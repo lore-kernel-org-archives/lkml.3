@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952AbaBUA7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:59:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45407 "EHLO
+	id S1754868AbaBTXu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45395 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769AbaBTXu6 (ORCPT
+	with ESMTP id S1754769AbaBTXuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:58 -0500
+	Thu, 20 Feb 2014 18:50:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve French <smfrench@gmail.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>
-Subject: [PATCH 3.10 08/66] retrieving CIFS ACLs when mounted with SMB2 fails dropping session
-Date: Thu, 20 Feb 2014 15:51:07 -0800
-Message-Id: <20140220234909.725372541@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 05/66] mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
+Date: Thu, 20 Feb 2014 15:51:04 -0800
+Message-Id: <20140220234909.642931438@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,159 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 83e3bc23ef9ce7c03b7b4e5d3d790246ea59db3e upstream.
+commit 8d547ff4ac5927245e0833ac18528f939da0ee0e upstream.
 
-The get/set ACL xattr support for CIFS ACLs attempts to send old
-cifs dialect protocol requests even when mounted with SMB2 or later
-dialects. Sending cifs requests on an smb2 session causes problems -
-the server drops the session due to the illegal request.
+mce-test detected a test failure when injecting error to a thp tail
+page.  This is because we take page refcount of the tail page in
+madvise_hwpoison() while the fix in commit a3e0f9e47d5e
+("mm/memory-failure.c: transfer page count from head page to tail page
+after split thp") assumes that we always take refcount on the head page.
 
-This patch makes CIFS ACL operations protocol specific to fix that.
+When a real memory error happens we take refcount on the head page where
+memory_failure() is called without MF_COUNT_INCREASED set, so it seems
+to me that testing memory error on thp tail page using madvise makes
+little sense.
 
-Attempting to query/set CIFS ACLs for SMB2 will now return
-EOPNOTSUPP (until we add worker routines for sending query
-ACL requests via SMB2) instead of sending invalid (cifs)
-requests.
+This patch cancels moving refcount in !MF_COUNT_INCREASED for valid
+testing.
 
-A separate followon patch will be needed to fix cifs_acl_to_fattr
-(which takes a cifs specific u16 fid so can't be abstracted
-to work with SMB2 until that is changed) and will be needed
-to fix mount problems when "cifsacl" is specified on mount
-with e.g. vers=2.1
-
-Signed-off-by: Steve French <smfrench@gmail.com>
-Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
+[akpm@linux-foundation.org: s/&&/&/]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsacl.c  |   28 ++++++++++++++++++++++++----
- fs/cifs/cifsglob.h |    4 ++++
- fs/cifs/smb1ops.c  |    4 ++++
- fs/cifs/xattr.c    |   15 +++++++++++----
- 4 files changed, 43 insertions(+), 8 deletions(-)
+ mm/memory-failure.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifsacl.c
-+++ b/fs/cifs/cifsacl.c
-@@ -1027,15 +1027,30 @@ id_mode_to_cifs_acl(struct inode *inode,
- 	__u32 secdesclen = 0;
- 	struct cifs_ntsd *pntsd = NULL; /* acl obtained from server */
- 	struct cifs_ntsd *pnntsd = NULL; /* modified acl to be sent to server */
-+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
-+	struct tcon_link *tlink = cifs_sb_tlink(cifs_sb);
-+	struct cifs_tcon *tcon;
-+
-+	if (IS_ERR(tlink))
-+		return PTR_ERR(tlink);
-+	tcon = tlink_tcon(tlink);
- 
- 	cifs_dbg(NOISY, "set ACL from mode for %s\n", path);
- 
- 	/* Get the security descriptor */
--	pntsd = get_cifs_acl(CIFS_SB(inode->i_sb), inode, path, &secdesclen);
-+
-+	if (tcon->ses->server->ops->get_acl == NULL) {
-+		cifs_put_tlink(tlink);
-+		return -EOPNOTSUPP;
-+	}
-+
-+	pntsd = tcon->ses->server->ops->get_acl(cifs_sb, inode, path,
-+						&secdesclen);
- 	if (IS_ERR(pntsd)) {
- 		rc = PTR_ERR(pntsd);
- 		cifs_dbg(VFS, "%s: error %d getting sec desc\n", __func__, rc);
--		goto out;
-+		cifs_put_tlink(tlink);
-+		return rc;
- 	}
- 
- 	/*
-@@ -1048,6 +1063,7 @@ id_mode_to_cifs_acl(struct inode *inode,
- 	pnntsd = kmalloc(secdesclen, GFP_KERNEL);
- 	if (!pnntsd) {
- 		kfree(pntsd);
-+		cifs_put_tlink(tlink);
- 		return -ENOMEM;
- 	}
- 
-@@ -1056,14 +1072,18 @@ id_mode_to_cifs_acl(struct inode *inode,
- 
- 	cifs_dbg(NOISY, "build_sec_desc rc: %d\n", rc);
- 
-+	if (tcon->ses->server->ops->set_acl == NULL)
-+		rc = -EOPNOTSUPP;
-+
- 	if (!rc) {
- 		/* Set the security descriptor */
--		rc = set_cifs_acl(pnntsd, secdesclen, inode, path, aclflag);
-+		rc = tcon->ses->server->ops->set_acl(pnntsd, secdesclen, inode,
-+						     path, aclflag);
- 		cifs_dbg(NOISY, "set_cifs_acl rc: %d\n", rc);
- 	}
-+	cifs_put_tlink(tlink);
- 
- 	kfree(pnntsd);
- 	kfree(pntsd);
--out:
- 	return rc;
- }
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -376,6 +376,10 @@ struct smb_version_operations {
- 	int (*set_EA)(const unsigned int, struct cifs_tcon *, const char *,
- 			const char *, const void *, const __u16,
- 			const struct nls_table *, int);
-+	struct cifs_ntsd * (*get_acl)(struct cifs_sb_info *, struct inode *,
-+			const char *, u32 *);
-+	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
-+			int);
- };
- 
- struct smb_version_values {
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -952,6 +952,10 @@ struct smb_version_operations smb1_opera
- 	.query_all_EAs = CIFSSMBQAllEAs,
- 	.set_EA = CIFSSMBSetEA,
- #endif /* CIFS_XATTR */
-+#ifdef CONFIG_CIFS_ACL
-+	.get_acl = get_cifs_acl,
-+	.set_acl = set_cifs_acl,
-+#endif /* CIFS_ACL */
- };
- 
- struct smb_version_values smb1_values = {
---- a/fs/cifs/xattr.c
-+++ b/fs/cifs/xattr.c
-@@ -176,8 +176,12 @@ int cifs_setxattr(struct dentry *direntr
- 			rc = -ENOMEM;
- 		} else {
- 			memcpy(pacl, ea_value, value_size);
--			rc = set_cifs_acl(pacl, value_size,
--				direntry->d_inode, full_path, CIFS_ACL_DACL);
-+			if (pTcon->ses->server->ops->set_acl)
-+				rc = pTcon->ses->server->ops->set_acl(pacl,
-+						value_size, direntry->d_inode,
-+						full_path, CIFS_ACL_DACL);
-+			else
-+				rc = -EOPNOTSUPP;
- 			if (rc == 0) /* force revalidate of the inode */
- 				CIFS_I(direntry->d_inode)->time = 0;
- 			kfree(pacl);
-@@ -323,8 +327,11 @@ ssize_t cifs_getxattr(struct dentry *dir
- 			u32 acllen;
- 			struct cifs_ntsd *pacl;
- 
--			pacl = get_cifs_acl(cifs_sb, direntry->d_inode,
--						full_path, &acllen);
-+			if (pTcon->ses->server->ops->get_acl == NULL)
-+				goto get_ea_exit; /* rc already EOPNOTSUPP */
-+
-+			pacl = pTcon->ses->server->ops->get_acl(cifs_sb,
-+					direntry->d_inode, full_path, &acllen);
- 			if (IS_ERR(pacl)) {
- 				rc = PTR_ERR(pacl);
- 				cifs_dbg(VFS, "%s: error %zd getting sec desc\n",
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -943,8 +943,10 @@ static int hwpoison_user_mappings(struct
+ 			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+-				put_page(hpage);
+-				get_page(p);
++				if (!(flags & MF_COUNT_INCREASED)) {
++					put_page(hpage);
++					get_page(p);
++				}
+ 				lock_page(p);
+ 				unlock_page(hpage);
+ 				*hpagep = p;
 
 
