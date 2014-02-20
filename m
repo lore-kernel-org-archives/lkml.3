@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816AbaBUAPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:15:45 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57662 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755941AbaBUAPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:15:39 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Lijun Pan <Lijun.Pan@freescale.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Priyanka Jain <Priyanka.Jain@freescale.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, scottwood@freescale.com
-Subject: [PATCH v2.1 9/11] powerpc/perf: add kconfig option for hypervisor provided counters
-Date: Thu, 20 Feb 2014 16:14:51 -0800
-Message-Id: <1392941697-21799-1-git-send-email-cody@linux.vnet.ibm.com>
+	id S1755936AbaBTXxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45995 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109AbaBTXxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:53:06 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 14/99] ath9k_htc: make ->sta_rc_update atomic for most calls
+Date: Thu, 20 Feb 2014 15:52:09 -0800
+Message-Id: <20140220235118.624273994@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392415338-16288-11-git-send-email-cody@linux.vnet.ibm.com>
-References: <1392415338-16288-11-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022100-0320-0000-0000-00000283EA1F
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+References: <20140220235118.191692546@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- arch/powerpc/perf/Makefile             |  2 ++
- arch/powerpc/platforms/pseries/Kconfig | 12 ++++++++++++
- 2 files changed, 14 insertions(+)
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
-index 60d71ee..f9c083a 100644
---- a/arch/powerpc/perf/Makefile
-+++ b/arch/powerpc/perf/Makefile
-@@ -11,5 +11,7 @@ obj32-$(CONFIG_PPC_PERF_CTRS)	+= mpc7450-pmu.o
- obj-$(CONFIG_FSL_EMB_PERF_EVENT) += core-fsl-emb.o
- obj-$(CONFIG_FSL_EMB_PERF_EVENT_E500) += e500-pmu.o e6500-pmu.o
+------------------
+
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+
+commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
+
+sta_rc_update() callback must be atomic, hence we can not take mutexes
+or do other operations, which can sleep in ath9k_htc_sta_rc_update().
+
+I think we can just return from ath9k_htc_sta_rc_update(), if it is
+called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
+with scheduling while atomic bug for most cases (except mesh and IBSS
+modes).
+
+For mesh and IBSS I do not see other solution like creating additional
+workqueue, because sending firmware command require us to sleep, but
+this can be done in additional patch.
+
+Patch partially fixes bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=990955
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
+
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -1315,21 +1315,22 @@ static void ath9k_htc_sta_rc_update(stru
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_htc_target_rate trate;
  
-+obj-$(CONFIG_HV_PERF_CTRS) += hv-24x7.o hv-gpci.o hv-common.o
++	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
++		return;
 +
- obj-$(CONFIG_PPC64)		+= $(obj64-y)
- obj-$(CONFIG_PPC32)		+= $(obj32-y)
-diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-index 80b1d57..2cb8b77 100644
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -111,6 +111,18 @@ config CMM
- 	  will be reused for other LPARs. The interface allows firmware to
- 	  balance memory across many LPARs.
+ 	mutex_lock(&priv->mutex);
+ 	ath9k_htc_ps_wakeup(priv);
  
-+config HV_PERF_CTRS
-+       bool "Hypervisor supplied PMU events (24x7 & GPCI)"
-+       default y
-+       depends on PERF_EVENTS && PPC_PSERIES
-+       help
-+	  Enable access to hypervisor supplied counters in perf. Currently,
-+	  this enables code that uses the hcall GetPerfCounterInfo and 24x7
-+	  interfaces to retrieve counters. GPCI exists on Power 6 and later
-+	  systems. 24x7 is available on Power 8 systems.
-+
-+          If unsure, select Y.
-+
- config DTL
- 	bool "Dispatch Trace Log"
- 	depends on PPC_SPLPAR && DEBUG_FS
--- 
-1.9.0
+-	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
+-		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
+-		ath9k_htc_setup_rate(priv, sta, &trate);
+-		if (!ath9k_htc_send_rate_cmd(priv, &trate))
+-			ath_dbg(common, CONFIG,
+-				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
+-				sta->addr, be32_to_cpu(trate.capflags));
+-		else
+-			ath_dbg(common, CONFIG,
+-				"Unable to update supported rates for sta: %pM\n",
+-				sta->addr);
+-	}
++	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
++	ath9k_htc_setup_rate(priv, sta, &trate);
++	if (!ath9k_htc_send_rate_cmd(priv, &trate))
++		ath_dbg(common, CONFIG,
++			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
++			sta->addr, be32_to_cpu(trate.capflags));
++	else
++		ath_dbg(common, CONFIG,
++			"Unable to update supported rates for sta: %pM\n",
++			sta->addr);
+ 
+ 	ath9k_htc_ps_restore(priv);
+ 	mutex_unlock(&priv->mutex);
+
 
