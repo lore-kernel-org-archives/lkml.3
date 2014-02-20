@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632AbaBUBEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:04:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45347 "EHLO
+	id S1754706AbaBTXuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720AbaBTXuq (ORCPT
+	with ESMTP id S1754673AbaBTXul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:46 -0500
+	Thu, 20 Feb 2014 18:50:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.10 01/66] xen-blkfront: handle backend CLOSED without CLOSING
-Date: Thu, 20 Feb 2014 15:51:00 -0800
-Message-Id: <20140220234909.524997080@linuxfoundation.org>
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.4 04/25] s390/dump: Fix dump memory detection
+Date: Thu, 20 Feb 2014 15:51:20 -0800
+Message-Id: <20140220234842.607775956@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
-References: <20140220234909.482516304@linuxfoundation.org>
+In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
+References: <20140220234842.483343851@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,48 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
+commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
 
-Backend drivers shouldn't transistion to CLOSED unless the frontend is
-CLOSED.  If a backend does transition to CLOSED too soon then the
-frontend may not see the CLOSING state and will not properly shutdown.
+Dumps created by kdump or zfcpdump can contain invalid memory holes when
+dumping z/VM systems that have memory pressure.
 
-So, treat an unexpected backend CLOSED state the same as CLOSING.
+For example:
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+   # zgetdump -i /proc/vmcore.
+   Memory map:
+   0000000000000000 - 0000000000bfffff (12 MB)
+   0000000000e00000 - 00000000014fffff (7 MB)
+   000000000bd00000 - 00000000f3bfffff (3711 MB)
+
+The memory detection function find_memory_chunks() issues tprot to
+find valid memory chunks. In case of CMM it can happen that pages are
+marked as unstable via set_page_unstable() in arch_free_page().
+If z/VM has released that pages, tprot returns -EFAULT and indicates
+a memory hole.
+
+So fix this and switch off CMM in case of kdump or zfcpdump.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkfront.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/s390/mm/page-states.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1518,13 +1518,16 @@ static void blkback_changed(struct xenbu
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
+--- a/arch/s390/mm/page-states.c
++++ b/arch/s390/mm/page-states.c
+@@ -12,6 +12,8 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <asm/setup.h>
++#include <asm/ipl.h>
  
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
+ #define ESSA_SET_STABLE		1
+ #define ESSA_SET_UNUSED		2
+@@ -41,6 +43,14 @@ void __init cmma_init(void)
  
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
- 		blkfront_closing(info);
- 		break;
+ 	if (!cmma_flag)
+ 		return;
++	/*
++	 * Disable CMM for dump, otherwise  the tprot based memory
++	 * detection can fail because of unstable pages.
++	 */
++	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
++		cmma_flag = 0;
++		return;
++	}
+ 	asm volatile(
+ 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
+ 		"0:     la      %0,0\n"
 
 
