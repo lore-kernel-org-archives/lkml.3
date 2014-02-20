@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaBTArR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:47:17 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49106 "EHLO
+	id S1752477AbaBTAuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:50:10 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49136 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaBTArP (ORCPT
+	with ESMTP id S1751945AbaBTAuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:47:15 -0500
-Date: Wed, 19 Feb 2014 19:47:13 -0500 (EST)
-Message-Id: <20140219.194713.1411547109743205257.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: akpm@linux-foundation.org, linux-arch@vger.kernel.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 2/4] Sparc: sparc_cpu_model isn't in asm/system.h any
- more
+	Wed, 19 Feb 2014 19:50:08 -0500
+Date: Wed, 19 Feb 2014 19:50:07 -0500 (EST)
+Message-Id: <20140219.195007.1409896950208101052.davem@davemloft.net>
+To: paul.gortmaker@windriver.com
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc32: fix build failure for
+ arch_jump_label_transform
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140212154559.2405.3104.stgit@warthog.procyon.org.uk>
-References: <20140212154544.2405.2992.stgit@warthog.procyon.org.uk>
-	<20140212154559.2405.3104.stgit@warthog.procyon.org.uk>
+In-Reply-To: <1392317864-24746-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1392317864-24746-1-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Feb 2014 16:47:15 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Feb 2014 16:50:08 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 12 Feb 2014 15:45:59 +0000
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 13 Feb 2014 13:57:44 -0500
 
-> sparc_cpu_model isn't in asm/system.h any more, so remove a comment about it.
+> In arch/sparc/Kernel/Makefile, we see:
 > 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+>    obj-$(CONFIG_SPARC64)   += jump_label.o
+> 
+> However, the Kconfig selects HAVE_ARCH_JUMP_LABEL unconditionally
+> for all SPARC.  This in turn leads to the following failure when
+> doing allmodconfig coverage builds:
+> 
+> kernel/built-in.o: In function `__jump_label_update':
+> jump_label.c:(.text+0x8560c): undefined reference to `arch_jump_label_transform'
+> kernel/built-in.o: In function `arch_jump_label_transform_static':
+> (.text+0x85cf4): undefined reference to `arch_jump_label_transform'
+> make: *** [vmlinux] Error 1
+> 
+> Change HAVE_ARCH_JUMP_LABEL to be conditional on SPARC64 so that it
+> matches the Makefile.
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-That's not all your patch does:
-
-> -	/* extern enum sparc_cpu sparc_cpu_model; */ /* in <asm/system.h> */
-> -	if (sparc_cpu_model != sun4m) {
-> +	if (sparc_cpu_model != sun4m)
->  		/* We must be on sun4m because we use MMU Bypass ASI. */
->  		return -ENXIO;
-> -	}
-
-The basic block is more than one line, therefore the braces are
-appropriate.  Please do not remove them, and especially do not
-remove them without mentioning them in the commit message.
-
-Thanks.
+Applied.
