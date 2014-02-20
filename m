@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361AbaBUArO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:47:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45592 "EHLO
+	id S1757392AbaBUArn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:47:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297AbaBTXvm (ORCPT
+	with ESMTP id S1755276AbaBTXvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:42 -0500
+	Thu, 20 Feb 2014 18:51:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 61/66] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Thu, 20 Feb 2014 15:52:00 -0800
-Message-Id: <20140220234911.237507714@linuxfoundation.org>
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 3.10 25/66] tty: Set correct tty name in active sysfs attribute
+Date: Thu, 20 Feb 2014 15:51:24 -0800
+Message-Id: <20140220234910.214283412@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,47 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Hannes Reinecke <hare@suse.de>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console.
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+The console structure doesn't refer to any device in sysfs, only the tty
+the console is running on has.  So we need to print out the tty names in
+'active', not the console names.
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
+This resolves an issue on s390 platforms in determining the correct
+console device to use.
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ Documentation/ABI/testing/sysfs-tty |    3 ++-
+ drivers/tty/tty_io.c                |   25 ++++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2396,6 +2396,13 @@ __rb_reserve_next(struct ring_buffer_per
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+--- a/Documentation/ABI/testing/sysfs-tty
++++ b/Documentation/ABI/testing/sysfs-tty
+@@ -3,7 +3,8 @@ Date:		Nov 2010
+ Contact:	Kay Sievers <kay.sievers@vrfy.org>
+ Description:
+ 		 Shows the list of currently configured
+-		 console devices, like 'tty1 ttyS0'.
++		 tty devices used for the console,
++		 like 'tty1 ttyS0'.
+ 		 The last entry in the file is the active
+ 		 device connected to /dev/console.
+ 		 The file supports poll() to detect virtual
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1263,16 +1263,17 @@ static void pty_line_name(struct tty_dri
+  *	@p: output buffer of at least 7 bytes
+  *
+  *	Generate a name from a driver reference and write it to the output
+- *	buffer.
++ *	buffer. Return the number of bytes written.
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
+ /**
+@@ -3538,9 +3539,19 @@ static ssize_t show_cons_active(struct d
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
+ 	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		struct tty_driver *driver;
++		const char *name = cs[i]->name;
++		int index = cs[i]->index;
 +
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
++		driver = cs[i]->device(cs[i], &index);
++		if (driver) {
++			count += tty_line_name(driver, index, buf + count);
++			count += sprintf(buf + count, "%c", i ? ' ':'\n');
++		} else
++			count += sprintf(buf + count, "%s%d%c",
++					 name, index, i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
 
 
