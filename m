@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbaBUAOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:14:03 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:51509 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755715AbaBUAOA (ORCPT
+	id S1756554AbaBUAO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:14:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46060 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960AbaBTXxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:14:00 -0500
+	Thu, 20 Feb 2014 18:53:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 03/99] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
+Date: Thu, 20 Feb 2014 15:51:58 -0800
+Message-Id: <20140220235118.301888765@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+References: <20140220235118.191692546@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <1392848019-24114-1-git-send-email-stefan.seyfried@googlemail.com>
-References: <1392848019-24114-1-git-send-email-stefan.seyfried@googlemail.com>
-Date: Thu, 20 Feb 2014 16:13:59 -0800
-X-Google-Sender-Auth: flpzfk9xRx67wqt-O3g_btTcRII
-Message-ID: <CAGXu5jLBG50B7bn8gdps4YTJBOjWpGJTtxWUBqFC9UKbs93oPw@mail.gmail.com>
-Subject: Re: [PATCH] Makefile: fix syntax error in warning message
-From: Kees Cook <keescook@chromium.org>
-To: stefan.seyfried@googlemail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Stefan Seyfried <seife+kernel@b1-systems.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 2:13 PM,  <stefan.seyfried@googlemail.com> wrote:
-> From: Stefan Seyfried <seife+kernel@b1-systems.com>
->
-> ---
->  Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/Makefile b/Makefile
-> index 893d6f0..eeaf3e7 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -606,7 +606,7 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
->    stackp-flag := -fstack-protector
->    ifeq ($(call cc-option, $(stackp-flag)),)
->      $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
-> -             -fstack-protector not supported by compiler))
-> +             -fstack-protector not supported by compiler)
->    endif
->  else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
->    stackp-flag := -fstack-protector-strong
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Hi!
+------------------
 
-Thanks, yes, this has already been picked up:
-http://marc.info/?l=linux-mm-commits&m=139275774732494&w=2
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
--Kees
+commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
 
--- 
-Kees Cook
-Chrome OS Security
+Recently due to a spike in connections per second memcached on 3
+separate boxes triggered the OOM killer from accept.  At the time the
+OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
+problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
+hold a bitmap, and there was sufficient fragmentation that the largest
+page available was 8KiB.
+
+I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
+but I do agree that order 3 allocations are very likely to succeed.
+
+There are always pathologies where order > 0 allocations can fail when
+there are copious amounts of free memory available.  Using the pigeon
+hole principle it is easy to show that it requires 1 page more than 50%
+of the pages being free to guarantee an order 1 (8KiB) allocation will
+succeed, 1 page more than 75% of the pages being free to guarantee an
+order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
+the pages being free to guarantee an order 3 allocate will succeed.
+
+A server churning memory with a lot of small requests and replies like
+memcached is a common case that if anything can will skew the odds
+against large pages being available.
+
+Therefore let's not give external applications a practical way to kill
+linux server applications, and specify __GFP_NORETRY to the kmalloc in
+alloc_fdmem.  Unless I am misreading the code and by the time the code
+reaches should_alloc_retry in __alloc_pages_slowpath (where
+__GFP_NORETRY becomes signification).  We have already tried everything
+reasonable to allocate a page and the only thing left to do is wait.  So
+not waiting and falling back to vmalloc immediately seems like the
+reasonable thing to do even if there wasn't a chance of triggering the
+OOM killer.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
+ 	 * vmalloc() if the allocation size will be considered "large" by the VM.
+ 	 */
+ 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
+-		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
+ 		if (data != NULL)
+ 			return data;
+ 	}
+
+
