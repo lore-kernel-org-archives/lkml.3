@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaBTOog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:44:36 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:47761 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604AbaBTOnZ (ORCPT
+	id S1754932AbaBTOof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:44:35 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:46205 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618AbaBTOnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 09:43:25 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -13,9 +13,9 @@ Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
         Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 08/10] spi: sh-msiof: Move clock management to (un)prepare_message()
-Date: Thu, 20 Feb 2014 15:43:07 +0100
-Message-Id: <1392907389-21798-9-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 09/10] spi: sh-msiof: Convert to let spi core validate xfer->bits_per_word
+Date: Thu, 20 Feb 2014 15:43:08 +0100
+Message-Id: <1392907389-21798-10-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
 References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
@@ -25,99 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Move clock management and pin configuration from the bitbang chipselect()
-method to the SPI core prepare_message() and unprepare_message() methods.
+Set bits_per_word_mask so the spi core will reject transfers that attempt
+to use an unsupported bits_per_word value.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
- drivers/spi/spi-sh-msiof.c |   56 +++++++++++++++++++++++++++-----------------
- 1 file changed, 34 insertions(+), 22 deletions(-)
+ drivers/spi/spi-sh-msiof.c |   19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index 31624fb4997d..7add4be37987 100644
+index 7add4be37987..bd300fcb7116 100644
 --- a/drivers/spi/spi-sh-msiof.c
 +++ b/drivers/spi/spi-sh-msiof.c
-@@ -472,9 +472,40 @@ static int sh_msiof_spi_setup(struct spi_device *spi)
- 	return spi_bitbang_setup(spi);
+@@ -441,22 +441,6 @@ static u32 sh_msiof_spi_hz(struct spi_device *spi, struct spi_transfer *t)
+ 	return hz;
  }
  
-+static int sh_msiof_prepare_message(struct spi_master *master,
-+				    struct spi_message *msg)
-+{
-+	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
-+	const struct spi_device *spi = msg->spi;
-+
-+	if (!test_and_set_bit(0, &p->flags)) {
-+		pm_runtime_get_sync(&p->pdev->dev);
-+		clk_enable(p->clk);
-+	}
-+
-+	/* Configure pins before asserting CS */
-+	sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
-+				  !!(spi->mode & SPI_CPHA),
-+				  !!(spi->mode & SPI_3WIRE),
-+				  !!(spi->mode & SPI_LSB_FIRST),
-+				  !!(spi->mode & SPI_CS_HIGH));
-+	return 0;
-+}
-+
-+static int sh_msiof_unprepare_message(struct spi_master *master,
-+				      struct spi_message *msg)
-+{
-+	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
-+
-+	if (test_and_clear_bit(0, &p->flags)) {
-+		clk_disable(p->clk);
-+		pm_runtime_put(&p->pdev->dev);
-+	}
-+	return 0;
-+}
-+
- static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
+-static int sh_msiof_spi_setup_transfer(struct spi_device *spi,
+-				       struct spi_transfer *t)
+-{
+-	int bits;
+-
+-	/* noting to check hz values against since parent clock is disabled */
+-
+-	bits = sh_msiof_spi_bits(spi, t);
+-	if (bits < 8)
+-		return -EINVAL;
+-	if (bits > 32)
+-		return -EINVAL;
+-
+-	return spi_bitbang_setup_transfer(spi, t);
+-}
+-
+ static int sh_msiof_spi_setup(struct spi_device *spi)
  {
--	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
- 	int value;
- 
- 	/* chip select is active low unless SPI_CS_HIGH is set */
-@@ -483,29 +514,8 @@ static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
- 	else
- 		value = (is_on == BITBANG_CS_ACTIVE) ? 0 : 1;
- 
--	if (is_on == BITBANG_CS_ACTIVE) {
--		if (!test_and_set_bit(0, &p->flags)) {
--			pm_runtime_get_sync(&p->pdev->dev);
--			clk_enable(p->clk);
--		}
--
--		/* Configure pins before asserting CS */
--		sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
--					  !!(spi->mode & SPI_CPHA),
--					  !!(spi->mode & SPI_3WIRE),
--					  !!(spi->mode & SPI_LSB_FIRST),
--					  !!(spi->mode & SPI_CS_HIGH));
--	}
--
- 	if (spi->cs_gpio >= 0)
- 		gpio_set_value(spi->cs_gpio, value);
--
--	if (is_on == BITBANG_CS_INACTIVE) {
--		if (test_and_clear_bit(0, &p->flags)) {
--			clk_disable(p->clk);
--			pm_runtime_put(&p->pdev->dev);
--		}
--	}
- }
- 
- static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
-@@ -810,6 +820,8 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
- 	master->num_chipselect = p->info->num_chipselect;
- 	master->setup = sh_msiof_spi_setup;
+ 	struct device_node	*np = spi->master->dev.of_node;
+@@ -822,10 +806,11 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
  	master->cleanup = spi_bitbang_cleanup;
-+	master->prepare_message = sh_msiof_prepare_message;
-+	master->unprepare_message = sh_msiof_unprepare_message;
+ 	master->prepare_message = sh_msiof_prepare_message;
+ 	master->unprepare_message = sh_msiof_unprepare_message;
++	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 32);
  
  	p->bitbang.master = master;
  	p->bitbang.chipselect = sh_msiof_spi_chipselect;
+-	p->bitbang.setup_transfer = sh_msiof_spi_setup_transfer;
++	p->bitbang.setup_transfer = spi_bitbang_setup_transfer;
+ 	p->bitbang.txrx_bufs = sh_msiof_spi_txrx;
+ 	p->bitbang.txrx_word[SPI_MODE_0] = sh_msiof_spi_txrx_word;
+ 	p->bitbang.txrx_word[SPI_MODE_1] = sh_msiof_spi_txrx_word;
 -- 
 1.7.9.5
 
