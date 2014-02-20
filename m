@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaBUASW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:18:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46018 "EHLO
+	id S1756596AbaBUASl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:18:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145AbaBTXxM (ORCPT
+	with ESMTP id S932140AbaBTXxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:12 -0500
+	Thu, 20 Feb 2014 18:53:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.13 02/99] xen-blkfront: handle backend CLOSED without CLOSING
-Date: Thu, 20 Feb 2014 15:51:57 -0800
-Message-Id: <20140220235118.272127185@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.13 19/99] s390: fix kernel crash due to linkage stack instructions
+Date: Thu, 20 Feb 2014 15:52:14 -0800
+Message-Id: <20140220235118.771887603@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,44 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
+commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
 
-Backend drivers shouldn't transistion to CLOSED unless the frontend is
-CLOSED.  If a backend does transition to CLOSED too soon then the
-frontend may not see the CLOSING state and will not properly shutdown.
+The kernel currently crashes with a low-address-protection exception
+if a user space process executes an instruction that tries to use the
+linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
+of the dispatchable-unit-control-table to point to a dummy ASTE.
+Set up control register 15 to point to an empty linkage stack with no
+room left.
 
-So, treat an unexpected backend CLOSED state the same as CLOSING.
+A user space process with a linkage stack instruction will still crash
+but with a different exception which is correctly translated to a
+segmentation fault instead of a kernel oops.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkfront.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/s390/kernel/head64.S |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1904,13 +1904,16 @@ static void blkback_changed(struct xenbu
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
+--- a/arch/s390/kernel/head64.S
++++ b/arch/s390/kernel/head64.S
+@@ -59,7 +59,7 @@ ENTRY(startup_continue)
+ 	.quad	0			# cr12: tracing off
+ 	.quad	0			# cr13: home space segment table
+ 	.quad	0xc0000000		# cr14: machine check handling off
+-	.quad	0			# cr15: linkage stack operations
++	.quad	.Llinkage_stack		# cr15: linkage stack operations
+ .Lpcmsk:.quad	0x0000000180000000
+ .L4malign:.quad 0xffffffffffc00000
+ .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
+@@ -67,12 +67,15 @@ ENTRY(startup_continue)
+ .Lparmaddr:
+ 	.quad	PARMAREA
+ 	.align	64
+-.Lduct: .long	0,0,0,0,.Lduald,0,0,0
++.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
+ 	.long	0,0,0,0,0,0,0,0
++.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
+ 	.align	128
+ .Lduald:.rept	8
+ 	.long	0x80000000,0,0,0	# invalid access-list entries
+ 	.endr
++.Llinkage_stack:
++	.long	0,0,0x89000000,0,0,0,0x8a000000,0
  
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
+ ENTRY(_ehead)
  
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
- 		blkfront_closing(info);
- 		break;
 
 
