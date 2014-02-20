@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaBTLo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:44:59 -0500
-Received: from sauhun.de ([89.238.76.85]:55237 "EHLO pokefinder.org"
+	id S1754416AbaBTLp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:45:28 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52963 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571AbaBTLlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753552AbaBTLlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 06:41:21 -0500
-Date: Thu, 20 Feb 2014 12:41:18 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, khilman@linaro.org, arnd@arndb.de,
-        linux-sh@vger.kernel.org, horms@verge.net.au, john.stultz@linaro.org,
-        olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [PATCH V6 0/3] clocksource: Consolidate SH and ARM mach-shmobile
- Kconfig bits
-Message-ID: <20140220114118.GA5670@katana>
-References: <1392670532-21523-1-git-send-email-wsa@the-dreams.de>
- <5305C13D.7040907@linaro.org>
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <bcousson@baylibre.com>, <lee.jones@linaro.org>
+CC: <balbi@ti.com>, <nm@ti.com>, <khilman@linaro.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v8 12/14] ARM: OMAP2+: Remove legacy_init_ehci_clk()
+Date: Thu, 20 Feb 2014 13:40:07 +0200
+Message-ID: <1392896409-5101-13-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1392896409-5101-1-git-send-email-rogerq@ti.com>
+References: <1392896409-5101-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <5305C13D.7040907@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The necessary clock phandle for the EHCI clock is now provided
+via device tree so we no longer need this legacy method.
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/pdata-quirks.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
+index 3d5b24d..f1ecd86 100644
+--- a/arch/arm/mach-omap2/pdata-quirks.c
++++ b/arch/arm/mach-omap2/pdata-quirks.c
+@@ -31,20 +31,6 @@ struct pdata_init {
+ struct of_dev_auxdata omap_auxdata_lookup[];
+ static struct twl4030_gpio_platform_data twl_gpio_auxdata;
+ 
+-/*
+- * Create alias for USB host PHY clock.
+- * Remove this when clock phandle can be provided via DT
+- */
+-static void __init __used legacy_init_ehci_clk(char *clkname)
+-{
+-	int ret;
+-
+-	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
+-	if (ret)
+-		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
+-		       __func__, clkname, ret);
+-}
+-
+ #if IS_ENABLED(CONFIG_WL12XX)
+ 
+ static struct wl12xx_platform_data wl12xx __initdata;
+@@ -182,7 +168,6 @@ static void __init omap4_sdp_legacy_init(void)
+ static void __init omap4_panda_legacy_init(void)
+ {
+ 	omap4_panda_display_init_of();
+-	legacy_init_ehci_clk("auxclk3_ck");
+ 	legacy_init_wl12xx(WL12XX_REFCLOCK_38, 0, 53);
+ }
+ #endif
+@@ -190,7 +175,6 @@ static void __init omap4_panda_legacy_init(void)
+ #ifdef CONFIG_SOC_OMAP5
+ static void __init omap5_uevm_legacy_init(void)
+ {
+-	legacy_init_ehci_clk("auxclk1_ck");
+ }
+ #endif
+ 
+-- 
+1.8.3.2
 
-> actually I was waiting for Magnus to send me the patchset respinned
-> against timers/core [1].
-
-Ehrm, how did I manage to miss that reply? :) Thanks for the pointer,
-will send V7 in a minute.
-
-
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTBendAAoJEBQN5MwUoCm2YmwP/35jH/lJtKQivgxBsF2urpVS
-5FKtfxjl6kyrV/9Ja9TO3LAs5SgrB02MERx0a/y+H0Dsct0oFsga28GgpXL2+VFe
-FHYQoNcD9zo1irN6cNexXyadSUpReUyQRD+nM7AJWt8vYURnOVJUqwJyLyesdtMJ
-K7YoZWCM8DHdYS88t4tUnDzoaewjPbrHWkz1qpBdS4UEUEVOKw1ZP9IHQC8Gslh/
-TfRzs5GQbdvnU8YO264mkSMkH9lpNkrdGFAlL7E7EhxLUQlCt6QBmvxTedXeurWg
-pjFe/7tjodwTbm4oJ7Rd3sqjN9K17GJSJN6VQN+gS2EjVvs/UcOiFCEHVy8r00EX
-7nb2XtW8xSA/gcoerPuhXtilHUGVSWQEoAmkbY2GB8VXNkNwkGToXwEY4eWIlT+M
-pOrhG7aiBK09xU7Pt2gsuaAjUJkhj7WgsypZbO0HML525Gk/2MKqs3Kr9CVjZV/e
-kgSw6VdK0bp7JeFvsnZetEHdsJf6/BpUY10pFodrRh4KtQfFp84C/0UoyhsKWryQ
-iWHSUy46JV6VmcNh8H33A1LFpRDk5B6TNEIGaeWRvqQDVYwjJqQocarUMLydfGOX
-AXQimlz5iJ0W12kOg0JKYm/7lN5lfawBE5s/OLFZDK/ZFs4oT3Iyv7E77RWPjmQL
-zGzV/Qeab4Kp+Imlq2+K
-=uFSk
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
