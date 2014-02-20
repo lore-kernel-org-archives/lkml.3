@@ -1,223 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaBTPvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:51:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33135 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753651AbaBTPvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:51:00 -0500
-Message-ID: <5306241D.1030108@ti.com>
-Date: Thu, 20 Feb 2014 17:49:49 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754165AbaBTPyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:54:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37558 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaBTPye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 10:54:34 -0500
+Date: Thu, 20 Feb 2014 16:54:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140220155416.GH9987@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+ <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
+ <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net>
+ <87r46xdbw4.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grygorii.strashko@ti.com" <grygorii.strashko@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "nsekhar@ti.com" <nsekhar@ti.com>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 2/2] memory: ti-aemif: add bindings for AEMIF driver
-References: <1392817210-14312-1-git-send-email-ivan.khoronzhuk@ti.com>	<1392817210-14312-3-git-send-email-ivan.khoronzhuk@ti.com>	<20140219181152.GG25079@e106331-lin.cambridge.arm.com>	<5305F898.6020401@ti.com> <CAL_JsqJ5hoQ3vWaQTo8--jiPPQ64OW_b4zKTe7aPLXN0td4DrA@mail.gmail.com>
-In-Reply-To: <CAL_JsqJ5hoQ3vWaQTo8--jiPPQ64OW_b4zKTe7aPLXN0td4DrA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r46xdbw4.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 20, 2014 at 07:47:23AM -0800, Andi Kleen wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > On Wed, Feb 19, 2014 at 05:34:49PM -0500, Vince Weaver wrote:
+> >> So where would the NMI counter event get disabled?  Would it never get 
+> >> disabled, just because it's always running and always gets the same fixed 
+> >> slot?  Why isn't this a problem all the time, not just with corner cases?
+> >
+> > Well it could get another counter assignment I suppose; there's no
+> > guarantee it always ends up in the fixed counter although that's rather
+> > likely.
+> >
+> >> Is somehow n_added getting confused?
+> >
+> > I'd expect worse than a warning if that happened, but who knows.
+> >
+> > You could try with the below; make sure you've got CONFIG_FUNCTION_TRACER=y.
+> >
+> > Then (assuming debugfs is mounted in /debug ; most modern distros have
+> > it at /sys/kernel/debug but they're wrong!):
+> >
+> > # echo 0 > /debug/tracing/tracing_on
+> > # echo function > /debug/tracing/current_tracer
+> > # echo nop > /debug/tracing/current_tracer
+> > # echo 0 > /debug/tracing/trace
+> > # echo 1 > /debug/tracing/tracing_on
+> >
+> > And make it go *BOOM*, then:
+> >
+> > # cat /debug/tracing/trace | bzip2 -9 > ~/trace.bz2
+> 
+> This won't work unless you apply this patch
+> 
+> http://lkml.org/lkml/2013/10/20/94
 
-On 02/20/2014 03:44 PM, Rob Herring wrote:
-> On Thu, Feb 20, 2014 at 6:44 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
->> On 02/19/2014 08:11 PM, Mark Rutland wrote:
->>> On Wed, Feb 19, 2014 at 01:40:10PM +0000, Ivan Khoronzhuk wrote:
->>>> Add bindings for TI Async External Memory Interface (AEMIF) controller.
->>>>
->>>> The Async External Memory Interface (EMIF16/AEMIF) controller is intended
->>>> to
->>>> provide a glue-less interface to a variety of asynchronous memory devices
->>>> like
->>>> ASRA M, NOR and NAND memory. A total of 256M bytes of any of these
->>>> memories
->>>> can be accessed via 4 chip selects with 64M byte access per chip select.
->>>>
->>>> We are not encoding CS number in reg property, it's memory partition
->>>> number.
->>>> The CS number is encoded for Davinci NAND node using standalone property
->>>> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
->>>> as result we can't encode CS number in "reg" for AEMIF child devices
->>>> (NAND/NOR/etc), as it will break bindings compatibility.
->>>>
->>>> In this patch, NAND node is used just as an example of child node.
->>>>
->>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>> ---
->>>>    .../bindings/memory-controllers/ti-aemif.txt       | 210
->>>> +++++++++++++++++++++
->>>>    1 file changed, 210 insertions(+)
->>>>    create mode 100644
->>>> Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
->>> [...]
->>>
->>>> +- ranges:              Contains memory regions. There are two types of
->>>> +                       ranges/partitions:
->>>> +                       - CS-specific partition/range. If continuous,
->>>> must be
->>>> +                       set up to reflect the memory layout for 4
->>>> chipselects,
->>>> +                       if not then additional range/partition can be
->>>> added and
->>>> +                       child device can select the proper one.
->>>> +                       - control partition which is common for all CS
->>>> +                       interfaces.
->>> This really doesn't sound anything like the typical meaning of ranges on
->>> a bus.
->>>
->>> Why isn't this information encoded in reg properties on the child nodes?
->>>
->>> [...]
->>
->> Note that we do not introduce NAND device bindings here.
->> The Davinci NAND bindings was introduced and accepted more then one year
->> ago.
->> And the CS number is encoded for Davinci NAND node using standalone property
->>
->> "ti,davinci-chipselect" and we need to provide two memory ranges to it,
->> as result we can't encode CS number in "reg" for AEMIF child devices
->> (NAND/NOR/etc),
->> as it will break bindings compatibility.
->>
->> In this document, NAND node is used just as an example of child node.
->>
->>
->>>> +- ti,cs-ss:            enable/disable select strobe mode
->>>> +                               In select strobe mode chip select behaves
->>>> as
->>>> +                               the strobe and is active only during the
->>>> strobe
->>>> +                               period. If present then enable.
->>>> +
->>>> +- ti,cs-ew:            enable/disable extended wait mode
->>>> +                               if set, the controller monitors the
->>>> EMIFWAIT pin
->>>> +                               mapped to that chip select to determine
->>>> if the
->>>> +                               device wants to extend the strobe period.
->>>> If
->>>> +                               present then enable.
->>> When would you have these two in the DT and when wouldn't you? Why can't
->>> the driver decide?
->>
->> These are properties of cs node, not the driver itself.
->> The driver cannot know what child device you are going to attach to cs node
->> , as result it cannot decide what settings you are using for particular cs
->> node.
->>
->>
->>> These names are also opaque. We can clearly do better.
->>
->> I propose the following names?:
->>
->> ti,cs-ss  --> ti,cs-select-strobe-mode
->> ti,cs-ew --> ti,cs-extended-waite-mode
->>
->> Are you OK with it?
->>
->>
->>>> +
->>>> +- ti,cs-ta:            minimum turn around time, ns
->>>> +                               Time between the end of one asynchronous
->>>> memory
->>>> +                               access and the start of another
->>>> asynchronous
->>>> +                               memory access. This delay is not incurred
->>>> +                               between a read followed by read or a
->>>> write
->>>> +                               followed by a write to same chip select.
->>> The name is opaque. How about ti,min-turnaround-time-ns ?
->>
->> I like without -ns suffix and with cs- prefix:
->> ti,cs-ta --> ti,cs-min-turnaround-time
->>
->> Is it OK?
->>
->>
->>>> +
->>>> +- ti,cs-rsetup:                read setup width, ns
->>>> +                               Time between the beginning of a memory
->>>> cycle
->>>> +                               and the activation of read strobe.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>>> +
->>>> +- ti,cs-rstobe:                read strobe width, ns
->>>> +                               Time between the activation and
->>>> deactivation of
->>>> +                               the read strobe.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>>> +
->>>> +- ti,cs-rhold:         read hold width, ns
->>>> +                               Time between the deactivation of the read
->>>> +                               strobe and the end of the cycle (which
->>>> may be
->>>> +                               either an address change or the
->>>> deactivation of
->>>> +                               the chip select signal.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>>> +
->>>> +- ti,cs-wsetup:                write setup width, ns
->>>> +                               Time between the beginning of a memory
->>>> cycle
->>>> +                               and the activation of write strobe.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>>> +
->>>> +- ti,cs-wstrobe:       write strobe width, ns
->>>> +                               Time between the activation and
->>>> deactivation of
->>>> +                               the write strobe.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>>> +
->>>> +- ti,cs-whold:         write hold width, ns
->>>> +                               Time between the deactivation of the
->>>> write
->>>> +                               strobe and the end of the cycle (which
->>>> may be
->>>> +                               either an address change or the
->>>> deactivation of
->>>> +                               the chip select signal.
->>>> +                               Minimum value is 1 (0 treated as 1).
->>> Likewise I think these can be given more descriptive names.
->>
->> Ok. How about:
->>
->> ti,cs-rsetup --> ti,cs-read-setup-time
->> ti,cs-rstobe --> ti,cs-read-strobe-time
->> ti,cs-rhold  --> ti,cs-read-hold-time
->> ti,cs-wsetup --> ti,cs-write-setup-time
->> ti,cs-wstrobe --> ti,cs-write-strobe-time
->> ti,cs-whold --> ti,cs-write-hold-time
-> Properties that have a unit of measure should have that unit in the
-> name. So replace "time" with "ns".
->
-> Rob
+It will; trace_printk() works without -pg, I think you didn't read the
+instructions very well.
 
-Ok, I will replace
+And there's a very good reason not to apply your patch; you can route
+the function tracer into perf, guess what happens when perf calls the
+function tracer again :-)
 
-Thanks!
-
--- 
-Regards,
-Ivan Khoronzhuk
-
+But yes; you can use it if you don't do that. But I didn't want the
+function trace, so who cares.
