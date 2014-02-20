@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaBTJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:14:16 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:63944 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754799AbaBTJOG (ORCPT
+	id S1755271AbaBTJOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:14:41 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46974 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaBTJOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:14:06 -0500
-Message-ID: <1392887643.5070.44.camel@x220>
-Subject: [PATCH 2/2] MAINTAINERS: mark Advansys Orphan
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Hans de Goede <hdegoede@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 20 Feb 2014 10:14:03 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Feb 2014 09:14:03.0994 (UTC) FILETIME=[19912BA0:01CF2E1C]
-X-RcptDomain: vger.kernel.org
+	Thu, 20 Feb 2014 04:14:35 -0500
+Date: Thu, 20 Feb 2014 18:12:57 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com, dmitry.torokhov@gmail.com,
+        lgirdwood@gmail.com, lars@metafoo.de, peter.ujfalusi@ti.com,
+        jarkko.nikula@bitmer.com, eric.y.miao@gmail.com,
+        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux@arm.linux.org.uk
+Message-ID: <20140220091257.GB2669@sirena.org.uk>
+References: <1392736948-26623-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1392736948-26623-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M3d18yTenwKOqJX4"
+Content-Disposition: inline
+In-Reply-To: <1392736948-26623-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/17 v2] Input - arizona-haptics: Fix double lock of
+ dapm_mutex
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox hasn't touched the Advansys driver since v2.6.29. I have
-not been able to get Matthew to respond to a trivial patch I'd like to
-see go in. Mark this driver Orphan and add this driver to Matthew's
-CREDITS entry.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- CREDITS     | 2 +-
- MAINTAINERS | 3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+--M3d18yTenwKOqJX4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/CREDITS b/CREDITS
-index e371c55..4adbf38 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -3805,7 +3805,7 @@ N: Matthew Wilcox
- E: matthew@wil.cx
- W: ftp://ftp.uk.linux.org/pub/linux/people/willy/
- D: Linux/PARISC hacker.  Filesystem hacker.  Random other hacking.  Custom
--D: PPC port hacking.
-+D: PPC port hacking.  Advansys SCSI driver.
- 
- N: G\"unter Windau
- E: gunter@mbfys.kun.nl
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fb08dce..c45d72e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -426,9 +426,8 @@ S:	Supported
- F:	drivers/input/misc/adxl34x.c
- 
- ADVANSYS SCSI DRIVER
--M:	Matthew Wilcox <matthew@wil.cx>
- L:	linux-scsi@vger.kernel.org
--S:	Maintained
-+S:	Orphan
- F:	Documentation/scsi/advansys.txt
- F:	drivers/scsi/advansys.c
- 
--- 
-1.8.5.3
+On Tue, Feb 18, 2014 at 03:22:12PM +0000, Charles Keepax wrote:
+> snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
+> it externally as well. This patch fixes this.
 
+Applied, thanks.
+
+--M3d18yTenwKOqJX4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBccVAAoJELSic+t+oim96ukQAJz0JktANPHTKHZuTakeIbiP
+bpHQ43gTHHA0LSSF/uxbTd12EVHOJVdPITeXLiCg+O99A0fKC2cBW5DgKHRQ7KB/
+cNK5AG4xAqORuRzj5tUVkmffdvTLd8qDznXq5EjhT97MQe0u1SB8WcRgGReos/w1
+LKpGgYRgHBE/ZmVaZIEZjHCfvrFKJeS+kPB7tKElrdah351ptcSJWYoeCLKAF+gi
+TiUd+nO7ZOS3W1uv45qjfwvUM/V+swQqntsGTel9/mJcTLDQSjqyRKALoaC+sxNF
+cbbRTrKd/2YnZyetwzTpztBOOUicZbN6USuRnA8Ti9YV0dcfBVgmSu8I3QLuqJEN
+EIDeFfUk7Hdvc8v2uvlDDa8t/R0QwHY977Kwos/7u3W8SaDJ1SHLMzl4QNdt3Qua
+x0BhxMHOk1gUKPEymlf06NeNdKZ9zAUHH5fydOCTXzHWNwhqkG7nsGax4RDcTRHB
+dvB5GddWYWwkwsRuKdW2HZeA04udO2JIE/4QFDG0LOpitLkpWhtz86GRhhzi8RE4
+sy6TV322/teX0yjqaR2i53YUKZMufsayNzxG8ykWdSwdHy+bJQaxVlWyyqb5iGOD
+8kQF5DP3JG4hjs/D1WXNomr9b0uEZqO6d/ZeL4fqoh6w8ncpCWmwzEI1gbEkmyYk
++OaVo6XDClrBDvpPp9Jq
+=R1zC
+-----END PGP SIGNATURE-----
+
+--M3d18yTenwKOqJX4--
