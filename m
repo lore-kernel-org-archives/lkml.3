@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaBTMmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 07:42:13 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48236 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733AbaBTMmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 07:42:09 -0500
+	id S1753946AbaBTMqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 07:46:03 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:39501 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705AbaBTMqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 07:46:01 -0500
+Message-ID: <5305F928.5070600@imgtec.com>
+Date: Thu, 20 Feb 2014 12:46:32 +0000
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140211184749.254574462@linuxfoundation.org>
-References: <20140211184748.191276235@linuxfoundation.org>
-	<20140211184749.254574462@linuxfoundation.org>
-Date: Thu, 20 Feb 2014 13:42:08 +0100
-X-Google-Sender-Auth: NldrFmPp9zorRP0e1rdTsxJvxqs
-Message-ID: <CAMuHMdWVRTPSeVEAPTM7KLME4db0vfBYuH6N7pNoUwNPb0aZ7w@mail.gmail.com>
-Subject: Re: [PATCH 3.12 037/107] spidev: fix hang when transfer_one_message fails
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: <linux-kernel@vger.kernel.org>
+CC: Michal Marek <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>,
+        "Markos Chandras" <Markos.Chandras@imgtec.com>
+Subject: Re: [PATCH] Makefile: Unset stack-protector gcc flag if it is not
+ supported
+References: <1391793327-9578-1-git-send-email-markos.chandras@imgtec.com>
+In-Reply-To: <1391793327-9578-1-git-send-email-markos.chandras@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.47]
+X-SEF-Processed: 7_3_0_01192__2014_02_20_12_45_58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 8:05 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> 3.12-stable review patch.  If anyone has any objections, please let me know.
-
-Sorry for not noticing this was queued up for stable before, but this
-patch was reverted in mainline:
-
-commit 1f802f8249a0da536877842c43c7204064c4de8b
-Author: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Date:   Tue Jan 28 10:33:03 2014 +0100
-
-    spi: Fix crash with double message finalisation on error handling
-
-    This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
-
-    It causes a NULL pointer dereference with drivers using the generic
-    spi_transfer_one_message(), which always calls
-    spi_finalize_current_message(), which zeroes master->cur_msg.
-
-    Drivers implementing transfer_one_message() theirselves must always call
-    spi_finalize_current_message(), even if the transfer failed:
-
-     * @transfer_one_message: the subsystem calls the driver to transfer a singl
-     *      message while queuing transfers that arrive in the meantime. When th
-     *      driver is finished with this message, it must call
-     *      spi_finalize_current_message() so the subsystem can issue the next
-     *      transfer
-
-    Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-    Signed-off-by: Mark Brown <broonie@linaro.org>
-
-> ------------------
+On 02/07/2014 05:15 PM, Markos Chandras wrote:
+> In case the compiler does not support the stack-protector option,
+> unset the flag to avoid build failures. Printing a warning is enough
+> to let the user know that this flag will not be used.
+> Fixes the following build problem when using a toolchain which does
+> not support the -fstack-protector-strong flag:
 >
-> From: Daniel Santos <daniel.santos@pobox.com>
+> Makefile:614: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG:
+> -fstack-protector-strong not supported by compiler
+> mips-linux-gnu-gcc: error: unrecognized command line option
+> '-fstack-protector-strong'
+> scripts/Makefile.build:308: recipe for target 'scripts/mod/empty.o' failed
+> make[2]: *** [scripts/mod/empty.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> scripts/Makefile.build:455: recipe for target 'scripts/mod' failed
 >
-> commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d upstream.
->
-> This corrects a problem in spi_pump_messages() that leads to an spi
-> message hanging forever when a call to transfer_one_message() fails.
-> This failure occurs in my MCP2210 driver when the cs_change bit is set
-> on the last transfer in a message, an operation which the hardware does
-> not support.
->
-> Rationale
-> Since the transfer_one_message() returns an int, we must presume that it
-> may fail.  If transfer_one_message() should never fail, it should return
-> void.  Thus, calls to transfer_one_message() should properly manage a
-> failure.
->
-> Fixes: ffbbdd21329f3 (spi: create a message queueing infrastructure)
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: linux-kbuild@vger.kernel.org
+> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
 > ---
->  drivers/spi/spi.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>   Makefile | 2 ++
+>   1 file changed, 2 insertions(+)
 >
-> --- a/drivers/spi/spi.c
-> +++ b/drivers/spi/spi.c
-> @@ -600,7 +600,9 @@ static void spi_pump_messages(struct kth
->         ret = master->transfer_one_message(master, master->cur_msg);
->         if (ret) {
->                 dev_err(&master->dev,
-> -                       "failed to transfer one message from queue\n");
-> +                       "failed to transfer one message from queue: %d\n", ret);
-> +               master->cur_msg->status = ret;
-> +               spi_finalize_current_message(master);
->                 return;
->         }
->  }
+> diff --git a/Makefile b/Makefile
+> index 606ef7c..63a5333 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -607,12 +607,14 @@ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+>     ifeq ($(call cc-option, $(stackp-flag)),)
+>       $(warning Cannot use CONFIG_CC_STACKPROTECTOR: \
+>   	      -fstack-protector not supported by compiler))
+> +    stackp-flag :=
+>     endif
+>   else ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+>     stackp-flag := -fstack-protector-strong
+>     ifeq ($(call cc-option, $(stackp-flag)),)
+>       $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+>   	      -fstack-protector-strong not supported by compiler)
+> +    stackp-flag :=
+>     endif
+>   else
+>     # Force off for distro compilers that enable stack protector by default.
+>
 
-Gr{oetje,eeting}s,
+Ping again?
 
-                        Geert
+-- 
+markos
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
