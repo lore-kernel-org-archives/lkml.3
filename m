@@ -1,187 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaBTQrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:47:10 -0500
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:57368 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683AbaBTQrI (ORCPT
+	id S1755495AbaBTQrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:47:23 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:57779
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753683AbaBTQrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:47:08 -0500
-Subject: Re: [PATCH 12/22] lpfc: Use pci_enable_msix_range()
-From: James Smart <james.smart@emulex.com>
-Reply-To: <james.smart@emulex.com>
-To: <agordeev@redhat.com>
-CC: <james.smart@emulex.com>, <linux-scsi@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Feb 2014 11:47:02 -0500
-Organization: 
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Thu, 20 Feb 2014 11:47:21 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <broonie@kernel.org>
+CC: <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] pfuze100-regulator: Return error on of_node_get() failure
+Date: Thu, 20 Feb 2014 13:47:02 -0300
+Message-ID: <1392914822-25825-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Message-ID: <a34533b1-77d9-45bc-ad66-aab336972b95@CMEXHTCAS2.ad.emulex.com>
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander,
+If of_node_get() fails, we should return an error.
 
-I've reworked this patch to layer on top of our rev 8.3.45 patches
-that were just posted to linux-scsi. There were some conflicts due to
-new additions.  Additionally, there were two other uses of pci_enable_msiXXX
-that needed to be addressed.  The changes in this patch also address the
-change requested by:
-"[PATCH 11/22] lpfc: Remove superfluous call to pci_disable_msix()"
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/regulator/pfuze100-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-To avoid creating merge conflicts - either by your patches going in then
-scsi git tree trying to merge or by scsi git tree going in and your patches
-trying to merge - I recommend that you eliminate your lpfc patches from the
-kernel and apply the patch below once scsi git with the updated lpfc driver
-has actually merged.
-
--- james s
-
-
-Revised patch:
-
-
-
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
-
-CC: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-
-
-
-Signed-off-by: James Smart <james.smart@emulex.com>
-
- ---
-
- lpfc_init.c |   43 ++++++++++++++++++++++---------------------
- 1 file changed, 22 insertions(+), 21 deletions(-)
-
-
-diff -upNr a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
---- a/drivers/scsi/lpfc/lpfc_init.c	2014-02-19 16:23:07.260097013 -0500
-+++ b/drivers/scsi/lpfc/lpfc_init.c	2014-02-20 11:39:20.348203354 -0500
-@@ -8100,8 +8100,8 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba
-  * @phba: pointer to lpfc hba data structure.
-  *
-  * This routine is invoked to enable the MSI-X interrupt vectors to device
-- * with SLI-3 interface specs. The kernel function pci_enable_msix() is
-- * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
-+ * with SLI-3 interface specs. The kernel function pci_enable_msix_range() is
-+ * called to enable the MSI-X vectors. Note that pci_enable_msix_range(), once
-  * invoked, enables either all or nothing, depending on the current
-  * availability of PCI vector resources. The device driver is responsible
-  * for calling the individual request_irq() to register each MSI-X vector
-@@ -8126,12 +8126,12 @@ lpfc_sli_enable_msix(struct lpfc_hba *ph
- 		phba->msix_entries[i].entry = i;
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index dcb03ce..1296221 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -252,7 +252,7 @@ static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
  
- 	/* Configure MSI-X capability structure */
--	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
--				ARRAY_SIZE(phba->msix_entries));
--	if (rc) {
-+	rc = pci_enable_msix_range(phba->pcidev, phba->msix_entries,
-+				   LPFC_MSIX_VECTORS, LPFC_MSIX_VECTORS);
-+	if (rc < 0) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0420 PCI enable MSI-X failed (%d)\n", rc);
--		goto msi_fail_out;
-+		goto vec_fail_out;
- 	}
- 	for (i = 0; i < LPFC_MSIX_VECTORS; i++)
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
-@@ -8209,6 +8209,8 @@ irq_fail_out:
- msi_fail_out:
- 	/* Unconfigure MSI-X capability structure */
- 	pci_disable_msix(phba->pcidev);
-+
-+vec_fail_out:
- 	return rc;
- }
+ 	np = of_node_get(dev->of_node);
+ 	if (!np)
+-		return 0;
++		return -EINVAL;
  
-@@ -8238,8 +8240,8 @@ lpfc_sli_disable_msix(struct lpfc_hba *p
-  * @phba: pointer to lpfc hba data structure.
-  *
-  * This routine is invoked to enable the MSI interrupt mode to device with
-- * SLI-3 interface spec. The kernel function pci_enable_msi() is called to
-- * enable the MSI vector. The device driver is responsible for calling the
-+ * SLI-3 interface spec. The kernel function pci_enable_msi_range() is called
-+ * to enable the MSI vector. The device driver is responsible for calling the
-  * request_irq() to register MSI vector with a interrupt the handler, which
-  * is done in this function.
-  *
-@@ -8252,8 +8254,8 @@ lpfc_sli_enable_msi(struct lpfc_hba *phb
- {
- 	int rc;
- 
--	rc = pci_enable_msi(phba->pcidev);
--	if (!rc)
-+	rc = pci_enable_msi_range(phba->pcidev, 1, 1);
-+	if (rc > 0)
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0462 PCI enable MSI mode success.\n");
- 	else {
-@@ -8692,17 +8694,15 @@ lpfc_sli4_enable_msix(struct lpfc_hba *p
- 		phba->sli4_hba.msix_entries[index].entry = index;
- 		vectors++;
- 	}
--enable_msix_vectors:
--	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
--			     vectors);
--	if (rc > 1) {
--		vectors = rc;
--		goto enable_msix_vectors;
--	} else if (rc) {
-+
-+	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
-+				   2, vectors);
-+	if (rc < 0) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0484 PCI enable MSI-X failed (%d)\n", rc);
- 		goto msi_fail_out;
- 	}
-+	vectors = rc;
- 
- 	/* Log MSI-X vector assignment */
- 	for (index = 0; index < vectors; index++)
-@@ -8764,9 +8764,10 @@ cfg_fail_out:
- 			 &phba->sli4_hba.fcp_eq_hdl[index]);
- 	}
- 
--msi_fail_out:
- 	/* Unconfigure MSI-X capability structure */
- 	pci_disable_msix(phba->pcidev);
-+
-+msi_fail_out:
- 	return rc;
- }
- 
-@@ -8804,7 +8805,7 @@ lpfc_sli4_disable_msix(struct lpfc_hba *
-  * @phba: pointer to lpfc hba data structure.
-  *
-  * This routine is invoked to enable the MSI interrupt mode to device with
-- * SLI-4 interface spec. The kernel function pci_enable_msi() is called
-+ * SLI-4 interface spec. The kernel function pci_enable_msi_range() is called
-  * to enable the MSI vector. The device driver is responsible for calling
-  * the request_irq() to register MSI vector with a interrupt the handler,
-  * which is done in this function.
-@@ -8818,8 +8819,8 @@ lpfc_sli4_enable_msi(struct lpfc_hba *ph
- {
- 	int rc, index;
- 
--	rc = pci_enable_msi(phba->pcidev);
--	if (!rc)
-+	rc = pci_enable_msi_range(phba->pcidev, 1, 1);
-+	if (rc > 0)
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0487 PCI enable MSI mode success.\n");
- 	else {
+ 	parent = of_get_child_by_name(np, "regulators");
+ 	if (!parent) {
+-- 
+1.8.1.2
 
 
