@@ -1,171 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaBTWKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 17:10:34 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52032 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306AbaBTWKc (ORCPT
+	id S1753121AbaBTWLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 17:11:05 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:62647 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752500AbaBTWLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 17:10:32 -0500
-Date: Thu, 20 Feb 2014 14:10:27 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140220221027.GC4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1392752867.18779.8120.camel@triegel.csb>
- <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
- <20140220040102.GM4250@linux.vnet.ibm.com>
- <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
- <20140220083032.GN4250@linux.vnet.ibm.com>
- <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
- <20140220181116.GT4250@linux.vnet.ibm.com>
- <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
- <20140220185608.GX4250@linux.vnet.ibm.com>
- <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022022-3532-0000-0000-000005DCBA85
+	Thu, 20 Feb 2014 17:11:04 -0500
+Message-ID: <1392934261.15264.22.camel@x220>
+Subject: [PATCH] NVMe: silence GCC warning on 32 bit
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 20 Feb 2014 23:11:01 +0100
+In-Reply-To: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
+References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Feb 2014 22:11:02.0153 (UTC) FILETIME=[A427B790:01CF2E88]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 11:45:29AM -0800, Linus Torvalds wrote:
-> On Thu, Feb 20, 2014 at 10:56 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > The example gcc breakage was something like this:
-> >
-> >         i = atomic_load(idx, memory_order_consume);
-> >         x = array[0 + i - i];
-> >
-> > Then gcc optimized this to:
-> >
-> >         i = atomic_load(idx, memory_order_consume);
-> >         x = array[0];
-> >
-> > This same issue would hit control dependencies.  You are free to argue
-> > that this is the fault of ARM and PowerPC memory ordering, but the fact
-> > remains that your suggested change has -exactly- the same vulnerability
-> > as memory_order_consume currently has.
+On Tue, 2014-02-18 at 10:02 +0100, Geert Uytterhoeven wrote:
+> *** WARNINGS ***
 > 
-> No it does not, for two reasons, first the legalistic (and bad) reason:
-> 
-> As I actually described it, the "consume" becomes an "acquire" by
-> default. If it's not used as an address to the dependent load, then
-> it's an acquire. The use "going away" in no way makes the acquire go
-> away in my simplistic model.
-> 
-> So the compiler would actually translate that to a load-with-acquire,
-> not be able to remove the acquire, and we have end of story. The
-> actual code generation would be that "ld + sync + ld" on powerpc, or
-> "ld.acq" on ARM.
-> 
-> Now, the reason I claim that reason was "legalistic and bad" is that
-> it's actually a cop-out, and if you had made the example be something
-> like this:
-> 
->    p = atomic_load(&ptr, memory_order_consume);
->    x = array[0 + p - p];
->    y = p->val;
-> 
-> then yes, I actually think that the order of loads of 'x' and 'p' are
-> not enforced by the "consume". The only case that is clear is the
-> order of 'y' and 'p', because that is the only one that really *USES*
-> the value.
-> 
-> The "use" of "+p-p" is syntactic bullshit. It's very obvious to even a
-> slightly developmentally challenged hedgehog that "+p-p" doesn't have
-> any actual *semantic* meaning, it's purely syntactic.
-> 
-> And the syntactic meaning is meaningless and doesn't matter. Because I
-> would just get rid of the whole "dependency chain" language
-> ALTOGETHER.
-> 
-> So in fact, in my world, I would consider your example to be a
-> non-issue. In my world, there _is_ no "dependency chain" at a
-> syntactic level. In my SANE world, none of that insane crap language
-> exists. That language is made-up and tied to syntax exactly because it
-> *cannot* be tied to semantics.
-> 
-> In my sane world, "consume" has a much simpler meaning, and has no
-> legalistic syntactic meaning: only real use matters. If the value can
-> be optimized away, the so can the barrier, and so can the whole load.
-> The value isn't "consumed", so it has no meaning.
-> 
-> So if you write
-> 
->    i = atomic_load(idx, memory_order_consume);
->    x = array[0+i-i];
-> 
-> then in my world that "+i-i" is meaningless. It's semantic fluff, and
-> while my naive explanation would have left it as an acquire (because
-> it cannot be peep-holed away), I actually do believe that the compiler
-> should be obviously allowed to optimize the load away entirely since
-> it's meaningless, and if no use of 'i' remains, then it has no
-> consumer, and so there is no dependency.
-> 
-> Put another way: "consume" is not about getting a lock, it's about
-> getting a *value*. Only the dependency on the *value* matters, and if
-> the value is optimized away, there is no dependency.
-> 
-> And the value itself does not have any semantics. There's nothing
-> "volatile" about the use of the value that would mean that the
-> compiler cannot re-order it or remove it entirely. There's no barrier
-> "carried around" by the value per se. The barrier is between the load
-> and use. That's the *point* of "consume" after all.
-> 
-> The whole "chain of dependency" language is pointless. It's wrong.
-> It's complicated, it is illogical, and it causes subtle problems
-> exactly because it got tied to the language *syntax* rather than to
-> any logical use.
-> 
-> Don't try to re-introduce the whole issue. It was a mistake for the C
-> standard to talk about dependencies in the first place, exactly
-> because it results in these idiotic legalistic practices.
-> 
-> You do realize that that whole "*(q+flag-flag)" example in the
-> bugzilla comes from the fact that the programmer tried to *fight* the
-> fact that the C standard got the control dependency wrong?
-> 
-> In other words, the *deepest* reason for that bugzilla is that the
-> programmer tried to force the logical dependency by rewriting it as a
-> (fake, and easily optimizable) data dependency.
-> 
-> In *my* world, the stupid data-vs-control dependency thing goes away,
-> the test of the value itself is a use of it, and "*p ? *q :0" just
-> does the right thing, there's no reason to do that "q+flag-flag" thing
-> in the first place, and if you do, the compiler *should* just ignore
-> your little games.
+> 188 regressions:
+>   [...]
+>   + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_len' may be used uninitialized in this function [-Wuninitialized]:  => 514:18
+>   + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_offset' may be used uninitialized in this function [-Wuninitialized]:  => 514:18
+>   + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_page' may be used uninitialized in this function [-Wuninitialized]:  => 511:17
 
-Linus, given that you are calling me out for pushing "legalistic and bad"
-things, "syntactic bullshit", and playing "little games", I am forced
-to conclude that you have never attended any sort of standards-committee
-meeting.  ;-)
+And these popped up in v3.14-rc1 on 32 bit x86. This patch makes these
+warnings go away. Compile tested only (on 32 and 64 bit x86).
 
-That said, I am fine with pushing control/data dependencies with this
-general approach.  There will be complications, but there always are
-and they can be dealt with as they come up.
+Review is appreciated, because the code I'm touching here is far from
+obvious to me.
+-------->8--------
+From: Paul Bolle <pebolle@tiscali.nl>
 
-FWIW, the last time I tried excluding things like "f-f", "x%1", "y*0" and
-so on, I got a lot of pushback.  The reason I didn't argue too much back
-(2007 or some such) then was that my view at the time was that I figured
-the kernel code wouldn't do things like that anyway, so it didn't matter.
-However, that was more than five years ago, so worth another try.
+Building nvme-core.o on 32 bit x86 triggers a rather impressive set of
+GCC warnings:
+    In file included from drivers/block/nvme-core.c:20:0:
+    drivers/block/nvme-core.c: In function 'nvme_submit_bio_queue':
+    include/linux/bio.h:154:55: warning: 'bvprv.bv_offset' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     #define bvec_to_phys(bv) (page_to_phys((bv)->bv_page) + (unsigned long) (bv)->bv_offset)
+                                                           ^
+    drivers/block/nvme-core.c:498:23: note: 'bvprv.bv_offset' was declared here
+      struct bio_vec bvec, bvprv;
+                           ^
+    In file included from drivers/block/nvme-core.c:20:0:
+    include/linux/bio.h:154:55: warning: 'bvprv.bv_len' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     #define bvec_to_phys(bv) (page_to_phys((bv)->bv_page) + (unsigned long) (bv)->bv_offset)
+                                                           ^
+    drivers/block/nvme-core.c:498:23: note: 'bvprv.bv_len' was declared here
+      struct bio_vec bvec, bvprv;
+                           ^
+    In file included from [...]/arch/x86/include/asm/page.h:70:0,
+                     from [...]/arch/x86/include/asm/processor.h:17,
+                     from [...]/arch/x86/include/asm/atomic.h:6,
+                     from include/linux/atomic.h:4,
+                     from include/linux/mutex.h:18,
+                     from include/linux/kernfs.h:13,
+                     from include/linux/sysfs.h:15,
+                     from include/linux/kobject.h:21,
+                     from include/linux/pci.h:28,
+                     from include/linux/nvme.h:23,
+                     from drivers/block/nvme-core.c:19:
+    include/asm-generic/memory_model.h:31:53: warning: 'bvprv.bv_page' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     #define __page_to_pfn(page) ((unsigned long)((page) - mem_map) + \
+                                                         ^
+    drivers/block/nvme-core.c:498:23: note: 'bvprv.bv_page' was declared here
+      struct bio_vec bvec, bvprv;
+                           ^
 
-							Thanx, Paul
+These are false positives. A bit of staring at the code reveals that
+"struct bio_vec bvprv" and "int first" operate in lockstep: if first is
+1 bvprv isn't yet initialized and if first is 0 bvprv will be
+initialized. But if we convert bvprv to a pointer and initialize it to
+NULL we can do away with first. And it turns out the warning is gone if
+we do that. So that appears to be enough to help GCC understand the
+flow of this code.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ drivers/block/nvme-core.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 51824d1..f9fb28b 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -495,11 +495,10 @@ static int nvme_split_and_submit(struct bio *bio, struct nvme_queue *nvmeq,
+ static int nvme_map_bio(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+ 		struct bio *bio, enum dma_data_direction dma_dir, int psegs)
+ {
+-	struct bio_vec bvec, bvprv;
++	struct bio_vec bvec, *bvprv = NULL;
+ 	struct bvec_iter iter;
+ 	struct scatterlist *sg = NULL;
+ 	int length = 0, nsegs = 0, split_len = bio->bi_iter.bi_size;
+-	int first = 1;
+ 
+ 	if (nvmeq->dev->stripe_size)
+ 		split_len = nvmeq->dev->stripe_size -
+@@ -508,10 +507,10 @@ static int nvme_map_bio(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+ 
+ 	sg_init_table(iod->sg, psegs);
+ 	bio_for_each_segment(bvec, bio, iter) {
+-		if (!first && BIOVEC_PHYS_MERGEABLE(&bvprv, &bvec)) {
++		if (bvprv && BIOVEC_PHYS_MERGEABLE(bvprv, &bvec)) {
+ 			sg->length += bvec.bv_len;
+ 		} else {
+-			if (!first && BIOVEC_NOT_VIRT_MERGEABLE(&bvprv, &bvec))
++			if (bvprv && BIOVEC_NOT_VIRT_MERGEABLE(bvprv, &bvec))
+ 				return nvme_split_and_submit(bio, nvmeq,
+ 							     length);
+ 
+@@ -524,8 +523,7 @@ static int nvme_map_bio(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+ 		if (split_len - length < bvec.bv_len)
+ 			return nvme_split_and_submit(bio, nvmeq, split_len);
+ 		length += bvec.bv_len;
+-		bvprv = bvec;
+-		first = 0;
++		bvprv = &bvec;
+ 	}
+ 	iod->nents = nsegs;
+ 	sg_mark_end(sg);
+-- 
+1.8.5.3
 
