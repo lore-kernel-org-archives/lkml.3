@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaBTXBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:01:32 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:34041 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751862AbaBTXBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:01:30 -0500
-Date: Thu, 20 Feb 2014 17:01:26 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: minyard@acm.org, lenb@kernel.org, rjw@rjwysocki.net,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, rja@sgi.com
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-Message-ID: <20140220230126.GA13558@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
+	id S1753541AbaBTXEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:04:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44520 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaBTXEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:04:39 -0500
+Date: Thu, 20 Feb 2014 15:06:06 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
+ specified resources
+Message-ID: <20140220230606.GA20053@kroah.com>
+References: <1392939912-7446-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1392939912-7446-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:28:29AM -0500, Matthew Garrett wrote:
-> The ACPI IPMI driver implements IPMI operation region support for the ACPI
-> core. Systems that declare ACPI operation regions may reference them at any
-> time, including during kernel initialisation. These accesses will fail
-> unless the ACPI IPMI driver is present, and undesirable system behaviour
-> may result. 
+On Thu, Feb 20, 2014 at 03:45:12PM -0800, K. Y. Srinivasan wrote:
+> Fix a bug in the resource walking code.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hv/vmbus_drv.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-Could you be more specific?  Is the problem kernel code
-trying to use IPMI functionality before the ipmi_si driver
-is loaded?  Or something else?
+Is this for 3.14-final or 3.15?
 
-What is the "undesirable system behaviour"?
-
-
-> Set the default to Y in order to encourage distributions and
-> users to configure kernels to avoid awkward surprises.
-
-What are the "awkward surprises"?
-
-Thanks,
--- 
-Russ Anderson,  Kernel and Performance Software Team Manager
-SGI - Silicon Graphics Inc          rja@sgi.com
+I ask this every time, someday you will let me know ahead of time...
