@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781AbaBUBJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:09:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45280 "EHLO
+	id S1754435AbaBTXua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45248 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487AbaBTXub (ORCPT
+	with ESMTP id S1753991AbaBTXuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:31 -0500
+	Thu, 20 Feb 2014 18:50:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.4 18/25] block: add cond_resched() to potentially long running ioctl discard loop
-Date: Thu, 20 Feb 2014 15:51:34 -0800
-Message-Id: <20140220234842.993896954@linuxfoundation.org>
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.4 10/25] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
+Date: Thu, 20 Feb 2014 15:51:26 -0800
+Message-Id: <20140220234842.771607770@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,42 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Hartmut Knaack <knaack.h@gmx.de>
 
-commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
+commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
 
-When mkfs issues a full device discard and the device only
-supports discards of a smallish size, we can loop in
-blkdev_issue_discard() for a long time. If preempt isn't enabled,
-this can turn into a softlock situation and the kernel will
-start complaining.
+Only free an IRQ in error_free_irq, if it has been requested previously.
 
-Add an explicit cond_resched() at the end of the loop to avoid
-that.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-lib.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/iio/adc/ad799x_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -101,6 +101,14 @@ int blkdev_issue_discard(struct block_de
+--- a/drivers/staging/iio/adc/ad799x_core.c
++++ b/drivers/staging/iio/adc/ad799x_core.c
+@@ -873,7 +873,8 @@ static int __devinit ad799x_probe(struct
+ 	return 0;
  
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
-+
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
- 
- 	/* Wait for bios in-flight */
+ error_free_irq:
+-	free_irq(client->irq, indio_dev);
++	if (client->irq > 0)
++		free_irq(client->irq, indio_dev);
+ error_cleanup_ring:
+ 	ad799x_ring_cleanup(indio_dev);
+ error_disable_reg:
 
 
