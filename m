@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaBTSws (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 13:52:48 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:62685 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166AbaBTSwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 13:52:46 -0500
-Date: Thu, 20 Feb 2014 13:54:45 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: x86_pmu_start WARN_ON.
-In-Reply-To: <20140220182300.GN9987@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu> <20140217152859.GF15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
- <20140220100830.GN6835@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu> <20140220182300.GN9987@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755453AbaBTSyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 13:54:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752497AbaBTSyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 13:54:15 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+References: <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	 <1392740258.18779.7732.camel@triegel.csb>
+	 <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	 <1392752867.18779.8120.camel@triegel.csb>
+	 <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	 <20140220040102.GM4250@linux.vnet.ibm.com>
+	 <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+	 <20140220083032.GN4250@linux.vnet.ibm.com>
+	 <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	 <20140220181116.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Feb 2014 19:53:41 +0100
+Message-ID: <1392922421.28840.36.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Peter Zijlstra wrote:
-
-> On Thu, Feb 20, 2014 at 01:03:16PM -0500, Vince Weaver wrote:
-> > attached, it's not very big.
+On Thu, 2014-02-20 at 10:32 -0800, Linus Torvalds wrote: 
+> On Thu, Feb 20, 2014 at 10:11 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > You really need that "consume" to be "acquire".
 > 
-> This is I think the relevant bit:
-> 
->    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
->    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
->    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
->    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
->    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
->    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
->    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
->    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
->    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
->    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
->    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
->    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
->    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
->    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
->    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
->    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
->    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
->    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
->    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
->    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
->    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
->    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
->    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
->    pec_1076_warn-2804  [000] d...   147.926191: x86_pmu_enable: starting: 0
-> 
-> so it does indeed look like n_added got scrambled; we started out with 1
-> event on disable; we've got 2 events on enable, but n_added is also 2,
-> which would suggest we had 0 on disable.
-> 
-> That makes us want to (re)start the NMI counter alright.
+> So I think we now all agree that that is what the standard is saying.
 
-Might be relevant: check the last_cpu values.  Right before the above
-it looks like the thread gets moved from CPU 1 to CPU 0
-(possibly as a result of the long chain started with the
-close() of the tracepoint event),
-so the problem NMI watchdog event being enabled is a different one than 
-the one that was disabled just before.
+Huh?
 
-Vince
+The standard says that there are two separate things (among many more):
+mo_acquire and mo_consume.  They both influence happens-before in
+different (and independent!) ways.
 
+What Paul is saying is that *you* should have used *acquire* in that
+example.
+
+> And I'm saying that that is wrong, that the standard is badly written,
+> and should be fixed.
+> 
+> Because before the standard is fixed, I claim that "consume" is
+> unusable. We cannot trust it. End of story.
+
+Then we still have all the rest.  Let's just ignore mo_consume for now,
+and look at mo_acquire, I suggest.
+
+> The fact that apparently gcc is currently buggy because it got the
+> dependency calculations *wrong* just reinforces my point.
+
+Well, I'm pretty sure nobody actually worked on trying to preserve the
+dependencies at all.  IOW, I suspect this fell through the cracks.  We
+can ask the person working on this if you really want to know.
+
+> The gcc bug Torvald pointed at is exactly because the current C
+> standard is illogical unreadable CRAP.
+
+It's obviously logically consistent to the extent that it can be
+represented by a formal specification such as the one by the Cambridge
+group.  Makes sense, or not?
+
+> I can guarantee that what
+> happened is:
+> 
+>  - the compiler saw that the result of the read was used as the left
+> hand expression of the ternary "? :" operator
+> 
+>  - as a result, the compiler decided that there's no dependency
+> 
+>  - the compiler didn't think about the dependency that comes from the
+> result of the load *also* being used as the middle part of the ternary
+> expression, because it had optimized it away, despite the standard not
+> talking about that at all.
+> 
+>  - so the compiler never saw the dependency that the standard talks about
+> 
+> BECAUSE THE STANDARD LANGUAGE IS PURE AND UTTER SHIT.
+
+Please, be specific.  Right now you're saying that all of it is useless.
+Which is arguable not true.
+
+> My suggested language never had any of these problems, because *my*
+> suggested semantics are clear, logical, and don't have these kinds of
+> idiotic pit-falls.
+
+Have you looked at and understood the semantics of the memory model
+(e.g. in the formalized form) with mo_consume and related being ignored
+(ie, just ignore 6.13 and 6.14 in n3132)?
 
 
