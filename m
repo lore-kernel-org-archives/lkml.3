@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138AbaBUAgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:36:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45733 "EHLO
+	id S1755550AbaBTXwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45710 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426AbaBTXwM (ORCPT
+	with ESMTP id S1755426AbaBTXwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:12 -0500
+	Thu, 20 Feb 2014 18:52:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.12 27/82] hwmon: (ntc_thermistor) Avoid math overflow
-Date: Thu, 20 Feb 2014 15:52:10 -0800
-Message-Id: <20140220235020.288398493@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 05/82] mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
+Date: Thu, 20 Feb 2014 15:51:48 -0800
+Message-Id: <20140220235019.646985394@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,49 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Anderson <dianders@chromium.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit d3d89c468ceebbcf9423d1a3d66c5bf91f569570 upstream.
+commit 8d547ff4ac5927245e0833ac18528f939da0ee0e upstream.
 
-The ntc thermistor code was doing math whose temporary result might
-have overflowed 32-bits.  We need some casts in there to make it safe.
+mce-test detected a test failure when injecting error to a thp tail
+page.  This is because we take page refcount of the tail page in
+madvise_hwpoison() while the fix in commit a3e0f9e47d5e
+("mm/memory-failure.c: transfer page count from head page to tail page
+after split thp") assumes that we always take refcount on the head page.
 
-In one example I found:
-- pullup_uV: 1800000
-- result of iio_read_channel_raw: 3226
-- 1800000 * 3226 => 0x15a1cbc80
+When a real memory error happens we take refcount on the head page where
+memory_failure() is called without MF_COUNT_INCREASED set, so it seems
+to me that testing memory error on thp tail page using madvise makes
+little sense.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This patch cancels moving refcount in !MF_COUNT_INCREASED for valid
+testing.
+
+[akpm@linux-foundation.org: s/&&/&/]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ntc_thermistor.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/memory-failure.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/ntc_thermistor.c
-+++ b/drivers/hwmon/ntc_thermistor.c
-@@ -145,7 +145,7 @@ struct ntc_data {
- static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
- {
- 	struct iio_channel *channel = pdata->chan;
--	unsigned int result;
-+	s64 result;
- 	int val, ret;
- 
- 	ret = iio_read_channel_raw(channel, &val);
-@@ -155,10 +155,10 @@ static int ntc_adc_iio_read(struct ntc_t
- 	}
- 
- 	/* unit: mV */
--	result = pdata->pullup_uv * val;
-+	result = pdata->pullup_uv * (s64) val;
- 	result >>= 12;
- 
--	return result;
-+	return (int)result;
- }
- 
- static const struct of_device_id ntc_match[] = {
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -945,8 +945,10 @@ static int hwpoison_user_mappings(struct
+ 			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+-				put_page(hpage);
+-				get_page(p);
++				if (!(flags & MF_COUNT_INCREASED)) {
++					put_page(hpage);
++					get_page(p);
++				}
+ 				lock_page(p);
+ 				unlock_page(hpage);
+ 				*hpagep = p;
 
 
