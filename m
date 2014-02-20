@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484AbaBTX74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:59:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46316 "EHLO
+	id S1756104AbaBTXyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46271 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110AbaBTXyP (ORCPT
+	with ESMTP id S1756049AbaBTXyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:15 -0500
+	Thu, 20 Feb 2014 18:54:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.13 49/99] staging: r8188eu: Fix typo in USB_DEVICE list
-Date: Thu, 20 Feb 2014 15:52:44 -0800
-Message-Id: <20140220235119.631389265@linuxfoundation.org>
+        Jan Moskyto Matejka <mq@suse.cz>
+Subject: [PATCH 3.13 79/99] Modpost: fixed USB alias generation for ranges including 0x9 and 0xA
+Date: Thu, 20 Feb 2014 15:53:14 -0800
+Message-Id: <20140220235120.498174479@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,32 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Jan Moskyto Matejka <mq@suse.cz>
 
-commit 08951f10ae146d0c4114ac508310ad316b6f8798 upstream.
+commit 03b56329f9bb5a1cb73d7dc659d529a9a9bf3acc upstream.
 
-There is a typo in the device list that interchanges the vendor and
-product codes for one of the entries. This exchange was determined
-by noticing that the vendor code is 0x07b8 for Abocom at
-http://www.linux-usb.org/usb.ids.
+Commit afe2dab4f6 ("USB: add hex/bcd detection to usb modalias generation")
+changed the routine that generates alias ranges. Before that change, only
+digits 0-9 were supported; the commit tried to fix the case when the range
+includes higher values than 0x9.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Unfortunately, the commit didn't fix the case when the range includes both
+0x9 and 0xA, meaning that the final range must look like [x-9A-y] where
+x <= 0x9 and y >= 0xA -- instead the [x-9A-x] range was produced.
+
+Modprobe doesn't complain as it sees no difference between no-match and
+bad-pattern results of fnmatch().
+
+Fixing this simple bug to fix the aliases.
+Also changing the hardcoded beginning of the range to uppercase as all the
+other letters are also uppercase in the device version numbers.
+
+Fortunately, this affects only the dvb-usb-dib0700 module, AFAIK.
+
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/mod/file2alias.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -53,7 +53,7 @@ static struct usb_device_id rtw_usb_id_t
- 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0179)}, /* 8188ETV */
- 	/*=== Customer ID ===*/
- 	/****** 8188EUS ********/
--	{USB_DEVICE(0x8179, 0x07B8)}, /* Abocom - Abocom */
-+	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{}	/* Terminating entry */
- };
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -210,8 +210,8 @@ static void do_usb_entry(void *symval,
+ 				range_lo < 0x9 ? "[%X-9" : "[%X",
+ 				range_lo);
+ 			sprintf(alias + strlen(alias),
+-				range_hi > 0xA ? "a-%X]" : "%X]",
+-				range_lo);
++				range_hi > 0xA ? "A-%X]" : "%X]",
++				range_hi);
+ 		}
+ 	}
+ 	if (bcdDevice_initial_digits < (sizeof(bcdDevice_lo) * 2 - 1))
 
 
