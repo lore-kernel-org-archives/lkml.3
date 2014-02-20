@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443AbaBUAvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:51:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45530 "EHLO
+	id S1756908AbaBUAvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:51:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188AbaBTXva (ORCPT
+	with ESMTP id S1755152AbaBTXv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:30 -0500
+	Thu, 20 Feb 2014 18:51:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 54/66] IB/qib: Add missing serdes init sequence
-Date: Thu, 20 Feb 2014 15:51:53 -0800
-Message-Id: <20140220234911.030875938@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Noonan <steven@uplinklabs.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Jakub Jelinek <jakub@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 53/66] compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
+Date: Thu, 20 Feb 2014 15:51:52 -0800
+Message-Id: <20140220234911.002709648@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -30,38 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Steven Noonan <steven@uplinklabs.net>
 
-commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
+commit a9f180345f5378ac87d80ed0bea55ba421d83859 upstream.
 
-Research has shown that commit a77fcf895046 ("IB/qib: Use a single
-txselect module parameter for serdes tuning") missed a key serdes init
-sequence.
+I started noticing problems with KVM guest destruction on Linux
+3.12+, where guest memory wasn't being cleaned up. I bisected it
+down to the commit introducing the new 'asm goto'-based atomics,
+and found this quirk was later applied to those.
 
-This patch add that sequence.
+Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
+known 'asm goto' bug) I am still getting some kind of
+miscompilation. If I enable the asm_volatile_goto quirk for my
+compiler, KVM guests are destroyed correctly and the memory is
+cleaned up.
 
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+So make the quirk unconditional for now, until bug is found
+and fixed.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Noonan <steven@uplinklabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/1392274867-15236-1-git-send-email-steven@uplinklabs.net
+Link: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_iba7322.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/compiler-gcc4.h |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -2287,6 +2287,11 @@ static int qib_7322_bringup_serdes(struc
- 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
- 	qib_write_kreg(dd, kr_scratch, 0ULL);
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -75,11 +75,7 @@
+  *
+  * (asm goto is automatically volatile - the naming reflects this.)
+  */
+-#if GCC_VERSION <= 40801
+-# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
+-#else
+-# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
+-#endif
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
  
-+	/* ensure previous Tx parameters are not still forced */
-+	qib_write_kreg_port(ppd, krp_tx_deemph_override,
-+		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
-+		reset_tx_deemphasis_override));
-+
- 	if (qib_compat_ddr_negotiate) {
- 		ppd->cpspec->ibdeltainprog = 1;
- 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
+ #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+ #if GCC_VERSION >= 40400
 
 
