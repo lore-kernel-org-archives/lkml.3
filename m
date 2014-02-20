@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaBTEFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 23:05:18 -0500
-Received: from ozlabs.org ([203.10.76.45]:56605 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314AbaBTEFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 23:05:17 -0500
-Date: Thu, 20 Feb 2014 15:05:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd-lj tree
-Message-Id: <20140220150508.79bfff95fb5d93c651801ffd@canb.auug.org.au>
-In-Reply-To: <20140217141446.454ab86eb19621fd397be6ed@canb.auug.org.au>
-References: <20140214134217.aa7e1994b4cab7ee563c8307@canb.auug.org.au>
-	<20140217141446.454ab86eb19621fd397be6ed@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__20_Feb_2014_15_05_08_+1100_iQaUD1/+lJ_RPpJv"
+	id S1753533AbaBTEHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 23:07:25 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:44535 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaBTEHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 23:07:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <1392821911.17130.63.camel@iivanov-dev>
+References: <1392729681-21022-1-git-send-email-iivanov@mm-sol.com>
+	<CA+bK7J7D1bgehNMaMtWWggZ5KDBfZ8LK0bEYUARmc8OD3wa89Q@mail.gmail.com>
+	<1392821911.17130.63.camel@iivanov-dev>
+Date: Wed, 19 Feb 2014 20:07:21 -0800
+Message-ID: <CA+bK7J5LrV-Dh1tNhEwhJ4y+XbkDeQkwVWoUYFX46X9uV1HdUQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] usb: chipidea: msm: Clean and fix glue layer driver
+From: Tim Bird <tbird20d@gmail.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Peter Chen <Peter.Chen@freescale.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Brown <davidb@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__20_Feb_2014_15_05_08_+1100_iQaUD1/+lJ_RPpJv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks very much.  I will try out the things you mention and let you
+know if I make progress.
+ -- Tim
 
-Hi Lee,
 
-On Mon, 17 Feb 2014 14:14:46 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Wed, Feb 19, 2014 at 6:58 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 >
-> On Fri, 14 Feb 2014 13:42:17 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > After merging the mfd-lj tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> >=20
-> > In file included from drivers/mfd/max665x.c:19:0:
-> > include/linux/mfd/max665x-private.h:31:1: error: expected ';', identifi=
-er or '(' before 'struct'
-> >  struct max665x_dev {
-> >  ^
-> >=20
-> > Caused by commit e77bb5297293 ("mfd: max665x: Differentiate between
-> > MAX665X devices").  Clearly never built by anyone :-(
-> >=20
-> > I have used the mfd-lj tree from next-20140210 again for today (since t=
-he
-> > other version had other problems).
->=20
-> Still seeing this error.
+> Hi Tim,
+>
+> On Tue, 2014-02-18 at 22:21 -0800, Tim Bird wrote:
+>> Ivan,
+>>
+>> I'm having tremendous problems getting this driver to initialize.  For
+>> some reason, I can't get the driver to actually transition the
+>> hardware into peripheral mode.  At first I was getting a lot of probe
+>> deferrals, based on not finding the regulators early enough in the
+>> boot, and I thought it was an issue with the gadget drivers loading
+>> before the driver could complete its setup.  However, I switched
+>> everything to loading via modules, and now have less probe deferrals,
+>> but I still can't get the driver to activate.
+>
+> My understanding for gadget drivers is that you can have only one
+> of them active in particular time. When compiled in kernel you can
+> chose only one of them, also you can have only one module (function)
+> loaded.
+>
+>
+>>   I see zero interrupts.
+>
+> Right, I think that we will not see interrupts until we have
+> SPMI drivers which could control PMIC chip, PMIC is responsible
+> to do ID line detection and generate IRQ to APQ/MSM chip.
+>
+>> In particular the routine hw_device_state (which turns on interrupts
+>> in the controller) is never called, because I can't get
+>> msm_otg_start_peripheral to actually kick the hardware.
+>>
+>
+> OTG state machine is not used at all. This phy-"otg" driver is
+> working only in "peripheral" mode, because of missing PMIC
+> communication.
+>
+> The only callback which you could see to be executed is
+> struct usb_otg::set_peripheral(), when you load gadget driver.
+>
+>
+> <snip>
+>
+> (Would you mind sharing your config?).
+>
+> Sure. Attached.
+>
+>
+>> I tried configuring the qcom,otg-control for user controlled mode
+>> setting (via debugfs),
+>
+> Never testes this. It was there before.
+>
+>>
+>> My kernel is based on an internal Sony 3.13-rc6 kernel with clock and
+>> regulator patches applied, as well as your phy-msm-usb.c patches from
+>> November and your chipidea patches from yesterday.
+>
+> You will need also 4th chipidea patch[1]. I have dropped it, because
+> I will like to upstream PHY driver changes first. They are depended
+> anyway.
+>
+> To reduce dependency to other drivers, I could recommend you to
+> use Zero gadget driver. It should be enough to test USB stack,
+> where APQ device will be peripheral and development workstation
+> will be a host[2].
+>
+>
+> # cat zero.sh
+> #!/bin/sh
+> cd /lib/modules/$(uname -r)/kernel/drivers/usb/gadget
+> insmod ./libcomposite.ko
+> insmod ./usb_f_ss_lb.ko
+> insmod ./g_zero.ko
+>
+>
+>> [   22.454287] [<c022afd8>] (warn_slowpath_common+0x68/0x88) from
+>> [<c022b08c>] (warn_slowpath_fmt+0x30/0x40)
+>> [   22.463060] [<c022b08c>] (warn_slowpath_fmt+0x30/0x40) from
+>> [<bf005024>] (msm_otg_probe+0x24/0x904 [phy_msm_usb])
+>> [   22.472703] [<bf005024>] (msm_otg_probe+0x24/0x904 [phy_msm_usb])
+>
+> This is know non-fatal issue. I will try to see how to fix it.
+>
+>
+> Regards,
+> Ivan
+>
+> [1] usb: chipidea: msm: Use USB PHY API to control PHY state
+> [2] http://www.linux-usb.org/usbtest/
+>
+>
 
-Still ...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__20_Feb_2014_15_05_08_+1100_iQaUD1/+lJ_RPpJv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTBX75AAoJEMDTa8Ir7ZwVA2UP/2wj5gpxTnj+gbeAAsq0ZEuy
-1AoZ8GIrPU+A1hDM56DI/HXkNyNKULxOTFBGb1gUtmk8ZD32USXahkb3X9Un7RRw
-sB8fKAm9240LlpP0QQ4eRlQIuBE5twWqu7rZjCDs3DNMK/CbnB1ElvAMek/Uq6fo
-7thY4vioPih/HwOFHfLqL/O6tHieA2JH5xEmh7NDRwiyw6Qv1fE89JIh9UXQb9PI
-44IryMIXBA3s6T9ZT1BMBA02FcfJPdwioCmIrxlmiKka9GmwWROwTGY1iDZ6ZtiY
-klzFO4A+vXdXrg6xl9rNsrovtjtlIRE9U2ob1C6hnS19Tm+LDkylODeIqhoG2mV/
-qh1ETQXGxL6GbzfG4k/ZBeWvK+MRi0xJLc/s9C1Oix6m7JU+6kdQf1zHUCxYCAe3
-E/XNhWNL3B9pOmsvGKRZ6emxpLaKKLggvuGJPP8KOAhUScFkLILqGmpt44lFX3qv
-tW6NX+M7B7BQe91U+kHK/wCEPbwboQ1ivenOYiSyAQTAkN5Y+IthH08zw+wmUJRa
-WWp8AbhsgRMimd0pD1DWEZ2fwIEq3HGPSuLRVNaqWZ/ZUxHJPZ8zDrhjwSpnHHkv
-cQj83p3+cFfjqY8QiM//Tp1YXTKkkK3Vl7IIgknTvD89pH/tT4M7Iqlh34C2jL4I
-Qlkbo+Oh5VNPE9TSn8lU
-=tba4
------END PGP SIGNATURE-----
-
---Signature=_Thu__20_Feb_2014_15_05_08_+1100_iQaUD1/+lJ_RPpJv--
+-- 
+ -- Tim Bird
+Senior Software Engineer, Sony Mobile
+Architecture Group Chair, CE Workgroup, Linux Foundation
