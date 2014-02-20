@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819AbaBUApi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:45:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45620 "EHLO
+	id S1755330AbaBTXvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45574 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349AbaBTXvs (ORCPT
+	with ESMTP id S1755252AbaBTXvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:48 -0500
+	Thu, 20 Feb 2014 18:51:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Noonan <steven@uplinklabs.net>,
-        Elena Ufimtseva <ufimtseva@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 01/82] xen: properly account for _PAGE_NUMA during xen pte translations
-Date: Thu, 20 Feb 2014 15:51:44 -0800
-Message-Id: <20140220235019.526774892@linuxfoundation.org>
+        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 23/66] lockd: send correct lock when granting a delayed lock.
+Date: Thu, 20 Feb 2014 15:51:22 -0800
+Message-Id: <20140220234910.157582340@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
+In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
+References: <20140220234909.482516304@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,108 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: NeilBrown <neilb@suse.de>
 
-commit a9c8e4beeeb64c22b84c803747487857fe424b68 upstream.
+commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
 
-Steven Noonan forwarded a users report where they had a problem starting
-vsftpd on a Xen paravirtualized guest, with this in dmesg:
+If an NFS client attempts to get a lock (using NLM) and the lock is
+not available, the server will remember the request and when the lock
+becomes available it will send a GRANT request to the client to
+provide the lock.
 
-  BUG: Bad page map in process vsftpd  pte:8000000493b88165 pmd:e9cc01067
-  page:ffffea00124ee200 count:0 mapcount:-1 mapping:     (null) index:0x0
-  page flags: 0x2ffc0000000014(referenced|dirty)
-  addr:00007f97eea74000 vm_flags:00100071 anon_vma:ffff880e98f80380 mapping:          (null) index:7f97eea74
-  CPU: 4 PID: 587 Comm: vsftpd Not tainted 3.12.7-1-ec2 #1
-  Call Trace:
-    dump_stack+0x45/0x56
-    print_bad_pte+0x22e/0x250
-    unmap_single_vma+0x583/0x890
-    unmap_vmas+0x65/0x90
-    exit_mmap+0xc5/0x170
-    mmput+0x65/0x100
-    do_exit+0x393/0x9e0
-    do_group_exit+0xcc/0x140
-    SyS_exit_group+0x14/0x20
-    system_call_fastpath+0x1a/0x1f
-  Disabling lock debugging due to kernel taint
-  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:0 val:-1
-  BUG: Bad rss-counter state mm:ffff880e9ca60580 idx:1 val:1
+If the client already held an adjacent lock, the GRANT callback will
+report the union of the existing and new locks, which can confuse the
+client.
 
-The issue could not be reproduced under an HVM instance with the same
-kernel, so it appears to be exclusive to paravirtual Xen guests.  He
-bisected the problem to commit 1667918b6483 ("mm: numa: clear numa
-hinting information on mprotect") that was also included in 3.12-stable.
+This happens because __posix_lock_file (called by vfs_lock_file)
+updates the passed-in file_lock structure when adjacent or
+over-lapping locks are found.
 
-The problem was related to how xen translates ptes because it was not
-accounting for the _PAGE_NUMA bit.  This patch splits pte_present to add
-a pteval_present helper for use by xen so both bare metal and xen use
-the same code when checking if a PTE is present.
+To avoid this problem we take a copy of the two fields that can
+be changed (fl_start and fl_end) before the call and restore them
+afterwards.
+An alternate would be to allocate a 'struct file_lock', initialise it,
+use locks_copy_lock() to take a copy, then locks_release_private()
+after the vfs_lock_file() call.  But that is a lot more work.
 
-[mgorman@suse.de: wrote changelog, proposed minor modifications]
-[akpm@linux-foundation.org: fix typo in comment]
-Reported-by: Steven Noonan <steven@uplinklabs.net>
-Tested-by: Steven Noonan <steven@uplinklabs.net>
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Olaf Kirch <okir@suse.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/x86/include/asm/pgtable.h |   14 ++++++++++++--
- arch/x86/xen/mmu.c             |    4 ++--
- 2 files changed, 14 insertions(+), 4 deletions(-)
+--
+v1 had a couple of issues (large on-stack struct and didn't really work properly).
+This version is much better tested.
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -445,10 +445,20 @@ static inline int pte_same(pte_t a, pte_
- 	return a.pte == b.pte;
- }
+---
+ fs/lockd/svclock.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -767,6 +767,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	struct nlm_file		*file = block->b_file;
+ 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
+ 	int			error;
++	loff_t			fl_start, fl_end;
  
-+static inline int pteval_present(pteval_t pteval)
-+{
-+	/*
-+	 * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
-+	 * way clearly states that the intent is that protnone and numa
-+	 * hinting ptes are considered present for the purposes of
-+	 * pagetable operations like zapping, protection changes, gup etc.
+ 	dprintk("lockd: grant blocked lock %p\n", block);
+ 
+@@ -784,9 +785,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	}
+ 
+ 	/* Try the lock operation again */
++	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
++	 * them unchanged for the GRANT_MSG
 +	 */
-+	return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
-+}
-+
- static inline int pte_present(pte_t a)
- {
--	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
--			       _PAGE_NUMA);
-+	return pteval_present(pte_flags(a));
- }
+ 	lock->fl.fl_flags |= FL_SLEEP;
++	fl_start = lock->fl.fl_start;
++	fl_end = lock->fl.fl_end;
+ 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
+ 	lock->fl.fl_flags &= ~FL_SLEEP;
++	lock->fl.fl_start = fl_start;
++	lock->fl.fl_end = fl_end;
  
- #define pte_accessible pte_accessible
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
- /* Assume pteval_t is equivalent to all the other *val_t types. */
- static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
--	if (val & _PAGE_PRESENT) {
-+	if (pteval_present(val)) {
- 		unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
- 		unsigned long pfn = mfn_to_pfn(mfn);
- 
-@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
- 
- static pteval_t pte_pfn_to_mfn(pteval_t val)
- {
--	if (val & _PAGE_PRESENT) {
-+	if (pteval_present(val)) {
- 		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
- 		pteval_t flags = val & PTE_FLAGS_MASK;
- 		unsigned long mfn;
+ 	switch (error) {
+ 	case 0:
 
 
