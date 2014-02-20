@@ -1,66 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaBTKQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 05:16:01 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:61595 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbaBTKP7 (ORCPT
+	id S1752729AbaBTKSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 05:18:07 -0500
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:41862 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751957AbaBTKSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 05:15:59 -0500
+	Thu, 20 Feb 2014 05:18:05 -0500
+X-Yandex-Uniq: 8d8ea1a4-51b0-4ebf-a25e-7d734c5c5d28
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Thu, 20 Feb 2014 14:17:58 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, Mike Galbraith <bitbucket@online.de>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] ioat: fix tasklet tear down
+Message-ID: <20140220101758.GC3487@stfomichev-desktop.yandex.net>
+References: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
 MIME-Version: 1.0
-Date: Thu, 20 Feb 2014 15:45:56 +0530
-Message-ID: <CABPv_jf7Sy26C=LUzFkYyDSFrvtk05Snv-PQJEu2fpm5dhJWrQ@mail.gmail.com>
-Subject: [PATCH] smack lsm bug fixes
-From: Pankaj Kumar <pankaj13lvs3@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        casey@schaufler-ca.com
-Cc: pankaj.k2@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220071145.21609.89019.stgit@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pankaj Kumar <pankaj.k2@samsung.com>
-
-1. In order to remove any SMACK extended attribute from a file, a user
-should have CAP_MAC_ADMIN capability. But any user without this
-capability is able to remove SMACK64MMAP security attribute. This error
-has been corrected by a modification in smack_inode_removexattr hook.
-
-2. While setting extended attribute in smack_inode_setsecurity hook,
-'-EACCES' error is returned if extended attribute size or value is not
-correct. This is wrong error rather this is invalid extended attribute
-case. Corrected error '-EINVAL' shall be returned.
-
-Signed-off-by: Pankaj Kumar <pankaj.k2@samsung.com>
-Signed-off-by: Himanshu Shukla <himanshu.sh@samsung.com>
----
- security/smack/smack_lsm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 14f52be..e1b1650 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -938,7 +938,7 @@ static int smack_inode_removexattr(struct dentry
-*dentry, const char *name)
-         strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
-         strcmp(name, XATTR_NAME_SMACKEXEC) == 0 ||
-         strcmp(name, XATTR_NAME_SMACKTRANSMUTE) == 0 ||
--        strcmp(name, XATTR_NAME_SMACKMMAP)) {
-+        strcmp(name, XATTR_NAME_SMACKMMAP) == 0) {
-         if (!smack_privileged(CAP_MAC_ADMIN))
-             rc = -EPERM;
-     } else
-@@ -2076,7 +2076,7 @@ static int smack_inode_setsecurity(struct inode
-*inode, const char *name,
-     int rc = 0;
-
-     if (value == NULL || size > SMK_LONGLABEL || size == 0)
--        return -EACCES;
-+        return -EINVAL;
-
-     skp = smk_import_entry(value, size);
-     if (skp == NULL)
--- 
-1.8.1.2
+> Passes my testing, but would appreciate a tested-by.
+Tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
