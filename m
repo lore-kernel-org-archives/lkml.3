@@ -1,198 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897AbaBTOoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:44:34 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:47307 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636AbaBTOnZ (ORCPT
+	id S1755089AbaBTOpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:45:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47519 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055AbaBTOpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 09:43:25 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 10/10] spi: sh-msiof: Use core message handling instead of spi-bitbang
-Date: Thu, 20 Feb 2014 15:43:09 +0100
-Message-Id: <1392907389-21798-11-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
+	Thu, 20 Feb 2014 09:45:44 -0500
+Date: Thu, 20 Feb 2014 23:45:21 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Message-ID: <20140220144521.GB12197@sirena.org.uk>
+References: <20140218224433.337299968@linuxfoundation.org>
+ <53054956.4010602@samsung.com>
+ <20140220003639.GF2669@sirena.org.uk>
+ <5305584D.9030106@samsung.com>
+ <20140220023437.GS2669@sirena.org.uk>
+ <530605D2.1080608@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2B/JsCI69OhZNC5r"
+Content-Disposition: inline
+In-Reply-To: <530605D2.1080608@samsung.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.156.234
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-The only remaining feature of spi-bitbang used by this driver is the
-chipselect() callback, which just does conditional GPIO.
-This is handled fine by the SPI core's spi_set_cs(), hence switch the
-driver to use the core message handling through our own transfer_one()
-method.
+--2B/JsCI69OhZNC5r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Remove the call to spi_master_put() in sh_msiof_spi_remove(), as our SPI
-master is now registered using devm_spi_register_master()
-(spi_bitbang_start() uses the non-managed version).
+On Thu, Feb 20, 2014 at 06:40:34AM -0700, Shuah Khan wrote:
+> On 02/19/2014 07:34 PM, Mark Brown wrote:
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
- drivers/spi/Kconfig        |    1 -
- drivers/spi/spi-sh-msiof.c |   65 ++++++++++++--------------------------------
- 2 files changed, 17 insertions(+), 49 deletions(-)
+> >Patches welcome...
 
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 339da4b15ec2..35d5c029393a 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -416,7 +416,6 @@ config SPI_SH_MSIOF
- 	tristate "SuperH MSIOF SPI controller"
- 	depends on HAVE_CLK
- 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
--	select SPI_BITBANG
- 	help
- 	  SPI driver for SuperH and SH Mobile MSIOF blocks.
- 
-diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index bd300fcb7116..642b0b637df1 100644
---- a/drivers/spi/spi-sh-msiof.c
-+++ b/drivers/spi/spi-sh-msiof.c
-@@ -26,7 +26,6 @@
- 
- #include <linux/spi/sh_msiof.h>
- #include <linux/spi/spi.h>
--#include <linux/spi/spi_bitbang.h>
- 
- #include <asm/unaligned.h>
- 
-@@ -36,7 +35,6 @@ struct sh_msiof_chipdata {
- };
- 
- struct sh_msiof_spi_priv {
--	struct spi_bitbang bitbang; /* must be first for spi_bitbang.c */
- 	void __iomem *mapbase;
- 	struct clk *clk;
- 	struct platform_device *pdev;
-@@ -452,8 +450,7 @@ static int sh_msiof_spi_setup(struct spi_device *spi)
- 		 */
- 		spi->cs_gpio = (uintptr_t)spi->controller_data;
- 	}
--
--	return spi_bitbang_setup(spi);
-+	return 0;
- }
- 
- static int sh_msiof_prepare_message(struct spi_master *master,
-@@ -488,20 +485,6 @@ static int sh_msiof_unprepare_message(struct spi_master *master,
- 	return 0;
- }
- 
--static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
--{
--	int value;
--
--	/* chip select is active low unless SPI_CS_HIGH is set */
--	if (spi->mode & SPI_CS_HIGH)
--		value = (is_on == BITBANG_CS_ACTIVE) ? 1 : 0;
--	else
--		value = (is_on == BITBANG_CS_ACTIVE) ? 0 : 1;
--
--	if (spi->cs_gpio >= 0)
--		gpio_set_value(spi->cs_gpio, value);
--}
--
- static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
- 				  void (*tx_fifo)(struct sh_msiof_spi_priv *,
- 						  const void *, int, int),
-@@ -571,9 +554,11 @@ static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
- 	return ret;
- }
- 
--static int sh_msiof_spi_txrx(struct spi_device *spi, struct spi_transfer *t)
-+static int sh_msiof_transfer_one(struct spi_master *master,
-+				 struct spi_device *spi,
-+				 struct spi_transfer *t)
- {
--	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
-+	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
- 	void (*tx_fifo)(struct sh_msiof_spi_priv *, const void *, int, int);
- 	void (*rx_fifo)(struct sh_msiof_spi_priv *, void *, int, int);
- 	int bits;
-@@ -654,13 +639,6 @@ static int sh_msiof_spi_txrx(struct spi_device *spi, struct spi_transfer *t)
- 		words -= n;
- 	}
- 
--	return bytes_done;
--}
--
--static u32 sh_msiof_spi_txrx_word(struct spi_device *spi, unsigned nsecs,
--				  u32 word, u8 bits)
--{
--	BUG(); /* unused but needed by bitbang code */
- 	return 0;
- }
- 
-@@ -795,7 +773,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
- 	if (p->info->rx_fifo_override)
- 		p->rx_fifo_size = p->info->rx_fifo_override;
- 
--	/* init master and bitbang code */
-+	/* init master code */
- 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
- 	master->mode_bits |= SPI_LSB_FIRST | SPI_3WIRE;
- 	master->flags = p->chipdata->master_flags;
-@@ -803,24 +781,20 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
- 	master->dev.of_node = pdev->dev.of_node;
- 	master->num_chipselect = p->info->num_chipselect;
- 	master->setup = sh_msiof_spi_setup;
--	master->cleanup = spi_bitbang_cleanup;
- 	master->prepare_message = sh_msiof_prepare_message;
- 	master->unprepare_message = sh_msiof_unprepare_message;
- 	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 32);
-+	master->transfer_one = sh_msiof_transfer_one;
- 
--	p->bitbang.master = master;
--	p->bitbang.chipselect = sh_msiof_spi_chipselect;
--	p->bitbang.setup_transfer = spi_bitbang_setup_transfer;
--	p->bitbang.txrx_bufs = sh_msiof_spi_txrx;
--	p->bitbang.txrx_word[SPI_MODE_0] = sh_msiof_spi_txrx_word;
--	p->bitbang.txrx_word[SPI_MODE_1] = sh_msiof_spi_txrx_word;
--	p->bitbang.txrx_word[SPI_MODE_2] = sh_msiof_spi_txrx_word;
--	p->bitbang.txrx_word[SPI_MODE_3] = sh_msiof_spi_txrx_word;
-+	ret = devm_spi_register_master(&pdev->dev, master);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "spi_register_master error.\n");
-+		goto err2;
-+	}
- 
--	ret = spi_bitbang_start(&p->bitbang);
--	if (ret == 0)
--		return 0;
-+	return 0;
- 
-+ err2:
- 	pm_runtime_disable(&pdev->dev);
- 	clk_unprepare(p->clk);
-  err1:
-@@ -831,15 +805,10 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
- static int sh_msiof_spi_remove(struct platform_device *pdev)
- {
- 	struct sh_msiof_spi_priv *p = platform_get_drvdata(pdev);
--	int ret;
- 
--	ret = spi_bitbang_stop(&p->bitbang);
--	if (!ret) {
--		pm_runtime_disable(&pdev->dev);
--		clk_unprepare(p->clk);
--		spi_master_put(p->bitbang.master);
--	}
--	return ret;
-+	pm_runtime_disable(&pdev->dev);
-+	clk_unprepare(p->clk);
-+	return 0;
- }
- 
- static struct platform_device_id spi_driver_ids[] = {
--- 
-1.7.9.5
+> ok I will send one soon then :)
 
+Thanks - if you forget I probably will get round to it but it's easier
+if you fix.
+
+--2B/JsCI69OhZNC5r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTBhT+AAoJELSic+t+oim9VkYP/j1Hkt9iEC9LmHseODyzd6y8
+YzMO8sD5gDgCK8hDWKdFZ/2iIpxJaCNEIs3gz2St+ljJodSNlcLMekuPZOICkRXS
+vEhoqDGFXa/4nSSN87cfYqLfjhwZcSACqB4j+vroNaiB88d4I5YmNEtocVByXCda
++scFI0hECiRbOMdicRCp2ufwGTvkOU3pSmnTp7dOApP2zOYRneh60RNcdpw1AQq1
+QPN5fBsX2ysu6VidjOUsjSbY9u7Bm6eEHu5E1ogNFLEbcGTTJgxHCQuEmWdMP8MZ
+crkGtR1e1vmg7+tTVgSu59DJjd++puWHnWoRIQeeVX+HhDteu8Xp025Xi9JdnxBB
+UTARlOQAA+uED1any5qibCmTkUmdygLOK3A6JQTPJk95NUpRyFuJwdbH5kc6tw1Z
+dibBYzrHmhrFzdx0e9XuHlqydY2xJLbH9mp5QBYzx9ldl/pm+ePPn5WSfyeqFrbi
+jy7SjyoebQC2Rx8fLHcd3aa0IHX6pJvmMVbFO3bnYWkNesQJee2//RWKXcE4RV6J
+RpMXdb9AL3243FM1zRKbkId7GXmKxn3LYlB0C+Ag/Ev+KTAPSjosDJzlm3zRCIqu
+p5AXd4wpE8bP2Uk2ad0F+Ny5t+wtoPJ8i/szD0wfKWZXfSXseU5zrU2fu0nxm2Fr
+QwSgB0nYPjJZPlJwhFok
+=q/fB
+-----END PGP SIGNATURE-----
+
+--2B/JsCI69OhZNC5r--
