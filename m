@@ -1,146 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaBUC2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:28:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40158 "EHLO mx1.redhat.com"
+	id S1752954AbaBUCbC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:31:02 -0500
+Received: from ozlabs.org ([203.10.76.45]:58914 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126AbaBUC2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:28:51 -0500
-Date: Thu, 20 Feb 2014 23:28:00 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140221022800.GA30230@amt.cnet>
-References: <20140214225810.57e854cb@redhat.com>
- <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
- <20140217085622.39b39cac@redhat.com>
- <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
- <20140218123013.GA20609@amt.cnet>
- <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
- <20140220022254.GA25898@amt.cnet>
- <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140220213407.GA11048@amt.cnet>
- <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
+	id S1752014AbaBUCa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 21:30:59 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jmario@redhat.com, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jmario@redhat.com, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Subject: Re: [tip:x86/asmlinkage] lto: Handle LTO common symbols in module loader
+In-Reply-To: <tip-80375980f1608f43b47abc2671456b23ec68c434@git.kernel.org>
+References: <1391846481-31491-5-git-send-email-ak@linux.intel.com> <tip-80375980f1608f43b47abc2671456b23ec68c434@git.kernel.org>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 21 Feb 2014 09:41:37 +1030
+Message-ID: <87ios99y6u.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 03:15:46PM -0800, David Rientjes wrote:
-> On Thu, 20 Feb 2014, Marcelo Tosatti wrote:
-> 
-> > Mel has clearly has no objection to the command line. You can also
-> > allocate 2M pages at runtime, and that is no reason for "hugepages="
-> > interface to not exist. 
-> > 
-> 
-> The "hugepages=" interface does exist and for good reason, when 
-> fragmentation is such that you cannot allocate that number of hugepages at 
-> runtime easily.  That's lacking from your use case: why can't your 
-> customer do it from an initscript?  So far, all you've said is that your 
-> customer wants 8 1GB hugepages on node 0 for a 32GB machine.
+tip-bot for Joe Mario <tipbot@zytor.com> writes:
+> Commit-ID:  80375980f1608f43b47abc2671456b23ec68c434
+> Gitweb:     http://git.kernel.org/tip/80375980f1608f43b47abc2671456b23ec68c434
+> Author:     Joe Mario <jmario@redhat.com>
+> AuthorDate: Sat, 8 Feb 2014 09:01:09 +0100
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Thu, 13 Feb 2014 20:24:50 -0800
+>
+> lto: Handle LTO common symbols in module loader
+>
+> Here is the workaround I made for having the kernel not reject modules
+> built with -flto.  The clean solution would be to get the compiler to not
+> emit the symbol.  Or if it has to emit the symbol, then emit it as
+> initialized data but put it into a comdat/linkonce section.
 
-See below about particular hugepages distribution.
+Gah, as I said, fix the damn comment!
 
-> > There is a number of parameters that are modifiable via the kernel
-> > command line, so following your reasoning, they should all be removed,
-> > because it can be done at runtime.
-> > 
-> 
-> 1GB is of such granularity that you'd typically either be (a) oom so that 
-> your userspace couldn't even start, or (b) have enough memory such that 
-> userspace would be able to start and allocate them dynamically through an 
-> initscript.
+>  		case SHN_COMMON:
+> +			/* Ignore common symbols */
+> +			if (!strncmp(name, "__gnu_lto", 9))
+> +				break;
+> +
+>  			/* We compiled with -fno-common.  These are not
 
-There are a number of kernel command line parameters which can be
-modified in runtime as well.
+/* Ignore common symbols */ is so bad, it's not even wrong.
 
-> > Yes, we'd like to maintain backwards compatibility.
-> > 
-> 
-> Good, see below.
-> 
-> > > Thus, it seems, the easiest addition would have 
-> > > been "hugepagesnode=" which I've mentioned several times, there's no 
-> > > reason to implement yet another command line option purely as a shorthand 
-> > > which hugepage_node=1:2:1G is and in a very cryptic way.
-> > 
-> > Can you state your suggestion clearly (or point to such messages), and
-> > list the advantages of it versus the proposed patch ?
-> > 
-> 
-> My suggestion was posted on the same day this patchset was posted: 
-> http://marc.info/?l=linux-kernel&m=139241967514884 it would be helpful if 
-> you read the thread before asking for something that has been repeated 
-> over and over.
-
-Please, repeat it. Compare your suggestion to the proposed interface.
-Copy & paste if necessary. You have not given a single technical point 
-so far.
-
-There is not ONE technical point in this message:
-http://marc.info/?l=linux-kernel&m=139241967514884
-
-You are asking what is the use-case.
-
-> There's no need to implement a shorthand that combines a few kernel 
-> command line options.
-> 
-> That's not the issue, anymore, though, since there's no need for the 
-> patchset to begin with if you can dynamically allocate 1GB hugepages at 
-> runtime.  If your customer wanted 4096 2MB hugepages on node 0 instead of 
-> 8 1GB hugepages on node 0, we'd not be having this conversation.
-
-A particular distribution is irrelevant. What you want is a non default
-distribution of 1GB hugepages.
-
-Can you agree with that ? (forget about particular values, please).
-
-> Do I really need to do your work for you and work on 1GB hugepages at 
-> runtime, which many more people would be interested in?  
-
-Our interest is satistified by this patch. The interest below is
-satisfied by the patch.
-
-> Or are we just 
-> seeking the easiest way out here with something that shuts the customer up 
-> and leaves a kernel command line option that we'll need to maintain to 
-> avoid breaking backwards compatibility in the future?
-
-We'd like to backport the minimal amount of code (minimal amount of
-code = kernel command line interface). 
-
-USE CASE FOR "hugetlb: add hugepages_node= command-line option" PATCH.
-
-Requirement1) Assume N 1GB hugepages on node A. No other hugepages on any node 
-are desired (because that memory must be free, for other uses).
-Requirement2) Assume that failure to allocate N 1GB hugepages is not acceptable.
-
-For this pair of requirements, THERE IS NO DIFFERENCE AT ALL whether
-1GB pages are allocated in userspace or via kernel command line.
-All it matters is that pages are allocated accordingly to Requirement1).
-
-Feel free to replace page distribution on Requirement1) by your
-imagination of how people can make use of computers.
-
-Now, your suggestion is to allocate pages during runtime. OK, can you
-explain what are the advantages of doing so (for use case above) ?
-
-Or for any use case which _MUST ALLOCATE_ a given number of 1GB hugepages ?
-
-"I object to a new kernel command line parameter because that
-parameter can be specified during runtime" is not a valid objection to me.
-
-It seems you are interested in writing code to allocate 1GB pages during 
-runtime? Sure, go ahead, no one is stopping you.
-
+Cheers,
+Rusty.
