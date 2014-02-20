@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbaBTLM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 06:12:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58394 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaBTLM0 (ORCPT
+	id S1753371AbaBTLNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 06:13:05 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:58170 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982AbaBTLNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 06:12:26 -0500
-Date: Thu, 20 Feb 2014 12:12:33 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexey Perevalov <a.perevalov@samsung.com>
-cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, anton@nomsg.org,
-        kyungmin.park@samsung.com, cw00.choi@samsung.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v3 0/6] Deferrable timers support for hrtimers/timerfd
- API
-In-Reply-To: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
-Message-ID: <alpine.DEB.2.02.1402201209550.4468@ionos.tec.linutronix.de>
-References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 20 Feb 2014 06:13:02 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20140220105540.GB3745@pek-khao-d1.corp.ad.wrs.com>
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
+	<CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
+	<20140220101240.GA3745@pek-khao-d1.corp.ad.wrs.com>
+	<CAK9yfHzM_kyXMrnLC=M0qiLHKWxE41E-MdyGtipKA7AwoLnOqg@mail.gmail.com>
+	<20140220105540.GB3745@pek-khao-d1.corp.ad.wrs.com>
+Date: Thu, 20 Feb 2014 16:43:01 +0530
+Message-ID: <CAK9yfHwC28zUY7jzJnR3evoevPE4SBofrd0p2B=J5XOKPXzHCg@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Kevin Hao <haokexin@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Alexey Perevalov wrote:
+On 20 February 2014 16:25, Kevin Hao <haokexin@gmail.com> wrote:
+> On Thu, Feb 20, 2014 at 03:57:07PM +0530, Sachin Kamat wrote:
+>> Hi Kevin,
+>>
+>> On 20 February 2014 15:42, Kevin Hao <haokexin@gmail.com> wrote:
+>> > On Thu, Feb 20, 2014 at 02:09:08PM +0530, Sachin Kamat wrote:
+>> >> Hi Grant,
+>> >>
+>> >> I observe the following boot failure with today's (next-20140220) linux-next
+>> >> tree on Exynos based boards with the default exynos_defconfig.
+>> >
+>> > Does this help?
+>>
+>> The below patch works for me. Thanks for the fix.
+>
+> Thanks Sachin.
+>
+> Hi Grant,
+>
+> I assume you would fold this change into the original patch. But if you want
+> a separate patch, please let me know.
+>
+> Thanks,
+> Kevin
 
-> Hello.
-> 
-> This is a combo patch set for support defferability in timerfd.
-> Due implementation of timerfd is based on hrtimers and only on hrtimers,
-> it was necessary to add such deferrability into hrtimers too.
+FWIW, On Exynos platform
+Tested-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-Sigh, this is not about timerfd. Adding new clock ids exposes them to
-all other hrtimer based interfaces as well.
- 
-Thanks,
 
-	tglx
+-- 
+With warm regards,
+Sachin
