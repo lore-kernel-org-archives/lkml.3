@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaBTQ7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:59:21 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47389 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaBTQ7T (ORCPT
+	id S1755575AbaBTRAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:00:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39722 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049AbaBTRAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:59:19 -0500
-Message-ID: <53063464.2020602@wwwdotorg.org>
-Date: Thu, 20 Feb 2014 09:59:16 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 20 Feb 2014 12:00:30 -0500
+Date: Thu, 20 Feb 2014 18:00:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140220170018.GJ9987@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+ <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
+ <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net>
+ <20140220112600.2f44874d@gandalf.local.home>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: tegra124: remove gr2d and gr3d clocks
-References: <1392904448-11939-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1392904448-11939-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220112600.2f44874d@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 06:54 AM, Peter De Schrijver wrote:
-> Tegra124 does not have gr2d and gr3d clocks. They have been replaced by the
-> vic03 and gpu clocks respectively.
+On Thu, Feb 20, 2014 at 11:26:00AM -0500, Steven Rostedt wrote:
+> On Thu, 20 Feb 2014 11:08:30 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > @rostedt: WTF is disable_trace_on_warning a boot option only?
+> 
+> Laziness.
+> 
+> 
+> I'll add a sysctl for it in 3.15.
 
-I think you need to remove the DT #defines from
-include/dt-bindings/clock/tegra124-car.h too.
+/debug/tracing/options/ was where I was looking first.
 
-With that change made,
-Acked-by: Stephen Warren <swarren@nvidia.com>
-(I assume this will be sent as a fix for 3.14)
+Its a bit weird to have half the options in options/ and the other half
+as sysctl in /proc/sys/kernel/
+
+
