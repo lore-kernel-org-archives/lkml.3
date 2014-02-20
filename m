@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaBTOoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:44:38 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:47284 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574AbaBTOnZ (ORCPT
+	id S1754956AbaBTOog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:44:36 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:47761 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604AbaBTOnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 09:43:25 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -12,11 +12,10 @@ To: Mark Brown <broonie@kernel.org>
 Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
         Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 06/10] spi: sh-msiof: Improve binding documentation
-Date: Thu, 20 Feb 2014 15:43:05 +0100
-Message-Id: <1392907389-21798-7-git-send-email-geert@linux-m68k.org>
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH 08/10] spi: sh-msiof: Move clock management to (un)prepare_message()
+Date: Thu, 20 Feb 2014 15:43:07 +0100
+Message-Id: <1392907389-21798-9-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
 References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
@@ -26,52 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-  - Add missing "interrupt-parent", "#address-cells", "#size-cells", and
-    "clocks" properties,
-  - Add missing default values for "renesas,tx-fifo-size" and
-    "renesas,rx-fifo-size",
-  - Add a reference to the pinctrl documentation.
+Move clock management and pin configuration from the bitbang chipselect()
+method to the SPI core prepare_message() and unprepare_message() methods.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: devicetree@vger.kernel.org
 ---
- Documentation/devicetree/bindings/spi/sh-msiof.txt |   24 ++++++++++++++------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ drivers/spi/spi-sh-msiof.c |   56 +++++++++++++++++++++++++++-----------------
+ 1 file changed, 34 insertions(+), 22 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/sh-msiof.txt b/Documentation/devicetree/bindings/spi/sh-msiof.txt
-index e6222106ca36..52cf5c78705b 100644
---- a/Documentation/devicetree/bindings/spi/sh-msiof.txt
-+++ b/Documentation/devicetree/bindings/spi/sh-msiof.txt
-@@ -1,12 +1,22 @@
- Renesas MSIOF spi controller
+diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+index 31624fb4997d..7add4be37987 100644
+--- a/drivers/spi/spi-sh-msiof.c
++++ b/drivers/spi/spi-sh-msiof.c
+@@ -472,9 +472,40 @@ static int sh_msiof_spi_setup(struct spi_device *spi)
+ 	return spi_bitbang_setup(spi);
+ }
  
- Required properties:
--- compatible : 	"renesas,sh-msiof" for SuperH or
--		"renesas,sh-mobile-msiof" for SH Mobile series
--- reg : Offset and length of the register set for the device
--- interrupts : interrupt line used by MSIOF
-+- compatible           : "renesas,sh-msiof" for SuperH, or
-+			 "renesas,sh-mobile-msiof" for SH Mobile series.
-+- reg                  : Offset and length of the register set for the device
-+- interrupt-parent     : The phandle for the interrupt controller that
-+			 services interrupts for this device
-+- interrupts           : Interrupt specifier
-+- #address-cells       : Must be <1>
-+- #size-cells          : Must be <0>
- 
- Optional properties:
--- num-cs		: total number of chip-selects
--- renesas,tx-fifo-size	: Overrides the default tx fifo size given in words
--- renesas,rx-fifo-size	: Overrides the default rx fifo size given in words
-+- clocks               : Must contain a reference to the functional clock.
-+- num-cs               : Total number of chip-selects
-+- renesas,tx-fifo-size : Overrides the default tx fifo size given in words
-+			 (default is 64)
-+- renesas,rx-fifo-size : Overrides the default rx fifo size given in words
-+			 (default is 64)
++static int sh_msiof_prepare_message(struct spi_master *master,
++				    struct spi_message *msg)
++{
++	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
++	const struct spi_device *spi = msg->spi;
 +
-+Pinctrl properties might be needed, too.  See
-+Documentation/devicetree/bindings/pinctrl/renesas,*.
++	if (!test_and_set_bit(0, &p->flags)) {
++		pm_runtime_get_sync(&p->pdev->dev);
++		clk_enable(p->clk);
++	}
++
++	/* Configure pins before asserting CS */
++	sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
++				  !!(spi->mode & SPI_CPHA),
++				  !!(spi->mode & SPI_3WIRE),
++				  !!(spi->mode & SPI_LSB_FIRST),
++				  !!(spi->mode & SPI_CS_HIGH));
++	return 0;
++}
++
++static int sh_msiof_unprepare_message(struct spi_master *master,
++				      struct spi_message *msg)
++{
++	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
++
++	if (test_and_clear_bit(0, &p->flags)) {
++		clk_disable(p->clk);
++		pm_runtime_put(&p->pdev->dev);
++	}
++	return 0;
++}
++
+ static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
+ {
+-	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
+ 	int value;
+ 
+ 	/* chip select is active low unless SPI_CS_HIGH is set */
+@@ -483,29 +514,8 @@ static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
+ 	else
+ 		value = (is_on == BITBANG_CS_ACTIVE) ? 0 : 1;
+ 
+-	if (is_on == BITBANG_CS_ACTIVE) {
+-		if (!test_and_set_bit(0, &p->flags)) {
+-			pm_runtime_get_sync(&p->pdev->dev);
+-			clk_enable(p->clk);
+-		}
+-
+-		/* Configure pins before asserting CS */
+-		sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
+-					  !!(spi->mode & SPI_CPHA),
+-					  !!(spi->mode & SPI_3WIRE),
+-					  !!(spi->mode & SPI_LSB_FIRST),
+-					  !!(spi->mode & SPI_CS_HIGH));
+-	}
+-
+ 	if (spi->cs_gpio >= 0)
+ 		gpio_set_value(spi->cs_gpio, value);
+-
+-	if (is_on == BITBANG_CS_INACTIVE) {
+-		if (test_and_clear_bit(0, &p->flags)) {
+-			clk_disable(p->clk);
+-			pm_runtime_put(&p->pdev->dev);
+-		}
+-	}
+ }
+ 
+ static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
+@@ -810,6 +820,8 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	master->num_chipselect = p->info->num_chipselect;
+ 	master->setup = sh_msiof_spi_setup;
+ 	master->cleanup = spi_bitbang_cleanup;
++	master->prepare_message = sh_msiof_prepare_message;
++	master->unprepare_message = sh_msiof_unprepare_message;
+ 
+ 	p->bitbang.master = master;
+ 	p->bitbang.chipselect = sh_msiof_spi_chipselect;
 -- 
 1.7.9.5
 
