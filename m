@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472AbaBUA5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:57:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45448 "EHLO
+	id S1754962AbaBTXvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45418 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970AbaBTXvI (ORCPT
+	with ESMTP id S1754904AbaBTXvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:08 -0500
+	Thu, 20 Feb 2014 18:51:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 34/66] x86, smap: Dont enable SMAP if CONFIG_X86_SMAP is disabled
-Date: Thu, 20 Feb 2014 15:51:33 -0800
-Message-Id: <20140220234910.474902930@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 17/66] iwlwifi: mvm: dont allow A band if SKU forbids it
+Date: Thu, 20 Feb 2014 15:51:16 -0800
+Message-Id: <20140220234909.976811004@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,41 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
+commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
 
-If SMAP support is not compiled into the kernel, don't enable SMAP in
-CR4 -- in fact, we should clear it, because the kernel doesn't contain
-the proper STAC/CLAC instructions for SMAP support.
+The driver wasn't reading the NVM properly. While this
+didn't lead to any issue until now, it seems that there
+is an old version of the NVM in the wild.
+In this version, the A band channels appear to be valid
+but the SKU capabilities (another field of the NVM) says
+that A band isn't supported at all.
+With this specific version of the NVM, the driver would
+think that A band is supported while the HW / firmware
+don't. This leads to asserts.
 
-Found by Fengguang Wu's test system.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -284,8 +284,13 @@ static __always_inline void setup_smap(s
- 	raw_local_save_flags(eflags);
- 	BUG_ON(eflags & X86_EFLAGS_AC);
+--- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+@@ -180,6 +180,11 @@ static int iwl_init_channel_map(struct d
  
--	if (cpu_has(c, X86_FEATURE_SMAP))
-+	if (cpu_has(c, X86_FEATURE_SMAP)) {
-+#ifdef CONFIG_X86_SMAP
- 		set_in_cr4(X86_CR4_SMAP);
-+#else
-+		clear_in_cr4(X86_CR4_SMAP);
-+#endif
-+	}
- }
- 
- /*
+ 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
+ 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
++
++		if (ch_idx >= NUM_2GHZ_CHANNELS &&
++		    !data->sku_cap_band_52GHz_enable)
++			ch_flags &= ~NVM_CHANNEL_VALID;
++
+ 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
+ 			IWL_DEBUG_EEPROM(dev,
+ 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
 
 
