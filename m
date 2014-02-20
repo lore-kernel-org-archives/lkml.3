@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaBTPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:24:28 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61131 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaBTPY1 (ORCPT
+	id S1754766AbaBTP2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:28:13 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50297 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468AbaBTP2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:24:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] rename HAS_IOPORT to HAS_IOPORT_MAP
-Date: Thu, 20 Feb 2014 16:24:19 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-References: <1392854190-29596-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1392854190-29596-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Thu, 20 Feb 2014 10:28:11 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [GIT PULL] USB patches
+Date: Thu, 20 Feb 2014 09:26:50 -0600
+Message-ID: <1392910010-25612-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201402201624.19922.arnd@arndb.de>
-X-Provags-ID: V02:K0:wh6qHUWObMUv/vn0TNA/w7VQIhc3yOLA4LyKfcmcXGv
- UPZgRloJt3KTbqtBH7Xr/L3ttfjJu5BwAl+wxObufe8rt/e0Va
- +jGBYz9+O4eTZybbHDNEFzBgDrcXNQrHSFqODZ5LLNjQAab98N
- SGhyFnG+VG6FqxRTHN4Ec2ertwgAdKUygppC66cJm9U3b7oKBE
- Zl8TQHVyxLkr0hK/hfUbIztCtAP0ImuBDGAEMJK+pYMlI/WMVv
- Lfht0D90K76MLwzDYIjlIJfBhDOsW+TEe7Bel6CaihzFKXa2aO
- jDm3m2rjKz8nvZZK9k7DZPWYk6PdynloEzoPEIJBlI6Pq1Xhna
- W+nFSEDkBhipISnwMh6c=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 February 2014, Uwe Kleine-König wrote:
-> If the renamed symbol is defined lib/iomap.c implements ioport_map and
-> ioport_unmap and currently (nearly) all platforms define the port
-> accessor functions outb/inb and friend unconditionally. So
-> HAS_IOPORT_MAP is the better name for this. Consequently NO_IOPORT is
-> renamed to NO_IOPORT_MAP.
-> 
-> The motivation for this change is to reintroduce a symbol HAS_IOPORT
-> that signals if outb/int et al are available. I will address that
-> at least one merge window later though to keep surprises to a minimum
-> and catch new introductions of (HAS|NO)_IOPORT.
-> 
-> The changes in this commit were done using:
-> 
->         $ git grep -l -E '(NO|HAS)_IOPORT' | xargs perl -p -i -e 's/\b((?:CONFIG_)?(?:NO|HAS)_IOPORT)\b/$1_MAP/'
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Hi Greg,
 
-Thanks for taking up that work, I had a similar patch series
-some years ago but never followed through with getting it upstream.
-If there are no objections, I hope Andrew can queue it up for -mm.
-Unfortunately I can't think of a good way to split up the patch
-into smaller units that could go through subsystem maintainer
-trees, since we want to start reusing the symbol as soon as possible.
+Here's a pull request for final round of fixes. All patches have
+been soaking for a long time in linux-usb, passed my 300 randconfig
+builds and work on real HW (where applicable).
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+This pull request is based off of greg/usb-linus in order for me
+to avoid merging patches you had already merged during my time
+off.
+
+Please consider merging this tag on your greg/usb-linus.
+
+cheers
+
+The following changes since commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d:
+
+  usb: option: blacklist ZTE MF667 net interface (2014-02-11 15:33:54 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.14-rc4
+
+for you to fetch changes up to 9ccfaf74e766d49a64f86943f98d0a82996d4dec:
+
+  usb: musb: correct use of schedule_delayed_work() (2014-02-20 09:17:24 -0600)
+
+----------------------------------------------------------------
+usb: fixes for v3.14-rc4
+
+Here are 10 fixes for our current -rc cycle. It's likely
+the last round of fixes for this merge window. All patches
+have soaked for a long time and have all been tested in real
+HW.
+
+The most interesting fixes are a fix for enumeration of superspeed
+hubs when MUSB is acting as host, and a remote-wakeup fix also on
+MUSB.
+
+Signed-of-by: Felipe Balbi <balbi@ti.com>
+
+----------------------------------------------------------------
+Ajay Kumar Gupta (1):
+      usb: musb: host: Fix SuperSpeed hub enumeration
+
+Andrzej Pietrasiewicz (1):
+      usb: gadget: fix NULL pointer dereference
+
+Daniel Mack (2):
+      usb: musb: do not sleep in atomic context
+      usb: musb: correct use of schedule_delayed_work()
+
+Felipe Balbi (1):
+      usb: musb: fix obex in g_nokia.ko causing kernel panic
+
+Florian Fainelli (1):
+      usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
+
+Josh Cartwright (1):
+      usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
+
+Peter Chen (1):
+      usb: gadget: printer: using gadget_is_otg to check otg support at runtime
+
+Roger Quadros (1):
+      usb: musb: core: Fix remote-wakeup resume
+
+Sachin Kamat (1):
+      usb: gadget: s3c2410_udc: Fix build error
+
+ drivers/usb/gadget/bcm63xx_udc.c | 58 ++++++++++++++++++++++------------------
+ drivers/usb/gadget/f_fs.c        |  7 ++++-
+ drivers/usb/gadget/printer.c     |  2 +-
+ drivers/usb/gadget/s3c2410_udc.c |  2 +-
+ drivers/usb/musb/musb_core.c     | 15 +++++++++--
+ drivers/usb/musb/musb_host.c     |  3 +++
+ drivers/usb/musb/musb_virthub.c  | 26 +++++++++++++-----
+ drivers/usb/musb/omap2430.c      |  2 --
+ drivers/usb/phy/phy-msm-usb.c    | 57 ++++++++++++++++++---------------------
+ 9 files changed, 101 insertions(+), 71 deletions(-)
