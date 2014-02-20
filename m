@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaBUATx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:19:53 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:19570 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932242AbaBUATv (ORCPT
+	id S1756359AbaBUAUP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:20:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46003 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124AbaBTXxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:19:51 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsMHADGbBlN5LJYe/2dsb2JhbABZgwa7UYVRgQ8XdIIlAQEEATocIwULCAMOCgkaCw8FJQMhE4d9B81JFxaOTgeEOASYL4pQh1WBb4FSKA
-Date: Fri, 21 Feb 2014 11:19:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-        akpm <akpm@linux-foundation.org>, cl@linux-foundation.org
-Subject: Re: Has slab ctor operation changed? -- was [PATCH 1/1] afs:
- afs_alloc_inode: use kmem_cache_zalloc
-Message-ID: <20140221001946.GV4916@dastard>
-References: <20140220211612.506074a7fd876e47130a8c5c@skynet.be>
- <32740.1392934995@warthog.procyon.org.uk>
+	Thu, 20 Feb 2014 18:53:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 16/99] ath9k: Do not support PowerSave by default
+Date: Thu, 20 Feb 2014 15:52:11 -0800
+Message-Id: <20140220235118.684934403@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+References: <20140220235118.191692546@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <32740.1392934995@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:23:15PM +0000, David Howells wrote:
-> Fabian Frederick <fabf@skynet.be> wrote:
-> 
-> > afs_vnode is currently cleared with 2 memsets after allocation and 
-> > 1 in constructor (afs_i_init_once).
-> > 	-This patch calls zalloc for explicit zero fill.
-> 
-> Ummm...  This patch isn't necessarily correct in the substantiative portions.
-> 
-> Since afs_i_init_once() is called by the slab allocator during the course of
-> kmem_cache_alloc(), how does kmem_cache_zalloc() interact with that?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-It breaks it. ;)
+------------------
 
-> IIRC, it used to be that the ctor() function was called when the pages were
-> allocated to the slab - and it wasn't called again, even if the object was
-> allocated, deallocated and reallocated.  This means that things like locks and
-> lists don't need reinitialising after allocation.
-> 
-> So afs_i_init_once() theoretically constructs the stuff that can be reused,
-> and afs_alloc_inode() therefore has to clear the non-reusable state.
-> 
-> Of course, it's possible that the slab allocator no longer works like this...
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-AFAIA the slab constructor behaviour has not changed. If it did, I'm
-pretty sure most filesystems would end up with inode cache problems
-because most of them rely on this ctor behaviour to avoid
-unnecessary reinitialisation of inode state....
+commit 8298383c2cd5a6d0639f1bb1781fba181bd20154 upstream.
 
-Cheers,
+Even though we make sure PowerSave is not enabled by default
+by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
+PS could be enabled by userspace based on various factors
+like battery usage etc. Since PS in ath9k is just broken
+and has been untested for years, remove support for it, but
+allow a user to explicitly enable it using a module parameter.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ath9k/init.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -57,6 +57,10 @@ static int ath9k_bt_ant_diversity;
+ module_param_named(bt_ant_diversity, ath9k_bt_ant_diversity, int, 0444);
+ MODULE_PARM_DESC(bt_ant_diversity, "Enable WLAN/BT RX antenna diversity");
+ 
++static int ath9k_ps_enable;
++module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
++MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
++
+ bool is_ath9k_unloaded;
+ /* We use the hw_value as an index into our private channel structure */
+ 
+@@ -890,13 +894,15 @@ void ath9k_set_hw_capab(struct ath_softc
+ 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
+ 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
+ 		IEEE80211_HW_SIGNAL_DBM |
+-		IEEE80211_HW_SUPPORTS_PS |
+ 		IEEE80211_HW_PS_NULLFUNC_STACK |
+ 		IEEE80211_HW_SPECTRUM_MGMT |
+ 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
+ 		IEEE80211_HW_SUPPORTS_RC_TABLE |
+ 		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
+ 
++	if (ath9k_ps_enable)
++		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
++
+ 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
+ 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
+ 
+
+
