@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaBTXuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:50:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45312 "EHLO
+	id S932368AbaBUBGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:06:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45329 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557AbaBTXui (ORCPT
+	with ESMTP id S1754557AbaBTXul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:38 -0500
+	Thu, 20 Feb 2014 18:50:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.4 24/25] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Thu, 20 Feb 2014 15:51:40 -0800
-Message-Id: <20140220234843.166325958@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.4 05/25] s390: fix kernel crash due to linkage stack instructions
+Date: Thu, 20 Feb 2014 15:51:21 -0800
+Message-Id: <20140220234842.635275506@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,47 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+The kernel currently crashes with a low-address-protection exception
+if a user space process executes an instruction that tries to use the
+linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
+of the dispatchable-unit-control-table to point to a dummy ASTE.
+Set up control register 15 to point to an empty linkage stack with no
+room left.
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+A user space process with a linkage stack instruction will still crash
+but with a different exception which is correctly translated to a
+segmentation fault instead of a kernel oops.
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
-
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/s390/kernel/head64.S |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2008,6 +2008,13 @@ __rb_reserve_next(struct ring_buffer_per
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+--- a/arch/s390/kernel/head64.S
++++ b/arch/s390/kernel/head64.S
+@@ -61,7 +61,7 @@ ENTRY(startup_continue)
+ 	.quad	0			# cr12: tracing off
+ 	.quad	0			# cr13: home space segment table
+ 	.quad	0xc0000000		# cr14: machine check handling off
+-	.quad	0			# cr15: linkage stack operations
++	.quad	.Llinkage_stack		# cr15: linkage stack operations
+ .Lpcmsk:.quad	0x0000000180000000
+ .L4malign:.quad 0xffffffffffc00000
+ .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
+@@ -69,12 +69,15 @@ ENTRY(startup_continue)
+ .Lparmaddr:
+ 	.quad	PARMAREA
+ 	.align	64
+-.Lduct: .long	0,0,0,0,.Lduald,0,0,0
++.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
+ 	.long	0,0,0,0,0,0,0,0
++.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
+ 	.align	128
+ .Lduald:.rept	8
+ 	.long	0x80000000,0,0,0	# invalid access-list entries
+ 	.endr
++.Llinkage_stack:
++	.long	0,0,0x89000000,0,0,0,0x8a000000,0
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
-+
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
+ ENTRY(_ehead)
+ 
 
 
