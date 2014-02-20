@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaBTAQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:16:29 -0500
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:36012 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbaBTAQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753366AbaBTAQZ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 19 Feb 2014 19:16:25 -0500
-X-AuditID: cbfec37d-b7ff46d000005528-c5-530549588c05
-Message-id: <53054956.4010602@samsung.com>
-Date: Wed, 19 Feb 2014 17:16:22 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, broonie@linaro.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
-References: <20140218224433.337299968@linuxfoundation.org>
-In-reply-to: <20140218224433.337299968@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.5]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hX90IT9Zgg009+hZz1q9hs9h0/Tqr
-	RfPi9WwWl3fNYbP4+tPBYsHGR4wWj/resjuwe+ycdZfd4861PWweJ2b8ZvHYP3cNu8fnTXIB
-	rFFcNimpOZllqUX6dglcGXv2HWIvWMVVcbjvA2sD43yOLkZODgkBE4lVcz4wQthiEhfurWfr
-	YuTiEBJYxijx//AtJginl0mi+cpXZghnA6PE3dUbWUFaeAW0JNYdPQ5mswioStzungE2ik1A
-	XeLz6x3sILaQgJxE05LVzCC2qECExKuzE1kgegUlfky+B2aLCKRLLPq3ggVkAbPACkaJ4y9f
-	soEkhIHuu/PzEVCCA2iQlcS71xUgYU4Ba4mFp1+C7WUGsldO2sYIYctLbF7zlhlir7LEn8un
-	mCBeU5C4sXAZ6wRGkVlIVs9C0j4LSfsCRuZVjGKlxckFxUnpqRUmesWJucWleel6yfm5mxgh
-	kVS7g/H+V5tDjAIcjEo8vBHXWYKFWBPLiitzDzFKcDArifBGs7EGC/GmJFZWpRblxxeV5qQW
-	H2Jk4uCUamD0Xb43cVvKS3eRhDSu05dEgzZOe/BOWEz9Hf/0PRtE0/Yr2Ju6hloGvzcW3lu5
-	6DLDoxT1yebJP/J6GhNX3RCI/i9Y+86sV3KHpM6j0C97FjZZ13/qWXJx+ZGtk5w9Z8XOtW9T
-	27jzhdfV9AU/Utc5eZ9vvf4qRyDo75ELfudYz+QHvP7qcK9UiaU4I9FQi7moOBEAY/TWi4IC	AAA=
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:63582 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636AbaBTANG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 19:13:06 -0500
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk
+Cc: bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 03/12] clk: bcm281xx: change some symbol names
+Date: Wed, 19 Feb 2014 18:12:53 -0600
+Message-Id: <1392855182-21155-4-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392855182-21155-1-git-send-email-elder@linaro.org>
+References: <1392855182-21155-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2014 03:47 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.13.4 release.
-> There are 40 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.4-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+As I developed the bcm281xx clock code I understood there were
+restrictions on device tree "compatible" strings names, and as a
+result "bcm11351" was used in places despite the part family being
+more properly called "bcm281xx".  This can be a little confusing.
 
-Compile tests and boot tests passed.
+In some cases I went to far and needlessly named things using
+"bcm11351" when that was not necessary.
 
-On Intel systems, there are no dmesg regressions: emerg, crit, alert, 
-err are clean. No regressions in warn.
+This patch remedies this.  It renames the symbol used to define the
+"compatible" string (but not its value) so it uses "BCM281XX".
+Similarly, the name names provided to the CLK_OF_DECLARE() macro
+are changed, hoping to minimize the number of places that the
+confusing "11351" string is used.
 
-On AMD systems, the following new error messages - suspect is to 
-drivers/regulator/core.c - patch
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-bcm281xx.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
-3.13.4 - amd:
- > sdhci-pci 0000:02:00.1: dummy supplies not allowed
- > sdhci-pci 0000:02:00.1: dummy supplies not allowed
-drivers/regulator/core.c - patch
-
-Mark Brown <broonie@linaro.org>
-     regulator: core: Correct default return value for full constraints
-
-Is this a problem???
-
--- Shuah
-
+diff --git a/drivers/clk/bcm/clk-bcm281xx.c b/drivers/clk/bcm/clk-bcm281xx.c
+index 3c66de6..bb947af 100644
+--- a/drivers/clk/bcm/clk-bcm281xx.c
++++ b/drivers/clk/bcm/clk-bcm281xx.c
+@@ -15,12 +15,17 @@
+ #include "clk-kona.h"
+ #include "dt-bindings/clock/bcm281xx.h"
+ 
+-/* bcm11351 CCU device tree "compatible" strings */
+-#define BCM11351_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
+-#define BCM11351_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
+-#define BCM11351_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
+-#define BCM11351_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
+-#define BCM11351_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
++/*
++ * These are the bcm281xx CCU device tree "compatible" strings.
++ * We're stuck with using "bcm11351" in the string because wild
++ * cards aren't allowed, and that name was the first one defined
++ * in this family of devices.
++ */
++#define BCM281XX_DT_ROOT_CCU_COMPAT	"brcm,bcm11351-root-ccu"
++#define BCM281XX_DT_AON_CCU_COMPAT	"brcm,bcm11351-aon-ccu"
++#define BCM281XX_DT_HUB_CCU_COMPAT	"brcm,bcm11351-hub-ccu"
++#define BCM281XX_DT_MASTER_CCU_COMPAT	"brcm,bcm11351-master-ccu"
++#define BCM281XX_DT_SLAVE_CCU_COMPAT	"brcm,bcm11351-slave-ccu"
+ 
+ /* Root CCU clocks */
+ 
+@@ -404,13 +409,13 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
+ 	kona_dt_ccu_setup(node, bcm281xx_slave_ccu_clks_setup);
+ }
+ 
+-CLK_OF_DECLARE(bcm11351_root_ccu, BCM11351_DT_ROOT_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_root_ccu, BCM281XX_DT_ROOT_CCU_COMPAT,
+ 			kona_dt_root_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_aon_ccu, BCM11351_DT_AON_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_aon_ccu, BCM281XX_DT_AON_CCU_COMPAT,
+ 			kona_dt_aon_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_hub_ccu, BCM11351_DT_HUB_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_hub_ccu, BCM281XX_DT_HUB_CCU_COMPAT,
+ 			kona_dt_hub_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_master_ccu, BCM11351_DT_MASTER_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_master_ccu, BCM281XX_DT_MASTER_CCU_COMPAT,
+ 			kona_dt_master_ccu_setup);
+-CLK_OF_DECLARE(bcm11351_slave_ccu, BCM11351_DT_SLAVE_CCU_COMPAT,
++CLK_OF_DECLARE(bcm281xx_slave_ccu, BCM281XX_DT_SLAVE_CCU_COMPAT,
+ 			kona_dt_slave_ccu_setup);
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+1.7.9.5
+
