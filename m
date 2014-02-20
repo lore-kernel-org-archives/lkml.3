@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaBTXxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46121 "EHLO
+	id S1756684AbaBUAJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:09:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932166AbaBTXxd (ORCPT
+	with ESMTP id S932182AbaBTXxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:33 -0500
+	Thu, 20 Feb 2014 18:53:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.13 41/99] drm/i915: Pair va_copy with va_end in i915_error_vprintf
-Date: Thu, 20 Feb 2014 15:52:36 -0800
-Message-Id: <20140220235119.409520566@linuxfoundation.org>
+        Steve French <smfrench@gmail.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>
+Subject: [PATCH 3.13 08/99] Add protocol specific operation for CIFS xattrs
+Date: Thu, 20 Feb 2014 15:52:03 -0800
+Message-Id: <20140220235118.450561073@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,43 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+From: Steve French <smfrench@gmail.com>
 
-commit 1d2cb9a54abc6e1d239f28f07661366d5662a94a upstream.
+commit d979f3b0a1f0b5499ab85e68cdf02b56852918b6 upstream.
 
-Each invocation of va_copy() must be matched by a corresponding
-invocation of va_end() in the same function.
+Changeset 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 added protocol
+operations for get/setxattr to avoid calling cifs operations
+on smb2/smb3 mounts for xattr operations and this changeset
+adds the calls to cifs specific protocol operations for xattrs
+(in order to reenable cifs support for xattrs which was
+temporarily disabled by the previous changeset.  We do not
+have SMB2/SMB3 worker function for setting xattrs yet so
+this only enables it for cifs.
 
-This regression has been introduced in
+CCing stable since without these two small changsets (its
+small coreq 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 is
+also needed) calling getfattr/setfattr on smb2/smb3 mounts
+causes problems.
 
-commit e29bb4ebbf000ff9ac081d29784a3331618f012e
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Sep 20 10:20:59 2013 +0100
-
-    drm/i915: Use a temporary va_list for two-pass string handling
-
-Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gpu_error.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/cifs/inode.c   |   13 +++++++++----
+ fs/cifs/smb1ops.c |    4 ++++
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gpu_error.c
-+++ b/drivers/gpu/drm/i915/i915_gpu_error.c
-@@ -146,7 +146,10 @@ static void i915_error_vprintf(struct dr
- 		va_list tmp;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -518,10 +518,15 @@ static int cifs_sfu_mode(struct cifs_fat
+ 		return PTR_ERR(tlink);
+ 	tcon = tlink_tcon(tlink);
  
- 		va_copy(tmp, args);
--		if (!__i915_error_seek(e, vsnprintf(NULL, 0, f, tmp)))
-+		len = vsnprintf(NULL, 0, f, tmp);
-+		va_end(tmp);
+-	rc = CIFSSMBQAllEAs(xid, tcon, path, "SETFILEBITS",
+-			    ea_value, 4 /* size of buf */, cifs_sb->local_nls,
+-			    cifs_sb->mnt_cifs_flags &
+-				CIFS_MOUNT_MAP_SPECIAL_CHR);
++	if (tcon->ses->server->ops->query_all_EAs == NULL) {
++		cifs_put_tlink(tlink);
++		return -EOPNOTSUPP;
++	}
 +
-+		if (!__i915_error_seek(e, len))
- 			return;
- 	}
++	rc = tcon->ses->server->ops->query_all_EAs(xid, tcon, path,
++			"SETFILEBITS", ea_value, 4 /* size of buf */,
++			cifs_sb->local_nls,
++			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	cifs_put_tlink(tlink);
+ 	if (rc < 0)
+ 		return (int)rc;
+--- a/fs/cifs/smb1ops.c
++++ b/fs/cifs/smb1ops.c
+@@ -1011,6 +1011,10 @@ struct smb_version_operations smb1_opera
+ 	.push_mand_locks = cifs_push_mandatory_locks,
+ 	.query_mf_symlink = open_query_close_cifs_symlink,
+ 	.is_read_op = cifs_is_read_op,
++#ifdef CONFIG_CIFS_XATTR
++	.query_all_EAs = CIFSSMBQAllEAs,
++	.set_EA = CIFSSMBSetEA,
++#endif /* CIFS_XATTR */
+ };
  
+ struct smb_version_values smb1_values = {
 
 
