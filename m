@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968AbaBUA2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:28:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45865 "EHLO
+	id S1756995AbaBUA21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:28:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774AbaBTXwl (ORCPT
+	with ESMTP id S1755768AbaBTXwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:41 -0500
+	Thu, 20 Feb 2014 18:52:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
-        Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 3.12 30/82] tty: Set correct tty name in active sysfs attribute
-Date: Thu, 20 Feb 2014 15:52:13 -0800
-Message-Id: <20140220235020.380604978@linuxfoundation.org>
+        David Milburn <dmilburn@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.12 65/82] block: Fix nr_vecs for inline integrity vectors
+Date: Thu, 20 Feb 2014 15:52:48 -0800
+Message-Id: <20140220235021.430688890@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -31,91 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
+commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console.
+Commit 9f060e2231ca changed the way we handle allocations for the
+integrity vectors. When the vectors are inline there is no associated
+slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
+against BIP_INLINE_VECS in that case.
 
-The console structure doesn't refer to any device in sysfs, only the tty
-the console is running on has.  So we need to print out the tty names in
-'active', not the console names.
-
-This resolves an issue on s390 platforms in determining the correct
-console device to use.
-
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
+Reported-by: David Milburn <dmilburn@redhat.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ABI/testing/sysfs-tty |    3 ++-
- drivers/tty/tty_io.c                |   25 ++++++++++++++++++-------
- 2 files changed, 20 insertions(+), 8 deletions(-)
+ fs/bio-integrity.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/Documentation/ABI/testing/sysfs-tty
-+++ b/Documentation/ABI/testing/sysfs-tty
-@@ -3,7 +3,8 @@ Date:		Nov 2010
- Contact:	Kay Sievers <kay.sievers@vrfy.org>
- Description:
- 		 Shows the list of currently configured
--		 console devices, like 'tty1 ttyS0'.
-+		 tty devices used for the console,
-+		 like 'tty1 ttyS0'.
- 		 The last entry in the file is the active
- 		 device connected to /dev/console.
- 		 The file supports poll() to detect virtual
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1267,16 +1267,17 @@ static void pty_line_name(struct tty_dri
-  *	@p: output buffer of at least 7 bytes
-  *
-  *	Generate a name from a driver reference and write it to the output
-- *	buffer.
-+ *	buffer. Return the number of bytes written.
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
  }
+ EXPORT_SYMBOL(bio_integrity_free);
  
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		struct tty_driver *driver;
-+		const char *name = cs[i]->name;
-+		int index = cs[i]->index;
++static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
++{
++	if (bip->bip_slab == BIO_POOL_NONE)
++		return BIP_INLINE_VECS;
 +
-+		driver = cs[i]->device(cs[i], &index);
-+		if (driver) {
-+			count += tty_line_name(driver, index, buf + count);
-+			count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+		} else
-+			count += sprintf(buf + count, "%s%d%c",
-+					 name, index, i ? ' ':'\n');
-+	}
- 	console_unlock();
++	return bvec_nr_vecs(bip->bip_slab);
++}
++
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *b
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
  
- 	return count;
+-	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
++	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
+ 	}
 
 
