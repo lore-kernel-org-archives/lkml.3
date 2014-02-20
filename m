@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaBTUjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:39:53 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:65229 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaBTUjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:39:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <53050244.1020106@citrix.com>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
- <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
- <1392668638.21106.5.camel@dcbw.local> <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
- <1392828325.21976.6.camel@dcbw.local> <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
- <53050244.1020106@citrix.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 20 Feb 2014 12:39:29 -0800
-X-Google-Sender-Auth: 3V2rZCREbKS3Jo1LIMjRuVp2TMw
-Message-ID: <CAB=NE6VswYVF1BOM+vwEh3MaX7sh0gvLqz0U0JoEFDS-EzO9Pg@mail.gmail.com>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Dan Williams <dcbw@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+	id S1753105AbaBTUkc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:40:32 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:53220 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753050AbaBTUka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 15:40:30 -0500
+Date: Thu, 20 Feb 2014 14:40:29 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=UTF-8
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140220204028.GJ17949@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com> <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392927381.20109.0.camel@x230>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:13 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
-> On 19/02/14 17:20, Luis R. Rodriguez wrote:
->>>> On 19/02/14 17:20, Luis R. Rodriguez also wrote:
->>>> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
->>>> backends though <...>
->>
->> As discussed in the other threads though there *is* some use cases
->> of assigning IPv4 or IPv6 addresses to the backend interfaces though:
->> routing them (although its unclear to me if iptables can be used
->> instead, Zoltan?).
->
-> Not with OVS, it steals the packet before netfilter hooks.
+On Thu, Feb 20, 2014 at 08:16:22PM +0000, Matthew Garrett wrote:
+> On Thu, 2014-02-20 at 14:14 -0600, Russ Anderson wrote:
+> 
+> > The distro that added this change created all sorts of support
+> > problems.  Problems include kipmi0 spinning at 100% of cpu
+> > (creating a performance hit) and long boot delays (as the
+> > kernel tries to talk to a BMC that will never respond).
+> > It has been a big mess.
+> 
+> Why is the BMC not responding? Why is kipmi0 at 100%? Why are we not
+> fixing those bugs?
 
-Got it, thanks! Can't the route be added using a front-end IP address
-instead on the host though ? I just tried that on a Xen system and it
-seems to work. Perhaps I'm not understand the exact topology on the
-routing case. So in my case I have the backend without any IPv4 or
-IPv6 interfaces, the guest has IPv4, IPv6 addresses and even a TUN for
-VPN and I can create routes on the host to the front end by not using
-the backend device name but instead using the front-end target IP.
+Why build a driver into the kernel?  The reason ipmi_si is 
+a driver is so systems that want it can load it and systems
+that do not want it do not have to load it.  Plus you can
+stop/start modules without rebooting.  You can change module
+parameters without rebooting.
 
-  Luis
+There are any number of reasons why a BMC may not respond.
+BMCs are notorious for being flakey, with different types
+of BMCs that may or may not be reliable.  You do not want
+to make the kernel boot dependent on an unreliable component.
+
+This is also a problem for systems with functional BMCs.  Our
+large cluster systems do all IPMI traffic (monitoring) through
+a system controller back door.  We do not want the kernel
+doing IPMI commands on those systems.   On those systems we
+simply do not load the ipmi_si module.  Building ipmi_si
+into the kernel means adding kernel boot line options to
+turn ipmi_si back off again.
+
+
+-- 
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
