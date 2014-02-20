@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaBTXvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45418 "EHLO
+	id S932483AbaBUA6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:58:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904AbaBTXvA (ORCPT
+	with ESMTP id S1754944AbaBTXvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:00 -0500
+	Thu, 20 Feb 2014 18:51:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 17/66] iwlwifi: mvm: dont allow A band if SKU forbids it
-Date: Thu, 20 Feb 2014 15:51:16 -0800
-Message-Id: <20140220234909.976811004@linuxfoundation.org>
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.10 30/66] staging: comedi: adv_pci1710: fix analog output readback value
+Date: Thu, 20 Feb 2014 15:51:29 -0800
+Message-Id: <20140220234910.359626560@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,41 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
+commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
 
-The driver wasn't reading the NVM properly. While this
-didn't lead to any issue until now, it seems that there
-is an old version of the NVM in the wild.
-In this version, the A band channels appear to be valid
-but the SKU capabilities (another field of the NVM) says
-that A band isn't supported at all.
-With this specific version of the NVM, the driver would
-think that A band is supported while the HW / firmware
-don't. This leads to asserts.
+The last value written to a analog output channel is cached in the
+private data of this driver for readback.
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Currently, the wrong value is cached in the (*insn_write) functions.
+The current code stores the data[n] value for readback afer the loop
+has written all the values. At this time 'n' points past the end of
+the data array.
+
+Fix the functions by using a local variable to hold the data being
+written to the analog output channel. This variable is then used
+after the loop is complete to store the readback value. The current
+value is retrieved before the loop in case no values are actually
+written..
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/staging/comedi/drivers/adv_pci1710.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-@@ -180,6 +180,11 @@ static int iwl_init_channel_map(struct d
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -489,6 +489,7 @@ static int pci171x_insn_write_ao(struct
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+ 	struct pci1710_private *devpriv = dev->private;
++	unsigned int val;
+ 	int n, chan, range, ofs;
  
- 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
- 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
-+
-+		if (ch_idx >= NUM_2GHZ_CHANNELS &&
-+		    !data->sku_cap_band_52GHz_enable)
-+			ch_flags &= ~NVM_CHANNEL_VALID;
-+
- 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
- 			IWL_DEBUG_EEPROM(dev,
- 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -504,11 +505,14 @@ static int pci171x_insn_write_ao(struct
+ 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
+ 		ofs = PCI171x_DA1;
+ 	}
++	val = devpriv->ao_data[chan];
+ 
+-	for (n = 0; n < insn->n; n++)
+-		outw(data[n], dev->iobase + ofs);
++	for (n = 0; n < insn->n; n++) {
++		val = data[n];
++		outw(val, dev->iobase + ofs);
++	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ 
+@@ -678,6 +682,7 @@ static int pci1720_insn_write_ao(struct
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+ 	struct pci1710_private *devpriv = dev->private;
++	unsigned int val;
+ 	int n, rangereg, chan;
+ 
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -687,13 +692,15 @@ static int pci1720_insn_write_ao(struct
+ 		outb(rangereg, dev->iobase + PCI1720_RANGE);
+ 		devpriv->da_ranges = rangereg;
+ 	}
++	val = devpriv->ao_data[chan];
+ 
+ 	for (n = 0; n < insn->n; n++) {
+-		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
++		val = data[n];
++		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
+ 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
+ 	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ }
 
 
