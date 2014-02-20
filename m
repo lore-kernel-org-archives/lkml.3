@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaBTQJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:09:09 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45596 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaBTQJG (ORCPT
+	id S1755026AbaBTQNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:13:22 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:60787 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564AbaBTQNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:09:06 -0500
-From: Kumar Gala <galak@codeaurora.org>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        svarbanov@mm-sol.com
-Subject: [PATCH v2] hwrng: msm: switch Kconfig to ARCH_QCOM depends
-Date: Thu, 20 Feb 2014 10:09:02 -0600
-Message-Id: <1392912542-5349-1-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 20 Feb 2014 11:13:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
+References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
+	<1392907389-21798-8-git-send-email-geert@linux-m68k.org>
+	<CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
+Date: Thu, 20 Feb 2014 17:13:16 +0100
+X-Google-Sender-Auth: YJ4u7F6X6qb-MfAcHecwwO3bn8A
+Message-ID: <CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
+Subject: Re: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
-driver is only relevant on the multiplatform supported SoCs so switch the
-Kconfig depends to ARCH_QCOM.
+On Thu, Feb 20, 2014 at 4:41 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+> On thing stuck out a bit with the bindings. I can see that you specify
+> both fifo size and use the SoC suffix for the r8a7790 and r8a7791
+> bindings. Isn't that a bit of redundant information there, if we know
+> that the SoC is r8a7790 or r8a7791 then can't we simply put that
+> information in r8a779x_data above and perhaps keep the binding
+> simpler? Perhaps same thing applies to other properties as well?
 
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
----
+"renesas,tx-fifo-size" and "renesas,rx-fifo-size" are part of the existing
+bindings, so I'm a bit reluctant to change these.
+Hmm, since the original bindings didn't specify the default values,
+I could make them chip-specific, though.
 
-Herbert,
+The only other property is "num-cs", which can have any value if you
+start using the generic "cs-gpios".
 
-If you can ack this I'll send it via linux-qcom/arm-soc tree's
+Gr{oetje,eeting}s,
 
-thanks
+                        Geert
 
-v2:
-* Updated help text to remove MSM references, made more generic
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
- drivers/char/hw_random/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
-index 2f2b084..f2b9f8c 100644
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@ -342,11 +342,11 @@ config HW_RANDOM_TPM
- 	  If unsure, say Y.
- 
- config HW_RANDOM_MSM
--	tristate "Qualcomm MSM Random Number Generator support"
--	depends on HW_RANDOM && ARCH_MSM
-+	tristate "Qualcomm ARM SoCs Random Number Generator support"
-+	depends on HW_RANDOM && ARCH_QCOM
- 	---help---
- 	  This driver provides kernel-side support for the Random Number
--	  Generator hardware found on Qualcomm MSM SoCs.
-+	  Generator hardware found on Qualcomm ARM SoCs.
- 
- 	  To compile this driver as a module, choose M here. the
- 	  module will be called msm-rng.
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
