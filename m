@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaBTXxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45966 "EHLO
+	id S1756387AbaBUASA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:18:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083AbaBTXxB (ORCPT
+	with ESMTP id S932083AbaBTXxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:01 -0500
+	Thu, 20 Feb 2014 18:53:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 70/82] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
-Date: Thu, 20 Feb 2014 15:52:53 -0800
-Message-Id: <20140220235021.580818485@linuxfoundation.org>
+        Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.13 20/99] nl80211: Reset split_start when netlink skb is exhausted
+Date: Thu, 20 Feb 2014 15:52:15 -0800
+Message-Id: <20140220235118.799453587@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+References: <20140220235118.191692546@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,49 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+commit f12cb2893069495726c21a4b0178705dacfecfe0 upstream.
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+When the netlink skb is exhausted split_start is left set. In the
+subsequent retry, with a larger buffer, the dump is continued from the
+failing point instead of from the beginning.
 
-I also did a little cleanup like removing an impossible NULL test.
+This was causing my rt28xx based USB dongle to now show up when
+running "iw list" with an old iw version without split dump support.
 
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Fixes: 3713b4e364ef ("nl80211: allow splitting wiphy information in dumps")
+Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+[avoid the entire workaround when state->split is set]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/coalesced_mmio.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ net/wireless/nl80211.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
- 
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1677,9 +1677,10 @@ static int nl80211_dump_wiphy(struct sk_
+ 				 * We can then retry with the larger buffer.
+ 				 */
+ 				if ((ret == -ENOBUFS || ret == -EMSGSIZE) &&
+-				    !skb->len &&
++				    !skb->len && !state->split &&
+ 				    cb->min_dump_alloc < 4096) {
+ 					cb->min_dump_alloc = 4096;
++					state->split_start = 0;
+ 					rtnl_unlock();
+ 					return 1;
+ 				}
 
 
