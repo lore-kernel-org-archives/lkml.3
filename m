@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaBUADD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:03:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46258 "EHLO
+	id S1753859AbaBUADX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:03:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46241 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042AbaBTXyD (ORCPT
+	with ESMTP id S1756036AbaBTXyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:03 -0500
+	Thu, 20 Feb 2014 18:54:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.13 75/99] Revert "xhci: Set scatter-gather limit to avoid failed block writes."
-Date: Thu, 20 Feb 2014 15:53:10 -0800
-Message-Id: <20140220235120.379861609@linuxfoundation.org>
+        Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Subject: [PATCH 3.13 72/99] usb: option: blacklist ZTE MF667 net interface
+Date: Thu, 20 Feb 2014 15:53:07 -0800
+Message-Id: <20140220235120.287933356@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,49 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
 
-commit 1386ff75797a187df324062fb4e929152392da88 upstream.
+commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d upstream.
 
-This reverts commit f2d9b991c549f159dc9ae81f77d8206c790cbfee.
+Interface #5 of 19d2:1270 is a net interface which has been submitted to the
+qmi_wwan driver so consequently remove it from the option driver.
 
-We are ripping out commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e "usb:
-xhci: Link TRB must not occur within a USB payload burst" because it's a
-hack that caused regressions in the usb-storage and userspace USB
-drivers that use usbfs and libusb.  This commit attempted to fix the
-issues with that patch.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    4 ++--
- drivers/usb/host/xhci.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4716,8 +4716,8 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 	struct device		*dev = hcd->self.controller;
- 	int			retval;
- 
--	/* Limit the block layer scatter-gather lists to half a segment. */
--	hcd->self.sg_tablesize = TRBS_PER_SEGMENT / 2;
-+	/* Accept arbitrarily long scatter-gather lists */
-+	hcd->self.sg_tablesize = ~0;
- 
- 	/* XHCI controllers don't stop the ep queue on short packets :| */
- 	hcd->self.no_stop_on_short = 1;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1260,7 +1260,7 @@ union xhci_trb {
-  * since the command ring is 64-byte aligned.
-  * It must also be greater than 16.
-  */
--#define TRBS_PER_SEGMENT	256
-+#define TRBS_PER_SEGMENT	64
- /* Allow two commands + a link TRB, along with any reserved command TRBs */
- #define MAX_RSVD_CMD_TRBS	(TRBS_PER_SEGMENT - 3)
- #define TRB_SEGMENT_SIZE	(TRBS_PER_SEGMENT*16)
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1362,7 +1362,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
 
 
