@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756997AbaBUAel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:34:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45779 "EHLO
+	id S1757032AbaBUAe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:34:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45757 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaBTXwW (ORCPT
+	with ESMTP id S1755587AbaBTXwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:22 -0500
+	Thu, 20 Feb 2014 18:52:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.12 28/82] lockd: send correct lock when granting a delayed lock.
-Date: Thu, 20 Feb 2014 15:52:11 -0800
-Message-Id: <20140220235020.324096844@linuxfoundation.org>
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.12 41/82] iio: adis16400: Set timestamp as the last element in chan_spec
+Date: Thu, 20 Feb 2014 15:52:24 -0800
+Message-Id: <20140220235020.704564949@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,70 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
 
-commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
+commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
 
-If an NFS client attempts to get a lock (using NLM) and the lock is
-not available, the server will remember the request and when the lock
-becomes available it will send a GRANT request to the client to
-provide the lock.
+This is necessary since timestamp is calculated as the last element
+in iio_compute_scan_bytes().
 
-If the client already held an adjacent lock, the GRANT callback will
-report the union of the existing and new locks, which can confuse the
-client.
+Without this fix any userspace code reading the layout of the buffer via
+sysfs will incorrectly interpret the data leading some nasty corruption.
 
-This happens because __posix_lock_file (called by vfs_lock_file)
-updates the passed-in file_lock structure when adjacent or
-over-lapping locks are found.
-
-To avoid this problem we take a copy of the two fields that can
-be changed (fl_start and fl_end) before the call and restore them
-afterwards.
-An alternate would be to allocate a 'struct file_lock', initialise it,
-use locks_copy_lock() to take a copy, then locks_release_private()
-after the vfs_lock_file() call.  But that is a lot more work.
-
-Reported-by: Olaf Kirch <okir@suse.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-v1 had a couple of issues (large on-stack struct and didn't really work properly).
-This version is much better tested.
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
 ---
- fs/lockd/svclock.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/iio/imu/adis16400.h      |    1 +
+ drivers/iio/imu/adis16400_core.c |   10 +++++-----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -779,6 +779,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
- 	struct nlm_file		*file = block->b_file;
- 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
- 	int			error;
-+	loff_t			fl_start, fl_end;
+--- a/drivers/iio/imu/adis16400.h
++++ b/drivers/iio/imu/adis16400.h
+@@ -189,6 +189,7 @@ enum {
+ 	ADIS16300_SCAN_INCLI_X,
+ 	ADIS16300_SCAN_INCLI_Y,
+ 	ADIS16400_SCAN_ADC,
++	ADIS16400_SCAN_TIMESTAMP,
+ };
  
- 	dprintk("lockd: grant blocked lock %p\n", block);
+ #ifdef CONFIG_IIO_BUFFER
+--- a/drivers/iio/imu/adis16400_core.c
++++ b/drivers/iio/imu/adis16400_core.c
+@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
+ 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
+ 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(12)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
  
-@@ -796,9 +797,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
- 	}
+ static const struct iio_chan_spec adis16448_channels[] = {
+@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16
+ 		},
+ 	},
+ 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(11)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
  
- 	/* Try the lock operation again */
-+	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
-+	 * them unchanged for the GRANT_MSG
-+	 */
- 	lock->fl.fl_flags |= FL_SLEEP;
-+	fl_start = lock->fl.fl_start;
-+	fl_end = lock->fl.fl_end;
- 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
- 	lock->fl.fl_flags &= ~FL_SLEEP;
-+	lock->fl.fl_start = fl_start;
-+	lock->fl.fl_end = fl_end;
+ static const struct iio_chan_spec adis16350_channels[] = {
+@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
+ 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
+ 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(11)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
  
- 	switch (error) {
- 	case 0:
+ static const struct iio_chan_spec adis16300_channels[] = {
+@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
+ 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
+ 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
+-	IIO_CHAN_SOFT_TIMESTAMP(14)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static const struct iio_chan_spec adis16334_channels[] = {
+@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16
+ 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
+ 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
+ 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
+-	IIO_CHAN_SOFT_TIMESTAMP(8)
++	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
+ };
+ 
+ static struct attribute *adis16400_attributes[] = {
 
 
