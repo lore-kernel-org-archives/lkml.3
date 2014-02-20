@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726AbaBUALw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:11:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46097 "EHLO
+	id S1756001AbaBTXx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46078 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbaBTXx3 (ORCPT
+	with ESMTP id S1755940AbaBTXxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:29 -0500
+	Thu, 20 Feb 2014 18:53:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 37/99] drm/radeon: fix UVD IRQ support on 7xx
-Date: Thu, 20 Feb 2014 15:52:32 -0800
-Message-Id: <20140220235119.298706715@linuxfoundation.org>
+        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.13 33/99] lockd: send correct lock when granting a delayed lock.
+Date: Thu, 20 Feb 2014 15:52:28 -0800
+Message-Id: <20140220235119.181131524@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,31 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 858a41c853cef2cb01de34dae334c19c1c15b237 upstream.
+commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
 
-Otherwise decoding isn't really useable.
+If an NFS client attempts to get a lock (using NLM) and the lock is
+not available, the server will remember the request and when the lock
+becomes available it will send a GRANT request to the client to
+provide the lock.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+If the client already held an adjacent lock, the GRANT callback will
+report the union of the existing and new locks, which can confuse the
+client.
+
+This happens because __posix_lock_file (called by vfs_lock_file)
+updates the passed-in file_lock structure when adjacent or
+over-lapping locks are found.
+
+To avoid this problem we take a copy of the two fields that can
+be changed (fl_start and fl_end) before the call and restore them
+afterwards.
+An alternate would be to allocate a 'struct file_lock', initialise it,
+use locks_copy_lock() to take a copy, then locks_release_private()
+after the vfs_lock_file() call.  But that is a lot more work.
+
+Reported-by: Olaf Kirch <okir@suse.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/gpu/drm/radeon/r600.c |    4 ++++
- 1 file changed, 4 insertions(+)
+--
+v1 had a couple of issues (large on-stack struct and didn't really work properly).
+This version is much better tested.
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3904,6 +3904,10 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 124: /* UVD */
-+			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
-+			radeon_fence_process(rdev, R600_RING_TYPE_UVD_INDEX);
-+			break;
- 		case 176: /* CP_INT in ring buffer */
- 		case 177: /* CP_INT in IB1 */
- 		case 178: /* CP_INT in IB2 */
+---
+ fs/lockd/svclock.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -779,6 +779,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	struct nlm_file		*file = block->b_file;
+ 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
+ 	int			error;
++	loff_t			fl_start, fl_end;
+ 
+ 	dprintk("lockd: grant blocked lock %p\n", block);
+ 
+@@ -796,9 +797,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	}
+ 
+ 	/* Try the lock operation again */
++	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
++	 * them unchanged for the GRANT_MSG
++	 */
+ 	lock->fl.fl_flags |= FL_SLEEP;
++	fl_start = lock->fl.fl_start;
++	fl_end = lock->fl.fl_end;
+ 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
+ 	lock->fl.fl_flags &= ~FL_SLEEP;
++	lock->fl.fl_start = fl_start;
++	lock->fl.fl_end = fl_end;
+ 
+ 	switch (error) {
+ 	case 0:
 
 
