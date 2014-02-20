@@ -1,62 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaBTVY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:24:56 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:53630 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751286AbaBTVYz (ORCPT
+	id S1753221AbaBTVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:25:57 -0500
+Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:57094 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751722AbaBTVZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:24:55 -0500
-Message-ID: <1392931493.15264.17.camel@x220>
-Subject: Re: [PATCH] drm/radeon: silence GCC warning on 32 bit
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Christian =?ISO-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 20 Feb 2014 22:24:53 +0100
-In-Reply-To: <CAKb7Uvg=U+b0d2uBM3rrXzotdCM=VZsJ0ArPU82Nzy95S=WZRw@mail.gmail.com>
-References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
-	 <1391085212.5170.9.camel@x41> <1392930177.15264.5.camel@x220>
-	 <CAKb7Uvg=U+b0d2uBM3rrXzotdCM=VZsJ0ArPU82Nzy95S=WZRw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
+	Thu, 20 Feb 2014 16:25:55 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:4:41:355:379:541:800:960:966:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1593:1594:1605:1730:1747:1777:1792:1981:2194:2196:2199:2200:2393:2559:2562:2640:2729:2828:2895:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3874:4225:4250:4321:4385:4605:5007:6117:6119:7652:7875:7903:8603:9592:10004:10848:11026:11232:11233:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sort85_507a570c2d027
+X-Filterd-Recvd-Size: 15117
+Message-ID: <1392931551.2594.9.camel@joe-AO722>
+Subject: [PATCH net-next] bnx2x: Remove hidden flow control goto from
+ BNX2X_ALLOC macros
+From: Joe Perches <joe@perches.com>
+To: Ariel Elior <ariele@broadcom.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Feb 2014 13:25:51 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Feb 2014 21:24:54.0300 (UTC) FILETIME=[3262DDC0:01CF2E82]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-20 at 16:07 -0500, Ilia Mirkin wrote:
-> On Thu, Feb 20, 2014 at 4:02 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > @@ -935,7 +935,7 @@ static ssize_t radeon_ttm_gtt_read(struct file *f, char __user *buf,
-> >         while (size) {
-> >                 loff_t p = *pos / PAGE_SIZE;
-> >                 unsigned off = *pos & ~PAGE_MASK;
-> > -               ssize_t cur_size = min(size, PAGE_SIZE - off);
-> > +               ssize_t cur_size = min(size, (size_t)(PAGE_SIZE - off));
-> 
-> Isn't the usual way of dealing with these to do something like
-> 
-> ssize_t cur_size = min_t(ssize_t, size, PAGE_SIZE - off)
+BNX2X_ALLOC macros use "goto alloc_mem_err"
+so these labels appear unused in some functions.
 
-I wouldn't know. I did
-    $ git grep -n "(size_t)(PAGE_SIZE"
-    arch/powerpc/mm/dma-noncoherent.c:357:  size_t seg_size = min((size_t)(PAGE_SIZE - offset), size);
-    arch/tile/kernel/pci-dma.c:176: size_t bytes = min(size, (size_t)(PAGE_SIZE - offset));
-    arch/tile/kernel/pci-dma.c:192: size_t bytes = min(size, (size_t)(PAGE_SIZE - offset));
-    drivers/net/wireless/ti/wlcore/main.c:806:      len = min(maxlen, (size_t)(PAGE_SIZE - wl->fwlog_size));
-    drivers/scsi/libfc/fc_libfc.c:143:                             (size_t)(PAGE_SIZE - (off & ~PAGE_MASK)));
-    drivers/target/tcm_fc/tfc_io.c:160:                     tlen = min(tlen, (size_t)(PAGE_SIZE -
-    drivers/target/tcm_fc/tfc_io.c:311:             tlen = min(tlen, (size_t)(PAGE_SIZE -
+Expand these macros in-place via coccinelle and
+some typing.
 
-and concluded my solution was acceptable. Is your alternative considered
-to be better?
+Update the macros to use statement expressions
+and remove the BNX2X_ALLOC macro.
 
+This adds some > 80 char lines.
 
-Paul Bolle
+$ cat bnx2x_pci_alloc.cocci
+@@
+expression e1;
+expression e2;
+expression e3;
+@@
+-	BNX2X_PCI_ALLOC(e1, e2, e3);
++	e1 = BNX2X_PCI_ALLOC(e2, e3); if (!e1) goto alloc_mem_err;
+
+@@
+expression e1;
+expression e2;
+expression e3;
+@@
+-	BNX2X_PCI_FALLOC(e1, e2, e3);
++	e1 = BNX2X_PCI_FALLOC(e2, e3); if (!e1) goto alloc_mem_err;
+
+@@
+expression e1;
+expression e2;
+@@
+-	BNX2X_ALLOC(e1, e2);
++	e1 = kzalloc(e2, GFP_KERNEL); if (!e1) goto alloc_mem_err;
+
+@@
+expression e1;
+expression e2;
+expression e3;
+@@
+-	kzalloc(sizeof(e1) * e2, e3)
++	kcalloc(e2, sizeof(e1), e3)
+
+@@
+expression e1;
+expression e2;
+expression e3;
+@@
+-	kzalloc(e1 * sizeof(e2), e3)
++	kcalloc(e1, sizeof(e2), e3)
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   | 77 ++++++++++++++---------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h   | 45 ++++++-------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c  | 69 +++++++++++++-------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c | 36 +++++++----
+ 4 files changed, 138 insertions(+), 89 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 5ee13af..89d75c2 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -2228,8 +2228,10 @@ static int bnx2x_alloc_fw_stats_mem(struct bnx2x *bp)
+ 		sizeof(struct per_queue_stats) * num_queue_stats +
+ 		sizeof(struct stats_counter);
+ 
+-	BNX2X_PCI_ALLOC(bp->fw_stats, &bp->fw_stats_mapping,
+-			bp->fw_stats_data_sz + bp->fw_stats_req_sz);
++	bp->fw_stats = BNX2X_PCI_ALLOC(&bp->fw_stats_mapping,
++				       bp->fw_stats_data_sz + bp->fw_stats_req_sz);
++	if (!bp->fw_stats)
++		goto alloc_mem_err;
+ 
+ 	/* Set shortcuts */
+ 	bp->fw_stats_req = (struct bnx2x_fw_stats_req *)bp->fw_stats;
+@@ -4357,14 +4359,17 @@ static int bnx2x_alloc_fp_mem_at(struct bnx2x *bp, int index)
+ 
+ 	if (!IS_FCOE_IDX(index)) {
+ 		/* status blocks */
+-		if (!CHIP_IS_E1x(bp))
+-			BNX2X_PCI_ALLOC(sb->e2_sb,
+-				&bnx2x_fp(bp, index, status_blk_mapping),
+-				sizeof(struct host_hc_status_block_e2));
+-		else
+-			BNX2X_PCI_ALLOC(sb->e1x_sb,
+-				&bnx2x_fp(bp, index, status_blk_mapping),
+-			    sizeof(struct host_hc_status_block_e1x));
++		if (!CHIP_IS_E1x(bp)) {
++			sb->e2_sb = BNX2X_PCI_ALLOC(&bnx2x_fp(bp, index, status_blk_mapping),
++						    sizeof(struct host_hc_status_block_e2));
++			if (!sb->e2_sb)
++				goto alloc_mem_err;
++		} else {
++			sb->e1x_sb = BNX2X_PCI_ALLOC(&bnx2x_fp(bp, index, status_blk_mapping),
++						     sizeof(struct host_hc_status_block_e1x));
++			if (!sb->e1x_sb)
++				goto alloc_mem_err;
++		}
+ 	}
+ 
+ 	/* FCoE Queue uses Default SB and doesn't ACK the SB, thus no need to
+@@ -4383,35 +4388,49 @@ static int bnx2x_alloc_fp_mem_at(struct bnx2x *bp, int index)
+ 			   "allocating tx memory of fp %d cos %d\n",
+ 			   index, cos);
+ 
+-			BNX2X_ALLOC(txdata->tx_buf_ring,
+-				sizeof(struct sw_tx_bd) * NUM_TX_BD);
+-			BNX2X_PCI_ALLOC(txdata->tx_desc_ring,
+-				&txdata->tx_desc_mapping,
+-				sizeof(union eth_tx_bd_types) * NUM_TX_BD);
++			txdata->tx_buf_ring = kcalloc(NUM_TX_BD,
++						      sizeof(struct sw_tx_bd),
++						      GFP_KERNEL);
++			if (!txdata->tx_buf_ring)
++				goto alloc_mem_err;
++			txdata->tx_desc_ring = BNX2X_PCI_ALLOC(&txdata->tx_desc_mapping,
++							       sizeof(union eth_tx_bd_types) * NUM_TX_BD);
++			if (!txdata->tx_desc_ring)
++				goto alloc_mem_err;
+ 		}
+ 	}
+ 
+ 	/* Rx */
+ 	if (!skip_rx_queue(bp, index)) {
+ 		/* fastpath rx rings: rx_buf rx_desc rx_comp */
+-		BNX2X_ALLOC(bnx2x_fp(bp, index, rx_buf_ring),
+-				sizeof(struct sw_rx_bd) * NUM_RX_BD);
+-		BNX2X_PCI_ALLOC(bnx2x_fp(bp, index, rx_desc_ring),
+-				&bnx2x_fp(bp, index, rx_desc_mapping),
+-				sizeof(struct eth_rx_bd) * NUM_RX_BD);
++		bnx2x_fp(bp, index, rx_buf_ring) =
++			kcalloc(NUM_RX_BD, sizeof(struct sw_rx_bd), GFP_KERNEL);
++		if (!bnx2x_fp(bp, index, rx_buf_ring))
++			goto alloc_mem_err;
++		bnx2x_fp(bp, index, rx_desc_ring) =
++			BNX2X_PCI_ALLOC(&bnx2x_fp(bp, index, rx_desc_mapping),
++					sizeof(struct eth_rx_bd) * NUM_RX_BD);
++		if (!bnx2x_fp(bp, index, rx_desc_ring))
++			goto alloc_mem_err;
+ 
+ 		/* Seed all CQEs by 1s */
+-		BNX2X_PCI_FALLOC(bnx2x_fp(bp, index, rx_comp_ring),
+-				 &bnx2x_fp(bp, index, rx_comp_mapping),
+-				 sizeof(struct eth_fast_path_rx_cqe) *
+-				 NUM_RCQ_BD);
++		bnx2x_fp(bp, index, rx_comp_ring) =
++			BNX2X_PCI_FALLOC(&bnx2x_fp(bp, index, rx_comp_mapping),
++					 sizeof(struct eth_fast_path_rx_cqe) * NUM_RCQ_BD);
++		if (!bnx2x_fp(bp, index, rx_comp_ring))
++			goto alloc_mem_err;
+ 
+ 		/* SGE ring */
+-		BNX2X_ALLOC(bnx2x_fp(bp, index, rx_page_ring),
+-				sizeof(struct sw_rx_page) * NUM_RX_SGE);
+-		BNX2X_PCI_ALLOC(bnx2x_fp(bp, index, rx_sge_ring),
+-				&bnx2x_fp(bp, index, rx_sge_mapping),
+-				BCM_PAGE_SIZE * NUM_RX_SGE_PAGES);
++		bnx2x_fp(bp, index, rx_page_ring) =
++			kcalloc(NUM_RX_SGE, sizeof(struct sw_rx_page),
++				GFP_KERNEL);
++		if (!bnx2x_fp(bp, index, rx_page_ring))
++			goto alloc_mem_err;
++		bnx2x_fp(bp, index, rx_sge_ring) =
++			BNX2X_PCI_ALLOC(&bnx2x_fp(bp, index, rx_sge_mapping),
++					BCM_PAGE_SIZE * NUM_RX_SGE_PAGES);
++		if (!bnx2x_fp(bp, index, rx_sge_ring))
++			goto alloc_mem_err;
+ 		/* RX BD ring */
+ 		bnx2x_set_next_page_rx_bd(fp);
+ 
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
+index ec02b15..05f4f5f 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
+@@ -47,31 +47,26 @@ extern int bnx2x_num_queues;
+ 		} \
+ 	} while (0)
+ 
+-#define BNX2X_PCI_ALLOC(x, y, size) \
+-	do { \
+-		x = dma_zalloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
+-		if (x == NULL) \
+-			goto alloc_mem_err; \
+-		DP(NETIF_MSG_HW, "BNX2X_PCI_ALLOC: Physical %Lx Virtual %p\n", \
+-		   (unsigned long long)(*y), x); \
+-	} while (0)
+-
+-#define BNX2X_PCI_FALLOC(x, y, size) \
+-	do { \
+-		x = dma_alloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
+-		if (x == NULL) \
+-			goto alloc_mem_err; \
+-		memset((void *)x, 0xFFFFFFFF, size); \
+-		DP(NETIF_MSG_HW, "BNX2X_PCI_FALLOC: Physical %Lx Virtual %p\n",\
+-		   (unsigned long long)(*y), x); \
+-	} while (0)
+-
+-#define BNX2X_ALLOC(x, size) \
+-	do { \
+-		x = kzalloc(size, GFP_KERNEL); \
+-		if (x == NULL) \
+-			goto alloc_mem_err; \
+-	} while (0)
++#define BNX2X_PCI_ALLOC(y, size)					\
++({									\
++	void *x = dma_zalloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
++	if (x)								\
++		DP(NETIF_MSG_HW,					\
++		   "BNX2X_PCI_ALLOC: Physical %Lx Virtual %p\n",	\
++		   (unsigned long long)(*y), x);			\
++	x;								\
++})
++#define BNX2X_PCI_FALLOC(y, size)					\
++({									\
++	void *x = dma_alloc_coherent(&bp->pdev->dev, size, y, GFP_KERNEL); \
++	if (x) {							\
++		memset(x, 0xff, size);					\
++		DP(NETIF_MSG_HW,					\
++		   "BNX2X_PCI_FALLOC: Physical %Lx Virtual %p\n",	\
++		   (unsigned long long)(*y), x);			\
++	}								\
++	x;								\
++})
+ 
+ /*********************** Interfaces ****************************
+  *  Functions that need to be implemented by each driver version
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 8443915..230dea6 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -8001,19 +8001,25 @@ void bnx2x_free_mem(struct bnx2x *bp)
+ 
+ int bnx2x_alloc_mem_cnic(struct bnx2x *bp)
+ {
+-	if (!CHIP_IS_E1x(bp))
++	if (!CHIP_IS_E1x(bp)) {
+ 		/* size = the status block + ramrod buffers */
+-		BNX2X_PCI_ALLOC(bp->cnic_sb.e2_sb, &bp->cnic_sb_mapping,
+-				sizeof(struct host_hc_status_block_e2));
+-	else
+-		BNX2X_PCI_ALLOC(bp->cnic_sb.e1x_sb,
+-				&bp->cnic_sb_mapping,
+-				sizeof(struct
+-				       host_hc_status_block_e1x));
++		bp->cnic_sb.e2_sb = BNX2X_PCI_ALLOC(&bp->cnic_sb_mapping,
++						    sizeof(struct host_hc_status_block_e2));
++		if (!bp->cnic_sb.e2_sb)
++			goto alloc_mem_err;
++	} else {
++		bp->cnic_sb.e1x_sb = BNX2X_PCI_ALLOC(&bp->cnic_sb_mapping,
++						     sizeof(struct host_hc_status_block_e1x));
++		if (!bp->cnic_sb.e1x_sb)
++			goto alloc_mem_err;
++	}
+ 
+-	if (CONFIGURE_NIC_MODE(bp) && !bp->t2)
++	if (CONFIGURE_NIC_MODE(bp) && !bp->t2) {
+ 		/* allocate searcher T2 table, as it wasn't allocated before */
+-		BNX2X_PCI_ALLOC(bp->t2, &bp->t2_mapping, SRC_T2_SZ);
++		bp->t2 = BNX2X_PCI_ALLOC(&bp->t2_mapping, SRC_T2_SZ);
++		if (!bp->t2)
++			goto alloc_mem_err;
++	}
+ 
+ 	/* write address to which L5 should insert its values */
+ 	bp->cnic_eth_dev.addr_drv_info_to_mcp =
+@@ -8034,15 +8040,22 @@ int bnx2x_alloc_mem(struct bnx2x *bp)
+ {
+ 	int i, allocated, context_size;
+ 
+-	if (!CONFIGURE_NIC_MODE(bp) && !bp->t2)
++	if (!CONFIGURE_NIC_MODE(bp) && !bp->t2) {
+ 		/* allocate searcher T2 table */
+-		BNX2X_PCI_ALLOC(bp->t2, &bp->t2_mapping, SRC_T2_SZ);
++		bp->t2 = BNX2X_PCI_ALLOC(&bp->t2_mapping, SRC_T2_SZ);
++		if (!bp->t2)
++			goto alloc_mem_err;
++	}
+ 
+-	BNX2X_PCI_ALLOC(bp->def_status_blk, &bp->def_status_blk_mapping,
+-			sizeof(struct host_sp_status_block));
++	bp->def_status_blk = BNX2X_PCI_ALLOC(&bp->def_status_blk_mapping,
++					     sizeof(struct host_sp_status_block));
++	if (!bp->def_status_blk)
++		goto alloc_mem_err;
+ 
+-	BNX2X_PCI_ALLOC(bp->slowpath, &bp->slowpath_mapping,
+-			sizeof(struct bnx2x_slowpath));
++	bp->slowpath = BNX2X_PCI_ALLOC(&bp->slowpath_mapping,
++				       sizeof(struct bnx2x_slowpath));
++	if (!bp->slowpath)
++		goto alloc_mem_err;
+ 
+ 	/* Allocate memory for CDU context:
+ 	 * This memory is allocated separately and not in the generic ILT
+@@ -8062,12 +8075,16 @@ int bnx2x_alloc_mem(struct bnx2x *bp)
+ 	for (i = 0, allocated = 0; allocated < context_size; i++) {
+ 		bp->context[i].size = min(CDU_ILT_PAGE_SZ,
+ 					  (context_size - allocated));
+-		BNX2X_PCI_ALLOC(bp->context[i].vcxt,
+-				&bp->context[i].cxt_mapping,
+-				bp->context[i].size);
++		bp->context[i].vcxt = BNX2X_PCI_ALLOC(&bp->context[i].cxt_mapping,
++						      bp->context[i].size);
++		if (!bp->context[i].vcxt)
++			goto alloc_mem_err;
+ 		allocated += bp->context[i].size;
+ 	}
+-	BNX2X_ALLOC(bp->ilt->lines, sizeof(struct ilt_line) * ILT_MAX_LINES);
++	bp->ilt->lines = kcalloc(ILT_MAX_LINES, sizeof(struct ilt_line),
++				 GFP_KERNEL);
++	if (!bp->ilt->lines)
++		goto alloc_mem_err;
+ 
+ 	if (bnx2x_ilt_mem_op(bp, ILT_MEMOP_ALLOC))
+ 		goto alloc_mem_err;
+@@ -8076,11 +8093,15 @@ int bnx2x_alloc_mem(struct bnx2x *bp)
+ 		goto alloc_mem_err;
+ 
+ 	/* Slow path ring */
+-	BNX2X_PCI_ALLOC(bp->spq, &bp->spq_mapping, BCM_PAGE_SIZE);
++	bp->spq = BNX2X_PCI_ALLOC(&bp->spq_mapping, BCM_PAGE_SIZE);
++	if (!bp->spq)
++		goto alloc_mem_err;
+ 
+ 	/* EQ */
+-	BNX2X_PCI_ALLOC(bp->eq_ring, &bp->eq_mapping,
+-			BCM_PAGE_SIZE * NUM_EQ_PAGES);
++	bp->eq_ring = BNX2X_PCI_ALLOC(&bp->eq_mapping,
++				      BCM_PAGE_SIZE * NUM_EQ_PAGES);
++	if (!bp->eq_ring)
++		goto alloc_mem_err;
+ 
+ 	return 0;
+ 
+@@ -11954,7 +11975,7 @@ static int bnx2x_init_mcast_macs_list(struct bnx2x *bp,
+ {
+ 	int mc_count = netdev_mc_count(bp->dev);
+ 	struct bnx2x_mcast_list_elem *mc_mac =
+-		kzalloc(sizeof(*mc_mac) * mc_count, GFP_ATOMIC);
++		kcalloc(mc_count, sizeof(*mc_mac), GFP_ATOMIC);
+ 	struct netdev_hw_addr *ha;
+ 
+ 	if (!mc_mac)
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+index 98b5367..61e6f60 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+@@ -2120,7 +2120,9 @@ int bnx2x_iov_alloc_mem(struct bnx2x *bp)
+ 		cxt->size = min_t(size_t, tot_size, CDU_ILT_PAGE_SZ);
+ 
+ 		if (cxt->size) {
+-			BNX2X_PCI_ALLOC(cxt->addr, &cxt->mapping, cxt->size);
++			cxt->addr = BNX2X_PCI_ALLOC(&cxt->mapping, cxt->size);
++			if (!cxt->addr)
++				goto alloc_mem_err;
+ 		} else {
+ 			cxt->addr = NULL;
+ 			cxt->mapping = 0;
+@@ -2130,20 +2132,28 @@ int bnx2x_iov_alloc_mem(struct bnx2x *bp)
+ 
+ 	/* allocate vfs ramrods dma memory - client_init and set_mac */
+ 	tot_size = BNX2X_NR_VIRTFN(bp) * sizeof(struct bnx2x_vf_sp);
+-	BNX2X_PCI_ALLOC(BP_VFDB(bp)->sp_dma.addr, &BP_VFDB(bp)->sp_dma.mapping,
+-			tot_size);
++	BP_VFDB(bp)->sp_dma.addr = BNX2X_PCI_ALLOC(&BP_VFDB(bp)->sp_dma.mapping,
++						   tot_size);
++	if (!BP_VFDB(bp)->sp_dma.addr)
++		goto alloc_mem_err;
+ 	BP_VFDB(bp)->sp_dma.size = tot_size;
+ 
+ 	/* allocate mailboxes */
+ 	tot_size = BNX2X_NR_VIRTFN(bp) * MBX_MSG_ALIGNED_SIZE;
+-	BNX2X_PCI_ALLOC(BP_VF_MBX_DMA(bp)->addr, &BP_VF_MBX_DMA(bp)->mapping,
+-			tot_size);
++	BP_VF_MBX_DMA(bp)->addr = BNX2X_PCI_ALLOC(&BP_VF_MBX_DMA(bp)->mapping,
++						  tot_size);
++	if (!BP_VF_MBX_DMA(bp)->addr)
++		goto alloc_mem_err;
++
+ 	BP_VF_MBX_DMA(bp)->size = tot_size;
+ 
+ 	/* allocate local bulletin boards */
+ 	tot_size = BNX2X_NR_VIRTFN(bp) * BULLETIN_CONTENT_SIZE;
+-	BNX2X_PCI_ALLOC(BP_VF_BULLETIN_DMA(bp)->addr,
+-			&BP_VF_BULLETIN_DMA(bp)->mapping, tot_size);
++	BP_VF_BULLETIN_DMA(bp)->addr = BNX2X_PCI_ALLOC(&BP_VF_BULLETIN_DMA(bp)->mapping,
++						       tot_size);
++	if (!BP_VF_BULLETIN_DMA(bp)->addr)
++		goto alloc_mem_err;
++
+ 	BP_VF_BULLETIN_DMA(bp)->size = tot_size;
+ 
+ 	return 0;
+@@ -3825,12 +3835,16 @@ int bnx2x_vf_pci_alloc(struct bnx2x *bp)
+ 	mutex_init(&bp->vf2pf_mutex);
+ 
+ 	/* allocate vf2pf mailbox for vf to pf channel */
+-	BNX2X_PCI_ALLOC(bp->vf2pf_mbox, &bp->vf2pf_mbox_mapping,
+-			sizeof(struct bnx2x_vf_mbx_msg));
++	bp->vf2pf_mbox = BNX2X_PCI_ALLOC(&bp->vf2pf_mbox_mapping,
++					 sizeof(struct bnx2x_vf_mbx_msg));
++	if (!bp->vf2pf_mbox)
++		goto alloc_mem_err;
+ 
+ 	/* allocate pf 2 vf bulletin board */
+-	BNX2X_PCI_ALLOC(bp->pf2vf_bulletin, &bp->pf2vf_bulletin_mapping,
+-			sizeof(union pf_vf_bulletin));
++	bp->pf2vf_bulletin = BNX2X_PCI_ALLOC(&bp->pf2vf_bulletin_mapping,
++					     sizeof(union pf_vf_bulletin));
++	if (!bp->pf2vf_bulletin)
++		goto alloc_mem_err;
+ 
+ 	return 0;
+ 
+
 
