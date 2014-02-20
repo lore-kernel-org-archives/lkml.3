@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451AbaBTNjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:39:42 -0500
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:55542 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaBTNjk (ORCPT
+	id S1754640AbaBTNkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:40:40 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:47735 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbaBTNki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:39:40 -0500
-X-AuditID: cbfec37b-b7f8f6d000007030-38-5306059af995
-Message-id: <53060590.9090600@samsung.com>
-Date: Thu, 20 Feb 2014 06:39:28 -0700
+	Thu, 20 Feb 2014 08:40:38 -0500
+X-AuditID: cbfec37a-b7fc06d00000555a-7e-530605d4dc59
+Message-id: <530605D2.1080608@samsung.com>
+Date: Thu, 20 Feb 2014 06:40:34 -0700
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.2.0
 MIME-version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
+To: Mark Brown <broonie@kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, n-horiguchi@ah.jp.nec.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
         Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.10 00/26] 3.10.31-stable review
-References: <20140218224530.398913499@linuxfoundation.org>
- <53054C83.8000409@samsung.com> <5305AF24.4030503@huawei.com>
-In-reply-to: <5305AF24.4030503@huawei.com>
+Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
+References: <20140218224433.337299968@linuxfoundation.org>
+ <53054956.4010602@samsung.com> <20140220003639.GF2669@sirena.org.uk>
+ <5305584D.9030106@samsung.com> <20140220023437.GS2669@sirena.org.uk>
+In-reply-to: <20140220023437.GS2669@sirena.org.uk>
 Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.34.4]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9hX91ZrGzBBtu2a1jMWb+GzaJ58Xo2
-	i8u75rBZfFh7isXi27TdjBZffzpYLNj4iNHiUd9bdgcOjxcLtzB77Jx1l92j5chbVo8TM36z
-	eOyfu4bd4/MmuQC2KC6blNSczLLUIn27BK6MW6/62Qsu8lc8+nWIsYFxAU8XIyeHhICJxJFH
-	/xkhbDGJC/fWs3UxcnEICSxjlGiYd4gFwullktj1ZSYzhLOBUeL85PnMIC28AloSi1//YAGx
-	WQRUJfo3L2YDsdkE1CU+v97BDmILCchJNC1ZDVYvKhAh8ersRBaIXkGJH5PvAdkcHCICyhI9
-	c5VB5jMLTGOSOHLgEdhJwgKmErOPNrFBzKmUOP/hK1gvJ9DeX0e/MYHYzALWEisnbWOEsOUl
-	Nq95ywxRryzx5/IpJojXFCRW3HjDMoFRZBaS1bOQtM9C0r6AkXkVo1hpcXJBcVJ6aoWRXnFi
-	bnFpXrpecn7uJkZIdFXvYLz71eYQowAHoxIPL8NVlmAh1sSy4srcQ4wSHMxKIrxbPrAGC/Gm
-	JFZWpRblxxeV5qQWH2Jk4uCUamCMicp6ZCFulCBseuqg8vUFs7yv7LHW9OxyecX15mFx1F37
-	fWc/nFNY3Bz2tbwv3W5ybNqv53bRD59EXH41WSGE4fzPucdk/iil97BdLk0yaV/5s9MkknP5
-	x5uMcmc+K920fb7zVkqPYpMcg9jTkqczWSMmB2zMn/3ZTME+zvNUkq5aYlifRqcSS3FGoqEW
-	c1FxIgAOYVrTjAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9hP90rrGzBBv9PmlrMWb+GzWLqwyds
+	Fs2L17NZXN41h83i608HiwUbHzFaPOp7y+7A7rFz1l12j02rOtk8Tsz4zeKxf+4ado/Pm+QC
+	WKO4bFJSczLLUov07RK4MiZ/mspU8Ia54ufLw6wNjP+Zuhg5OSQETCTuvTrICGGLSVy4t56t
+	i5GLQ0hgGaPE9U3nmUESQgK9TBKXvgdCJDYwSmz7u5YVJMEroCUxoa0BbBKLgKrEkSsPwSax
+	CahLfH69gx2iWU6iaclqsEGiAhESr85OZIHoFZT4MfkemC0ioCxx9fteFpAFzAI/GSV+nXkO
+	1iAMdN6dn49YIAadYJSYsy8NxOYUMJI4tPEvG4jNLGAtsXLSNkYIW15i85q3UFcrS/y5fArq
+	TQWJFTfesExgFJmFZPcsJO2zkLQvYGRexShWWpxcUJyUnlphqFecmFtcmpeul5yfu4kREklV
+	OxjvfLU5xCjAwajEwxtxnSVYiDWxrLgy9xCjBAezkgjvlg+swUK8KYmVValF+fFFpTmpxYcY
+	mTg4pRoYhV39TjoLpcoobzqjfFwvxpB5e4yCRn+7mZVdatKKpbnsjGu1libe7Z9es3j7j+9V
+	WVdneWpmJvjdd2o09GFqW61w36ShM/tH7Rsztc0s/zk+r69ZcziNNS9uXe4koSNPsrrTso3Z
+	tESdJodoLnth1Ls9Yu835Y/rZp2bsKz9TO8bozv7j65RYinOSDTUYi4qTgQAxJ5HFoICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 12:30 AM, Xishi Qiu wrote:
-> On 2014/2/20 8:29, Shuah Khan wrote:
+On 02/19/2014 07:34 PM, Mark Brown wrote:
+> On Wed, Feb 19, 2014 at 06:20:13PM -0700, Shuah Khan wrote:
 >
->> On 02/18/2014 03:46 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.10.31 release.
->>> There are 26 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Thu Feb 20 22:45:20 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->>> The whole patch series can be found in one patch at:
->>>      kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.31-rc1.gz
->>> and the diffstat can be found below.
->>>
->>> thanks,
->>>
->>> greg k-h
->>>
->>
->> Compile and boot tests passed on AMD system. Boot failed on Intel systems. I think the following changes are the suspect, so far by process of elimination - these two aren't in 3.12 and 3.13
->>
->> #    modified:   mm/hugetlb.c
->> #    modified:   mm/memory-failure.c
->>
->> However, my strong suspect is the following:
->>
->> Xishi Qiu <qiuxishi@huawei.com>
->>      mm: fix process accidentally killed by mce because of huge page migration
->>
->> I don't see how this could cause problems, none the less, I will test without these changes and let you know.
->>
->>
->> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->>      mm/memory-failure.c: fix memory leak in successful soft offlining
->>
->> I will test without these changes and let you know.
->>
->> -- Shuah
->>
+>> Right. I think this message should be a warning instead of an error.
+>> Error is too alarming, unless there is a good reason for it to be an
+>> error.
 >
-> Hi Shuah
+> Patches welcome...
 >
-> I tested on my system, it boot successfully.
->
-> hardware: Intel(R) Xeon(R) CPU E5-2420 0 @ 1.90GHz
-> OS: v3.10.30 + the two patches
->
-> Thanks,
-> Xishi Qiu
 
-Xishi,
-
-I tested without your patch and still see the issue. My wild guess 
-wasn't a good one :) I am starting git bisect now.
+ok I will send one soon then :)
 
 -- Shuah
-
 
 -- 
 Shuah Khan
