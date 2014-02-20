@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaBTNT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:19:28 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:10042 "EHLO SMTP.CITRIX.COM"
+	id S1754650AbaBTNVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:21:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35743 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787AbaBTNT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:19:26 -0500
-X-IronPort-AV: E=Sophos;i="4.97,512,1389744000"; 
-   d="scan'208";a="104297584"
-Message-ID: <530600C5.3070107@citrix.com>
-Date: Thu, 20 Feb 2014 13:19:01 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754375AbaBTNU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 08:20:59 -0500
+Date: Thu, 20 Feb 2014 14:22:58 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] ntb: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140220132258.GB8198@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-1-git-send-email-agordeev@redhat.com>
+ <20140219180926.GA1333@jonmason-lab>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-CC: Ian Campbell <Ian.Campbell@citrix.com>, <kvm@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        <bridge@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
- from becoming the root bridge
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com> <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com> <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com> <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
-In-Reply-To: <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219180926.GA1333@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/14 17:02, Luis R. Rodriguez wrote:
-> On Wed, Feb 19, 2014 at 6:35 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->> On 19/02/14 09:52, Ian Campbell wrote:
->>> Can't we arrange things in the Xen hotplug scripts such that if the
->>> root_block stuff isn't available/doesn't work we fallback to the
->>> existing fe:ff:ff:ff:ff usage?
->>>
->>> That would avoid concerns about forward/backwards compat I think. It
->>> wouldn't solve the issue you are targeting on old systems, but it also
->>> doesn't regress them any further.
->>
->> I agree, I think this problem could be better handled from userspace: if it
->> can set root_block then change the default MAC to a random one, if it can't,
->> then stay with the default one. Or if someone doesn't care about STP but DAD
->> is still important, userspace can have a force_random_mac option somewhere
->> to change to a random MAC regardless of root_block presence.
->
-> Folks, what if I repurpose my patch to use the IFF_BRIDGE_NON_ROOT (or
-> relabel to IFF_ROOT_BLOCK_DEF) flag for a default driver preference
-> upon initialization so that root block will be used once the device
-> gets added to a bridge. The purpose would be to avoid drivers from
-> using the high MAC address hack, streamline to use a random MAC
-> address thereby avoiding the possible duplicate address situation for
-> IPv6. In the STP use case for these interfaces we'd just require
-> userspace to unset the root block. I'd consider the STP use case the
-> most odd of all. The caveat to this approach is 3.8 would be needed
-> (or its the root block patches cherry picked) for base kernels older
-> than 3.8.
+On Wed, Feb 19, 2014 at 11:09:27AM -0700, Jon Mason wrote:
+> On Wed, Feb 19, 2014 at 11:15:21AM +0100, Alexander Gordeev wrote:
+> > @@ -1112,26 +1106,21 @@ static int ntb_setup_msix(struct ntb_device *ndev)
+> >  	for (i = 0; i < msix_entries; i++)
+> >  		ndev->msix_entries[i].entry = i;
+> >  
+> > -	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> > -	if (rc < 0)
+> > -		goto err1;
+> > -	if (rc > 0) {
+> > +	if (ndev->hw_type != BWD_HW)
+> >  		/* On SNB, the link interrupt is always tied to 4th vector.  If
+> >  		 * we can't get all 4, then we can't use MSI-X.
+> >  		 */
+> > -		if (ndev->hw_type != BWD_HW) {
+> > -			rc = -EIO;
+> > -			goto err1;
+> > -		}
+> > -
+> > -		dev_warn(&pdev->dev,
+> > -			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+> > -			 rc);
+> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
+> > +					   msix_entries, msix_entries);
+> > +	else
+> > +		rc = pci_enable_msix_range(pdev, ndev->msix_entries,
+> > +					   1, msix_entries);
+> 
+> Actually, this must be 2 for the min.  One for the Data and one for
+> the Link.  If you look a few lines after this in the original code,
+> there is a grabbing of the last vector for the link.  I realize there
+> is currently no check for this in the driver and a potential error
+> case occurs.  I can make a separate patch to correct this issue if
+> this patch is not going through my tree.
 
-How about this: netback sets the root_block flag and a random MAC by 
-default. So the default behaviour won't change, DAD will be happy, and 
-userspace don't have to do anything unless it's using netback for STP 
-root bridge (I don't think there are too many toolstacks doing that), in 
-which case it has to remove the root_block flag instead of setting a 
-random MAC.
+I am confused here again. In the original code I see "ntb-callback-msix"
+is requested for all MSI-Xs on BWD_HW and "ntb-event-msix" requested for
+the last vector on SNB_HW. Therefore, the range [1..msix_entries] should
+be fine for BWD_HW, isn't it?
 
-Zoli
+> Thanks,
+> Jon
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
