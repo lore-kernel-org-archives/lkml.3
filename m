@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520AbaBUBBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:01:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45400 "EHLO
+	id S1757354AbaBUBBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:01:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845AbaBTXu4 (ORCPT
+	with ESMTP id S1754818AbaBTXux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:56 -0500
+	Thu, 20 Feb 2014 18:50:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.10 06/66] CIFS: Fix SMB2 mounts so they dont try to set or get xattrs via cifs
-Date: Thu, 20 Feb 2014 15:51:05 -0800
-Message-Id: <20140220234909.670662244@linuxfoundation.org>
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>
+Subject: [PATCH 3.10 03/66] xen: Fix possible user space selector corruption
+Date: Thu, 20 Feb 2014 15:51:02 -0800
+Message-Id: <20140220234909.587548746@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,130 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: Frediano Ziglio <frediano.ziglio@citrix.com>
 
-commit 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 upstream.
+commit 7cde9b27e7b3a2e09d647bb4f6d94e842698d2d5 upstream.
 
-When mounting with smb2 (or smb2.1 or smb3) we need to check to make
-sure that attempts to query or set extended attributes do not
-attempt to send the request with the older cifs protocol instead
-(eventually we also need to add the support in SMB2
-to query/set extended attributes but this patch prevents us from
-using the wrong protocol for extended attribute operations).
+Due to the way kernel is initialized under Xen is possible that the
+ring1 selector used by the kernel for the boot cpu end up to be copied
+to userspace leading to segmentation fault in the userspace.
 
-Signed-off-by: Steve French <smfrench@gmail.com>
+Xen code in the kernel initialize no-boot cpus with correct selectors (ds
+and es set to __USER_DS) but the boot one keep the ring1 (passed by Xen).
+On task context switch (switch_to) we assume that ds, es and cs already
+point to __USER_DS and __KERNEL_CSso these selector are not changed.
+
+If processor is an Intel that support sysenter instruction sysenter/sysexit
+is used so ds and es are not restored switching back from kernel to
+userspace. In the case the selectors point to a ring1 instead of __USER_DS
+the userspace code will crash on first memory access attempt (to be
+precise Xen on the emulated iret used to do sysexit will detect and set ds
+and es to zero which lead to GPF anyway).
+
+Now if an userspace process call kernel using sysenter and get rescheduled
+(for me it happen on a specific init calling wait4) could happen that the
+ring1 selector is set to ds and es.
+
+This is quite hard to detect cause after a while these selectors are fixed
+(__USER_DS seems sticky).
+
+Bisecting the code commit 7076aada1040de4ed79a5977dbabdb5e5ea5e249 appears
+to be the first one that have this issue.
+
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Andrew Cooper <andrew.cooper3@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsglob.h |    6 ++++++
- fs/cifs/xattr.c    |   49 ++++++++++++++++++++++++++++++-------------------
- 2 files changed, 36 insertions(+), 19 deletions(-)
+ arch/x86/xen/smp.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -370,6 +370,12 @@ struct smb_version_operations {
- 	void (*new_lease_key)(struct cifs_fid *fid);
- 	int (*calc_signature)(struct smb_rqst *rqst,
- 				   struct TCP_Server_Info *server);
-+	ssize_t (*query_all_EAs)(const unsigned int, struct cifs_tcon *,
-+			const unsigned char *, const unsigned char *, char *,
-+			size_t, const struct nls_table *, int);
-+	int (*set_EA)(const unsigned int, struct cifs_tcon *, const char *,
-+			const char *, const void *, const __u16,
-+			const struct nls_table *, int);
- };
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -245,6 +245,15 @@ static void __init xen_smp_prepare_boot_
+ 	   old memory can be recycled */
+ 	make_lowmem_page_readwrite(xen_initial_gdt);
  
- struct smb_version_values {
---- a/fs/cifs/xattr.c
-+++ b/fs/cifs/xattr.c
-@@ -82,9 +82,11 @@ int cifs_removexattr(struct dentry *dire
- 			goto remove_ea_exit;
- 
- 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
--		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
--			(__u16)0, cifs_sb->local_nls,
--			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (pTcon->ses->server->ops->set_EA)
-+			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
-+				full_path, ea_name, NULL, (__u16)0,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	}
- remove_ea_exit:
- 	kfree(full_path);
-@@ -149,18 +151,22 @@ int cifs_setxattr(struct dentry *direntr
- 			cifs_dbg(FYI, "attempt to set cifs inode metadata\n");
- 
- 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
--		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
--			(__u16)value_size, cifs_sb->local_nls,
--			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (pTcon->ses->server->ops->set_EA)
-+			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
-+				full_path, ea_name, ea_value, (__u16)value_size,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
- 		   == 0) {
- 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
- 			goto set_ea_exit;
- 
- 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
--		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
--			(__u16)value_size, cifs_sb->local_nls,
--			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (pTcon->ses->server->ops->set_EA)
-+			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
-+				full_path, ea_name, ea_value, (__u16)value_size,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	} else if (strncmp(ea_name, CIFS_XATTR_CIFS_ACL,
- 			strlen(CIFS_XATTR_CIFS_ACL)) == 0) {
- #ifdef CONFIG_CIFS_ACL
-@@ -272,17 +278,21 @@ ssize_t cifs_getxattr(struct dentry *dir
- 			/* revalidate/getattr then populate from inode */
- 		} /* BB add else when above is implemented */
- 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
--		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
--			buf_size, cifs_sb->local_nls,
--			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (pTcon->ses->server->ops->query_all_EAs)
-+			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
-+				full_path, ea_name, ea_value, buf_size,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
- 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
- 			goto get_ea_exit;
- 
- 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
--		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
--			buf_size, cifs_sb->local_nls,
--			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-+		if (pTcon->ses->server->ops->query_all_EAs)
-+			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
-+				full_path, ea_name, ea_value, buf_size,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	} else if (strncmp(ea_name, POSIX_ACL_XATTR_ACCESS,
- 			  strlen(POSIX_ACL_XATTR_ACCESS)) == 0) {
- #ifdef CONFIG_CIFS_POSIX
-@@ -400,11 +410,12 @@ ssize_t cifs_listxattr(struct dentry *di
- 	/* if proc/fs/cifs/streamstoxattr is set then
- 		search server for EAs or streams to
- 		returns as xattrs */
--	rc = CIFSSMBQAllEAs(xid, pTcon, full_path, NULL, data,
--				buf_size, cifs_sb->local_nls,
--				cifs_sb->mnt_cifs_flags &
--					CIFS_MOUNT_MAP_SPECIAL_CHR);
- 
-+	if (pTcon->ses->server->ops->query_all_EAs)
-+		rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
-+				full_path, NULL, data, buf_size,
-+				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
-+					CIFS_MOUNT_MAP_SPECIAL_CHR);
- list_ea_exit:
- 	kfree(full_path);
- 	free_xid(xid);
++#ifdef CONFIG_X86_32
++	/*
++	 * Xen starts us with XEN_FLAT_RING1_DS, but linux code
++	 * expects __USER_DS
++	 */
++	loadsegment(ds, __USER_DS);
++	loadsegment(es, __USER_DS);
++#endif
++
+ 	xen_filter_cpu_maps();
+ 	xen_setup_vcpu_info_placement();
+ }
 
 
