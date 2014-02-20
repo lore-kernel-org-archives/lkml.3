@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867AbaBUAWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:22:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45958 "EHLO
+	id S1755901AbaBTXw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaBTXw7 (ORCPT
+	with ESMTP id S1755820AbaBTXwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:59 -0500
+	Thu, 20 Feb 2014 18:52:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.12 78/82] target: Fix free-after-use regression in PR unregister
-Date: Thu, 20 Feb 2014 15:53:01 -0800
-Message-Id: <20140220235021.815936392@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.12 82/82] EDAC: Correct workqueue setup path
+Date: Thu, 20 Feb 2014 15:53:05 -0800
+Message-Id: <20140220235021.938624816@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -30,79 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Borislav Petkov <bp@suse.de>
 
-commit fc09149df6e20cfbb0bb86f10899607c321a31eb upstream.
+commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
 
-This patch addresses a >= v3.11 free-after-use regression
-in core_scsi3_emulate_pro_register() that was introduced
-in the following commit:
+We're using edac_mc_workq_setup() both on the init path, when
+we load an edac driver and when we change the polling period
+(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
 
-commit bc118fe4c4a8cfa453491ba77c0a146a6d0e73e0
-Author: Andy Grover <agrover@redhat.com>
-Date:   Thu May 16 10:41:04 2013 -0700
+On that second path we don't need to init the workqueue which has been
+initialized already.
 
-    target: Further refactoring of core_scsi3_emulate_pro_register()
+Thanks to Tejun for workqueue insights.
 
-To avoid the free-after-use, save an type value before hand, and
-only call core_scsi3_put_pr_reg() with a valid *pr_reg.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_pr.c |   11 +++++++----
+ drivers/edac/edac_mc.c |   11 +++++++----
  1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -2009,7 +2009,7 @@ core_scsi3_emulate_pro_register(struct s
- 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
- 	unsigned char isid_buf[PR_REG_ISID_LEN], *isid_ptr = NULL;
- 	sense_reason_t ret = TCM_NO_SENSE;
--	int pr_holder = 0;
-+	int pr_holder = 0, type;
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struc
+  *
+  *		called with the mem_ctls_mutex held
+  */
+-static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
++static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
++				bool init)
+ {
+ 	edac_dbg(0, "\n");
  
- 	if (!se_sess || !se_lun) {
- 		pr_err("SPC-3 PR: se_sess || struct se_lun is NULL!\n");
-@@ -2131,6 +2131,7 @@ core_scsi3_emulate_pro_register(struct s
- 			ret = TCM_RESERVATION_CONFLICT;
- 			goto out;
- 		}
-+		type = pr_reg->pr_res_type;
+@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct m
+ 	if (mci->op_state != OP_RUNNING_POLL)
+ 		return;
  
- 		spin_lock(&pr_tmpl->registration_lock);
- 		/*
-@@ -2161,6 +2162,7 @@ core_scsi3_emulate_pro_register(struct s
- 		 * Release the calling I_T Nexus registration now..
- 		 */
- 		__core_scsi3_free_registration(cmd->se_dev, pr_reg, NULL, 1);
-+		pr_reg = NULL;
- 
- 		/*
- 		 * From spc4r17, section 5.7.11.3 Unregistering
-@@ -2174,8 +2176,8 @@ core_scsi3_emulate_pro_register(struct s
- 		 * RESERVATIONS RELEASED.
- 		 */
- 		if (pr_holder &&
--		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
--		     pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
-+		    (type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
-+		     type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
- 			list_for_each_entry(pr_reg_p,
- 					&pr_tmpl->registration_list,
- 					pr_reg_list) {
-@@ -2194,7 +2196,8 @@ core_scsi3_emulate_pro_register(struct s
- 	ret = core_scsi3_update_and_write_aptpl(dev, aptpl);
- 
- out:
--	core_scsi3_put_pr_reg(pr_reg);
-+	if (pr_reg)
-+		core_scsi3_put_pr_reg(pr_reg);
- 	return ret;
+-	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++	if (init)
++		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
++
+ 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
  }
  
+@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(unsigned
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
+ 
+-		edac_mc_workq_setup(mci, value);
++		edac_mc_workq_setup(mci, value, false);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *
+ 		/* This instance is NOW RUNNING */
+ 		mci->op_state = OP_RUNNING_POLL;
+ 
+-		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
++		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
+ 	} else {
+ 		mci->op_state = OP_RUNNING_INTERRUPT;
+ 	}
 
 
