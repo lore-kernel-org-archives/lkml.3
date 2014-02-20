@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724AbaBUBH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:07:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45309 "EHLO
+	id S932539AbaBUBH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:07:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45307 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619AbaBTXuh (ORCPT
+	with ESMTP id S1753996AbaBTXug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:37 -0500
+	Thu, 20 Feb 2014 18:50:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3.4 23/25] power: max17040: Fix NULL pointer dereference when there is no platform_data
-Date: Thu, 20 Feb 2014 15:51:39 -0800
-Message-Id: <20140220234843.138927692@linuxfoundation.org>
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.4 22/25] time: Fix overflow when HZ is smaller than 60
+Date: Thu, 20 Feb 2014 15:51:38 -0800
+Message-Id: <20140220234843.105558201@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -28,87 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ac323d8d807060f7c95a685a9fe861e7b6300993 upstream.
+commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
 
-Fix NULL pointer dereference of "chip->pdata" if platform_data was not
-supplied to the driver.
+When compiling for the IA-64 ski emulator, HZ is set to 32 because the
+emulation is slow and we don't want to waste too many cycles processing
+timers. Alpha also has an option to set HZ to 32.
 
-The driver during probe stored the pointer to the platform_data:
-	chip->pdata = client->dev.platform_data;
-Later it was dereferenced in max17040_get_online() and
-max17040_get_status().
+This causes integer underflow in
+kernel/time/jiffies.c:
+kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
+  ^
 
-If platform_data was not supplied, the NULL pointer exception would
-happen:
+This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
 
-[    6.626094] Unable to handle kernel  of a at virtual address 00000000
-[    6.628557] pgd = c0004000
-[    6.632868] [00000000] *pgd=66262564
-[    6.634636] Unable to handle kernel paging request at virtual address e6262000
-[    6.642014] pgd = de468000
-[    6.644700] [e6262000] *pgd=00000000
-[    6.648265] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[    6.653552] Modules linked in:
-[    6.656598] CPU: 0 PID: 31 Comm: kworker/0:1 Not tainted 3.10.14-02717-gc58b4b4 #505
-[    6.664334] Workqueue: events max17040_work
-[    6.668488] task: dfa11b80 ti: df9f6000 task.ti: df9f6000
-[    6.673873] PC is at show_pte+0x80/0xb8
-[    6.677687] LR is at show_pte+0x3c/0xb8
-[    6.681503] pc : [<c001b7b8>]    lr : [<c001b774>]    psr: 600f0113
-[    6.681503] sp : df9f7d58  ip : 600f0113  fp : 00000009
-[    6.692965] r10: 00000000  r9 : 00000000  r8 : dfa11b80
-[    6.698171] r7 : df9f7ea0  r6 : e6262000  r5 : 00000000  r4 : 00000000
-[    6.704680] r3 : 00000000  r2 : e6262000  r1 : 600f0193  r0 : c05b3750
-[    6.711194] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    6.718485] Control: 10c53c7d  Table: 5e46806a  DAC: 00000015
-[    6.724218] Process kworker/0:1 (pid: 31, stack limit = 0xdf9f6238)
-[    6.730465] Stack: (0xdf9f7d58 to 0xdf9f8000)
-[    6.914325] [<c001b7b8>] (show_pte+0x80/0xb8) from [<c047107c>] (__do_kernel_fault.part.9+0x44/0x74)
-[    6.923425] [<c047107c>] (__do_kernel_fault.part.9+0x44/0x74) from [<c001bb7c>] (do_page_fault+0x2c4/0x360)
-[    6.933144] [<c001bb7c>] (do_page_fault+0x2c4/0x360) from [<c0008400>] (do_DataAbort+0x34/0x9c)
-[    6.941825] [<c0008400>] (do_DataAbort+0x34/0x9c) from [<c000e5d8>] (__dabt_svc+0x38/0x60)
-[    6.950058] Exception stack(0xdf9f7ea0 to 0xdf9f7ee8)
-[    6.955099] 7ea0: df0c1790 00000000 00000002 00000000 df0c1794 df0c1790 df0c1790 00000042
-[    6.963271] 7ec0: df0c1794 00000001 00000000 00000009 00000000 df9f7ee8 c0306268 c0306270
-[    6.971419] 7ee0: a00f0113 ffffffff
-[    6.974902] [<c000e5d8>] (__dabt_svc+0x38/0x60) from [<c0306270>] (max17040_work+0x8c/0x144)
-[    6.983317] [<c0306270>] (max17040_work+0x8c/0x144) from [<c003f364>] (process_one_work+0x138/0x440)
-[    6.992429] [<c003f364>] (process_one_work+0x138/0x440) from [<c003fa64>] (worker_thread+0x134/0x3b8)
-[    7.001628] [<c003fa64>] (worker_thread+0x134/0x3b8) from [<c00454bc>] (kthread+0xa4/0xb0)
-[    7.009875] [<c00454bc>] (kthread+0xa4/0xb0) from [<c000eb28>] (ret_from_fork+0x14/0x2c)
-[    7.017943] Code: e1a03005 e2422480 e0826104 e59f002c (e7922104)
-[    7.024017] ---[ end trace 73bc7006b9cc5c79 ]---
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: c6f4a42de60b981dd210de01cd3e575835e3158e
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/max17040_battery.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/time/jiffies.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/power/max17040_battery.c
-+++ b/drivers/power/max17040_battery.c
-@@ -148,7 +148,7 @@ static void max17040_get_online(struct i
- {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -51,7 +51,13 @@
+  * HZ shrinks, so values greater than 8 overflow 32bits when
+  * HZ=100.
+  */
++#if HZ < 34
++#define JIFFIES_SHIFT	6
++#elif HZ < 67
++#define JIFFIES_SHIFT	7
++#else
+ #define JIFFIES_SHIFT	8
++#endif
  
--	if (chip->pdata->battery_online)
-+	if (chip->pdata && chip->pdata->battery_online)
- 		chip->online = chip->pdata->battery_online();
- 	else
- 		chip->online = 1;
-@@ -158,7 +158,8 @@ static void max17040_get_status(struct i
+ static cycle_t jiffies_read(struct clocksource *cs)
  {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
- 
--	if (!chip->pdata->charger_online || !chip->pdata->charger_enable) {
-+	if (!chip->pdata || !chip->pdata->charger_online
-+			|| !chip->pdata->charger_enable) {
- 		chip->status = POWER_SUPPLY_STATUS_UNKNOWN;
- 		return;
- 	}
 
 
