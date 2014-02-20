@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaBTPsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 10:48:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33655 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809AbaBTPsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 10:48:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,512,1389772800"; 
-   d="scan'208";a="486644107"
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: x86_pmu_start WARN_ON.
-References: <20140211132956.GY9987@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402121559350.20738@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
-	<20140217152859.GF15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
-	<20140219101949.GG15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
-	<20140220100830.GN6835@laptop.programming.kicks-ass.net>
-Date: Thu, 20 Feb 2014 07:47:23 -0800
-In-Reply-To: <20140220100830.GN6835@laptop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Thu, 20 Feb 2014 11:08:30 +0100")
-Message-ID: <87r46xdbw4.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754420AbaBTPsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 10:48:12 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:45452 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753809AbaBTPsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 10:48:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1392907779-22053-5-git-send-email-geert@linux-m68k.org>
+References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
+	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
+Date: Fri, 21 Feb 2014 00:48:06 +0900
+Message-ID: <CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
+Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+Hi Geert,
 
-> On Wed, Feb 19, 2014 at 05:34:49PM -0500, Vince Weaver wrote:
->> So where would the NMI counter event get disabled?  Would it never get 
->> disabled, just because it's always running and always gets the same fixed 
->> slot?  Why isn't this a problem all the time, not just with corner cases?
+On Thu, Feb 20, 2014 at 11:49 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 >
-> Well it could get another counter assignment I suppose; there's no
-> guarantee it always ends up in the fixed counter although that's rather
-> likely.
+> Add MSIOF resources, platform data, platform device, pinctrl, and SPI
+> child device.
 >
->> Is somehow n_added getting confused?
+>   - Platform device numbering is 1-based for compatibility with the BSP,
+>     as QSPI uses zero.
+>   - Only MSIOF1 is in use, and thus registered. Its bus contains a single
+>     device (a Renesas R2A11302FT PMIC).
 >
-> I'd expect worse than a warning if that happened, but who knows.
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> ---
+>  arch/arm/mach-shmobile/board-lager.c |   64 ++++++++++++++++++++++++++++++----
+>  1 file changed, 58 insertions(+), 6 deletions(-)
 >
-> You could try with the below; make sure you've got CONFIG_FUNCTION_TRACER=y.
+> diff --git a/arch/arm/mach-shmobile/board-lager.c b/arch/arm/mach-shmobile/board-lager.c
+> index f0104bfe544e..6062bcbda366 100644
+> --- a/arch/arm/mach-shmobile/board-lager.c
+> +++ b/arch/arm/mach-shmobile/board-lager.c
+> @@ -55,6 +55,7 @@
+>  #include <linux/mtd/mtd.h>
+>  #include <linux/spi/flash.h>
+>  #include <linux/spi/rspi.h>
+> +#include <linux/spi/sh_msiof.h>
+>  #include <linux/spi/spi.h>
+>  #include <sound/rcar_snd.h>
+>  #include <sound/simple_card.h>
+> @@ -287,6 +288,40 @@ static const struct platform_device_info ether_info __initconst = {
+>         .dma_mask       = DMA_BIT_MASK(32),
+>  };
 >
-> Then (assuming debugfs is mounted in /debug ; most modern distros have
-> it at /sys/kernel/debug but they're wrong!):
->
-> # echo 0 > /debug/tracing/tracing_on
-> # echo function > /debug/tracing/current_tracer
-> # echo nop > /debug/tracing/current_tracer
-> # echo 0 > /debug/tracing/trace
-> # echo 1 > /debug/tracing/tracing_on
->
-> And make it go *BOOM*, then:
->
-> # cat /debug/tracing/trace | bzip2 -9 > ~/trace.bz2
+> +/* MSIOF */
+> +static const struct resource sh_msiof0_resources[] __initconst = {
+> +       DEFINE_RES_MEM(0xe6e20000, 0x0064),
+> +       DEFINE_RES_IRQ(gic_spi(156)),
+> +};
+> +
+> +static const struct resource sh_msiof1_resources[] __initconst = {
+> +       DEFINE_RES_MEM(0xe6e10000, 0x0064),
+> +       DEFINE_RES_IRQ(gic_spi(157)),
+> +};
+> +
+> +static const struct resource sh_msiof2_resources[] __initconst = {
+> +       DEFINE_RES_MEM(0xe6e00000, 0x0064),
+> +       DEFINE_RES_IRQ(gic_spi(158)),
+> +};
+> +
+> +static const struct resource sh_msiof3_resources[] __initconst = {
+> +       DEFINE_RES_MEM(0xe6c90000, 0x0064),
+> +       DEFINE_RES_IRQ(gic_spi(159)),
+> +};
+> +
+> +static const struct sh_msiof_spi_info sh_msiof_info __initconst = {
+> +       .rx_fifo_override       = 256,
+> +       .num_chipselect         = 1,
+> +};
+> +
+> +#define r8a7790_register_msiof(idx)                                    \
+> +       platform_device_register_resndata(&platform_bus,                \
+> +                               "spi_r8a7790_msiof",                    \
+> +                               (idx+1), sh_msiof##idx##_resources,     \
+> +                               ARRAY_SIZE(sh_msiof##idx##_resources),  \
+> +                               &sh_msiof_info,                         \
+> +                               sizeof(struct sh_msiof_spi_info))
 
-This won't work unless you apply this patch
+Hi Geert,
 
-http://lkml.org/lkml/2013/10/20/94
+That for your efforts - it's good to see the MSIOF being integrated as
+well! I have one comment on this legacy board integration code.
 
--Andi
+Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
+best to omit the unused resources from above? In case of DT I think it
+makes sense to define all channels in the SoC.dtsi and let the
+SoC-board.dts just enable the channels that are used. But in this case
+with legacy code  I think we should keep thing simple and small and
+just enable the bits that are used on the particular board.
 
+The same obviously applies to the Koelsch legacy code as well. =)
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+
+/ magnus
