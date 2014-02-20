@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaBTOaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:30:24 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57503 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700AbaBTOaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 09:30:22 -0500
-Date: Thu, 20 Feb 2014 09:30:18 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: fix namespace refcnt leak
-Message-ID: <20140220143018.GE6897@htj.dyndns.org>
-References: <53018813.7030409@huawei.com>
- <20140218231242.GJ31892@mtj.dyndns.org>
- <53040B50.4060600@huawei.com>
+	id S1754854AbaBTObL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:31:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754727AbaBTObJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 09:31:09 -0500
+Date: Thu, 20 Feb 2014 15:31:03 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Re: WARNING at kernel/workqueue.c:829
+ wq_worker_waking_up+0x53/0x70()
+Message-ID: <20140220143102.GA12948@krava.brq.redhat.com>
+References: <20140213124059.GA2908@krava.brq.redhat.com>
+ <20140217171900.GB29173@redhat.com>
+ <20140218224907.GG31892@mtj.dyndns.org>
+ <530602FA.1020103@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53040B50.4060600@huawei.com>
+In-Reply-To: <530602FA.1020103@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
-
-On Wed, Feb 19, 2014 at 09:39:28AM +0800, Li Zefan wrote:
-> > Can we make it optional so that users who don't care about it can
-> > ignore it?
+On Thu, Feb 20, 2014 at 09:28:26PM +0800, Lan Tianyu wrote:
+> On 02/19/2014 06:49 AM, Tejun Heo wrote:
+> >Hello,
+> >
+> >On Mon, Feb 17, 2014 at 06:19:00PM +0100, Oleg Nesterov wrote:
+> >>acpi_processor_set_throttling() plays with set_cpus_allowed_ptr(current),
+> >>this is obviously wrong, and the worker is bound.
+> >
+> >Umm... yeah, anything running on workqueues shouldn't be diddling with
+> >cpu affinity.  The function even has /* FIXME: use work_on_cpu() */ in
+> >it.  I suppose it's about time to actually implement that?
+> >
+> >Thanks.
+> >
 > 
-> cgroupfs also needs this to fix refcnt leak.
+> Hi Jiri:
+> 	Could you try this patch which reworks ACPI processor throttling
+> with work_on_cpu()?
 
-Ah, okay.
+hum, I've got difficulties to apply it..
 
-> Because success in finding an existing cgroup_root doesn't mean no new
-> superblock is needed. For example:
-> 
->   # mount -t cgroup -o cpuacct xxx /cgroup
->   # mkdir /cgroup/tmp
->   # umount /cgroup    <--- sb will be freed but cgroup_root won't
-> 
->   // this will allocate new sb, but we find the cgroup_root is there.
->   # mount -t cgroup -o cpuacct xxx /cgroup
-> 
-> But debugfs won't need this if it's converted to kernfs.
-> 
-> How about I keep kernfs_mount() API intact, and when this fix gets
-> merged into mainline, you merge the fix into cgroup-next, and then
-> I make a fix for cgroup by changing kernfs_mount()?
+[jolsa@krava2 linux-perf]$ git am /tmp/wq/
+Applying: WARNING at kernel/workqueue.c:829 wq_worker_waking_up+0x53/0x70()
+fatal: corrupt patch at line 8
+Patch failed at 0001 WARNING at kernel/workqueue.c:829 wq_worker_waking_up+0x53/0x70()
 
-If we need kernfs_mount() modified anyway, let's do it in this patch.
-I still think it'd be better to allow the parameter to be NULL but
-other than that, no objection.
-
-Thanks!
-
--- 
-tejun
+jirka
