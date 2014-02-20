@@ -1,146 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaBTARC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:17:02 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:33209 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaBTANF (ORCPT
+	id S1752126AbaBTAW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:22:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53868 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751080AbaBTAWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:13:05 -0500
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk
-Cc: bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/12] clk: bcm281xx: use init_data.name for clock name
-Date: Wed, 19 Feb 2014 18:12:52 -0600
-Message-Id: <1392855182-21155-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1392855182-21155-1-git-send-email-elder@linaro.org>
-References: <1392855182-21155-1-git-send-email-elder@linaro.org>
+	Wed, 19 Feb 2014 19:22:55 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sudeep Holla <Sudeep.Holla@arm.com>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>, Lan Tianyu <tianyu.lan@intel.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [PATCH v4 5/5] ACPI: Replace printk with pr_* in tables.c
+Date: Thu, 20 Feb 2014 01:37:46 +0100
+Message-ID: <1624648.FYgVXnCCsW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5304DFDB.6020202@arm.com>
+References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org> <2341500.Z47JjkFCMP@vostro.rjw.lan> <5304DFDB.6020202@arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the init_data.name field to hold the name of a Kona clock rather
-than duplicating it.
+On Wednesday, February 19, 2014 04:46:19 PM Sudeep Holla wrote:
+> On 19/02/14 16:49, Rafael J. Wysocki wrote:
+> > On Wednesday, February 19, 2014 04:32:34 PM Sudeep Holla wrote:
+> >> On 18/02/14 13:55, Hanjun Guo wrote:
+> >>> This patch just do some clean up to replace printk with pr_*,
+> >>> no functional change.
+> >>>
+> >> Any particular reason for choosing just this file in this series ?
+> >> It seems but off-topic in this series. The printk format is same in almost all
+> >> other acpi files and it's better to change all or none for consistency.
+> > 
+> > Well, it's fine, I can put it into a different branch in any case. :-)
+> > 
+> >>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> >>> ---
+> >>>  drivers/acpi/tables.c |   51 +++++++++++++++++++------------------------------
+> >>>  1 file changed, 20 insertions(+), 31 deletions(-)
+> >>>
+> >>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> >>> index 5837f85..97bc6df 100644
+> >>> --- a/drivers/acpi/tables.c
+> >>> +++ b/drivers/acpi/tables.c
+> >>> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
+> >>>  		{
+> >>>  			struct acpi_madt_local_apic *p =
+> >>>  			    (struct acpi_madt_local_apic *)header;
+> >>> -			printk(KERN_INFO PREFIX
+> >>> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+> >>> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+> >>
+> >> You can even get rid of PREFIX by defining pr_fmt instead.
+> > 
+> > But this is a good point.
+> > 
+> >> If the intention is to move to pr_* format it's better to have this as separate
+> >> patch and convert all of them.
+> > 
+> > Well, not really.  One file at a time is OK too.
+> > 
+> No what I meant was to convert all for consistency, not in a single patch.
+> As I was playing with regex for few minutes, with few patterns was able to fix
+> most(not all) of them. It even compiles :) for x86. But turns out to be a big
+> churn :( [43 files changed, 253 insertions(+), 329 deletions(-)]
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/bcm/clk-kona-setup.c |    6 +++---
- drivers/clk/bcm/clk-kona.c       |   17 ++++++++++-------
- drivers/clk/bcm/clk-kona.h       |    3 +--
- 3 files changed, 14 insertions(+), 12 deletions(-)
+Well, precisely.  That's why I'd prefer doing that gradually.
 
-diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
-index c7607fe..eed84f5 100644
---- a/drivers/clk/bcm/clk-kona-setup.c
-+++ b/drivers/clk/bcm/clk-kona-setup.c
-@@ -64,7 +64,7 @@ static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
- 
- 	BUG_ON(bcm_clk->type != bcm_clk_peri);
- 	peri = bcm_clk->peri;
--	name = bcm_clk->name;
-+	name = bcm_clk->init_data.name;
- 	range = bcm_clk->ccu->range;
- 
- 	limit = range - sizeof(u32);
-@@ -329,7 +329,7 @@ peri_clk_data_valid(struct kona_clk *bcm_clk)
- 		return false;
- 
- 	peri = bcm_clk->peri;
--	name = bcm_clk->name;
-+	name = bcm_clk->init_data.name;
- 	gate = &peri->gate;
- 	if (gate_exists(gate) && !gate_valid(gate, "gate", name))
- 		return false;
-@@ -630,7 +630,7 @@ struct clk *kona_clk_setup(struct ccu_data *ccu, const char *name,
- 		return NULL;
- 	}
- 	bcm_clk->ccu = ccu;
--	bcm_clk->name = name;
-+	bcm_clk->init_data.name = name;
- 
- 	init_data = &bcm_clk->init_data;
- 	init_data->name = name;
-diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-index c01d810..488ed1f 100644
---- a/drivers/clk/bcm/clk-kona.c
-+++ b/drivers/clk/bcm/clk-kona.c
-@@ -807,7 +807,7 @@ static int kona_peri_clk_enable(struct clk_hw *hw)
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
- 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
- 
--	return clk_gate(bcm_clk->ccu, bcm_clk->name, gate, true);
-+	return clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, true);
- }
- 
- static void kona_peri_clk_disable(struct clk_hw *hw)
-@@ -815,7 +815,7 @@ static void kona_peri_clk_disable(struct clk_hw *hw)
- 	struct kona_clk *bcm_clk = to_kona_clk(hw);
- 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
- 
--	(void)clk_gate(bcm_clk->ccu, bcm_clk->name, gate, false);
-+	(void)clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, false);
- }
- 
- static int kona_peri_clk_is_enabled(struct clk_hw *hw)
-@@ -873,12 +873,13 @@ static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
- 
- 	ret = selector_write(bcm_clk->ccu, &data->gate, sel, trig, index);
- 	if (ret == -ENXIO) {
--		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: gating failure for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 		ret = -EIO;	/* Don't proliferate weird errors */
- 	} else if (ret == -EIO) {
- 		pr_err("%s: %strigger failed for %s\n", __func__,
- 			trig == &data->pre_trig ? "pre-" : "",
--			bcm_clk->name);
-+			bcm_clk->init_data.name);
- 	}
- 
- 	return ret;
-@@ -937,10 +938,12 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
- 	ret = divider_write(bcm_clk->ccu, &data->gate, &data->div,
- 				&data->trig, scaled_div);
- 	if (ret == -ENXIO) {
--		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: gating failure for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 		ret = -EIO;	/* Don't proliferate weird errors */
- 	} else if (ret == -EIO) {
--		pr_err("%s: trigger failed for %s\n", __func__, bcm_clk->name);
-+		pr_err("%s: trigger failed for %s\n", __func__,
-+			bcm_clk->init_data.name);
- 	}
- 
- 	return ret;
-@@ -962,7 +965,7 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
- {
- 	struct ccu_data *ccu = bcm_clk->ccu;
- 	struct peri_clk_data *peri = bcm_clk->peri;
--	const char *name = bcm_clk->name;
-+	const char *name = bcm_clk->init_data.name;
- 	struct bcm_clk_trig *trig;
- 
- 	BUG_ON(bcm_clk->type != bcm_clk_peri);
-diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-index 5e139ad..96fd0bc 100644
---- a/drivers/clk/bcm/clk-kona.h
-+++ b/drivers/clk/bcm/clk-kona.h
-@@ -373,8 +373,7 @@ struct peri_clk_data {
- 
- struct kona_clk {
- 	struct clk_hw hw;
--	struct clk_init_data init_data;
--	const char *name;	/* name of this clock */
-+	struct clk_init_data init_data;	/* includes name of this clock */
- 	struct ccu_data *ccu;	/* ccu this clock is associated with */
- 	enum bcm_clk_type type;
- 	union {
+That said I'll just drop the patch for now due to the PREFIX thing.
+
+Thanks!
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
