@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaBTCGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 21:06:24 -0500
-Received: from mail-by2lp0240.outbound.protection.outlook.com ([207.46.163.240]:27863
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751998AbaBTCGX convert rfc822-to-8bit (ORCPT
+	id S1752705AbaBTCK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 21:10:58 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54666 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaBTCK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 21:06:23 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-CC: "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: RE: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
- visible in Kconfig
-Thread-Topic: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
- visible in Kconfig
-Thread-Index: AQHPJtx7vjnlwG7hYkWLGSOUXx6EvJq9cbFA
-Date: Thu, 20 Feb 2014 02:06:20 +0000
-Message-ID: <36d9c0a870604fbe87b129e95fea9da1@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1392086825-15737-1-git-send-email-Li.Xiubo@freescale.com>
- <1392086825-15737-2-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1392086825-15737-2-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.215]
-x-forefront-prvs: 01283822F8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(51704005)(164054003)(81342001)(81542001)(69226001)(93136001)(59766001)(77982001)(74366001)(19580395003)(56776001)(19580405001)(2201001)(53806001)(83072002)(85852003)(51856001)(54356001)(46102001)(76796001)(76786001)(81686001)(92566001)(81816001)(95416001)(86362001)(93516002)(95666001)(94946001)(76482001)(76576001)(54316002)(94316002)(80976001)(56816005)(85306002)(87936001)(90146001)(66066001)(31966008)(74502001)(47446002)(83322001)(74316001)(33646001)(2656002)(87266001)(47736001)(47976001)(50986001)(63696002)(74662001)(65816001)(4396001)(74876001)(49866001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB441;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.215;FPR:7CD8E25D.3BD227F1.C6559C.84D4AAF3.2020D;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 19 Feb 2014 21:10:56 -0500
+Message-ID: <53056429.8030705@linaro.org>
+Date: Thu, 20 Feb 2014 10:10:49 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Sudeep Holla <Sudeep.Holla@arm.com>, Lan Tianyu <tianyu.lan@intel.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [PATCH v4 5/5] ACPI: Replace printk with pr_* in
+ tables.c
+References: <1392731700-10992-1-git-send-email-hanjun.guo@linaro.org> <2341500.Z47JjkFCMP@vostro.rjw.lan> <5304DFDB.6020202@arm.com> <1624648.FYgVXnCCsW@vostro.rjw.lan>
+In-Reply-To: <1624648.FYgVXnCCsW@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 2014年02月20日 08:37, Rafael J. Wysocki wrote:
+> On Wednesday, February 19, 2014 04:46:19 PM Sudeep Holla wrote:
+>> On 19/02/14 16:49, Rafael J. Wysocki wrote:
+>>> On Wednesday, February 19, 2014 04:32:34 PM Sudeep Holla wrote:
+>>>> On 18/02/14 13:55, Hanjun Guo wrote:
+>>>>> This patch just do some clean up to replace printk with pr_*,
+>>>>> no functional change.
+>>>>>
+>>>> Any particular reason for choosing just this file in this series ?
 
-I'm not very sure of this patch, maybe should we add one menu
-in Kconfig for all visible CPU DAIs firstly like for code drivers?
+Yes, the reason is that I will update this file in my next patch set 
+(ARM64 ACPI core) with
+pr_*, in order to keep  consistency, I updated them all in this file first.
 
-Thanks,
+>>>> It seems but off-topic in this series. The printk format is same in almost all
+>>>> other acpi files and it's better to change all or none for consistency.
+>>> Well, it's fine, I can put it into a different branch in any case. :-)
+>>>
+>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>>>> ---
+>>>>>   drivers/acpi/tables.c |   51 +++++++++++++++++++------------------------------
+>>>>>   1 file changed, 20 insertions(+), 31 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+>>>>> index 5837f85..97bc6df 100644
+>>>>> --- a/drivers/acpi/tables.c
+>>>>> +++ b/drivers/acpi/tables.c
+>>>>> @@ -55,8 +55,7 @@ void acpi_table_print_madt_entry(struct acpi_subtable_header *header)
+>>>>>   		{
+>>>>>   			struct acpi_madt_local_apic *p =
+>>>>>   			    (struct acpi_madt_local_apic *)header;
+>>>>> -			printk(KERN_INFO PREFIX
+>>>>> -			       "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+>>>>> +			pr_info(PREFIX "LAPIC (acpi_id[0x%02x] lapic_id[0x%02x] %s)\n",
+>>>> You can even get rid of PREFIX by defining pr_fmt instead.
+>>> But this is a good point.
+>>>
+>>>> If the intention is to move to pr_* format it's better to have this as separate
+>>>> patch and convert all of them.
+>>> Well, not really.  One file at a time is OK too.
+>>>
+>> No what I meant was to convert all for consistency, not in a single patch.
+>> As I was playing with regex for few minutes, with few patterns was able to fix
+>> most(not all) of them. It even compiles :) for x86. But turns out to be a big
+>> churn :( [43 files changed, 253 insertions(+), 329 deletions(-)]
+> Well, precisely.  That's why I'd prefer doing that gradually.
+>
+> That said I'll just drop the patch for now due to the PREFIX thing.
 
---
-Best Regards,
-Xiubo
+I will update this patch accordingly and send it out soon.
 
-
-> Subject: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be visible in
-> Kconfig
-> 
-> For simple card since the whole idea is to support any CODEC and
-> any CPU DAI with the same driver, we should probably just make sure
-> that all the individual CODEC and CPU DAI drivers can be enabled in
-> Kconfig. That way we don't have to have specific Kconfig entries for
-> boards and loose some of the benefit of the generic card.
-> 
-> This will make the Freescale SAI/ESAI/SPDIF device be visible in
-> Kconfig.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Cc: Nicolin Chen <Guangyu.Chen@freescale.com>
-> Cc: Mark Brown <broonie@linaro.org>
-> ---
->  sound/soc/fsl/Kconfig | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-> index d0914c0..f397144 100644
-> --- a/sound/soc/fsl/Kconfig
-> +++ b/sound/soc/fsl/Kconfig
-> @@ -1,5 +1,5 @@
->  config SND_SOC_FSL_SAI
-> -	tristate
-> +	tristate "ALSA SoC support for the Freescale SAI device"
->  	select REGMAP_MMIO
->  	select SND_SOC_GENERIC_DMAENGINE_PCM
-> 
-> @@ -7,11 +7,11 @@ config SND_SOC_FSL_SSI
->  	tristate
-> 
->  config SND_SOC_FSL_SPDIF
-> -	tristate
-> +	tristate "ALSA SoC support for the Freescale SPDIF device"
->  	select REGMAP_MMIO
-> 
->  config SND_SOC_FSL_ESAI
-> -	tristate
-> +	tristate "ALSA SoC support for the Freescale ESAI device"
->  	select REGMAP_MMIO
-> 
->  config SND_SOC_FSL_UTILS
-> --
-> 1.8.4
-> 
-
+Thanks
+Hanjun
