@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261AbaBUAmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:42:18 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:44495 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431AbaBUAmO (ORCPT
+	id S1755423AbaBTXv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45647 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338AbaBTXvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:42:14 -0500
+	Thu, 20 Feb 2014 18:51:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 15/82] ar5523: fix usb id for Gigaset.
+Date: Thu, 20 Feb 2014 15:51:58 -0800
+Message-Id: <20140220235019.943442115@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
+References: <20140220235019.483734207@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 20 Feb 2014 16:41:32 -0800
-Message-ID: <CAGVrzcZTHZYaB7sEDxFrP3PzZh0y-daS0gqg2Z4PUzuWGFeiSw@mail.gmail.com>
-Subject: Re: [PATCH v6 0/8] ARM: brcmstb: Add Broadcom STB SoC support
-To: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-2014-02-03 13:30 GMT-08:00 Marc Carino <marc.ceeeee@gmail.com>:
-> This patchset contains the board support package for the
-> Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-> minimal set of code needed for a BCM7445-based board to boot
-> the Linux kernel.
+------------------
 
-If you are happy with this round of changes, can you also carry those
-patches in your tree for 3.15?
+From: Oleksij Rempel <linux@rempel-privat.de>
 
->
-> These changes heavily leverage the OF/devicetree framework.
->
-> v6:
-> - rebased to v3.14-rc1
-> - utilize common APIs for handling CPU power-down
-> - drop deprecated __cpuinit attributes
->
-> v5 (https://lkml.org/lkml/2014/1/21/640):
-> - rebased to v3.13 tag
-> - make UART DT node a child of 'rdb' node
-> - fix ordering of debug UART entries
->
-> v4 (https://lkml.org/lkml/2014/1/17/455):
-> - make a reboot driver and put it in the drivers folder
-> - rework DT bindings to leverage 'syscon'
-> - rework BSP code to use 'syscon' for all register mappings
-> - misc. tweaks per suggestions from v3
->
-> v3 (https://lkml.org/lkml/2014/1/14/696):
-> - rebased to v3.13-rc8
-> - switched to using 'multi_v7_defconfig'
-> - eliminated dependence on compile-time peripheral register access
-> - moved DT node iomap out from 'init_early'
-> - misc. minor cleanups from mailing-list discussion for v2
->
-> v2 (https://lkml.org/lkml/2013/11/26/570):
-> - rebased to v3.13-rc1
-> - moved implementation to 'mach-bcm' folder
-> - added CPU init for B16RM
->
-> v1:
-> - initial submission
->
-> [1] http://www.broadcom.com/products/Cable/Cable-Set-Top-Box-Solutions/BCM7445
->
-> Marc Carino (8):
->   ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
->   power: reset: Add reboot driver for brcmstb
->   ARM: brcmstb: add debug UART for earlyprintk support
->   ARM: do CPU-specific init for Broadcom Brahma15 cores
->   ARM: brcmstb: add CPU binding for Broadcom Brahma15
->   ARM: brcmstb: add misc. DT bindings for brcmstb
->   ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
->   ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
->
->  .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++
->  Documentation/devicetree/bindings/arm/cpus.txt     |    1 +
->  Documentation/devicetree/bindings/arm/gic.txt      |    1 +
->  arch/arm/Kconfig.debug                             |   15 +-
->  arch/arm/boot/dts/bcm7445.dts                      |  111 +++++++
->  arch/arm/configs/multi_v7_defconfig                |    1 +
->  arch/arm/mach-bcm/Kconfig                          |   15 +
->  arch/arm/mach-bcm/Makefile                         |    4 +
->  arch/arm/mach-bcm/brcmstb.c                        |  104 +++++++
->  arch/arm/mach-bcm/brcmstb.h                        |   38 +++
->  arch/arm/mach-bcm/headsmp-brcmstb.S                |   33 ++
->  arch/arm/mach-bcm/hotplug-brcmstb.c                |  311 ++++++++++++++++++++
->  arch/arm/mm/proc-v7.S                              |   11 +
->  drivers/power/reset/Kconfig                        |   10 +
->  drivers/power/reset/Makefile                       |    1 +
->  drivers/power/reset/brcmstb-reboot.c               |  120 ++++++++
->  16 files changed, 870 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
->  create mode 100644 arch/arm/boot/dts/bcm7445.dts
->  create mode 100644 arch/arm/mach-bcm/brcmstb.c
->  create mode 100644 arch/arm/mach-bcm/brcmstb.h
->  create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
->  create mode 100644 arch/arm/mach-bcm/hotplug-brcmstb.c
->  create mode 100644 drivers/power/reset/brcmstb-reboot.c
->
+commit 4fcfc7443d072582b5047b8b391d711590e5645c upstream.
+
+Raw id and FW id should be switched.
+
+Tested-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ath/ar5523/ar5523.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ar5523/ar5523.c
++++ b/drivers/net/wireless/ath/ar5523/ar5523.c
+@@ -1764,7 +1764,7 @@ static struct usb_device_id ar5523_id_ta
+ 	AR5523_DEVICE_UX(0x2001, 0x3a04),	/* Dlink / DWLAG122 */
+ 	AR5523_DEVICE_UG(0x1690, 0x0712),	/* Gigaset / AR5523 */
+ 	AR5523_DEVICE_UG(0x1690, 0x0710),	/* Gigaset / SMCWUSBTG */
+-	AR5523_DEVICE_UG(0x129b, 0x160c),	/* Gigaset / USB stick 108
++	AR5523_DEVICE_UG(0x129b, 0x160b),	/* Gigaset / USB stick 108
+ 						   (CyberTAN Technology) */
+ 	AR5523_DEVICE_UG(0x16ab, 0x7801),	/* Globalsun / AR5523_1 */
+ 	AR5523_DEVICE_UX(0x16ab, 0x7811),	/* Globalsun / AR5523_2 */
 
 
-
--- 
-Florian
