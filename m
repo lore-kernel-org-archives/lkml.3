@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaBTNM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 08:12:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57367 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753235AbaBTNM0 (ORCPT
+	id S1754244AbaBTNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 08:13:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39756 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552AbaBTNNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 08:12:26 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v2 1/1] ACPI, PCI, ISA: Call ISA-specific code only for architectures which support ISA.
-Date: Thu, 20 Feb 2014 14:27:18 +0100
-Message-ID: <1960149.m5ChbkDSsG@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5305DC92.8050706@linaro.org>
-References: <1392806122-23318-1-git-send-email-tomasz.nowicki@linaro.org> <3640027.L0fXHYxIB5@vostro.rjw.lan> <5305DC92.8050706@linaro.org>
+	Thu, 20 Feb 2014 08:13:25 -0500
+Message-ID: <5305FF70.2030406@canonical.com>
+Date: Thu, 20 Feb 2014 14:13:20 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [x86] 339a3922f6: +4.3% aim7 jobs-per-min
+References: <20140220130646.GA22815@localhost>
+In-Reply-To: <20140220130646.GA22815@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 20, 2014 11:44:34 AM Tomasz Nowicki wrote:
-> On 19.02.2014 17:11, Rafael J. Wysocki wrote:
-> > On Wednesday, February 19, 2014 11:35:22 AM Tomasz Nowicki wrote:
-> >> This commit moves ISA-specific code to separate function and makes that
-> >> function depend on CONFIG_{E}ISA so that we do not have to maintain
-> >> acpi_isa_irq_to_gsi() function for architectures which do not support ISA.
-> >>
-> >> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> >> ---
-> >>   drivers/acpi/pci_irq.c |   35 +++++++++++++++++++++++++----------
-> >>   1 file changed, 25 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-> >> index 361b40c..0a553a0 100644
-> >> --- a/drivers/acpi/pci_irq.c
-> >> +++ b/drivers/acpi/pci_irq.c
-> >> @@ -370,6 +370,30 @@ static struct acpi_prt_entry *acpi_pci_irq_lookup(struct pci_dev *dev, int pin)
-> >>   	return NULL;
-> >>   }
-> >>
-> >> +#if IS_ENABLED(CONFIG_ISA) || IS_ENABLED(CONFIG_EISA)
-> >> +static int acpi_isa_register_gsi(struct pci_dev *dev)
-> >> +{
-> >> +	u32 dev_gsi;
-> >> +
-> >> +	/* Interrupt Line values above 0xF are forbidden */
-> >> +	if (dev->irq > 0 && (dev->irq <= 0xF) &&
-> >> +	    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
-> >> +		dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
-> >> +			 pin_name(dev->pin), dev->irq);
-> >> +		acpi_register_gsi(&dev->dev, dev_gsi,
-> >> +				  ACPI_LEVEL_SENSITIVE,
-> >> +				  ACPI_ACTIVE_LOW);
-> >> +		return 0;
-> >> +	}
-> >> +	return -EINVAL;
-> >> +}
-> >> +#else
-> >> +static inline int acpi_isa_register_gsi(struct pci_dev *dev)
-> >> +{
-> >> +	return -ENODEV;
-> >> +}
-> >> +#endif
-> >> +
-> >>   int acpi_pci_irq_enable(struct pci_dev *dev)
-> >>   {
-> >>   	struct acpi_prt_entry *entry;
-> >> @@ -416,16 +440,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
-> >>   	 * driver reported one, then use it. Exit in any case.
-> >>   	 */
-> >>   	if (gsi < 0) {
-> >> -		u32 dev_gsi;
-> >> -		/* Interrupt Line values above 0xF are forbidden */
-> >> -		if (dev->irq > 0 && (dev->irq <= 0xF) &&
-> >> -		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
-> >> -			dev_warn(&dev->dev, "PCI INT %c: no GSI - using ISA IRQ %d\n",
-> >> -				 pin_name(pin), dev->irq);
-> >> -			acpi_register_gsi(&dev->dev, dev_gsi,
-> >> -					  ACPI_LEVEL_SENSITIVE,
-> >> -					  ACPI_ACTIVE_LOW);
-> >> -		} else {
-> >> +		if (acpi_isa_register_gsi(dev)) {
-> >
-> > The curly brackets are not necessary here and you can even move the below into
-> > acpi_isa_register_gsi().
-> Right, the curly brackets can be removed.
-> 
-> My intention was to print warning when ISA is not supported too, and do 
-> not put dev_warn() into both version of acpi_isa_register_gsi(). So I 
-> would leave code below as it is.
+op 20-02-14 14:06, Fengguang Wu schreef:
+> Hi Maarten,
+>
+> We are glad to find that your commit 339a3922f68dcb7d93001f07b7e914d5cf6c066d
+> ("decrease useless padding") increased aim disk_src performance by 4.3%:
+>
+> 74833276be6802b  339a3922f68dcb7d93001f07b
+> ---------------  -------------------------
+>      511685 ~ 0%      +4.3%     533571 ~ 0%  TOTAL aim7.2000.jobs-per-min
+>       77.30 ~ 0%      -9.9%      69.66 ~ 0%  TOTAL time.system_time
+>        1.95 ~ 2%      +7.0%       2.09 ~ 2%  TOTAL iostat.sda.rrqm/s
+>       23.57 ~ 0%      -4.1%      22.60 ~ 0%  TOTAL time.elapsed_time
+>         425 ~ 0%      -3.1%        412 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+>        7.59 ~ 0%      -2.9%       7.37 ~ 0%  TOTAL boottime.dhcp
+>       15.24 ~ 0%      -1.9%      14.94 ~ 0%  TOTAL boottime.boot
+>
+Really? I just did it to get rid of the 15-byte nop sequences with tons of prefixes.
+Interesting..
 
-OK
+~Maarten
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
