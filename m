@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627AbaBUAGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:06:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46190 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225AbaBTXxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932244AbaBTXxr (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Feb 2014 18:53:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46175 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932225AbaBTXxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:53:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Po-Hsu Lin <po-hsu.lin@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 60/99] ALSA: hda - Add a headset quirk for Dell XPS 13
-Date: Thu, 20 Feb 2014 15:52:55 -0800
-Message-Id: <20140220235119.951346299@linuxfoundation.org>
+        Beomho Seo <beomho.seo@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.13 56/99] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
+Date: Thu, 20 Feb 2014 15:52:51 -0800
+Message-Id: <20140220235119.827060202@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,32 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Beomho Seo <beomho.seo@samsung.com>
 
-commit f47e5dc464251f661da9495fcbf003a0d22c1360 upstream.
+commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
 
-This quirk is needed for the headset microphone to work.
+This effects the reported scale of the raw values, and thus userspace
+applications that use this value.
 
-Alsa-info at http://www.alsa-project.org/db/?f=8c7dfe857ceff462ca2de133e67023c0f68de9cb
+One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
+ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
+always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
+As a result, read_raw call back function return accurate scale value.
 
-Reported-by: Po-Hsu Lin <po-hsu.lin@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/iio/magnetometer/ak8975.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5093,6 +5093,7 @@ static const struct snd_pci_quirk alc662
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x060a, "Dell XPS 13", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_AUTO_MUTE),
- 	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_AUTO_MUTE),
- 	SND_PCI_QUIRK(0x1028, 0x0625, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -85,6 +85,7 @@
+ #define AK8975_MAX_CONVERSION_TIMEOUT	500
+ #define AK8975_CONVERSION_DONE_POLL_TIME 10
+ #define AK8975_DATA_READY_TIMEOUT	((100*HZ)/1000)
++#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
+ 
+ /*
+  * Per-instance context data for the device.
+@@ -265,15 +266,15 @@ static int ak8975_setup(struct i2c_clien
+  *
+  * Since 1uT = 0.01 gauss, our final scale factor becomes:
+  *
+- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
+- * Hadj = H * ((ASA + 128) * 30 / 256
++ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
++ * Hadj = H * ((ASA + 128) * 0.003) / 256
+  *
+  * Since ASA doesn't change, we cache the resultant scale factor into the
+  * device context in ak8975_setup().
+  */
+-	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
+-	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
+-	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
++	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
++	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
++	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
+ 
+ 	return 0;
+ }
+@@ -428,8 +429,9 @@ static int ak8975_read_raw(struct iio_de
+ 	case IIO_CHAN_INFO_RAW:
+ 		return ak8975_read_axis(indio_dev, chan->address, val);
+ 	case IIO_CHAN_INFO_SCALE:
+-		*val = data->raw_to_gauss[chan->address];
+-		return IIO_VAL_INT;
++		*val = 0;
++		*val2 = data->raw_to_gauss[chan->address];
++		return IIO_VAL_INT_PLUS_MICRO;
+ 	}
+ 	return -EINVAL;
+ }
 
 
