@@ -1,170 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaBTBdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:33:04 -0500
+	id S1753107AbaBTBdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:33:07 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58001 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaBTBdB (ORCPT
+	with ESMTP id S1752979AbaBTBdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:33:01 -0500
-X-AuditID: 9c93016f-b7c65ae000004a2a-36-53055b4af63d
+	Wed, 19 Feb 2014 20:33:05 -0500
+X-AuditID: 9c93016f-b7c65ae000004a2a-54-53055b4c30ec
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>
-Subject: [PATCH 1/4] perf tools: Check availability of annotate when processing samples
-Date: Thu, 20 Feb 2014 10:32:53 +0900
-Message-Id: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 3/4] perf tools: Check return value of filename__read_debuglink()
+Date: Thu, 20 Feb 2014 10:32:55 +0900
+Message-Id: <1392859976-32760-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
+References: <1392859976-32760-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TUI of perf report and top support annotation, but stdio and GTK
-don't.  So it should be checked before calling hist_entry__inc_addr_
-samples() since perf annotate need it regardless of UI and sort keys.
+From: Stephane Eranian <eranian@google.com>
 
-It caused perf annotate on ppc64 to produce zero output.
+When dso__read_binary_type_filename() called, it doesn't check the
+return value of filename__read_debuglink() so that it'll try to open
+the debuglink file even if it doesn't exist.
 
-Reported-by: Anton Blanchard <anton@samba.org>
-Cc: Anton Blanchard <anton@samba.org>
+Also fix return value of the filename__read_debuglink() as it always
+return -1 regardless of the result.
+
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 45 +++++++++++++++++++++++++++++----------------
- tools/perf/builtin-top.c    | 11 +++++++++--
- tools/perf/util/annotate.c  |  2 +-
- 3 files changed, 39 insertions(+), 19 deletions(-)
+Stephane, can I add your s-o-b here?
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d882b6f96411..bab762bdeb0d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -75,6 +75,11 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
+ tools/perf/util/dso.c        | 4 ++--
+ tools/perf/util/symbol-elf.c | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 4045d086d9d9..64453d63b971 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -45,8 +45,8 @@ int dso__read_binary_type_filename(const struct dso *dso,
+ 			debuglink--;
+ 		if (*debuglink == '/')
+ 			debuglink++;
+-		filename__read_debuglink(dso->long_name, debuglink,
+-					 size - (debuglink - filename));
++		ret = filename__read_debuglink(dso->long_name, debuglink,
++					       size - (debuglink - filename));
+ 		}
+ 		break;
+ 	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 3e9f336740fa..8ac4a4fe2abd 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -506,6 +506,8 @@ int filename__read_debuglink(const char *filename, char *debuglink,
+ 	/* the start of this section is a zero-terminated string */
+ 	strncpy(debuglink, data->d_buf, size);
  
-+static bool report_needs_annotate(void)
-+{
-+	return use_browser == 1 && sort__has_sym;
-+}
++	err = 0;
 +
- static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
- 				      struct perf_sample *sample, struct perf_evsel *evsel)
- {
-@@ -110,14 +115,16 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
- 	if (!he)
- 		return -ENOMEM;
- 
--	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
--	if (err)
--		goto out;
-+	if (report_needs_annotate()) {
-+		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+		if (err)
-+			goto out;
- 
--	mx = he->mem_info;
--	err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
--	if (err)
--		goto out;
-+		mx = he->mem_info;
-+		err = addr_map_symbol__inc_samples(&mx->daddr, evsel->idx);
-+		if (err)
-+			goto out;
-+	}
- 
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-@@ -159,14 +166,18 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 		he = __hists__add_entry(&evsel->hists, al, parent, &bi[i], NULL,
- 					1, 1, 0);
- 		if (he) {
--			bx = he->branch_info;
--			err = addr_map_symbol__inc_samples(&bx->from, evsel->idx);
--			if (err)
--				goto out;
--
--			err = addr_map_symbol__inc_samples(&bx->to, evsel->idx);
--			if (err)
--				goto out;
-+			if (report_needs_annotate()) {
-+				bx = he->branch_info;
-+				err = addr_map_symbol__inc_samples(&bx->from,
-+								   evsel->idx);
-+				if (err)
-+					goto out;
-+
-+				err = addr_map_symbol__inc_samples(&bx->to,
-+								   evsel->idx);
-+				if (err)
-+					goto out;
-+			}
- 
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-@@ -199,7 +210,9 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 	if (err)
- 		goto out;
- 
--	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+	if (report_needs_annotate())
-+		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+
- 	evsel->hists.stats.total_period += sample->period;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- out:
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ed99ec4a309f..a19c3afcfa0e 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -87,6 +87,11 @@ static void perf_top__sig_winch(int sig __maybe_unused,
- 	perf_top__update_print_entries(top);
- }
- 
-+static bool top_needs_annotate(void)
-+{
-+	return use_browser == 1 && sort__has_sym;
-+}
-+
- static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
- {
- 	struct symbol *sym;
-@@ -176,7 +181,7 @@ static void perf_top__record_precise_ip(struct perf_top *top,
- {
- 	struct annotation *notes;
- 	struct symbol *sym;
--	int err;
-+	int err = 0;
- 
- 	if (he == NULL || he->ms.sym == NULL ||
- 	    ((top->sym_filter_entry == NULL ||
-@@ -190,7 +195,9 @@ static void perf_top__record_precise_ip(struct perf_top *top,
- 		return;
- 
- 	ip = he->ms.map->map_ip(he->ms.map, ip);
--	err = hist_entry__inc_addr_samples(he, counter, ip);
-+
-+	if (top_needs_annotate())
-+		err = hist_entry__inc_addr_samples(he, counter, ip);
- 
- 	pthread_mutex_unlock(&notes->lock);
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 469eb679fb9d..6fcada625c86 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -489,7 +489,7 @@ static int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- {
- 	struct annotation *notes;
- 
--	if (sym == NULL || use_browser != 1 || !sort__has_sym)
-+	if (sym == NULL)
- 		return 0;
- 
- 	notes = symbol__annotation(sym);
+ out_elf_end:
+ 	elf_end(elf);
+ out_close:
 -- 
 1.7.11.7
 
