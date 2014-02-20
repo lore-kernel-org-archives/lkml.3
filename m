@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514AbaBUAB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:01:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46290 "EHLO
+	id S1756069AbaBTXyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756082AbaBTXyL (ORCPT
+	with ESMTP id S1756047AbaBTXyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:11 -0500
+	Thu, 20 Feb 2014 18:54:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 83/99] ACPI / hotplug / PCI: Relax the checking of _STA return values
-Date: Thu, 20 Feb 2014 15:53:18 -0800
-Message-Id: <20140220235120.612269485@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.13 77/99] Revert "usb: xhci: Link TRB must not occur within a USB payload burst"
+Date: Thu, 20 Feb 2014 15:53:12 -0800
+Message-Id: <20140220235120.435346701@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,75 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 7282059489868e0ed1b0d79765730c6b233a8399 upstream.
+commit 3d4b81eda2211f32886e2978daf6f39885042fc4 upstream.
 
-The ACPI specification (ACPI 5.0A, Section 6.3.7) says:
+This reverts commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e.  It's a
+hack that caused regressions in the usb-storage and userspace USB
+drivers that use usbfs and libusb.  Commit 70cabb7d992f "xhci 1.0: Limit
+arbitrarily-aligned scatter gather." should fix the issues seen with the
+ax88179_178a driver on xHCI 1.0 hosts, without causing regressions.
 
- _STA may return bit 0 clear (not present) with bit 3 set (device is
- functional). This case is used to indicate a valid device for which
- no device driver should be loaded (for example, a bridge device.)
- Children of this device may be present and valid. OSPM should
- continue enumeration below a device whose _STA returns this bit
- combination.
-
-Evidently, some BIOSes follow that and return 0x0A from _STA, which
-causes problems to happen when they trigger bus check or device check
-notifications for those devices too.  Namely, ACPIPHP thinks that they
-are gone and may drop them, for example, if such a notification is
-triggered during a resume from system suspend.
-
-To fix that, modify ACPICA to regard devies as present and
-functioning if _STA returns both the ACPI_STA_DEVICE_ENABLED
-and ACPI_STA_DEVICE_FUNCTIONING bits set for them.
-
-Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
-[rjw: Subject and changelog, minor code modifications]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-ring.c |   54 +------------------------------------------
+ include/linux/usb.h          |    2 -
+ 2 files changed, 2 insertions(+), 54 deletions(-)
 
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -706,6 +706,17 @@ static unsigned int get_slot_status(stru
- 	return (unsigned int)sta;
- }
- 
-+static inline bool device_status_valid(unsigned int sta)
-+{
-+	/*
-+	 * ACPI spec says that _STA may return bit 0 clear with bit 3 set
-+	 * if the device is valid but does not require a device driver to be
-+	 * loaded (Section 6.3.7 of ACPI 5.0A).
-+	 */
-+	unsigned int mask = ACPI_STA_DEVICE_ENABLED | ACPI_STA_DEVICE_FUNCTIONING;
-+	return (sta & mask) == mask;
-+}
-+
- /**
-  * trim_stale_devices - remove PCI devices that are not responding.
-  * @dev: PCI device to start walking the hierarchy from.
-@@ -721,7 +732,7 @@ static void trim_stale_devices(struct pc
- 		unsigned long long sta;
- 
- 		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
--		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
-+		alive = (ACPI_SUCCESS(status) && device_status_valid(sta))
- 			|| acpiphp_no_hotplug(handle);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2973,58 +2973,8 @@ static int prepare_ring(struct xhci_hcd
  	}
- 	if (!alive) {
-@@ -764,7 +775,7 @@ static void acpiphp_check_bridge(struct
- 		mutex_lock(&slot->crit_sect);
- 		if (slot_no_hotplug(slot)) {
- 			; /* do nothing */
--		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
-+		} else if (device_status_valid(get_slot_status(slot))) {
- 			/* remove stale devices if any */
- 			list_for_each_entry_safe(dev, tmp, &bus->devices,
- 						 bus_list)
+ 
+ 	while (1) {
+-		if (room_on_ring(xhci, ep_ring, num_trbs)) {
+-			union xhci_trb *trb = ep_ring->enqueue;
+-			unsigned int usable = ep_ring->enq_seg->trbs +
+-					TRBS_PER_SEGMENT - 1 - trb;
+-			u32 nop_cmd;
+-
+-			/*
+-			 * Section 4.11.7.1 TD Fragments states that a link
+-			 * TRB must only occur at the boundary between
+-			 * data bursts (eg 512 bytes for 480M).
+-			 * While it is possible to split a large fragment
+-			 * we don't know the size yet.
+-			 * Simplest solution is to fill the trb before the
+-			 * LINK with nop commands.
+-			 */
+-			if (num_trbs == 1 || num_trbs <= usable || usable == 0)
+-				break;
+-
+-			if (ep_ring->type != TYPE_BULK)
+-				/*
+-				 * While isoc transfers might have a buffer that
+-				 * crosses a 64k boundary it is unlikely.
+-				 * Since we can't add NOPs without generating
+-				 * gaps in the traffic just hope it never
+-				 * happens at the end of the ring.
+-				 * This could be fixed by writing a LINK TRB
+-				 * instead of the first NOP - however the
+-				 * TRB_TYPE_LINK_LE32() calls would all need
+-				 * changing to check the ring length.
+-				 */
+-				break;
+-
+-			if (num_trbs >= TRBS_PER_SEGMENT) {
+-				xhci_err(xhci, "Too many fragments %d, max %d\n",
+-						num_trbs, TRBS_PER_SEGMENT - 1);
+-				return -ENOMEM;
+-			}
+-
+-			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
+-					ep_ring->cycle_state);
+-			ep_ring->num_trbs_free -= usable;
+-			do {
+-				trb->generic.field[0] = 0;
+-				trb->generic.field[1] = 0;
+-				trb->generic.field[2] = 0;
+-				trb->generic.field[3] = nop_cmd;
+-				trb++;
+-			} while (--usable);
+-			ep_ring->enqueue = trb;
+-			if (room_on_ring(xhci, ep_ring, num_trbs))
+-				break;
+-		}
++		if (room_on_ring(xhci, ep_ring, num_trbs))
++			break;
+ 
+ 		if (ep_ring == xhci->cmd_ring) {
+ 			xhci_err(xhci, "Do not support expand command ring\n");
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1264,8 +1264,6 @@ typedef void (*usb_complete_t)(struct ur
+  * @sg: scatter gather buffer list, the buffer size of each element in
+  * 	the list (except the last) must be divisible by the endpoint's
+  * 	max packet size if no_sg_constraint isn't set in 'struct usb_bus'
+- * 	(FIXME: scatter-gather under xHCI is broken for periodic transfers.
+- * 	Do not use urb->sg for interrupt endpoints for now, only bulk.)
+  * @num_mapped_sgs: (internal) number of mapped sg entries
+  * @num_sgs: number of entries in the sg list
+  * @transfer_buffer_length: How big is transfer_buffer.  The transfer may
 
 
