@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaBTUoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:44:54 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:47529 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639AbaBTUov (ORCPT
+	id S1753744AbaBTUox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:44:53 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:58106 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723AbaBTUou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:44:51 -0500
+	Thu, 20 Feb 2014 15:44:50 -0500
 From: Tejun Heo <tj@kernel.org>
 To: laijs@cn.fujitsu.com
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 9/9] workqueue: remove PREPARE_[DELAYED_]WORK()
-Date: Thu, 20 Feb 2014 15:44:31 -0500
-Message-Id: <1392929071-16555-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 8/9] staging/fwserial: don't use PREPARE_WORK
+Date: Thu, 20 Feb 2014 15:44:30 -0500
+Message-Id: <1392929071-16555-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1392929071-16555-1-git-send-email-tj@kernel.org>
 References: <1392929071-16555-1-git-send-email-tj@kernel.org>
@@ -21,71 +21,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley noticed that since a2c1c57be8d9 ("workqueue: consider
-work function when searching for busy work items"), a work item which
-gets assigned a different work function would break out of the
-non-reentrancy guarantee as workqueue would consider it a different
-work item.
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-This is fragile and extremely subtle.  PREPARE_[DELAYED_]WORK() have
-never been used widely and its semantics has always been somewhat
-iffy.  If the work item is known not to be on queue when
-PREPARE_WORK() is called, there's no difference from using
-INIT_WORK().  If the work item may be queued at the time of
-PREPARE_WORK(), we can't really tell whether the old or new function
-will be executed the next time.
+fwtty_peer->work is multiplexed with multiple work functions.
+Introduce fwserial_peer_workfn() which invokes fwtty_peer->workfn and
+always use it as the work function and update the users to set the
+->workfn field instead of overriding the work function using
+PREPARE_WORK().
 
-We really don't want this level of subtlety in workqueue interface for
-such marginal use cases.  The previous patches converted all existing
-users away from PREPARE_[DELAYED_]WORK().  Let's remove them.
+It would probably be best to route this with other related updates
+through the workqueue tree.
+
+Compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Peter Hurley <peter@hurleysoftware.com>
-Link: http://lkml.kernel.org/g/1392493119-9277-1-git-send-email-peter@hurleysoftware.com
 ---
- include/linux/workqueue.h | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/staging/fwserial/fwserial.c | 13 ++++++++++---
+ drivers/staging/fwserial/fwserial.h |  1 +
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 594521b..d499066 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -177,17 +177,6 @@ struct execute_work {
- #define DECLARE_DEFERRABLE_WORK(n, f)					\
- 	struct delayed_work n = __DELAYED_WORK_INITIALIZER(n, f, TIMER_DEFERRABLE)
+diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
+index 8af136e..b22142e 100644
+--- a/drivers/staging/fwserial/fwserial.c
++++ b/drivers/staging/fwserial/fwserial.c
+@@ -2036,6 +2036,13 @@ static void fwserial_auto_connect(struct work_struct *work)
+ 		schedule_delayed_work(&peer->connect, CONNECT_RETRY_DELAY);
+ }
  
--/*
-- * initialize a work item's function pointer
-- */
--#define PREPARE_WORK(_work, _func)					\
--	do {								\
--		(_work)->func = (_func);				\
--	} while (0)
--
--#define PREPARE_DELAYED_WORK(_work, _func)				\
--	PREPARE_WORK(&(_work)->work, (_func))
--
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
- extern void __init_work(struct work_struct *work, int onstack);
- extern void destroy_work_on_stack(struct work_struct *work);
-@@ -217,7 +206,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
- 		(_work)->data = (atomic_long_t) WORK_DATA_INIT();	\
- 		lockdep_init_map(&(_work)->lockdep_map, #_work, &__key, 0); \
- 		INIT_LIST_HEAD(&(_work)->entry);			\
--		PREPARE_WORK((_work), (_func));				\
-+		(_work)->func = (_func);				\
- 	} while (0)
- #else
- #define __INIT_WORK(_work, _func, _onstack)				\
-@@ -225,7 +214,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
- 		__init_work((_work), _onstack);				\
- 		(_work)->data = (atomic_long_t) WORK_DATA_INIT();	\
- 		INIT_LIST_HEAD(&(_work)->entry);			\
--		PREPARE_WORK((_work), (_func));				\
-+		(_work)->func = (_func);				\
- 	} while (0)
- #endif
++static void fwserial_peer_workfn(struct work_struct *work)
++{
++	struct fwtty_peer *peer = to_peer(work, work);
++
++	peer->workfn(work);
++}
++
+ /**
+  * fwserial_add_peer - add a newly probed 'serial' unit device as a 'peer'
+  * @serial: aggregate representing the specific fw_card to add the peer to
+@@ -2100,7 +2107,7 @@ static int fwserial_add_peer(struct fw_serial *serial, struct fw_unit *unit)
+ 	peer->port = NULL;
  
+ 	init_timer(&peer->timer);
+-	INIT_WORK(&peer->work, NULL);
++	INIT_WORK(&peer->work, fwserial_peer_workfn);
+ 	INIT_DELAYED_WORK(&peer->connect, fwserial_auto_connect);
+ 
+ 	/* associate peer with specific fw_card */
+@@ -2702,7 +2709,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
+ 
+ 		} else {
+ 			peer->work_params.plug_req = pkt->plug_req;
+-			PREPARE_WORK(&peer->work, fwserial_handle_plug_req);
++			peer->workfn = fwserial_handle_plug_req;
+ 			queue_work(system_unbound_wq, &peer->work);
+ 		}
+ 		break;
+@@ -2731,7 +2738,7 @@ static int fwserial_parse_mgmt_write(struct fwtty_peer *peer,
+ 			fwtty_err(&peer->unit, "unplug req: busy\n");
+ 			rcode = RCODE_CONFLICT_ERROR;
+ 		} else {
+-			PREPARE_WORK(&peer->work, fwserial_handle_unplug_req);
++			peer->workfn = fwserial_handle_unplug_req;
+ 			queue_work(system_unbound_wq, &peer->work);
+ 		}
+ 		break;
+diff --git a/drivers/staging/fwserial/fwserial.h b/drivers/staging/fwserial/fwserial.h
+index 54f7f9b..98b853d 100644
+--- a/drivers/staging/fwserial/fwserial.h
++++ b/drivers/staging/fwserial/fwserial.h
+@@ -91,6 +91,7 @@ struct fwtty_peer {
+ 	struct rcu_head		rcu;
+ 
+ 	spinlock_t		lock;
++	work_func_t		workfn;
+ 	struct work_struct	work;
+ 	struct peer_work_params work_params;
+ 	struct timer_list	timer;
 -- 
 1.8.5.3
 
