@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596AbaBUASl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:18:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46015 "EHLO
+	id S1756841AbaBUAS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:18:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46011 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140AbaBTXxL (ORCPT
+	with ESMTP id S932138AbaBTXxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:11 -0500
+	Thu, 20 Feb 2014 18:53:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.13 19/99] s390: fix kernel crash due to linkage stack instructions
-Date: Thu, 20 Feb 2014 15:52:14 -0800
-Message-Id: <20140220235118.771887603@linuxfoundation.org>
+Subject: [PATCH 3.13 18/99] s390/dump: Fix dump memory detection
+Date: Thu, 20 Feb 2014 15:52:13 -0800
+Message-Id: <20140220235118.743120942@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,55 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
+commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
 
-The kernel currently crashes with a low-address-protection exception
-if a user space process executes an instruction that tries to use the
-linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
-of the dispatchable-unit-control-table to point to a dummy ASTE.
-Set up control register 15 to point to an empty linkage stack with no
-room left.
+Dumps created by kdump or zfcpdump can contain invalid memory holes when
+dumping z/VM systems that have memory pressure.
 
-A user space process with a linkage stack instruction will still crash
-but with a different exception which is correctly translated to a
-segmentation fault instead of a kernel oops.
+For example:
 
+   # zgetdump -i /proc/vmcore.
+   Memory map:
+   0000000000000000 - 0000000000bfffff (12 MB)
+   0000000000e00000 - 00000000014fffff (7 MB)
+   000000000bd00000 - 00000000f3bfffff (3711 MB)
+
+The memory detection function find_memory_chunks() issues tprot to
+find valid memory chunks. In case of CMM it can happen that pages are
+marked as unstable via set_page_unstable() in arch_free_page().
+If z/VM has released that pages, tprot returns -EFAULT and indicates
+a memory hole.
+
+So fix this and switch off CMM in case of kdump or zfcpdump.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/head64.S |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/s390/mm/page-states.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/s390/kernel/head64.S
-+++ b/arch/s390/kernel/head64.S
-@@ -59,7 +59,7 @@ ENTRY(startup_continue)
- 	.quad	0			# cr12: tracing off
- 	.quad	0			# cr13: home space segment table
- 	.quad	0xc0000000		# cr14: machine check handling off
--	.quad	0			# cr15: linkage stack operations
-+	.quad	.Llinkage_stack		# cr15: linkage stack operations
- .Lpcmsk:.quad	0x0000000180000000
- .L4malign:.quad 0xffffffffffc00000
- .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
-@@ -67,12 +67,15 @@ ENTRY(startup_continue)
- .Lparmaddr:
- 	.quad	PARMAREA
- 	.align	64
--.Lduct: .long	0,0,0,0,.Lduald,0,0,0
-+.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
- 	.long	0,0,0,0,0,0,0,0
-+.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
- 	.align	128
- .Lduald:.rept	8
- 	.long	0x80000000,0,0,0	# invalid access-list entries
- 	.endr
-+.Llinkage_stack:
-+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+--- a/arch/s390/mm/page-states.c
++++ b/arch/s390/mm/page-states.c
+@@ -12,6 +12,8 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <asm/setup.h>
++#include <asm/ipl.h>
  
- ENTRY(_ehead)
+ #define ESSA_SET_STABLE		1
+ #define ESSA_SET_UNUSED		2
+@@ -41,6 +43,14 @@ void __init cmma_init(void)
  
+ 	if (!cmma_flag)
+ 		return;
++	/*
++	 * Disable CMM for dump, otherwise  the tprot based memory
++	 * detection can fail because of unstable pages.
++	 */
++	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
++		cmma_flag = 0;
++		return;
++	}
+ 	asm volatile(
+ 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
+ 		"0:     la      %0,0\n"
 
 
