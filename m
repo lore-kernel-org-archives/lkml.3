@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaBUBJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:09:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45284 "EHLO
+	id S1754497AbaBTXub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506AbaBTXuc (ORCPT
+	with ESMTP id S1754050AbaBTXu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:32 -0500
+	Thu, 20 Feb 2014 18:50:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 19/25] IB/qib: Add missing serdes init sequence
-Date: Thu, 20 Feb 2014 15:51:35 -0800
-Message-Id: <20140220234843.021311718@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Subject: [PATCH 3.4 13/25] usb-storage: add unusual-devs entry for BlackBerry 9000
+Date: Thu, 20 Feb 2014 15:51:29 -0800
+Message-Id: <20140220234842.854363278@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -30,38 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
+commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
 
-Research has shown that commit a77fcf895046 ("IB/qib: Use a single
-txselect module parameter for serdes tuning") missed a key serdes init
-sequence.
+This patch adds an unusual-devs entry for the BlackBerry 9000.  This
+fixes Bugzilla #22442.
 
-This patch add that sequence.
-
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_iba7322.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -2279,6 +2279,11 @@ static int qib_7322_bringup_serdes(struc
- 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
- 	qib_write_kreg(dd, kr_scratch, 0ULL);
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1441,6 +1441,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_CAPACITY ),
  
-+	/* ensure previous Tx parameters are not still forced */
-+	qib_write_kreg_port(ppd, krp_tx_deemph_override,
-+		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
-+		reset_tx_deemphasis_override));
++/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
++UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
++		"Research In Motion",
++		"BlackBerry Bold 9000",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
 +
- 	if (qib_compat_ddr_negotiate) {
- 		ppd->cpspec->ibdeltainprog = 1;
- 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
+ /* Reported by Michael Stattmann <michael@stattmann.com> */
+ UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
+ 		"Sony Ericsson",
 
 
