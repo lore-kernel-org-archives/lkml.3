@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163AbaBTXxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46083 "EHLO
+	id S1756705AbaBUAKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:10:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46130 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982AbaBTXx0 (ORCPT
+	with ESMTP id S932167AbaBTXxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:26 -0500
+	Thu, 20 Feb 2014 18:53:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars Poeschel <poeschel@lemonage.de>
-Subject: [PATCH 3.13 34/99] tty: n_gsm: Fix for modems with brk in modem status control
-Date: Thu, 20 Feb 2014 15:52:29 -0800
-Message-Id: <20140220235119.208999218@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 05/99] mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
+Date: Thu, 20 Feb 2014 15:52:00 -0800
+Message-Id: <20140220235118.366313478@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,59 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars Poeschel <poeschel@lemonage.de>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
+commit 8d547ff4ac5927245e0833ac18528f939da0ee0e upstream.
 
-3GPP TS 07.10 states in section 5.4.6.3.7:
-"The length byte contains the value 2 or 3 ... depending on the break
-signal." The break byte is optional and if it is sent, the length is
-3. In fact the driver was not able to work with modems that send this
-break byte in their modem status control message. If the modem just
-sends the break byte if it is really set, then weird things might
-happen.
-The code for deconding the modem status to the internal linux
-presentation in gsm_process_modem has already a big comment about
-this 2 or 3 byte length thing and it is already able to decode the
-brk, but the code calling the gsm_process_modem function in
-gsm_control_modem does not encode it and hand it over the right way.
-This patch fixes this.
-Without this fix if the modem sends the brk byte in it's modem status
-control message the driver will hang when opening a muxed channel.
+mce-test detected a test failure when injecting error to a thp tail
+page.  This is because we take page refcount of the tail page in
+madvise_hwpoison() while the fix in commit a3e0f9e47d5e
+("mm/memory-failure.c: transfer page count from head page to tail page
+after split thp") assumes that we always take refcount on the head page.
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+When a real memory error happens we take refcount on the head page where
+memory_failure() is called without MF_COUNT_INCREASED set, so it seems
+to me that testing memory error on thp tail page using madvise makes
+little sense.
+
+This patch cancels moving refcount in !MF_COUNT_INCREASED for valid
+testing.
+
+[akpm@linux-foundation.org: s/&&/&/]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ mm/memory-failure.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1089,6 +1089,7 @@ static void gsm_control_modem(struct gsm
- {
- 	unsigned int addr = 0;
- 	unsigned int modem = 0;
-+	unsigned int brk = 0;
- 	struct gsm_dlci *dlci;
- 	int len = clen;
- 	u8 *dp = data;
-@@ -1115,6 +1116,16 @@ static void gsm_control_modem(struct gsm
- 		if (len == 0)
- 			return;
- 	}
-+	len--;
-+	if (len > 0) {
-+		while (gsm_read_ea(&brk, *dp++) == 0) {
-+			len--;
-+			if (len == 0)
-+				return;
-+		}
-+		modem <<= 7;
-+		modem |= (brk & 0x7f);
-+	}
- 	tty = tty_port_tty_get(&dlci->port);
- 	gsm_process_modem(tty, dlci, modem, clen);
- 	if (tty) {
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -945,8 +945,10 @@ static int hwpoison_user_mappings(struct
+ 			 * to it. Similarly, page lock is shifted.
+ 			 */
+ 			if (hpage != p) {
+-				put_page(hpage);
+-				get_page(p);
++				if (!(flags & MF_COUNT_INCREASED)) {
++					put_page(hpage);
++					get_page(p);
++				}
+ 				lock_page(p);
+ 				unlock_page(hpage);
+ 				*hpagep = p;
 
 
