@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389AbaBTX6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:58:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46333 "EHLO
+	id S1756120AbaBTXyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46261 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130AbaBTXyT (ORCPT
+	with ESMTP id S1756046AbaBTXyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:19 -0500
+	Thu, 20 Feb 2014 18:54:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.13 87/99] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
-Date: Thu, 20 Feb 2014 15:53:22 -0800
-Message-Id: <20140220235120.725033725@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.13 76/99] Revert "xhci: Avoid infinite loop when sg urb requires too many trbs"
+Date: Thu, 20 Feb 2014 15:53:11 -0800
+Message-Id: <20140220235120.407579896@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,45 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+commit 9cf00d91708221ff2d8a11143315f7ebab8d5da8 upstream.
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+This reverts commit d6c9ea9069af684358efedcaf2f2f687f51c58ee.
 
-I also did a little cleanup like removing an impossible NULL test.
+We are ripping out commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e "usb:
+xhci: Link TRB must not occur within a USB payload burst" because it's a
+hack that caused regressions in the usb-storage and userspace USB
+drivers that use usbfs and libusb.  This commit attempted to fix the
+issues with that patch.
 
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/coalesced_mmio.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3008,7 +3008,7 @@ static int prepare_ring(struct xhci_hcd
+ 			if (num_trbs >= TRBS_PER_SEGMENT) {
+ 				xhci_err(xhci, "Too many fragments %d, max %d\n",
+ 						num_trbs, TRBS_PER_SEGMENT - 1);
+-				return -EINVAL;
++				return -ENOMEM;
+ 			}
  
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
+ 			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
 
 
