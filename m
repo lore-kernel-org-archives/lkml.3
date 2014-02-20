@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343AbaBUAdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:33:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45791 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609AbaBTXwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755647AbaBTXwZ (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Feb 2014 18:52:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45770 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609AbaBTXwU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:52:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Strouth <james.strouth@ge.com>, Martyn Welch <martyn.welch@ge.com>
-Subject: [PATCH 3.12 49/82] VME: Correct read/write alignment algorithm
-Date: Thu, 20 Feb 2014 15:52:32 -0800
-Message-Id: <20140220235020.950726783@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.12 44/82] x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+Date: Thu, 20 Feb 2014 15:52:27 -0800
+Message-Id: <20140220235020.791681232@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,66 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martyn Welch <martyn.welch@ge.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit f0342e66b397947ed8c3eef8c37b5ca2d5b1bb50 upstream.
+commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961 upstream.
 
-In order to ensure the correct width cycles on the VME bus, the VME bridge
-drivers implement an algorithm to utilise the largest possible width reads and
-writes whilst maintaining natural alignment constraints. The algorithm
-currently looks at the start address rather than the current read/write address
-when determining whether a 16-bit width cycle is required to get to 32-bit
-alignment.  This results in incorrect alignment,
+If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
+which are incorrect (as the AC flag doesn't matter), causing spurious
+faults.
 
-Reported-by: Jim Strouth <james.strouth@ge.com>
-Tested-by: Jim Strouth <james.strouth@ge.com>
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+The dynamic disabling of SMAP (nosmap on the command line) is fine
+because it disables X86_FEATURE_SMAP, therefore causing the
+static_cpu_has() to return false.
+
+Found by Fengguang Wu's test system.
+
+[ v3: move all predicates into smap_violation() ]
+[ v2: use IS_ENABLED() instead of #ifdef ]
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vme/bridges/vme_ca91cx42.c |    4 ++--
- drivers/vme/bridges/vme_tsi148.c   |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/mm/fault.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/vme/bridges/vme_ca91cx42.c
-@@ -884,7 +884,7 @@ static ssize_t ca91cx42_master_read(stru
- 		if (done == count)
- 			goto out;
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -980,6 +980,12 @@ static int fault_in_kernel_space(unsigne
+ 
+ static inline bool smap_violation(int error_code, struct pt_regs *regs)
+ {
++	if (!IS_ENABLED(CONFIG_X86_SMAP))
++		return false;
++
++	if (!static_cpu_has(X86_FEATURE_SMAP))
++		return false;
++
+ 	if (error_code & PF_USER)
+ 		return false;
+ 
+@@ -1081,11 +1087,9 @@ __do_page_fault(struct pt_regs *regs, un
+ 	if (unlikely(error_code & PF_RSVD))
+ 		pgtable_bad(regs, error_code, address);
+ 
+-	if (static_cpu_has(X86_FEATURE_SMAP)) {
+-		if (unlikely(smap_violation(error_code, regs))) {
+-			bad_area_nosemaphore(regs, error_code, address);
+-			return;
+-		}
++	if (unlikely(smap_violation(error_code, regs))) {
++		bad_area_nosemaphore(regs, error_code, address);
++		return;
  	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			*(u8 *)(buf + done) = ioread8(addr + done);
- 			done += 1;
-@@ -938,7 +938,7 @@ static ssize_t ca91cx42_master_write(str
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			iowrite8(*(u8 *)(buf + done), addr + done);
- 			done += 1;
---- a/drivers/vme/bridges/vme_tsi148.c
-+++ b/drivers/vme/bridges/vme_tsi148.c
-@@ -1289,7 +1289,7 @@ static ssize_t tsi148_master_read(struct
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			*(u8 *)(buf + done) = ioread8(addr + done);
- 			done += 1;
-@@ -1371,7 +1371,7 @@ static ssize_t tsi148_master_write(struc
- 		if (done == count)
- 			goto out;
- 	}
--	if ((uintptr_t)addr & 0x2) {
-+	if ((uintptr_t)(addr + done) & 0x2) {
- 		if ((count - done) < 2) {
- 			iowrite8(*(u8 *)(buf + done), addr + done);
- 			done += 1;
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 
 
