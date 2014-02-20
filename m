@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaBTOnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 09:43:52 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:39897 "EHLO
+	id S1754253AbaBTOnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 09:43:51 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:39902 "EHLO
 	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaBTOn0 (ORCPT
+	with ESMTP id S1753710AbaBTOn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 09:43:26 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -12,10 +12,11 @@ To: Mark Brown <broonie@kernel.org>
 Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
         Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
         linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH 03/10] spi: sh-msiof: Change hz from unsigned long to u32
-Date: Thu, 20 Feb 2014 15:43:02 +0100
-Message-Id: <1392907389-21798-4-git-send-email-geert@linux-m68k.org>
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
+Date: Thu, 20 Feb 2014 15:43:06 +0100
+Message-Id: <1392907389-21798-8-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
 References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
@@ -25,40 +26,224 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Both spi_transfer.speed_hz and spi_master.max_speed_hz are u32
+Add support for the MSIOF variant in the R-Car H2 (r8a7790) and M2
+(r8a7791) SoCs.
+
+Binding documentation:
+  - Add future-proof "renesas,msiof-<soctype>" compatible values,
+  - Add example bindings.
+
+Implementation:
+  - MSIOF on R-Car H2 and M2 requires the transmission of dummy data if
+    data is being received only (cfr. "Set SICTR.TSCKE to 1" and "Write
+    dummy transmission data to SITFDR" in paragraph "Transmit and Receive
+    Procedures" of the Hardware User's Manual).
+  - As RX depends on TX, MSIOF on R-Car H2 and M2 also lacks the RSCR
+    register (Receive Clock Select Register), and some bits in the RMDR1
+    (Receive Mode Register 1) and TMDR2 (Transmit Mode Register 2)
+    registers.
+  - Use the recently introduced SPI_MASTER_MUST_TX flag to enable support
+    for dummy transmission in the SPI core, and to differentiate from other
+    MSIOF implementations in code paths that need this.
+  - New DT compatible values ("renesas,msiof-r8a7790" and
+    "renesas,msiof-r8a7791") are added, as well as new platform device
+    names ("spi_r8a7790_msiof" and "spi_r8a7791_msiof").
+  - Hardware features are indicated using a new struct sh_msiof_chipdata,
+    which is used for both DT and legacy binding. For now this contains the
+    SPI master flags only.
+
+This is loosely based on a set of patches from Takashi Yoshii
+<takasi-y@ops.dti.ne.jp>.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+Cc: devicetree@vger.kernel.org
 ---
- drivers/spi/spi-sh-msiof.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ Documentation/devicetree/bindings/spi/sh-msiof.txt |   21 +++++++-
+ drivers/spi/spi-sh-msiof.c                         |   57 ++++++++++++++++----
+ 2 files changed, 66 insertions(+), 12 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/spi/sh-msiof.txt b/Documentation/devicetree/bindings/spi/sh-msiof.txt
+index 52cf5c78705b..1528d30a6f6d 100644
+--- a/Documentation/devicetree/bindings/spi/sh-msiof.txt
++++ b/Documentation/devicetree/bindings/spi/sh-msiof.txt
+@@ -1,8 +1,13 @@
+ Renesas MSIOF spi controller
+ 
+ Required properties:
+-- compatible           : "renesas,sh-msiof" for SuperH, or
++- compatible           : "renesas,msiof-<soctype>" for SoCs,
++			 "renesas,sh-msiof" for SuperH, or
+ 			 "renesas,sh-mobile-msiof" for SH Mobile series.
++			 Examples with soctypes are:
++			 "renesas,msiof-sh7724" (SH)
++			 "renesas,msiof-r8a7790" (R-Car H2)
++			 "renesas,msiof-r8a7791" (R-Car M2)
+ - reg                  : Offset and length of the register set for the device
+ - interrupt-parent     : The phandle for the interrupt controller that
+ 			 services interrupts for this device
+@@ -20,3 +25,17 @@ Optional properties:
+ 
+ Pinctrl properties might be needed, too.  See
+ Documentation/devicetree/bindings/pinctrl/renesas,*.
++
++Example:
++
++	spi1: spi@e6e20000 {
++		compatible = "renesas,msiof-r8a7791";
++		reg = <0 0xe6e20000 0 0x0064>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 156 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&mstp0_clks R8A7791_CLK_MSIOF0>;
++		num-cs = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
 diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
-index cc12e755131d..af9f2db41b16 100644
+index 92515c1ececa..31624fb4997d 100644
 --- a/drivers/spi/spi-sh-msiof.c
 +++ b/drivers/spi/spi-sh-msiof.c
-@@ -144,8 +144,7 @@ static struct {
- };
+@@ -20,6 +20,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
  
- static void sh_msiof_spi_set_clk_regs(struct sh_msiof_spi_priv *p,
--				      unsigned long parent_rate,
--				      unsigned long spi_hz)
-+				      unsigned long parent_rate, u32 spi_hz)
- {
- 	unsigned long div = 1024;
- 	size_t k;
-@@ -372,10 +371,9 @@ static int sh_msiof_spi_bits(struct spi_device *spi, struct spi_transfer *t)
- 	return bits;
+@@ -29,11 +30,17 @@
+ 
+ #include <asm/unaligned.h>
+ 
++
++struct sh_msiof_chipdata {
++	u16 master_flags;
++};
++
+ struct sh_msiof_spi_priv {
+ 	struct spi_bitbang bitbang; /* must be first for spi_bitbang.c */
+ 	void __iomem *mapbase;
+ 	struct clk *clk;
+ 	struct platform_device *pdev;
++	const struct sh_msiof_chipdata *chipdata;
+ 	struct sh_msiof_spi_info *info;
+ 	struct completion done;
+ 	unsigned long flags;
+@@ -210,7 +217,8 @@ static void sh_msiof_spi_set_clk_regs(struct sh_msiof_spi_priv *p,
+ 	k = min_t(int, k, ARRAY_SIZE(sh_msiof_spi_clk_table) - 1);
+ 
+ 	sh_msiof_write(p, TSCR, sh_msiof_spi_clk_table[k].scr);
+-	sh_msiof_write(p, RSCR, sh_msiof_spi_clk_table[k].scr);
++	if (!(p->chipdata->master_flags & SPI_MASTER_MUST_TX))
++		sh_msiof_write(p, RSCR, sh_msiof_spi_clk_table[k].scr);
  }
  
--static unsigned long sh_msiof_spi_hz(struct spi_device *spi,
--				     struct spi_transfer *t)
-+static u32 sh_msiof_spi_hz(struct spi_device *spi, struct spi_transfer *t)
- {
--	unsigned long hz;
-+	u32 hz;
+ static void sh_msiof_spi_set_pin_regs(struct sh_msiof_spi_priv *p,
+@@ -233,6 +241,10 @@ static void sh_msiof_spi_set_pin_regs(struct sh_msiof_spi_priv *p,
+ 	tmp |= !cs_high << MDR1_SYNCAC_SHIFT;
+ 	tmp |= lsb_first << MDR1_BITLSB_SHIFT;
+ 	sh_msiof_write(p, TMDR1, tmp | MDR1_TRMD | TMDR1_PCON);
++	if (p->chipdata->master_flags & SPI_MASTER_MUST_TX) {
++		/* These bits are reserved if RX needs TX */
++		tmp &= ~0x0000ffff;
++	}
+ 	sh_msiof_write(p, RMDR1, tmp);
  
- 	hz = t ? t->speed_hz : 0;
- 	if (!hz)
+ 	tmp = 0;
+@@ -253,7 +265,7 @@ static void sh_msiof_spi_set_mode_regs(struct sh_msiof_spi_priv *p,
+ {
+ 	u32 dr2 = MDR2_BITLEN1(bits) | MDR2_WDLEN1(words);
+ 
+-	if (tx_buf)
++	if (tx_buf || (p->chipdata->master_flags & SPI_MASTER_MUST_TX))
+ 		sh_msiof_write(p, TMDR2, dr2);
+ 	else
+ 		sh_msiof_write(p, TMDR2, dr2 | MDR2_GRPMASK1);
+@@ -659,6 +671,23 @@ static u32 sh_msiof_spi_txrx_word(struct spi_device *spi, unsigned nsecs,
+ }
+ 
+ #ifdef CONFIG_OF
++static const struct sh_msiof_chipdata sh_data = {
++	.master_flags = 0,
++};
++
++static const struct sh_msiof_chipdata r8a779x_data = {
++	.master_flags = SPI_MASTER_MUST_TX,
++};
++
++static const struct of_device_id sh_msiof_match[] = {
++	{ .compatible = "renesas,sh-msiof",        .data = &sh_data },
++	{ .compatible = "renesas,sh-mobile-msiof", .data = &sh_data },
++	{ .compatible = "renesas,msiof-r8a7790",   .data = &r8a779x_data },
++	{ .compatible = "renesas,msiof-r8a7791",   .data = &r8a779x_data },
++	{},
++};
++MODULE_DEVICE_TABLE(of, sh_msiof_match);
++
+ static struct sh_msiof_spi_info *sh_msiof_spi_parse_dt(struct device *dev)
+ {
+ 	struct sh_msiof_spi_info *info;
+@@ -693,6 +722,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ {
+ 	struct resource	*r;
+ 	struct spi_master *master;
++	const struct of_device_id *of_id;
+ 	struct sh_msiof_spi_priv *p;
+ 	int i;
+ 	int ret;
+@@ -706,10 +736,15 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	p = spi_master_get_devdata(master);
+ 
+ 	platform_set_drvdata(pdev, p);
+-	if (pdev->dev.of_node)
++
++	of_id = of_match_device(sh_msiof_match, &pdev->dev);
++	if (of_id) {
++		p->chipdata = of_id->data;
+ 		p->info = sh_msiof_spi_parse_dt(&pdev->dev);
+-	else
++	} else {
++		p->chipdata = (const void *)pdev->id_entry->driver_data;
+ 		p->info = dev_get_platdata(&pdev->dev);
++	}
+ 
+ 	if (!p->info) {
+ 		dev_err(&pdev->dev, "failed to obtain device info\n");
+@@ -769,7 +804,7 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	/* init master and bitbang code */
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+ 	master->mode_bits |= SPI_LSB_FIRST | SPI_3WIRE;
+-	master->flags = 0;
++	master->flags = p->chipdata->master_flags;
+ 	master->bus_num = pdev->id;
+ 	master->dev.of_node = pdev->dev.of_node;
+ 	master->num_chipselect = p->info->num_chipselect;
+@@ -810,18 +845,18 @@ static int sh_msiof_spi_remove(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-#ifdef CONFIG_OF
+-static const struct of_device_id sh_msiof_match[] = {
+-	{ .compatible = "renesas,sh-msiof", },
+-	{ .compatible = "renesas,sh-mobile-msiof", },
++static struct platform_device_id spi_driver_ids[] = {
++	{ "spi_sh_msiof",	(kernel_ulong_t)&sh_data },
++	{ "spi_r8a7790_msiof",	(kernel_ulong_t)&r8a779x_data },
++	{ "spi_r8a7791_msiof",	(kernel_ulong_t)&r8a779x_data },
+ 	{},
+ };
+-MODULE_DEVICE_TABLE(of, sh_msiof_match);
+-#endif
++MODULE_DEVICE_TABLE(platform, spi_driver_ids);
+ 
+ static struct platform_driver sh_msiof_spi_drv = {
+ 	.probe		= sh_msiof_spi_probe,
+ 	.remove		= sh_msiof_spi_remove,
++	.id_table	= spi_driver_ids,
+ 	.driver		= {
+ 		.name		= "spi_sh_msiof",
+ 		.owner		= THIS_MODULE,
 -- 
 1.7.9.5
 
