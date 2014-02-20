@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaBTHYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 02:24:04 -0500
-Received: from relay.parallels.com ([195.214.232.42]:45658 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaBTHWR (ORCPT
+	id S1753907AbaBTHYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 02:24:22 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58191 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbaBTHYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 02:22:17 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>, <akpm@linux-foundation.org>
-CC: <rientjes@google.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH -mm v3 0/7] memcg-vs-slab related fixes, improvements, cleanups
-Date: Thu, 20 Feb 2014 11:22:02 +0400
-Message-ID: <cover.1392879001.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 20 Feb 2014 02:24:19 -0500
+Message-ID: <5305AD7D.1060702@linaro.org>
+Date: Thu, 20 Feb 2014 15:23:41 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [sched/balance] WARNING: CPU: 0 PID: 8 at kernel/sched/core.c:2939
+ rt_mutex_setprio()
+References: <20140219121855.GF7241@localhost>
+In-Reply-To: <20140219121855.GF7241@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/19/2014 08:18 PM, Fengguang Wu wrote:
+> Greetings,
+> 
+> I got the below dmesg and the first bad commit is
 
-This patch set mostly cleanups memcg slab caches creation/destruction
-paths fixing a couple of bugs in the meanwhile. The only serious change
-it introduces is a rework of the sysfs layout for memcg slub caches (see
-patch 7).
+[snip]
+> 
+>     sched/balance: add balance_interval to tuning top level balance frequency
+>     
 
-Changes in v3 (thanks to Michal Hocko):
- - improve patch descriptions
- - overall cleanup
- - rebase onto v3.14-rc3
-Changes in v2 (thanks to David Rientjes):
- - do not remove cgroup name part from memcg cache names
- - do not export memcg cache id to userspace
-
-Thanks,
-
-Vladimir Davydov (7):
-  memcg, slab: never try to merge memcg caches
-  memcg, slab: cleanup memcg cache creation
-  memcg, slab: separate memcg vs root cache creation paths
-  memcg, slab: unregister cache from memcg before starting to destroy
-    it
-  memcg, slab: do not destroy children caches if parent has aliases
-  slub: adjust memcg caches when creating cache alias
-  slub: rework sysfs layout for memcg caches
-
- include/linux/memcontrol.h |    9 +-
- include/linux/slab.h       |    6 +-
- include/linux/slub_def.h   |    3 +
- mm/memcontrol.c            |  109 ++++++++-----------
- mm/slab.h                  |   21 +---
- mm/slab_common.c           |  250 +++++++++++++++++++++++++++-----------------
- mm/slub.c                  |   58 ++++++++--
- 7 files changed, 261 insertions(+), 195 deletions(-)
+Good catching! :)
+I will fix this problem and updated soon.
 
 -- 
-1.7.10.4
-
+Thanks
+    Alex
