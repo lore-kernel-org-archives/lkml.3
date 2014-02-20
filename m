@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaBTMCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 07:02:51 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47331 "EHLO
+	id S1754074AbaBTMDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 07:03:39 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47336 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124AbaBTMCu (ORCPT
+	with ESMTP id S1752869AbaBTMDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 07:02:50 -0500
-Date: Thu, 20 Feb 2014 21:02:43 +0900
+	Thu, 20 Feb 2014 07:03:38 -0500
+Date: Thu, 20 Feb 2014 21:03:30 +0900
 From: Mark Brown <broonie@kernel.org>
 To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Message-ID: <20140220120243.GM2669@sirena.org.uk>
+Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
+Message-ID: <20140220120330.GN2669@sirena.org.uk>
 References: <1392886403-10640-1-git-send-email-sachin.kamat@linaro.org>
- <1392886403-10640-19-git-send-email-sachin.kamat@linaro.org>
+ <1392886403-10640-20-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zMxPFfwyjSN7AMOh"
+	protocol="application/pgp-signature"; boundary="pJhtOc9NxSWHq38L"
 Content-Disposition: inline
-In-Reply-To: <1392886403-10640-19-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1392886403-10640-20-git-send-email-sachin.kamat@linaro.org>
 X-Cookie: Don't read everything you believe.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 106.188.156.234
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 19/23] regulator: tps80031: Remove redundant error message
+Subject: Re: [PATCH 20/23] regulator: wm831x-dcdc: Remove redundant error
+ message
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,35 +32,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---zMxPFfwyjSN7AMOh
+--pJhtOc9NxSWHq38L
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Feb 20, 2014 at 02:23:19PM +0530, Sachin Kamat wrote:
+On Thu, Feb 20, 2014 at 02:23:20PM +0530, Sachin Kamat wrote:
 > kzalloc prints its own OOM message upon failure.
 
 Applied, thanks.
 
---zMxPFfwyjSN7AMOh
+--pJhtOc9NxSWHq38L
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTBe7fAAoJELSic+t+oim92hYP/0cz3IUauOqESCOIzZ3cPuP/
-MAp+Z+Eht/TXhZSrMKUBF2wCp3e5LD/7pKB+jBFfiJpm+4nBobyPM+hmRgws4ZzP
-RNrkNtg1JiojVCqodIjm8TgB18uKN1/le/h2v7KW1Q4Sqpx523qX7cWrwTsDj4uR
-6rZTW+bhKsowzddMiarosS42ZL1iwg5xEBGY8SjWJbnSVtvmxtWEIhNrDYXC+snI
-PL1CdtbptimHuC8SuLl6FL6/k4NeHKxgh85gRx28O5361xHpCGUNhqmUhD7z29qR
-XWu8IL1g53WFkFatfT5TrqDzxLCU1GisADITUH2ukZ2IBa8nOZN9U7OGLC3Gan4+
-46ptq0nwOkY6JBvehYR7Y/azH6skhTT0r84R3aBKTm7+3hlyKQXJu0F2IT8tHU4z
-9TZX5zhlUZTZIoYvV1Je6pkIyvODophCph2Poh7ujbCN0H2vxAt4XSiFUGXXQevU
-v7kBTczUWUK70CQhdboX9VvhXHTuiBmJlBQzt/cYqfme1Lq9ihWFd+n5I+OsStzc
-yJgvost/FvMChFDevjvKsD9ELaebGc1f3R5Bq+1ZrVjRomyEpuq6p3+9cLtPjHcu
-AC7MTgZHyv1CBs+G4aPu9DvPniRpIhyL1qXztwGoXID0WJghylmimyrXFpHrVI+V
-Q+5ZPLFbB7OREJcUtlZV
-=lcCB
+iQIcBAEBAgAGBQJTBe8PAAoJELSic+t+oim92sUP/0T++zIGClvhOweC/Lme0Osr
+RX3KTnJt0pFmaHEVVfGzhtNi8E8/csCjh1GXa51jpUsNyAj0jlBSorBfC0F3f26y
+v2dH0Zz0+ZFOZvgSi1X+m/LMKIl34BwoCig+neVOPyQxHzSW0BV5w8DnTG6Mpxp3
+F4CEXM4VoqHQGNoxGOTZNOHn6oDnRFQGyHr0dU6njQZGR6Az7I3IGUwQzaJ0pMoF
+E8tDCo1PdArtEzIRSqdAa2d5K7Dm2yZRFVE1NeR9cd5Ic2oFdNgWxcMHA6EzeiHV
+o1PrZx+6Rb40gOpZTYKr9SUCi0XIG3MzWtEGT8D5kVCuiTWiTro/S8mNerdK85U6
+hCGEcOJt6mHpLIRX4Hocdj6iL0TsEUckrEIBHbaEsnS6qlWErzl0Ov3JOiz+gz9n
+Yl3hKrBFDN09jsurMC8cKXdBbj2Vtlz52b/YLIUZnHgxaNOGwcTqJY+Zkt972Yn3
+kqbzqRlJCbVmX12mRfojN/LyBObNV6o4MJ7udmgBboYcpFHNO+Um0gKELrKnLK7M
+M4gYaEqqT2U3DWS1zJlf5ICs4FSjp+LAcIjQzj6BJhKb78n3l3ELpkq8moHULKtx
+5b+P7WEp91ceGE4Y+BhrErjJkVbpAgcPaAKuFgNZCiaJsvHFgDyQjTqfBOw/vChc
+NwtGkAuDz7XGRFu6dQWL
+=PZeB
 -----END PGP SIGNATURE-----
 
---zMxPFfwyjSN7AMOh--
+--pJhtOc9NxSWHq38L--
