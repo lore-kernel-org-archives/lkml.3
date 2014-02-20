@@ -1,28 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025AbaBUBLD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:11:03 -0500
-Received: from host-21.hipuu.com.py ([190.104.157.21]:36067 "EHLO tacpy.com.py"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754093AbaBUBK7 convert rfc822-to-8bit (ORCPT
+	id S932591AbaBUBLV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:11:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388AbaBTXu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:10:59 -0500
-X-Greylist: delayed 14310 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 20:10:58 EST
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 20 Feb 2014 18:50:29 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Subject: [PATCH 3.4 16/25] usb: option: blacklist ZTE MF667 net interface
+Date: Thu, 20 Feb 2014 15:51:32 -0800
+Message-Id: <20140220234842.937273780@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
+References: <20140220234842.483343851@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: fyi>
-To: Recipients <thangnguyenq1@vus-etsc.edu.vn>
-From: LEWIS BAACH <thangnguyenq1@vus-etsc.edu.vn>
-Date: Thu, 20 Feb 2014 22:15:09 +0200
-Reply-To: lewisesq@cnegal.com
-Message-Id: <20140220201708.7D1EC6DED652@tacpy.com.py>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My name is Lewis Baach, Attorney at law. Sequel to your non response to my previous email, I am re-sending this to you again thus; A deceased client of mine, that shares the same last name as yours,who died as the result of a heart-related condition on January 28th 2009. I have contacted you to assist in distributing the money left behind by my client which is lodged in the bank.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Regards,
-Lewis Baach
+------------------
+
+From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+
+commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d upstream.
+
+Interface #5 of 19d2:1270 is a net interface which has been submitted to the
+qmi_wwan driver so consequently remove it from the option driver.
+
+Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1376,7 +1376,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
+
+
