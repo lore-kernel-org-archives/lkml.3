@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895AbaBUACV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:02:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46278 "EHLO
+	id S1756537AbaBUACl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:02:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063AbaBTXyI (ORCPT
+	with ESMTP id S1756055AbaBTXyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:08 -0500
+	Thu, 20 Feb 2014 18:54:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Milburn <dmilburn@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.13 81/99] block: Fix nr_vecs for inline integrity vectors
-Date: Thu, 20 Feb 2014 15:53:16 -0800
-Message-Id: <20140220235120.556613625@linuxfoundation.org>
+        Frank Mayhar <fmayhar@google.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.13 80/99] block: __elv_next_request() shouldnt call into the elevator if bypassing
+Date: Thu, 20 Feb 2014 15:53:15 -0800
+Message-Id: <20140220235120.525944079@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,50 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
+commit 556ee818c06f37b2e583af0363e6b16d0e0270de upstream.
 
-Commit 9f060e2231ca changed the way we handle allocations for the
-integrity vectors. When the vectors are inline there is no associated
-slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
-against BIP_INLINE_VECS in that case.
+request_queue bypassing is used to suppress higher-level function of a
+request_queue so that they can be switched, reconfigured and shut
+down.  A request_queue does the followings while bypassing.
 
-Reported-by: David Milburn <dmilburn@redhat.com>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+* bypasses elevator and io_cq association and queues requests directly
+  to the FIFO dispatch queue.
+
+* bypasses block cgroup request_list lookup and always uses the root
+  request_list.
+
+Once confirmed to be bypassing, specific elevator and block cgroup
+policy implementations can assume that nothing is in flight for them
+and perform various operations which would be dangerous otherwise.
+
+Such confirmation is acheived by short-circuiting all new requests
+directly to the dispatch queue and waiting for all the requests which
+were issued before to finish.  Unfortunately, while the request
+allocating and draining sides were properly handled, we forgot to
+actually plug the request dispatch path.  Even after bypassing mode is
+confirmed, if the attached driver tries to fetch a request and the
+dispatch queue is empty, __elv_next_request() would invoke the current
+elevator's elevator_dispatch_fn() callback.  As all in-flight requests
+were drained, the elevator wouldn't contain any request but once
+bypass is confirmed we don't even know whether the elevator is even
+there.  It might be in the process of being switched and half torn
+down.
+
+Frank Mayhar reports that this actually happened while switching
+elevators, leading to an oops.
+
+Let's fix it by making __elv_next_request() avoid invoking the
+elevator_dispatch_fn() callback if the queue is bypassing.  It already
+avoids invoking the callback if the queue is dying.  As a dying queue
+is guaranteed to be bypassing, we can simply replace blk_queue_dying()
+check with blk_queue_bypass().
+
+Reported-by: Frank Mayhar <fmayhar@google.com>
+References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
+Tested-by: Frank Mayhar <fmayhar@google.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/bio-integrity.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ block/blk.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
- }
- EXPORT_SYMBOL(bio_integrity_free);
- 
-+static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
-+{
-+	if (bip->bip_slab == BIO_POOL_NONE)
-+		return BIP_INLINE_VECS;
-+
-+	return bvec_nr_vecs(bip->bip_slab);
-+}
-+
- /**
-  * bio_integrity_add_page - Attach integrity metadata
-  * @bio:	bio to update
-@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *b
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 	struct bio_vec *iv;
- 
--	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
-+	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
- 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
- 		return 0;
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -113,7 +113,7 @@ static inline struct request *__elv_next
+ 			q->flush_queue_delayed = 1;
+ 			return NULL;
+ 		}
+-		if (unlikely(blk_queue_dying(q)) ||
++		if (unlikely(blk_queue_bypass(q)) ||
+ 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
+ 			return NULL;
  	}
 
 
