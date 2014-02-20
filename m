@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbaBUAfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:35:14 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55551 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211AbaBUAfL (ORCPT
+	id S1757078AbaBUAft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:35:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45753 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755579AbaBTXwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:35:11 -0500
-From: Stewart Smith <stewart@linux.vnet.ibm.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Stewart Smith <stewart@linux.vnet.ibm.com>
-Subject: [PATCH] scsi/sd.c: fix spun up and not ready messages to mention which disk
-Date: Fri, 21 Feb 2014 11:34:43 +1100
-Message-Id: <1392942883-4624-1-git-send-email-stewart@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.3
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022100-5564-0000-0000-00000C1F302F
+	Thu, 20 Feb 2014 18:52:16 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.12 40/82] iio: max1363: Use devm_regulator_get_optional for optional regulator
+Date: Thu, 20 Feb 2014 15:52:23 -0800
+Message-Id: <20140220235020.674700833@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
+References: <20140220235019.483734207@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, many years ago, this was done in series which was fine,
-but things moved to be done in parallel and with many disks in a system
-it can be hard to see which disk spun up and which one didn't as the
-printk messages were all mixed together.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+------------------
+
+From: Guenter Roeck <linux@roeck-us.net>
+
+commit 55b40d37311807a6bb2acdae0df904f54a0da3ae upstream.
+
+In kernel version 3.13, devm_regulator_get() may return no error
+if a regulator is undeclared. regulator_get_voltage() will return
+-EINVAL if this happens. This causes the driver to fail loading if
+the vref regulator is not declared.
+
+Since vref is optional, call devm_regulator_get_optional instead.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/scsi/sd.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/iio/adc/max1363.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 470954a..1436c85 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1838,7 +1838,6 @@ sd_spinup_disk(struct scsi_disk *sdkp)
- 			}
- 			/* Wait 1 second for next try */
- 			msleep(1000);
--			printk(".");
+--- a/drivers/iio/adc/max1363.c
++++ b/drivers/iio/adc/max1363.c
+@@ -1527,7 +1527,7 @@ static int max1363_probe(struct i2c_clie
+ 	st->client = client;
  
- 		/*
- 		 * Wait for USB flash devices with slow firmware.
-@@ -1868,9 +1867,9 @@ sd_spinup_disk(struct scsi_disk *sdkp)
+ 	st->vref_uv = st->chip_info->int_vref_mv * 1000;
+-	vref = devm_regulator_get(&client->dev, "vref");
++	vref = devm_regulator_get_optional(&client->dev, "vref");
+ 	if (!IS_ERR(vref)) {
+ 		int vref_uv;
  
- 	if (spintime) {
- 		if (scsi_status_is_good(the_result))
--			printk("ready\n");
-+			sd_printk(KERN_NOTICE, sdkp, "ready\n");
- 		else
--			printk("not responding...\n");
-+			sd_printk(KERN_NOTICE, sdkp, "not responding...\n");
- 	}
- }
- 
--- 
-1.8.5.3
+
 
