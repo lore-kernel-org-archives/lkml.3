@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaBUAar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:30:47 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:42735 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaBUAap (ORCPT
+	id S1755688AbaBTXw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:52:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551AbaBTXwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:30:45 -0500
+	Thu, 20 Feb 2014 18:52:18 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Beomho Seo <beomho.seo@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.12 42/82] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
+Date: Thu, 20 Feb 2014 15:52:25 -0800
+Message-Id: <20140220235020.733502592@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
+References: <20140220235019.483734207@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <53068F5C.9000008@zytor.com>
-References: <53068F5C.9000008@zytor.com>
-Date: Thu, 20 Feb 2014 16:30:44 -0800
-X-Google-Sender-Auth: W85SfvWK_dUusjyHkC5mHXHl_mQ
-Message-ID: <CA+55aFw211LMAk=CSgOo26a-1QqpSEjmJZNJ4TSnbPnJUjPwOQ@mail.gmail.com>
-Subject: Re: "m" constraints, jumps, and alternatives
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Another option is to say "don't do that then", and weed out the current
-> uses of "m" and instead force the pointer in question explicitly into a
-> register.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Passing addresses in registers is usually a *horrible* thing for the
-kernel, because most of the time they are actually offsets within some
-structure, and the address is almost invariably of the type
-"offset(%register)". Which means that if you have to pass it as a pure
-register, you are now (a) wasting a register and (b) adding an extra
-"lea" or similar instruction just to do so.
+------------------
 
-Sadly, there is no good constraint for something like that. There's
-"o" for "offsetable", but that is actually perfectly fine with a
-PC-relative thing.
+From: Beomho Seo <beomho.seo@samsung.com>
 
-My preferred solution would be to (a) just say that it cannot be done
-for replacement instructions (but is ok for the original
-non-replacement one) and (b) perhaps have some build-time check of
-just the replacement tables.
+commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
 
-So then we'd at least get a build-time failure, and any users could be
-taught that they have to use some obfuscation macro - I know we have
-them, I can't recall their name, we've used them for the percpu stuff
-- to force the address to be in a register rather than to be
-%rip-relative.
+This effects the reported scale of the raw values, and thus userspace
+applications that use this value.
 
-Does that sound doable at all?
+One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
+ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
+always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
+As a result, read_raw call back function return accurate scale value.
 
-             Linus
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/iio/magnetometer/ak8975.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
+
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -85,6 +85,7 @@
+ #define AK8975_MAX_CONVERSION_TIMEOUT	500
+ #define AK8975_CONVERSION_DONE_POLL_TIME 10
+ #define AK8975_DATA_READY_TIMEOUT	((100*HZ)/1000)
++#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
+ 
+ /*
+  * Per-instance context data for the device.
+@@ -265,15 +266,15 @@ static int ak8975_setup(struct i2c_clien
+  *
+  * Since 1uT = 100 gauss, our final scale factor becomes:
+  *
+- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
+- * Hadj = H * ((ASA + 128) * 30 / 256
++ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
++ * Hadj = H * ((ASA + 128) * 0.003) / 256
+  *
+  * Since ASA doesn't change, we cache the resultant scale factor into the
+  * device context in ak8975_setup().
+  */
+-	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
+-	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
+-	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
++	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
++	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
++	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
+ 
+ 	return 0;
+ }
+@@ -428,8 +429,9 @@ static int ak8975_read_raw(struct iio_de
+ 	case IIO_CHAN_INFO_RAW:
+ 		return ak8975_read_axis(indio_dev, chan->address, val);
+ 	case IIO_CHAN_INFO_SCALE:
+-		*val = data->raw_to_gauss[chan->address];
+-		return IIO_VAL_INT;
++		*val = 0;
++		*val2 = data->raw_to_gauss[chan->address];
++		return IIO_VAL_INT_PLUS_MICRO;
+ 	}
+ 	return -EINVAL;
+ }
+
+
