@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223AbaBUAkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:40:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45689 "EHLO
+	id S932112AbaBUAke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:40:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493AbaBTXwD (ORCPT
+	with ESMTP id S1755481AbaBTXwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:03 -0500
+	Thu, 20 Feb 2014 18:52:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qipan Li <Qipan.Li@csr.com>, Barry Song <Baohua.Song@csr.com>
-Subject: [PATCH 3.12 25/82] serial: sirf: fix kernel panic caused by unpaired spinlock
-Date: Thu, 20 Feb 2014 15:52:08 -0800
-Message-Id: <20140220235020.231871475@linuxfoundation.org>
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 3.12 23/82] of: fix PCI bus match for PCIe slots
+Date: Thu, 20 Feb 2014 15:52:06 -0800
+Message-Id: <20140220235020.174282354@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,90 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qipan Li <Qipan.Li@csr.com>
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 
-commit fb78b811422cd2d8c8605949cc4cc13618347ad5 upstream.
+commit 14e2abb732e485ee57d9d5b2cb8884652238e5c1 upstream.
 
-commit 8b9ade9f74f8a279 coming from Viresh Kumar "tty: serial: sirfsoc: drop
-uart_port->lock before calling tty_flip_buffer_push()" broke sirfsoc uart
-driver by knic:
+On IBM pseries systems the device_type device-tree property of a PCIe
+bridge contains the string "pciex". The of_bus_pci_match() function was
+looking only for "pci" on this property, so in such cases the bus
+matching code was falling back to the default bus, causing problems on
+functions that should be using "assigned-addresses" for region address
+translation. This patch fixes the problem by also looking for "pciex" on
+the PCI bus match function.
 
-	[    5.129122] BUG: spinlock already unlocked on CPU#0, ip6tables/1331
-	[    5.132554]  lock: sirfsoc_uart_ports+0x4/0x8a0, .magic: dead4ead,
-	.owner: <none>/-1, .owner_cpu: -1
-	[    5.141651] CPU: 0 PID: 1331 Comm: ip6tables Tainted: G
-	W  O 3.10.16 #3
-	[    5.148866] [<c0013528>] (unwind_backtrace+0x0/0xe0) from
-	[<c0010e70>] (show_stack+0x10/0x14)
-	[    5.157362] [<c0010e70>] (show_stack+0x10/0x14) from
-	[<c01a5e68>] (do_raw_spin_unlock+0x40/0xc8)
-	[    5.166125] [<c01a5e68>] (do_raw_spin_unlock+0x40/0xc8) from
-	[<c03ff8b4>] (_raw_spin_unlock+0x8/0x40)
-	[    5.175322] [<c03ff8b4>] (_raw_spin_unlock+0x8/0x40) from
-	[<c0203fcc>] (sirfsoc_uart_pio_rx_chars+0xa4/0xc0)
-	[    5.185120] [<c0203fcc>]
-	(sirfsoc_uart_pio_rx_chars+0xa4/0xc0) from [<c0204fb8>]
-	(sirfsoc_rx_tmo_process_tl+0xdc/0x1e0)
-	[    5.195875] [<c0204fb8>]
-	(sirfsoc_rx_tmo_process_tl+0xdc/0x1e0) from [<c0024b50>]
-	(tasklet_action+0x8c/0xec)
-	[    5.205673] [<c0024b50>] (tasklet_action+0x8c/0xec) from
-	[<c00242a8>] (__do_softirq+0xec/0x1d4)
-	[    5.214347] [<c00242a8>] (__do_softirq+0xec/0x1d4) from
-	[<c0024428>] (do_softirq+0x48/0x54)
-	[    5.222674] [<c0024428>] (do_softirq+0x48/0x54) from
-	[<c0024690>] (irq_exit+0x74/0xc0)
-	[    5.230573] [<c0024690>] (irq_exit+0x74/0xc0) from
-	[<c000e1e8>] (handle_IRQ+0x6c/0x90)
-	[    5.238465] [<c000e1e8>] (handle_IRQ+0x6c/0x90) from
-	[<c000d500>] (__irq_svc+0x40/0x70)
-	[    5.246446] [<c000d500>] (__irq_svc+0x40/0x70) from
-	[<c0092e7c>] (mark_page_accessed+0xc/0x68)
-	[    5.255034] [<c0092e7c>] (mark_page_accessed+0xc/0x68) from
-	[<c00a2a4c>] (unmap_single_vma+0x3bc/0x550)
-	[    5.264402] [<c00a2a4c>] (unmap_single_vma+0x3bc/0x550) from
-	[<c00a3b4c>] (unmap_vmas+0x44/0x54)
-	[    5.273164] [<c00a3b4c>] (unmap_vmas+0x44/0x54) from
-	[<c00a81a8>] (exit_mmap+0xc4/0x1e0)
-	[    5.281233] [<c00a81a8>] (exit_mmap+0xc4/0x1e0) from
-	[<c001bb78>] (mmput+0x3c/0xdc)
-	[    5.288868] [<c001bb78>] (mmput+0x3c/0xdc) from [<c0021b0c>]
-	(do_exit+0x30c/0x828)
-	[    5.296413] [<c0021b0c>] (do_exit+0x30c/0x828) from
-	[<c0022dac>] (do_group_exit+0x4c/0xb0)
-	[    5.304653] [<c0022dac>] (do_group_exit+0x4c/0xb0) from
-	[<c0022e20>] (__wake_up_parent+0x0/0x18)
+v2: added comment
 
-Root cause:
-the commit dropped uart_port->lock before calling tty_flip_buffer_push(), but in sirfsoc-uart,
-sirfsoc_uart_pio_rx_chars() can be called by sirfsoc_rx_tmo_process_tl(). here uart_port->lock
-has not been taken yet. so that caused unpaired lock/unlock.
-
-Solution:
-This patch is doing a quick fix for that, it adds spin_lock/unlock(&port->lock) protect to
-sirfsoc_uart_pio_rx_chars() in sirfsoc_rx_tmo_process_tl() to keep spin_lock/unlock in pair.
-
-Signed-off-by: Qipan Li <Qipan.Li@csr.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/sirfsoc_uart.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/of/address.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/sirfsoc_uart.c
-+++ b/drivers/tty/serial/sirfsoc_uart.c
-@@ -540,8 +540,10 @@ static void sirfsoc_rx_tmo_process_tl(un
- 	wr_regl(port, ureg->sirfsoc_rx_dma_io_ctrl,
- 			rd_regl(port, ureg->sirfsoc_rx_dma_io_ctrl) |
- 			SIRFUART_IO_MODE);
--	sirfsoc_uart_pio_rx_chars(port, 4 - sirfport->rx_io_count);
- 	spin_unlock_irqrestore(&sirfport->rx_lock, flags);
-+	spin_lock(&port->lock);
-+	sirfsoc_uart_pio_rx_chars(port, 4 - sirfport->rx_io_count);
-+	spin_unlock(&port->lock);
- 	if (sirfport->rx_io_count == 4) {
- 		spin_lock_irqsave(&sirfport->rx_lock, flags);
- 		sirfport->rx_io_count = 0;
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -99,11 +99,12 @@ static unsigned int of_bus_default_get_f
+ static int of_bus_pci_match(struct device_node *np)
+ {
+ 	/*
++ 	 * "pciex" is PCI Express
+ 	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
+ 	 * "ht" is hypertransport
+ 	 */
+-	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
+-		!strcmp(np->type, "ht");
++	return !strcmp(np->type, "pci") || !strcmp(np->type, "pciex") ||
++		!strcmp(np->type, "vci") || !strcmp(np->type, "ht");
+ }
+ 
+ static void of_bus_pci_count_cells(struct device_node *np,
 
 
