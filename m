@@ -1,121 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaBTAxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:53:54 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:35029 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaBTAxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:53:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392752867.18779.8120.camel@triegel.csb>
-References: <1392321837.18779.3249.camel@triegel.csb>
-	<20140214020144.GO4250@linux.vnet.ibm.com>
-	<1392352981.18779.3800.camel@triegel.csb>
-	<20140214172920.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFx9CbgrfK4rBVYD75y2KoWiO90dSYsAW83O-tYVLK-gkg@mail.gmail.com>
-	<CA+55aFypfiTFwundih8QEA6ZwVGk=g5L4sabsN0932eih5knOQ@mail.gmail.com>
-	<1392486310.18779.6447.camel@triegel.csb>
-	<CA+55aFwTrt_6m1inNHQkk74i7uPkHNnacwHiBgioZSXieAs5Sw@mail.gmail.com>
-	<1392666947.18779.6838.camel@triegel.csb>
-	<CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
-	<20140218030002.GA15857@linux.vnet.ibm.com>
-	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-	<1392740258.18779.7732.camel@triegel.csb>
-	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
-	<1392752867.18779.8120.camel@triegel.csb>
-Date: Wed, 19 Feb 2014 16:53:49 -0800
-X-Google-Sender-Auth: MsmXOfxHt8Tx_kb22dkg_bWmqBQ
-Message-ID: <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	id S1752814AbaBTAzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:55:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571AbaBTAzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 19:55:49 -0500
+Message-ID: <1392857777.22693.14.camel@dcbw.local>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+From: Dan Williams <dcbw@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Date: Wed, 19 Feb 2014 18:56:17 -0600
+In-Reply-To: <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
+	 <1392668638.21106.5.camel@dcbw.local>
+	 <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
+	 <1392828325.21976.6.camel@dcbw.local>
+	 <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:47 AM, Torvald Riegel <triegel@redhat.com> wrote:
-> On Tue, 2014-02-18 at 09:44 -0800, Linus Torvalds wrote:
->>
->> Can you point to it? Because I can find a draft standard, and it sure
->> as hell does *not* contain any clarity of the model. It has a *lot* of
->> verbiage, but it's pretty much impossible to actually understand, even
->> for somebody who really understands memory ordering.
->
-> http://www.cl.cam.ac.uk/~mjb220/n3132.pdf
-> This has an explanation of the model up front, and then the detailed
-> formulae in Section 6.  This is from 2010, and there might have been
-> smaller changes since then, but I'm not aware of any bigger ones.
+On Wed, 2014-02-19 at 09:20 -0800, Luis R. Rodriguez wrote:
+> On Wed, Feb 19, 2014 at 8:45 AM, Dan Williams <dcbw@redhat.com> wrote:
+> > On Tue, 2014-02-18 at 13:19 -0800, Luis R. Rodriguez wrote:
+> >> On Mon, Feb 17, 2014 at 12:23 PM, Dan Williams <dcbw@redhat.com> wrote:
+> >> > On Fri, 2014-02-14 at 18:59 -0800, Luis R. Rodriguez wrote:
+> >> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >> >>
+> >> >> Some interfaces do not need to have any IPv4 or IPv6
+> >> >> addresses, so enable an option to specify this. One
+> >> >> example where this is observed are virtualization
+> >> >> backend interfaces which just use the net_device
+> >> >> constructs to help with their respective frontends.
+> >> >>
+> >> >> This should optimize boot time and complexity on
+> >> >> virtualization environments for each backend interface
+> >> >> while also avoiding triggering SLAAC and DAD, which is
+> >> >> simply pointless for these type of interfaces.
+> >> >
+> >> > Would it not be better/cleaner to use disable_ipv6 and then add a
+> >> > disable_ipv4 sysctl, then use those with that interface?
+> >>
+> >> Sure, but note that the both disable_ipv6 and accept_dada sysctl
+> >> parameters are global. ipv4 and ipv6 interfaces are created upon
+> >> NETDEVICE_REGISTER, which will get triggered when a driver calls
+> >> register_netdev(). The goal of this patch was to enable an early
+> >> optimization for drivers that have no need ever for ipv4 or ipv6
+> >> interfaces.
+> >
+> > Each interface gets override sysctls too though, eg:
+> >
+> > /proc/sys/net/ipv6/conf/enp0s25/disable_ipv6
+> 
+> I hadn't seen those, thanks!
 
-Ahh, this is different from what others pointed at. Same people,
-similar name, but not the same paper.
+Note that there isn't yet a disable_ipv4 knob though, I was
+perhaps-too-subtly trying to get you to send a patch for it, since I can
+use it too :)
 
-I will read this version too, but from reading the other one and the
-standard in parallel and trying to make sense of it, it seems that I
-may have originally misunderstood part of the whole control dependency
-chain.
+Dan
 
-The fact that the left side of "? :", "&&" and "||" breaks data
-dependencies made me originally think that the standard tried very
-hard to break any control dependencies. Which I felt was insane, when
-then some of the examples literally were about the testing of the
-value of an atomic read. The data dependency matters quite a bit. The
-fact that the other "Mathematical" paper then very much talked about
-consume only in the sense of following a pointer made me think so even
-more.
+> > which is the one I meant; you're obviously right that the global ones
+> > aren't what you want here.  But the specific ones should be suitable?
+> 
+> Under the approach Stephen mentioned by first ensuring the interface
+> is down yes. There's one use case I can consider to still want the
+> patch though, more on that below.
+> 
+> > If you set that on a per-interface basis, then you'll get EPERM or
+> > something whenever you try to add IPv6 addresses or do IPv6 routing.
+> 
+> Neat, thanks.
+> 
+> >> Zoltan has noted though some use cases of IPv4 or IPv6 addresses on
+> >> backends though, as such this is no longer applicable as a
+> >> requirement. The ipv4 sysctl however still seems like a reasonable
+> >> approach to enable optimizations of the network in topologies where
+> >> its known we won't need them but -- we'd need to consider a much more
+> >> granular solution, not just global as it is now for disable_ipv6, and
+> >> we'd also have to figure out a clean way to do this to not incur the
+> >> cost of early address interface addition upon register_netdev().
+> >>
+> >> Given that we have a use case for ipv4 and ipv6 addresses on
+> >> xen-netback we no longer have an immediate use case for such early
+> >> optimization primitives though, so I'll drop this.
+> >>
+> >> > The IFF_SKIP_IP seems to duplicate at least part of what disable_ipv6 is
+> >> > already doing.
+> >>
+> >> disable_ipv6 is global, the goal was to make this granular and skip
+> >> the cost upon early boot, but its been clarified we don't need this.
+> >
+> > Like Stephen says, you need to make sure you set them before IFF_UP, but
+> > beyond that, wouldn't the interface-specific sysctls work?
+> 
+> Yeah that'll do it, unless there is a measurable run time benefit cost
+> to never even add these in the first place. Consider a host with tons
+> of guests, not sure how many is 'a lot' these days. One would have to
+> measure the cost of reducing the amount of time it takes to boot these
+> up. As discussed in the other threads though there *is* some use cases
+> of assigning IPv4 or IPv6 addresses to the backend interfaces though:
+> routing them (although its unclear to me if iptables can be used
+> instead, Zoltan?). So at least now there no clear requirement to
+> remove these interfaces or not have them at all. The boot time cost
+> savings should be considered though if this is ultimately desirable. I
+> saw tons of timers and events that'd get triggered with any IPv4 or
+> IPv6 interface laying around.
+> 
+>   Luis
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-But reading it some more, I now think that the whole "data dependency"
-logic (which is where the special left-hand side rule of the ternary
-and logical operators come in) are basically an exception to the rule
-that sequence points end up being also meaningful for ordering (ok, so
-C11 seems to have renamed "sequence points" to "sequenced before").
 
-So while an expression like
-
-    atomic_read(p, consume) ? a : b;
-
-doesn't have a data dependency from the atomic read that forces
-serialization, writing
-
-   if (atomic_read(p, consume))
-      a;
-   else
-      b;
-
-the standard *does* imply that the atomic read is "happens-before" wrt
-"a", and I'm hoping that there is no question that the control
-dependency still acts as an ordering point.
-
-THAT was one of my big confusions, the discussion about control
-dependencies and the fact that the logical ops broke the data
-dependency made me believe that the standard tried to actively avoid
-the whole issue with "control dependencies can break ordering
-dependencies on some CPU's due to branch prediction and memory
-re-ordering by the CPU".
-
-But after all the reading, I'm starting to think that that was never
-actually the implication at all, and the "logical ops breaks the data
-dependency rule" is simply an exception to the sequence point rule.
-All other sequence points still do exist, and do imply an ordering
-that matters for "consume"
-
-Am I now reading it right?
-
-So the clarification is basically to the statement that the "if
-(consume(p)) a" version *would* have an ordering guarantee between the
-read of "p" and "a", but the "consume(p) ? a : b" would *not* have
-such an ordering guarantee. Yes?
-
-                       Linus
