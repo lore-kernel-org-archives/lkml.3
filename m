@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaBUAAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:00:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46303 "EHLO
+	id S1756087AbaBTXyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:54:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334AbaBTXyM (ORCPT
+	with ESMTP id S1756048AbaBTXyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:54:12 -0500
+	Thu, 20 Feb 2014 18:54:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH 3.13 85/99] misc: mic: fix possible signed underflow (undefined behavior) in userspace API
-Date: Thu, 20 Feb 2014 15:53:20 -0800
-Message-Id: <20140220235120.667780237@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@intel.com>,
+        Sergey Galanov <sergey.e.galanov@gmail.com>
+Subject: [PATCH 3.13 78/99] Revert "usbcore: set lpm_capable field for LPM capable root hubs"
+Date: Thu, 20 Feb 2014 15:53:13 -0800
+Message-Id: <20140220235120.470068139@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,52 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sudeep Dutt <sudeep.dutt@intel.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 3b1cc9b9622a022208ec95b1259b05bbdf712eb7 upstream.
+commit 140e3026a57ab7d830dab2f2c57796c222db0ea9 upstream.
 
-iovcnt is declared as a signed integer in both the userspace API and
-as a local variable in mic_virtio.c. The while() loop in mic_virtio.c
-iterates until the local variable iovcnt reaches the value 0. If
-userspace passes e.g. INT_MIN as iovcnt field, this loop then appears
-to depend on an undefined behavior (signed underflow) to complete.
-The fix is to use unsigned integers in both the userspace API and
-the local variable.
+Commit 9df89d85b407690afa46ddfbccc80bec6869971d "usbcore: set
+lpm_capable field for LPM capable root hubs" was created under the
+assumption that all USB host controllers should have USB 3.0 Link PM
+enabled for all devices under the hosts.
 
-This issue was reported @ https://lkml.org/lkml/2014/1/10/10
+Unfortunately, that's not the case.  The xHCI driver relies on knowledge
+of the host hardware scheduler to calculate the LPM U1/U2 timeout
+values, and it only sets lpm_capable to one for Intel host controllers
+(that have the XHCI_LPM_SUPPORT quirk set).
 
-Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+When LPM is enabled for some Fresco Logic hosts, it causes failures with
+a AgeStar 3UBT USB 3.0 hard drive dock:
+
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: new SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:03 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:08 sg-laptop kernel: usb-storage 3-1:1.0: USB Mass Storage device detected
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1c.3/0000:04:00.0/usb3/3-1"
+Jan 11 13:59:08 sg-laptop mtp-probe[613]: bus: 3, device: 2 was not an MTP device
+Jan 11 13:59:08 sg-laptop kernel: scsi6 : usb-storage 3-1:1.0
+Jan 11 13:59:13 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U1 failed.
+Jan 11 13:59:18 sg-laptop kernel: usb 3-1: Set SEL for device-initiated U2 failed.
+Jan 11 13:59:18 sg-laptop kernel: usbcore: registered new interface driver usb-storage
+Jan 11 13:59:40 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: device descriptor read/8, error -71
+Jan 11 13:59:41 sg-laptop kernel: usb 3-1: reset SuperSpeed USB device number 2 using xhci_hcd
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: device descriptor read/8, error -110
+Jan 11 13:59:46 sg-laptop kernel: scsi 6:0:0:0: Device offlined - not ready after error recovery
+Jan 11 13:59:46 sg-laptop kernel: usb 3-1: USB disconnect, device number 2
+
+lspci for the affected host:
+
+04:00.0 0c03: 1b73:1000 (rev 04) (prog-if 30 [XHCI])
+        Subsystem: 1043:1039
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 19
+        Region 0: Memory at dd200000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+        Kernel modules: xhci_hcd
+
+The commit was backported to stable kernels, and will need to be
+reverted there as well.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@intel.com>
+Reported-by: Sergey Galanov <sergey.e.galanov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mic/host/mic_virtio.c |    3 ++-
- include/uapi/linux/mic_ioctl.h     |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd.c |    1 -
+ drivers/usb/core/hub.c |    7 +------
+ drivers/usb/core/usb.h |    1 -
+ 3 files changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/misc/mic/host/mic_virtio.c
-+++ b/drivers/misc/mic/host/mic_virtio.c
-@@ -156,7 +156,8 @@ static int mic_vringh_copy(struct mic_vd
- static int _mic_virtio_copy(struct mic_vdev *mvdev,
- 	struct mic_copy_desc *copy)
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1031,7 +1031,6 @@ static int register_root_hub(struct usb_
+ 					dev_name(&usb_dev->dev), retval);
+ 			return retval;
+ 		}
+-		usb_dev->lpm_capable = usb_device_supports_lpm(usb_dev);
+ 	}
+ 
+ 	retval = usb_new_device (usb_dev);
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -135,7 +135,7 @@ struct usb_hub *usb_hub_to_struct_hub(st
+ 	return usb_get_intfdata(hdev->actconfig->interface[0]);
+ }
+ 
+-int usb_device_supports_lpm(struct usb_device *udev)
++static int usb_device_supports_lpm(struct usb_device *udev)
  {
--	int ret = 0, iovcnt = copy->iovcnt;
-+	int ret = 0;
-+	u32 iovcnt = copy->iovcnt;
- 	struct iovec iov;
- 	struct iovec __user *u_iov = copy->iov;
- 	void __user *ubuf = NULL;
---- a/include/uapi/linux/mic_ioctl.h
-+++ b/include/uapi/linux/mic_ioctl.h
-@@ -39,7 +39,7 @@ struct mic_copy_desc {
- #else
- 	struct iovec *iov;
- #endif
--	int iovcnt;
-+	__u32 iovcnt;
- 	__u8 vr_idx;
- 	__u8 update_used;
- 	__u32 out_len;
+ 	/* USB 2.1 (and greater) devices indicate LPM support through
+ 	 * their USB 2.0 Extended Capabilities BOS descriptor.
+@@ -156,11 +156,6 @@ int usb_device_supports_lpm(struct usb_d
+ 				"Power management will be impacted.\n");
+ 		return 0;
+ 	}
+-
+-	/* udev is root hub */
+-	if (!udev->parent)
+-		return 1;
+-
+ 	if (udev->parent->lpm_capable)
+ 		return 1;
+ 
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -35,7 +35,6 @@ extern int usb_get_device_descriptor(str
+ 		unsigned int size);
+ extern int usb_get_bos_descriptor(struct usb_device *dev);
+ extern void usb_release_bos_descriptor(struct usb_device *dev);
+-extern int usb_device_supports_lpm(struct usb_device *udev);
+ extern char *usb_cache_string(struct usb_device *udev, int index);
+ extern int usb_set_configuration(struct usb_device *dev, int configuration);
+ extern int usb_choose_configuration(struct usb_device *udev);
 
 
