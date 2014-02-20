@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633AbaBUAIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:08:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46179 "EHLO
+	id S1756647AbaBUAId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:08:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46166 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932226AbaBTXxp (ORCPT
+	with ESMTP id S932215AbaBTXxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:45 -0500
+	Thu, 20 Feb 2014 18:53:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.13 57/99] x86, smap: Dont enable SMAP if CONFIG_X86_SMAP is disabled
-Date: Thu, 20 Feb 2014 15:52:52 -0800
-Message-Id: <20140220235119.861257709@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.13 54/99] iio: max1363: Use devm_regulator_get_optional for optional regulator
+Date: Thu, 20 Feb 2014 15:52:49 -0800
+Message-Id: <20140220235119.771348958@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,41 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
+commit 55b40d37311807a6bb2acdae0df904f54a0da3ae upstream.
 
-If SMAP support is not compiled into the kernel, don't enable SMAP in
-CR4 -- in fact, we should clear it, because the kernel doesn't contain
-the proper STAC/CLAC instructions for SMAP support.
+In kernel version 3.13, devm_regulator_get() may return no error
+if a regulator is undeclared. regulator_get_voltage() will return
+-EINVAL if this happens. This causes the driver to fail loading if
+the vref regulator is not declared.
 
-Found by Fengguang Wu's test system.
+Since vref is optional, call devm_regulator_get_optional instead.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/iio/adc/max1363.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -284,8 +284,13 @@ static __always_inline void setup_smap(s
- 	raw_local_save_flags(eflags);
- 	BUG_ON(eflags & X86_EFLAGS_AC);
+--- a/drivers/iio/adc/max1363.c
++++ b/drivers/iio/adc/max1363.c
+@@ -1560,7 +1560,7 @@ static int max1363_probe(struct i2c_clie
+ 	st->client = client;
  
--	if (cpu_has(c, X86_FEATURE_SMAP))
-+	if (cpu_has(c, X86_FEATURE_SMAP)) {
-+#ifdef CONFIG_X86_SMAP
- 		set_in_cr4(X86_CR4_SMAP);
-+#else
-+		clear_in_cr4(X86_CR4_SMAP);
-+#endif
-+	}
- }
+ 	st->vref_uv = st->chip_info->int_vref_mv * 1000;
+-	vref = devm_regulator_get(&client->dev, "vref");
++	vref = devm_regulator_get_optional(&client->dev, "vref");
+ 	if (!IS_ERR(vref)) {
+ 		int vref_uv;
  
- /*
 
 
