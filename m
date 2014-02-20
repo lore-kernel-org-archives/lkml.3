@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaBUAcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:32:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45802 "EHLO
+	id S1755689AbaBUAc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:32:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaBTXw2 (ORCPT
+	with ESMTP id S1755653AbaBTXw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:28 -0500
+	Thu, 20 Feb 2014 18:52:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ulrich Hahn <uhahn@eanco.de>, Johan Hovold <johan@hovold.com>
-Subject: [PATCH 3.12 52/82] USB: ftdi_sio: add Tagsys RFID Reader IDs
-Date: Thu, 20 Feb 2014 15:52:35 -0800
-Message-Id: <20140220235021.047079352@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.12 50/82] Drivers: hv: vmbus: Dont timeout during the initial connection with host
+Date: Thu, 20 Feb 2014 15:52:33 -0800
+Message-Id: <20140220235020.982785631@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,48 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Hahn <uhahn@eanco.de>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
+commit 269f979467cf49f2ea8132316c1f00f8c9678f7c upstream.
 
-Adding two more IDs to the ftdi_sio usb serial driver.
-It now connects Tagsys RFID readers.
-There might be more IDs out there for other Tagsys models.
+When the guest attempts to connect with the host when there may already be a
+connection with the host (as would be the case during the kdump/kexec path),
+it is difficult to guarantee timely response from the host. Starting with
+WS2012 R2, the host supports this ability to re-connect with the host
+(explicitly to support kexec). Prior to responding to the guest, the host
+needs to ensure that device states based on the previous connection to
+the host have been properly torn down. This may introduce unbounded delays.
+To deal with this issue, don't do a timed wait during the initial connect
+with the host.
 
-Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
-Cc: Johan Hovold <johan@hovold.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/hv/connection.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -193,6 +193,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -364,6 +364,12 @@
- /* Sprog II (Andrew Crosland's SprogII DCC interface) */
- #define FTDI_SPROG_II		0xF0C8
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -67,7 +67,6 @@ static int vmbus_negotiate_version(struc
+ 	int ret = 0;
+ 	struct vmbus_channel_initiate_contact *msg;
+ 	unsigned long flags;
+-	int t;
  
-+/*
-+ * Two of the Tagsys RFID Readers
-+ */
-+#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
-+#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
-+
- /* an infrared receiver for user access control with IR tags */
- #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
+ 	init_completion(&msginfo->waitevent);
  
+@@ -102,15 +101,7 @@ static int vmbus_negotiate_version(struc
+ 	}
+ 
+ 	/* Wait for the connection response */
+-	t =  wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	if (t == 0) {
+-		spin_lock_irqsave(&vmbus_connection.channelmsg_lock,
+-				flags);
+-		list_del(&msginfo->msglistentry);
+-		spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock,
+-					flags);
+-		return -ETIMEDOUT;
+-	}
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_del(&msginfo->msglistentry);
 
 
