@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539AbaBUBH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:07:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45307 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996AbaBTXug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754599AbaBTXug (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Feb 2014 18:50:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45288 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaBTXud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:50:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.4 22/25] time: Fix overflow when HZ is smaller than 60
-Date: Thu, 20 Feb 2014 15:51:38 -0800
-Message-Id: <20140220234843.105558201@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 02/25] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
+Date: Thu, 20 Feb 2014 15:51:18 -0800
+Message-Id: <20140220234842.553195135@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
 References: <20140220234842.483343851@linuxfoundation.org>
@@ -29,46 +33,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
+commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
+Recently due to a spike in connections per second memcached on 3
+separate boxes triggered the OOM killer from accept.  At the time the
+OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
+problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
+hold a bitmap, and there was sufficient fragmentation that the largest
+page available was 8KiB.
 
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
+I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
+but I do agree that order 3 allocations are very likely to succeed.
 
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
+There are always pathologies where order > 0 allocations can fail when
+there are copious amounts of free memory available.  Using the pigeon
+hole principle it is easy to show that it requires 1 page more than 50%
+of the pages being free to guarantee an order 1 (8KiB) allocation will
+succeed, 1 page more than 75% of the pages being free to guarantee an
+order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
+the pages being free to guarantee an order 3 allocate will succeed.
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+A server churning memory with a lot of small requests and replies like
+memcached is a common case that if anything can will skew the odds
+against large pages being available.
+
+Therefore let's not give external applications a practical way to kill
+linux server applications, and specify __GFP_NORETRY to the kmalloc in
+alloc_fdmem.  Unless I am misreading the code and by the time the code
+reaches should_alloc_retry in __alloc_pages_slowpath (where
+__GFP_NORETRY becomes signification).  We have already tried everything
+reasonable to allocate a page and the only thing left to do is wait.  So
+not waiting and falling back to vmalloc immediately seems like the
+reasonable thing to do even if there wasn't a chance of triggering the
+OOM killer.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/jiffies.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
- 
- static cycle_t jiffies_read(struct clocksource *cs)
- {
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -47,7 +47,7 @@ static void *alloc_fdmem(size_t size)
+ 	 * vmalloc() if the allocation size will be considered "large" by the VM.
+ 	 */
+ 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
+-		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
+ 		if (data != NULL)
+ 			return data;
+ 	}
 
 
