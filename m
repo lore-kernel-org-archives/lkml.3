@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaBTXw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45931 "EHLO
+	id S1756889AbaBUAYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:24:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865AbaBTXwy (ORCPT
+	with ESMTP id S1755876AbaBTXw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:54 -0500
+	Thu, 20 Feb 2014 18:52:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.12 72/82] md/raid1: restore ability for check and repair to fix read errors.
-Date: Thu, 20 Feb 2014 15:52:55 -0800
-Message-Id: <20140220235021.644430505@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH 3.12 74/82] i2c: mv64xxx: refactor message start to ensure proper initialization
+Date: Thu, 20 Feb 2014 15:52:57 -0800
+Message-Id: <20140220235021.701011869@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -28,76 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit 1877db75589a895bbdc4c4c3f23558e57b521141 upstream.
+commit 79970db213344b4a4034645db5ebfc31571f3fa3 upstream.
 
-commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
-    md/raid1: fix bio handling problems in process_checks()
+Because the offload mechanism can fall back to a standard transfer,
+having two seperate initialization states is unfortunate. Let's just
+have one state which does things consistently. This fixes a bug where
+some preparation was missing when the fallback happened. And it makes
+the code much easier to follow. To implement this, we put the check
+if offload is possible at the top of the offload setup function.
 
-Move the bio_reset() to a point before where BIO_UPTODATE is checked,
-so that check now always report that the bio is uptodate, even if it is not.
-
-This causes process_check() to sometimes treat read-errors as
-successful matches so the good data isn't written out.
-
-This patch preserves the flag until it is needed.
-
-Bug was introduced in 3.11, but backported to 3.10-stable (as it fixed
-an even worse bug).  So suitable for any -stable since 3.10.
-
-Reported-and-tested-by: Michael Tokarev <mjt@tls.msk.ru>
-Fixed: 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-mv64xxx.c |   33 ++++++++++++++-------------------
+ 1 file changed, 14 insertions(+), 19 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1855,11 +1855,15 @@ static int process_checks(struct r1bio *
- 	for (i = 0; i < conf->raid_disks * 2; i++) {
- 		int j;
- 		int size;
-+		int uptodate;
- 		struct bio *b = r1_bio->bios[i];
- 		if (b->bi_end_io != end_sync_read)
- 			continue;
--		/* fixup the bio for reuse */
-+		/* fixup the bio for reuse, but preserve BIO_UPTODATE */
-+		uptodate = test_bit(BIO_UPTODATE, &b->bi_flags);
- 		bio_reset(b);
-+		if (!uptodate)
-+			clear_bit(BIO_UPTODATE, &b->bi_flags);
- 		b->bi_vcnt = vcnt;
- 		b->bi_size = r1_bio->sectors << 9;
- 		b->bi_sector = r1_bio->sector +
-@@ -1892,11 +1896,14 @@ static int process_checks(struct r1bio *
- 		int j;
- 		struct bio *pbio = r1_bio->bios[primary];
- 		struct bio *sbio = r1_bio->bios[i];
-+		int uptodate = test_bit(BIO_UPTODATE, &sbio->bi_flags);
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -97,7 +97,6 @@ enum {
+ enum {
+ 	MV64XXX_I2C_ACTION_INVALID,
+ 	MV64XXX_I2C_ACTION_CONTINUE,
+-	MV64XXX_I2C_ACTION_OFFLOAD_SEND_START,
+ 	MV64XXX_I2C_ACTION_SEND_START,
+ 	MV64XXX_I2C_ACTION_SEND_RESTART,
+ 	MV64XXX_I2C_ACTION_OFFLOAD_RESTART,
+@@ -204,6 +203,9 @@ static int mv64xxx_i2c_offload_msg(struc
+ 	unsigned long ctrl_reg;
+ 	struct i2c_msg *msg = drv_data->msgs;
  
- 		if (sbio->bi_end_io != end_sync_read)
- 			continue;
-+		/* Now we can 'fixup' the BIO_UPTODATE flag */
-+		set_bit(BIO_UPTODATE, &sbio->bi_flags);
++	if (!drv_data->offload_enabled)
++		return -EOPNOTSUPP;
++
+ 	drv_data->msg = msg;
+ 	drv_data->byte_posn = 0;
+ 	drv_data->bytes_left = msg->len;
+@@ -433,8 +435,7 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
  
--		if (test_bit(BIO_UPTODATE, &sbio->bi_flags)) {
-+		if (uptodate) {
- 			for (j = vcnt; j-- ; ) {
- 				struct page *p, *s;
- 				p = pbio->bi_io_vec[j].bv_page;
-@@ -1911,7 +1918,7 @@ static int process_checks(struct r1bio *
- 		if (j >= 0)
- 			atomic64_add(r1_bio->sectors, &mddev->resync_mismatches);
- 		if (j < 0 || (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)
--			      && test_bit(BIO_UPTODATE, &sbio->bi_flags))) {
-+			      && uptodate)) {
- 			/* No need to write to this device. */
- 			sbio->bi_end_io = NULL;
- 			rdev_dec_pending(conf->mirrors[i].rdev, mddev);
+ 		drv_data->msgs++;
+ 		drv_data->num_msgs--;
+-		if (!(drv_data->offload_enabled &&
+-				mv64xxx_i2c_offload_msg(drv_data))) {
++		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
+ 			drv_data->cntl_bits |= MV64XXX_I2C_REG_CONTROL_START;
+ 			writel(drv_data->cntl_bits,
+ 			drv_data->reg_base + drv_data->reg_offsets.control);
+@@ -458,15 +459,14 @@ mv64xxx_i2c_do_action(struct mv64xxx_i2c
+ 			drv_data->reg_base + drv_data->reg_offsets.control);
+ 		break;
+ 
+-	case MV64XXX_I2C_ACTION_OFFLOAD_SEND_START:
+-		if (!mv64xxx_i2c_offload_msg(drv_data))
+-			break;
+-		else
+-			drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
+-		/* FALLTHRU */
+ 	case MV64XXX_I2C_ACTION_SEND_START:
+-		writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
+-			drv_data->reg_base + drv_data->reg_offsets.control);
++		/* Can we offload this msg ? */
++		if (mv64xxx_i2c_offload_msg(drv_data) < 0) {
++			/* No, switch to standard path */
++			mv64xxx_i2c_prepare_for_io(drv_data, drv_data->msgs);
++			writel(drv_data->cntl_bits | MV64XXX_I2C_REG_CONTROL_START,
++				drv_data->reg_base + drv_data->reg_offsets.control);
++		}
+ 		break;
+ 
+ 	case MV64XXX_I2C_ACTION_SEND_ADDR_1:
+@@ -625,15 +625,10 @@ mv64xxx_i2c_execute_msg(struct mv64xxx_i
+ 	unsigned long	flags;
+ 
+ 	spin_lock_irqsave(&drv_data->lock, flags);
+-	if (drv_data->offload_enabled) {
+-		drv_data->action = MV64XXX_I2C_ACTION_OFFLOAD_SEND_START;
+-		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+-	} else {
+-		mv64xxx_i2c_prepare_for_io(drv_data, msg);
+ 
+-		drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
+-		drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
+-	}
++	drv_data->action = MV64XXX_I2C_ACTION_SEND_START;
++	drv_data->state = MV64XXX_I2C_STATE_WAITING_FOR_START_COND;
++
+ 	drv_data->send_stop = is_last;
+ 	drv_data->block = 1;
+ 	mv64xxx_i2c_do_action(drv_data);
 
 
