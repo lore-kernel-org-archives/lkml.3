@@ -1,46 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaBTUZF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:25:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11883 "EHLO mx1.redhat.com"
+	id S1752367AbaBTU1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:27:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61319 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472AbaBTUY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:24:56 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: benjamin.tissoires@gmail.com, jkosina@suse.cz, dh.herrmann@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] HID: low level transport cleanup, series 3
-Date: Thu, 20 Feb 2014 15:24:47 -0500
-Message-Id: <1392927890-2389-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1750705AbaBTU1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 15:27:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,514,1389772800"; 
+   d="scan'208";a="486795515"
+Message-ID: <53066544.8030404@intel.com>
+Date: Thu, 20 Feb 2014 21:27:48 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@linux.intel.com>
+CC: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nouveau, ACPI: fix regression caused by b072e53
+References: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On 2/20/2014 10:23 AM, Jiang Liu wrote:
+> Fix regression caused by commit b072e53, which breaks loading nouveau
+> driver on optimus laptops.
+>
+> On some platforms, ACPI _DSM method (nouveau_op_dsm_muid, function 0)
+> has special requirements on the fourth parameter, which is different
+> from ACPI specifications. So revert to the private implementation
+> to check availability of _DSM functions instead of using common
+> acpi_check_dsm() interface.
+>
+> Reported-and-Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-this is a new round in the low level HID transport cleanup.
-These are the formely 7/14 an 12/14 only.
-I add in between a patch which makes .raw_request mandatory, to cleanup
-the old 12/14 (so 3/3 here).
+I'm taking this, because the commit that introduced the regression went 
+in through my tree.
 
-There is only two patches 2 merge after these 3... We are approaching the end!
+In the future I'll appreciate CCing ACPI-related patches to linux-acpi, 
+however.
 
-Cheers,
-Benjamin
+Thanks,
+Rafael
 
-Benjamin Tissoires (3):
-  HID: input: hid-input remove hid_output_raw_report call
-  HID: make .raw_request mandatory
-  HID: hidraw: replace hid_output_raw_report() calls by appropriates
-    ones
 
- Documentation/hid/hid-transport.txt |  3 ++-
- drivers/hid/hid-core.c              | 11 ++++++++---
- drivers/hid/hid-input.c             | 10 ++++++----
- drivers/hid/hidraw.c                | 19 ++++++++++++++-----
- include/linux/hid.h                 |  5 +----
- 5 files changed, 31 insertions(+), 17 deletions(-)
-
--- 
-1.8.5.3
+> ---
+>   drivers/gpu/drm/nouveau/nouveau_acpi.c |   26 ++++++++++++++++++++++++--
+>   1 file changed, 24 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> index 4ef83df..83face3 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+> @@ -106,6 +106,29 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+>   	return 0;
+>   }
+>   
+> +/*
+> + * On some platforms, _DSM(nouveau_op_dsm_muid, func0) has special
+> + * requirements on the fourth parameter, so a private implementation
+> + * instead of using acpi_check_dsm().
+> + */
+> +static int nouveau_check_optimus_dsm(acpi_handle handle)
+> +{
+> +	int result;
+> +
+> +	/*
+> +	 * Function 0 returns a Buffer containing available functions.
+> +	 * The args parameter is ignored for function 0, so just put 0 in it
+> +	 */
+> +	if (nouveau_optimus_dsm(handle, 0, 0, &result))
+> +		return 0;
+> +
+> +	/*
+> +	 * ACPI Spec v4 9.14.1: if bit 0 is zero, no function is supported.
+> +	 * If the n-th bit is enabled, function n is supported
+> +	 */
+> +	return result & 1 && result & (1 << NOUVEAU_DSM_OPTIMUS_CAPS);
+> +}
+> +
+>   static int nouveau_dsm(acpi_handle handle, int func, int arg)
+>   {
+>   	int ret = 0;
+> @@ -207,8 +230,7 @@ static int nouveau_dsm_pci_probe(struct pci_dev *pdev)
+>   			   1 << NOUVEAU_DSM_POWER))
+>   		retval |= NOUVEAU_DSM_HAS_MUX;
+>   
+> -	if (acpi_check_dsm(dhandle, nouveau_op_dsm_muid, 0x00000100,
+> -			   1 << NOUVEAU_DSM_OPTIMUS_CAPS))
+> +	if (nouveau_check_optimus_dsm(dhandle))
+>   		retval |= NOUVEAU_DSM_HAS_OPT;
+>   
+>   	if (retval & NOUVEAU_DSM_HAS_OPT) {
 
