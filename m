@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432AbaBUAu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:50:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45534 "EHLO
+	id S1757443AbaBUAvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:51:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203AbaBTXvb (ORCPT
+	with ESMTP id S1755188AbaBTXva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:31 -0500
+	Thu, 20 Feb 2014 18:51:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 55/66] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
-Date: Thu, 20 Feb 2014 15:51:54 -0800
-Message-Id: <20140220234911.058527737@linuxfoundation.org>
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.10 54/66] IB/qib: Add missing serdes init sequence
+Date: Thu, 20 Feb 2014 15:51:53 -0800
+Message-Id: <20140220234911.030875938@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,45 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+Research has shown that commit a77fcf895046 ("IB/qib: Use a single
+txselect module parameter for serdes tuning") missed a key serdes init
+sequence.
 
-I also did a little cleanup like removing an impossible NULL test.
+This patch add that sequence.
 
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/coalesced_mmio.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/infiniband/hw/qib/qib_iba7322.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -2287,6 +2287,11 @@ static int qib_7322_bringup_serdes(struc
+ 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
+ 	qib_write_kreg(dd, kr_scratch, 0ULL);
  
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
++	/* ensure previous Tx parameters are not still forced */
++	qib_write_kreg_port(ppd, krp_tx_deemph_override,
++		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
++		reset_tx_deemphasis_override));
++
+ 	if (qib_compat_ddr_negotiate) {
+ 		ppd->cpspec->ibdeltainprog = 1;
+ 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
 
 
