@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaBTVzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:55:44 -0500
-Received: from ip-64-139-1-69.sjc.megapath.net ([64.139.1.69]:50136 "EHLO
-	ip-64-139-1-69.sjc.megapath.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204AbaBTVzm (ORCPT
+	id S1752986AbaBTV4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:56:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34811 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbaBTV4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:55:42 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3
-To: Peter Hurley <peter@hurleysoftware.com>
-cc: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-From: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-Subject: Re: locking changes in tty broke low latency feature
-In-Reply-To: Message from Peter Hurley <peter@hurleysoftware.com>
-   of "Wed, 19 Feb 2014 21:55:21 EST." <53056E99.9070900@hurleysoftware.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Date: Thu, 20 Feb 2014 13:55:41 -0800
-Message-Id: <20140220215541.7D694406062@ip-64-139-1-69.sjc.megapath.net>
+	Thu, 20 Feb 2014 16:56:09 -0500
+Date: Thu, 20 Feb 2014 22:56:14 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
+        anton@nomsg.org, kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v3 2/6] hrtimer: Add support for deferrable timer into
+ the hrtimer
+In-Reply-To: <5306718E.9080803@linaro.org>
+Message-ID: <alpine.DEB.2.02.1402202254450.4468@ionos.tec.linutronix.de>
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com> <1392885633-7787-3-git-send-email-a.perevalov@samsung.com> <53064E4A.8030105@linaro.org> <alpine.DEB.2.02.1402202216350.4468@ionos.tec.linutronix.de> <5306718E.9080803@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Feb 2014, John Stultz wrote:
+> On 02/20/2014 01:18 PM, Thomas Gleixner wrote:
+> > On Thu, 20 Feb 2014, John Stultz wrote:
+> >> On 02/20/2014 12:40 AM, Alexey Perevalov wrote:
+> >>> diff --git a/include/uapi/linux/time.h b/include/uapi/linux/time.h
+> >>> index e75e1b6..bb8dc60 100644
+> >>> --- a/include/uapi/linux/time.h
+> >>> +++ b/include/uapi/linux/time.h
+> >>> @@ -56,6 +56,9 @@ struct itimerval {
+> >>>  #define CLOCK_BOOTTIME_ALARM		9
+> >>>  #define CLOCK_SGI_CYCLE			10	/* Hardware specific */
+> >>>  #define CLOCK_TAI			11
+> >>> +#define CLOCK_REALTIME_DEFERRABLE	12
+> >>> +#define CLOCK_MONOTONIC_DEFERRABLE	13
+> >>> +#define CLOCK_BOOTTIME_DEFERRABLE	14
+> >> Adding the deferrable HRTIMER bases above is right, but I don't think we
+> >> agreed on adding the _DEFERRABLE clockids.
+> >>
+> >> I'd instead prefer you use add a new TIMER_DEFERABLE flags argument, and
+> >> use the combination of the clockid + flag to decide which HRTIMER base
+> >> is used.
+> > And how does that work with anything else than timerfd? If we add
+> > deferrable posix clocks then we add them for the other interfaces
+> > which take a clockid as well.
+> Other interfaces have flag arguments as well (for things like
+> TIMER_ABSTIME).
 
-> Have you tried 3.12+ without low_latency? I ripped out a lot of locks from
-> 3.12+ so it's possible it already meets your requirements. 
+Fair enough. Let me look tomorrow what implications that
+has. Definitely a bit more intrusive, but probably more elegant.
 
-Looks good.  I don't think I could tell the difference by looking at my 
-normal collection of graphs.
+Thanks,
 
-
-> Hopefully you meant "milliseconds" here; single-digit microsecond latency on
-> any kind of stable duty cycle is linux-rt territory, and simply not a
-> reasonable goal for mainline. 
-
-No, I really meant microseconds.  Remember, I'm running on a lightly loaded 
-system, not trying to squeeze the impossible out of an overloaded system.
-
-top says gpsd has niced itself to -10, and ntpd is marked RT. 
-
-100 microseconds is easy.  I can get down to a few 10s of microseconds.  I'm 
-not sure how low I could get.
-
-
->> What does "unsupported termios changes" mean?
-
-> For example, once the port is in low_latency mode, setting L_ECHO (and its
-> ilk) would be rejected. And vice versa, if the L_ECHO is set in termios,
-> low_latency would be rejected.
-
-> So running a vt console is low_latency mode is not going to work. 
-
-OK.  I doubt if there is any problem, but we should be sure to be explicit 
-about what "and its ilk" really means.
-
-------------
-
-I don't understand the scheduler issues that triggered this bug.
-
-Let's go back to the big picture.  In the old old days, time sharing systems 
-had lots of serial ports.  It was common for the hardware to buffer up 
-several characters before requesting an interrupt in order to reduce the CPU 
-load.  There was usually a bit in the hardware to bypass this if you thought 
-that response time was more important than CPU load.  I was expecting 
-low_latency to set that bit.
-
-Is that option even present in modern serial chips?  Do the various chips 
-claiming to be 8250/16550 and friends correctly implement all the details of 
-the specs?
-
-Many gigabit ethernet controllers have the same issue.  It's often called 
-interrupt coalescing.
-
-What/why is the serial/scheduler doing differently in the low_latency case?  
-What case does that help?
-
-
-
--- 
-These are my opinions.  I hate spam.
-
-
-
+	tglx
