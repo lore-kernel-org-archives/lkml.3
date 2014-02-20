@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361AbaBTTT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 14:19:29 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:51808 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933AbaBTTT1 (ORCPT
+	id S1755474AbaBTTVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 14:21:15 -0500
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:59103 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494AbaBTTVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 14:19:27 -0500
-Date: Thu, 20 Feb 2014 14:21:26 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: x86_pmu_start WARN_ON.
-In-Reply-To: <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1402201414380.24360@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu> <20140217152859.GF15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
- <20140220100830.GN6835@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu> <20140220182300.GN9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 20 Feb 2014 14:21:13 -0500
+Message-ID: <530655A3.4050105@hp.com>
+Date: Thu, 20 Feb 2014 14:21:07 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073111.GW27965@twins.programming.kicks-ass.net> <5303B4C4.2040907@hp.com> <20140218212827.GR14089@laptop.programming.kicks-ass.net> <5303FDEC.9060001@hp.com> <20140219085107.GG27965@twins.programming.kicks-ass.net> <53050501.3070101@hp.com> <CA+55aFwyVgLJq2OgKZBK7g+T5-_M4o+dnEAr+qtYxA5t_=HSvA@mail.gmail.com> <5306413F.3010106@hp.com> <CA+55aFyJTOwnSJxc_qeHxKGoZ71xo3UWc4DrAJ5=OAtOvG7_CA@mail.gmail.com>
+In-Reply-To: <CA+55aFyJTOwnSJxc_qeHxKGoZ71xo3UWc4DrAJ5=OAtOvG7_CA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Vince Weaver wrote:
+On 02/20/2014 01:42 PM, Linus Torvalds wrote:
+> On Thu, Feb 20, 2014 at 9:54 AM, Waiman Long<waiman.long@hp.com>  wrote:
+>> I think we could implement 2 versions of _raw_spin_lock.
+> Yup. Or rather,  I'd suggest implement just one version of
+> arch_spin_lock(), but at the top of it you do something like
+>
+>     #if CONFIG_PARAVIRT_SPINLOCK
+>          if (static_key_false(&unfair_spinlocks)) {
+>             .. do paravirt unfair lock version ..
+>          }
+>     #endif
+>
+> which should basically generate almost-perfect code:  it's one extra
+> no-op for the native case if CONFIG_PARAVIRT_SPINLOCK is on, which
+> turns into a branch for the unfair version for paravirtualization.
+>
+> Or something like that.
+>
+>                Linus
 
-> Might be relevant: check the last_cpu values.  Right before the above
-> it looks like the thread gets moved from CPU 1 to CPU 0
-> (possibly as a result of the long chain started with the
-> close() of the tracepoint event),
-> so the problem NMI watchdog event being enabled is a different one than 
-> the one that was disabled just before.
+Yes, this is actually what I meant. The only difference is that I am 
+thinking about using a different config variable as PARAVIRT_SPINLOCKS 
+actually mean something else.
 
-so is this a false warning?  If you get scheduled to a new CPU
-and there's an already running CPU-wide event, is that OK?
-
-Or should x86_pmu_disable() be setting PERF_HES_STOPPED on all events?
-It looks like other architectures are (such as armpmu_stop() ).
-
-Vince
-
+-Longman
