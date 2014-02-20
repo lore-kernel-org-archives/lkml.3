@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaBTXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45995 "EHLO
+	id S1756820AbaBUAQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:16:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaBTXxG (ORCPT
+	with ESMTP id S1755935AbaBTXxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:06 -0500
+	Thu, 20 Feb 2014 18:53:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 14/99] ath9k_htc: make ->sta_rc_update atomic for most calls
-Date: Thu, 20 Feb 2014 15:52:09 -0800
-Message-Id: <20140220235118.624273994@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.13 24/99] iwlwifi: mvm: print the version of the firmware when it asserts
+Date: Thu, 20 Feb 2014 15:52:19 -0800
+Message-Id: <20140220235118.917586150@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,69 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
+commit b900a87b2eb90c0b9586496c82a323a1b8832d73 upstream.
 
-sta_rc_update() callback must be atomic, hence we can not take mutexes
-or do other operations, which can sleep in ath9k_htc_sta_rc_update().
+This can be useful to be able to spot the firmware version
+from the error reports without needing to fetch it from
+another place.
 
-I think we can just return from ath9k_htc_sta_rc_update(), if it is
-called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
-with scheduling while atomic bug for most cases (except mesh and IBSS
-modes).
-
-For mesh and IBSS I do not see other solution like creating additional
-workqueue, because sending firmware command require us to sleep, but
-this can be done in additional patch.
-
-Patch partially fixes bug:
-https://bugzilla.redhat.com/show_bug.cgi?id=990955
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/utils.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -1315,21 +1315,22 @@ static void ath9k_htc_sta_rc_update(stru
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_htc_target_rate trate;
+--- a/drivers/net/wireless/iwlwifi/mvm/utils.c
++++ b/drivers/net/wireless/iwlwifi/mvm/utils.c
+@@ -411,6 +411,8 @@ void iwl_mvm_dump_nic_error_log(struct i
+ 			mvm->status, table.valid);
+ 	}
  
-+	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
-+		return;
++	IWL_ERR(mvm, "Loaded firmware version: %s\n", mvm->fw->fw_version);
 +
- 	mutex_lock(&priv->mutex);
- 	ath9k_htc_ps_wakeup(priv);
- 
--	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
--		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
--		ath9k_htc_setup_rate(priv, sta, &trate);
--		if (!ath9k_htc_send_rate_cmd(priv, &trate))
--			ath_dbg(common, CONFIG,
--				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
--				sta->addr, be32_to_cpu(trate.capflags));
--		else
--			ath_dbg(common, CONFIG,
--				"Unable to update supported rates for sta: %pM\n",
--				sta->addr);
--	}
-+	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
-+	ath9k_htc_setup_rate(priv, sta, &trate);
-+	if (!ath9k_htc_send_rate_cmd(priv, &trate))
-+		ath_dbg(common, CONFIG,
-+			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
-+			sta->addr, be32_to_cpu(trate.capflags));
-+	else
-+		ath_dbg(common, CONFIG,
-+			"Unable to update supported rates for sta: %pM\n",
-+			sta->addr);
- 
- 	ath9k_htc_ps_restore(priv);
- 	mutex_unlock(&priv->mutex);
+ 	trace_iwlwifi_dev_ucode_error(trans->dev, table.error_id, table.tsf_low,
+ 				      table.data1, table.data2, table.data3,
+ 				      table.blink1, table.blink2, table.ilink1,
 
 
