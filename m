@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288AbaBUAoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:44:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45639 "EHLO
+	id S1755378AbaBTXvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:51:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336AbaBTXvw (ORCPT
+	with ESMTP id S1755336AbaBTXvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:52 -0500
+	Thu, 20 Feb 2014 18:51:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 13/82] ath9k_htc: Do not support PowerSave by default
-Date: Thu, 20 Feb 2014 15:51:56 -0800
-Message-Id: <20140220235019.879866551@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [PATCH 3.10 65/66] EDAC: Poll timeout cannot be zero, p2
+Date: Thu, 20 Feb 2014 15:52:04 -0800
+Message-Id: <20140220234911.349579388@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
+In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
+References: <20140220234909.482516304@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,59 +25,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Borislav Petkov <bp@suse.de>
 
-commit 6bca610d97b6139a1d7598b8009da9d339daa50f upstream.
+commit 9da21b1509d8aa7ab4846722817d16c72d656c91 upstream.
 
-It is a copy/paste of patch provided by Sujith for ath9k.
+Sanitize code even more to accept unsigned longs only and to not allow
+polling intervals below 1 second as this is unnecessary and doesn't make
+much sense anyway for polling errors.
 
-"Even though we make sure PowerSave is not enabled by default
-by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
-PS could be enabled by userspace based on various factors
-like battery usage etc. Since PS in ath9k is just broken
-and has been untested for years, remove support for it, but
-allow a user to explicitly enable it using a module parameter."
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+Cc: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/edac/edac_mc.c       |    4 ++--
+ drivers/edac/edac_mc_sysfs.c |   10 ++++++----
+ drivers/edac/edac_module.h   |    2 +-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -34,6 +34,10 @@ static int ath9k_htc_btcoex_enable;
- module_param_named(btcoex_enable, ath9k_htc_btcoex_enable, int, 0444);
- MODULE_PARM_DESC(btcoex_enable, "Enable wifi-BT coexistence");
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -601,7 +601,7 @@ static void edac_mc_workq_teardown(struc
+  *	user space has updated our poll period value, need to
+  *	reset our workq delays
+  */
+-void edac_mc_reset_delay_period(int value)
++void edac_mc_reset_delay_period(unsigned long value)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct list_head *item;
+@@ -611,7 +611,7 @@ void edac_mc_reset_delay_period(int valu
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
  
-+static int ath9k_ps_enable;
-+module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
-+MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
-+
- #define CHAN2G(_freq, _idx)  { \
- 	.center_freq = (_freq), \
- 	.hw_value = (_idx), \
-@@ -725,12 +729,14 @@ static void ath9k_set_hw_capab(struct at
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_HAS_RATE_CONTROL |
- 		IEEE80211_HW_RX_INCLUDES_FCS |
--		IEEE80211_HW_SUPPORTS_PS |
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
- 		IEEE80211_HW_MFP_CAPABLE |
- 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING;
+-		edac_mc_workq_setup(mci, (unsigned long) value);
++		edac_mc_workq_setup(mci, value);
+ 	}
  
-+	if (ath9k_ps_enable)
-+		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
+ 	mutex_unlock(&mem_ctls_mutex);
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -52,18 +52,20 @@ int edac_mc_get_poll_msec(void)
+ 
+ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
+ {
+-	long l;
++	unsigned long l;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+ 
+-	ret = kstrtol(val, 0, &l);
++	ret = kstrtoul(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if (!l || ((int)l != l))
 +
- 	hw->wiphy->interface_modes =
- 		BIT(NL80211_IFTYPE_STATION) |
- 		BIT(NL80211_IFTYPE_ADHOC) |
++	if (l < 1000)
+ 		return -EINVAL;
+-	*((int *)kp->arg) = l;
++
++	*((unsigned long *)kp->arg) = l;
+ 
+ 	/* notify edac_mc engine to reset the poll period */
+ 	edac_mc_reset_delay_period(l);
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -52,7 +52,7 @@ extern void edac_device_workq_setup(stru
+ extern void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_reset_delay_period(struct edac_device_ctl_info
+ 					   *edac_dev, unsigned long value);
+-extern void edac_mc_reset_delay_period(int value);
++extern void edac_mc_reset_delay_period(unsigned long value);
+ 
+ extern void *edac_align_ptr(void **p, unsigned size, int n_elems);
+ 
 
 
