@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869AbaBUA07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:26:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45882 "EHLO
+	id S1756922AbaBUA1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:27:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45873 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797AbaBTXwo (ORCPT
+	with ESMTP id S1755796AbaBTXwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:44 -0500
+	Thu, 20 Feb 2014 18:52:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Noonan <steven@uplinklabs.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jakub Jelinek <jakub@redhat.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.12 68/82] compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
-Date: Thu, 20 Feb 2014 15:52:51 -0800
-Message-Id: <20140220235021.516967447@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 67/82] ACPI / hotplug / PCI: Relax the checking of _STA return values
+Date: Thu, 20 Feb 2014 15:52:50 -0800
+Message-Id: <20140220235021.487910930@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -34,55 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Noonan <steven@uplinklabs.net>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit a9f180345f5378ac87d80ed0bea55ba421d83859 upstream.
+commit 7282059489868e0ed1b0d79765730c6b233a8399 upstream.
 
-I started noticing problems with KVM guest destruction on Linux
-3.12+, where guest memory wasn't being cleaned up. I bisected it
-down to the commit introducing the new 'asm goto'-based atomics,
-and found this quirk was later applied to those.
+The ACPI specification (ACPI 5.0A, Section 6.3.7) says:
 
-Unfortunately, even with GCC 4.8.2 (which ostensibly fixed the
-known 'asm goto' bug) I am still getting some kind of
-miscompilation. If I enable the asm_volatile_goto quirk for my
-compiler, KVM guests are destroyed correctly and the memory is
-cleaned up.
+ _STA may return bit 0 clear (not present) with bit 3 set (device is
+ functional). This case is used to indicate a valid device for which
+ no device driver should be loaded (for example, a bridge device.)
+ Children of this device may be present and valid. OSPM should
+ continue enumeration below a device whose _STA returns this bit
+ combination.
 
-So make the quirk unconditional for now, until bug is found
-and fixed.
+Evidently, some BIOSes follow that and return 0x0A from _STA, which
+causes problems to happen when they trigger bus check or device check
+notifications for those devices too.  Namely, ACPIPHP thinks that they
+are gone and may drop them, for example, if such a notification is
+triggered during a resume from system suspend.
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Steven Noonan <steven@uplinklabs.net>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/1392274867-15236-1-git-send-email-steven@uplinklabs.net
-Link: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+To fix that, modify ACPICA to regard devies as present and
+functioning if _STA returns both the ACPI_STA_DEVICE_ENABLED
+and ACPI_STA_DEVICE_FUNCTIONING bits set for them.
+
+Reported-and-tested-by: Peter Wu <lekensteyn@gmail.com>
+[rjw: Subject and changelog, minor code modifications]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compiler-gcc4.h |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -75,11 +75,7 @@
-  *
-  * (asm goto is automatically volatile - the naming reflects this.)
-  */
--#if GCC_VERSION <= 40801
--# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
--#else
--# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
--#endif
-+#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -706,6 +706,17 @@ static unsigned int get_slot_status(stru
+ 	return (unsigned int)sta;
+ }
  
- #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
- #if GCC_VERSION >= 40400
++static inline bool device_status_valid(unsigned int sta)
++{
++	/*
++	 * ACPI spec says that _STA may return bit 0 clear with bit 3 set
++	 * if the device is valid but does not require a device driver to be
++	 * loaded (Section 6.3.7 of ACPI 5.0A).
++	 */
++	unsigned int mask = ACPI_STA_DEVICE_ENABLED | ACPI_STA_DEVICE_FUNCTIONING;
++	return (sta & mask) == mask;
++}
++
+ /**
+  * trim_stale_devices - remove PCI devices that are not responding.
+  * @dev: PCI device to start walking the hierarchy from.
+@@ -721,7 +732,7 @@ static void trim_stale_devices(struct pc
+ 		unsigned long long sta;
+ 
+ 		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
+-		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
++		alive = (ACPI_SUCCESS(status) && device_status_valid(sta))
+ 			|| acpiphp_no_hotplug(handle);
+ 	}
+ 	if (!alive) {
+@@ -764,7 +775,7 @@ static void acpiphp_check_bridge(struct
+ 		mutex_lock(&slot->crit_sect);
+ 		if (slot_no_hotplug(slot)) {
+ 			; /* do nothing */
+-		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
++		} else if (device_status_valid(get_slot_status(slot))) {
+ 			/* remove stale devices if any */
+ 			list_for_each_entry_safe(dev, tmp, &bus->devices,
+ 						 bus_list)
 
 
