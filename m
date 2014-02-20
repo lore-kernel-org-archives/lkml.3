@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaBUFlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 00:41:03 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23142 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbaBUFlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 00:41:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,516,1389772800"; 
-   d="scan'208";a="485290315"
-Message-ID: <5306E6E8.4010708@linux.intel.com>
-Date: Fri, 21 Feb 2014 13:40:56 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nouveau, ACPI: fix regression caused by b072e53
-References: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com> <53066544.8030404@intel.com>
-In-Reply-To: <53066544.8030404@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752324AbaBUFqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 00:46:30 -0500
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:24237 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750900AbaBUFq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 00:46:28 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkgWAOrnBlNXQzZB/2dsb2JhbABZKIJeg0O+EAICgQ0XdIIlAQEEATocIwULCAMOCiMLOR4GE4d9DAHNSReOZAeEOAEDiUaObQGKUYdWgW+BSy8
+Date: Fri, 21 Feb 2014 05:47:52 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
+        cl@linux-foundation.org
+Subject: Re: Has slab ctor operation changed? -- was [PATCH 1/1] afs:
+ afs_alloc_inode: use kmem_cache_zalloc
+Message-Id: <20140221054752.3905832359384e0f427ee9f8@skynet.be>
+In-Reply-To: <32740.1392934995@warthog.procyon.org.uk>
+References: <20140220211612.506074a7fd876e47130a8c5c@skynet.be>
+	<32740.1392934995@warthog.procyon.org.uk>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Rafael.
-Will cc ACPI maillist next time.
+On Thu, 20 Feb 2014 22:23:15 +0000
+David Howells <dhowells@redhat.com> wrote:
 
-On 2014/2/21 4:27, Rafael J. Wysocki wrote:
-> On 2/20/2014 10:23 AM, Jiang Liu wrote:
->> Fix regression caused by commit b072e53, which breaks loading nouveau
->> driver on optimus laptops.
->>
->> On some platforms, ACPI _DSM method (nouveau_op_dsm_muid, function 0)
->> has special requirements on the fourth parameter, which is different
->> from ACPI specifications. So revert to the private implementation
->> to check availability of _DSM functions instead of using common
->> acpi_check_dsm() interface.
->>
->> Reported-and-Tested-by: Maarten Lankhorst
->> <maarten.lankhorst@canonical.com>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Fabian Frederick <fabf@skynet.be> wrote:
 > 
-> I'm taking this, because the commit that introduced the regression went
-> in through my tree.
+> > afs_vnode is currently cleared with 2 memsets after allocation and 
+> > 1 in constructor (afs_i_init_once).
+> > 	-This patch calls zalloc for explicit zero fill.
 > 
-> In the future I'll appreciate CCing ACPI-related patches to linux-acpi,
-> however.
+> Ummm...  This patch isn't necessarily correct in the substantiative portions.
 > 
-> Thanks,
-> Rafael
+> Since afs_i_init_once() is called by the slab allocator during the course of
+> kmem_cache_alloc(), how does kmem_cache_zalloc() interact with that?
+
+Object of this patch was to replace any kmem_cache_alloc by kmem_cache_zalloc
+so I guess what is done in the patch v2 in afs_alloc_inode below zalloc
+would be ok (leaving ctor how it is) ?
+
 > 
+> IIRC, it used to be that the ctor() function was called when the pages were
+> allocated to the slab - and it wasn't called again, even if the object was
+> allocated, deallocated and reallocated.  This means that things like locks and
+> lists don't need reinitialising after allocation.
 > 
->> ---
->>   drivers/gpu/drm/nouveau/nouveau_acpi.c |   26
->> ++++++++++++++++++++++++--
->>   1 file changed, 24 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c
->> b/drivers/gpu/drm/nouveau/nouveau_acpi.c
->> index 4ef83df..83face3 100644
->> --- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
->> +++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
->> @@ -106,6 +106,29 @@ static int nouveau_optimus_dsm(acpi_handle
->> handle, int func, int arg, uint32_t *
->>       return 0;
->>   }
->>   +/*
->> + * On some platforms, _DSM(nouveau_op_dsm_muid, func0) has special
->> + * requirements on the fourth parameter, so a private implementation
->> + * instead of using acpi_check_dsm().
->> + */
->> +static int nouveau_check_optimus_dsm(acpi_handle handle)
->> +{
->> +    int result;
->> +
->> +    /*
->> +     * Function 0 returns a Buffer containing available functions.
->> +     * The args parameter is ignored for function 0, so just put 0 in it
->> +     */
->> +    if (nouveau_optimus_dsm(handle, 0, 0, &result))
->> +        return 0;
->> +
->> +    /*
->> +     * ACPI Spec v4 9.14.1: if bit 0 is zero, no function is supported.
->> +     * If the n-th bit is enabled, function n is supported
->> +     */
->> +    return result & 1 && result & (1 << NOUVEAU_DSM_OPTIMUS_CAPS);
->> +}
->> +
->>   static int nouveau_dsm(acpi_handle handle, int func, int arg)
->>   {
->>       int ret = 0;
->> @@ -207,8 +230,7 @@ static int nouveau_dsm_pci_probe(struct pci_dev
->> *pdev)
->>                  1 << NOUVEAU_DSM_POWER))
->>           retval |= NOUVEAU_DSM_HAS_MUX;
->>   -    if (acpi_check_dsm(dhandle, nouveau_op_dsm_muid, 0x00000100,
->> -               1 << NOUVEAU_DSM_OPTIMUS_CAPS))
->> +    if (nouveau_check_optimus_dsm(dhandle))
->>           retval |= NOUVEAU_DSM_HAS_OPT;
->>         if (retval & NOUVEAU_DSM_HAS_OPT) {
+> So afs_i_init_once() theoretically constructs the stuff that can be reused,
+> and afs_alloc_inode() therefore has to clear the non-reusable state.
 > 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Of course, it's possible that the slab allocator no longer works like this...
+> 
+> David
