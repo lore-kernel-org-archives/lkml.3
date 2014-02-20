@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaBTQIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 11:08:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705AbaBTQIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 11:08:34 -0500
-Date: Thu, 20 Feb 2014 10:06:03 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140220100603.76622b33@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1402192048240.2568@chino.kir.corp.google.com>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
- <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
- <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
- <20140214225810.57e854cb@redhat.com>
- <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
- <20140217085622.39b39cac@redhat.com>
- <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
- <20140218123013.GA20609@amt.cnet>
- <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
- <20140220022254.GA25898@amt.cnet>
- <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140219234232.07dc1eab@redhat.com>
- <alpine.DEB.2.02.1402192048240.2568@chino.kir.corp.google.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754932AbaBTQJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 11:09:09 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45596 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122AbaBTQJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 11:09:06 -0500
+From: Kumar Gala <galak@codeaurora.org>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        svarbanov@mm-sol.com
+Subject: [PATCH v2] hwrng: msm: switch Kconfig to ARCH_QCOM depends
+Date: Thu, 20 Feb 2014 10:09:02 -0600
+Message-Id: <1392912542-5349-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014 20:51:55 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
+driver is only relevant on the multiplatform supported SoCs so switch the
+Kconfig depends to ARCH_QCOM.
 
-> On Wed, 19 Feb 2014, Luiz Capitulino wrote:
-> 
-> > > Yes, my concrete objection is that the command line interface is 
-> > > unnecessary if you can dynamically allocate and free 1GB pages at runtime 
-> > > unless memory will be so fragmented that it cannot be done when userspace 
-> > > is brought up.  That is not your use case, thus this support is not 
-> > 
-> > Yes it is. The early boot is the most reliable moment to allocate huge pages
-> > and we want to take advantage from that.
-> > 
-> 
-> Your use case is 8GB of hugepages on a 32GB machine.  It shouldn't be 
-> necessary to do that at boot.
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stanimir Varbanov <svarbanov@mm-sol.com>
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
 
-That's shortsighted because it's tied to a particular machine. The same
-customer asked for more flexibility, too.
+Herbert,
 
-Look, we're also looking forward to allocating 1G huge pages from user-space.
-We actually agree here. What we're suggesting is having _both_, the
-command-line option (which offers higher reliability and is a low hanging
-fruit right now) _and_ later we add support to allocate 1G huge pages from
-user-space. No loss here, that's the maximum benefit for all users.
+If you can ack this I'll send it via linux-qcom/arm-soc tree's
+
+thanks
+
+v2:
+* Updated help text to remove MSM references, made more generic
+
+ drivers/char/hw_random/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 2f2b084..f2b9f8c 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -342,11 +342,11 @@ config HW_RANDOM_TPM
+ 	  If unsure, say Y.
+ 
+ config HW_RANDOM_MSM
+-	tristate "Qualcomm MSM Random Number Generator support"
+-	depends on HW_RANDOM && ARCH_MSM
++	tristate "Qualcomm ARM SoCs Random Number Generator support"
++	depends on HW_RANDOM && ARCH_QCOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+-	  Generator hardware found on Qualcomm MSM SoCs.
++	  Generator hardware found on Qualcomm ARM SoCs.
+ 
+ 	  To compile this driver as a module, choose M here. the
+ 	  module will be called msm-rng.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
