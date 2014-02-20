@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbaBTXxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
+	id S1756395AbaBUAGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:06:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190AbaBTXxn (ORCPT
+	with ESMTP id S932254AbaBTXxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:43 -0500
+	Thu, 20 Feb 2014 18:53:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.13 55/99] iio: adis16400: Set timestamp as the last element in chan_spec
-Date: Thu, 20 Feb 2014 15:52:50 -0800
-Message-Id: <20140220235119.798842041@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 61/99] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
+Date: Thu, 20 Feb 2014 15:52:56 -0800
+Message-Id: <20140220235119.979181870@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -30,82 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
+commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
 
-This is necessary since timestamp is calculated as the last element
-in iio_compute_scan_bytes().
+The very same fixup is needed to make the mic on Sony VAIO Pro 11
+working as well as VAIO Pro 13 model.
 
-Without this fix any userspace code reading the layout of the buffer via
-sysfs will incorrectly interpret the data leading some nasty corruption.
-
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/imu/adis16400.h      |    1 +
- drivers/iio/imu/adis16400_core.c |   10 +++++-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/iio/imu/adis16400.h
-+++ b/drivers/iio/imu/adis16400.h
-@@ -189,6 +189,7 @@ enum {
- 	ADIS16300_SCAN_INCLI_X,
- 	ADIS16300_SCAN_INCLI_Y,
- 	ADIS16400_SCAN_ADC,
-+	ADIS16400_SCAN_TIMESTAMP,
- };
- 
- #ifdef CONFIG_IIO_BUFFER
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
- 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(12)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16448_channels[] = {
-@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16
- 		},
- 	},
- 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16350_channels[] = {
-@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16300_channels[] = {
-@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
- 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
- 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
--	IIO_CHAN_SOFT_TIMESTAMP(14)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16334_channels[] = {
-@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
- 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(8)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static struct attribute *adis16400_attributes[] = {
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4319,6 +4319,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x8516, "ASUS X101CH", ALC269_FIXUP_ASUS_X101),
++	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
+ 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 
 
