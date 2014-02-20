@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaBUAEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:04:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46229 "EHLO
+	id S932299AbaBTXxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306AbaBTXx6 (ORCPT
+	with ESMTP id S932264AbaBTXxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:58 -0500
+	Thu, 20 Feb 2014 18:53:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.13 70/99] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
-Date: Thu, 20 Feb 2014 15:53:05 -0800
-Message-Id: <20140220235120.231681097@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.13 63/99] mei: dont unset read cb ptr on reset
+Date: Thu, 20 Feb 2014 15:52:58 -0800
+Message-Id: <20140220235120.036454832@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -28,36 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
+commit 5cb906c7035f03a3a44fecece9d3ff8fcc75d6e0 upstream.
 
-The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
-causes problems.  Although it was originally reported only for
-bcdDevice = 0x160, its range was much larger.  This resulted in a bug
-report for bcdDevice 0x220, so the range was capped at 0x219.  Now
-Milan reports errors with bcdDevice 0x150.
+Don't set read callback to NULL during reset as
+this leads to memory leak of both cb and its buffer.
+The memory is correctly freed during mei_release.
 
-Therefore this patch restricts the range to just 0x160.
+The memory leak is detectable by kmemleak if
+application has open read call while system is going through
+suspend/resume.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
+unreferenced object 0xecead780 (size 64):
+  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
+  hex dump (first 32 bytes):
+    00 01 10 00 00 02 20 00 00 bf 30 f1 00 00 00 00  ...... ...0.....
+    00 00 00 00 00 00 00 00 36 01 00 00 00 70 da e2  ........6....p..
+  backtrace:
+    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
+    [<c131ed56>] kmem_cache_alloc_trace+0xc6/0x190
+    [<c16243c9>] mei_io_cb_init+0x29/0x50
+    [<c1625722>] mei_cl_read_start+0x102/0x360
+    [<c16268f3>] mei_read+0x103/0x4e0
+    [<c1324b09>] vfs_read+0x89/0x160
+    [<c1324d5f>] SyS_read+0x4f/0x80
+    [<c1a7b318>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
+unreferenced object 0xe2da7000 (size 512):
+  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
+  hex dump (first 32 bytes):
+    00 6c da e2 7c 00 00 00 00 00 00 00 c0 eb 0c 59  .l..|..........Y
+    1b 00 00 00 01 00 00 00 02 10 00 00 01 00 00 00  ................
+  backtrace:
+    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
+    [<c131f127>] __kmalloc+0xe7/0x1d0
+    [<c162447e>] mei_io_cb_alloc_resp_buf+0x2e/0x60
+    [<c162574c>] mei_cl_read_start+0x12c/0x360
+    [<c16268f3>] mei_read+0x103/0x4e0
+    [<c1324b09>] vfs_read+0x89/0x160
+    [<c1324d5f>] SyS_read+0x4f/0x80
+    [<c1a7b318>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/mei/client.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
- 
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -907,7 +907,6 @@ void mei_cl_all_disconnect(struct mei_de
+ 	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
+ 		cl->state = MEI_FILE_DISCONNECTED;
+ 		cl->mei_flow_ctrl_creds = 0;
+-		cl->read_cb = NULL;
+ 		cl->timer_count = 0;
+ 	}
+ }
 
 
