@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaBTEv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 23:51:58 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61782 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529AbaBTEv5 (ORCPT
+	id S1753826AbaBTEwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 23:52:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34380 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758AbaBTEwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 23:51:57 -0500
-Date: Wed, 19 Feb 2014 20:51:55 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-In-Reply-To: <20140219234232.07dc1eab@redhat.com>
-Message-ID: <alpine.DEB.2.02.1402192048240.2568@chino.kir.corp.google.com>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com> <1392339728-13487-5-git-send-email-lcapitulino@redhat.com> <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com> <20140214225810.57e854cb@redhat.com>
- <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com> <20140217085622.39b39cac@redhat.com> <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com> <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
- <20140220022254.GA25898@amt.cnet> <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com> <20140219234232.07dc1eab@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Feb 2014 23:52:02 -0500
+Date: Wed, 19 Feb 2014 20:51:41 -0800
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-3af7111e2066a641510c16a4e9e82dd81550115b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, fengguang.wu@intel.com, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, fengguang.wu@intel.com
+In-Reply-To: <1392587568-7325-3-git-send-email-stefani@seibold.net>
+References: <1392587568-7325-3-git-send-email-stefani@seibold.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] mm: Clean up style in install_special_mapping()
+Git-Commit-ID: 3af7111e2066a641510c16a4e9e82dd81550115b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Feb 2014, Luiz Capitulino wrote:
+Commit-ID:  3af7111e2066a641510c16a4e9e82dd81550115b
+Gitweb:     http://git.kernel.org/tip/3af7111e2066a641510c16a4e9e82dd81550115b
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 19 Feb 2014 20:46:57 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 19 Feb 2014 20:46:57 -0800
 
-> > Yes, my concrete objection is that the command line interface is 
-> > unnecessary if you can dynamically allocate and free 1GB pages at runtime 
-> > unless memory will be so fragmented that it cannot be done when userspace 
-> > is brought up.  That is not your use case, thus this support is not 
-> 
-> Yes it is. The early boot is the most reliable moment to allocate huge pages
-> and we want to take advantage from that.
-> 
+mm: Clean up style in install_special_mapping()
 
-Your use case is 8GB of hugepages on a 32GB machine.  It shouldn't be 
-necessary to do that at boot.
+We can clean up the style in install_special_mapping(), and make it
+use PTR_ERR_OR_ZERO().
 
-Thanks.
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/1392587568-7325-3-git-send-email-stefani@seibold.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ mm/mmap.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 81ba54f..6b78a77 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2959,12 +2959,10 @@ int install_special_mapping(struct mm_struct *mm,
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
+ {
+-	struct vm_area_struct *vma = _install_special_mapping(mm,
+-			    addr, len, vm_flags, pages);
++	struct vm_area_struct *vma;
+ 
+-	if (IS_ERR(vma))
+-		return PTR_ERR(vma);
+-	return 0;
++	vma = _install_special_mapping(mm, addr, len, vm_flags, pages);
++	return PTR_ERR_OR_ZERO(vma);
+ }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
