@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096AbaBUAgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:36:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45743 "EHLO
+	id S1757117AbaBUAgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:36:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45741 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572AbaBTXwO (ORCPT
+	with ESMTP id S1755566AbaBTXwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:14 -0500
+	Thu, 20 Feb 2014 18:52:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.12 38/82] staging: comedi: adv_pci1710: fix analog output readback value
-Date: Thu, 20 Feb 2014 15:52:21 -0800
-Message-Id: <20140220235020.616550739@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.12 37/82] staging: r8188eu: Fix typo in USB_DEVICE list
+Date: Thu, 20 Feb 2014 15:52:20 -0800
+Message-Id: <20140220235020.586036024@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,85 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
+commit 08951f10ae146d0c4114ac508310ad316b6f8798 upstream.
 
-The last value written to a analog output channel is cached in the
-private data of this driver for readback.
+There is a typo in the device list that interchanges the vendor and
+product codes for one of the entries. This exchange was determined
+by noticing that the vendor code is 0x07b8 for Abocom at
+http://www.linux-usb.org/usb.ids.
 
-Currently, the wrong value is cached in the (*insn_write) functions.
-The current code stores the data[n] value for readback afer the loop
-has written all the values. At this time 'n' points past the end of
-the data array.
-
-Fix the functions by using a local variable to hold the data being
-written to the analog output channel. This variable is then used
-after the loop is complete to store the readback value. The current
-value is retrieved before the loop in case no values are actually
-written..
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/adv_pci1710.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -490,6 +490,7 @@ static int pci171x_insn_write_ao(struct
- 				 struct comedi_insn *insn, unsigned int *data)
- {
- 	struct pci1710_private *devpriv = dev->private;
-+	unsigned int val;
- 	int n, chan, range, ofs;
- 
- 	chan = CR_CHAN(insn->chanspec);
-@@ -505,11 +506,14 @@ static int pci171x_insn_write_ao(struct
- 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
- 		ofs = PCI171x_DA1;
- 	}
-+	val = devpriv->ao_data[chan];
- 
--	for (n = 0; n < insn->n; n++)
--		outw(data[n], dev->iobase + ofs);
-+	for (n = 0; n < insn->n; n++) {
-+		val = data[n];
-+		outw(val, dev->iobase + ofs);
-+	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
- 
-@@ -679,6 +683,7 @@ static int pci1720_insn_write_ao(struct
- 				 struct comedi_insn *insn, unsigned int *data)
- {
- 	struct pci1710_private *devpriv = dev->private;
-+	unsigned int val;
- 	int n, rangereg, chan;
- 
- 	chan = CR_CHAN(insn->chanspec);
-@@ -688,13 +693,15 @@ static int pci1720_insn_write_ao(struct
- 		outb(rangereg, dev->iobase + PCI1720_RANGE);
- 		devpriv->da_ranges = rangereg;
- 	}
-+	val = devpriv->ao_data[chan];
- 
- 	for (n = 0; n < insn->n; n++) {
--		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
-+		val = data[n];
-+		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
- 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
- 	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
- }
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -53,7 +53,7 @@ static struct usb_device_id rtw_usb_id_t
+ 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0179)}, /* 8188ETV */
+ 	/*=== Customer ID ===*/
+ 	/****** 8188EUS ********/
+-	{USB_DEVICE(0x8179, 0x07B8)}, /* Abocom - Abocom */
++	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
+ 	{}	/* Terminating entry */
+ };
 
 
