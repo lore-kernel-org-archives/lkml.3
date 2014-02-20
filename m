@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaBTRqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:46:17 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:6399 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754932AbaBTRqO (ORCPT
+	id S1755728AbaBTRqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:46:44 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:39499 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755701AbaBTRqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:46:14 -0500
-Date: Thu, 20 Feb 2014 12:46:12 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: x86_pmu_start WARN_ON.
-Message-ID: <20140220124612.3a387673@gandalf.local.home>
-In-Reply-To: <20140220124351.7f920c08@gandalf.local.home>
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
-	<20140217152859.GF15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
-	<20140219101949.GG15586@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
-	<20140220100830.GN6835@laptop.programming.kicks-ass.net>
-	<20140220112600.2f44874d@gandalf.local.home>
-	<20140220170018.GJ9987@twins.programming.kicks-ass.net>
-	<20140220124351.7f920c08@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 20 Feb 2014 12:46:42 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: David Howells <dhowells@redhat.com>
+CC: <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH] frv: replace now removed pci_bus_b() causing build failure
+Date: Thu, 20 Feb 2014 12:46:06 -0500
+Message-ID: <1392918366-19079-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014 12:43:51 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+In commit 94e6a9b93064b49024b8701d2d81fcb4a821fa09 ("PCI: Remove
+pci_bus_b() and use list_for_each_entry() directly") the function
+pci_bus_b() was removed, but one instance of its usage was missed.
 
-> As a disable_trace_on_warning is more of a modification to the kernel,
-> I'm leaning to adding a /proc/sys/kernel/ftrace_disable_on_warning
-> file. This keeps it in line with ftrace_dump_on_oops, which is the most
-> similar feature.
+Replace it in the same fashion that the original commit did.
 
-Nevermind. There's a "traceoff_on_warning" already there that does
-exactly this :-/
+Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
--- Steve
+[Note: commit ID referenced above is from linux-next and will
+ be invalid if the PCI-next content is ever rebased.]
+
+ arch/frv/mb93090-mb00/pci-frv.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/frv/mb93090-mb00/pci-frv.c b/arch/frv/mb93090-mb00/pci-frv.c
+index c28121765448..67b1d1685759 100644
+--- a/arch/frv/mb93090-mb00/pci-frv.c
++++ b/arch/frv/mb93090-mb00/pci-frv.c
+@@ -88,7 +88,7 @@ static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
+ 
+ 	/* Depth-First Search on bus tree */
+ 	for (ln=bus_list->next; ln != bus_list; ln=ln->next) {
+-		bus = pci_bus_b(ln);
++		bus = list_entry(ln, struct pci_bus, node);
+ 		if ((dev = bus->self)) {
+ 			for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
+ 				r = &dev->resource[idx];
+-- 
+1.8.5.2
 
