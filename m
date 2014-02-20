@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729AbaBUBDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:03:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45360 "EHLO
+	id S1755331AbaBUBDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:03:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747AbaBTXut (ORCPT
+	with ESMTP id S1754742AbaBTXus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:49 -0500
+	Thu, 20 Feb 2014 18:50:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 12/66] ath9k_htc: make ->sta_rc_update atomic for most calls
-Date: Thu, 20 Feb 2014 15:51:11 -0800
-Message-Id: <20140220234909.835079558@linuxfoundation.org>
+        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 11/66] mac80211: fix fragmentation code, particularly for encryption
+Date: Thu, 20 Feb 2014 15:51:10 -0800
+Message-Id: <20140220234909.807977255@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -29,69 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
+commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f upstream.
 
-sta_rc_update() callback must be atomic, hence we can not take mutexes
-or do other operations, which can sleep in ath9k_htc_sta_rc_update().
+The "new" fragmentation code (since my rewrite almost 5 years ago)
+erroneously sets skb->len rather than using skb_trim() to adjust
+the length of the first fragment after copying out all the others.
+This leaves the skb tail pointer pointing to after where the data
+originally ended, and thus causes the encryption MIC to be written
+at that point, rather than where it belongs: immediately after the
+data.
 
-I think we can just return from ath9k_htc_sta_rc_update(), if it is
-called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
-with scheduling while atomic bug for most cases (except mesh and IBSS
-modes).
+The impact of this is that if software encryption is done, then
+ a) encryption doesn't work for the first fragment, the connection
+    becomes unusable as the first fragment will never be properly
+    verified at the receiver, the MIC is practically guaranteed to
+    be wrong
+ b) we leak up to 8 bytes of plaintext (!) of the packet out into
+    the air
 
-For mesh and IBSS I do not see other solution like creating additional
-workqueue, because sending firmware command require us to sleep, but
-this can be done in additional patch.
+This is only mitigated by the fact that many devices are capable
+of doing encryption in hardware, in which case this can't happen
+as the tail pointer is irrelevant in that case. Additionally,
+fragmentation is not used very frequently and would normally have
+to be configured manually.
 
-Patch partially fixes bug:
-https://bugzilla.redhat.com/show_bug.cgi?id=990955
+Fix this by using skb_trim() properly.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ net/mac80211/tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -1331,21 +1331,22 @@ static void ath9k_htc_sta_rc_update(stru
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_htc_target_rate trate;
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -854,7 +854,7 @@ static int ieee80211_fragment(struct iee
+ 	}
  
-+	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
-+		return;
-+
- 	mutex_lock(&priv->mutex);
- 	ath9k_htc_ps_wakeup(priv);
+ 	/* adjust first fragment's length */
+-	skb->len = hdrlen + per_fragm;
++	skb_trim(skb, hdrlen + per_fragm);
+ 	return 0;
+ }
  
--	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
--		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
--		ath9k_htc_setup_rate(priv, sta, &trate);
--		if (!ath9k_htc_send_rate_cmd(priv, &trate))
--			ath_dbg(common, CONFIG,
--				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
--				sta->addr, be32_to_cpu(trate.capflags));
--		else
--			ath_dbg(common, CONFIG,
--				"Unable to update supported rates for sta: %pM\n",
--				sta->addr);
--	}
-+	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
-+	ath9k_htc_setup_rate(priv, sta, &trate);
-+	if (!ath9k_htc_send_rate_cmd(priv, &trate))
-+		ath_dbg(common, CONFIG,
-+			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
-+			sta->addr, be32_to_cpu(trate.capflags));
-+	else
-+		ath_dbg(common, CONFIG,
-+			"Unable to update supported rates for sta: %pM\n",
-+			sta->addr);
- 
- 	ath9k_htc_ps_restore(priv);
- 	mutex_unlock(&priv->mutex);
 
 
