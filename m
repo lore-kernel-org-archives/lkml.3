@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaBTXxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45978 "EHLO
+	id S932143AbaBUATU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:19:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaBTXxD (ORCPT
+	with ESMTP id S932087AbaBTXxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:03 -0500
+	Thu, 20 Feb 2014 18:53:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliad@wizery.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.13 10/99] mac80211: move roc cookie assignment earlier
-Date: Thu, 20 Feb 2014 15:52:05 -0800
-Message-Id: <20140220235118.512886173@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 17/99] ar5523: fix usb id for Gigaset.
+Date: Thu, 20 Feb 2014 15:52:12 -0800
+Message-Id: <20140220235118.716710323@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,80 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 2f617435c3a6fe3f39efb9ae2baa77de2d6c97b8 upstream.
+commit 4fcfc7443d072582b5047b8b391d711590e5645c upstream.
 
-ieee80211_start_roc_work() might add a new roc
-to existing roc, and tell cfg80211 it has already
-started.
+Raw id and FW id should be switched.
 
-However, this might happen before the roc cookie
-was set, resulting in REMAIN_ON_CHANNEL (started)
-event with null cookie. Consequently, it can make
-wpa_supplicant go out of sync.
-
-Fix it by setting the roc cookie earlier.
-
-Signed-off-by: Eliad Peller <eliad@wizery.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Tested-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/cfg.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/net/wireless/ath/ar5523/ar5523.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -2608,6 +2608,24 @@ static int ieee80211_start_roc_work(stru
- 	INIT_DELAYED_WORK(&roc->work, ieee80211_sw_roc_work);
- 	INIT_LIST_HEAD(&roc->dependents);
- 
-+	/*
-+	 * cookie is either the roc cookie (for normal roc)
-+	 * or the SKB (for mgmt TX)
-+	 */
-+	if (!txskb) {
-+		/* local->mtx protects this */
-+		local->roc_cookie_counter++;
-+		roc->cookie = local->roc_cookie_counter;
-+		/* wow, you wrapped 64 bits ... more likely a bug */
-+		if (WARN_ON(roc->cookie == 0)) {
-+			roc->cookie = 1;
-+			local->roc_cookie_counter++;
-+		}
-+		*cookie = roc->cookie;
-+	} else {
-+		*cookie = (unsigned long)txskb;
-+	}
-+
- 	/* if there's one pending or we're scanning, queue this one */
- 	if (!list_empty(&local->roc_list) ||
- 	    local->scanning || local->radar_detect_enabled)
-@@ -2742,24 +2760,6 @@ static int ieee80211_start_roc_work(stru
- 	if (!queued)
- 		list_add_tail(&roc->list, &local->roc_list);
- 
--	/*
--	 * cookie is either the roc cookie (for normal roc)
--	 * or the SKB (for mgmt TX)
--	 */
--	if (!txskb) {
--		/* local->mtx protects this */
--		local->roc_cookie_counter++;
--		roc->cookie = local->roc_cookie_counter;
--		/* wow, you wrapped 64 bits ... more likely a bug */
--		if (WARN_ON(roc->cookie == 0)) {
--			roc->cookie = 1;
--			local->roc_cookie_counter++;
--		}
--		*cookie = roc->cookie;
--	} else {
--		*cookie = (unsigned long)txskb;
--	}
--
- 	return 0;
- }
- 
+--- a/drivers/net/wireless/ath/ar5523/ar5523.c
++++ b/drivers/net/wireless/ath/ar5523/ar5523.c
+@@ -1765,7 +1765,7 @@ static struct usb_device_id ar5523_id_ta
+ 	AR5523_DEVICE_UG(0x07d1, 0x3a07),	/* D-Link / WUA-2340 rev A1 */
+ 	AR5523_DEVICE_UG(0x1690, 0x0712),	/* Gigaset / AR5523 */
+ 	AR5523_DEVICE_UG(0x1690, 0x0710),	/* Gigaset / SMCWUSBTG */
+-	AR5523_DEVICE_UG(0x129b, 0x160c),	/* Gigaset / USB stick 108
++	AR5523_DEVICE_UG(0x129b, 0x160b),	/* Gigaset / USB stick 108
+ 						   (CyberTAN Technology) */
+ 	AR5523_DEVICE_UG(0x16ab, 0x7801),	/* Globalsun / AR5523_1 */
+ 	AR5523_DEVICE_UX(0x16ab, 0x7811),	/* Globalsun / AR5523_2 */
 
 
