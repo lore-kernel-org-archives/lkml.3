@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaBTGUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 01:20:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31830 "EHLO mga02.intel.com"
+	id S1751777AbaBTGay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 01:30:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:18392 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261AbaBTGUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 01:20:21 -0500
+	id S1750999AbaBTGaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 01:30:52 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,510,1389772800"; 
-   d="scan'208";a="458622942"
-Message-ID: <53059E9D.1030109@intel.com>
-Date: Thu, 20 Feb 2014 14:20:13 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+X-IronPort-AV: E=Sophos;i="4.97,511,1389772800"; 
+   d="scan'208";a="484623233"
+Date: Thu, 20 Feb 2014 12:00:32 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v3 14/15] charger: max14577: Configure battery-dependent
+ settings from DTS
+Message-ID: <20140220063031.GC2498@jenny-desktop>
+References: <1392627950-26927-1-git-send-email-k.kozlowski@samsung.com>
+ <1392627950-26927-15-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-CC: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com
-Subject: Re: [PATCH] perf/x86/uncore: Fix IVT/SNB-EP uncore CBOX NID filter
- table
-References: <20140219131018.GA24475@quad>
-In-Reply-To: <20140219131018.GA24475@quad>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392627950-26927-15-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2014 09:10 PM, Stephane Eranian wrote:
-> 
-> This patch updates the CBOX PMU filters mapping tables for SNB-EP
-> and IVT (model 45 and 62 respectively).
-> 
-> The NID umask always comes in addition to another umask.
-> When set, the NID filter is applied.
+On Mon, Feb 17, 2014 at 10:05:49AM +0100, Krzysztof Kozlowski wrote:
+> +static inline int max14577_init_eoc(struct max14577_charger *chg,
+> +		unsigned int uamp)
+> +{
+> +	unsigned int current_bits = 0xf;
+> +	u8 reg_data;
+> +
+> +	switch (chg->maxim_core->dev_type) {
+> +	case MAXIM_DEVICE_TYPE_MAX77836:
+> +		if (uamp < 5000)
+> +			return -EINVAL; /* Requested current is too low */
+> +
+> +		if (uamp == 7500)
+> +			current_bits = 0x0;
 
-Do you means the NID always applies for LLC_LOOKUP no matter what umask is.
-If yes, I think it's better to define filter as SNBEP_CBO_EVENT_EXTRA_REG(0x34, 0xff, 0x6)
+if (uamp <= 7500) ?
 
-Regards
-Yan, Zheng
+> +	/* Initialize Overvoltage-Protection Threshold */
+> +	switch (chg->pdata->ovp_uvolt) {
+> +	case 7500000:
+> +		reg_data = 0x0;
+> +		break;
+> +	case 6000000:
+> +	case 6500000:
+> +	case 7000000:
+> +		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
+> +		break;
 
-> 
-> The current mapping tables were missing some code/umask
-> combinations to account for the NID umask. This patch
-> fixes that.
->     
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -501,8 +501,11 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
->  	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
->  				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0334, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4334, 0xffff, 0x6),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0534, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4534, 0xffff, 0x6),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0934, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4934, 0xffff, 0x6),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
-> @@ -1178,10 +1181,15 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
->  	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
->  				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0334, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4334, 0xffff, 0xc),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0534, 0xffff, 0x4),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4534, 0xffff, 0xc),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0934, 0xffff, 0x4),
-> -	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
-> +	SNBEP_CBO_EVENT_EXTRA_REG(0x4934, 0xffff, 0xc),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x10),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x10),
->  	SNBEP_CBO_EVENT_EXTRA_REG(0x2135, 0xffff, 0x10),
-> 
-
+Is it battery OVP or charger source OVP? If it's battery OVP, then  minimum
+level as 6V seems to be unsafe even for 4.4V batteries.
