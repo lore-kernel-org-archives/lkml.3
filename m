@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaBTIY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 03:24:57 -0500
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:25979
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752550AbaBTIY4 convert rfc822-to-8bit (ORCPT
+	id S1753940AbaBTIZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 03:25:47 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:38819 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752550AbaBTIZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 03:24:56 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH Resend] regmap: fix _regmap_update_bits()
-Thread-Topic: [PATCH Resend] regmap: fix _regmap_update_bits()
-Thread-Index: AQHPLd7q0Z2vByHzw0eCmMQ8D1Ny5pq9btuAgABfDMA=
-Date: Thu, 20 Feb 2014 08:24:53 +0000
-Message-ID: <618b45af88a3496f900fc8b6d53abf2f@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1392857410-9068-1-git-send-email-Li.Xiubo@freescale.com>
- <20140220024147.GT2669@sirena.org.uk>
-In-Reply-To: <20140220024147.GT2669@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.215]
-x-forefront-prvs: 01283822F8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(199002)(189002)(24454002)(95416001)(46102001)(81542001)(81342001)(54316002)(54356001)(56776001)(76482001)(53806001)(80976001)(69226001)(94946001)(93136001)(51856001)(93516002)(95666001)(86362001)(94316002)(33646001)(47976001)(49866001)(59766001)(50986001)(92566001)(47736001)(83322001)(74876001)(65816001)(66066001)(4396001)(85306002)(56816005)(74502001)(47446002)(90146001)(31966008)(74662001)(85852003)(81686001)(81816001)(63696002)(87936001)(74366001)(2656002)(80022001)(83072002)(79102001)(77982001)(87266001)(74316001)(76576001)(74706001)(76786001)(76796001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:192.88.158.215;FPR:EE12C056.A5325791.B8F315F0.C4E1E2F5.20136;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Feb 2014 03:25:46 -0500
+Message-ID: <5305BBA6.3070105@marvell.com>
+Date: Thu, 20 Feb 2014 16:24:06 +0800
+From: Nenghua Cao <nhcao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Nenghua Cao <nhcao@marvell.com>
+CC: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] driver: regmap: add regmap_parse_val api
+References: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+In-Reply-To: <1392806653-29604-1-git-send-email-nhcao@marvell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-20_02:2014-02-18,2014-02-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402200001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: Re: [PATCH Resend] regmap: fix _regmap_update_bits()
+Hi, Mark:
+
+     Do you still have any other problem which have impact on evaluating
+these two patches?
+
+BR
+Nenghua
+
+On 02/19/2014 06:44 PM, Nenghua Cao wrote:
+> From: Nenghua Cao <nhcao@marvell.com>
 > 
-> On Thu, Feb 20, 2014 at 08:50:10AM +0800, Xiubo Li wrote:
+>     In some cases, we need regmap's format parse_val function
+> to do be/le translation according to the bus configuration.
+> For example, snd_soc_bytes_put() uses regmap to write/read values,
+> and use cpu_to_be() directly to covert MASK into big endian. This
+> is a defect, and should use regmap's format function to do it according
+> to bus configuration.
 > 
-> > This resend version just rewrites the commit comment.
+> Signed-off-by: Nenghua Cao <nhcao@marvell.com>
+> ---
+>  drivers/base/regmap/regmap.c |   12 ++++++++++++
+>  include/linux/regmap.h       |    9 +++++++++
+>  2 files changed, 21 insertions(+), 0 deletions(-)
 > 
-> I've applied this but I updated the commit log further - part of the
-> reason this didn't get applied first time around was that it says it's a
-> fix but it's actually a coding style change.
+> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+> index 6a19515..4b2ed0c 100644
+> --- a/drivers/base/regmap/regmap.c
+> +++ b/drivers/base/regmap/regmap.c
+> @@ -2240,6 +2240,18 @@ int regmap_get_val_bytes(struct regmap *map)
+>  }
+>  EXPORT_SYMBOL_GPL(regmap_get_val_bytes);
+>  
+> +int regmap_parse_val(struct regmap *map, const void *buf,
+> +			unsigned int *val)
+> +{
+> +	if (!map->format.parse_val)
+> +		return -EINVAL;
+> +
+> +	*val = map->format.parse_val(buf);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(regmap_parse_val);
+> +
+>  static int __init regmap_initcall(void)
+>  {
+>  	regmap_debugfs_initcall();
+> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+> index 4149f1a..3e1a2e4 100644
+> --- a/include/linux/regmap.h
+> +++ b/include/linux/regmap.h
+> @@ -423,6 +423,8 @@ bool regmap_check_range_table(struct regmap *map, unsigned int reg,
+>  
+>  int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+>  			  int num_regs);
+> +int regmap_parse_val(struct regmap *map, const void *buf,
+> +				unsigned int *val);
+>  
+>  static inline bool regmap_reg_in_range(unsigned int reg,
+>  				       const struct regmap_range *range)
+> @@ -695,6 +697,13 @@ static inline int regmap_register_patch(struct regmap *map,
+>  	return -EINVAL;
+>  }
+>  
+> +static inline int regmap_parse_val(struct regmap *map, const void *buf,
+> +				unsigned int *val)
+> +{
+> +	WARN_ONCE(1, "regmap API is disabled");
+> +	return -EINVAL;
+> +}
+> +
+>  static inline struct regmap *dev_get_regmap(struct device *dev,
+>  					    const char *name)
+>  {
+> 
 
-Yes, it's.
-
-Thanks very much for your updating.
-
---
-Best Regards,
-Xiubo
-
-> The other part of the
-> reason was that at first glance I wasn't sure if it was actually an
-> improvement so wanted to think about it.
