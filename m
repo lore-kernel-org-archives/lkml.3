@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaBTUoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 15:44:38 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:47873 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaBTUoh (ORCPT
+	id S1754217AbaBTUtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 15:49:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34468 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaBTUtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 15:44:37 -0500
-From: Tejun Heo <tj@kernel.org>
-To: laijs@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCHSET wq/for-3.15] workqueue: remove PREPARE_[DELAYED_]WORK()
-Date: Thu, 20 Feb 2014 15:44:22 -0500
-Message-Id: <1392929071-16555-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
+	Thu, 20 Feb 2014 15:49:09 -0500
+Date: Thu, 20 Feb 2014 21:49:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexey Perevalov <a.perevalov@samsung.com>
+cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, anton@enomsg.org,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v4 1/6] Replace ternary operator to macro
+In-Reply-To: <1392913425-29369-2-git-send-email-a.perevalov@samsung.com>
+Message-ID: <alpine.DEB.2.02.1402202148180.4468@ionos.tec.linutronix.de>
+References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com> <1392913425-29369-2-git-send-email-a.perevalov@samsung.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley noticed that since a2c1c57be8d9 ("workqueue: consider
-work function when searching for busy work items"), a work item which
-gets assigned a different work function would break out of the
-non-reentrancy guarantee as workqueue would consider it a different
-work item.
+On Thu, 20 Feb 2014, Alexey Perevalov wrote:
 
-This is fragile and extremely subtle.  PREPARE_[DELAYED_]WORK() have
-never been used widely and its semantics has always been somewhat
-iffy.  If the work item is known not to be on queue when
-PREPARE_WORK() is called, there's no difference from using
-INIT_WORK().  If the work item may be queued at the time of
-PREPARE_WORK(), we can't really tell whether the old or new function
-will be executed the next time.
+The subject line lacks any information in which part of the kernel you
+are doing this.
 
-We really don't want this level of subtlety in workqueue interface for
-such marginal use cases.  The previous patches converted all existing
-users away from PREPARE_[DELAYED_]WORK().  Let's remove them.
-
-This patchset contains the following nine patches.
-
- 0001-wireless-rt2x00-don-t-use-PREPARE_WORK-in-rt2800usb..patch
- 0002-ps3-vuart-don-t-use-PREPARE_WORK.patch
- 0003-floppy-don-t-use-PREPARE_-DELAYED_-WORK.patch
- 0004-firewire-don-t-use-PREPARE_DELAYED_WORK.patch
- 0005-usb-don-t-use-PREPARE_DELAYED_WORK.patch
- 0006-nvme-don-t-use-PREPARE_WORK.patch
- 0007-afs-don-t-use-PREPARE_WORK.patch
- 0008-staging-fwserial-don-t-use-PREPARE_WORK.patch
- 0009-workqueue-remove-PREPARE_-DELAYED_-WORK.patch
-
-0001-0008 convert existing users.
-
-0009 removes them.
-
-This patchset is on top of e95003c3f9ccb ("Merge tag 'nfs-for-3.14-4'
-of git://git.linux-nfs.org/projects/trondmy/linux-nfs") and also
-available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-kill-PREPARE_WORK
-
-diffstat follows.
-
- drivers/block/floppy.c                  |   42 +++++++++++++++++++++-----------
- drivers/block/nvme-core.c               |   18 +++++++++----
- drivers/firewire/core-device.c          |   22 +++++++++++-----
- drivers/firewire/sbp2.c                 |   17 +++++++++---
- drivers/net/wireless/rt2x00/rt2800usb.c |    2 -
- drivers/ps3/ps3-vuart.c                 |    4 ---
- drivers/staging/fwserial/fwserial.c     |   13 +++++++--
- drivers/staging/fwserial/fwserial.h     |    1 
- drivers/usb/core/hub.c                  |   13 +++++++--
- drivers/usb/core/hub.h                  |    1 
- fs/afs/internal.h                       |    1 
- fs/afs/rxrpc.c                          |   12 +++++++--
- include/linux/firewire.h                |    1 
- include/linux/nvme.h                    |    1 
- include/linux/workqueue.h               |   15 +----------
- 15 files changed, 107 insertions(+), 56 deletions(-)
-
-Thanks.
-
---
-tejun
-
+> For extensibility purpose it's better to have _switch_ type mechanism
+> for representing human readable CLOCKID* and HRMODE.
+> 
+> Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
+> ---
+>  include/trace/events/timer.h |   16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/trace/events/timer.h b/include/trace/events/timer.h
+> index 68c2c20..185b2c6 100644
+> --- a/include/trace/events/timer.h
+> +++ b/include/trace/events/timer.h
+> @@ -8,6 +8,16 @@
+>  #include <linux/hrtimer.h>
+>  #include <linux/timer.h>
+>  
+> +#define clockid_to_string(clockid)						\
+> +	__print_symbolic(clockid,						\
+> +			 { CLOCK_MONOTONIC,		"CLOCK_MONOTONIC" },	\
+> +			 { CLOCK_REALTIME,		"CLOCK_REALTIME" })
+> +
+> +#define hrmode_to_string(hrmode)						\
+> +	__print_symbolic(hrmode,						\
+> +			 { HRTIMER_MODE_ABS,		"HRTIMER_MODE_ABS" },	\
+> +			 { HRTIMER_MODE_REL,		"HRTIMER_MODE_REL" })
+> +
+>  DECLARE_EVENT_CLASS(timer_class,
+>  
+>  	TP_PROTO(struct timer_list *timer),
+> @@ -147,10 +157,8 @@ TRACE_EVENT(hrtimer_init,
+>  	),
+>  
+>  	TP_printk("hrtimer=%p clockid=%s mode=%s", __entry->hrtimer,
+> -		  __entry->clockid == CLOCK_REALTIME ?
+> -			"CLOCK_REALTIME" : "CLOCK_MONOTONIC",
+> -		  __entry->mode == HRTIMER_MODE_ABS ?
+> -			"HRTIMER_MODE_ABS" : "HRTIMER_MODE_REL")
+> +		  clockid_to_string(__entry->clockid),
+> +		  hrmode_to_string(__entry->mode))
+>  );
+>  
+>  /**
+> -- 
+> 1.7.9.5
+> 
+> 
