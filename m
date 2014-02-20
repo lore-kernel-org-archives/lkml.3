@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaBTBac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:30:32 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:50437 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaBTBaa convert rfc822-to-8bit (ORCPT
+	id S1752743AbaBTBbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:31:07 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:17529 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751638AbaBTBbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:30:30 -0500
+	Wed, 19 Feb 2014 20:31:04 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(z579ehz98dI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 20 Feb 2014 09:30:54 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Anson Huang <b20788@freescale.com>
+Subject: Re: linux-next: manual merge of the imx-mxs tree with the arm-soc
+ tree
+Message-ID: <20140220013051.GK3010@S2101-09.ap.freescale.net>
+References: <20140220114242.b3ce4d77b677544d2feebd3e@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20140219192646.1a62521d@alan.etchedpixels.co.uk>
-References: <cover.1387588711.git.luto@amacapital.net> <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
- <20140219151626.GA13973@katana> <CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
- <20140219192646.1a62521d@alan.etchedpixels.co.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Feb 2014 17:30:09 -0800
-Message-ID: <CALCETrWEexCqH5486Qfyt22i5+MZjpETJEMTyg6FO6xOwXuraQ@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rui Wang <ruiv.wang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140220114242.b3ce4d77b677544d2feebd3e@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:26 AM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->> example, lots of graphics drivers provide i2c busses, and those busses
->> often contain eeproms, and, in theory, things should know that the
->> eeprom is associated with a particular graphics port, for example.
->> Unfortunately, the i2c core does not know that, things like
->> decode-dimms will try to decode it, sensors-detect will scan graphics
->> ports for motherboard sensors, etc.
->
-> ACPI does now try to describe what is on an i²c bus. We perhaps don't use
-> that information well but on a modern PC class box at least for onboard
-> devices most of the info is there for the munching.
+On Thu, Feb 20, 2014 at 11:42:42AM +1100, Stephen Rothwell wrote:
+> Hi Shawn,
+> 
+> Today's linux-next merge of the imx-mxs tree got conflicts in
+> arch/arm/mach-imx/Makefile and arch/arm/mach-imx/common.h between commit
+> 28a9f3b078c5 ("ARM: imx6: build pm-imx6q.c independently of CONFIG_PM")
+> from the arm-soc tree and commits 8dd751932545 ("ARM: imx: add suspend in
+> ocram support for i.mx6q") and 79a8eef47d12 ("RM: imx: add suspend in
+> ocram support for i.mx6sl") from the imx-mxs tree.
+> 
+> I fixed it up (I think, see below) and can carry the fix as necessary (no
+> action is required).
 
-I'm discussing the in-kernel representation, not where the information
-comes from.  Presumably there should be something in the kernel that
-works for ACPI, DT, and directly-enumerated busses (see below).
+Thanks, Stephen.  Once "ARM: imx6: build pm-imx6q.c independently of
+CONFIG_PM" hits mainline, I will rebase my branch against the latest -rc
+to get rid of the conflicts.
 
->
->> For extra fun, there could be drivers for different types of i2c_port.
->>  One of them could be the "DIMM bus" driver, which would know how to
->> probe the i2c adapter associated with a DIMM port.  Another could be
->> the graphics port driver, which (maybe with some extra configuration
->> hints from the graphics driver) could look for EDID-related things.
->
-> Busses are not necessarily that tidily organised. There isn't anything
-> saying you can't sneak multiple things on the same bus. In the graphics
-> case its unlikely but I wouldn't rule even that out for a display panel.
-> Once you get onto phones and tablets it seems anything goes 8)
->
+Shawn
 
-I'm suggesting identifying a range of addresses on a bus with a "port"
-(or whatever it should be called).  Multiple ports could claim
-non-overlapping ranges on the same bus.
-
->> I wonder if this would fit in well with the device tree stuff, too --
->> DT has ways to say "this node links to that one", right?
->
-> ACPI basically tries to describe the heirarchy of devices on the bus, but
-> as you say the "real" device can be a rambling mix of GPIO, I²C, SPI,
-> PCI (quite probably fake PCI at that) and other resources.
->
-> If there is a legitimate use case for poking around with memory dimm i2c
-> on these boards then really there needs to be a proper defined interface
-> for doing so that covers firmware and OS users.
-
-The legitimate use case is NV-DIMMs.  They have control registers that
-are accessed via smbus.  BIOS is likely to poke at those registers
-early in boot, but the kernel and/or userspace will need them, too.
-It would be nice to know which DIMM slot they map to.
-
-In this particular case (Intel LGA2011 systems), there's only one sane
-way to wire up the busses, since the memory controller *is* the smbus
-master.  According to the JEDEC spec, each DIMM slot is has three pins
-that indicate which slot it is on its channel, and the onboard smbus
-hardware uses those pins to select its addresses.  (This maps directly
-to three of the seven address bits.)  Each memory controller supports
-two RAM channels and two i2c channels, and, if you wire them backwards
-(or mix them up between controllers), then I would be amazed if the
-system works.  So this particular driver really does know the topology
-a priori.
-
-On the other hand, nothing rules out having NV-DIMMs in non-LGA2011
-systems where the smbus/i2c topology is less certain.  But I think it
-would be silly for an eventual NVDIMM driver to specifically depend on
-ACPI, since ACPI isn't needed for existing LGA2011 NVDIMM systems.
-
-(Knowing which physical memory addresses map to which DIMM is a
-different story.  I think that the sb-edac driver knows the mapping,
-though.)
-
---Andy
