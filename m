@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453AbaBTXv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:51:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45663 "EHLO
+	id S1756339AbaBUAls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:41:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45670 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338AbaBTXv5 (ORCPT
+	with ESMTP id S1755447AbaBTXv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:57 -0500
+	Thu, 20 Feb 2014 18:51:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 19/82] spi: Fix crash with double message finalisation on error handling
-Date: Thu, 20 Feb 2014 15:52:02 -0800
-Message-Id: <20140220235020.057445711@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.12 20/82] iwlwifi: mvm: dont allow A band if SKU forbids it
+Date: Thu, 20 Feb 2014 15:52:03 -0800
+Message-Id: <20140220235020.085729537@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
 References: <20140220235019.483734207@linuxfoundation.org>
@@ -29,45 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 1f802f8249a0da536877842c43c7204064c4de8b upstream.
+commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
 
-This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
+The driver wasn't reading the NVM properly. While this
+didn't lead to any issue until now, it seems that there
+is an old version of the NVM in the wild.
+In this version, the A band channels appear to be valid
+but the SKU capabilities (another field of the NVM) says
+that A band isn't supported at all.
+With this specific version of the NVM, the driver would
+think that A band is supported while the HW / firmware
+don't. This leads to asserts.
 
-It causes a NULL pointer dereference with drivers using the generic
-spi_transfer_one_message(), which always calls
-spi_finalize_current_message(), which zeroes master->cur_msg.
-
-Drivers implementing transfer_one_message() theirselves must always call
-spi_finalize_current_message(), even if the transfer failed:
-
- * @transfer_one_message: the subsystem calls the driver to transfer a single
- *      message while queuing transfers that arrive in the meantime. When the
- *      driver is finished with this message, it must call
- *      spi_finalize_current_message() so the subsystem can issue the next
- *      transfer
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -600,9 +600,7 @@ static void spi_pump_messages(struct kth
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue: %d\n", ret);
--		master->cur_msg->status = ret;
--		spi_finalize_current_message(master);
-+			"failed to transfer one message from queue\n");
- 		return;
- 	}
- }
+--- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+@@ -182,6 +182,11 @@ static int iwl_init_channel_map(struct d
+ 
+ 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
+ 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
++
++		if (ch_idx >= NUM_2GHZ_CHANNELS &&
++		    !data->sku_cap_band_52GHz_enable)
++			ch_flags &= ~NVM_CHANNEL_VALID;
++
+ 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
+ 			IWL_DEBUG_EEPROM(dev,
+ 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
 
 
