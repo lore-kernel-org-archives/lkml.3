@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaBUBDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:03:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45355 "EHLO
+	id S1754739AbaBTXur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:50:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742AbaBTXus (ORCPT
+	with ESMTP id S1754673AbaBTXuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:48 -0500
+	Thu, 20 Feb 2014 18:50:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 11/66] mac80211: fix fragmentation code, particularly for encryption
-Date: Thu, 20 Feb 2014 15:51:10 -0800
-Message-Id: <20140220234909.807977255@linuxfoundation.org>
+        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 08/25] lockd: send correct lock when granting a delayed lock.
+Date: Thu, 20 Feb 2014 15:51:24 -0800
+Message-Id: <20140220234842.717086690@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
-References: <20140220234909.482516304@linuxfoundation.org>
+In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
+References: <20140220234842.483343851@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,57 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f upstream.
+commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
 
-The "new" fragmentation code (since my rewrite almost 5 years ago)
-erroneously sets skb->len rather than using skb_trim() to adjust
-the length of the first fragment after copying out all the others.
-This leaves the skb tail pointer pointing to after where the data
-originally ended, and thus causes the encryption MIC to be written
-at that point, rather than where it belongs: immediately after the
-data.
+If an NFS client attempts to get a lock (using NLM) and the lock is
+not available, the server will remember the request and when the lock
+becomes available it will send a GRANT request to the client to
+provide the lock.
 
-The impact of this is that if software encryption is done, then
- a) encryption doesn't work for the first fragment, the connection
-    becomes unusable as the first fragment will never be properly
-    verified at the receiver, the MIC is practically guaranteed to
-    be wrong
- b) we leak up to 8 bytes of plaintext (!) of the packet out into
-    the air
+If the client already held an adjacent lock, the GRANT callback will
+report the union of the existing and new locks, which can confuse the
+client.
 
-This is only mitigated by the fact that many devices are capable
-of doing encryption in hardware, in which case this can't happen
-as the tail pointer is irrelevant in that case. Additionally,
-fragmentation is not used very frequently and would normally have
-to be configured manually.
+This happens because __posix_lock_file (called by vfs_lock_file)
+updates the passed-in file_lock structure when adjacent or
+over-lapping locks are found.
 
-Fix this by using skb_trim() properly.
+To avoid this problem we take a copy of the two fields that can
+be changed (fl_start and fl_end) before the call and restore them
+afterwards.
+An alternate would be to allocate a 'struct file_lock', initialise it,
+use locks_copy_lock() to take a copy, then locks_release_private()
+after the vfs_lock_file() call.  But that is a lot more work.
 
-Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
-Reported-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Olaf Kirch <okir@suse.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/mac80211/tx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--
+v1 had a couple of issues (large on-stack struct and didn't really work properly).
+This version is much better tested.
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -854,7 +854,7 @@ static int ieee80211_fragment(struct iee
+---
+ fs/lockd/svclock.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -769,6 +769,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ 	struct nlm_file		*file = block->b_file;
+ 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
+ 	int			error;
++	loff_t			fl_start, fl_end;
+ 
+ 	dprintk("lockd: grant blocked lock %p\n", block);
+ 
+@@ -786,9 +787,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
  	}
  
- 	/* adjust first fragment's length */
--	skb->len = hdrlen + per_fragm;
-+	skb_trim(skb, hdrlen + per_fragm);
- 	return 0;
- }
+ 	/* Try the lock operation again */
++	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
++	 * them unchanged for the GRANT_MSG
++	 */
+ 	lock->fl.fl_flags |= FL_SLEEP;
++	fl_start = lock->fl.fl_start;
++	fl_end = lock->fl.fl_end;
+ 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
+ 	lock->fl.fl_flags &= ~FL_SLEEP;
++	lock->fl.fl_start = fl_start;
++	lock->fl.fl_end = fl_end;
  
+ 	switch (error) {
+ 	case 0:
 
 
