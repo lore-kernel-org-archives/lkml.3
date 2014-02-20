@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaBTANG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 19:13:06 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:38470 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaBTAND (ORCPT
+	id S1752835AbaBTARC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 19:17:02 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:33209 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaBTANF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 19:13:03 -0500
+	Wed, 19 Feb 2014 19:13:05 -0500
 From: Alex Elder <elder@linaro.org>
 To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
         robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -14,72 +14,133 @@ To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
         linux@arm.linux.org.uk
 Cc: bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/12] clk: bcm281xx: updates for 3.14
-Date: Wed, 19 Feb 2014 18:12:50 -0600
-Message-Id: <1392855182-21155-1-git-send-email-elder@linaro.org>
+Subject: [PATCH 02/12] clk: bcm281xx: use init_data.name for clock name
+Date: Wed, 19 Feb 2014 18:12:52 -0600
+Message-Id: <1392855182-21155-3-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392855182-21155-1-git-send-email-elder@linaro.org>
+References: <1392855182-21155-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series includes updates for the bcm281xx clock code to be 
-considered for kernel 3.14.  I've held off posting this because
-a mixup caused the code to which this applies to be dropped at
-the last minute from the 3.13 release, and I wanted to make sure
-the dust had settled on getting that resolved.  The patches are
-available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/bcm-clk-next
+Use the init_data.name field to hold the name of a Kona clock rather
+than duplicating it.
 
-These are based on three patches that implement the baseline
-bcm281xx clock functionality, which I re-posted last week.
-    https://lkml.org/lkml/2014/2/14/449
-    https://lkml.org/lkml/2014/2/14/456
-    https://lkml.org/lkml/2014/2/14/451
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-kona-setup.c |    6 +++---
+ drivers/clk/bcm/clk-kona.c       |   17 ++++++++++-------
+ drivers/clk/bcm/clk-kona.h       |    3 +--
+ 3 files changed, 14 insertions(+), 12 deletions(-)
 
-I've grouped them, and offer a little explanation of each of the
-groups below.
-
-					-Alex
-
-Alex Elder (12):
-  clk: bcm281xx: warn if ccu_wait_bit() fails
-  clk: bcm281xx: use init_data.name for clock name
-       Two small improvements to the code.
-
-  clk: bcm281xx: change some symbol names
-  mach-bcm: bcm281xx: more symbol cleanup
-	Improve clarity by using "281xx" rather than "11351" in
-	symbols; support for the bcm11351 board is going away, and
-	in these cases there's no reason not to use "281xx" instead.
-
-  clk: bcm281xx: initialize CCU structures statically
-  clk: bcm281xx: define CCU clock data statically
-  	This rearranges the way CCUs and the clocks they provide are
-	defined, so that they're defined statically to the extent
-	possible rather than allocating and initializing things
-	at runtime.
-
-  clk: bcm281xx: add clock policy support
-  clk: bcm281xx: add clock hysteresis support
-  clk: bcm281xx: add an initialized flag
-  clk: bcm281xx: implement prerequisite clocks
-  clk: bcm281xx: add bus clock support
-  clk: bcm281xx: define a bus clock
-  	This series adds a few new features, ultimately for the
-	purpose of adding support for another type of Kona clock.
-	Currently only peripheral clocks are supported; this adds
-	the ability to define and control bus clocks.  In addition,
-	support is added for clocks to identify a prerequisite
-	clock; a clock won't be initialized until after its
-	prerequisite has been.
-
- arch/arm/boot/dts/bcm11351.dtsi      |    3 +-
- arch/arm/mach-bcm/board_bcm281xx.c   |    9 +-
- drivers/clk/bcm/clk-bcm281xx.c       |  254 ++++++++++++--------------
- drivers/clk/bcm/clk-kona-setup.c     |  331 +++++++++++++++++++++++++++-------
- drivers/clk/bcm/clk-kona.c           |  331 ++++++++++++++++++++++++++++++++--
- drivers/clk/bcm/clk-kona.h           |  189 ++++++++++++++++---
- include/dt-bindings/clock/bcm281xx.h |    3 +-
- 7 files changed, 878 insertions(+), 242 deletions(-)
+diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
+index c7607fe..eed84f5 100644
+--- a/drivers/clk/bcm/clk-kona-setup.c
++++ b/drivers/clk/bcm/clk-kona-setup.c
+@@ -64,7 +64,7 @@ static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
+ 
+ 	BUG_ON(bcm_clk->type != bcm_clk_peri);
+ 	peri = bcm_clk->peri;
+-	name = bcm_clk->name;
++	name = bcm_clk->init_data.name;
+ 	range = bcm_clk->ccu->range;
+ 
+ 	limit = range - sizeof(u32);
+@@ -329,7 +329,7 @@ peri_clk_data_valid(struct kona_clk *bcm_clk)
+ 		return false;
+ 
+ 	peri = bcm_clk->peri;
+-	name = bcm_clk->name;
++	name = bcm_clk->init_data.name;
+ 	gate = &peri->gate;
+ 	if (gate_exists(gate) && !gate_valid(gate, "gate", name))
+ 		return false;
+@@ -630,7 +630,7 @@ struct clk *kona_clk_setup(struct ccu_data *ccu, const char *name,
+ 		return NULL;
+ 	}
+ 	bcm_clk->ccu = ccu;
+-	bcm_clk->name = name;
++	bcm_clk->init_data.name = name;
+ 
+ 	init_data = &bcm_clk->init_data;
+ 	init_data->name = name;
+diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+index c01d810..488ed1f 100644
+--- a/drivers/clk/bcm/clk-kona.c
++++ b/drivers/clk/bcm/clk-kona.c
+@@ -807,7 +807,7 @@ static int kona_peri_clk_enable(struct clk_hw *hw)
+ 	struct kona_clk *bcm_clk = to_kona_clk(hw);
+ 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
+ 
+-	return clk_gate(bcm_clk->ccu, bcm_clk->name, gate, true);
++	return clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, true);
+ }
+ 
+ static void kona_peri_clk_disable(struct clk_hw *hw)
+@@ -815,7 +815,7 @@ static void kona_peri_clk_disable(struct clk_hw *hw)
+ 	struct kona_clk *bcm_clk = to_kona_clk(hw);
+ 	struct bcm_clk_gate *gate = &bcm_clk->peri->gate;
+ 
+-	(void)clk_gate(bcm_clk->ccu, bcm_clk->name, gate, false);
++	(void)clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, false);
+ }
+ 
+ static int kona_peri_clk_is_enabled(struct clk_hw *hw)
+@@ -873,12 +873,13 @@ static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
+ 
+ 	ret = selector_write(bcm_clk->ccu, &data->gate, sel, trig, index);
+ 	if (ret == -ENXIO) {
+-		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
++		pr_err("%s: gating failure for %s\n", __func__,
++			bcm_clk->init_data.name);
+ 		ret = -EIO;	/* Don't proliferate weird errors */
+ 	} else if (ret == -EIO) {
+ 		pr_err("%s: %strigger failed for %s\n", __func__,
+ 			trig == &data->pre_trig ? "pre-" : "",
+-			bcm_clk->name);
++			bcm_clk->init_data.name);
+ 	}
+ 
+ 	return ret;
+@@ -937,10 +938,12 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	ret = divider_write(bcm_clk->ccu, &data->gate, &data->div,
+ 				&data->trig, scaled_div);
+ 	if (ret == -ENXIO) {
+-		pr_err("%s: gating failure for %s\n", __func__, bcm_clk->name);
++		pr_err("%s: gating failure for %s\n", __func__,
++			bcm_clk->init_data.name);
+ 		ret = -EIO;	/* Don't proliferate weird errors */
+ 	} else if (ret == -EIO) {
+-		pr_err("%s: trigger failed for %s\n", __func__, bcm_clk->name);
++		pr_err("%s: trigger failed for %s\n", __func__,
++			bcm_clk->init_data.name);
+ 	}
+ 
+ 	return ret;
+@@ -962,7 +965,7 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
+ {
+ 	struct ccu_data *ccu = bcm_clk->ccu;
+ 	struct peri_clk_data *peri = bcm_clk->peri;
+-	const char *name = bcm_clk->name;
++	const char *name = bcm_clk->init_data.name;
+ 	struct bcm_clk_trig *trig;
+ 
+ 	BUG_ON(bcm_clk->type != bcm_clk_peri);
+diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
+index 5e139ad..96fd0bc 100644
+--- a/drivers/clk/bcm/clk-kona.h
++++ b/drivers/clk/bcm/clk-kona.h
+@@ -373,8 +373,7 @@ struct peri_clk_data {
+ 
+ struct kona_clk {
+ 	struct clk_hw hw;
+-	struct clk_init_data init_data;
+-	const char *name;	/* name of this clock */
++	struct clk_init_data init_data;	/* includes name of this clock */
+ 	struct ccu_data *ccu;	/* ccu this clock is associated with */
+ 	enum bcm_clk_type type;
+ 	union {
+-- 
+1.7.9.5
 
