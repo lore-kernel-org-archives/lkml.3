@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaBTRox (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 12:44:53 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:59334 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752982AbaBTRov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 12:44:51 -0500
-Message-ID: <53063F09.9000102@free-electrons.com>
-Date: Thu, 20 Feb 2014 18:44:41 +0100
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: How to get rid of IRQF_DISABLED for good?
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755526AbaBTRpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 12:45:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752982AbaBTRpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 12:45:02 -0500
+From: Mateusz Guzik <mguzik@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rik van Riel <riel@redhat.com>
+Subject: [PATCH] kref: oops on zero or negative refcount
+Date: Thu, 20 Feb 2014 18:44:59 +0100
+Message-Id: <1392918299-673-1-git-send-email-mguzik@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In use after free situations, it is possible for one thread to write to
+memory that has just been reallocated to a new user. This could open up
+potential security issues.
 
-In spite of the patches I have been sending (and resending!) over the
-past months, there are still 118 occurrences of the idle IRQF_DISABLED
-flag in the kernel code. This corresponds to 31 patches which haven't
-been accepted yet.
+Close off those potential security holes by terminating the current
+thread when kref encounters such a race condition or underflow.
 
-What would you advise to get rid of IRQF_DISABLED for good?
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+ include/linux/kref.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-  * Send a treewide patch removing the last occurrences in one shot,
-    bypassing the regular maintainers? Who could take it?
-  * Remove the definition of IRQF_DISABLED to force the individual
-    maintainers (and out of tree drivers!) to update their code? It
-    could be a way of seeing which code isn't maintained any more ;)
-  * Continue to resend the patches for a few more cycles, until the
-    corresponding maintainers can no longer bear the discredit?
-  * Any other solution?
-
-Thank you in advance for your advise!
-
-Michael.
-
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 484604d..c3f8a0a 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -43,8 +43,10 @@ static inline void kref_get(struct kref *kref)
+ 	/* If refcount was 0 before incrementing then we have a race
+ 	 * condition when this kref is freeing by some other thread right now.
+ 	 * In this case one should use kref_get_unless_zero()
++	 *
++	 * Terminate the current thread to stop potential security exploits.
+ 	 */
+-	WARN_ON_ONCE(atomic_inc_return(&kref->refcount) < 2);
++	BUG_ON(atomic_inc_return(&kref->refcount) < 2);
+ }
+ 
+ /**
 -- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+1.8.3.1
 
