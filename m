@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712AbaBUALX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:11:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46110 "EHLO
+	id S1756018AbaBTXxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 18:53:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088AbaBTXxb (ORCPT
+	with ESMTP id S1755981AbaBTXxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:31 -0500
+	Thu, 20 Feb 2014 18:53:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 04/99] mm: fix page leak at nfs_symlink()
-Date: Thu, 20 Feb 2014 15:51:59 -0800
-Message-Id: <20140220235118.331264781@linuxfoundation.org>
+        Doug Anderson <dianders@chromium.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.13 32/99] hwmon: (ntc_thermistor) Avoid math overflow
+Date: Thu, 20 Feb 2014 15:52:27 -0800
+Message-Id: <20140220235119.154025023@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -33,50 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael Aquini <aquini@redhat.com>
+From: Doug Anderson <dianders@chromium.org>
 
-commit a0b54adda3fe4b4cc6d28f2a9217cd35d1aa888c upstream.
+commit d3d89c468ceebbcf9423d1a3d66c5bf91f569570 upstream.
 
-Changes in commit a0b8cab3b9b2 ("mm: remove lru parameter from
-__pagevec_lru_add and remove parts of pagevec API") have introduced a
-call to add_to_page_cache_lru() which causes a leak in nfs_symlink() as
-now the page gets an extra refcount that is not dropped.
+The ntc thermistor code was doing math whose temporary result might
+have overflowed 32-bits.  We need some casts in there to make it safe.
 
-Jan Stancek observed and reported the leak effect while running test8
-from Connectathon Testsuite.  After several iterations over the test
-case, which creates several symlinks on a NFS mountpoint, the test
-system was quickly getting into an out-of-memory scenario.
+In one example I found:
+- pullup_uV: 1800000
+- result of iio_read_channel_raw: 3226
+- 1800000 * 3226 => 0x15a1cbc80
 
-This patch fixes the page leak by dropping that extra refcount
-add_to_page_cache_lru() is grabbing.
-
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/dir.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hwmon/ntc_thermistor.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1837,6 +1837,11 @@ int nfs_symlink(struct inode *dir, struc
- 							GFP_KERNEL)) {
- 		SetPageUptodate(page);
- 		unlock_page(page);
-+		/*
-+		 * add_to_page_cache_lru() grabs an extra page refcount.
-+		 * Drop it here to avoid leaking this page later.
-+		 */
-+		page_cache_release(page);
- 	} else
- 		__free_page(page);
+--- a/drivers/hwmon/ntc_thermistor.c
++++ b/drivers/hwmon/ntc_thermistor.c
+@@ -145,7 +145,7 @@ struct ntc_data {
+ static int ntc_adc_iio_read(struct ntc_thermistor_platform_data *pdata)
+ {
+ 	struct iio_channel *channel = pdata->chan;
+-	unsigned int result;
++	s64 result;
+ 	int val, ret;
  
+ 	ret = iio_read_channel_raw(channel, &val);
+@@ -155,10 +155,10 @@ static int ntc_adc_iio_read(struct ntc_t
+ 	}
+ 
+ 	/* unit: mV */
+-	result = pdata->pullup_uv * val;
++	result = pdata->pullup_uv * (s64) val;
+ 	result >>= 12;
+ 
+-	return result;
++	return (int)result;
+ }
+ 
+ static const struct of_device_id ntc_match[] = {
 
 
