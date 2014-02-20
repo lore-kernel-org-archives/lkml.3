@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBTBja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Feb 2014 20:39:30 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:33171 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaBTBj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Feb 2014 20:39:28 -0500
+	id S1752613AbaBTBsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Feb 2014 20:48:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:52918 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751752AbaBTBsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Feb 2014 20:48:05 -0500
+X-IronPort-AV: E=Sophos;i="4.97,509,1389715200"; 
+   d="scan'208";a="9563837"
+Message-ID: <53055F6F.6060909@cn.fujitsu.com>
+Date: Thu, 20 Feb 2014 09:50:39 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31DCC6F8@ORSMSX106.amr.corp.intel.com>
-References: <cover.1387588711.git.luto@amacapital.net> <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
- <20140219151626.GA13973@katana> <CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
- <20140220035128.14da0f79.m.chehab@samsung.com> <3908561D78D1C84285E8C5FCA982C28F31DCC6F8@ORSMSX106.amr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 19 Feb 2014 17:39:07 -0800
-Message-ID: <CALCETrVwSj3KGcPqQD2Kd9W5FCHyPWLukCVr0BZLdQc_Fgz4qA@mail.gmail.com>
-Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rui Wang <ruiv.wang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: Fix possible unexpectedly worker wakeup before
+ started
+References: <1392781678-31952-1-git-send-email-laijs@cn.fujitsu.com> <20140220001142.GV10134@htj.dyndns.org>
+In-Reply-To: <20140220001142.GV10134@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/20 09:45:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/20 09:45:52,
+	Serialize complete at 2014/02/20 09:45:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 11:03 AM, Luck, Tony <tony.luck@intel.com> wrote:
->> (I'm c/c Tony here, as he also shared the same concern that I had on a
->> previous feedback about using I2C to talk with the DIMM).
->
-> Correct - I've heard the same issues that reads on I2C can be misinterpreted
-> as writes ... and oops, you have a brick.
+On 02/20/2014 08:11 AM, Tejun Heo wrote:
+> Hello, Lai.
+> 
+> On Wed, Feb 19, 2014 at 11:47:58AM +0800, Lai Jiangshan wrote:
+>> If a worker is wokenup unexpectedly, it will start to work incorretly.
+>> Although it hardly happen, we should catch it and wait for being started
+>> if it does happen.
+> 
+> Can this actually happen?  If so, how?
 
-Is this true on DDR3 DIMMs, i.e. anything that's compatible with
-LGA2011?  If you plug a DIMM into an LGA2011 board's memory slot,
-then, one way or another, it's very likely that there will be TSOD
-traffic, if for no other purpose than to determine that there is no
-TSOD present.  TSOD traffic consists of reads and writes, both with
-and without register numbers.  (Sorry, I can never remember the smbus
-terminology here -- the relevant transactions are two-byte reads and
-two-byte writes, both with a command specified and without one.  One
-of the bits in the iMC SMBUS registers tells the controller which kind
-of read to use to probe the thermometer.)
+I don't think it can happen.
+It depends on the system outside of workqueue.
 
->
-> What is the larger context/  What problem are we trying to solve?
+I'm afraid someone see the task and wake up it.
+workqueue protect itself.
 
-NV-DIMM control registers are exposed via i2c, presumably because
-trying to access them through the memory pins would be a giant mess.
-So, one way or another, something needs to be able to initiate
-transactions to access those registers.  BIOS will do some initial
-setup, but the OS will need to poke at these registers, too.  (The
-actual docs are covered by NDA.  I suspect that this will change if
-the manufacturers ever want these things to be widely used, though,
-since these things really want a full-featured kernel driver so that
-things like pmfs will work cleanly.)
+> 
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>>  kernel/workqueue.c |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index 82ef9f3..bee5fe1 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -2284,6 +2284,12 @@ static int worker_thread(void *__worker)
+>>  	struct worker *worker = __worker;
+>>  	struct worker_pool *pool = worker->pool;
+>>  
+>> +	if (WARN_ON_ONCE(!(worker->flags & WORKER_STARTED))) {
+> 
+> And if this is something which can legitimately happen, why are we
+> triggering WARN on it?
 
-As a secondary benefit, having access to the TSOD and SPD is nice,
-albeit far from critical.
+If it happens, it means there is something wrong in the system.
 
-AFAICT Intel actively working on NV-DIMM-related things, so maybe
-Intel will contribute an engineer who help :)
+> 
+>> +		/* The worker is wokenup unexpectedly before started */
+>> +		mutex_lock(&pool->manager_mutex);
+>> +		mutex_unlock(&pool->manager_mutex);
+> 
+> And what does these mutex cycling achieve (they need comment)?
 
---Andy
+Synchronize the manager to finish.
 
->
-> -Tony
+> 
+> Thanks.
+> 
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
