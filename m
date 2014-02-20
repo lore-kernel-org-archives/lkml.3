@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaBUAvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:51:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45520 "EHLO
+	id S1757472AbaBUAwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:52:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45515 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175AbaBTXv2 (ORCPT
+	with ESMTP id S1755165AbaBTXv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:51:28 -0500
+	Thu, 20 Feb 2014 18:51:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Milburn <dmilburn@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
         Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 52/66] block: add cond_resched() to potentially long running ioctl discard loop
-Date: Thu, 20 Feb 2014 15:51:51 -0800
-Message-Id: <20140220234910.973971325@linuxfoundation.org>
+Subject: [PATCH 3.10 51/66] block: Fix nr_vecs for inline integrity vectors
+Date: Thu, 20 Feb 2014 15:51:50 -0800
+Message-Id: <20140220234910.945490095@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
 References: <20140220234909.482516304@linuxfoundation.org>
@@ -28,42 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
+commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
 
-When mkfs issues a full device discard and the device only
-supports discards of a smallish size, we can loop in
-blkdev_issue_discard() for a long time. If preempt isn't enabled,
-this can turn into a softlock situation and the kernel will
-start complaining.
+Commit 9f060e2231ca changed the way we handle allocations for the
+integrity vectors. When the vectors are inline there is no associated
+slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
+against BIP_INLINE_VECS in that case.
 
-Add an explicit cond_resched() at the end of the loop to avoid
-that.
-
+Reported-by: David Milburn <dmilburn@redhat.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-lib.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/bio-integrity.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -121,6 +121,14 @@ int blkdev_issue_discard(struct block_de
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
+ }
+ EXPORT_SYMBOL(bio_integrity_free);
  
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
++static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
++{
++	if (bip->bip_slab == BIO_POOL_NONE)
++		return BIP_INLINE_VECS;
 +
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
- 	blk_finish_plug(&plug);
++	return bvec_nr_vecs(bip->bip_slab);
++}
++
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *b
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
  
+-	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
++	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
+ 	}
 
 
