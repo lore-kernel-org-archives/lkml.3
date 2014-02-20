@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204AbaBUARL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:17:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46030 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920AbaBTXxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755917AbaBTXxO (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Feb 2014 18:53:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45982 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088AbaBTXxE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 18:53:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 22/99] iwlwifi: mvm: dont allow A band if SKU forbids it
-Date: Thu, 20 Feb 2014 15:52:17 -0800
-Message-Id: <20140220235118.854928158@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.13 11/99] mac80211: release the channel in error path in start_ap
+Date: Thu, 20 Feb 2014 15:52:06 -0800
+Message-Id: <20140220235118.540401258@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -31,39 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
+commit 0297ea17bf7879fb5846fafd1be4c0471e72848d upstream.
 
-The driver wasn't reading the NVM properly. While this
-didn't lead to any issue until now, it seems that there
-is an old version of the NVM in the wild.
-In this version, the A band channels appear to be valid
-but the SKU capabilities (another field of the NVM) says
-that A band isn't supported at all.
-With this specific version of the NVM, the driver would
-think that A band is supported while the HW / firmware
-don't. This leads to asserts.
+When the driver cannot start the AP or when the assignement
+of the beacon goes wrong, we need to unassign the vif.
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/mac80211/cfg.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-@@ -182,6 +182,11 @@ static int iwl_init_channel_map(struct d
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -995,8 +995,10 @@ static int ieee80211_start_ap(struct wip
+ 					IEEE80211_P2P_OPPPS_ENABLE_BIT;
  
- 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
- 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
-+
-+		if (ch_idx >= NUM_2GHZ_CHANNELS &&
-+		    !data->sku_cap_band_52GHz_enable)
-+			ch_flags &= ~NVM_CHANNEL_VALID;
-+
- 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
- 			IWL_DEBUG_EEPROM(dev,
- 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
+ 	err = ieee80211_assign_beacon(sdata, &params->beacon);
+-	if (err < 0)
++	if (err < 0) {
++		ieee80211_vif_release_channel(sdata);
+ 		return err;
++	}
+ 	changed |= err;
+ 
+ 	err = drv_start_ap(sdata->local, sdata);
+@@ -1005,6 +1007,7 @@ static int ieee80211_start_ap(struct wip
+ 		if (old)
+ 			kfree_rcu(old, rcu_head);
+ 		RCU_INIT_POINTER(sdata->u.ap.beacon, NULL);
++		ieee80211_vif_release_channel(sdata);
+ 		return err;
+ 	}
+ 
 
 
