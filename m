@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaBTVOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 16:14:50 -0500
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:19570 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751286AbaBTVOt (ORCPT
+	id S1752702AbaBTVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 16:18:16 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34615 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaBTVSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 16:14:49 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscVAPxuBlNXQx0h/2dsb2JhbABZKIJewRoCAoEQF3SCUxMcIxiBAjeICQHNUReOZB2EIgSJRo5pAYpPh1WDOi8
-Date: Thu, 20 Feb 2014 21:16:12 +0800
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells <dhowells@redhat.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] afs: afs_alloc_inode: use kmem_cache_zalloc
-Message-Id: <20140220211612.506074a7fd876e47130a8c5c@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Feb 2014 16:18:15 -0500
+Date: Thu, 20 Feb 2014 22:18:19 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
+        anton@nomsg.org, kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v3 2/6] hrtimer: Add support for deferrable timer into
+ the hrtimer
+In-Reply-To: <53064E4A.8030105@linaro.org>
+Message-ID: <alpine.DEB.2.02.1402202216350.4468@ionos.tec.linutronix.de>
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com> <1392885633-7787-3-git-send-email-a.perevalov@samsung.com> <53064E4A.8030105@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-afs_vnode is currently cleared with 2 memsets after allocation and 
-1 in constructor (afs_i_init_once).
-	-This patch calls zalloc for explicit zero fill.
-	-Fix some typos.
+On Thu, 20 Feb 2014, John Stultz wrote:
+> On 02/20/2014 12:40 AM, Alexey Perevalov wrote:
+> > diff --git a/include/uapi/linux/time.h b/include/uapi/linux/time.h
+> > index e75e1b6..bb8dc60 100644
+> > --- a/include/uapi/linux/time.h
+> > +++ b/include/uapi/linux/time.h
+> > @@ -56,6 +56,9 @@ struct itimerval {
+> >  #define CLOCK_BOOTTIME_ALARM		9
+> >  #define CLOCK_SGI_CYCLE			10	/* Hardware specific */
+> >  #define CLOCK_TAI			11
+> > +#define CLOCK_REALTIME_DEFERRABLE	12
+> > +#define CLOCK_MONOTONIC_DEFERRABLE	13
+> > +#define CLOCK_BOOTTIME_DEFERRABLE	14
+> 
+> Adding the deferrable HRTIMER bases above is right, but I don't think we
+> agreed on adding the _DEFERRABLE clockids.
+> 
+> I'd instead prefer you use add a new TIMER_DEFERABLE flags argument, and
+> use the combination of the clockid + flag to decide which HRTIMER base
+> is used.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/afs/super.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+And how does that work with anything else than timerfd? If we add
+deferrable posix clocks then we add them for the other interfaces
+which take a clockid as well.
 
-diff --git a/fs/afs/super.c b/fs/afs/super.c
-index c486155..e1fc569 100644
---- a/fs/afs/super.c
-+++ b/fs/afs/super.c
-@@ -76,7 +76,7 @@ static const match_table_t afs_options_list = {
- };
- 
- /*
-- * initialise the filesystem
-+ * Initialize the filesystem
-  */
- int __init afs_fs_init(void)
- {
-@@ -448,19 +448,19 @@ error:
- static void afs_kill_super(struct super_block *sb)
- {
- 	struct afs_super_info *as = sb->s_fs_info;
-+
- 	kill_anon_super(sb);
- 	afs_put_volume(as->volume);
- 	kfree(as);
- }
- 
- /*
-- * initialise an inode cache slab element prior to any use
-+ * Initialize an inode cache slab element prior to any use
-  */
- static void afs_i_init_once(void *_vnode)
- {
- 	struct afs_vnode *vnode = _vnode;
- 
--	memset(vnode, 0, sizeof(*vnode));
- 	inode_init_once(&vnode->vfs_inode);
- 	init_waitqueue_head(&vnode->update_waitq);
- 	mutex_init(&vnode->permits_lock);
-@@ -481,15 +481,12 @@ static struct inode *afs_alloc_inode(struct super_block *sb)
- {
- 	struct afs_vnode *vnode;
- 
--	vnode = kmem_cache_alloc(afs_inode_cachep, GFP_KERNEL);
-+	vnode = kmem_cache_zalloc(afs_inode_cachep, GFP_KERNEL);
- 	if (!vnode)
- 		return NULL;
- 
- 	atomic_inc(&afs_count_active_inodes);
- 
--	memset(&vnode->fid, 0, sizeof(vnode->fid));
--	memset(&vnode->status, 0, sizeof(vnode->status));
--
- 	vnode->volume		= NULL;
- 	vnode->update_cnt	= 0;
- 	vnode->flags		= 1 << AFS_VNODE_UNSET;
-@@ -503,6 +500,7 @@ static void afs_i_callback(struct rcu_head *head)
- {
- 	struct inode *inode = container_of(head, struct inode, i_rcu);
- 	struct afs_vnode *vnode = AFS_FS_I(inode);
-+
- 	kmem_cache_free(afs_inode_cachep, vnode);
- }
- 
--- 
-1.8.1.4
+Thanks,
 
+	tglx
