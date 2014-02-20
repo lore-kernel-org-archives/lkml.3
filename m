@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaBTTJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 14:09:27 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:38116 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933AbaBTTJZ (ORCPT
+	id S1755361AbaBTTT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 14:19:29 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:51808 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933AbaBTTT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 14:09:25 -0500
+	Thu, 20 Feb 2014 14:19:27 -0500
+Date: Thu, 20 Feb 2014 14:21:26 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: x86_pmu_start WARN_ON.
+In-Reply-To: <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1402201414380.24360@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu> <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu> <20140220182300.GN9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1392922421.28840.36.camel@triegel.csb>
-References: <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
-	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
-	<1392740258.18779.7732.camel@triegel.csb>
-	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
-	<1392752867.18779.8120.camel@triegel.csb>
-	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
-	<20140220040102.GM4250@linux.vnet.ibm.com>
-	<CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
-	<20140220083032.GN4250@linux.vnet.ibm.com>
-	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	<20140220181116.GT4250@linux.vnet.ibm.com>
-	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	<1392922421.28840.36.camel@triegel.csb>
-Date: Thu, 20 Feb 2014 11:09:24 -0800
-X-Google-Sender-Auth: FNt0BszzdWa3n8O7WLLnulEOVM4
-Message-ID: <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torvald Riegel <triegel@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:53 AM, Torvald Riegel <triegel@redhat.com> wrote:
-> On Thu, 2014-02-20 at 10:32 -0800, Linus Torvalds wrote:
->> On Thu, Feb 20, 2014 at 10:11 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> >
->> > You really need that "consume" to be "acquire".
->>
->> So I think we now all agree that that is what the standard is saying.
->
-> Huh?
->
-> The standard says that there are two separate things (among many more):
-> mo_acquire and mo_consume.  They both influence happens-before in
-> different (and independent!) ways.
->
-> What Paul is saying is that *you* should have used *acquire* in that
-> example.
+On Thu, 20 Feb 2014, Vince Weaver wrote:
 
-I understand.
+> Might be relevant: check the last_cpu values.  Right before the above
+> it looks like the thread gets moved from CPU 1 to CPU 0
+> (possibly as a result of the long chain started with the
+> close() of the tracepoint event),
+> so the problem NMI watchdog event being enabled is a different one than 
+> the one that was disabled just before.
 
-And I disagree. I think the standard is wrong, and what I *should* be
-doing is point out the fact very loudly, and just tell people to NEVER
-EVER use "consume" as long as it's not reliable and has insane
-semantics.
+so is this a false warning?  If you get scheduled to a new CPU
+and there's an already running CPU-wide event, is that OK?
 
-So what I "should do" is to not accept any C11 atomics use in the
-kernel. Because with the "acquire", it generates worse code than what
-we already have, and with the "consume" it's shit.
+Or should x86_pmu_disable() be setting PERF_HES_STOPPED on all events?
+It looks like other architectures are (such as armpmu_stop() ).
 
-See?
+Vince
 
-                  Linus
