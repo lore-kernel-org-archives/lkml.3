@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001AbaBTXx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:53:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46078 "EHLO
+	id S1756114AbaBUAMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:12:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46086 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbaBTXxZ (ORCPT
+	with ESMTP id S1755990AbaBTXx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:53:25 -0500
+	Thu, 20 Feb 2014 18:53:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.13 33/99] lockd: send correct lock when granting a delayed lock.
-Date: Thu, 20 Feb 2014 15:52:28 -0800
-Message-Id: <20140220235119.181131524@linuxfoundation.org>
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs attribute
+Date: Thu, 20 Feb 2014 15:52:30 -0800
+Message-Id: <20140220235119.236520201@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
 References: <20140220235118.191692546@linuxfoundation.org>
@@ -29,70 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
+commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
 
-If an NFS client attempts to get a lock (using NLM) and the lock is
-not available, the server will remember the request and when the lock
-becomes available it will send a GRANT request to the client to
-provide the lock.
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console.
 
-If the client already held an adjacent lock, the GRANT callback will
-report the union of the existing and new locks, which can confuse the
-client.
+The console structure doesn't refer to any device in sysfs, only the tty
+the console is running on has.  So we need to print out the tty names in
+'active', not the console names.
 
-This happens because __posix_lock_file (called by vfs_lock_file)
-updates the passed-in file_lock structure when adjacent or
-over-lapping locks are found.
+This resolves an issue on s390 platforms in determining the correct
+console device to use.
 
-To avoid this problem we take a copy of the two fields that can
-be changed (fl_start and fl_end) before the call and restore them
-afterwards.
-An alternate would be to allocate a 'struct file_lock', initialise it,
-use locks_copy_lock() to take a copy, then locks_release_private()
-after the vfs_lock_file() call.  But that is a lot more work.
-
-Reported-by: Olaf Kirch <okir@suse.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-v1 had a couple of issues (large on-stack struct and didn't really work properly).
-This version is much better tested.
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
 ---
- fs/lockd/svclock.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/ABI/testing/sysfs-tty |    3 ++-
+ drivers/tty/tty_io.c                |   25 ++++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -779,6 +779,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
- 	struct nlm_file		*file = block->b_file;
- 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
- 	int			error;
-+	loff_t			fl_start, fl_end;
+--- a/Documentation/ABI/testing/sysfs-tty
++++ b/Documentation/ABI/testing/sysfs-tty
+@@ -3,7 +3,8 @@ Date:		Nov 2010
+ Contact:	Kay Sievers <kay.sievers@vrfy.org>
+ Description:
+ 		 Shows the list of currently configured
+-		 console devices, like 'tty1 ttyS0'.
++		 tty devices used for the console,
++		 like 'tty1 ttyS0'.
+ 		 The last entry in the file is the active
+ 		 device connected to /dev/console.
+ 		 The file supports poll() to detect virtual
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1267,16 +1267,17 @@ static void pty_line_name(struct tty_dri
+  *	@p: output buffer of at least 7 bytes
+  *
+  *	Generate a name from a driver reference and write it to the output
+- *	buffer.
++ *	buffer. Return the number of bytes written.
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
  
- 	dprintk("lockd: grant blocked lock %p\n", block);
- 
-@@ -796,9 +797,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
+ /**
+@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
  	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		struct tty_driver *driver;
++		const char *name = cs[i]->name;
++		int index = cs[i]->index;
++
++		driver = cs[i]->device(cs[i], &index);
++		if (driver) {
++			count += tty_line_name(driver, index, buf + count);
++			count += sprintf(buf + count, "%c", i ? ' ':'\n');
++		} else
++			count += sprintf(buf + count, "%s%d%c",
++					 name, index, i ? ' ':'\n');
++	}
+ 	console_unlock();
  
- 	/* Try the lock operation again */
-+	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
-+	 * them unchanged for the GRANT_MSG
-+	 */
- 	lock->fl.fl_flags |= FL_SLEEP;
-+	fl_start = lock->fl.fl_start;
-+	fl_end = lock->fl.fl_end;
- 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
- 	lock->fl.fl_flags &= ~FL_SLEEP;
-+	lock->fl.fl_start = fl_start;
-+	lock->fl.fl_end = fl_end;
- 
- 	switch (error) {
- 	case 0:
+ 	return count;
 
 
