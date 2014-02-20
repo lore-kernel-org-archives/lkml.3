@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaBTXur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:50:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45342 "EHLO
+	id S1757632AbaBUBEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:04:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45347 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673AbaBTXuo (ORCPT
+	with ESMTP id S1754720AbaBTXuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:44 -0500
+	Thu, 20 Feb 2014 18:50:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Kirch <okir@suse.com>, NeilBrown <neilb@suse.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.4 08/25] lockd: send correct lock when granting a delayed lock.
-Date: Thu, 20 Feb 2014 15:51:24 -0800
-Message-Id: <20140220234842.717086690@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.10 01/66] xen-blkfront: handle backend CLOSED without CLOSING
+Date: Thu, 20 Feb 2014 15:51:00 -0800
+Message-Id: <20140220234909.524997080@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
-References: <20140220234842.483343851@linuxfoundation.org>
+In-Reply-To: <20140220234909.482516304@linuxfoundation.org>
+References: <20140220234909.482516304@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,74 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
+commit 3661371701e714f0cea4120f6a365340858fb4e4 upstream.
 
-If an NFS client attempts to get a lock (using NLM) and the lock is
-not available, the server will remember the request and when the lock
-becomes available it will send a GRANT request to the client to
-provide the lock.
+Backend drivers shouldn't transistion to CLOSED unless the frontend is
+CLOSED.  If a backend does transition to CLOSED too soon then the
+frontend may not see the CLOSING state and will not properly shutdown.
 
-If the client already held an adjacent lock, the GRANT callback will
-report the union of the existing and new locks, which can confuse the
-client.
+So, treat an unexpected backend CLOSED state the same as CLOSING.
 
-This happens because __posix_lock_file (called by vfs_lock_file)
-updates the passed-in file_lock structure when adjacent or
-over-lapping locks are found.
-
-To avoid this problem we take a copy of the two fields that can
-be changed (fl_start and fl_end) before the call and restore them
-afterwards.
-An alternate would be to allocate a 'struct file_lock', initialise it,
-use locks_copy_lock() to take a copy, then locks_release_private()
-after the vfs_lock_file() call.  But that is a lot more work.
-
-Reported-by: Olaf Kirch <okir@suse.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-v1 had a couple of issues (large on-stack struct and didn't really work properly).
-This version is much better tested.
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
 ---
- fs/lockd/svclock.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/block/xen-blkfront.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -769,6 +769,7 @@ nlmsvc_grant_blocked(struct nlm_block *b
- 	struct nlm_file		*file = block->b_file;
- 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
- 	int			error;
-+	loff_t			fl_start, fl_end;
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -1518,13 +1518,16 @@ static void blkback_changed(struct xenbu
+ 	case XenbusStateReconfiguring:
+ 	case XenbusStateReconfigured:
+ 	case XenbusStateUnknown:
+-	case XenbusStateClosed:
+ 		break;
  
- 	dprintk("lockd: grant blocked lock %p\n", block);
+ 	case XenbusStateConnected:
+ 		blkfront_connect(info);
+ 		break;
  
-@@ -786,9 +787,16 @@ nlmsvc_grant_blocked(struct nlm_block *b
- 	}
- 
- 	/* Try the lock operation again */
-+	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
-+	 * them unchanged for the GRANT_MSG
-+	 */
- 	lock->fl.fl_flags |= FL_SLEEP;
-+	fl_start = lock->fl.fl_start;
-+	fl_end = lock->fl.fl_end;
- 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
- 	lock->fl.fl_flags &= ~FL_SLEEP;
-+	lock->fl.fl_start = fl_start;
-+	lock->fl.fl_end = fl_end;
- 
- 	switch (error) {
- 	case 0:
++	case XenbusStateClosed:
++		if (dev->state == XenbusStateClosed)
++			break;
++		/* Missed the backend's Closing state -- fallthrough */
+ 	case XenbusStateClosing:
+ 		blkfront_closing(info);
+ 		break;
 
 
