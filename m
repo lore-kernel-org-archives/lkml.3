@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaBTJU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 04:20:59 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43399 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaBTJUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 04:20:55 -0500
-Date: Thu, 20 Feb 2014 01:20:49 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140220092049.GA22688@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140218030002.GA15857@linux.vnet.ibm.com>
- <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
- <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
- <1392740258.18779.7732.camel@triegel.csb>
- <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
- <1392752867.18779.8120.camel@triegel.csb>
- <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
- <20140220040102.GM4250@linux.vnet.ibm.com>
- <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
- <20140220083032.GN4250@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140220083032.GN4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022009-0928-0000-0000-0000069F849B
+	id S1751854AbaBTJWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 04:22:45 -0500
+Received: from mga03.intel.com ([143.182.124.21]:58325 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075AbaBTJWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 04:22:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,511,1389772800"; 
+   d="scan'208";a="342323983"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: David Airlie <airlied@linux.ie>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Emil Velikov <emil.l.velikov@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] nouveau, ACPI: fix regression caused by b072e53
+Date: Thu, 20 Feb 2014 17:23:16 +0800
+Message-Id: <1392888200-27567-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 12:30:32AM -0800, Paul E. McKenney wrote:
-> On Wed, Feb 19, 2014 at 08:43:14PM -0800, Linus Torvalds wrote:
+Fix regression caused by commit b072e53, which breaks loading nouveau
+driver on optimus laptops.
 
-[ . . . ]
+On some platforms, ACPI _DSM method (nouveau_op_dsm_muid, function 0)
+has special requirements on the fourth parameter, which is different
+from ACPI specifications. So revert to the private implementation
+to check availability of _DSM functions instead of using common
+acpi_check_dsm() interface.
 
-> So, if you make one of two changes to your example, then I will agree
-> with you.  The first change is to have a real data dependency between
-> the read of "a" and the second read:
-> 
->  - Initial state:
-> 
->    a = &c, b = 0; c = 0;
-> 
->  - Thread 1 ("consumer"):
-> 
->     if (atomic_read(&a, consume))
+Reported-and-Tested-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |   26 ++++++++++++++++++++++++--
+ 1 file changed, 24 insertions(+), 2 deletions(-)
 
-And the above should be "if (atomic_read(&a, consume) != &c)".  Sigh!!!
-
-							Thanx, Paul
-
->          return *a;
->     /* not yet initialized */
->     return -1;
-> 
->  - Thread 2 ("initializer"):
-> 
->      b = some_value_lets_say_42;
->      /* We are now ready to party */
->      atomic_write(&a, &b, release);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index 4ef83df..83face3 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -106,6 +106,29 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
+ 	return 0;
+ }
+ 
++/*
++ * On some platforms, _DSM(nouveau_op_dsm_muid, func0) has special
++ * requirements on the fourth parameter, so a private implementation
++ * instead of using acpi_check_dsm().
++ */
++static int nouveau_check_optimus_dsm(acpi_handle handle)
++{
++	int result;
++
++	/*
++	 * Function 0 returns a Buffer containing available functions.
++	 * The args parameter is ignored for function 0, so just put 0 in it
++	 */
++	if (nouveau_optimus_dsm(handle, 0, 0, &result))
++		return 0;
++
++	/*
++	 * ACPI Spec v4 9.14.1: if bit 0 is zero, no function is supported.
++	 * If the n-th bit is enabled, function n is supported
++	 */
++	return result & 1 && result & (1 << NOUVEAU_DSM_OPTIMUS_CAPS);
++}
++
+ static int nouveau_dsm(acpi_handle handle, int func, int arg)
+ {
+ 	int ret = 0;
+@@ -207,8 +230,7 @@ static int nouveau_dsm_pci_probe(struct pci_dev *pdev)
+ 			   1 << NOUVEAU_DSM_POWER))
+ 		retval |= NOUVEAU_DSM_HAS_MUX;
+ 
+-	if (acpi_check_dsm(dhandle, nouveau_op_dsm_muid, 0x00000100,
+-			   1 << NOUVEAU_DSM_OPTIMUS_CAPS))
++	if (nouveau_check_optimus_dsm(dhandle))
+ 		retval |= NOUVEAU_DSM_HAS_OPT;
+ 
+ 	if (retval & NOUVEAU_DSM_HAS_OPT) {
+-- 
+1.7.10.4
 
