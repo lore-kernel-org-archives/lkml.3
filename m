@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaBUOYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:24:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12380 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754867AbaBUOYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:24:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,519,1389772800"; 
-   d="scan'208";a="459475573"
-Date: Fri, 21 Feb 2014 16:23:49 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Marc Dietrich <marvin24@gmx.de>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] net: rfkill: gpio: remove unused and obsolete
- platform parameters
-Message-ID: <20140221142349.GB10489@xps8300>
-References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1392900697-27577-2-git-send-email-heikki.krogerus@linux.intel.com>
- <1723302.jKkc8NDNRI@fb07-iapwap2>
+	id S1755446AbaBUOZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:25:12 -0500
+Received: from forward5m.mail.yandex.net ([37.140.138.5]:52034 "EHLO
+	forward5m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaBUOZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 09:25:10 -0500
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20140221134438.ab2d02c4165fa2a6cbd663be@gmail.com>
+References: <230991392848160@web13m.yandex.ru>
+	<20140221103715.GP9987@twins.programming.kicks-ass.net>
+	<128831392982418@web15j.yandex.ru>
+	<311621392984565@web3h.yandex.ru> <20140221134438.ab2d02c4165fa2a6cbd663be@gmail.com>
+Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1723302.jKkc8NDNRI@fb07-iapwap2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <3231392992702@web26m.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 21 Feb 2014 18:25:02 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Fri, Feb 21, 2014 at 02:55:14PM +0100, Marc Dietrich wrote:
-> Am Donnerstag, 20. Februar 2014, 14:51:34 schrieb Heikki Krogerus:
-> > After upgrading to descriptor based gpios, the gpio numbers
-> > are not used anymore. The power_clk_name and the platform
-> > specific setup and close hooks are not used by anybody, and
-> > we should not encourage use of such things, so removing them.
-> 
-> arch/arm/mach-tegra/board-paz00.c is still using platform data. Is there some 
-> prerequisite patch I'm missing (3.14-rc3) or how can this file be converted? 
-> We are waiting for DT support to arrive so we can finally remove this file.
 
-True! It still set's the shutdown_gpio and reset_gpio members. I think
-I'll leave the header untouched and just clean net/rfkill/rfkill-gpio.c
-in this patch. We can remove the whole header after you guys have moved
-to DT.
+21.02.2014, 16:44, "Juri Lelli" <juri.lelli@gmail.com>:
+> On Fri, 21 Feb 2014 16:09:25 +0400
+> Kirill Tkhai <tkhai@yandex.ru> wrote:
+>
+>> š21.02.2014, 15:39, "Kirill Tkhai" <tkhai@yandex.ru>:
+>>> š21.02.2014, 14:37, "Peter Zijlstra" <peterz@infradead.org>:
+>>>> ššOn Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
+>>>>> šššSince deadline tasks share rt bandwidth, we must care about
+>>>>> šššbandwidth timer set. Otherwise rt_time may grow up to infinity
+>>>>> šššin update_curr_dl(), if there are no other available RT tasks
+>>>>> šššon top level bandwidth.
+>>>>>
+>>>>> šššI'm going to decide the problem the way below. Almost untested
+>>>>> šššbecause of I skipped almost all of recent patches which haveto be applied from lkml.
+>>>>>
+>>>>> šššPlease say, if I skipped anything in idea. Maybe better put
+>>>>> šššstart_top_rt_bandwidth() into set_curr_task_dl()?
+>>>> ššHow about we only increment rt_time when there's an RT bandwidth timer
+>>>> ššactive?
+>>> šThis case RT and DL may eat all the time:
+>>>
+>>> š-------------- štime ------------------>
+>>> š|RT's working |DL's working|
+>>> š----------------------------
+>>> š|rt_runtime šš| ššššššššššš|
+>>> š----------------------------
+>>> š| šššššššrt_period šššššššš|
+>>>
+>>> šOr at least more, than it's allowed.
+>>>
+>>> šIt looks like, if we want to limit time of high priority classes
+>>> šexecution, we have to set the timer anyway.
+>> šOh, above is confusing. Sorry.
+>>
+>> šI mean one RT task and
+>>
+>> š----------------- štime -------------------------->
+>> š|DL's working ššš|RT's working| |DL's working ššš|
+>> š--------------------------------------------------
+>> š| ššššššššššššššš|rt_runtime š| | ššššššššššššššš|
+>> š--------------------------------------------------
+>> š| ššššššššššššššš| ššrt_period š| ššššššššššššššš|
+>>
+>> šIn this case FAIR receives less ratio, than (rt_period-rt_runtime)/rt_period.
+>
+> DL tasks won't be allowed to run in this situation, as their bw exceedes
+> rt_runtime/rt_period.
 
-I'll prepare v2 next week.
+Maybe, I don't uderstand. Where does DL control summary (DL+RT) runtime?
 
-Thanks!
+RT does not do this too. But it looks like, RT has to do this.
 
--- 
-heikki
+Kirill
