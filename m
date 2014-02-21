@@ -1,99 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186AbaBURMw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:12:52 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:37302 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659AbaBURMt (ORCPT
+	id S933077AbaBURQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:16:16 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:47578 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932734AbaBURQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:12:49 -0500
-Message-ID: <5307890D.4080807@acm.org>
-Date: Fri, 21 Feb 2014 11:12:45 -0600
-From: Corey Minyard <minyard@acm.org>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 21 Feb 2014 12:16:13 -0500
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "rja@sgi.com" <rja@sgi.com>, "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>	 <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230>	 <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230>	 <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230>	 <5307568C.3020701@acm.org> <1392997912.20109.41.camel@x230>
-In-Reply-To: <1392997912.20109.41.camel@x230>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Fri, 21 Feb 2014 18:16:10 +0100
+Message-ID: <CAJZ5v0jZrD+jML2hT7v=gYog1TuXK-VK2DjoPthNbMpoPxnbmg@mail.gmail.com>
+Subject: [GIT PULL] ACPI and power management fixes for v3.14-rc4
+From: Rafael Wysocki <rjwysocki@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 09:51 AM, Matthew Garrett wrote:
-> On Fri, 2014-02-21 at 07:37 -0600, Corey Minyard wrote:
->
->> However, the basic problem is that hardware vendors produce hardware
->> that sucks and then expect software to fix all the problems.  Most IPMI
->> interfaces don't have interrupts, so they have to be polled.  Then they
->> add important interfaces on top of it like firmware upgrade and ACPI and
->> expect it to perform well.  If vendors would just have an interrupt for
->> IPMI, 99% of these problems would go away.
-> Not going to disagree. The impact on power consumption is also pretty
-> awful. I should re-read the spec to figure out whether we can
-> legitimately get away with not doing that.
+Hi Linus,
 
-Thinking about this some more, I realized that it may possible to turn
-off the driver if nothing at all is waiting.  I'll need to look at the
-spec to see if I'm forgetting something.
+Please pull from the git repository at
 
->
->> One thing we can do is remove the default interface probing for IPMI. 
->> Even though the spec has it, all modern hardware should have it
->> specified in ACPI or device tree.  That should fix all the slow boot
->> problems, at least.  If a user wants to add a default interface, they
->> can use the interface to dynamically add it after boot time.
-> Something like this (untested)?
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.14-rc4
 
-That's exactly what I would have done...
+to receive ACPI and power management fixes for v3.14-rc4
+with top-most commit fee5ae96e0bc48b13f97512aef91d5aea60240a5
 
--corey
+  Merge branch 'pm-cpufreq'
 
->
-> diff --git a/drivers/char/ipmi/Kconfig b/drivers/char/ipmi/Kconfig
-> index eea8464..5126230 100644
-> --- a/drivers/char/ipmi/Kconfig
-> +++ b/drivers/char/ipmi/Kconfig
-> @@ -52,6 +52,16 @@ config IPMI_SI
->          Currently, only KCS and SMIC are supported.  If
->          you are using IPMI, you should probably say "y" here.
->  
-> +config IPMI_PROBE_DEFAULTS
-> +       bool 'Probe for all possible IPMI interfaces by default'
-> +       help
-> +         Modern systems will usually expose IPMI interfaces via a discoverable
-> +        firmware mechanism such as ACPI or DMI. Older systems do not, and so
-> +        the driver is forced to probe hardware manually. This may cause boot
-> +        delays. Say "n" here to disable this manual probing. IPMI will then
-> +        only be available on older systems if the "ipmi_si_intf.trydefaults=1"
-> +        boot argument is passed.
-> +
->  config IPMI_WATCHDOG
->         tristate 'IPMI Watchdog Timer'
->         help
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 03f4189..82c7d56 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -1230,7 +1230,11 @@ static bool          si_tryplatform = 1;
->  #ifdef CONFIG_PCI
->  static bool          si_trypci = 1;
->  #endif
-> +#ifdef CONFIG_IPMI_PROBE_DEFAULTS
->  static bool          si_trydefaults = 1;
-> +#else
-> +static bool          si_trydefaults;
-> +#endif
->  static char          *si_type[SI_MAX_PARMS];
->  #define MAX_SI_TYPE_STR 30
->  static char          si_type_str[MAX_SI_TYPE_STR];
->
->
+on top of commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2
 
+  Linux 3.14-rc3
+
+These include two fixes for recent regressions related to ACPI, a
+cpufreq fix for breakage overlooked by a previous fix commit, two
+intel_pstate fixes for stuff added during the 3.13 cycle that need
+to go into -stable, three fixes for older bugs that also are -stable
+candidates, ACPI video blacklist changes related to BIOSes that
+behave in a special way on Windows 8, several build fixes for
+CONFIG_PM_SLEEP unset in ACPI drivers and an ACPI driver
+cleanup.
+
+Specifics:
+
+ - Fix for a recent probing regression in the nouveau driver introduced
+   by an ACPI change related to the handling of _DSM from Jiang Liu.
+
+ - Fix for a dock station sysfs attribute that stopped working correctly
+   after recent changes in the ACPI core.
+
+ - cpufreq fix taking care of broken code related to CPU removal and
+   overlooked by a previous recent fix in that area.  From Viresh Kumar.
+
+ - Two intel_pstate fixes related to Baytrail support added during
+   the 3.13 cycle (candidates for -stable) from Dirk Brandewie.
+
+ - ACPI video fix removing duplicate brightness values from the _BCL
+   table which makes its user space interface behave sanely.  From
+   Hans de Goede.
+
+ - Fix for the powernow-k8 cpufreq driver making it initialize its
+   per-CPU data structures correctly from Srivatsa S. Bhat.
+
+ - Fix for an obscure memory leak in the ACPI PCI interrupt allocation
+   code (related to ISA) from Tomasz Nowicki.
+
+ - ACPI video blacklist changes moving several systems that should
+   use the native backlight interface instead of the ACPI one from
+   the general ACPI _OSI blacklist the the ACPI video driver's
+   blacklist where they belong.  This consists of an ACPI video
+   driver update from Aaron Lu and a revert of a previous commit
+   adding systems to the ACPI _OSI blacklist requested by
+   Takashi Iwai.  All of that has been tested by the involved
+   reporters and should not cause any fallout to happen.
+
+ - Several fixes for build issues in ACPI drivers occuring when
+   CONFIG_PM_SLEEP is unset from Shuah Khan.
+
+ - Fix for an sscanf() format string in the ACPI Smart Battery
+   Subsystem (SBS) driver from Luis G.F.
+
+Thanks!
+
+
+---------------
+
+Aaron Lu (1):
+      ACPI / video: Add systems that should favour native backlight interface
+
+Dirk Brandewie (2):
+      intel_pstate: Use LFM bus ratio as min ratio/P state
+      intel_pstate: Add support for Baytrail turbo P states
+
+Hans de Goede (1):
+      ACPI / video: Filter the _BCL table for duplicate brightness values
+
+Jiang Liu (1):
+      ACPI / nouveau: fix probing regression related to _DSM
+
+Luis G.F (1):
+      ACPI / SBS: Fix incorrect sscanf() string
+
+Rafael J. Wysocki (2):
+      ACPI / dock: Make 'docked' sysfs attribute work as documented
+      Revert "ACPI: Blacklist Win8 OSI for some HP laptop 2013 models"
+
+Shuah Khan (6):
+      ACPI / AC: fix AC driver compile error when CONFIG_PM_SLEEP is undefined
+      ACPI / battery: fix battery driver compile error when
+CONFIG_PM_SLEEP is undefined
+      ACPI / button: fix button driver compile error when
+CONFIG_PM_SLEEP is undefined
+      ACPI / fan: fix fan driver compile error when CONFIG_PM_SLEEP is undefined
+      ACPI / SBS: fix SBS driver compile error when CONFIG_PM_SLEEP is undefined
+      ACPI / thermal: fix thermal driver compile error when
+CONFIG_PM_SLEEP is undefined
+
+Srivatsa S. Bhat (1):
+      cpufreq: powernow-k8: Initialize per-cpu data-structures properly
+
+Tomasz Nowicki (1):
+      ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+
+Viresh Kumar (1):
+      cpufreq: remove sysfs link when a cpu != policy->cpu, is removed
+
+---------------
+
+ drivers/acpi/ac.c                      |   2 +
+ drivers/acpi/battery.c                 |   2 +
+ drivers/acpi/blacklist.c               |  58 -------------
+ drivers/acpi/button.c                  |   2 +
+ drivers/acpi/dock.c                    |   8 +-
+ drivers/acpi/fan.c                     |   3 +
+ drivers/acpi/pci_irq.c                 |   1 +
+ drivers/acpi/sbs.c                     |   4 +-
+ drivers/acpi/thermal.c                 |   2 +
+ drivers/acpi/video.c                   | 147 +++++++++++++++++++++++++++++++--
+ drivers/acpi/video_detect.c            |  16 ----
+ drivers/cpufreq/cpufreq.c              |   3 +-
+ drivers/cpufreq/intel_pstate.c         |  17 +++-
+ drivers/cpufreq/powernow-k8.c          |  10 ++-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |  26 +++++-
+ 15 files changed, 204 insertions(+), 97 deletions(-)
