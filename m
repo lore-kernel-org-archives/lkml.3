@@ -1,173 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaBUMgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:36:52 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52364 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569AbaBUMgs convert rfc822-to-8bit (ORCPT
+	id S1755514AbaBUMiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:38:18 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54668 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754569AbaBUMiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:36:48 -0500
-Message-ID: <5307487F.6000308@arm.com>
-Date: Fri, 21 Feb 2014 12:37:19 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>
-CC: Sudeep.Holla@arm.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
+	Fri, 21 Feb 2014 07:38:16 -0500
+Date: Fri, 21 Feb 2014 12:37:04 +0000
+From: Dave Martin <Dave.Martin@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Larry Bassel <lbassel@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Jiang Liu <liuj97@gmail.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH v5 3/5] ACPI / processor: Introduce map_gic_id() to get
- apic id from MADT or _MAT method
-References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org> <1392740638-2479-4-git-send-email-hanjun.guo@linaro.org> <5304C0C4.3080601@arm.com> <53057DA9.3010307@linaro.org>
-In-Reply-To: <53057DA9.3010307@linaro.org>
-X-OriginalArrivalTime: 21 Feb 2014 12:36:49.0573 (UTC) FILETIME=[973AF550:01CF2F01]
-X-MC-Unique: 114022112364602001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
+Message-ID: <20140221123645.GA2578@e103592.cambridge.arm.com>
+References: <1392339850-18686-1-git-send-email-keescook@chromium.org>
+ <1392339850-18686-3-git-send-email-keescook@chromium.org>
+ <20140214162257.GB2331@e103592.cambridge.arm.com>
+ <CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
+ <20140217123415.GA2182@e103592.cambridge.arm.com>
+ <CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hanjun,
-
-(Adding MarcZ for his views on GIC)
-
-On 20/02/14 03:59, Hanjun Guo wrote:
-> Hi Sudeep,
+On Tue, Feb 18, 2014 at 10:10:03AM -0800, Kees Cook wrote:
+> On Mon, Feb 17, 2014 at 4:34 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> > On Fri, Feb 14, 2014 at 11:11:07AM -0800, Kees Cook wrote:
+> >> On Fri, Feb 14, 2014 at 8:22 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> >> > On Thu, Feb 13, 2014 at 05:04:10PM -0800, Kees Cook wrote:
+> >> >> Introduce "CONFIG_DEBUG_RODATA" to mostly match the x86 config, though
+> >> >> the behavior is different: it depends on STRICT_KERNMEM_PERMS, which
+> >> >> sets rodata read-only (but executable), where as this option additionally
+> >> >> splits rodata from the kernel text (resulting in potentially more memory
+> >> >> lost to padding) and sets it non-executable as well. The end result is
+> >> >> that on builds with CONFIG_DEBUG_RODATA=y (like x86) the rodata with be
+> >> >> marked purely read-only.
+> >> >
+> >> > This triggers an Oops in kexec, because we have a block of code in .text
+> >> > which is a template for generating baremetal code to relocate the new
+> >> > kernel, and some literal words are written into it before copying.
+> >>
+> >> You're writing into the text area? I would imagine that
+> >> CONFIG_ARM_KERNMEM_PERMS would break that. However, that's not the
+> >> right place to be building code -- shouldn't the module area be used
+> >> for that?
+> >>
+> >> > Possibly this should be in .rodata, not .text.
+> >>
+> >> Well, rodata should be neither writable nor executable.
+> >
+> > We're not writing into code exactly.
+> >
+> > This code is never executed in-place in vmlinux.  It gets copied, and
+> > only copies are ever executed.
+> >
+> > Some pointers and offsets get poked into the code to configure it.
+> >
+> > I think it would be better simply to put the code in .rodata, and
+> > poke paramaters into the copy, not the original -- but that's a bit
+> > more awkward to code up, since the values can't be poked simply by
+> > writing global variables.
 > 
-> Thanks for your comments, please refer to the replies below. :)
+> Okay, interesting. I'll be curious to see what the patch for this looks like.
 > 
-> On 2014年02月19日 22:33, Sudeep Holla wrote:
->> Hi Hanjun,
->>
->> On 18/02/14 16:23, Hanjun Guo wrote:
->>> Get apic id from MADT or _MAT method is not implemented on arm/arm64,
->>> and ACPI 5.0 introduces GIC Structure for it, so this patch introduces
->>> map_gic_id() to get apic id followed the ACPI 5.0 spec.
->>>
->>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>> ---
->>>   drivers/acpi/processor_core.c |   26 ++++++++++++++++++++++++++
->>>   1 file changed, 26 insertions(+)
->>>
->>> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
->>> index 4dcf776..d316d9b 100644
->>> --- a/drivers/acpi/processor_core.c
->>> +++ b/drivers/acpi/processor_core.c
->>> @@ -71,6 +71,27 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
->>>   	return 0;
->>>   }
->>>   
->>> +static int map_gic_id(struct acpi_subtable_header *entry,
->>> +		int device_declaration, u32 acpi_id, int *apic_id)
->>> +{
->>> +	struct acpi_madt_generic_interrupt *gic =
->>> +		(struct acpi_madt_generic_interrupt *)entry;
->>> +
->>> +	if (!(gic->flags & ACPI_MADT_ENABLED))
->>> +		return -ENODEV;
->>> +
->>> +	/* In the GIC interrupt model, logical processors are
->>> +	 * required to have a Processor Device object in the DSDT,
->>> +	 * so we should check device_declaration here
->>> +	 */
->>> +	if (device_declaration && (gic->uid == acpi_id)) {
->>> +		*apic_id = gic->gic_id;
->> I have mentioned this earlier, it's not clear yet to me how does this work ?
->> It needs more clarity in the form of comment here at-least as the ACPIv5.0 is
->> also not so clear or explicit on how to handle this.
+> >> > There may be a few other instances of this kind of thing.
+> >>
+> >> This config will certainly find them! :) But, that's why it's behind a config.
+> >
+> > I haven't tested exhaustively, but it think this is sufficient for a
+> > Tested-by.  The patch does seem to be doing what it is intended to
+> > do, and doesn't seem to be triggering false positives all over the
+> > place.
 > 
-> Yes, I noticed your comments and had a reply for that, after a
-> long consideration for this, I would withdraw my previous comments
-> before, please refer to the comments below.
+> Great, thanks for taking the time to check on it!
 > 
->>
->> Here you are expecting gic->uid = acpi_id which is fine, while acpi_map_cpuid
->> matches apic_id with cpu_physical_id(which must be MPIDR in ARM{32,64}). The
->> latter imposes restriction that gic->gic_id has to be MPIDR. Does that mean we
->> are imposing restriction on GIC ID to be MPIDR ? If so please document it here
->> and please explain the reason behind that choice.
-> 
-> On x86 and IA64, APIC/SAPIC ID is the hardware id of the logical
-> processor, and UID is just a unique ID to identify the processor in DSDT, it
-> can be any value, and even can be strings defined in ASL if I remember
-> that correctly.
-> 
-OK, but that's not the case on ARM{32,64}. My main concern here is if we don't
-make this definitions clear enough, the vendors might produce ACPI tables with
-whatever suits them and we may end up supporting them. Since we are starting
-with clean slate, we can avoid getting into such situations. I will be to be
-more elaborate this time.
+> Should I send this to the patch tracker, or wait for more feedback?
 
-The GIC ID is referred as the local GIC’s hardware ID in ACPIv5.0.
-IIUC, since GICC is per-cpu entry, it has to GIC CPU interface ID.
+It would be good if someone who's more familiar with the parms and
+vmlinux.lds stuff could take a look at it, though I don't see any
+obvious problem yet.
 
-Now how does it differ from MPIDR ? e.g. ARM TC2(multi cluster system)
-	GIC ID		MPIDR			Comment
-	0		0x000			CA15_0
-	1		0x001			CA15_1
-	2		0x100			CA7_0
-	3		0x101			CA7_1
-	4		0x102			CA7_2
+If you don't receive further comments, you could try reposting once
+to alert people to the fact that you're still waiting.
 
-> The processor driver also follows that guidance now, and GIC structure 
-> in MADT
-> actually represents a processor (GICC) in the system, so I would let
-> gic->gic_id as MPIDR(processor hardware ID) for now to avoid confusions
-> and keep consistency with current ACPI driver.
-> 
-
-Yes that's my worry "... so I would let gic->gic_id as MPIDR(processor hardware
-ID)" as it contradicts the definition.
-
-1. Yes today GIC CPU ID is enumerated in the code and we don't need it, but
-   that doesn't mean the GICC contain whatever(of vendor choice). IMO it should
-   be CPU interface ID as per the definition.
-
-2. It's better you post this patch as part of ARM64 port for easier
-   understanding on how this gets used as its ARM specific anyway.
-   That gives better/complete picture at least for review purposes.
-
-> UID can be any value and it depends on implementation, so it can be MPIDR
-> also, it will not conflict with GIC ID and can works fine in acpi processor
-> driver now.
-> 
-
-Agreed UID can be anything, but your initial ARM64 APCI patches were assuming it
-to be MPIDR. Since MPIDR is not specified anywhere else in the ACPI tables and
-it is required for some boot methods like PSCI and may be others, I am for
-mandating _UID in processor object to be MPIDR. If you agree please make it
-explicit in the comments.
-
->>
->> I would expect _UID to be MPIDR rather than GIC ID but you may have some reasons
->> for this choice.
-> 
-> I think they both can be MPIDR for now, is this ok to you?
-> 
-
-Yes for _UID and no for GIC ID, they need to represent the hardware. We can see
-how to manage in this in ACPI. Initially I went by the name "cpu_physical_id"
-in acpi_map_cpuid but it looks like it's cpuid->apicid mapping on x86. So that
-should not be problem.
-
-> we can update the code when the new ACPI spec is coming out if there
-> is a clear explanation for GIC ID and UID in GIC structures, does this make
-> sense to you?
-
-Yes, that's for next version of ACPI but we don't know that yet. IIUC you are
-trying to implement ACPI port for ARM64 based on ACPIv5.0 through these patches
-right ? Hence I pushing you to be more explicit through comments as ACPIv5.0 is
-not clear enough.
-
-Regards,
-Sudeep
-
-
+Cheers
+---Dave
