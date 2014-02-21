@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835AbaBUQ2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:28:43 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63277 "HELO
+	id S932864AbaBUQ3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:29:14 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57419 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932286AbaBUQ2k (ORCPT
+	with SMTP id S932286AbaBUQ3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:28:40 -0500
+	Fri, 21 Feb 2014 11:29:10 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
-Date: Fri, 21 Feb 2014 17:43:33 +0100
-Message-ID: <4216593.WbzE5aJO7L@vostro.rjw.lan>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
+        Robert Moore <robert.moore@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@acpica.org
+Subject: Re: [PATCH] ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
+Date: Fri, 21 Feb 2014 17:44:04 +0100
+Message-ID: <2288001.mCzAGKvxFb@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C27D32@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A01C27D32@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <5306EB00.1090108@linux.intel.com>
+References: <1392789739-32317-1-git-send-email-jiang.liu@linux.intel.com> <60567343.brKB2SuRkR@vostro.rjw.lan> <5306EB00.1090108@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,45 +28,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 21, 2014 01:38:45 AM Liu, Chuansheng wrote:
-> Hello Rafael,
-> 
-> > -----Original Message-----
-> > From: Liu, Chuansheng
-> > Sent: Tuesday, February 18, 2014 10:29 AM
-> > To: rjw@rjwysocki.net; gregkh@linuxfoundation.org; Brown, Len;
-> > pavel@ucw.cz
-> > Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi; Liu,
-> > Chuansheng
-> > Subject: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
-> > 
-> > Hello,
-> > 
-> > This patch series are for enabling the asynchronous threads for the phases
-> > resume_noirq, resume_early, suspend_noirq and suspend_late.
-> > 
-> 
-> After dig more about async threads, I found dpm_prepare/complete phases need
-> them also.
-> 
-> dpm_prepare()
->   -- > call pci_pm_prepare() one by one
->       -- > call pm_runtime_resume() one by one
->         -- > call pci_set_power_state to D3HOT -- > D0
-> 
-> It will cause much time delaying due to d3_delay.
-> And I made one draft patch to implement the asynchronous threads for dpm_prepare(),
-> it is really save much time.
-> 
-> If you like it, I can prepare another series patches for dpm_prepare() and dpm_complete(),
-> thanks.
+On Friday, February 21, 2014 01:58:24 PM Jiang Liu wrote:
+> Hi Rafael,
+> 	I failed to get the point to kill ACPI_HOTPLUG_OST altogether:(
+> Should I merge it into my series and resend?
 
-I think a better solution here would be to move the pm_runtime_resume()
-out of the .prepare() callback for PCI.  We may be doing that in the
-process of suspend optimization anyway, so I'd wait with making those
-phases async.
+No, thanks, I can handle it.
 
-Thanks!
+> Hi Toshi,
+> 	Any comments here?
+> 
+> On 2014/2/21 8:19, Rafael J. Wysocki wrote:
+> > On Wednesday, February 19, 2014 02:02:15 PM Jiang Liu wrote:
+> >> Rename acpi_evaluate_hotplug_ost() to acpi_evaluate_ost() for later resue.
+> >>
+> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> > 
+> > Below is a patch replacing acpi_evaluate_hotplug_ost() with acpi_evaluate_ost()
+> > and dropping the ACPI_HOTPLUG_OST which I don't believe is necessary at all.
+> > 
+> > On top of the current linux-next and your series.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
+> > 
+> > Replace acpi_evaluate_hotplug_ost() with acpi_evaluate_ost()
+> > everywhere and drop the ACPI_HOTPLUG_OST symbol so that hotplug
+> > _OST is supported unconditionally.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/bus.c                |    4 +---
+> >  drivers/acpi/scan.c               |   10 +++++-----
+> >  drivers/acpi/utils.c              |    2 +-
+> >  drivers/xen/xen-acpi-cpuhotplug.c |    2 +-
+> >  drivers/xen/xen-acpi-memhotplug.c |    2 +-
+> >  include/acpi/acpi_bus.h           |    8 --------
+> >  6 files changed, 9 insertions(+), 19 deletions(-)
+> > 
+> > Index: linux-pm/drivers/acpi/bus.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/bus.c
+> > +++ linux-pm/drivers/acpi/bus.c
+> > @@ -311,9 +311,7 @@ static void acpi_bus_osc_support(void)
+> >  	capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_PPC_OST_SUPPORT;
+> >  #endif
+> >  
+> > -#ifdef ACPI_HOTPLUG_OST
+> >  	capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_HOTPLUG_OST_SUPPORT;
+> > -#endif
+> >  
+> >  	if (!ghes_disable)
+> >  		capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_APEI_SUPPORT;
+> > @@ -410,7 +408,7 @@ static void acpi_bus_notify(acpi_handle
+> >  	return;
+> >  
+> >   err:
+> > -	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+> > +	acpi_evaluate_ost(handle, type, ost_code, NULL);
+> >  }
+> >  
+> >  /* --------------------------------------------------------------------------
+> > Index: linux-pm/include/acpi/acpi_bus.h
+> > ===================================================================
+> > --- linux-pm.orig/include/acpi/acpi_bus.h
+> > +++ linux-pm/include/acpi/acpi_bus.h
+> > @@ -51,14 +51,6 @@ acpi_evaluate_reference(acpi_handle hand
+> >  acpi_status
+> >  acpi_evaluate_ost(acpi_handle handle, u32 source_event, u32 status_code,
+> >  		  struct acpi_buffer *status_buf);
+> > -#ifdef ACPI_HOTPLUG_OST
+> > -#define	acpi_evaluate_hotplug_ost	acpi_evaluate_ost
+> > -#else
+> > -static inline acpi_status
+> > -acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
+> > -			u32 status_code, struct acpi_buffer *status_buf)
+> > -{ return AE_OK; }
+> > -#endif
+> >  
+> >  acpi_status
+> >  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
+> > Index: linux-pm/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/scan.c
+> > +++ linux-pm/drivers/acpi/scan.c
+> > @@ -463,8 +463,8 @@ static int acpi_generic_hotplug_event(st
+> >  			dev_info(&adev->dev, "Eject disabled\n");
+> >  			return -EPERM;
+> >  		}
+> > -		acpi_evaluate_hotplug_ost(adev->handle, ACPI_NOTIFY_EJECT_REQUEST,
+> > -					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> > +		acpi_evaluate_ost(adev->handle, ACPI_NOTIFY_EJECT_REQUEST,
+> > +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> >  		return acpi_scan_hot_remove(adev);
+> >  	}
+> >  	return -EINVAL;
+> > @@ -514,7 +514,7 @@ void acpi_device_hotplug(void *data, u32
+> >  		ost_code = ACPI_OST_SC_SUCCESS;
+> >  
+> >   err_out:
+> > -	acpi_evaluate_hotplug_ost(adev->handle, src, ost_code, NULL);
+> > +	acpi_evaluate_ost(adev->handle, src, ost_code, NULL);
+> >  
+> >   out:
+> >  	acpi_bus_put_acpi_device(adev);
+> > @@ -574,8 +574,8 @@ acpi_eject_store(struct device *d, struc
+> >  		return count;
+> >  
+> >  	put_device(&acpi_device->dev);
+> > -	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
+> > -				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
+> > +	acpi_evaluate_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
+> > +			  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
+> >  	return status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
+> >  }
+> >  
+> > Index: linux-pm/drivers/acpi/utils.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/utils.c
+> > +++ linux-pm/drivers/acpi/utils.c
+> > @@ -422,7 +422,7 @@ out:
+> >  EXPORT_SYMBOL(acpi_get_physical_device_location);
+> >  
+> >  /**
+> > - * acpi_evaluate_hotplug_ost: Evaluate _OST for hotplug operations
+> > + * acpi_evaluate_ost: Evaluate _OST for hotplug operations
+> >   * @handle: ACPI device handle
+> >   * @source_event: source event code
+> >   * @status_code: status code
+> > Index: linux-pm/drivers/xen/xen-acpi-cpuhotplug.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/xen/xen-acpi-cpuhotplug.c
+> > +++ linux-pm/drivers/xen/xen-acpi-cpuhotplug.c
+> > @@ -313,7 +313,7 @@ static void acpi_processor_hotplug_notif
+> >  		goto out;
+> >  	}
+> >  
+> > -	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
+> > +	(void) acpi_evaluate_ost(handle, event, ost_code, NULL);
+> >  
+> >  out:
+> >  	acpi_scan_lock_release();
+> > Index: linux-pm/drivers/xen/xen-acpi-memhotplug.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/xen/xen-acpi-memhotplug.c
+> > +++ linux-pm/drivers/xen/xen-acpi-memhotplug.c
+> > @@ -285,7 +285,7 @@ static void acpi_memory_device_notify(ac
+> >  		return;
+> >  	}
+> >  
+> > -	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
+> > +	(void) acpi_evaluate_ost(handle, event, ost_code, NULL);
+> >  	return;
+> >  }
+> >  
+> > 
 
 -- 
 I speak only for myself.
