@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaBUV7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:59:51 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:54346 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103AbaBUV7t (ORCPT
+	id S1754766AbaBUWDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:03:50 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11798 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957AbaBUWDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:59:49 -0500
-Message-ID: <5307CC50.4070502@webreactor.eu>
-Date: Fri, 21 Feb 2014 22:59:44 +0100
-From: Marcin Lulek <admin@webreactor.eu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Feb 2014 17:03:48 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19wrNIhmOpMp7VxzS3F7AFBWzJXJqsuUFc=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 2155A52FB93
+Date: Fri, 21 Feb 2014 17:03:30 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: [GIT PULL V2] irqchip: mvebu fixes for v3.14
+Message-ID: <20140221220330.GN7862@titan.lakedaemon.net>
+References: <20140218162210.GU7862@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3.14-rc3] input: Add device id for Thrustmaster GPX Gamepad
- for joystick/xpad.c driver
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218162210.GU7862@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thomas,
 
-It seems xpad driver misses quite a few newer device id's for gamepads 
-which leads to wrong recognition.
+Here it is.  Sorry for the delay.  I was under the weather past couple
+days.
 
+thx,
 
- From 18d5a1b290e4b39596e200449aaac6b93c035d63 Mon Sep 17 00:00:00 2001
-From: Marcin Lulek <info@webreactor.eu>
-Date: Fri, 21 Feb 2014 22:11:46 +0100
-Subject: [PATCH 1/1] Add device id for Thrustmaster GPX Gamepad for
-  joystick/xpad.c driver
+Jason.
 
-Signed-off-by: Marcin Lulek <info@webreactor.eu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Thomaz de Oliveira dos Reis <thor27@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
----
-  drivers/input/joystick/xpad.c | 1 +
-  1 file changed, 1 insertion(+)
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 603fe0d..b94668f 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -124,6 +124,7 @@ static const struct xpad_device {
-      { 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", 
-MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
-      { 0x045e, 0x0719, "Xbox 360 Wireless Receiver", 
-MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
-      { 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
-+    { 0x24c6, 0x5b02, "Thrustmaster, Inc. GPX Controller", 0, 
-XTYPE_XBOX360 },
-      { 0x046d, 0xc21d, "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
-      { 0x046d, 0xc21f, "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
-      { 0x046d, 0xc242, "Logitech Chillstream Controller", 0, 
-XTYPE_XBOX360 },
--- 
-1.8.3.2
+are available in the git repository at:
 
+  git://git.infradead.org/linux-mvebu.git tags/irqchip-mvebu-fixes-3.14
+
+for you to fetch changes up to d86e9af6336c0ad586a5dbd70064253d40bbb5ff:
+
+  irqchip: orion: Fix getting generic chip pointer. (2014-02-21 21:46:56 +0000)
+
+----------------------------------------------------------------
+irqchip mvebu fixes for v3.14
+
+ - orion:
+    - fixes for clearing bridge cause register, and clearing stale interrupts
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      irqchip: orion: Fix getting generic chip pointer.
+
+Sebastian Hesselbarth (3):
+      irqchip: orion: clear bridge cause register on init
+      irqchip: orion: use handle_edge_irq on bridge irqs
+      irqchip: orion: clear stale interrupts in irq_startup
+
+ drivers/irqchip/irq-orion.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
