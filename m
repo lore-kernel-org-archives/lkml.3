@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131AbaBUX2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:28:07 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:43761 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaBUX2F (ORCPT
+	id S1754375AbaBUXbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:31:20 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44577 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaBUXbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:28:05 -0500
-Date: Fri, 21 Feb 2014 15:28:01 -0800
-From: Jens <axboe@kernel.dk>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] fs/bio-integrity: remove duplicate code
-Message-ID: <20140221232801.GC29129@kernel.dk>
-References: <53072633.2010106@cn.fujitsu.com>
+	Fri, 21 Feb 2014 18:31:19 -0500
+Date: Sat, 22 Feb 2014 00:31:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dan Williams <dan.j.williams@intel.com>
+cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Mike Galbraith <bitbucket@online.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] ioat: fix tasklet tear down
+In-Reply-To: <CAPcyv4h0iHXt5jioOt=WMmrobJ-6Si2SALxGZoibJphB2=+XkQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402220030560.21251@ionos.tec.linutronix.de>
+References: <20140220071145.21609.89019.stgit@viggo.jf.intel.com> <alpine.DEB.2.02.1402201102290.4468@ionos.tec.linutronix.de> <CAPcyv4h0iHXt5jioOt=WMmrobJ-6Si2SALxGZoibJphB2=+XkQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53072633.2010106@cn.fujitsu.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21 2014, Gu Zheng wrote:
-> Most code of function bio_integrity_verify and bio_integrity_generate
-> is the same, so introduce a help function bio_integrity_generate_verify()
-> to remove the duplicate code.
+On Thu, 20 Feb 2014, Dan Williams wrote:
+> On Thu, Feb 20, 2014 at 2:30 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > That's 18 of 30 usage sites. Impressive....
+> >
+> > We need to poke the relevant maintainers to get this solved.
+> >
+> 
+> Maybe also rename tasklet_disable() to tasklet_pause() to make it
+> clearer "this isn't the tasklet cleanup routine you're looking for"?
 
-Thanks, queued up for the next release.
+Indeed.
 
--- 
-Jens Axboe
-
+ 
