@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaBUUnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 15:43:45 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:33967 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaBUUno (ORCPT
+	id S1755439AbaBUUqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 15:46:17 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5880 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbaBUUqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 15:43:44 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 0/3] Binder ABI updates for 64bit systems for staging-next
-Date: Fri, 21 Feb 2014 12:43:31 -0800
-Message-Id: <1393015414-12499-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 21 Feb 2014 15:46:16 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 21 Feb 2014 12:43:53 -0800
+Message-ID: <5307BA97.5080809@nvidia.com>
+Date: Fri, 21 Feb 2014 12:44:07 -0800
+From: Sai <sgurrappadi@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, <pboonstoppel@nvidia.com>,
+        <pwalmsley@nvidia.com>, <fweisbec@gmail.com>
+Subject: Re: [RFC PATCH] sched: Update cpu_load before nohz ilb
+References: <53067C82.4080807@nvidia.com>
+In-Reply-To: <53067C82.4080807@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanted to re-submit to staging-next two changes from the AOSP
-common.git android-3.10 branch, which provide ABI fixes and
-introduce a new ABI and protocol version for binder, along
-with compatibility support for existing systems.
++ More people.
 
-This new ABI allows for both 32bit and 64bit applications
-to co-exist, which wasn't previously possible due to word
-size assumptions in the binder protocol.
-
-Also included is a minor tweak from me to make the Kconfig
-compatibility entry a bit more clear.
-
-The changes have been updated to improve their commit message
-since the last time they were submitted. Thanks to Arve for the
-extra context and Serban for help with the wording.
-
-thanks
--john
-
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-
-
-Arve Hjønnevåg (1):
-  staging: binder: Support concurrent 32 bit and 64 bit processes.
-
-John Stultz (1):
-  staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
-
-Serban Constantinescu (1):
-  staging: binder: Fix ABI for 64bit Android
-
- drivers/staging/android/Kconfig        |  13 ++
- drivers/staging/android/binder.c       | 268 ++++++++++++++++++---------------
- drivers/staging/android/binder.h       |   4 +
- drivers/staging/android/binder_trace.h |  14 +-
- drivers/staging/android/uapi/binder.h  |  77 ++++++----
- 5 files changed, 224 insertions(+), 152 deletions(-)
-
--- 
-1.8.3.2
-
+On 02/20/2014 02:06 PM, Sai wrote:
+> Update the cpu_load of the kickee in run_rebalance_domains before
+> calling rebalance_domains if the kickee is in nohz_idle. This avoids
+> using stale cpu_load for the subsequent load_balance.
+> 
+> cpu_load in the nohz path is updated on tick_nohz_idle_exit or if a
+> kickee performances balancing on the behalf of tickless cpus in
+> nohz_idle_balance. However, the kickee's cpu_load is never updated if it
+> doesn't exit nohz_idle. This causes stale cpu_load to be used which
+> causes incorrect load balancing decisions.
+> 
+> Tested on k3.10.
+> 
+> Signed-off-by: Sai Gurrappadi <sgurrappadi@nvidia.com>
+> ---
+>  kernel/sched/fair.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 860a152..1d4eb4a 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -7140,6 +7140,13 @@ static void run_rebalance_domains(struct
+> softirq_action *h)
+>         enum cpu_idle_type idle = this_rq->idle_balance ?
+>                                                 CPU_IDLE : CPU_NOT_IDLE;
+> 
+> +       if (test_bit(NOHZ_BALANCE_KICK, nohz_flags(this_rq->cpu))) {
+> +               raw_spin_lock_irq(&this_rq->lock);
+> +               update_rq_clock(this_rq);
+> +               update_idle_cpu_load(this_rq);
+> +               raw_spin_unlock_irq(&this_rq->lock);
+> +       }
+> +
+>         rebalance_domains(this_rq, idle);
+> 
+>         /*
+> 
