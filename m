@@ -1,98 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaBUXYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:24:03 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:64491 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365AbaBUXYB (ORCPT
+	id S1754131AbaBUX2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:28:07 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:43761 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaBUX2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:24:01 -0500
+	Fri, 21 Feb 2014 18:28:05 -0500
+Date: Fri, 21 Feb 2014 15:28:01 -0800
+From: Jens <axboe@kernel.dk>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs/bio-integrity: remove duplicate code
+Message-ID: <20140221232801.GC29129@kernel.dk>
+References: <53072633.2010106@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1402212255590.21251@ionos.tec.linutronix.de>
-References: <1393019430-13200-1-git-send-email-john.stultz@linaro.org>
-	<alpine.DEB.2.02.1402212255590.21251@ionos.tec.linutronix.de>
-Date: Fri, 21 Feb 2014 15:24:00 -0800
-Message-ID: <CALAqxLUJYT9G2ekEk_BoNNL4T6Pjiq56KR_i87GLnSuyddWS0Q@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] time: Improve negative offset handling in timekeeping_inject_offset
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53072633.2010106@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 2:54 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 21 Feb 2014, John Stultz wrote:
->> I fully agree with this, but since the existing interface
->> only accepts #7 style negative timespecs, we have to continue
->> to support that style for this interface.
->>
->> Another possible view is that the rule that the tv_nsec
->> value always be [0,1e9). And that while maybe non-intuitive,
->> the #7 style representations are valid and the existing
->> interface is correct, thus no further change is needed.
->
-> We have the requirement all over the place in the kernel to use
-> normalized timespecs in the #7 form where: 0 <= tv_nsec < 1e9
->
-[snip]
-> If you have the 0 <= tv_nsec < 1e9 enforcement, then you catch that
-> issue way before the add actually makes the tv_nsec value negative and
-> causes some undechifferable wreckage.
->
-> Sure you might argue that the requirement is:
->
->      -1e9 < tv_nsec < 1e9
->
-> but then you need to allow all combinations of signs of tv_sec/tv_nsec
-> just for compatibility reasons.
->
-> Sure our normalize function can cope with that, but where is the
-> point?
->
-> We already enforce the 0 <= tv_nsec < 1e9 on all timespec interfaces
-> (kernel interal and syscalls), which in turn forces people to use
-> timespec_add/sub_ns or timespec_normalize.
+On Fri, Feb 21 2014, Gu Zheng wrote:
+> Most code of function bio_integrity_verify and bio_integrity_generate
+> is the same, so introduce a help function bio_integrity_generate_verify()
+> to remove the duplicate code.
 
-Though we also require timespecs to be for positive intervals (at
-least from a user-space side), so this case doesn't have a whole bunch
-of precedent to follow.
+Thanks, queued up for the next release.
 
-And as an in-kernel counter example, I think the wall_to_monotonic
-timespec is represented in {-1, -500} style.
+-- 
+Jens Axboe
 
-
-> Why can't the adjtimex folks not handle that? They already have to
-> handle the kernel readouts which are in the normalized form. So what's
-> the problem to feed their computational value through
-> normalize/sub/add whatever before handing it to the kernel.
-
-Having libc handle the translation is indeed another option (one
-Richard already brought up in private).  It rubs me a little bit the
-wrong way as its fairly easy to handle this in kernel and then we
-don't have compatability issues depending on what the libc
-implementation does.
-
-[snip]
-> I really prefer that people use proper helper functions to
-> add/sub/normalize timespecs into a single representation instead of
-> having to look at a gazillion of permutations of the same unparseable
-> crap.
->
-> Aside of that, if we allow that for adjtimex, then how do we argue the
-> restriction on all other timespec related interfaces?
-
-I'd say the rule that the signs must agree is a good one to start out
-with. However, in the case with this interface, we allow for the
-awkward {-3,500} style values to be compatible with earlier releases.
-
-But yes, we can just leave it as is, and it is a bit academic. But
-mostly for me this is just about making the interface a bit more
-intuitive when working with negative relative intervals, and maybe
-more importantly making clear the precedent should any other userspace
-interface do something similar.
-
-thanks
--john
