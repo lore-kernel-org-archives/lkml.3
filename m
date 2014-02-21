@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaBUMti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:49:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46784 "EHLO
+	id S1755894AbaBUMtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:49:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46788 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585AbaBUMtg (ORCPT
+	with ESMTP id S1755737AbaBUMtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 07:49:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 019/121] pinctrl: protect pinctrl_list add
-Date: Fri, 21 Feb 2014 12:47:23 +0000
-Message-Id: <1392986945-9693-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/121] drm/mgag200: fix typo causing bw limits to be ignored on some chips
+Date: Fri, 21 Feb 2014 12:47:24 +0000
+Message-Id: <1392986945-9693-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 7b320cb1ed2dbd2c5f2a778197baf76fd6bf545a upstream.
+commit ec22b4aa993abbd18f5bbbcb20a1c56be3b1d38b upstream.
 
-We have few fedora bug reports about list corruption on pinctrl,
-for example:
-https://bugzilla.redhat.com/show_bug.cgi?id=1051918
+mode->mdev otherwise the bw limits never kick in.
 
-Most likely corruption happen due lack of protection of pinctrl_list
-when adding new nodes to it. Patch corrects that.
+Reported in RHEL testing.
 
-Fixes: 42fed7ba44e ("pinctrl: move subsystem mutex to pinctrl_dev struct")
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pinctrl/core.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/mgag200/mgag200_mode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 2a00239..dbcf284 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -827,7 +827,9 @@ static struct pinctrl *create_pinctrl(struct device *dev)
- 	kref_init(&p->users);
- 
- 	/* Add the pinctrl handle to the global list */
-+	mutex_lock(&pinctrl_list_mutex);
- 	list_add_tail(&p->node, &pinctrl_list);
-+	mutex_unlock(&pinctrl_list_mutex);
- 
- 	return p;
- }
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index 503a414..1288cd9 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -1521,11 +1521,11 @@ static int mga_vga_mode_valid(struct drm_connector *connector,
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (32700 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_EH &&
++	} else if (mdev->type == G200_EH &&
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (37500 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_ER &&
++	} else if (mdev->type == G200_ER &&
+ 		(mga_vga_calculate_mode_bandwidth(mode,
+ 			bpp) > (55000 * 1024))) {
+ 		return MODE_BANDWIDTH;
 -- 
 1.9.0
 
