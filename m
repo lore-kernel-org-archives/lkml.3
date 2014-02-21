@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbaBUBXC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:23:02 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:13385
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754337AbaBUBW7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:22:59 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI9371Ic89bh936eI1454I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
-Date: Thu, 20 Feb 2014 17:22:51 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Grant Likely <grant.likely@linaro.org>
-CC: Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kevin Hao <haokexin@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
-References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
- <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
- <CACxGe6sg7FpJqAUjkU5DkUpiV_mDbtSV3RETtiQdACUXhRtRrg@mail.gmail.com>
+	id S1755297AbaBUBai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:30:38 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:50740 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754337AbaBUBag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 20:30:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6sg7FpJqAUjkU5DkUpiV_mDbtSV3RETtiQdACUXhRtRrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <91d21c6c-a87a-46bf-8036-c8f769e32399@VA3EHSMHS018.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Feb 2014 18:30:15 -0700
+Message-ID: <CAErSpo7z9-gTGLHT8gOGC-KHek-kzNBtWVMWQEU8DWn3PekmTw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] Remove dead code
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Cc: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Joerg Roedel <joro@8bytes.org>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Aaron F Brown <aaron.f.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Tue, Feb 18, 2014 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> This is v2 of my rework of part of Stephen's patch [1].  My v1 posting,
+> with a little discussion, is here [2].
+>
+> This removes SR-IOV migration support, which seems to be unused.
+>
+> Changes since v1:
+>   - Drop the removal of MMIO exclusivity.
+>   - Add a few includes of <linux/irqreturn.h>.  The SR-IOV migration
+>     support included irqreturn.h via linux/pci.h, and a few drivers relied
+>     on that.  So this v2 series updates those drivers to include
+>     irqreturn.h directly.
+>
+> Unless there's objection, I'd like to merge all these through my PCI tree
+> for v3.15.
 
-On Thu, 2014-02-20 at 11:29AM +0000, Grant Likely wrote:
-> On Thu, Feb 20, 2014 at 8:39 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> > Hi Grant,
-> >
-> > I observe the following boot failure with today's (next-20140220) linux-next
-> > tree on Exynos based boards with the default exynos_defconfig.
-> 
-> Ugh, nested locking. that is not good. Kevin's patch looks correct and
-> I'll merge it in. I'm a little disturbed though that you're the only
-> one who has reported problems. Looking at what it does I would expect
-> pretty much every SMP platform for freak out about this, but I've
-> heard nothing from the powerpc guys.
-> 
-> I'll merge in the fix of course, but I'd like to know what I'm missing.
+I applied these to my pci/dead-code branch, which is now in -next, for v3.15.
 
-FWIW, I see a deadlock on Zynq (ARM) as well. The proposed patch
-resolves it. Feel free to add my
-Tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-
-	Sören
-
-
+> Bjorn
+>
+> [1] http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
+> [2] https://lkml.kernel.org/r/20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com
+>
+> ---
+>
+> Bjorn Helgaas (4):
+>       misc: mic: Add include of <linux/irqreturn.h>
+>       mei: Add include of <linux/irqreturn.h>
+>       iommu/amd: Add include of <linux/irqreturn.h>
+>       PCI: Remove unused SR-IOV VF Migration support
+>
+>
+>  Documentation/PCI/pci-iov-howto.txt |    4 -
+>  drivers/iommu/amd_iommu_types.h     |    1
+>  drivers/misc/mei/hw-me.h            |    1
+>  drivers/misc/mic/card/mic_device.h  |    1
+>  drivers/misc/mic/host/mic_device.h  |    1
+>  drivers/pci/iov.c                   |  119 -----------------------------------
+>  drivers/pci/pci.h                   |    4 -
+>  include/linux/pci.h                 |    4 -
+>  8 files changed, 4 insertions(+), 131 deletions(-)
