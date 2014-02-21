@@ -1,235 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566AbaBUPsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:48:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2324 "EHLO mx1.redhat.com"
+	id S932592AbaBUPs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51510 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932338AbaBUPrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:47:40 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Jon Mason <jon.mason@intel.com>,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 3/4] ntb: Split ntb_setup_msix() into separate BWD/SNB routines
-Date: Fri, 21 Feb 2014 16:49:31 +0100
-Message-Id: <bb2b61719e4dd15c29bc8022e76a9463d548f561.1392996332.git.agordeev@redhat.com>
-In-Reply-To: <cover.1392996332.git.agordeev@redhat.com>
-References: <cover.1392996332.git.agordeev@redhat.com>
+	id S932274AbaBUPs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:48:26 -0500
+Date: Fri, 21 Feb 2014 16:48:23 +0100
+From: Jan Kara <jack@suse.cz>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: poma <pomidorabelisima@gmail.com>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, eparis@parisplace.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: BUG: unable to handle kernel paging request at 0000000100000003
+ - Oops: 0000 [#1] SMP
+Message-ID: <20140221154823.GA21405@quack.suse.cz>
+References: <53073B1A.3040709@gmail.com>
+ <CAFLxGvygOyXrMt=UBnMUziVFG40sEQvRquGKV8kyrhdp-_NrgQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvygOyXrMt=UBnMUziVFG40sEQvRquGKV8kyrhdp-_NrgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an cleanup effort to make ntb_setup_msix() more
-readable - use ntb_setup_bwd_msix() to init MSI-Xs on
-BWD hardware and ntb_setup_snb_msix() - on SNB hardware.
+On Fri 21-02-14 14:08:03, Richard Weinberger wrote:
+> On Fri, Feb 21, 2014 at 12:40 PM, poma <pomidorabelisima@gmail.com> wrote:
+> >
+> > Affected kernels - 3.14.0-0.rc3*:
+> >
+> > - 3.14.0-0.rc3.git0.1
+> >   http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
+> >
+> > - 3.14.0-0.rc3.git0.7 based on 3.14.0-0.rc3.git0.1
+> >
+> > - 3.14.0-0.rc3.git2.1
+> >   http://koji.fedoraproject.org/koji/buildinfo?buildID=499061
+> >
+> > - 3.14.0-0.rc3.git5.1
+> >   http://koji.fedoraproject.org/koji/buildinfo?buildID=499636
+> >
+> > Memtest86+ 4.20 - OK
+> > http://goo.gl/1nm1nV
+> >
+> > RHBZ
+> > https://bugzilla.redhat.com/show_bug.cgi?id=1067919
+> >
+> > messages-Oops-es-3.14.0-0.rc3
+> > https://bugzilla.redhat.com/attachment.cgi?id=865926
+> 
+> Maybe commits 7053aee26a3548ebaba046ae2e52396ccf56ac6c (fsnotify: do
+> not share events between notification groups)
+> and 85816794240b9659e66e4d9b0df7c6e814e5f603 (fanotify: Fix use after
+> free for permission events) introduced this regression.
+  So the immediate problem seems to be that event->tgid is 0xffffffff
+instead of a pointer. I don't see how this could be use after free and we
+unconditionally initialize event->tgid to something sensible. Hum, but if
+it is an overflow event, we are in a trouble since that doesn't have ->tgid
+field at all so we read random crap that happens to be beyond the event
+structure. Actually there seem to be more problems in the handling of
+overflow event so I better add that to my testing (both for fanotify and
+inotify). I'll work on the fix. Thanks for report!
 
-Function ntb_setup_snb_msix() also initializes MSI-Xs the
-way it should has been done - looping pci_enable_msix()
-until success or failure.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: linux-pci@vger.kernel.org
----
- drivers/ntb/ntb_hw.c |  170 +++++++++++++++++++++++++++++++-------------------
- 1 files changed, 106 insertions(+), 64 deletions(-)
-
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 53468f4..0472045 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1079,6 +1079,107 @@ static irqreturn_t ntb_interrupt(int irq, void *dev)
- 	return IRQ_HANDLED;
- }
- 
-+static int ntb_setup_snb_msix(struct ntb_device *ndev, int msix_entries)
-+{
-+	struct pci_dev *pdev = ndev->pdev;
-+	struct msix_entry *msix;
-+	int rc, i;
-+
-+	if (msix_entries < SNB_MSIX_CNT)
-+		return -ENOSPC;
-+
-+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+	if (rc < 0)
-+		return rc;
-+	else if (rc > 0)
-+		return -ENOSPC;
-+
-+	for (i = 0; i < msix_entries; i++) {
-+		msix = &ndev->msix_entries[i];
-+		WARN_ON(!msix->vector);
-+
-+		if (i == msix_entries - 1) {
-+			rc = request_irq(msix->vector,
-+					 xeon_event_msix_irq, 0,
-+					 "ntb-event-msix", ndev);
-+			if (rc)
-+				goto err;
-+		} else {
-+			rc = request_irq(msix->vector,
-+					 xeon_callback_msix_irq, 0,
-+					 "ntb-callback-msix",
-+					 &ndev->db_cb[i]);
-+			if (rc)
-+				goto err;
-+		}
-+	}
-+
-+	ndev->num_msix = msix_entries;
-+	ndev->max_cbs = msix_entries - 1;
-+
-+	return 0;
-+
-+err:
-+	while (--i >= 0) {
-+		msix = &ndev->msix_entries[i];
-+		WARN_ON(i == ndev->num_msix - 1);
-+
-+		if (i == ndev->num_msix - 1)
-+			free_irq(msix->vector, ndev);
-+		else
-+			free_irq(msix->vector, &ndev->db_cb[i]);
-+	}
-+
-+	pci_disable_msix(pdev);
-+	ndev->num_msix = 0;
-+
-+	return rc;
-+}
-+
-+static int ntb_setup_bwd_msix(struct ntb_device *ndev, int msix_entries)
-+{
-+	struct pci_dev *pdev = ndev->pdev;
-+	struct msix_entry *msix;
-+	int rc, i;
-+
-+retry:
-+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
-+	if (rc < 0)
-+		return rc;
-+	else if (rc > 0) {
-+		dev_warn(&pdev->dev,
-+			 "Only %d MSI-X vectors. "
-+			 "Limiting the number of queues to that number.\n",
-+			 rc);
-+		msix_entries = rc;
-+		goto retry;
-+	}
-+
-+	for (i = 0; i < msix_entries; i++) {
-+		msix = &ndev->msix_entries[i];
-+		WARN_ON(!msix->vector);
-+
-+		rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
-+				 "ntb-callback-msix", &ndev->db_cb[i]);
-+		if (rc)
-+			goto err;
-+	}
-+
-+	ndev->num_msix = msix_entries;
-+	ndev->max_cbs = msix_entries;
-+
-+	return 0;
-+
-+err:
-+	while (--i >= 0)
-+		free_irq(msix->vector, &ndev->db_cb[i]);
-+
-+	pci_disable_msix(pdev);
-+	ndev->num_msix = 0;
-+
-+	return rc;
-+}
-+
- static int ntb_setup_msix(struct ntb_device *ndev)
- {
- 	struct pci_dev *pdev = ndev->pdev;
-@@ -1105,78 +1206,19 @@ static int ntb_setup_msix(struct ntb_device *ndev)
- 	for (i = 0; i < msix_entries; i++)
- 		ndev->msix_entries[i].entry = i;
- 
--	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
--	if (rc < 0)
--		goto err1;
--	if (rc > 0) {
--		/* On SNB, the link interrupt is always tied to 4th vector.  If
--		 * we can't get all 4, then we can't use MSI-X.
--		 */
--		if (ndev->hw_type != BWD_HW) {
--			rc = -EIO;
--			goto err1;
--		}
--
--		dev_warn(&pdev->dev,
--			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
--			 rc);
--		msix_entries = rc;
--
--		rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
--		if (rc)
--			goto err1;
--	}
--
--	for (i = 0; i < msix_entries; i++) {
--		msix = &ndev->msix_entries[i];
--		WARN_ON(!msix->vector);
--
--		/* Use the last MSI-X vector for Link status */
--		if (ndev->hw_type == BWD_HW) {
--			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
--					 "ntb-callback-msix", &ndev->db_cb[i]);
--			if (rc)
--				goto err2;
--		} else {
--			if (i == msix_entries - 1) {
--				rc = request_irq(msix->vector,
--						 xeon_event_msix_irq, 0,
--						 "ntb-event-msix", ndev);
--				if (rc)
--					goto err2;
--			} else {
--				rc = request_irq(msix->vector,
--						 xeon_callback_msix_irq, 0,
--						 "ntb-callback-msix",
--						 &ndev->db_cb[i]);
--				if (rc)
--					goto err2;
--			}
--		}
--	}
--
--	ndev->num_msix = msix_entries;
- 	if (ndev->hw_type == BWD_HW)
--		ndev->max_cbs = msix_entries;
-+		rc = ntb_setup_bwd_msix(ndev, msix_entries);
- 	else
--		ndev->max_cbs = msix_entries - 1;
-+		rc = ntb_setup_snb_msix(ndev, msix_entries);
-+	if (rc)
-+		goto err1;
- 
- 	return 0;
- 
--err2:
--	while (--i >= 0) {
--		msix = &ndev->msix_entries[i];
--		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
--			free_irq(msix->vector, ndev);
--		else
--			free_irq(msix->vector, &ndev->db_cb[i]);
--	}
--	pci_disable_msix(pdev);
- err1:
- 	kfree(ndev->msix_entries);
--	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
- err:
--	ndev->num_msix = 0;
-+	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
- 	return rc;
- }
- 
+								Honza
 -- 
-1.7.7.6
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
