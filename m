@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbaBUCAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:00:50 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:56072 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaBUCAs (ORCPT
+	id S1754415AbaBUCHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:07:34 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:51074 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752394AbaBUCHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:00:48 -0500
-From: "Zhao\, Gang" <gamerh2o@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        devel@driverdev.osuosl.org, mark.einon@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] et131x: fix allocation failures
-References: <20140217141252.26738.33549.stgit@alan.etchedpixels.co.uk>
-	<874n3v52fo.fsf@will.lan>
-	<20140219114315.5af78dfe@alan.etchedpixels.co.uk>
-	<8738jefpta.fsf@will.lan> <20140220090339.GW26722@mwanda>
-Date: Fri, 21 Feb 2014 10:00:19 +0800
-In-Reply-To: <20140220090339.GW26722@mwanda> (Dan Carpenter's message of "Thu,
-	20 Feb 2014 12:03:39 +0300")
-Message-ID: <87y515dy30.fsf@will.lan>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 20 Feb 2014 21:07:32 -0500
+X-Greylist: delayed 1362 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Feb 2014 21:07:32 EST
+Message-ID: <5306B4DF.4000901@hurleysoftware.com>
+Date: Thu, 20 Feb 2014 21:07:27 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <tj@kernel.org>
+CC: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+References: <1392929071-16555-1-git-send-email-tj@kernel.org> <1392929071-16555-5-git-send-email-tj@kernel.org> <5306AF8E.3080006@hurleysoftware.com> <20140221015935.GF6897@htj.dyndns.org>
+In-Reply-To: <20140221015935.GF6897@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-20 at 17:03:39 +0800, Dan Carpenter wrote:
-> On Thu, Feb 20, 2014 at 11:03:45AM +0800, Zhao, Gang wrote:
->> On Wed, 2014-02-19 at 19:43:15 +0800, One Thousand Gnomes wrote:
->> > On Wed, 19 Feb 2014 09:14:19 +0800
->> > "Zhao\, Gang" <gamerh2o@gmail.com> wrote:
->> >
->> >> Alan, thanks for resending this patch. But it seems you overlooked
->> >> something we discussed earlier.
->> >> 
->> >> On Mon, 2014-02-17 at 22:13:08 +0800, Alan wrote:
->> >> > We should check the ring allocations don't fail.
->> >> > If we get a fail we need to clean up properly. The allocator assumes the
->> >> > deallocator will be used on failure, but it isn't. Make sure the
->> >> > right deallocator is always called and add a missing check against
->> >> > fbr allocation failure.
->> >> >
->> >> > [v2]: Correct check logic
->> >> >
->> >> > Signed-off-by: Alan Cox <alan@linux.intel.com>
->> >> > ---
->> >> >  drivers/staging/et131x/et131x.c |    9 +++++++--
->> >> >  1 file changed, 7 insertions(+), 2 deletions(-)
->> >> >
->> >> > diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
->> >> > index 6413500..cc600df 100644
->> >> > --- a/drivers/staging/et131x/et131x.c
->> >> > +++ b/drivers/staging/et131x/et131x.c
->> >> > @@ -2124,7 +2124,11 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
->> >> >  
->> >> >  	/* Alloc memory for the lookup table */
->> >> >  	rx_ring->fbr[0] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
->> >> > +	if (rx_ring->fbr[0] == NULL)
->> >> > +		return -ENOMEM;
->> >> >  	rx_ring->fbr[1] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
->> >> > +	if (rx_ring->fbr[1] == NULL)
->> >> > +		return -ENOMEM;
->> >> 
->> >> Shouldn't rx_ring->fbr[0] be freed when allocation of rx_ring->fbr[1]
->> >> fails ? Or we will leak memory here.
->> >
->> > No.. the tx_dma_memory_free and rx_dma_memory_free functions are
->> > designed to handle incomplete set up. They are now called on incomplete
->> > setup and will clean up all the resources.
->> >
->> 
->> Yes, you are right. By calling {tx, rx}_dma_memory_free the memory will
->> be freed.
->> 
->> But I think a comment is needed here, to make this more clear ? Without
->> proper comment the above code looks a little strange to let one think
->> it's right. :)
+On 02/20/2014 08:59 PM, Tejun Heo wrote:
+> Hello,
 >
-> No.  We don't need a comment.  If people start adding kfree() calls
-> all over the place without thinking then we are already screwed and no
-> comment is going to help us.
-
-Hi, I thought this a little more.
-
-AFAIK, most functions deal with this "fail in the middle" allocation
-failure themselves. Honestly, relying on the caller to handle this type
-of error seems a bad idea to me.
-
-Code reviewer has to check *every* caller of this function to make sure
-whether rx_ring->fbr[0] is leaked or not when allocation of
-rx_ring->fbr[1] fails.(By examing if the caller called the correct
-freeing function when this function returns error) This is just a waste
-of time. By freeing rx_ring->fbr[0] in this function the above type of
-memory leak can't be happen at the beginning.
-
-So now my suggestion is freeing rx_ring->fbr[0] *and* set the pointer
-rx_ring->fbr[0] to NULL when allocation of rx_ring->fbr[1] fails *in*
-this function. The freeing function which can handle "fail in the
-middle" allocation failure surely can handle this situation correctly,
-isn't it ?
-
+> On Thu, Feb 20, 2014 at 08:44:46PM -0500, Peter Hurley wrote:
+>>> +static void fw_device_workfn(struct work_struct *work)
+>>> +{
+>>> +	struct fw_device *device = container_of(to_delayed_work(work),
+>>> +						struct fw_device, work);
+>>
+>> I think this needs an smp_rmb() here.
 >
-> regards,
-> dan carpenter
+> The patch is equivalent transformation and the whole thing is
+> guaranteed to have gone through pool->lock.  No explicit rmb
+> necessary.
+
+The spin_unlock_irq(&pool->lock) only guarantees completion of
+memory operations _before_ the unlock; memory operations which occur
+_after_ the unlock may be speculated before the unlock.
+
+IOW, unlock is not a memory barrier for operations that occur after.
+
+>> IOW, the beginning of the work function should act like a barrier in
+>> the same way that queue_work_on() (et. al.) already does.
+>
+> workqueue already has enough barriers; otherwise, the whole kernel
+> would have crumbled long time ago.
+
+See above.
+
+Regards,
+Peter Hurley
