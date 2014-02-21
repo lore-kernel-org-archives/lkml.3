@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaBUPka (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:40:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54405 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131AbaBUPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:40:27 -0500
-Date: Fri, 21 Feb 2014 09:39:05 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-Message-ID: <20140221153905.GE31902@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
- <20140220182257.GF23217@saruman.home>
- <a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
+	id S932489AbaBUPkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:40:53 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:35613 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932368AbaBUPk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:40:29 -0500
+Date: Fri, 21 Feb 2014 10:40:25 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [cgroup/task_lock] INFO: suspicious RCU usage.
+Message-ID: <20140221154025.GB460@htj.dyndns.org>
+References: <20140221021622.GB13515@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lqaZmxkhekPBfBzr"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
+In-Reply-To: <20140221021622.GB13515@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---lqaZmxkhekPBfBzr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+On Fri, Feb 21, 2014 at 10:16:22AM +0800, Fengguang Wu wrote:
+> commit fb47fea7a59cf3d6387c566084a6684b5005af83
+> Author:     Tejun Heo <tj@kernel.org>
+> AuthorDate: Thu Feb 13 15:16:35 2014 -0500
+> Commit:     Tejun Heo <tj@kernel.org>
+> CommitDate: Thu Feb 13 15:16:35 2014 -0500
+> 
+>     cgroup: drop task_lock() protection around task->cgroups
+>     
+>     For optimization, task_lock() is additionally used to protect
+>     task->cgroups.  The optimization is pretty dubious as either
+>     css_set_rwsem is grabbed anyway or PF_EXITING already protects
+>     task->cgroups.  It adds only overhead and confusion at this point.
+>     Let's drop task_[un]lock() and update comments accordingly.
+>     
+>     Signed-off-by: Tejun Heo <tj@kernel.org>
+> 
+> [main] Setsockopt(1 2b 80d1000 4) on fd 223 [17:2:768]
+> [   27.030764] 
+> [   27.031119] ===============================
+> [   27.031833] [ INFO: suspicious RCU usage. ]
+> [   27.032536] 3.14.0-rc3-02458-g837caba #2 Not tainted
+> [   27.033378] -------------------------------
+> [   27.044237] include/linux/cgroup.h:697 suspicious rcu_dereference_check() usage!
+> [   27.045795] 
+> [   27.045795] other info that might help us debug this:
+> [   27.045795] 
+> [   27.047114] 
+> [   27.047114] rcu_scheduler_active = 1, debug_locks = 0
+> [main] Setsockopt(1 c 80d1000 4) on fd 225 [39:5:0]
+> [   27.048751] 2 locks held by trinity-c0/4479:
+> [   27.049478]  #0:  (callback_mutex){+.+...}, at: [<81118395>] cpuset_cpus_allowed+0x1e/0x123
+> [   27.051132]  #1:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<8111839c>] cpuset_cpus_allowed+0x25/0x123
+> [   27.052788] 
+> [   27.052788] stack backtrace:
+> [   27.053528] CPU: 0 PID: 4479 Comm: trinity-c0 Not tainted 3.14.0-rc3-02458-g837caba #2
+> [   27.064971]  00000000 00000000
+>  919eff28 81877cc3[main] Setsockopt(1 7 80d1000 4) on fd 226 [1:5:1]
 
-On Fri, Feb 21, 2014 at 11:27:07AM +0000, Subbaraya Sundeep Bhatta wrote:
-> > From the looks of it, I doubt this was actually tested, you need a lot
-> > of work on this driver.
-> Tested on both ARM and Microblaze architectures with Mass storage gadget.
-> Will send a v2 after addressing all your comments.
+So, this is from removing task_lock from task_css_set_check() and
+adding rcu_read_lock() in cpuset_cpus_allowed() should fix it.  I'm
+not sure how much of task_lock() locking we currently have in cpuset
+is actually necessary tho.  Shouldn't we be able to do most with just
+callback_mutex, if not cpuset_mutex?  Li, any ideas?
 
-clearly you didn't try to remove and reinsert the module or you would
-see a whole bunch of errors.
+Thanks.
 
-> This email and any attachments are intended for the sole use of the
-> named recipient(s) and contain(s) confidential information that may be
-> proprietary, privileged or copyrighted under applicable law. If you
-> are not the intended recipient, do not read, copy, or forward this
-> email message or any attachments. Delete this email message and any
-> attachments immediately.
-
-remove this footer message, btw, when sending emails to public mailing
-lists.
-
---=20
-balbi
-
---lqaZmxkhekPBfBzr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTB3MZAAoJEIaOsuA1yqREw7MP/2PCe42dNMiNbseVBAcFyptt
-LF85jcqOebK2WykWV0HacXmaP2LN+d8VOTMQyJXIFuNlQoocPQnX4GoGS8YMs8GF
-zPvrhGAiX/qHFl9GF46IWQWAVbNRHzJwdUnKSJH5X+MM80ya1jWCV7X7mDA/YPDE
-rH2MlxNq4pqJQfr18m6i7R5gQDzVtVwUTBXsbIWtR4HA5/KvYA/Tj9Orl51MqZuw
-epw/JX+FXgq0QbDfQKIVzTlvlReGCSdsN+5zQZ+pLv3PK6q+xBf1DfcZ3CSvz39F
-uXpn8M8xaj9V74l8M/E2FWBLAknbarTDGjW3E5ZHiMuYVc2oUihYWH03qa10kyxf
-YQ5GlRXs5medfBunZXs8gyaPb6RDwbSyQeSJxKFC+0nRUUTI091pS+SerOaRG+Ap
-u23BrWoiG4bTq/sw4a8NFpsMbnQEAIFw1WHRv8VgJYt1Pzof6ukjWMFacgvptSHY
-dWsWdIwVKROb9uip5o9qjVecx3+TP2nKnfnDIPgAUoSq1Yel7PlU4wdZrqKL9ojq
-Usa6Hubr6yrdH/XROvGOb4n1zS03NQle7BRVq+p073u3ikHI2oHFPTh1NLC1bcKU
-VATUQ5mNBnsBtrvUKvsyFbc03PwCTQCFilYwIINXBXDv5YAWkkumDnRM4VNmxeLs
-j86qJpSn/D4sq7RlvVcw
-=TYDi
------END PGP SIGNATURE-----
-
---lqaZmxkhekPBfBzr--
+-- 
+tejun
