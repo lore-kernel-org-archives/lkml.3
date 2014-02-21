@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaBUWkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:40:33 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:45464 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaBUWkb (ORCPT
+	id S1755909AbaBUWkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:40:35 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50385 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755024AbaBUWkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:40:31 -0500
+	Fri, 21 Feb 2014 17:40:33 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
         =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCHv2 0/3] Binder ABI updates for 64bit systems for staging-next
-Date: Fri, 21 Feb 2014 14:40:24 -0800
-Message-Id: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCHv2 1/3] staging: binder: Fix ABI for 64bit Android
+Date: Fri, 21 Feb 2014 14:40:25 -0800
+Message-Id: <1393022427-14364-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
+References: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,55 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Again, wanted to re-submit to staging-next two changes from
-the AOSP common.git android-3.10 branch, which provide ABI
-fixes and introduce a new ABI and protocol version for binder,
-along with compatibility support for existing systems.
+From: Serban Constantinescu <serban.constantinescu@arm.com>
 
-This new ABI allows for both 32bit and 64bit applications
-to co-exist, which wasn't previously possible due to word
-size assumptions in the binder protocol.
+BC_REQUEST_DEATH_NOTIFICATION and BC_CLEAR_DEATH_NOTIFICATION were
+defined with the wrong structure that did not match the code. Since a
+binder pointer and handle are the same size on 32 bit systems, this
+change does not affect them. The two commands claimed they were using
+struct binder_ptr_cookie but they are using a 32bit handle and a pointer.
 
-Also included is a minor tweak from me to make the Kconfig
-compatibility entry a bit more clear.
+The main purpose of this patch is to add the binder_handle_cookie
+struct so the service manager does not have to define its own version
+(libbinder writes one field at a time so it does not use the struct).
 
-The changes have been updated to improve their commit message
-since the last time they were submitted. Thanks to Arve for the
-extra context and Serban for help with the wording.
-
-
-v2:
-* Further tweak commit message to make it more clear the binder
-  protocol version is increased only when the
-  CONFIG_ANDROID_BINDER_IPC_32BIT option is disabled.
-
-
-thanks
--john
+On 32bit systems the payload size is the same as the size of struct
+binder_ptr_cookie. On 64bit systems, the size does differ, and the
+ioctl number does change. However, there are no known 64bit users of
+this interface, and any 64bit systems will need the following patch to
+run 32 bit processes anyway, so it is not expected that anyone will
+ship a 64bit system without this change, so this change should not
+affect any existing systems.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Arve Hjønnevåg <arve@android.com>
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
 Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+[jstultz: Few 80+ col fixes for checkpatch, improved commit message
+with help from Serban, and included rational from Arve's email]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/uapi/binder.h | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-
-Arve Hjønnevåg (1):
-  staging: binder: Support concurrent 32 bit and 64 bit processes.
-
-John Stultz (1):
-  staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
-
-Serban Constantinescu (1):
-  staging: binder: Fix ABI for 64bit Android
-
- drivers/staging/android/Kconfig        |  13 ++
- drivers/staging/android/binder.c       | 268 ++++++++++++++++++---------------
- drivers/staging/android/binder.h       |   4 +
- drivers/staging/android/binder_trace.h |  14 +-
- drivers/staging/android/uapi/binder.h  |  77 ++++++----
- 5 files changed, 224 insertions(+), 152 deletions(-)
-
+diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
+index 2b1eb81..4071fcf 100644
+--- a/drivers/staging/android/uapi/binder.h
++++ b/drivers/staging/android/uapi/binder.h
+@@ -152,6 +152,11 @@ struct binder_ptr_cookie {
+ 	void *cookie;
+ };
+ 
++struct binder_handle_cookie {
++	__u32 handle;
++	void *cookie;
++} __attribute__((packed));
++
+ struct binder_pri_desc {
+ 	__s32 priority;
+ 	__u32 desc;
+@@ -308,15 +313,17 @@ enum binder_driver_command_protocol {
+ 	 * of looping threads it has available.
+ 	 */
+ 
+-	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct binder_ptr_cookie),
++	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14,
++						struct binder_handle_cookie),
+ 	/*
+-	 * void *: ptr to binder
++	 * int: handle
+ 	 * void *: cookie
+ 	 */
+ 
+-	BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15, struct binder_ptr_cookie),
++	BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15,
++						struct binder_handle_cookie),
+ 	/*
+-	 * void *: ptr to binder
++	 * int: handle
+ 	 * void *: cookie
+ 	 */
+ 
 -- 
 1.8.3.2
 
