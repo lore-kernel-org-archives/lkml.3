@@ -1,2022 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaBUL1a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 06:27:30 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:26701
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754777AbaBUL1Z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 06:27:25 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VPS-11(zz98dI9371I1403R542Ie0eah1432Id799h4015Ic8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097h84d07hz2fh95h109h839h944hc61hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
-From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-Thread-Topic: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-Thread-Index: AQHPLmjQx1weo2qVu02bJhQS64VOWZq/jpTQ
-Date: Fri, 21 Feb 2014 11:27:07 +0000
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
- <20140220182257.GF23217@saruman.home>
-In-Reply-To: <20140220182257.GF23217@saruman.home>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.98.173]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1755218AbaBUL1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 06:27:54 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40618 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195AbaBUL1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 06:27:50 -0500
+Date: Fri, 21 Feb 2014 19:27:45 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Cc: tglx <tglx@linutronix.de>, mingo <mingo@redhat.com>, hpa <hpa@zytor.com>,
+        bhelgaas <bhelgaas@google.com>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [BUG] Plug vga cable induce usb irq disabled.
+X-Priority: 3
+X-GUID: 310B97C6-3404-42D4-AD02-60CA58DA2753
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
+Mime-Version: 1.0
+Message-ID: <201402211927414183846@gmail.com>
+Content-Type: text/plain;
+	charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1LBS3xb029626
 
-Hi,
+Hi all:
+	I met a problem. When i plug vga cable(only need once), the kernel print those messages and disable IRQ 16.
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Thursday, February 20, 2014 11:53 PM
-> To: Subbaraya Sundeep Bhatta
-> Cc: Felipe Balbi; Greg Kroah-Hartman; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Michal Simek; Subbaraya Sundeep Bhatta;
-> devicetree@vger.kernel.org
-> Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
->
-> Hi,
->
-> On Wed, Feb 19, 2014 at 03:10:45PM +0530, Subbaraya Sundeep Bhatta wrote:
-> > This patch adds xilinx axi usb2 device driver support
-> >
-> > Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-> > ---
-> >  .../devicetree/bindings/usb/xilinx_usb.txt         |   21 +
-> >  drivers/usb/gadget/Kconfig                         |   14 +
-> >  drivers/usb/gadget/Makefile                        |    1 +
-> >  drivers/usb/gadget/xilinx_udc.c                    | 2045 ++++++++++++++++++++
-> >  4 files changed, 2081 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/usb/xilinx_usb.txt
-> >  create mode 100644 drivers/usb/gadget/xilinx_udc.c
-> >
-> > diff --git a/Documentation/devicetree/bindings/usb/xilinx_usb.txt
-> b/Documentation/devicetree/bindings/usb/xilinx_usb.txt
-> > new file mode 100644
-> > index 0000000..acf03ab
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/usb/xilinx_usb.txt
-> > @@ -0,0 +1,21 @@
-> > +Xilinx AXI USB2 device controller
-> > +
-> > +Required properties:
-> > +- compatible               : Should be "xlnx,axi-usb2-device-4.00.a"
-> > +- reg                      : Physical base address and size of the Axi USB2
-> > +                     device registers map.
-> > +- interrupts               : Property with a value describing the interrupt
-> > +                     number.
-> > +- interrupt-parent : Must be core interrupt controller
-> > +- xlnx,include-dma : Must be 1 or 0 based on whether DMA is included
-> > +                     in IP or not.
-> > +
-> > +Example:
-> > +           axi-usb2-device@42e00000 {
-> > +                        compatible = "xlnx,axi-usb2-device-4.00.a";
-> > +                        interrupt-parent = <0x1>;
-> > +                        interrupts = <0x0 0x39 0x1>;
-> > +                        reg = <0x42e00000 0x10000>;
-> > +                        xlnx,include-dma = <0x1>;
-> > +                };
-> > +
->
-> you need to Cc devicetree@vger.kernel.org for this.
-Ok.
->
-> > diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> > index 8154165..0b284bf 100644
-> > --- a/drivers/usb/gadget/Kconfig
-> > +++ b/drivers/usb/gadget/Kconfig
-> > @@ -466,6 +466,20 @@ config USB_EG20T
-> >       ML7213/ML7831 is companion chip for Intel Atom E6xx series.
-> >       ML7213/ML7831 is completely compatible for Intel EG20T PCH.
-> >
-> > +config USB_GADGET_XILINX
-> > +   tristate "Xilinx USB Driver"
-> > +   depends on MICROBLAZE || ARCH_ZYNQ
->
-> This has the tendency to grow and I really don't like seeing a bunch of
-> arch-specific dependencies. At a minimum add COMPILE_TEST so I can build
-> test on my setup and make sure it builds fine on other architectures.
->
-> > +   help
-> > +     USB peripheral controller driver for Xilinx AXI USB2 device.
-> > +     Xilinx AXI USB2 device is a soft IP which supports both full
-> > +     and high speed USB 2.0 data transfers. It has seven configurable
-> > +     endpoints(bulk or interrupt or isochronous), as well as
-> > +     endpoint zero(for control transfers).
-> > +
-> > +     Say "y" to link the driver statically, or "m" to build a
-> > +     dynamically linked module called "xilinx_udc" and force all
-> > +     gadget drivers to also be dynamically linked.
-> > +
-> >  #
-> >  # LAST -- dummy/emulated controller
-> >  #
-> > diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-> > index 5f150bc..3a55564 100644
-> > --- a/drivers/usb/gadget/Makefile
-> > +++ b/drivers/usb/gadget/Makefile
-> > @@ -36,6 +36,7 @@ obj-$(CONFIG_USB_FUSB300) += fusb300_udc.o
-> >  obj-$(CONFIG_USB_FOTG210_UDC)      += fotg210-udc.o
-> >  obj-$(CONFIG_USB_MV_U3D)   += mv_u3d_core.o
-> >  obj-$(CONFIG_USB_GR_UDC)   += gr_udc.o
-> > +obj-$(CONFIG_USB_GADGET_XILINX)    += xilinx_udc.o
->
-> let's start normalizing the names here (I'll patch the others later) and
-> call this udc-xilinx.o
->
-Ok
-> > diff --git a/drivers/usb/gadget/xilinx_udc.c b/drivers/usb/gadget/xilinx_udc.c
-> > new file mode 100644
-> > index 0000000..3ee8359
-> > --- /dev/null
-> > +++ b/drivers/usb/gadget/xilinx_udc.c
-> > @@ -0,0 +1,2045 @@
-> > +/*
-> > + * Xilinx USB peripheral controller driver
-> > + *
-> > + * Copyright (C) 2004 by Thomas Rathbone
-> > + * Copyright (C) 2005 by HP Labs
-> > + * Copyright (C) 2005 by David Brownell
->
-> heh! :-) Brownell was really everywhere, good to still see code from him
-> ;-)
->
-> > + * Copyright (C) 2010 - 2014 Xilinx, Inc.
-> > + *
-> > + * Some parts of this driver code is based on the driver for at91-series
-> > + * USB peripheral controller (at91_udc.c).
-> > + *
-> > + * This program is free software; you can redistribute it
-> > + * and/or modify it under the terms of the GNU General Public
-> > + * License as published by the Free Software Foundation;
-> > + * either version 2 of the License, or (at your option) any
-> > + * later version.
->
-> are you sure you want to allow people ot use GPL v3 on this driver ?
->
-> > +#include <linux/interrupt.h>
-> > +#include <linux/device.h>
-> > +#include <linux/module.h>
-> > +#include <linux/prefetch.h>
-> > +#include <linux/usb/ch9.h>
-> > +#include <linux/usb/gadget.h>
-> > +#include <linux/io.h>
-> > +#include <linux/seq_file.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_device.h>
-> > +#include <linux/of_platform.h>
-> > +#include <linux/of_irq.h>
-> > +#include <linux/dma-mapping.h>
-> > +#include "gadget_chips.h"
-> > +
-> > +/* Register offsets for the USB device.*/
-> > +#define XUSB_EP0_CONFIG_OFFSET             0x0000  /* EP0 Config Reg
-> Offset */
-> > +#define XUSB_SETUP_PKT_ADDR_OFFSET 0x0080  /* Setup Packet
-> Address */
-> > +#define XUSB_ADDRESS_OFFSET                0x0100  /* Address Register */
-> > +#define XUSB_CONTROL_OFFSET                0x0104  /* Control Register */
-> > +#define XUSB_STATUS_OFFSET         0x0108  /* Status Register */
-> > +#define XUSB_FRAMENUM_OFFSET               0x010C  /* Frame Number
-> Register */
-> > +#define XUSB_IER_OFFSET                    0x0110  /* Interrupt Enable
-> Register */
-> > +#define XUSB_BUFFREADY_OFFSET              0x0114  /* Buffer Ready
-> Register */
-> > +#define XUSB_TESTMODE_OFFSET               0x0118  /* Test Mode Register
-> */
-> > +#define XUSB_DMA_RESET_OFFSET              0x0200  /* DMA Soft Reset
-> Register */
-> > +#define XUSB_DMA_CONTROL_OFFSET            0x0204  /* DMA
-> Control Register */
-> > +#define XUSB_DMA_DSAR_ADDR_OFFSET  0x0208  /* DMA source
-> Address Reg */
-> > +#define XUSB_DMA_DDAR_ADDR_OFFSET  0x020C  /* DMA destination
-> Addr Reg */
-> > +#define XUSB_DMA_LENGTH_OFFSET             0x0210  /* DMA Length
-> Register */
-> > +#define XUSB_DMA_STATUS_OFFSET             0x0214  /* DMA Status Register
-> */
-> > +
-> > +/* Endpoint Configuration Space offsets */
-> > +#define XUSB_EP_CFGSTATUS_OFFSET   0x00    /* Endpoint Config
-> Status  */
-> > +#define XUSB_EP_BUF0COUNT_OFFSET   0x08    /* Buffer 0 Count */
-> > +#define XUSB_EP_BUF1COUNT_OFFSET   0x0C    /* Buffer 1 Count */
-> > +
-> > +#define XUSB_CONTROL_USB_READY_MASK        0x80000000 /* USB ready
-> Mask */
-> > +
-> > +/* Interrupt register related masks.*/
-> > +#define XUSB_STATUS_GLOBAL_INTR_MASK       0x80000000 /* Global Intr
-> Enable */
-> > +#define XUSB_STATUS_RESET_MASK             0x00800000 /* USB Reset
-> Mask */
-> > +#define XUSB_STATUS_SUSPEND_MASK   0x00400000 /* USB Suspend
-> Mask */
-> > +#define XUSB_STATUS_DISCONNECT_MASK        0x00200000 /* USB Disconnect
-> Mask */
-> > +#define XUSB_STATUS_FIFO_BUFF_RDY_MASK     0x00100000 /* FIFO
-> Buff Ready Mask */
-> > +#define XUSB_STATUS_FIFO_BUFF_FREE_MASK    0x00080000 /* FIFO
-> Buff Free Mask */
-> > +#define XUSB_STATUS_SETUP_PACKET_MASK      0x00040000 /* Setup packet
-> received */
-> > +#define XUSB_STATUS_EP1_BUFF2_COMP_MASK    0x00000200 /* EP 1
-> Buff 2 Processed */
-> > +#define XUSB_STATUS_EP1_BUFF1_COMP_MASK    0x00000002 /* EP 1
-> Buff 1 Processed */
-> > +#define XUSB_STATUS_EP0_BUFF2_COMP_MASK    0x00000100 /* EP 0
-> Buff 2 Processed */
-> > +#define XUSB_STATUS_EP0_BUFF1_COMP_MASK    0x00000001 /* EP 0
-> Buff 1 Processed */
-> > +#define XUSB_STATUS_HIGH_SPEED_MASK        0x00010000 /* USB Speed
-> Mask */
-> > +/* Suspend,Reset and Disconnect Mask */
-> > +#define XUSB_STATUS_INTR_EVENT_MASK        0x00E00000
-> > +/* Buffers  completion Mask */
-> > +#define XUSB_STATUS_INTR_BUFF_COMP_ALL_MASK        0x0000FEFF
-> > +/* Mask for buffer 0 and buffer 1 completion for all Endpoints */
-> > +#define XUSB_STATUS_INTR_BUFF_COMP_SHIFT_MASK      0x00000101
-> > +#define XUSB_STATUS_EP_BUFF2_SHIFT 8          /* EP buffer offset */
-> > +
-> > +/* Endpoint Configuration Status Register */
-> > +#define XUSB_EP_CFG_VALID_MASK             0x80000000 /* Endpoint Valid
-> bit */
-> > +#define XUSB_EP_CFG_STALL_MASK             0x40000000 /* Endpoint Stall
-> bit */
-> > +#define XUSB_EP_CFG_DATA_TOGGLE_MASK       0x08000000 /* Endpoint Data
-> toggle */
-> > +
-> > +/* USB device specific global configuration constants.*/
-> > +#define XUSB_MAX_ENDPOINTS         8       /* Maximum End
-> Points */
-> > +#define XUSB_EP_NUMBER_ZERO                0       /* End point Zero */
-> > +
-> > +/* Test Modes (Set Feature).*/
-> > +#define TEST_J                             1       /* Chirp J Test */
-> > +#define TEST_K                             2       /* Chirp K Test */
-> > +#define TEST_SE0_NAK                       3       /* Chirp SE0 Test */
-> > +#define TEST_PKT                   4       /* Packet Test */
-> > +
-> > +#define CONFIGURATION_ONE          0x01    /* USB device
-> configuration*/
-> > +#define STANDARD_OUT_DEVICE                0x00    /* Out device */
-> > +#define STANDARD_OUT_ENDPOINT              0x02    /* Standard Out end
-> point */
->
-> DO NOT REDEFINE THESE, use the ones from <linux/usb/ch9.h>
-Ok
->
-> > +
-> > +#define XUSB_DMA_READ_FROM_DPRAM   0x80000000/**< DPRAM is the
-> source
-> > +                                                   address for DMA
-> transfer
-> > +                                                   */
-> > +#define XUSB_DMA_DMASR_BUSY                0x80000000 /**< DMA busy*/
-> > +#define XUSB_DMA_DMASR_ERROR               0x40000000 /**< DMA Error */
-> > +
-> > +/*
-> > + * When this bit is set, the DMA buffer ready bit is set by hardware upon
-> > + * DMA transfer completion.
-> > + */
-> > +#define XUSB_DMA_BRR_CTRL          0x40000000 /**< DMA
-> bufready ctrl bit */
-> > +
-> > +/* Phase States */
-> > +#define SETUP_PHASE                        0x0000  /* Setup Phase */
-> > +#define DATA_PHASE                 0x0001  /* Data Phase */
-> > +#define STATUS_PHASE                       0x0002  /* Status Phase */
-> > +
-> > +#define EP_TRANSMIT                0       /* EP is IN endpoint */
-> > +#define EP0_MAX_PACKET             64 /* Endpoint 0 maximum packet
-> length */
-> > +
-> > +/**
-> > + * struct xusb_request - Xilinx USB device request structure
-> > + * @usb_req: Linux usb request structure
-> > + * @queue: usb device request queue
-> > + */
-> > +struct xusb_request {
-> > +   struct usb_request usb_req;
-> > +   struct list_head queue;
-> > +};
-> > +
-> > +/**
-> > + * struct xusb_ep - USB end point structure.
-> > + * @ep_usb: usb endpoint instance
-> > + * @queue: endpoint message queue
-> > + * @udc: xilinx usb peripheral driver instance pointer
-> > + * @desc: pointer to the usb endpoint descriptor
-> > + * @data: pointer to the xusb_request structure
-> > + * @rambase: the endpoint buffer address
-> > + * @endpointoffset: the endpoint register offset value
-> > + * @epnumber: endpoint number
-> > + * @maxpacket: maximum packet size the endpoint can store
-> > + * @buffer0count: the size of the packet recieved in the first buffer
-> > + * @buffer0ready: the busy state of first buffer
-> > + * @buffer1count: the size of the packet received in the second buffer
-> > + * @buffer1ready: the busy state of second buffer
-> > + * @eptype: endpoint transfer type (BULK, INTERRUPT)
-> > + * @curbufnum: current buffer of endpoint that will be processed next
-> > + * @is_in: endpoint direction (IN or OUT)
-> > + * @stopped: endpoint active status
-> > + * @is_iso: endpoint type(isochronous or non isochronous)
-> > + * @name: name of the endpoint
-> > + */
-> > +struct xusb_ep {
-> > +   struct usb_ep ep_usb;
-> > +   struct list_head queue;
-> > +   struct xusb_udc *udc;
-> > +   const struct usb_endpoint_descriptor *desc;
-> > +   struct xusb_request *data;
-> > +   u32 rambase;
-> > +   u32 endpointoffset;
-> > +   u16 epnumber;
-> > +   u16 maxpacket;
-> > +   u16 buffer0count;
-> > +   u16 buffer1count;
-> > +   u8 buffer0ready;
-> > +   u8 buffer1ready;
-> > +   u8 eptype;
-> > +   u8 curbufnum;
-> > +   u8 is_in;
-> > +   u8 stopped;
-> > +   u8 is_iso;
-> > +   char name[4];
-> > +};
-> > +
-> > +/**
-> > + * struct xusb_udc -  USB peripheral driver structure
-> > + * @gadget: USB gadget driver instance
-> > + * @ep: an array of endpoint structures
-> > + * @driver: pointer to the usb gadget driver instance
-> > + * @read_fn: function pointer to read device registers
-> > + * @write_fn: function pointer to write to device registers
-> > + * @base_address: the usb device base address
-> > + * @lock: instance of spinlock
-> > + * @dma_enabled: flag indicating whether the dma is included in the system
-> > + * @status: status flag indicating the device cofiguration
-> > + */
-> > +struct xusb_udc {
-> > +   struct usb_gadget gadget;
-> > +   struct xusb_ep ep[8];
-> > +   struct usb_gadget_driver *driver;
-> > +   unsigned int (*read_fn)(void __iomem *);
-> > +   void (*write_fn)(u32, void __iomem *);
-> > +   void __iomem *base_address;
-> > +   spinlock_t lock;
-> > +   bool dma_enabled;
-> > +   u8 status;
-> > +};
-> > +
-> > +/**
-> > + * struct cmdbuf - Standard USB Command Buffer Structure defined
-> > + * @setup: usb_ctrlrequest structure for control requests
-> > + * @contreadcount: read data bytes count
-> > + * @contwritecount: write data bytes count
-> > + * @setupseqtx: tx status
-> > + * @setupseqrx: rx status
-> > + * @contreadptr: pointer to endpoint0 read data
-> > + * @contwriteptr: pointer to endpoint0 write data
-> > + * @contreaddatabuffer: read data buffer for endpoint0
-> > + */
-> > +struct cmdbuf {
-> > +   struct usb_ctrlrequest setup;
-> > +   u32 contreadcount;
-> > +   u32 contwritecount;
-> > +   u32 setupseqtx;
-> > +   u32 setupseqrx;
-> > +   u8 *contreadptr;
-> > +   u8 *contwriteptr;
-> > +   u8 contreaddatabuffer[64];
-> > +};
-> > +
-> > +static struct cmdbuf ch9_cmdbuf;
->
-> NAK, you should support multiple instances of this device in the same
-> SoC.
-Ok.
->
-> > +/*
-> > + * Endpoint buffer start addresses in the core
-> > + */
->
-> fits in one line.
-Ok
->
-> > +static u32 rambase[8] = { 0x22, 0x1000, 0x1100, 0x1200, 0x1300, 0x1400,
-> 0x1500,
-> > +                   0x1600 };
-> > +
-> > +static const char driver_name[] = "xilinx-udc";
-> > +static const char ep0name[] = "ep0";
-> > +
-> > +/* Control endpoint configuration.*/
-> > +static struct usb_endpoint_descriptor config_bulk_out_desc = {
-> > +   .bLength = USB_DT_ENDPOINT_SIZE,
-> > +   .bDescriptorType = USB_DT_ENDPOINT,
-> > +   .bEndpointAddress = USB_DIR_OUT,
-> > +   .bmAttributes = USB_ENDPOINT_XFER_BULK,
-> > +   .wMaxPacketSize = __constant_cpu_to_le16(0x40),
-> > +};
-> > +
-> > +/**
-> > + * to_udc - Return the udc instance pointer
-> > + * @g: pointer to the usb gadget driver instance
-> > + *
-> > + * Return: xusb_udc pointer
-> > + */
-> > +static inline struct xusb_udc *to_udc(struct usb_gadget *g)
-> > +{
-> > +
->
-> remove this whiteline here. Also, this could very well be a macro
-> instead of a function. No strong feelings though.
-Ok
->
-> > +   return container_of(g, struct xusb_udc, gadget);
-> > +}
-> > +
-> > +/**
-> > + * xudc_write32 - little endian write to device registers
-> > + * @val: data to be written
-> > + * @addr: addr of device register
-> > + */
-> > +static void xudc_write32(u32 val, void __iomem *addr)
->
-> usually, people tend to pass addr, offset and value. Then you do the
-> quick little math internally:
->
->       iowrite32(val, addr + offset);
->
-> no strong feelings either.
->
-> > +static int xudc_eptxrx(struct xusb_ep *ep, u8 *bufferptr, u32 bufferlen,
-> > +                   u8 direction)
-> > +{
-> > +   u32 *eprambase;
-> > +   u32 bytestosend;
-> > +   u8 *temprambase;
-> > +   unsigned long timeout;
-> > +   u32 srcaddr = 0;
-> > +   u32 dstaddr = 0;
-> > +   int rc = 0;
-> > +   struct xusb_udc *udc = ep->udc;
-> > +
-> > +   bytestosend = bufferlen;
-> > +
-> > +   /* Put the transmit buffer into the correct ping-pong buffer.*/
-> > +   if (!ep->curbufnum && !ep->buffer0ready) {
-> > +           /* Get the Buffer address and copy the transmit data.*/
-> > +           eprambase = (u32 __force *)(ep->udc->base_address +
-> > +                           ep->rambase);
-> > +
-> > +           if (ep->udc->dma_enabled) {
-> > +                   if (direction == EP_TRANSMIT) {
-> > +                           srcaddr = dma_map_single(
-> > +                                   ep->udc->gadget.dev.parent,
-> > +                                   bufferptr, bufferlen, DMA_TO_DEVICE);
-> > +                           dstaddr = virt_to_phys(eprambase);
-> > +                           udc->write_fn(bufferlen,
-> > +                                           ep->udc->base_address +
-> > +                                           ep->endpointoffset +
-> > +
->       XUSB_EP_BUF0COUNT_OFFSET);
-> > +                           udc->write_fn(XUSB_DMA_BRR_CTRL |
-> > +                                           (1 << ep->epnumber),
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_DMA_CONTROL_OFFSET);
-> > +                   } else {
-> > +                           srcaddr = virt_to_phys(eprambase);
-> > +                           dstaddr = dma_map_single(
-> > +                                   ep->udc->gadget.dev.parent,
-> > +                                   bufferptr, bufferlen,
-> DMA_FROM_DEVICE);
-> > +                           udc->write_fn(XUSB_DMA_BRR_CTRL |
-> > +                                   XUSB_DMA_READ_FROM_DPRAM |
-> > +                                   (1 << ep->epnumber),
-> > +                                   ep->udc->base_address +
-> > +                                   XUSB_DMA_CONTROL_OFFSET);
-> > +                   }
-> > +                   /*
-> > +                    * Set the addresses in the DMA source and destination
-> > +                    * registers and then set the length into the DMA length
-> > +                    * register.
-> > +                    */
-> > +                   udc->write_fn(srcaddr, ep->udc->base_address +
-> > +                           XUSB_DMA_DSAR_ADDR_OFFSET);
-> > +                   udc->write_fn(dstaddr, ep->udc->base_address +
-> > +                           XUSB_DMA_DDAR_ADDR_OFFSET);
-> > +                   udc->write_fn(bufferlen, ep->udc->base_address +
-> > +                                   XUSB_DMA_LENGTH_OFFSET);
-> > +           } else {
-> > +
-> > +                   while (bytestosend > 3) {
-> > +                           if (direction == EP_TRANSMIT)
-> > +                                   *eprambase++ = *(u32 *)bufferptr;
-> > +                           else
-> > +                                   *(u32 *)bufferptr = *eprambase++;
-> > +                           bufferptr += 4;
-> > +                           bytestosend -= 4;
-> > +                   }
-> > +                   temprambase = (u8 *)eprambase;
-> > +                   while (bytestosend--) {
-> > +                           if (direction == EP_TRANSMIT)
-> > +                                   *temprambase++ = *bufferptr++;
-> > +                           else
-> > +                                   *bufferptr++ = *temprambase++;
-> > +                   }
-> > +                   /*
-> > +                    * Set the Buffer count register with transmit length
-> > +                    * and enable the buffer for transmission.
-> > +                    */
-> > +                   if (direction == EP_TRANSMIT)
-> > +                           udc->write_fn(bufferlen,
-> > +                                   ep->udc->base_address +
-> > +                                   ep->endpointoffset +
-> > +                                   XUSB_EP_BUF0COUNT_OFFSET);
-> > +                   udc->write_fn(1 << ep->epnumber,
-> > +                                   ep->udc->base_address +
-> > +                                   XUSB_BUFFREADY_OFFSET);
-> > +           }
-> > +           ep->buffer0ready = 1;
-> > +           ep->curbufnum = 1;
-> > +
-> > +   } else
-> > +           if ((ep->curbufnum == 1) && (!ep->buffer1ready)) {
-> > +
-> > +                   /* Get the Buffer address and copy the transmit data.*/
-> > +                   eprambase = (u32 __force *)(ep->udc->base_address +
-> > +                                   ep->rambase + ep-
-> >ep_usb.maxpacket);
-> > +                   if (ep->udc->dma_enabled) {
-> > +                           if (direction == EP_TRANSMIT) {
-> > +                                   srcaddr = dma_map_single(
-> > +                                           ep->udc->gadget.dev.parent,
-> > +                                           bufferptr, bufferlen,
-> > +                                           DMA_TO_DEVICE);
-> > +                                   dstaddr = virt_to_phys(eprambase);
-> > +                                   udc->write_fn(bufferlen,
-> > +                                           ep->udc->base_address +
-> > +                                           ep->endpointoffset +
-> > +
->       XUSB_EP_BUF1COUNT_OFFSET);
-> > +                                   udc->write_fn(XUSB_DMA_BRR_CTRL
-> |
-> > +                                           (1 << (ep->epnumber +
-> > +
->       XUSB_STATUS_EP_BUFF2_SHIFT)),
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_DMA_CONTROL_OFFSET);
-> > +                           } else {
-> > +                                   srcaddr = virt_to_phys(eprambase);
-> > +                                   dstaddr = dma_map_single(
-> > +                                           ep->udc->gadget.dev.parent,
-> > +                                           bufferptr, bufferlen,
-> > +                                           DMA_FROM_DEVICE);
-> > +                                   udc->write_fn(XUSB_DMA_BRR_CTRL
-> |
-> > +
->       XUSB_DMA_READ_FROM_DPRAM |
-> > +                                           (1 << (ep->epnumber +
-> > +
->       XUSB_STATUS_EP_BUFF2_SHIFT)),
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_DMA_CONTROL_OFFSET);
-> > +                           }
-> > +                           /*
-> > +                            * Set the addresses in the DMA source and
-> > +                            * destination registers and then set the length
-> > +                            * into the DMA length register.
-> > +                            */
-> > +                           udc->write_fn(srcaddr,
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_DMA_DSAR_ADDR_OFFSET);
-> > +                           udc->write_fn(dstaddr,
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_DMA_DDAR_ADDR_OFFSET);
-> > +                           udc->write_fn(bufferlen,
-> > +                                           ep->udc->base_address +
-> > +                                           XUSB_DMA_LENGTH_OFFSET);
-> > +                   } else {
-> > +                           while (bytestosend > 3) {
-> > +                                   if (direction == EP_TRANSMIT)
-> > +                                           *eprambase++ =
-> > +                                                   *(u32 *)bufferptr;
-> > +                                   else
-> > +                                           *(u32 *)bufferptr =
-> > +                                                   *eprambase++;
-> > +                                   bufferptr += 4;
-> > +                                   bytestosend -= 4;
-> > +                           }
-> > +                           temprambase = (u8 *)eprambase;
-> > +                           while (bytestosend--) {
-> > +                                   if (direction == EP_TRANSMIT)
-> > +                                           *temprambase++ =
-> *bufferptr++;
-> > +                                   else
-> > +                                           *bufferptr++ =
-> *temprambase++;
-> > +                           }
-> > +                           /*
-> > +                            * Set the Buffer count register with transmit
-> > +                            * length and enable the buffer for
-> > +                            * transmission.
-> > +                            */
-> > +                           if (direction == EP_TRANSMIT)
-> > +                                   udc->write_fn(bufferlen,
-> > +                                           ep->udc->base_address +
-> > +                                           ep->endpointoffset +
-> > +
->       XUSB_EP_BUF1COUNT_OFFSET);
-> > +                           udc->write_fn(1 << (ep->epnumber +
-> > +
->       XUSB_STATUS_EP_BUFF2_SHIFT),
-> > +                                           ep->udc->base_address +
-> > +                                           XUSB_BUFFREADY_OFFSET);
-> > +                   }
-> > +                   ep->buffer1ready = 1;
-> > +                   ep->curbufnum = 0;
-> > +           } else {
-> > +                   /*
-> > +                    * None of the ping-pong buffer is free. Return a
-> > +                    * failure.
-> > +                    */
-> > +                   return 1;
-> > +           }
-> > +
-> > +   if (ep->udc->dma_enabled) {
-> > +           /*
-> > +            * Wait till DMA transaction is complete and
-> > +            * check whether the DMA transaction was
-> > +            * successful.
-> > +            */
-> > +           while ((udc->read_fn(ep->udc->base_address +
-> > +                           XUSB_DMA_STATUS_OFFSET) &
-> > +                           XUSB_DMA_DMASR_BUSY) ==
-> XUSB_DMA_DMASR_BUSY) {
-> > +                   timeout = jiffies + 10000;
-> > +
-> > +                   if (time_after(jiffies, timeout)) {
-> > +                           rc = -ETIMEDOUT;
-> > +                           goto clean;
-> > +                   }
-> > +
-> > +           }
-> > +           if ((udc->read_fn(ep->udc->base_address +
-> > +                           XUSB_DMA_STATUS_OFFSET) &
-> > +                           XUSB_DMA_DMASR_ERROR) ==
-> XUSB_DMA_DMASR_ERROR)
-> > +                   dev_dbg(&ep->udc->gadget.dev, "DMA Error\n");
-> > +clean:
-> > +           if (direction == EP_TRANSMIT) {
-> > +                   dma_unmap_single(ep->udc->gadget.dev.parent,
-> > +                           srcaddr, bufferlen, DMA_TO_DEVICE);
-> > +           } else {
-> > +                   dma_unmap_single(ep->udc->gadget.dev.parent,
-> > +                           dstaddr, bufferlen, DMA_FROM_DEVICE);
-> > +           }
-> > +   }
-> > +   return rc;
-> > +}
->
-> what a big function. Looks like you could split it into smaller
-> functions to aid redability.
-Ok.
->
-> > +static int xudc_ep_enable(struct usb_ep *_ep,
-> > +                     const struct usb_endpoint_descriptor *desc)
-> > +{
-> > +   struct xusb_ep *ep = container_of(_ep, struct xusb_ep, ep_usb);
-> > +   struct xusb_udc *dev = ep->udc;
-> > +   u32 tmp;
-> > +   u8 eptype = 0;
-> > +   unsigned long flags;
-> > +   u32 epcfg;
-> > +   struct xusb_udc *udc = ep->udc;
-> > +
-> > +   /*
-> > +    * The check for _ep->name == ep0name is not done as this enable i
-> used
-> > +    * for enabling ep0 also. In other gadget drivers, this ep name is not
-> > +    * used.
-> > +    */
-> > +   if (!_ep || !desc || ep->desc ||
-> > +       desc->bDescriptorType != USB_DT_ENDPOINT) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "first check fails\n");
->
-> you need a more descriptive message here.
-Ok.
->
-> > +           return -EINVAL;
-> > +   }
-> > +
-> > +   if (!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "bogus device state\n");
-> > +           return -ESHUTDOWN;
-> > +   }
-> > +
-> > +
-> > +   ep->is_in = ((desc->bEndpointAddress & USB_DIR_IN) != 0);
-> > +   /*
-> > +    * Bit 3...0: endpoint number
-> > +    */
->
-> fits in one line, no need for multiline comment.
-Ok.
->
-> > +   ep->epnumber = (desc->bEndpointAddress & 0x0f);
-> > +   ep->stopped = 0;
-> > +   ep->desc = desc;
-> > +   ep->ep_usb.desc = desc;
-> > +   tmp = desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
-> > +   spin_lock_irqsave(&ep->udc->lock, flags);
-> > +   ep->ep_usb.maxpacket = le16_to_cpu(desc->wMaxPacketSize);
-> > +
-> > +   switch (tmp) {
-> > +   case USB_ENDPOINT_XFER_CONTROL:
-> > +           dev_dbg(&ep->udc->gadget.dev, "only one control
-> endpoint\n");
-> > +           /* NON- ISO */
-> > +           eptype = 0;
-> > +           spin_unlock_irqrestore(&ep->udc->lock, flags);
-> > +           return -EINVAL;
-> > +   case USB_ENDPOINT_XFER_INT:
-> > +           /* NON- ISO */
-> > +           eptype = 0;
-> > +           if (ep->ep_usb.maxpacket > 64)
-> > +                   goto bogus_max;
-> > +           break;
-> > +   case USB_ENDPOINT_XFER_BULK:
-> > +           /* NON- ISO */
-> > +           eptype = 0;
-> > +           switch (ep->ep_usb.maxpacket) {
-> > +           case 8:
-> > +           case 16:
-> > +           case 32:
-> > +           case 64:
-> > +           case 512:
-> > +           goto ok;
->
-> bogus indentation.
-Ok
->
-> > +           }
-> > +bogus_max:
-> > +           dev_dbg(&ep->udc->gadget.dev, "bogus maxpacket %d\n",
-> > +                   ep->ep_usb.maxpacket);
-> > +           spin_unlock_irqrestore(&ep->udc->lock, flags);
-> > +           return -EINVAL;
-> > +   case USB_ENDPOINT_XFER_ISOC:
-> > +           /* ISO */
-> > +           eptype = 1;
-> > +           ep->is_iso = 1;
-> > +           break;
-> > +   }
-> > +
-> > +ok:        ep->eptype = eptype;
->
-> the label sits in a line by itself
-Ok. Will change.
->
-> ok:
->       ep->eptype = eptype;
->
->       ...
->
-> > +static int xudc_ep_disable(struct usb_ep *_ep)
-> > +{
-> > +   struct xusb_ep *ep = container_of(_ep, struct xusb_ep, ep_usb);
-> > +   unsigned long flags;
-> > +   u32 epcfg;
-> > +   struct xusb_udc *udc = ep->udc;
-> > +
-> > +   if (ep == &ep->udc->ep[XUSB_EP_NUMBER_ZERO]) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "Ep0 disable called\n");
-> > +           return -EINVAL;
-> > +   }
-> > +   spin_lock_irqsave(&ep->udc->lock, flags);
-> > +
-> > +   xudc_nuke(ep, -ESHUTDOWN);
-> > +
-> > +   /* Restore the endpoint's pristine config */
-> > +   ep->desc = NULL;
-> > +   ep->ep_usb.desc = NULL;
-> > +
-> > +   ep->stopped = 1;
-> > +
-> > +   dev_dbg(&ep->udc->gadget.dev, "USB Ep %d disable\n ", ep-
-> >epnumber);
-> > +
-> > +   /* Disable the endpoint.*/
-> > +   epcfg = udc->read_fn(ep->udc->base_address + ep->endpointoffset);
-> > +   epcfg &= ~XUSB_EP_CFG_VALID_MASK;
-> > +   udc->write_fn(epcfg, ep->udc->base_address + ep->endpointoffset);
-> > +   spin_unlock_irqrestore(&ep->udc->lock, flags);
-> > +   return 0;
-> > +}
-> > +
-> > +/**
-> > + * xudc_ep_alloc_request - Initializes the request queue.
-> > + * @_ep: pointer to the usb device endpoint structure.
-> > + * @gfp_flags: Flags related to the request call.
-> > + *
-> > + * Return: pointer to request structure on success and a NULL on failure.
-> > + */
-> > +static struct usb_request *xudc_ep_alloc_request(struct usb_ep *_ep,
-> > +                                            gfp_t gfp_flags)
-> > +{
-> > +   struct xusb_request *req;
-> > +
-> > +   req = kmalloc(sizeof(*req), gfp_flags);
->
-> use kzalloc...
->
-> > +   if (!req)
-> > +           return NULL;
-> > +
-> > +   memset(req, 0, sizeof(*req));
->
-> ... and drop this list head.
->
-> > +   INIT_LIST_HEAD(&req->queue);
->
-> remove this INIT_LIST_HEAD();
-Ok.
->
-> also, before returning, I suppose you probably want to link the request
-> to the endpoint somehow. Usually people save the endpoint pointer inside
-> the private request structure (iow: req->ep = ep;)
-Ok.
->
-> > +   return &req->usb_req;
-> > +}
-> > +
-> > +/**
-> > + * xudc_free_request - Releases the request from queue.
-> > + * @_ep: pointer to the usb device endpoint structure.
-> > + * @_req: pointer to the usb request structure.
-> > + */
-> > +static void xudc_free_request(struct usb_ep *_ep, struct usb_request *_req)
-> > +{
-> > +   struct xusb_ep *ep = container_of(_ep, struct xusb_ep, ep_usb);
-> > +   struct xusb_request *req;
-> > +
-> > +   req = container_of(_req, struct xusb_request, usb_req);
->
-> define helper macros for these two container_of(). It helps with
-> readability.
-Ok.
->
-> > +   if (!list_empty(&req->queue))
-> > +           dev_warn(&ep->udc->gadget.dev, "Error: No memory to free");
->
-> what did you want to do here ? Perhaps:
->
->       if (list_empty(&req->queue)) {
->               dev_warn(&ep->udc->gadget.dev, "Error: no request to free");
->               return;
->       }
->
-> ???
->
-> > +   kfree(req);
-> > +}
-> > +
-> > +/**
-> > + * xudc_ep_queue - Adds the request to the queue.
-> > + * @_ep: pointer to the usb device endpoint structure.
-> > + * @_req: pointer to the usb request structure.
-> > + * @gfp_flags: Flags related to the request call.
-> > + *
-> > + * Return: 0 for success and error value on failure
-> > + */
-> > +static int xudc_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
-> > +                    gfp_t gfp_flags)
-> > +{
-> > +   struct xusb_request *req;
-> > +   struct xusb_ep *ep;
-> > +   struct xusb_udc *dev;
-> > +   unsigned long flags;
-> > +   u32 length, count;
-> > +   u8 *corebuf;
-> > +   struct xusb_udc *udc;
-> > +
-> > +   req = container_of(_req, struct xusb_request, usb_req);
-> > +   ep = container_of(_ep, struct xusb_ep, ep_usb);
-> > +   udc = ep->udc;
-> > +
-> > +   if (!_req || !_req->complete || !_req->buf ||
-> > +                   !list_empty(&req->queue)) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "invalid request\n");
-> > +           return -EINVAL;
-> > +   }
-> > +
-> > +   if (!_ep || (!ep->desc && ep->ep_usb.name != ep0name)) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "invalid ep\n");
-> > +           return -EINVAL;
-> > +   }
-> > +
-> > +   dev = ep->udc;
-> > +   if (!dev || !dev->driver || dev->gadget.speed ==
-> USB_SPEED_UNKNOWN) {
-> > +           dev_dbg(&ep->udc->gadget.dev, "%s, bogus device state %p\n",
-> > +                   __func__, dev->driver);
-> > +           return -ESHUTDOWN;
-> > +   }
-> > +
-> > +   spin_lock_irqsave(&dev->lock, flags);
-> > +
-> > +   _req->status = -EINPROGRESS;
-> > +   _req->actual = 0;
-> > +
-> > +   /* Try to kickstart any empty and idle queue */
-> > +   if (list_empty(&ep->queue)) {
-> > +           if (!ep->epnumber) {
-> > +                   ep->data = req;
-> > +                   if (ch9_cmdbuf.setup.bRequestType & USB_DIR_IN) {
-> > +                           ch9_cmdbuf.contwriteptr = req->usb_req.buf +
-> > +                                                   req->usb_req.actual;
-> > +                           prefetch(ch9_cmdbuf.contwriteptr);
-> > +                           length = req->usb_req.length -
-> > +                                   req->usb_req.actual;
-> > +                           corebuf = (void __force *) ((ep->rambase << 2)
-> +
-> > +                                       ep->udc->base_address);
-> > +                           ch9_cmdbuf.contwritecount = length;
-> > +                           length = count = min_t(u32, length,
-> > +                                                   EP0_MAX_PACKET);
-> > +                           while (length--)
-> > +                                   *corebuf++ =
-> *ch9_cmdbuf.contwriteptr++;
-> > +                           udc->write_fn(count, ep->udc->base_address +
-> > +                                      XUSB_EP_BUF0COUNT_OFFSET);
-> > +                           udc->write_fn(1, ep->udc->base_address +
-> > +                                      XUSB_BUFFREADY_OFFSET);
-> > +                           ch9_cmdbuf.contwritecount -= count;
-> > +                   } else {
-> > +                           if (ch9_cmdbuf.setup.wLength) {
-> > +                                   ch9_cmdbuf.contreadptr =
-> > +                                           req->usb_req.buf +
-> > +                                                   req->usb_req.actual;
-> > +                                   udc->write_fn(req->usb_req.length ,
-> > +                                           ep->udc->base_address +
-> > +
->       XUSB_EP_BUF0COUNT_OFFSET);
-> > +                                   udc->write_fn(1, ep->udc-
-> >base_address
-> > +                                           + XUSB_BUFFREADY_OFFSET);
-> > +                           } else {
-> > +                                   xudc_wrstatus(udc);
-> > +                                   req = NULL;
-> > +                           }
-> > +                   }
-> > +           } else {
-> > +
-> > +                   if (ep->is_in) {
-> > +                           dev_dbg(&ep->udc->gadget.dev,
-> > +                                   "xudc_write_fifo called from
-> queue\n");
-> > +                           if (xudc_write_fifo(ep, req) == 1)
-> > +                                   req = NULL;
-> > +                   } else {
-> > +                           dev_dbg(&ep->udc->gadget.dev,
-> > +                                   "xudc_read_fifo called from queue\n");
-> > +                           if (xudc_read_fifo(ep, req) == 1)
-> > +                                   req = NULL;
-> > +                   }
-> > +           }
-> > +   }
-> > +
-> > +   if (req != NULL)
-> > +           list_add_tail(&req->queue, &ep->queue);
-> > +   spin_unlock_irqrestore(&dev->lock, flags);
-> > +   return 0;
-> > +}
-> > +
-> > +/**
-> > + * xudc_ep_dequeue - Removes the request from the queue.
-> > + * @_ep: pointer to the usb device endpoint structure.
-> > + * @_req: pointer to the usb request structure.
-> > + *
-> > + * Return: 0 for success and error value on failure
-> > + */
-> > +static int xudc_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
-> > +{
-> > +   struct xusb_ep *ep;
-> > +   struct xusb_request *req;
-> > +   unsigned long flags;
-> > +
-> > +   ep = container_of(_ep, struct xusb_ep, ep_usb);
-> > +
-> > +   if (!_ep || ep->ep_usb.name == ep0name)
-> > +           return -EINVAL;
-> > +
-> > +   spin_lock_irqsave(&ep->udc->lock, flags);
-> > +   /* Make sure it's actually queued on this endpoint */
-> > +   list_for_each_entry(req, &ep->queue, queue) {
-> > +           if (&req->usb_req == _req)
-> > +                   break;
-> > +   }
-> > +   if (&req->usb_req != _req) {
-> > +           spin_unlock_irqrestore(&ep->udc->lock, flags);
-> > +           return -EINVAL;
-> > +   }
-> > +
-> > +   xudc_done(ep, req, -ECONNRESET);
-> > +   spin_unlock_irqrestore(&ep->udc->lock, flags);
-> > +
-> > +   return 0;
-> > +}
-> > +
-> > +static struct usb_ep_ops xusb_ep_ops = {
-> > +   .enable = xudc_ep_enable,
-> > +   .disable = xudc_ep_disable,
-> > +
-> > +   .alloc_request = xudc_ep_alloc_request,
-> > +   .free_request = xudc_free_request,
-> > +
-> > +   .queue = xudc_ep_queue,
-> > +   .dequeue = xudc_ep_dequeue,
-> > +   .set_halt = xudc_ep_set_halt,
-> > +};
-> > +
-> > +/**
-> > + * xudc_get_frame - Reads the current usb frame number.
-> > + * @gadget: pointer to the usb gadget structure.
-> > + *
-> > + * Return: current frame number for success and error value on failure.
-> > + */
-> > +static int xudc_get_frame(struct usb_gadget *gadget)
-> > +{
-> > +
-> > +   struct xusb_udc *udc = to_udc(gadget);
-> > +   unsigned long flags;
-> > +   int retval;
-> > +
-> > +   if (!gadget)
-> > +           return -ENODEV;
-> > +
-> > +   local_irq_save(flags);
-> > +   retval = udc->read_fn(udc->base_address +
-> XUSB_FRAMENUM_OFFSET);
-> > +   local_irq_restore(flags);
-> > +   return retval;
-> > +}
-> > +
-> > +/**
-> > + * xudc_reinit - Restores inital software state.
-> > + * @udc: pointer to the usb device controller structure.
-> > + */
-> > +static void xudc_reinit(struct xusb_udc *udc)
-> > +{
-> > +   u32 ep_number;
-> > +   char name[4];
-> > +
-> > +   INIT_LIST_HEAD(&udc->gadget.ep_list);
-> > +   INIT_LIST_HEAD(&udc->gadget.ep0->ep_list);
-> > +
-> > +   for (ep_number = 0; ep_number < XUSB_MAX_ENDPOINTS;
-> ep_number++) {
-> > +           struct xusb_ep *ep = &udc->ep[ep_number];
-> > +
-> > +           if (ep_number) {
-> > +                   list_add_tail(&ep->ep_usb.ep_list,
-> > +                                   &udc->gadget.ep_list);
-> > +                   ep->ep_usb.maxpacket = (unsigned short)~0;
-> > +                   sprintf(name, "ep%d", ep_number);
-> > +                   strcpy(ep->name, name);
-> > +                   ep->ep_usb.name = ep->name;
-> > +           } else {
-> > +                   ep->ep_usb.name = ep0name;
-> > +                   ep->ep_usb.maxpacket = 0x40;
-> > +           }
-> > +
-> > +           ep->ep_usb.ops = &xusb_ep_ops;
-> > +           ep->udc = udc;
-> > +           ep->epnumber = ep_number;
-> > +           ep->desc = NULL;
-> > +           ep->stopped = 0;
-> > +           /*
-> > +            * The configuration register address offset between
-> > +            * each endpoint is 0x10.
-> > +            */
-> > +           ep->endpointoffset = XUSB_EP0_CONFIG_OFFSET +
-> > +                                   (ep_number * 0x10);
-> > +           ep->is_in = 0;
-> > +           ep->is_iso = 0;
-> > +           ep->maxpacket = 0;
-> > +           xudc_epconfig(ep, udc);
-> > +           udc->status = 0;
-> > +
-> > +           /* Initialize one queue per endpoint */
-> > +           INIT_LIST_HEAD(&ep->queue);
-> > +   }
-> > +}
-> > +
-> > +/**
-> > + * xudc_stop_activity - Stops any further activity on the device.
-> > + * @udc: pointer to the usb device controller structure.
-> > + */
-> > +static void xudc_stop_activity(struct xusb_udc *udc)
-> > +{
-> > +   struct usb_gadget_driver *driver = udc->driver;
-> > +   int i;
-> > +
-> > +   if (udc->gadget.speed == USB_SPEED_UNKNOWN)
-> > +           driver = NULL;
-> > +   udc->gadget.speed = USB_SPEED_HIGH;
-> > +
-> > +   for (i = 0; i < XUSB_MAX_ENDPOINTS; i++) {
-> > +           struct xusb_ep *ep = &udc->ep[i];
-> > +
-> > +           ep->stopped = 1;
-> > +           xudc_nuke(ep, -ESHUTDOWN);
-> > +   }
-> > +   if (driver) {
-> > +           spin_unlock(&udc->lock);
-> > +           driver->disconnect(&udc->gadget);
-> > +           spin_lock(&udc->lock);
-> > +   }
->
-> you shouldn't be calling disconnect here, udc-core is doing that for
-> you.
-Ok.
->
-> > +
-> > +   xudc_reinit(udc);
-> > +}
-> > +
-> > +/**
-> > + * xudc_start - Starts the device.
-> > + * @gadget: pointer to the usb gadget structure
-> > + * @driver: pointer to gadget driver structure
-> > + *
-> > + * Return: zero always
-> > + */
-> > +static int xudc_start(struct usb_gadget *gadget,
-> > +                   struct usb_gadget_driver *driver)
-> > +{
-> > +   struct xusb_udc *udc = to_udc(gadget);
-> > +   const struct usb_endpoint_descriptor *d = &config_bulk_out_desc;
-> > +
-> > +   driver->driver.bus = NULL;
-> > +   /* hook up the driver */
-> > +   udc->driver = driver;
-> > +   udc->gadget.dev.driver = &driver->driver;
-> > +   udc->gadget.speed = driver->max_speed;
-> > +
-> > +   /* Enable the USB device.*/
-> > +   xudc_ep_enable(&udc->ep[XUSB_EP_NUMBER_ZERO].ep_usb, d);
-> > +   udc->write_fn(0, (udc->base_address + XUSB_ADDRESS_OFFSET));
-> > +   udc->write_fn(XUSB_CONTROL_USB_READY_MASK,
-> > +           udc->base_address + XUSB_CONTROL_OFFSET);
-> > +
-> > +   return 0;
-> > +}
-> > +
-> > +/**
-> > + * xudc_stop - stops the device.
-> > + * @gadget: pointer to the usb gadget structure
-> > + * @driver: pointer to usb gadget driver structure
-> > + *
-> > + * Return: zero always
-> > + */
-> > +static int xudc_stop(struct usb_gadget *gadget,
-> > +           struct usb_gadget_driver *driver)
-> > +{
-> > +   struct xusb_udc *udc = to_udc(gadget);
-> > +   unsigned long flags;
-> > +   u32 crtlreg;
-> > +
-> > +   /* Disable USB device.*/
-> > +   crtlreg = udc->read_fn(udc->base_address + XUSB_CONTROL_OFFSET);
-> > +   crtlreg &= ~XUSB_CONTROL_USB_READY_MASK;
-> > +   udc->write_fn(crtlreg, udc->base_address + XUSB_CONTROL_OFFSET);
-> > +   spin_lock_irqsave(&udc->lock, flags);
-> > +   udc->gadget.speed = USB_SPEED_UNKNOWN;
-> > +   xudc_stop_activity(udc);
-> > +   spin_unlock_irqrestore(&udc->lock, flags);
-> > +
-> > +   udc->gadget.dev.driver = NULL;
-> > +   udc->driver = NULL;
-> > +
-> > +   return 0;
-> > +}
-> > +
-> > +static const struct usb_gadget_ops xusb_udc_ops = {
-> > +   .get_frame = xudc_get_frame,
-> > +   .udc_start = xudc_start,
-> > +   .udc_stop  = xudc_stop,
-> > +};
-> > +
-> > +/**
-> > + * xudc_startup_handler - The usb device controller interrupt handler.
-> > + * @callbackref: pointer to the reference value being passed.
-> > + * @intrstatus: The mask value containing the interrupt sources.
-> > + *
-> > + * This handler handles the RESET, SUSPEND and DISCONNECT interrupts.
-> > + */
-> > +static void xudc_startup_handler(void *callbackref, u32 intrstatus)
->
-> why void ? why isn't this returning irqreturn_t ?
->
-> > +{
-> > +   struct xusb_udc *udc;
-> > +   u32 intrreg;
-> > +
-> > +   udc = (struct xusb_udc *) callbackref;
->
-> you don't need the cast here.
->
-> > +   if (intrstatus & XUSB_STATUS_RESET_MASK) {
-> > +           dev_dbg(&udc->gadget.dev, "Reset\n");
-> > +           if (intrstatus & XUSB_STATUS_HIGH_SPEED_MASK)
-> > +                   udc->gadget.speed = USB_SPEED_HIGH;
-> > +           else
-> > +                   udc->gadget.speed = USB_SPEED_FULL;
-> > +
-> > +           if (udc->status == 1) {
-> > +                   udc->status = 0;
-> > +                   /* Set device address to 0.*/
-> > +                   udc->write_fn(0, udc->base_address +
-> > +                                           XUSB_ADDRESS_OFFSET);
-> > +           }
-> > +           /* Disable the Reset interrupt.*/
-> > +           intrreg = udc->read_fn(udc->base_address +
-> > +                                   XUSB_IER_OFFSET);
-> > +
-> > +           intrreg &= ~XUSB_STATUS_RESET_MASK;
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +           /* Enable thesuspend and disconnect.*/
-> > +           intrreg =
-> > +                   udc->read_fn(udc->base_address + XUSB_IER_OFFSET);
-> > +           intrreg |=
-> > +                   (XUSB_STATUS_SUSPEND_MASK |
-> > +                    XUSB_STATUS_DISCONNECT_MASK);
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +   }
-> > +
-> > +   if (intrstatus & XUSB_STATUS_DISCONNECT_MASK) {
-> > +
-> > +           /* Disable the Disconnect interrupt.*/
-> > +           intrreg =
-> > +                   udc->read_fn(udc->base_address + XUSB_IER_OFFSET);
-> > +           intrreg &= ~XUSB_STATUS_DISCONNECT_MASK;
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +           dev_dbg(&udc->gadget.dev, "Disconnect\n");
-> > +           if (udc->status == 1) {
-> > +                   udc->status = 0;
-> > +                   /* Set device address to 0.*/
-> > +                   udc->write_fn(0, udc->base_address +
-> > +                                   XUSB_ADDRESS_OFFSET);
-> > +                   /* Enable the USB device.*/
-> > +                   udc->write_fn(XUSB_CONTROL_USB_READY_MASK,
-> > +                           udc->base_address +
-> XUSB_CONTROL_OFFSET);
-> > +           }
-> > +
-> > +           /* Enable the suspend and reset interrupts.*/
-> > +           intrreg = udc->read_fn(udc->base_address + XUSB_IER_OFFSET)
-> |
-> > +                           XUSB_STATUS_SUSPEND_MASK |
-> > +                           XUSB_STATUS_RESET_MASK;
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +           xudc_stop_activity(udc);
-> > +   }
-> > +
-> > +   if (intrstatus & XUSB_STATUS_SUSPEND_MASK) {
-> > +           dev_dbg(&udc->gadget.dev, "Suspend\n");
-> > +           /* Disable the Suspend interrupt.*/
-> > +           intrreg = udc->read_fn(udc->base_address + XUSB_IER_OFFSET)
-> &
-> > +                                   ~XUSB_STATUS_SUSPEND_MASK;
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +           /* Enable the Disconnect and reset interrupts. */
-> > +           intrreg = udc->read_fn(udc->base_address + XUSB_IER_OFFSET)
-> |
-> > +                           XUSB_STATUS_DISCONNECT_MASK |
-> > +                           XUSB_STATUS_RESET_MASK;
-> > +           udc->write_fn(intrreg, udc->base_address + XUSB_IER_OFFSET);
-> > +   }
-> > +}
-> > +
-> > +/**
-> > + * xudc_set_clear_feature - Executes the set feature and clear feature
-> commands.
-> > + * @udc: pointer to the usb device controller structure.
-> > + * @flag: Value deciding the set or clear action.
-> > + *
-> > + * Processes the SET_FEATURE and CLEAR_FEATURE commands.
-> > + */
-> > +static void xudc_set_clear_feature(struct xusb_udc *udc, int flag)
-> > +{
-> > +   u8 endpoint;
-> > +   u8 outinbit;
-> > +   u32 epcfgreg;
-> > +
-> > +   switch (ch9_cmdbuf.setup.bRequestType) {
-> > +   case STANDARD_OUT_DEVICE:
->
-> use the macros from <linux/usb/ch9.h>
-Ok.
->
-> > +           switch (ch9_cmdbuf.setup.wValue) {
-> > +           case USB_DEVICE_TEST_MODE:
-> > +                   /*
-> > +                    * The Test Mode will be executed
-> > +                    * after the status phase.
-> > +                    */
-> > +                   break;
-> > +
-> > +           default:
-> > +                   epcfgreg = udc->read_fn(udc->base_address +
-> > +                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +                   epcfgreg |= XUSB_EP_CFG_STALL_MASK;
-> > +                   udc->write_fn(epcfgreg, udc->base_address +
-> > +                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +                   break;
-> > +           }
-> > +           break;
-> > +
-> > +   case STANDARD_OUT_ENDPOINT:
->
-> use the macros from <linux/usb/ch9.h>
-Ok.
->
-> > +           if (!ch9_cmdbuf.setup.wValue) {
-> > +                   endpoint = ch9_cmdbuf.setup.wIndex & 0xf;
-> > +                   outinbit = ch9_cmdbuf.setup.wIndex & 0x80;
-> > +                   outinbit = outinbit >> 7;
-> > +
-> > +                   /* Make sure direction matches.*/
-> > +                   if (outinbit != udc->ep[endpoint].is_in) {
-> > +                           epcfgreg = udc->read_fn(udc->base_address +
-> > +                                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].
-> > +                                           endpointoffset);
-> > +                           epcfgreg |= XUSB_EP_CFG_STALL_MASK;
-> > +
-> > +                           udc->write_fn(epcfgreg, udc->base_address +
-> > +                                   udc->ep[XUSB_EP_NUMBER_ZERO].
-> > +                                   endpointoffset);
-> > +                           return;
-> > +                   }
-> > +
-> > +                   if (!endpoint) {
-> > +                           /* Clear the stall.*/
-> > +                           epcfgreg = udc->read_fn(udc->base_address +
-> > +                                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].
-> > +                                           endpointoffset);
-> > +
-> > +                           epcfgreg &= ~XUSB_EP_CFG_STALL_MASK;
-> > +
-> > +                           udc->write_fn(epcfgreg, udc->base_address +
-> > +                                   udc->ep[XUSB_EP_NUMBER_ZERO].
-> > +                                   endpointoffset);
-> > +                           break;
-> > +                   } else {
-> > +                           if (flag == 1) {
-> > +                                   epcfgreg =
-> > +                                           udc->read_fn(udc-
-> >base_address +
-> > +                                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].
-> > +                                           endpointoffset);
-> > +                                   epcfgreg |=
-> XUSB_EP_CFG_STALL_MASK;
-> > +
-> > +                                   udc->write_fn(epcfgreg,
-> > +                                           udc->base_address +
-> > +                                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].
-> > +                                           endpointoffset);
-> > +                           } else {
-> > +                                   /* Unstall the endpoint.*/
-> > +                                   epcfgreg =
-> > +                                           udc->read_fn(udc-
-> >base_address +
-> > +                                           udc->ep[endpoint].
-> > +                                           endpointoffset);
-> > +                                   epcfgreg &=
-> > +                                           ~(XUSB_EP_CFG_STALL_MASK
-> |
-> > +
-> XUSB_EP_CFG_DATA_TOGGLE_MASK);
-> > +                                   udc->write_fn(epcfgreg,
-> > +                                           udc->base_address +
-> > +                                           udc->ep[endpoint].
-> > +                                           endpointoffset);
-> > +                           }
-> > +                   }
-> > +           }
-> > +           break;
-> > +
-> > +   default:
-> > +           epcfgreg = udc->read_fn(udc->base_address +
-> > +                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +           epcfgreg |= XUSB_EP_CFG_STALL_MASK;
-> > +           udc->write_fn(epcfgreg, udc->base_address +
-> > +                   udc->ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +           return;
-> > +   }
-> > +
-> > +   /* Cause and valid status phase to be issued.*/
-> > +   xudc_wrstatus(udc);
-> > +
-> > +   return;
-> > +}
-> > +
-> > +/**
-> > + * xudc_execute_cmd - Processes the USB specification chapter 9 commands.
-> > + * @udc: pointer to the usb device controller structure.
-> > + *
-> > + * Return: 0 for success and the same reuqest command if it is not handled.
-> > + */
-> > +static int xudc_execute_cmd(struct xusb_udc *udc)
-> > +{
-> > +
-> > +   if ((ch9_cmdbuf.setup.bRequestType & USB_TYPE_MASK) ==
-> > +                   USB_TYPE_STANDARD) {
-> > +           /* Process the chapter 9 command.*/
-> > +           switch (ch9_cmdbuf.setup.bRequest) {
-> > +
-> > +           case USB_REQ_CLEAR_FEATURE:
-> > +                   xudc_set_clear_feature(udc, 0);
-> > +                   break;
-> > +
-> > +           case USB_REQ_SET_FEATURE:
-> > +                   xudc_set_clear_feature(udc, 1);
-> > +                   break;
-> > +
-> > +           case USB_REQ_SET_ADDRESS:
-> > +                   xudc_wrstatus(udc);
-> > +                   break;
-> > +
-> > +           case USB_REQ_SET_CONFIGURATION:
-> > +                   udc->status = 1;
-> > +                   return ch9_cmdbuf.setup.bRequest;
-> > +
-> > +           default:
-> > +                   /*
-> > +                    * Return the same request to application for
-> > +                    * handling.
-> > +                    */
-> > +                   return ch9_cmdbuf.setup.bRequest;
-> > +           }
-> > +
-> > +   } else {
-> > +           if ((ch9_cmdbuf.setup.bRequestType & USB_TYPE_MASK) ==
-> > +                USB_TYPE_CLASS)
-> > +                   return ch9_cmdbuf.setup.bRequest;
-> > +   }
-> > +   return 0;
-> > +}
-> > +
-> > +/**
-> > + * xudc_handle_setup - Processes the setup packet.
-> > + * @udc: pointer to the usb device controller structure.
-> > + * @ctrl: pointer to the usb control endpoint structure.
-> > + *
-> > + * Return: 0 for success and request to be handled by application if
-> > + *         is not handled by the driver.
-> > + */
-> > +static int xudc_handle_setup(struct xusb_udc *udc, struct usb_ctrlrequest
-> *ctrl)
-> > +{
-> > +   u32 *ep0rambase;
-> > +
-> > +   /* Load up the chapter 9 command buffer.*/
-> > +   ep0rambase = (u32 __force *) (udc->base_address +
-> > +                             XUSB_SETUP_PKT_ADDR_OFFSET);
-> > +   memcpy((void *)&ch9_cmdbuf.setup, (void *)ep0rambase, 8);
-> > +
-> > +   ctrl->bRequestType = ch9_cmdbuf.setup.bRequestType;
-> > +   ctrl->bRequest     = ch9_cmdbuf.setup.bRequest;
-> > +   ctrl->wValue       = ch9_cmdbuf.setup.wValue;
-> > +   ctrl->wIndex       = ch9_cmdbuf.setup.wIndex;
-> > +   ctrl->wLength      = ch9_cmdbuf.setup.wLength;
-> > +
-> > +   ch9_cmdbuf.setup.wValue = cpu_to_le16(ch9_cmdbuf.setup.wValue);
-> > +   ch9_cmdbuf.setup.wIndex = cpu_to_le16(ch9_cmdbuf.setup.wIndex);
-> > +   ch9_cmdbuf.setup.wLength = cpu_to_le16(ch9_cmdbuf.setup.wLength);
-> > +
-> > +   /* Restore ReadPtr to data buffer.*/
-> > +   ch9_cmdbuf.contreadptr = &ch9_cmdbuf.contreaddatabuffer[0];
-> > +   ch9_cmdbuf.contreadcount = 0;
-> > +
-> > +   if (ch9_cmdbuf.setup.bRequestType & USB_DIR_IN) {
-> > +           /* Execute the get command.*/
-> > +           ch9_cmdbuf.setupseqrx = STATUS_PHASE;
-> > +           ch9_cmdbuf.setupseqtx = DATA_PHASE;
-> > +           return xudc_execute_cmd(udc);
-> > +   } else {
-> > +           /* Execute the put command.*/
-> > +           ch9_cmdbuf.setupseqrx = DATA_PHASE;
-> > +           ch9_cmdbuf.setupseqtx = STATUS_PHASE;
-> > +           return xudc_execute_cmd(udc);
-> > +   }
-> > +   /* Control should never come here.*/
-> > +   return 0;
-> > +}
-> > +
-> > +/**
-> > + * xudc_ep0_out - Processes the endpoint 0 OUT token.
-> > + * @udc: pointer to the usb device controller structure.
-> > + */
-> > +static void xudc_ep0_out(struct xusb_udc *udc)
-> > +{
-> > +   struct xusb_ep *ep;
-> > +   u8 count;
-> > +   u8 *ep0rambase;
-> > +   u16 index;
-> > +
-> > +   ep = &udc->ep[0];
-> > +   switch (ch9_cmdbuf.setupseqrx) {
-> > +   case STATUS_PHASE:
->
-> what about the setup phase ?
-This not USB phases and just internal to driver.
->
-> > +           /*
-> > +            * This resets both state machines for the next
-> > +            * Setup packet.
-> > +            */
-> > +           ch9_cmdbuf.setupseqrx = SETUP_PHASE;
-> > +           ch9_cmdbuf.setupseqtx = SETUP_PHASE;
-> > +           ep->data->usb_req.actual = ep->data->usb_req.length;
-> > +           xudc_done(ep, ep->data, 0);
-> > +           break;
-> > +
-> > +   case DATA_PHASE:
-> > +           count = udc->read_fn(udc->base_address +
-> > +                           XUSB_EP_BUF0COUNT_OFFSET);
-> > +           /* Copy the data to be received from the DPRAM. */
-> > +           ep0rambase =
-> > +                   (u8 __force *) (udc->base_address +
-> > +                           (udc->ep[XUSB_EP_NUMBER_ZERO].rambase
-> << 2));
-> > +
-> > +           for (index = 0; index < count; index++)
-> > +                   *ch9_cmdbuf.contreadptr++ = *ep0rambase++;
-> > +
-> > +           ch9_cmdbuf.contreadcount += count;
-> > +           if (ch9_cmdbuf.setup.wLength == ch9_cmdbuf.contreadcount) {
-> > +                           xudc_wrstatus(udc);
-> > +           } else {
-> > +                   /* Set the Tx packet size and the Tx enable bit.*/
-> > +                   udc->write_fn(0, udc->base_address +
-> > +                           XUSB_EP_BUF0COUNT_OFFSET);
-> > +                   udc->write_fn(1, udc->base_address +
-> > +                           XUSB_BUFFREADY_OFFSET);
-> > +           }
-> > +           break;
-> > +
-> > +   default:
-> > +           break;
-> > +   }
-> > +}
-> > +
-> > +/**
-> > + * xudc_ep0_in - Processes the endpoint 0 IN token.
-> > + * @udc: pointer to the usb device controller structure.
-> > + */
-> > +static void xudc_ep0_in(struct xusb_udc *udc)
-> > +{
-> > +   struct xusb_ep *ep;
-> > +   u32 epcfgreg;
-> > +   u16 count;
-> > +   u16 length;
-> > +   u8 *ep0rambase;
-> > +
-> > +   ep = &udc->ep[0];
-> > +   switch (ch9_cmdbuf.setupseqtx) {
-> > +   case STATUS_PHASE:
-> > +           if (ch9_cmdbuf.setup.bRequest == USB_REQ_SET_ADDRESS) {
-> > +                   /* Set the address of the device.*/
-> > +                   udc->write_fn(ch9_cmdbuf.setup.wValue,
-> > +                                   (udc->base_address +
-> > +                                   XUSB_ADDRESS_OFFSET));
-> > +                   break;
-> > +           } else {
-> > +                   if (ch9_cmdbuf.setup.bRequest ==
-> USB_REQ_SET_FEATURE) {
-> > +                           if (ch9_cmdbuf.setup.bRequestType ==
-> > +                               STANDARD_OUT_DEVICE) {
-> > +                                   if (ch9_cmdbuf.setup.wValue ==
-> > +                                       USB_DEVICE_TEST_MODE)
-> > +                                           udc->write_fn(TEST_J,
-> > +                                                   udc->base_address +
-> > +
->       XUSB_TESTMODE_OFFSET);
->
-> use a switch.
->
-> > +                           }
-> > +                   }
-> > +           }
-> > +           ep->data->usb_req.actual = ch9_cmdbuf.setup.wLength;
-> > +           xudc_done(ep, ep->data, 0);
-> > +           break;
-> > +
-> > +   case DATA_PHASE:
-> > +           if (!ch9_cmdbuf.contwritecount) {
-> > +                   /*
-> > +                    * We're done with data transfer, next
-> > +                    * will be zero length OUT with data toggle of
-> > +                    * 1. Setup data_toggle.
-> > +                    */
-> > +                   epcfgreg = udc->read_fn(udc->base_address +
-> > +                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +                   epcfgreg |= XUSB_EP_CFG_DATA_TOGGLE_MASK;
-> > +                   udc->write_fn(epcfgreg, udc->base_address +
-> > +                           udc-
-> >ep[XUSB_EP_NUMBER_ZERO].endpointoffset);
-> > +                   count = 0;
-> > +
-> > +                   ch9_cmdbuf.setupseqtx = STATUS_PHASE;
-> > +
-> > +           } else {
-> > +                   length = count = min_t(u32,
-> ch9_cmdbuf.contwritecount,
-> > +                                           EP0_MAX_PACKET);
-> > +                   /* Copy the data to be transmitted into the DPRAM. */
-> > +                   ep0rambase = (u8 __force *) (udc->base_address +
-> > +                           (udc->ep[XUSB_EP_NUMBER_ZERO].rambase
-> << 2));
-> > +                   while (length--)
-> > +                           *ep0rambase++ =
-> *ch9_cmdbuf.contwriteptr++;
-> > +
-> > +                   ch9_cmdbuf.contwritecount -= count;
-> > +           }
-> > +           udc->write_fn(count, udc->base_address +
-> > +                           XUSB_EP_BUF0COUNT_OFFSET);
-> > +           udc->write_fn(1, udc->base_address +
-> XUSB_BUFFREADY_OFFSET);
-> > +           break;
-> > +
-> > +   default:
-> > +           break;
-> > +   }
-> > +}
-> > +
-> > +/**
-> > + * xudc_ctrl_ep_handler - Endpoint 0 interrupt handler.
-> > + * @callbackref: pointer to the call back reference passed by the
-> > + *                 main interrupt handler.
-> > + * @intrstatus:    It's the mask value for the interrupt sources on
-> endpoint 0.
-> > + *
-> > + * Processes the commands received during enumeration phase.
-> > + */
-> > +static void xudc_ctrl_ep_handler(void *callbackref, u32 intrstatus)
-> > +{
-> > +   struct xusb_udc *udc;
-> > +   struct usb_ctrlrequest ctrl;
-> > +   int status;
-> > +   int epnum;
-> > +   u32 intrreg;
-> > +
-> > +   udc = (struct xusb_udc *) callbackref;
-> > +   /* Process the end point zero buffer interrupt.*/
-> > +   if (intrstatus & XUSB_STATUS_EP0_BUFF1_COMP_MASK) {
-> > +           if (intrstatus & XUSB_STATUS_SETUP_PACKET_MASK) {
-> > +                   /*
-> > +                    * Enable the Disconnect, suspend and reset
-> > +                    * interrupts.
-> > +                    */
-> > +                   intrreg = udc->read_fn(udc->base_address +
-> > +                                   XUSB_IER_OFFSET);
-> > +                   intrreg |= XUSB_STATUS_DISCONNECT_MASK |
-> > +                                    XUSB_STATUS_SUSPEND_MASK |
-> > +                                    XUSB_STATUS_RESET_MASK;
-> > +                   udc->write_fn(intrreg,
-> > +                           udc->base_address + XUSB_IER_OFFSET);
-> > +                   status = xudc_handle_setup(udc, &ctrl);
-> > +                   if (status || ((ch9_cmdbuf.setup.bRequestType &
-> > +                                   USB_TYPE_MASK) ==
-> USB_TYPE_CLASS)) {
-> > +                           /*
-> > +                            * Request is to be handled by the gadget
-> > +                            * driver.
-> > +                            */
-> > +                           spin_unlock(&udc->lock);
-> > +                           udc->driver->setup(&udc->gadget, &ctrl);
-> > +                           spin_lock(&udc->lock);
-> > +                   } else {
-> > +                           if (ctrl.bRequest ==
-> USB_REQ_CLEAR_FEATURE) {
-> > +                                   epnum = ctrl.wIndex & 0xf;
-> > +                                   udc->ep[epnum].stopped = 0;
-> > +                           }
-> > +                           if (ctrl.bRequest == USB_REQ_SET_FEATURE) {
-> > +                                   epnum = ctrl.wIndex & 0xf;
-> > +                                   udc->ep[epnum].stopped = 1;
-> > +                           }
-> > +                   }
-> > +           } else {
-> > +                   if (intrstatus & XUSB_STATUS_FIFO_BUFF_RDY_MASK)
-> > +                           xudc_ep0_out(udc);
-> > +                   else if (intrstatus &
-> > +                           XUSB_STATUS_FIFO_BUFF_FREE_MASK)
-> > +                           xudc_ep0_in(udc);
-> > +           }
-> > +   }
-> > +}
-> > +
-> > +/**
-> > + * xudc_nonctrl_ep_handler - Non control endpoint interrupt handler.
-> > + * @callbackref: pointer to the call back reference passed by the
-> > + *                 main interrupt handler.
-> > + * @epnum: End point number for which the interrupt is to be processed
-> > + * @intrstatus:    It's the mask value for the interrupt sources on
-> endpoint 0.
-> > + */
-> > +static void xudc_nonctrl_ep_handler(void *callbackref, u8 epnum,
-> > +                                   u32 intrstatus)
-> > +{
-> > +
-> > +   struct xusb_request *req;
-> > +   struct xusb_udc *udc;
-> > +   struct xusb_ep *ep;
-> > +
-> > +   udc = (struct xusb_udc *) callbackref;
-> > +   ep = &udc->ep[epnum];
-> > +   /* Process the End point interrupts.*/
-> > +   if (intrstatus & (XUSB_STATUS_EP0_BUFF1_COMP_MASK << epnum))
-> > +           ep->buffer0ready = 0;
-> > +   if (intrstatus & (XUSB_STATUS_EP0_BUFF2_COMP_MASK << epnum))
-> > +           ep->buffer1ready = 0;
-> > +
-> > +   if (list_empty(&ep->queue))
-> > +           req = NULL;
-> > +   else
-> > +           req = list_entry(ep->queue.next, struct xusb_request, queue);
-> > +   if (!req)
-> > +           return;
-> > +   if (ep->is_in)
-> > +           xudc_write_fifo(ep, req);
-> > +   else
-> > +           xudc_read_fifo(ep, req);
-> > +}
-> > +
-> > +/**
-> > + * xudc_irq - The main interrupt handler.
-> > + * @irq: The interrupt number.
-> > + * @_udc: pointer to the usb device controller structure.
-> > + *
-> > + * Return: IRQ_HANDLED after the interrupt is handled.
-> > + */
-> > +static irqreturn_t xudc_irq(int irq, void *_udc)
-> > +{
-> > +   struct xusb_udc *udc = _udc;
-> > +   u32 intrstatus;
-> > +   u8 index;
-> > +   u32 bufintr;
-> > +
-> > +   spin_lock(&(udc->lock));
-> > +
-> > +   /* Read the Interrupt Status Register.*/
-> > +   intrstatus = udc->read_fn(udc->base_address + XUSB_STATUS_OFFSET);
-> > +   /* Call the handler for the event interrupt.*/
-> > +   if (intrstatus & XUSB_STATUS_INTR_EVENT_MASK) {
-> > +           /*
-> > +            * Check if there is any action to be done for :
-> > +            * - USB Reset received {XUSB_STATUS_RESET_MASK}
-> > +            * - USB Suspend received {XUSB_STATUS_SUSPEND_MASK}
->
-> what about resume ? No resume ?
->
-> > +            * - USB Disconnect received
-> {XUSB_STATUS_DISCONNECT_MASK}
-> > +            */
-> > +           xudc_startup_handler(udc, intrstatus);
-> > +   }
-> > +
-> > +   /* Check the buffer completion interrupts */
-> > +   if (intrstatus & XUSB_STATUS_INTR_BUFF_COMP_ALL_MASK) {
-> > +           if (intrstatus & XUSB_STATUS_EP0_BUFF1_COMP_MASK)
-> > +                   xudc_ctrl_ep_handler(udc, intrstatus);
-> > +
-> > +           for (index = 1; index < 8; index++) {
-> > +                   bufintr = ((intrstatus &
-> > +
->       (XUSB_STATUS_EP1_BUFF1_COMP_MASK <<
-> > +                                                   (index - 1))) ||
-> > +                              (intrstatus &
-> > +
->       (XUSB_STATUS_EP1_BUFF2_COMP_MASK <<
-> > +                                                   (index - 1))));
-> > +
-> > +                   if (bufintr)
-> > +                           xudc_nonctrl_ep_handler(udc, index,
-> > +                                           intrstatus);
-> > +           }
-> > +   }
-> > +   spin_unlock(&(udc->lock));
-> > +
-> > +   return IRQ_HANDLED;
-> > +}
-> > +
-> > +
-> > +
-> > +/**
-> > + * xudc_release - Releases device structure
-> > + * @dev: pointer to device structure
-> > + */
-> > +static void xudc_release(struct device *dev)
-> > +{
-> > +}
->
-> you don't need to define this, udc-core will give you a release method.
-Ok.
->
-> > +/**
-> > + * xudc_probe - The device probe function for driver initialization.
-> > + * @pdev: pointer to the platform device structure.
-> > + *
-> > + * Return: 0 for success and error value on failure
-> > + */
-> > +static int xudc_probe(struct platform_device *pdev)
-> > +{
-> > +   struct device_node *np = pdev->dev.of_node;
-> > +   struct resource *res;
-> > +   struct xusb_udc *udc;
-> > +   int irq;
-> > +   int ret;
-> > +
-> > +   dev_dbg(&pdev->dev, "%s(%p)\n", __func__, pdev);
-> > +
-> > +   udc = devm_kzalloc(&pdev->dev, sizeof(*udc), GFP_KERNEL);
-> > +   if (!udc)
-> > +           return -ENOMEM;
-> > +
-> > +   /* Map the registers */
-> > +   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +   udc->base_address = devm_ioremap_nocache(&pdev->dev, res->start,
-> > +                                            resource_size(res));
->
-> use devm_ioremap_resource() instead.
-Ok.
->
-> > +   if (!udc->base_address)
-> > +           return -ENOMEM;
-> > +
-> > +   irq = platform_get_irq(pdev, 0);
-> > +   if (irq < 0) {
-> > +           dev_err(&pdev->dev, "unable to get irq\n");
-> > +           return irq;
-> > +   }
-> > +   ret = request_irq(irq, xudc_irq, 0, dev_name(&pdev->dev), udc);
->
-> devm_request_irq()
-Ok.
->
-> > +   if (ret < 0) {
-> > +           dev_dbg(&pdev->dev, "unable to request irq %d", irq);
-> > +           goto fail0;
-> > +   }
-> > +
-> > +   udc->dma_enabled = of_property_read_bool(np, "xlnx,include-dma");
-> > +
-> > +   /* Setup gadget structure */
-> > +   udc->gadget.ops = &xusb_udc_ops;
-> > +   udc->gadget.max_speed = USB_SPEED_HIGH;
-> > +   udc->gadget.speed = USB_SPEED_HIGH;
-> > +   udc->gadget.ep0 = &udc->ep[XUSB_EP_NUMBER_ZERO].ep_usb;
-> > +   udc->gadget.name = driver_name;
-> > +
-> > +   dev_set_name(&udc->gadget.dev, "xilinx_udc");
-> > +   udc->gadget.dev.release = xudc_release;
-> > +   udc->gadget.dev.parent = &pdev->dev;
->
-> don't touch the gadget device directly, udc-core handles all of that for
-> you.
->
-> > +
-> > +   spin_lock_init(&udc->lock);
-> > +
-> > +   /* Check for IP endianness */
-> > +   udc->write_fn = xudc_write32_be;
-> > +   udc->read_fn = xudc_read32_be;
-> > +   udc->write_fn(TEST_J, udc->base_address + XUSB_TESTMODE_OFFSET);
-> > +   if ((udc->read_fn(udc->base_address + XUSB_TESTMODE_OFFSET))
-> > +                   != TEST_J) {
-> > +           udc->write_fn = xudc_write32;
-> > +           udc->read_fn = xudc_read32;
-> > +   }
-> > +   udc->write_fn(0, udc->base_address + XUSB_TESTMODE_OFFSET);
-> > +
-> > +   xudc_reinit(udc);
-> > +
-> > +   /* Set device address to 0.*/
-> > +   udc->write_fn(0, udc->base_address + XUSB_ADDRESS_OFFSET);
-> > +
-> > +   ret = usb_add_gadget_udc(&pdev->dev, &udc->gadget);
-> > +   if (ret)
-> > +           goto fail1;
-> > +
-> > +   /* Enable the interrupts.*/
-> > +   udc->write_fn(XUSB_STATUS_GLOBAL_INTR_MASK |
-> XUSB_STATUS_RESET_MASK |
-> > +                 XUSB_STATUS_DISCONNECT_MASK |
-> XUSB_STATUS_SUSPEND_MASK |
-> > +                 XUSB_STATUS_FIFO_BUFF_RDY_MASK |
-> > +                 XUSB_STATUS_FIFO_BUFF_FREE_MASK |
-> > +                 XUSB_STATUS_EP0_BUFF1_COMP_MASK,
-> > +                 udc->base_address + XUSB_IER_OFFSET);
-> > +
-> > +   platform_set_drvdata(pdev, udc);
-> > +
-> > +   dev_info(&pdev->dev, "%s #%d at 0x%08X mapped to 0x%08X\n",
-> > +            driver_name, 0, (u32)res->start,
-> > +            (u32 __force)udc->base_address);
->
-> make this a dev_vdbg().
-Ok.
->
-> > +
-> > +   return 0;
-> > +
-> > +fail1:
-> > +   free_irq(irq, udc);
-> > +fail0:
-> > +   dev_dbg(&pdev->dev, "probe failed, %d\n", ret);
->
-> this should be dev_err().
-Ok.
->
-> > +   return ret;
-> > +}
-> > +
-> > +/**
-> > + * xudc_remove - Releases the resources allocated during the initialization.
-> > + * @pdev: pointer to the platform device structure.
-> > + *
-> > + * Return: 0 for success and error value on failure
-> > + */
-> > +static int xudc_remove(struct platform_device *pdev)
-> > +{
-> > +   struct xusb_udc *udc = platform_get_drvdata(pdev);
-> > +
-> > +   dev_dbg(&pdev->dev, "remove\n");
-> > +   usb_del_gadget_udc(&udc->gadget);
-> > +   if (udc->driver)
-> > +           return -EBUSY;
-> > +
-> > +   device_unregister(&udc->gadget.dev);
->
-> remove this line.
-Ok.
->
-> Also, you're leaking your IRQ handler, if you switch to
-> devm_request_irq() then you don't need to free it, though.
-Ok.
->
-> From the looks of it, I doubt this was actually tested, you need a lot
-> of work on this driver.
-Tested on both ARM and Microblaze architectures with Mass storage gadget.
-Will send a v2 after addressing all your comments.
->
-> cheers
->
-> --
-> balbi
+[   16.907826] irq 16: nobody cared (try booting with the "irqpoll" option)
+[   16.907834] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc3+ #74
+[   16.907836] Hardware name: To be filled by O.E.M. NVR2821/NVR2821, BIOS 1.00 11/06/2013
+[   16.907838]  ffff880079429384 ffff880100203e18 ffffffff81547dae 00000000000400f6
+[   16.907842]  ffff880079429300 ffff880100203e48 ffffffff8107c3ec 000000000000000b
+[   16.907845]  ffff880079429300 0000000000000000 0000000000000010 ffff880100203e88
+[   16.907848] Call Trace:
+[   16.907850]  <IRQ>  [<ffffffff81547dae>] dump_stack+0x46/0x58
+[   16.907860]  [<ffffffff8107c3ec>] __report_bad_irq+0x24/0xc7
+[   16.907863]  [<ffffffff8107c7bd>] note_interrupt+0x164/0x1ef
+[   16.907868]  [<ffffffff8107aa7f>] handle_irq_event_percpu+0x163/0x1a7
+[   16.907872]  [<ffffffff8107aaf6>] handle_irq_event+0x33/0x51
+[   16.907874]  [<ffffffff8107d0c4>] handle_fasteoi_irq+0x77/0xac
+[   16.907878]  [<ffffffff81004048>] handle_irq+0x120/0x130
+[   16.907882]  [<ffffffff81550905>] ? __atomic_notifier_call_chain+0xd/0xf
+[   16.907885]  [<ffffffff81550916>] ? atomic_notifier_call_chain+0xf/0x11
+[   16.907888]  [<ffffffff81003a1c>] do_IRQ+0x4b/0xc2
+[   16.907891]  [<ffffffff8154da2a>] common_interrupt+0x6a/0x6a
+[   16.907892]  <EOI>  [<ffffffff8136c25a>] ? cpuidle_enter_state+0x49/0xac
+[   16.907900]  [<ffffffff8136c253>] ? cpuidle_enter_state+0x42/0xac
+[   16.907904]  [<ffffffff8136c399>] cpuidle_idle_call+0xdc/0x14b
+[   16.907909]  [<ffffffff81009cd0>] arch_cpu_idle+0x9/0x18
+[   16.907912]  [<ffffffff8107a1d1>] cpu_startup_entry+0xdb/0x15e
+[   16.907916]  [<ffffffff81540a8e>] rest_init+0x72/0x74
+[   16.907921]  [<ffffffff81accd11>] start_kernel+0x3a0/0x3ad
+[   16.907924]  [<ffffffff81acc779>] ? repair_env_string+0x5a/0x5a
+[   16.907927]  [<ffffffff81acc481>] x86_64_start_reservations+0x2a/0x2c
+[   16.907930]  [<ffffffff81acc57d>] x86_64_start_kernel+0xfa/0xfe
+[   16.907931] handlers:
+[   16.907942] [<ffffffffa005b0a7>] usb_hcd_irq [usbcore]
+[   16.907944] Disabling IRQ #16
 
-Thanks,
-Sundeep.B.S.
+I found if the system has i915 driver, this bug can't occur.
+I did some tests:
+A:Not using IO-APIC rather than 8259A, the bug still occur(no i915 driver)
+B:If i disable irq of vga controller(PCI 00:02.0) using the config file of sysfs.The bug can't occur.
+C:Remove usb driver and enable IRQ 16 for io-apic, the bug still occur(because if no usb-drives,the do_IRQ will mask-irq,so i only to modify this).
+D:From the datasheet of PCH, i know the PIRQA-H are connect to IRQ16-IRQ23.But from lspci,we can see the irq line of vga controlle is 11.Why?
 
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+I don't this bug is hardware or software bug?
+The following messages are the machine infos:
+
+root@debian:~# uname -a
+Linux debian 3.14.0-rc3+ #74 SMP Fri Feb 21 19:16:55 CST 2014 x86_64 GNU/Linux
+
+root@debian:~/linux# cat /proc/cpuinfo 
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 58
+model name	: Intel(R) Celeron(R) CPU 1037U @ 1.80GHz
+stepping	: 9
+microcode	: 0x17
+cpu MHz		: 1800.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 0
+cpu cores	: 2
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave lahf_lm arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms
+bogomips	: 3591.83
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 58
+model name	: Intel(R) Celeron(R) CPU 1037U @ 1.80GHz
+stepping	: 9
+microcode	: 0x17
+cpu MHz		: 1800.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 1
+cpu cores	: 2
+apicid		: 2
+initial apicid	: 2
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave lahf_lm arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms
+bogomips	: 3591.83
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+root@debian:~# cat /proc/interrupts 
+           CPU0       CPU1       
+  0:         17          0   IO-APIC-edge      timer
+  1:          0          2   IO-APIC-edge      i8042
+  8:          1          0   IO-APIC-edge      rtc0
+  9:          0          0   IO-APIC-fasteoi   acpi
+ 12:          2          1   IO-APIC-edge      i8042
+ 16:      99982         19   IO-APIC-fasteoi   ehci_hcd:usb1
+ 23:         16         10   IO-APIC-fasteoi   ehci_hcd:usb2
+ 40:       5982       1901   PCI-MSI-edge      ahci
+ 41:          0          0   PCI-MSI-edge      ahci
+ 42:        456         10   PCI-MSI-edge      snd_hda_intel
+ 43:          0          0   PCI-MSI-edge      eth0
+ 44:          1         85   PCI-MSI-edge      eth0-rx-0
+ 45:          1         85   PCI-MSI-edge      eth0-rx-1
+ 46:          1         85   PCI-MSI-edge      eth0-tx-0
+ 47:          1         85   PCI-MSI-edge      eth0-tx-1
+ 48:          1          0   PCI-MSI-edge      eth1
+ 49:       2291         26   PCI-MSI-edge      eth1-rx-0
+ 50:         87          0   PCI-MSI-edge      eth1-rx-1
+ 51:         92          0   PCI-MSI-edge      eth1-tx-0
+ 52:        271         20   PCI-MSI-edge      eth1-tx-1
+NMI:          0          0   Non-maskable interrupts
+LOC:       6434       4700   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+PMI:          0          0   Performance monitoring interrupts
+IWI:        286        208   IRQ work interrupts
+RTR:          0          0   APIC ICR read retries
+RES:       2724       2949   Rescheduling interrupts
+CAL:         14         34   Function call interrupts
+TLB:        471        446   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:          2          2   Machine check polls
+ERR:          0
+MIS:          0
+
+root@debian:~# lspci -v
+00:00.0 Host bridge: Intel Corporation 3rd Gen Core processor DRAM Controller (rev 09)
+	Subsystem: Intel Corporation 3rd Gen Core processor DRAM Controller
+	Flags: bus master, fast devsel, latency 0
+	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
+
+00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor Graphics Controller (rev 09) (prog-if 00 [VGA controller])
+	Subsystem: Intel Corporation Device 2010
+	Flags: bus master, fast devsel, latency 0, IRQ 11
+	Memory at f7400000 (64-bit, non-prefetchable) [size=4M]
+	Memory at e0000000 (64-bit, prefetchable) [size=256M]
+	I/O ports at f000 [size=64]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Power Management version 2
+	Capabilities: [a4] PCI Advanced Features
+
+00:16.0 Communication controller: Intel Corporation 7 Series/C210 Series Chipset Family MEI Controller #1 (rev 04)
+	Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family MEI Controller #1
+	Flags: bus master, fast devsel, latency 0, IRQ 11
+	Memory at f7c0a000 (64-bit, non-prefetchable) [size=16]
+	Capabilities: [50] Power Management version 3
+	Capabilities: [8c] MSI: Enable- Count=1/1 Maskable- 64bit+
+
+00:1a.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #2 (rev 04) (prog-if 20 [EHCI])
+	Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #2
+	Flags: bus master, medium devsel, latency 0, IRQ 16
+	Memory at f7c08000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Capabilities: [98] PCI Advanced Features
+	Kernel driver in use: ehci-pci
+
+00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller (rev 04)
+	Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller
+	Flags: bus master, fast devsel, latency 0, IRQ 42
+	Memory at f7c00000 (64-bit, non-prefetchable) [size=16K]
+	Capabilities: [50] Power Management version 2
+	Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
+	Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
+	Capabilities: [100] Virtual Channel
+	Capabilities: [130] Root Complex Link
+	Kernel driver in use: snd_hda_intel
+
+00:1c.0 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 1 (rev c4) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
+	I/O behind bridge: 0000e000-0000efff
+	Memory behind bridge: f7b00000-f7bfffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 1
+	Capabilities: [a0] Power Management version 2
+	Kernel driver in use: pcieport
+
+00:1c.1 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 2 (rev c4) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
+	I/O behind bridge: 0000d000-0000dfff
+	Memory behind bridge: f7a00000-f7afffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 2
+	Capabilities: [a0] Power Management version 2
+	Kernel driver in use: pcieport
+
+00:1c.2 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 3 (rev c4) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
+	I/O behind bridge: 0000c000-0000cfff
+	Memory behind bridge: f7900000-f79fffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 3
+	Capabilities: [a0] Power Management version 2
+	Kernel driver in use: pcieport
+
+00:1c.3 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 4 (rev c4) (prog-if 00 [Normal decode])
+	Flags: bus master, fast devsel, latency 0
+	Bus: primary=00, secondary=04, subordinate=04, sec-latency=0
+	I/O behind bridge: 0000b000-0000bfff
+	Memory behind bridge: f7800000-f78fffff
+	Capabilities: [40] Express Root Port (Slot+), MSI 00
+	Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
+	Capabilities: [90] Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 4
+	Capabilities: [a0] Power Management version 2
+	Kernel driver in use: pcieport
+
+00:1d.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #1 (rev 04) (prog-if 20 [EHCI])
+	Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #1
+	Flags: bus master, medium devsel, latency 0, IRQ 23
+	Memory at f7c07000 (32-bit, non-prefetchable) [size=1K]
+	Capabilities: [50] Power Management version 2
+	Capabilities: [58] Debug port: BAR=1 offset=00a0
+	Capabilities: [98] PCI Advanced Features
+	Kernel driver in use: ehci-pci
+
+00:1f.0 ISA bridge: Intel Corporation 7 Series Chipset Family LPC Controller (rev 04)
+	Subsystem: Intel Corporation 7 Series Chipset Family LPC Controller
+	Flags: bus master, medium devsel, latency 0
+	Capabilities: [e0] Vendor Specific Information: Len=0c <?>
+
+00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family 6-port SATA Controller [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
+	Subsystem: Intel Corporation 7 Series Chipset Family 6-port SATA Controller [AHCI mode]
+	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 40
+	I/O ports at f0b0 [size=8]
+	I/O ports at f0a0 [size=4]
+	I/O ports at f090 [size=8]
+	I/O ports at f080 [size=4]
+	I/O ports at f060 [size=32]
+	Memory at f7c06000 (32-bit, non-prefetchable) [size=2K]
+	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+	Capabilities: [70] Power Management version 3
+	Capabilities: [a8] SATA HBA v1.0
+	Capabilities: [b0] PCI Advanced Features
+	Kernel driver in use: ahci
+
+00:1f.3 SMBus: Intel Corporation 7 Series/C210 Series Chipset Family SMBus Controller (rev 04)
+	Subsystem: Intel Corporation 7 Series/C210 Series Chipset Family SMBus Controller
+	Flags: medium devsel, IRQ 18
+	Memory at f7c05000 (64-bit, non-prefetchable) [size=256]
+	I/O ports at f040 [size=32]
+
+01:00.0 Ethernet controller: Intel Corporation I211 Gigabit Network Connection (rev 03)
+	Subsystem: Intel Corporation Device 0000
+	Flags: bus master, fast devsel, latency 0, IRQ 16
+	Memory at f7b00000 (32-bit, non-prefetchable) [size=128K]
+	I/O ports at e000 [size=32]
+	Memory at f7b20000 (32-bit, non-prefetchable) [size=16K]
+	Capabilities: [40] Power Management version 3
+	Capabilities: [50] MSI: Enable- Count=1/1 Maskable+ 64bit+
+	Capabilities: [70] MSI-X: Enable+ Count=5 Masked-
+	Capabilities: [a0] Express Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Device Serial Number 00-30-64-ff-ff-26-dc-f8
+	Capabilities: [1a0] Transaction Processing Hints
+	Kernel driver in use: igb
+
+02:00.0 Ethernet controller: Intel Corporation I211 Gigabit Network Connection (rev 03)
+	Subsystem: Intel Corporation Device 0000
+	Flags: bus master, fast devsel, latency 0, IRQ 17
+	Memory at f7a00000 (32-bit, non-prefetchable) [size=128K]
+	I/O ports at d000 [size=32]
+	Memory at f7a20000 (32-bit, non-prefetchable) [size=16K]
+	Capabilities: [40] Power Management version 3
+	Capabilities: [50] MSI: Enable- Count=1/1 Maskable+ 64bit+
+	Capabilities: [70] MSI-X: Enable+ Count=5 Masked-
+	Capabilities: [a0] Express Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Device Serial Number 00-30-64-ff-ff-26-dc-f9
+	Capabilities: [1a0] Transaction Processing Hints
+	Kernel driver in use: igb
+
+03:00.0 Mass storage controller: Silicon Image, Inc. SiI 3132 Serial ATA Raid II Controller (rev 01)
+	Subsystem: Silicon Image, Inc. SiI 3132 Serial ATA Raid II Controller
+	Flags: bus master, fast devsel, latency 0, IRQ 10
+	Memory at f7984000 (64-bit, non-prefetchable) [size=128]
+	Memory at f7980000 (64-bit, non-prefetchable) [size=16K]
+	I/O ports at c000 [size=128]
+	Expansion ROM at f7900000 [disabled] [size=512K]
+	Capabilities: [54] Power Management version 2
+	Capabilities: [5c] MSI: Enable- Count=1/1 Maskable- 64bit+
+	Capabilities: [70] Express Legacy Endpoint, MSI 00
+	Capabilities: [100] Advanced Error Reporting
+
+04:00.0 SATA controller: Marvell Technology Group Ltd. Device 9215 (rev 10) (prog-if 01 [AHCI 1.0])
+	Subsystem: Marvell Technology Group Ltd. Device 9215
+	Flags: bus master, fast devsel, latency 0, IRQ 41
+	I/O ports at b050 [size=8]
+	I/O ports at b040 [size=4]
+	I/O ports at b030 [size=8]
+	I/O ports at b020 [size=4]
+	I/O ports at b000 [size=32]
+	Memory at f7810000 (32-bit, non-prefetchable) [size=2K]
+	Expansion ROM at f7800000 [disabled] [size=64K]
+	Capabilities: [40] Power Management version 3
+	Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit-
+	Capabilities: [70] Express Legacy Endpoint, MSI 00
+	Capabilities: [e0] SATA HBA v0.0
+	Capabilities: [100] Advanced Error Reporting
+	Kernel driver in use: ahci
 
 
+
+Thanks!
+Jianpeng Ma
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
