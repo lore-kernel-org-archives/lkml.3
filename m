@@ -1,75 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804AbaBUNBe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47214 "EHLO
+	id S932982AbaBUNBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:01:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540AbaBUMvZ (ORCPT
+	with ESMTP id S932540AbaBUNBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:25 -0500
+	Fri, 21 Feb 2014 08:01:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 097/121] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Fri, 21 Feb 2014 12:48:41 +0000
-Message-Id: <1392986945-9693-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 02/60] crypto: s390 - fix concurrency issue in aes-ctr mode
+Date: Fri, 21 Feb 2014 13:00:29 +0000
+Message-Id: <1392987687-15367-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
+References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+3.5.7.31 -stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit 0519e9ad89e5cd6e6b08398f57c6a71d9580564c upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+The aes-ctr mode uses one preallocated page without any concurrency
+protection. When multiple threads run aes-ctr encryption or decryption
+this can lead to data corruption.
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+The patch introduces locking for the page and a fallback solution with
+slower en/decryption performance in concurrency situations.
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
-
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ring_buffer.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/s390/crypto/aes_s390.c | 65 ++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 46 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index cc2f66f..0e337ee 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2397,6 +2397,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
+index f3000a4..51fb1ef 100644
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -25,6 +25,7 @@
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
++#include <linux/spinlock.h>
+ #include "crypt_s390.h"
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
+ #define AES_KEYLEN_128		1
+@@ -32,6 +33,7 @@
+ #define AES_KEYLEN_256		4
+ 
+ static u8 *ctrblk;
++static DEFINE_SPINLOCK(ctrblk_lock);
+ static char keylen_flag;
+ 
+ struct s390_aes_ctx {
+@@ -760,43 +762,67 @@ static int ctr_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
+ 	return aes_set_key(tfm, in_key, key_len);
+ }
+ 
++static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
++{
++	unsigned int i, n;
 +
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
++	/* only use complete blocks, max. PAGE_SIZE */
++	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(AES_BLOCK_SIZE - 1);
++	for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
++		memcpy(ctrptr + i, ctrptr + i - AES_BLOCK_SIZE,
++		       AES_BLOCK_SIZE);
++		crypto_inc(ctrptr + i, AES_BLOCK_SIZE);
++	}
++	return n;
++}
++
+ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
+ 			 struct s390_aes_ctx *sctx, struct blkcipher_walk *walk)
+ {
+ 	int ret = blkcipher_walk_virt_block(desc, walk, AES_BLOCK_SIZE);
+-	unsigned int i, n, nbytes;
+-	u8 buf[AES_BLOCK_SIZE];
+-	u8 *out, *in;
++	unsigned int n, nbytes;
++	u8 buf[AES_BLOCK_SIZE], ctrbuf[AES_BLOCK_SIZE];
++	u8 *out, *in, *ctrptr = ctrbuf;
+ 
+ 	if (!walk->nbytes)
+ 		return ret;
+ 
+-	memcpy(ctrblk, walk->iv, AES_BLOCK_SIZE);
++	if (spin_trylock(&ctrblk_lock))
++		ctrptr = ctrblk;
++
++	memcpy(ctrptr, walk->iv, AES_BLOCK_SIZE);
+ 	while ((nbytes = walk->nbytes) >= AES_BLOCK_SIZE) {
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		while (nbytes >= AES_BLOCK_SIZE) {
+-			/* only use complete blocks, max. PAGE_SIZE */
+-			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
+-						 nbytes & ~(AES_BLOCK_SIZE - 1);
+-			for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
+-				memcpy(ctrblk + i, ctrblk + i - AES_BLOCK_SIZE,
+-				       AES_BLOCK_SIZE);
+-				crypto_inc(ctrblk + i, AES_BLOCK_SIZE);
+-			}
+-			ret = crypt_s390_kmctr(func, sctx->key, out, in, n, ctrblk);
+-			if (ret < 0 || ret != n)
++			if (ctrptr == ctrblk)
++				n = __ctrblk_init(ctrptr, nbytes);
++			else
++				n = AES_BLOCK_SIZE;
++			ret = crypt_s390_kmctr(func, sctx->key, out, in,
++					       n, ctrptr);
++			if (ret < 0 || ret != n) {
++				if (ctrptr == ctrblk)
++					spin_unlock(&ctrblk_lock);
+ 				return -EIO;
++			}
+ 			if (n > AES_BLOCK_SIZE)
+-				memcpy(ctrblk, ctrblk + n - AES_BLOCK_SIZE,
++				memcpy(ctrptr, ctrptr + n - AES_BLOCK_SIZE,
+ 				       AES_BLOCK_SIZE);
+-			crypto_inc(ctrblk, AES_BLOCK_SIZE);
++			crypto_inc(ctrptr, AES_BLOCK_SIZE);
+ 			out += n;
+ 			in += n;
+ 			nbytes -= n;
+ 		}
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	}
++	if (ctrptr == ctrblk) {
++		if (nbytes)
++			memcpy(ctrbuf, ctrptr, AES_BLOCK_SIZE);
++		else
++			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
++		spin_unlock(&ctrblk_lock);
++	}
+ 	/*
+ 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
+ 	 */
+@@ -804,14 +830,15 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 		ret = crypt_s390_kmctr(func, sctx->key, buf, in,
+-				       AES_BLOCK_SIZE, ctrblk);
++				       AES_BLOCK_SIZE, ctrbuf);
+ 		if (ret < 0 || ret != AES_BLOCK_SIZE)
+ 			return -EIO;
+ 		memcpy(out, buf, nbytes);
+-		crypto_inc(ctrblk, AES_BLOCK_SIZE);
++		crypto_inc(ctrbuf, AES_BLOCK_SIZE);
+ 		ret = blkcipher_walk_done(desc, walk, 0);
++		memcpy(walk->iv, ctrbuf, AES_BLOCK_SIZE);
+ 	}
+-	memcpy(walk->iv, ctrblk, AES_BLOCK_SIZE);
++
+ 	return ret;
+ }
+ 
 -- 
 1.9.0
 
