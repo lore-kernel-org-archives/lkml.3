@@ -1,77 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023AbaBUQbf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:31:35 -0500
-Received: from plane.gmane.org ([80.91.229.3]:46093 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264AbaBUQbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:31:34 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Grant Edwards <grant.b.edwards@gmail.com>
-Subject: Re: locking changes in tty broke low latency feature
-Date: Fri, 21 Feb 2014 16:31:03 +0000 (UTC)
-Message-ID: <le7v07$9gn$1@ger.gmane.org>
-References: <20140218093829.GC1741@redhat.com>
- <5303DABD.9000302@hurleysoftware.com> <20140219130308.GC1851@redhat.com>
- <le2nmd$p1$1@ger.gmane.org> <5304EC33.5040502@hurleysoftware.com>
- <20140219191717.486ac4d0@alan.etchedpixels.co.uk>
- <53051276.2070601@hurleysoftware.com>
- <20140219214242.406e705b@alan.etchedpixels.co.uk>
- <5305664C.7080701@hurleysoftware.com>
- <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
- <53077799.6030700@hurleysoftware.com>
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: c-24-118-110-103.hsd1.mn.comcast.net
-User-Agent: slrn/1.0.1 (Linux)
-Cc: linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org
+	id S933048AbaBUQdH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:33:07 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:35694 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932264AbaBUQdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:33:04 -0500
+Date: Fri, 21 Feb 2014 10:33:02 -0600
+From: Russ Anderson <rja@sgi.com>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140221163302.GN16114@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230> <20140220212854.GO17949@sgi.com> <1392932363.20109.11.camel@x230> <20140220220656.GT17949@sgi.com> <1392935204.20109.17.camel@x230> <20140220224529.GV17949@sgi.com> <1392937781.20109.24.camel@x230> <20140220235904.GZ17949@sgi.com> <1AE640813FDE7649BE1B193DEA596E88024B228C@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024B228C@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-21, Peter Hurley <peter@hurleysoftware.com> wrote:
+On Fri, Feb 21, 2014 at 02:17:12AM +0000, Zheng, Lv wrote:
+> Hi,
+> 
+> Sorry for interrupting you.
+> I have some information that may be helpful for your discussion.
+> Please find them in the inlined replies.
+> Well, I don't want to join the fight, just for your informations. :-)
 
-> I think the consensus is to leave the low_latency facility in, but
-> remove it's connection to the tty buffers.
->
-> If the known-to-be-already-in-non-interrupt-context drivers want,
-> I can add a different function for executing flush_to_ldisc()
-> directly. But I don't want to do that without a use-case and test
-> subject.
+I don't want to join the fight, either.
 
-Three of the drivers I maintain have modes where they handle all rx
-data in non-interrupt contexts, but I'm not convinced (or even
-suspicious) that there would be any noticeable benefit from such a
-function.  If, at some point in the future, it becomes apparent that
-there is "too much latency" in certain cases then perhaps it can be
-looked at again -- but I think doing it now is premature optimization.
-That said, all things being equal, it would be nice to avoid anything
-that would make such an addition impossible in the future.
+I have not looked at your code changes but the description
+looks like the right direction.
 
->> First question though comes before all of this - and that is do we need
->> low_latency at all any more or is the current scheduling logic now good
->> enough to do the job anyway.
->
-> Right.
->
-> Based on my recent test, I think low_latency doesn't need to be a
-> knob for the tty core.
 
-I Agree: there doesn't seem to be any evidence that it's needed by the
-tty/ldisc layer.
-
-> Drivers can continue to use it to mess with their rx fifo settings
-> and such like.
-
-Excellent.  One of my serial_core drivers still has (in it's default
-configuration) 10ms of latency that I can choose to eliminate on a
-per-port bases (at the cost of extra CPU cycles) when the low_latency
-flag is set.
-
-> I plan on sending Greg a patch to do just that, probably this weekend.
-
-Cool.  Thanks much for your attention to this.
+> > From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Russ Anderson
+> > Sent: Friday, February 21, 2014 7:59 AM
+> > 
+> > On Thu, Feb 20, 2014 at 11:09:42PM +0000, Matthew Garrett wrote:
+> > > On Thu, 2014-02-20 at 16:45 -0600, Russ Anderson wrote:
+> > > > On Thu, Feb 20, 2014 at 10:26:45PM +0000, Matthew Garrett wrote:
+> > >
+> > > > > Because I'm trying to ensure that the default behaviour of the kernel is
+> > > > > to *work*. Defaulting to having IPMI be modular means that the default
+> > > > > behaviour of the kernel, as far as the ACPI spec goes, is to be broken.
+> > > >
+> > > > The ACPI spec requires IPMI functionality before a module loads at
+> > > > boot time?  And the kernel is *broken* if it does not support ACIP IPMI
+> > > > functionality before module load time?  Really?
+> > >
+> > > There's no mechanism to ensure that IPMI support will be loaded before
+> > > ACPI calls attempt to access IPMI operation regions. Really.
+> > 
+> > And no mechanism can be added to ensure that ACPI call are
+> > not attempted before IPMI is initialized?  A flag or lock
+> > or exported symbol indicating IPMI support is ready.
+> 
+> In fact there is a workaround solution I've posted here:
+> https://patchwork.kernel.org/patch/2831851/
+> The updated version of this patch can be found at:
+> https://bugzilla.kernel.org/attachment.cgi?id=112611
+> It is the acpi-ipmi13.patch file.
+> 
+> This solution may change the meaning of ACPI spec defined _REG.
+> So we may need a better solution.
+> 
+> But after merging this patch, it is safe to unload acpi_ipmi at users' wishes.
+> Without solutions to solve region handler uninstallation races, it is not safe to unload acpi_ipmi module.
+> You can see crashes in the description of this patch.
+> 
+> The ipmi_si module is using a different way to unload itself which has not been tested by me.
+> You can find it in Documentation/IPMI.txt by searching "hot and remove of interfaces" in this file.
+> 
+> > 
+> > > > > ACPI 4.0 includes support for IPMI operation regions. Modular IPMI means
+> > > > > that the kernel will spend a significant amount of time (potentially
+> > > > > until a user manually loads a driver) failing to implement part of the
+> > > > > IPMI specification. That's a problem, and the correct fix is to ensure
+> > > > > that the kernel always implements IPMI support.
+> > > >
+> > > > The ACPI spec says ipmi_si cannot be a driver?  Really?
+> > > > What is the real problem you are trying to solve?
+> > >
+> > > The most straightforward case is that of an ACPI power meter.
+> > 
+> > So it is just a matter of making sure ipmi_si modules loads before
+> > the ACPI power meter module loads, right?  module dependency issue.
+> 
+> I agree.
+> I think there should be relationship between ACPI region and Linux kernel modules.
+> In fact on the well-known operating system, _REG is always invoked at the end of the IRP_PNP_START_DEVICE completions.
+> But we may still be able to return -EPROBE_DEFER in the power meter driver when it detects failures caused by the readiness state of the region handlers.
+> 
+> I didn't work further on this issue when solving the reported bug:
+> https://bugzilla.kernel.org/show_bug.cgi?id=46741
+> 
+> > 
+> > >                                                                Several
+> > > vendors implement this with an IPMI operation region. Calling any of the
+> > > power meter functions will trigger access to that IPMI operation region,
+> > > which will fail. This may result in driver initialisation failing. There
+> > > is no express dependency between the power meter driver and ipmi_si,
+> > > because the spec envisages IPMI support as basic kernel functionality.
+> > > It's meant to be there before you start loading any other drivers.
+> > 
+> > The spec "envisages"?  I get there is a dependency, that IPMI driver
+> > needs to be loaded before ACIP power meter.  This isn't the first
+> > case of a driver being dependent on another driver.  That doesn't
+> > mean IPMI driver must be built into the kernel.
+> > 
+> > > > > Now, you've described some other problems. I don't disagree that those
+> > > > > are problems. The correct thing for us to do with those problems is to
+> > > > > fix them, not to simply change the kernel defaults such that it's
+> > > > > possible for users to choose between two differently broken states. I'm
+> > > > > absolutely willing to help, as long as you're willing to put some
+> > > > > reasonable amount of effort into describing them.
+> > > >
+> > > > How about ACPI IPMI functionality starts when the ipmi_si
+> > > > module loads at boot time.
+> 
+> Actually, I have a solution implemented this.
+> You can find it at:
+> https://bugzilla.kernel.org/attachment.cgi?id=112611
+> It is the acpi-ipmi14.patch file.
+> 
+> The patch will hand the maintenance-ship of acpi_ipmi to IPMI community.
+> I'm not sure it is proper to merge it by Linux upstreams.
+> 
+> Thanks and best regards
+> -Lv
+> 
+> > >
+> > > I've repeatedly asked for you to provide detailed descriptions of the
+> > > problems you've seen because I have a genuine interest in fixing them.
+> > > If you're just going to childishly refuse then this discussion is
+> > > pointless.
+> > 
+> > The distro cases I would point you at are marked private.
+> > And you do not have access to our internal support system.
+> > A simple google search for "kipmi0" shows a lot of reports of
+> > high cpu utilization.
+> > 
+> > And I'm old enough to appreciate being called childishly.  :-)
+> > 
+> > --
+> > Russ Anderson,  Kernel and Performance Software Team Manager
+> > SGI - Silicon Graphics Inc          rja@sgi.com
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Grant
-
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
