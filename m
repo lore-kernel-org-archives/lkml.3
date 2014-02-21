@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaBUELj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:11:39 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50159 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058AbaBUELh (ORCPT
+	id S1753300AbaBUENY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 23:13:24 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:52671 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752294AbaBUENW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:11:37 -0500
-Date: Thu, 20 Feb 2014 20:11:34 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, anton@nomsg.org, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, akpm@linux-foundation.org
-Subject: Re: [PATCH v3 5/6] timerfd: Add support for deferrable timers
-Message-ID: <20140221041134.GA20564@teo>
-References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
- <1392885633-7787-6-git-send-email-a.perevalov@samsung.com>
- <alpine.DEB.2.02.1402201152440.4468@ionos.tec.linutronix.de>
+	Thu, 20 Feb 2014 23:13:22 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: linux-kernel@vger.kernel.org
+Subject: progress, marching to the rear
+Date: Thu, 20 Feb 2014 23:13:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402201152440.4468@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201402202313.11871.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 12:09:43PM +0100, Thomas Gleixner wrote:
-> On Thu, 20 Feb 2014, Alexey Perevalov wrote:
-> > From: Anton Vorontsov <anton@enomsg.org>
-> > 
-> > This patch implements a userland-side API for generic deferrable timers,
-> > per linux/timer.h:
-> > 
-> >  * A deferrable timer will work normally when the system is busy, but
-> >  * will not cause a CPU to come out of idle just to service it; instead,
-> >  * the timer will be serviced when the CPU eventually wakes up with a
-> >  * subsequent non-deferrable timer.
-> > 
-> > These timers are crucial for power saving, i.e. periodic tasks that want
-> > to work in background when the system is under use, but don't want to
-> > cause wakeups themselves.
-> > 
-> > The deferred timers are somewhat orthogonal to high-res external timers,
-> > since the deferred timer is tied to the system load, not just to some
-> > external decrementer source.
-> 
-> Again this changelog makes no sense. What's orthogonal to high-res
-> timers and why are they external?
+I finally found a keyboard I can use when the boots fails to the
+initramfs: prompt.  ps2 plug on it.
 
-Not trying to defend the current series, just felt the need clarify this
-one.
+>From the messages it leaves on screen, it is NOT finding the drive plugged 
+into the mobo SATA1 connector when I try to boot to a 3.13.1-2-3 kernel.
 
-By orthogonal I meant that comparing to high resolution timers' use cases,
-deferred timers can be super-low resolution, super inaccurate. We don't
-know exactly when they will fire, all we know is something like "every 0.2
-seconds, iff the system/user is doing something, otherwise don't bother."
+So just to verify I am looking in the right place in the /sys directory, I 
+believe I was in drivers/pci/sata_nv when I took the pix now up on my web 
+page.  
 
-As for external (my bad, shouldn't invent personal terminology): the
-hrtimers are tied to some clock source (which is "external" to me), but
-deferred timers are mostly tied to the system's activity.
+This is an ASUS M2N SLI Deluxe mobo, 8 Gigs of ram, phenom 9550 running 
+slow at 2.1 Ghz.  This needs the sata_nv module to work with this hardware.
 
-Thanks,
+There are 4 drives in this box, and they are all working just fine when 
+booted to 3.12.9, but that pix I just posted to my web page in the link 
+below, in the Genes-os9-stf/LCNC link looks like there are only 3, and the 
+first one has been enumerated to pci 5:0. Then 5:1 and 5:2 if I am reading 
+that right.  But that same location in the 3.12.9 boot also only shows 3 
+"devices" so obviously I don't know what I am doing.  Again...
 
-Anton
+So, when all I have is the initramfs: prompt, where in the /sys tree can I 
+verify that all 4 drives are present and awake?
+
+Thanks.
+
+Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
