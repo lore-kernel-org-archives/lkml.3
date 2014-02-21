@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaBUMJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:09:33 -0500
-Received: from forward3h.mail.yandex.net ([84.201.187.148]:49406 "EHLO
-	forward3h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261AbaBUMJc (ORCPT
+	id S1755054AbaBUMMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:12:52 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:62759 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687AbaBUMMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:09:32 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <128831392982418@web15j.yandex.ru>
-References: <230991392848160@web13m.yandex.ru> <20140221103715.GP9987@twins.programming.kicks-ass.net> <128831392982418@web15j.yandex.ru>
-Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
-MIME-Version: 1.0
-Message-Id: <311621392984565@web3h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 21 Feb 2014 16:09:25 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Fri, 21 Feb 2014 07:12:51 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-0d-530742c09772
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH v2] regulator: max14577: Fix invalid return value on DT parse
+ success
+Date: Fri, 21 Feb 2014 13:12:38 +0100
+Message-id: <1392984758-10127-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIJMWRmVeSWpSXmKPExsVy+t/xy7oHnNiDDZ73GlpMffiEzeL1C0OL
+	b1c6mCwu75rDZnHyTy+jA6vHzll32T02repk87hzbQ+bR9+WVYwenzfJBbBGcdmkpOZklqUW
+	6dslcGUs/LuYveA6R8WK/VkNjHPZuxg5OSQETCQOrNkIZYtJXLi3nq2LkYtDSGApo0Tz8aks
+	EE4fk8Shle+YQarYBIwlNi9fwgZiiwhkSGyeN5UVxGYWiJaY/foYWI2wQLjEkbmTWEBsFgFV
+	ietf/zCC2LwC7hItX9YBxTmAtilIzJlkM4GRewEjwypG0dTS5ILipPRcQ73ixNzi0rx0veT8
+	3E2MkGD4soNx8TGrQ4wCHIxKPLwFEmzBQqyJZcWVuYcYJTiYlUR4D+qzBwvxpiRWVqUW5ccX
+	leakFh9iZOLglGpg1ElbmXLDqOVBhVr3XBUHkS+nvr+be+PJUclNwj+P1vLtdZnh+IMhZuov
+	wV1TVL+L3w9ctOncyX7vu7vmSKYI8Ic6ysnq7YqVdnL+w/WwUrf+fKGfz0HlC3/uTbvmWDXZ
+	PUPWo+th7Y9E0+0O0nxRDEmM7j41k+J12ZKOeigu+XRHtU0hTMROiaU4I9FQi7moOBEAU/mz
+	t+QBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fixes bug introduced in 667a6b7a (regulator: max14577: Add missing
+of_node_put). The DTS parsing function returned number of matched
+regulators as success status which then was compared against 0 in probe.
 
+Result was a probe fail after successful parsing the DTS:
+max14577-regulator: probe of max14577-regulator failed with error 2
 
-21.02.2014, 15:39, "Kirill Tkhai" <tkhai@yandex.ru>:
-> 21.02.2014, 14:37, "Peter Zijlstra" <peterz@infradead.org>:
->
->> šOn Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
->>> ššSince deadline tasks share rt bandwidth, we must care about
->>> ššbandwidth timer set. Otherwise rt_time may grow up to infinity
->>> ššin update_curr_dl(), if there are no other available RT tasks
->>> ššon top level bandwidth.
->>>
->>> ššI'm going to decide the problem the way below. Almost untested
->>> ššbecause of I skipped almost all of recent patches which haveto be applied from lkml.
->>>
->>> ššPlease say, if I skipped anything in idea. Maybe better put
->>> ššstart_top_rt_bandwidth() into set_curr_task_dl()?
->> šHow about we only increment rt_time when there's an RT bandwidth timer
->> šactive?
->
-> This case RT and DL may eat all the time:
->
-> -------------- štime ------------------>
-> |RT's working |DL's working|
-> ----------------------------
-> |rt_runtime šš| ššššššššššš|
-> ----------------------------
-> | šššššššrt_period šššššššš|
->
-> Or at least more, than it's allowed.
->
-> It looks like, if we want to limit time of high priority classes
-> execution, we have to set the timer anyway.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+---
+ drivers/regulator/max14577.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Oh, above is confusing. Sorry.
+diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+index 186df8785a91..e0619526708c 100644
+--- a/drivers/regulator/max14577.c
++++ b/drivers/regulator/max14577.c
+@@ -166,9 +166,10 @@ static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
+ 
+ 	ret = of_regulator_match(&pdev->dev, np, max14577_regulator_matches,
+ 			MAX14577_REG_MAX);
+-	if (ret < 0) {
++	if (ret < 0)
+ 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n", ret);
+-	}
++	else
++		ret = 0;
+ 
+ 	of_node_put(np);
+ 
+-- 
+1.7.9.5
 
-I mean one RT task and
-
------------------  time -------------------------->
-|DL's working    |RT's working| |DL's working    |
---------------------------------------------------
-|                |rt_runtime  | |                |
---------------------------------------------------
-|                |   rt_period  |                |
-
-In this case FAIR receives less ratio, than (rt_period-rt_runtime)/rt_period.
-
->> š---
->> š--- a/kernel/sched/rt.c
->> š+++ b/kernel/sched/rt.c
->> š@@ -568,6 +568,12 @@ static inline struct rt_bandwidth *sched
->
-> [snipped by dumb mail client]
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at šhttp://www.tux.org/lkml/
