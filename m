@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349AbaBUQ5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:57:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932441AbaBUQ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:57:51 -0500
-Date: Fri, 21 Feb 2014 17:59:47 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] virtio: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140221165946.GJ17353@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-9-git-send-email-agordeev@redhat.com>
- <87eh2yblsk.fsf@rustcorp.com.au>
+	id S933357AbaBUQ6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:58:31 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:54802 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469AbaBUQ61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:58:27 -0500
+Date: Fri, 21 Feb 2014 08:58:23 -0800
+From: Jens Axboe <axboe@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/3] next round of blk-mq updates
+Message-ID: <20140221165823.GE30251@kernel.dk>
+References: <20140220233235.443299098@bombadil.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87eh2yblsk.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140220233235.443299098@bombadil.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty et al,
+On Thu, Feb 20 2014, Christoph Hellwig wrote:
+> A couple more blkmq updates: a trivial cleanup, a consolidation of two very
+> similar functions into one, and support for partial request completions,
+> a feature needed by the work in progress scsi blk-mq support.
 
-Based on recently accepted to the mainline pci_enable_msix_exact() function,
-I am sending a updated version of the patch. Please, let me know if it does
-not work for you and you need and incremental update from the previous version.
-
-Thanks!
-
+Thanks, applied all 3. The end_io is a bit fatter than it was before,
+which is a shame. But on the plus side, it's consistent...
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Jens Axboe
+
