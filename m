@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaBUP7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:59:47 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:64948 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244AbaBUP7n (ORCPT
+	id S932630AbaBUQBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:01:36 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:65011 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179AbaBUQBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:59:43 -0500
+	Fri, 21 Feb 2014 11:01:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <53074E69.4060206@citrix.com>
+In-Reply-To: <53074E6B.6030006@citrix.com>
 References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
  <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com>
  <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com>
  <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com>
  <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
- <530600C5.3070107@citrix.com> <CAB=NE6WKhBJyyUO5o8B53J+F4PqF2PHvvbV3=yS3qs0ZDRKH7Q@mail.gmail.com>
- <53074E69.4060206@citrix.com>
+ <20140219090855.610c0e04@nehalam.linuxnetplumber.net> <CAB=NE6UAqoiFAJdckE1d7cgMZnU6_=8X+N=tSc6qH2bgH08M7Q@mail.gmail.com>
+ <20140220091958.62a8b444@nehalam.linuxnetplumber.net> <CAB=NE6WnMFkH7JPNt+ROiWEvhvZ03vdGr21STf75DV9fRaK=PA@mail.gmail.com>
+ <53074E6B.6030006@citrix.com>
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 21 Feb 2014 07:59:20 -0800
-X-Google-Sender-Auth: nyC9iEkqBouGXG4SEmKLeD9xVBo
-Message-ID: <CAB=NE6Xx1f2zYaTP=h-319_T4UtsXVjn0+ZPrSuCqXJ6hk5Jhw@mail.gmail.com>
+Date: Fri, 21 Feb 2014 08:01:13 -0800
+X-Google-Sender-Auth: g8flil1XipO98jp74Y9RRz7l_gg
+Message-ID: <CAB=NE6XR+FW2X2_nr2JAxgQD+zpm8=Xq7Y4fTf740rLhGCOzEw@mail.gmail.com>
 Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
  from becoming the root bridge
 To: Zoltan Kiss <zoltan.kiss@citrix.com>
@@ -35,55 +36,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Feb 21, 2014 at 5:02 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
-> On 20/02/14 20:01, Luis R. Rodriguez wrote:
->>
->> On Thu, Feb 20, 2014 at 5:19 AM, Zoltan Kiss <zoltan.kiss@citrix.com>
->> wrote:
->>>
->>> How about this: netback sets the root_block flag and a random MAC by
->>> default. So the default behaviour won't change, DAD will be happy, and
->>> userspace don't have to do anything unless it's using netback for STP
->>> root
->>> bridge (I don't think there are too many toolstacks doing that), in which
->>> case it has to remove the root_block flag instead of setting a random
->>> MAC.
->>
->>
->> :D that's exactly what I ended up proposing too. I mentioned how
->> xen-netback could do this as well, we'd keep or rename the flag I
->> added, and then the bridge could would look at it and enable the root
->> block if the flag is set. Stephen however does not like having the
->> bridge code look at magic flags for this behavior and would prefer for
->> us to get the tools to ask for the root block. Let's follow more up on
->> that thread
+>> Agreed that's the best strategy and I'll work on sending patches to
+>> brctl to enable the root_block preference. This approach however also
 >
-> We don't need that new flag, just forget about it.
+> I don't think brctl should deal with any Xen specific stuff. I assume there
+> is a misunderstanding in this thread: when I (and possibly other Xen folks)
+> talk about "userspace" or "toolstack" here, I mean Xen specific tools which
+> use e.g. brctl to set up bridges. Not brctl itself.
 
-Unless I'm missing something the root_block flag is a bridge port
-primitive. This means we can't set it *until* the interface gets added
-to a bridge, and even then, its a knob that would be available only to
-the bridge.
-
-> Another problem with the random addresses, pointed out by Ian earlier, that
-> when adding/removing interfaces, the bridge does recalculate it's MAC
-> address, and choose the lowest one. In the general usecase I think that's
-> normal, but in case of Xen networking, we would like to keep the bridge
-> using the physical interface's MAC, because the local port of the bridge is
-> used for Dom0 network traffic, therefore changing the bridge MAC when a
-> netback device has lower MAC breaks that traffic.
-
-This is a good reason then to actually have an interface general
-specific knob to annotate to the bridge that we'd prefer to root_block
-by default, the alternative as you point out below is to have the xen
-/ kvm utils to set the bridge MAC address statically, but that'll
-requires a userspace upgrade. I'm looking for a kernel solution that
-is backwards compatible with old userspace.
-
-> I think the best is to
-> address this from userspace: if it set the MAC of the bridge explicitly,
-> dev_set_mac_address() does dev->addr_assign_type = NET_ADDR_SET;, so
-> br_stp_recalculate_bridge_id() will exit before changing anything.
-
-That will certainly work for new xen / kvm util userspace.
+I did mean brctl, but as I looked at the code it doesn't used
+rtnl_open() and not sure if Stephen would want that. Additionally even
+if it did handle root_block the other issue with this strategy is that
+as you noted upon initialization the bridge, without a static MAC
+address, could end up setting the backend as the root port, until you
+let userspace turn the root_block knob.
 
   Luis
