@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803AbaBUNAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:00:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47216 "EHLO
+	id S932804AbaBUNBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:01:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47214 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547AbaBUMv0 (ORCPT
+	with ESMTP id S932540AbaBUMvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:26 -0500
+	Fri, 21 Feb 2014 07:51:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 094/121] mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
-Date: Fri, 21 Feb 2014 12:48:38 +0000
-Message-Id: <1392986945-9693-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 097/121] ring-buffer: Fix first commit on sub-buffer having non-zero delta
+Date: Fri, 21 Feb 2014 12:48:41 +0000
+Message-Id: <1392986945-9693-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -32,53 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 8d547ff4ac5927245e0833ac18528f939da0ee0e upstream.
+commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
 
-mce-test detected a test failure when injecting error to a thp tail
-page.  This is because we take page refcount of the tail page in
-madvise_hwpoison() while the fix in commit a3e0f9e47d5e
-("mm/memory-failure.c: transfer page count from head page to tail page
-after split thp") assumes that we always take refcount on the head page.
+Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
+that page use a 27 bit delta against that timestamp in order to save on
+bits written to the ring buffer. If the time between events is larger than
+what the 27 bits can hold, a "time extend" event is added to hold the
+entire 64 bit timestamp again and the events after that hold a delta from
+that timestamp.
 
-When a real memory error happens we take refcount on the head page where
-memory_failure() is called without MF_COUNT_INCREASED set, so it seems
-to me that testing memory error on thp tail page using madvise makes
-little sense.
+As a "time extend" is always paired with an event, it is logical to just
+allocate the event with the time extend, to make things a bit more efficient.
 
-This patch cancels moving refcount in !MF_COUNT_INCREASED for valid
-testing.
+Unfortunately, when the pairing code was written, it removed the "delta = 0"
+from the first commit on a page, causing the events on the page to be
+slightly skewed.
 
-[akpm@linux-foundation.org: s/&&/&/]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory-failure.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index bfee485..a869081 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -943,8 +943,10 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 			 * to it. Similarly, page lock is shifted.
- 			 */
- 			if (hpage != p) {
--				put_page(hpage);
--				get_page(p);
-+				if (!(flags & MF_COUNT_INCREASED)) {
-+					put_page(hpage);
-+					get_page(p);
-+				}
- 				lock_page(p);
- 				unlock_page(hpage);
- 				*hpagep = p;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index cc2f66f..0e337ee 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2397,6 +2397,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
+ 	write &= RB_WRITE_MASK;
+ 	tail = write - length;
+ 
++	/*
++	 * If this is the first commit on the page, then it has the same
++	 * timestamp as the page itself.
++	 */
++	if (!tail)
++		delta = 0;
++
+ 	/* See if we shot pass the end of this buffer page */
+ 	if (unlikely(write > BUF_PAGE_SIZE))
+ 		return rb_move_tail(cpu_buffer, length, tail,
 -- 
 1.9.0
 
