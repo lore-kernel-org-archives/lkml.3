@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175AbaBURLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:11:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53280 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755212AbaBURLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:11:35 -0500
-Message-ID: <530788C1.6030109@redhat.com>
-Date: Fri, 21 Feb 2014 18:11:29 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1756186AbaBURMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:12:52 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:37302 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659AbaBURMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 12:12:49 -0500
+Message-ID: <5307890D.4080807@acm.org>
+Date: Fri, 21 Feb 2014 11:12:45 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] kvm: Use pci_enable_msix_exact() instead of pci_enable_msix()
-References: <1392804931-30671-11-git-send-email-agordeev@redhat.com> <5304B09D.7010900@redhat.com> <20140221170414.GM17353@dhcp-26-207.brq.redhat.com> <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "rja@sgi.com" <rja@sgi.com>, "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>	 <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230>	 <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230>	 <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230>	 <5307568C.3020701@acm.org> <1392997912.20109.41.camel@x230>
+In-Reply-To: <1392997912.20109.41.camel@x230>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/02/2014 18:05, Alexander Gordeev ha scritto:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+On 02/21/2014 09:51 AM, Matthew Garrett wrote:
+> On Fri, 2014-02-21 at 07:37 -0600, Corey Minyard wrote:
 >
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: kvm@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  virt/kvm/assigned-dev.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+>> However, the basic problem is that hardware vendors produce hardware
+>> that sucks and then expect software to fix all the problems.  Most IPMI
+>> interfaces don't have interrupts, so they have to be polled.  Then they
+>> add important interfaces on top of it like firmware upgrade and ACPI and
+>> expect it to perform well.  If vendors would just have an interrupt for
+>> IPMI, 99% of these problems would go away.
+> Not going to disagree. The impact on power consumption is also pretty
+> awful. I should re-read the spec to figure out whether we can
+> legitimately get away with not doing that.
+
+Thinking about this some more, I realized that it may possible to turn
+off the driver if nothing at all is waiting.  I'll need to look at the
+spec to see if I'm forgetting something.
+
 >
-> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> index 8db4370..bf06577 100644
-> --- a/virt/kvm/assigned-dev.c
-> +++ b/virt/kvm/assigned-dev.c
-> @@ -395,7 +395,8 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
->  	if (dev->entries_nr == 0)
->  		return r;
+>> One thing we can do is remove the default interface probing for IPMI. 
+>> Even though the spec has it, all modern hardware should have it
+>> specified in ACPI or device tree.  That should fix all the slow boot
+>> problems, at least.  If a user wants to add a default interface, they
+>> can use the interface to dynamically add it after boot time.
+> Something like this (untested)?
+
+That's exactly what I would have done...
+
+-corey
+
 >
-> -	r = pci_enable_msix(dev->dev, dev->host_msix_entries, dev->entries_nr);
-> +	r = pci_enable_msix_exact(dev->dev,
-> +				  dev->host_msix_entries, dev->entries_nr);
->  	if (r)
->  		return r;
+> diff --git a/drivers/char/ipmi/Kconfig b/drivers/char/ipmi/Kconfig
+> index eea8464..5126230 100644
+> --- a/drivers/char/ipmi/Kconfig
+> +++ b/drivers/char/ipmi/Kconfig
+> @@ -52,6 +52,16 @@ config IPMI_SI
+>          Currently, only KCS and SMIC are supported.  If
+>          you are using IPMI, you should probably say "y" here.
+>  
+> +config IPMI_PROBE_DEFAULTS
+> +       bool 'Probe for all possible IPMI interfaces by default'
+> +       help
+> +         Modern systems will usually expose IPMI interfaces via a discoverable
+> +        firmware mechanism such as ACPI or DMI. Older systems do not, and so
+> +        the driver is forced to probe hardware manually. This may cause boot
+> +        delays. Say "n" here to disable this manual probing. IPMI will then
+> +        only be available on older systems if the "ipmi_si_intf.trydefaults=1"
+> +        boot argument is passed.
+> +
+>  config IPMI_WATCHDOG
+>         tristate 'IPMI Watchdog Timer'
+>         help
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+> index 03f4189..82c7d56 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -1230,7 +1230,11 @@ static bool          si_tryplatform = 1;
+>  #ifdef CONFIG_PCI
+>  static bool          si_trypci = 1;
+>  #endif
+> +#ifdef CONFIG_IPMI_PROBE_DEFAULTS
+>  static bool          si_trydefaults = 1;
+> +#else
+> +static bool          si_trydefaults;
+> +#endif
+>  static char          *si_type[SI_MAX_PARMS];
+>  #define MAX_SI_TYPE_STR 30
+>  static char          si_type_str[MAX_SI_TYPE_STR];
 >
 >
 
-It's okay, but it's not clear to me whether I should include this patch 
-or someone else will. :)
-
-Paolo
