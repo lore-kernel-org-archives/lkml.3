@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507AbaBURg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:36:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40837 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933198AbaBURgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:36:55 -0500
-Message-ID: <53078E9B.5010806@ti.com>
-Date: Fri, 21 Feb 2014 11:36:27 -0600
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S933525AbaBURhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:37:21 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44810 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932840AbaBURhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 12:37:17 -0500
+Date: Fri, 21 Feb 2014 17:36:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch v6 1/2] dmaengine: qcom_bam_dma: Add device tree binding
+Message-ID: <20140221173647.GC28555@e106331-lin.cambridge.arm.com>
+References: <1392964986-5207-1-git-send-email-agross@codeaurora.org>
+ <1392964986-5207-2-git-send-email-agross@codeaurora.org>
+ <20140221092657.GD7541@e106331-lin.cambridge.arm.com>
+ <20140221163053.GA3102@qualcomm.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "nsekhar@ti.com" <nsekhar@ti.com>
-Subject: Re: [PATCH] ARM: EDMA: Use platform_get_resource functions for DT
-References: <1392956661-28787-1-git-send-email-joelf@ti.com> <20140221121548.GF8783@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140221121548.GF8783@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221163053.GA3102@qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 06:15 AM, Mark Rutland wrote:
->> Also, while at it get rid of the assumption in the code that "CC" is at reg
->> index 0 in the DT and xbar is at offset 1. Instead use reg-names to get the
->> memory resource in concern keeping things much cleaner and simpler. This also
->> makes it possible to have multiple channel controllers.
+On Fri, Feb 21, 2014 at 04:30:53PM +0000, Andy Gross wrote:
+> On Fri, Feb 21, 2014 at 09:26:57AM +0000, Mark Rutland wrote:
+> > On Fri, Feb 21, 2014 at 06:43:04AM +0000, Andy Gross wrote:
+> > > Add device tree binding support for the QCOM BAM DMA driver.
+> > > 
+> [snip]
+> > > +Required properties:
+> > > +- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
+> > > +		Must be "qcom,bam-v1.4.1" for MSM8974 V2
+> > 
+> > This looks a bit odd. How about:
+> > 
+> > - compatible: must contain:
+> >   * "qcom,bam-v1.4.0" for MSM8974 V1
+> >   * "qcom,bam-v1.4.1" for MSM8974 V2
+> > 
 > 
-> While this is nice I think we have to have a fallback to the existing
-> behaviour if there's no reg-names property present, unless we know for
-> certain no-one is possibly using an existing DTB.
+> Agreed.  I'll fix that.
+> 
+> > > +- reg: Address range for DMA registers
+> > > +- interrupts: single interrupt for this controller
+> > 
+> > This device only has a single interrupt? Or there's only one we care
+> > about at the moment?
+> > 
+> 
+> Yes only a single interrupt.  I can remove the s.
 
-Yes, its true it break existing DTBs but currently only 2 TI SoCs use EDMA this
-way, the vast majority of EDMA users are yet to follow where we can do it right.
- Further, the old bindings are really limiting specially the 2 CC case and if
-additionally memory maps are used in the future. So keeping the old binding is
-limiting in this regard.
+Please don't, the interrupts proeprty is standard and shouldn't change.
 
-Here is what the platform_data used to look like when used by mach-davinci:
+I was only asking to ensure that all interrupts were described in the
+binding, which they are. :)
 
-static struct resource da850_edma_resources[] = {
-        {
-                .name   = "edma_cc0",
-                .start  = DA8XX_TPCC_BASE,
-                .end    = DA8XX_TPCC_BASE + SZ_32K - 1,
-                .flags  = IORESOURCE_MEM,
-        },
-        {
-                .name   = "edma_tc0",
-                .start  = DA8XX_TPTC0_BASE,
-                .end    = DA8XX_TPTC0_BASE + SZ_1K - 1,
-                .flags  = IORESOURCE_MEM,
-        },
-        {
-                .name   = "edma_tc1",
-                .start  = DA8XX_TPTC1_BASE,
-                .end    = DA8XX_TPTC1_BASE + SZ_1K - 1,
-                .flags  = IORESOURCE_MEM,
-        },
-        {
-                .name   = "edma_cc1",
-                .start  = DA850_TPCC1_BASE,
-                .end    = DA850_TPCC1_BASE + SZ_32K - 1,
-                .flags  = IORESOURCE_MEM,
-        },
+> 
+> > > +- #dma-cells: must be <1>
+> > > +- clocks: required clock
+> > > +- clock-names: name of clock
+> > 
+> > Either describe the _exact_ name this binding expects for any clocks
+> > input, or get rid of clock-names. I would prefer the former.
+> 
+> So then I'd use the full name in the driver file.  That's fine.
 
-As you can see, there are several memory maps and different interpretations.
-Considering this, IMO- it makes sense to pay a small price to keep the semantics
-sane.
+Yup. 
 
-On the other hand, the other 2 options are:
-1. We add a fallback if reg-names look up fails.
-2. We inject reg-names property into edma DT nodes that don't have them, and
-make sure all future dtsi with edma nodes mention the reg-names property.
+> 
+> [snip]
+> > > +Client:
+> > > +Required properties:
+> > > +- dmas: List of dma channel requests
+> > > +- dma-names: Names of aforementioned requested channels
+> > 
+> > Do we really need to describe the client binding? Do we not have a
+> > generic DMA binding doc we can refer to?
+> > 
+> 
+> Originally there was more information in the entry.  It was pared down over time
+> and I didn't go back to referencing the generic doc.  I'll do this and that'll
+> fix this and your next comment.
 
-These 2 are a bit error prone though, for example if someone deliberately
-forgets to mention reg-names, and the code still works, but misbehaves in some way.
+Sounds good!
 
-Regards,
--Joel
-
+Cheers,
+Mark.
