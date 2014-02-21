@@ -1,184 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235AbaBURyl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:54:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51419 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754569AbaBURyj convert rfc822-to-8bit (ORCPT
+	id S1756036AbaBURzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:55:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57293 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755934AbaBURzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:54:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
-   d="scan'208,223";a="485605378"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
-Subject: [PATCH v4 1/3] KVM: x86: Intel MPX vmx and msr handle
-Thread-Topic: [PATCH v4 1/3] KVM: x86: Intel MPX vmx and msr handle
-Thread-Index: Ac8vLfQeRDoaS9CSRJyUluHh9vLaQA==
-Date: Fri, 21 Feb 2014 17:54:23 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509BE5@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Feb 2014 12:55:52 -0500
+Date: Fri, 21 Feb 2014 09:57:20 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
+Subject: Re: SPDX-License-Identifier
+Message-ID: <20140221175720.GA21660@kroah.com>
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
+ <20140220182257.GF23217@saruman.home>
+ <5306F458.9010706@monstr.eu>
+ <20140221160442.GA17506@kroah.com>
+ <5307790A.4050806@monstr.eu>
+ <20140221161246.GM31902@saruman.home>
+ <53077C5F.9000407@monstr.eu>
+ <20140221162045.GN31902@saruman.home>
+ <20140221165633.GA5465@kroah.com>
+ <53078C30.7060703@monstr.eu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53078C30.7060703@monstr.eu>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From eb56f19c14d5603209b22b97cd53ef1716bf2804 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Sat, 22 Feb 2014 07:53:32 +0800
-Subject: [PATCH v4 1/3] KVM: x86: Intel MPX vmx and msr handle
+On Fri, Feb 21, 2014 at 06:26:08PM +0100, Michal Simek wrote:
+> On 02/21/2014 05:56 PM, Greg Kroah-Hartman wrote:
+> > On Fri, Feb 21, 2014 at 10:20:45AM -0600, Felipe Balbi wrote:
+> >> Hi,
+> >>
+> >> On Fri, Feb 21, 2014 at 05:18:39PM +0100, Michal Simek wrote:
+> >>> On 02/21/2014 05:12 PM, Felipe Balbi wrote:
+> >>>> On Fri, Feb 21, 2014 at 05:04:26PM +0100, Michal Simek wrote:
+> >>>>> On 02/21/2014 05:04 PM, Greg Kroah-Hartman wrote:
+> >>>>>> On Fri, Feb 21, 2014 at 07:38:16AM +0100, Michal Simek wrote:
+> >>>>>>> BTW: u-boot started to use SPDX-License-Identifier
+> >>>>>>> which will be nice to start to use.
+> >>>>>>
+> >>>>>> I agree, feel free to start sending patches to use this type of
+> >>>>>> identifier for drivers.
+> >>>>>
+> >>>>> But we probably need to add that Licenses to one location.
+> >>>>> Documentation/Licenses?
+> >>>>
+> >>>> Just add to the drivers themselves, just like u-boot is doing. A simple:
+> >>>>
+> >>>> 	$ git grep -e SPDX-License-Identifier
+> >>>>
+> >>>> will tell you filename and license. Or did I misunderstand your question ?
+> >>>
+> >>> But for doing this it is probably necessary to have location where
+> >>> you will place that licenses and you will explain what it is how
+> >>> it is done by Wolfgang in this commit.
+> >>>
+> >>> http://git.denx.de/?p=u-boot.git;a=commitdiff;h=eca3aeb352c964bdb28b8e191d6326370245e03f
+> >>>
+> >>> Then yes, adding one line is enough.
+> >>
+> >> spdx.org has all licenses, why don't we just rely on that instead of
+> >> adding every other license to the kernel source ?
+> > 
+> > Yes, all that will be acceptable is a one-line identifier in the file.
+> > No need to have all the different licenses in the kernel source, that's
+> > crazy and not needed at all.
+> >
+> > I've told the SPDX people this in the past, and they keep promising that
+> > they will do the comment work, but it's been months and I have yet to
+> > see a single patch...
+> 
+> But shouldn't we at least write somewhere
+> that it has connection to spdx.org where you can find out that licenses.
 
-This patch handle vmx and msr of Intel MPX feature.
+Why?  Are these licenses so unknown that no one knows what they are?
+And, as part of the kernel-as-a-whole-work, they all resolve to GPLv2
+anyway, and we have that license in the source tree, so nothing else
+should be needed.
 
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- arch/x86/include/asm/kvm_host.h       |    1 +
- arch/x86/include/asm/vmx.h            |    4 ++++
- arch/x86/include/uapi/asm/msr-index.h |    1 +
- arch/x86/kvm/vmx.c                    |   18 ++++++++++++++++--
- 4 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index fdf83af..e605b71 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -765,6 +765,7 @@ struct kvm_x86_ops {
- 			       struct x86_instruction_info *info,
- 			       enum x86_intercept_stage stage);
- 	void (*handle_external_intr)(struct kvm_vcpu *vcpu);
-+	int (*mpx_supported)(void);
- };
- 
- struct kvm_arch_async_pf {
-diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
-index 2067264..7004d21 100644
---- a/arch/x86/include/asm/vmx.h
-+++ b/arch/x86/include/asm/vmx.h
-@@ -85,6 +85,7 @@
- #define VM_EXIT_SAVE_IA32_EFER                  0x00100000
- #define VM_EXIT_LOAD_IA32_EFER                  0x00200000
- #define VM_EXIT_SAVE_VMX_PREEMPTION_TIMER       0x00400000
-+#define VM_EXIT_CLEAR_BNDCFGS                   0x00800000
- 
- #define VM_EXIT_ALWAYSON_WITHOUT_TRUE_MSR	0x00036dff
- 
-@@ -95,6 +96,7 @@
- #define VM_ENTRY_LOAD_IA32_PERF_GLOBAL_CTRL     0x00002000
- #define VM_ENTRY_LOAD_IA32_PAT			0x00004000
- #define VM_ENTRY_LOAD_IA32_EFER                 0x00008000
-+#define VM_ENTRY_LOAD_BNDCFGS                   0x00010000
- 
- #define VM_ENTRY_ALWAYSON_WITHOUT_TRUE_MSR	0x000011ff
- 
-@@ -174,6 +176,8 @@ enum vmcs_field {
- 	GUEST_PDPTR2_HIGH               = 0x0000280f,
- 	GUEST_PDPTR3                    = 0x00002810,
- 	GUEST_PDPTR3_HIGH               = 0x00002811,
-+	GUEST_BNDCFGS                   = 0x00002812,
-+	GUEST_BNDCFGS_HIGH              = 0x00002813,
- 	HOST_IA32_PAT			= 0x00002c00,
- 	HOST_IA32_PAT_HIGH		= 0x00002c01,
- 	HOST_IA32_EFER			= 0x00002c02,
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index c19fc60..ed821ed 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -295,6 +295,7 @@
- #define MSR_SMI_COUNT			0x00000034
- #define MSR_IA32_FEATURE_CONTROL        0x0000003a
- #define MSR_IA32_TSC_ADJUST             0x0000003b
-+#define MSR_IA32_BNDCFGS		0x00000d90
- 
- #define FEATURE_CONTROL_LOCKED				(1<<0)
- #define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index a06f101..35d285f 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -441,6 +441,7 @@ struct vcpu_vmx {
- #endif
- 		int           gs_ldt_reload_needed;
- 		int           fs_reload_needed;
-+		u64           msr_host_bndcfgs;
- 	} host_state;
- 	struct {
- 		int vm86_active;
-@@ -1710,6 +1711,8 @@ static void vmx_save_host_state(struct kvm_vcpu *vcpu)
- 	if (is_long_mode(&vmx->vcpu))
- 		wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_guest_kernel_gs_base);
- #endif
-+	if (boot_cpu_has(X86_FEATURE_MPX))
-+		rdmsrl(MSR_IA32_BNDCFGS, vmx->host_state.msr_host_bndcfgs);
- 	for (i = 0; i < vmx->save_nmsrs; ++i)
- 		kvm_set_shared_msr(vmx->guest_msrs[i].index,
- 				   vmx->guest_msrs[i].data,
-@@ -1747,6 +1750,8 @@ static void __vmx_load_host_state(struct vcpu_vmx *vmx)
- #ifdef CONFIG_X86_64
- 	wrmsrl(MSR_KERNEL_GS_BASE, vmx->msr_host_kernel_gs_base);
- #endif
-+	if (vmx->host_state.msr_host_bndcfgs)
-+		wrmsrl(MSR_IA32_BNDCFGS, vmx->host_state.msr_host_bndcfgs);
- 	/*
- 	 * If the FPU is not active (through the host task or
- 	 * the guest vcpu), then restore the cr0.TS bit.
-@@ -2837,7 +2842,7 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
- 	min |= VM_EXIT_HOST_ADDR_SPACE_SIZE;
- #endif
- 	opt = VM_EXIT_SAVE_IA32_PAT | VM_EXIT_LOAD_IA32_PAT |
--		VM_EXIT_ACK_INTR_ON_EXIT;
-+		VM_EXIT_ACK_INTR_ON_EXIT | VM_EXIT_CLEAR_BNDCFGS;
- 	if (adjust_vmx_controls(min, opt, MSR_IA32_VMX_EXIT_CTLS,
- 				&_vmexit_control) < 0)
- 		return -EIO;
-@@ -2854,7 +2859,7 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
- 		_pin_based_exec_control &= ~PIN_BASED_POSTED_INTR;
- 
- 	min = 0;
--	opt = VM_ENTRY_LOAD_IA32_PAT;
-+	opt = VM_ENTRY_LOAD_IA32_PAT | VM_ENTRY_LOAD_BNDCFGS;
- 	if (adjust_vmx_controls(min, opt, MSR_IA32_VMX_ENTRY_CTLS,
- 				&_vmentry_control) < 0)
- 		return -EIO;
-@@ -7052,6 +7057,12 @@ static void vmx_handle_external_intr(struct kvm_vcpu *vcpu)
- 		local_irq_enable();
- }
- 
-+static int vmx_mpx_supported(void)
-+{
-+	return ((vmcs_config.vmexit_ctrl & VM_EXIT_CLEAR_BNDCFGS) &&
-+		(vmcs_config.vmentry_ctrl & VM_ENTRY_LOAD_BNDCFGS));
-+}
-+
- static void vmx_recover_nmi_blocking(struct vcpu_vmx *vmx)
- {
- 	u32 exit_intr_info;
-@@ -8634,6 +8645,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
- 
- 	.check_intercept = vmx_check_intercept,
- 	.handle_external_intr = vmx_handle_external_intr,
-+	.mpx_supported = vmx_mpx_supported,
- };
- 
- static int __init vmx_init(void)
-@@ -8721,6 +8733,8 @@ static int __init vmx_init(void)
- 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
- 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
- 	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
-+	vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
-+
- 	memcpy(vmx_msr_bitmap_legacy_x2apic,
- 			vmx_msr_bitmap_legacy, PAGE_SIZE);
- 	memcpy(vmx_msr_bitmap_longmode_x2apic,
--- 
-1.7.1
+greg k-h
