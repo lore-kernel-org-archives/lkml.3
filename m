@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaBUMtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:49:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46689 "EHLO
+	id S1755572AbaBUMtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:49:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46715 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589AbaBUMtL (ORCPT
+	with ESMTP id S1754336AbaBUMtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:49:11 -0500
+	Fri, 21 Feb 2014 07:49:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 001/121] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
-Date: Fri, 21 Feb 2014 12:47:05 +0000
-Message-Id: <1392986945-9693-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 005/121] crypto: s390 - fix des and des3_ede cbc concurrency issue
+Date: Fri, 21 Feb 2014 12:47:09 +0000
+Message-Id: <1392986945-9693-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,171 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
+commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
 
-ftrace_trace_function is a variable that holds what function will be called
-directly by the assembly code (mcount). If just a single function is
-registered and it handles recursion itself, then the assembly will call that
-function directly without any helper function. It also passes in the
-ftrace_op that was registered with the callback. The ftrace_op to send is
-stored in the function_trace_op variable.
+In s390 des and des3_ede cbc mode the iv value is not protected
+against concurrency access and modifications from another running
+en/decrypt operation which is using the very same tfm struct
+instance. This fix copies the iv to the local stack before
+the crypto operation and stores the value back when done.
 
-The ftrace_trace_function and function_trace_op needs to be coordinated such
-that the called callback wont be called with the wrong ftrace_op, otherwise
-bad things can happen if it expected a different op. Luckily, there's no
-callback that doesn't use the helper functions that requires this. But
-there soon will be and this needs to be fixed.
-
-Use a set_function_trace_op to store the ftrace_op to set the
-function_trace_op to when it is safe to do so (during the update function
-within the breakpoint or stop machine calls). Or if dynamic ftrace is not
-being used (static tracing) then we have to do a bit more synchronization
-when the ftrace_trace_function is set as that takes affect immediately
-(as oppose to dynamic ftrace doing it with the modification of the trampoline).
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: backported to 3.11: used Steven Rostedt's backport to 3.10 ]
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 87 ++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 72 insertions(+), 15 deletions(-)
+ arch/s390/crypto/des_s390.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index c984033..aba7446 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
- 
- /* Current function tracing op */
- struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
-+/* What to set function_trace_op to */
-+static struct ftrace_ops *set_function_trace_op;
- 
- /* List for set_ftrace_pid's pids. */
- LIST_HEAD(ftrace_pids);
-@@ -278,6 +280,23 @@ static void update_global_ops(void)
- 	global_ops.func = func;
+diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
+index bcca01c..4b28089 100644
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -105,29 +105,35 @@ static int ecb_desall_crypt(struct blkcipher_desc *desc, long func,
  }
  
-+static void ftrace_sync(struct work_struct *work)
-+{
-+	/*
-+	 * This function is just a stub to implement a hard force
-+	 * of synchronize_sched(). This requires synchronizing
-+	 * tasks even in userspace and idle.
-+	 *
-+	 * Yes, function tracing is rude.
-+	 */
-+}
-+
-+static void ftrace_sync_ipi(void *data)
-+{
-+	/* Probably not needed, but do it anyway */
-+	smp_rmb();
-+}
-+
- static void update_ftrace_function(void)
+ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    u8 *iv, struct blkcipher_walk *walk)
++			    struct blkcipher_walk *walk)
  {
- 	ftrace_func_t func;
-@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
- 	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
--			function_trace_op = ftrace_global_list;
-+			set_function_trace_op = ftrace_global_list;
- 		else
--			function_trace_op = ftrace_ops_list;
-+			set_function_trace_op = ftrace_ops_list;
- 		func = ftrace_ops_list->func;
- 	} else {
- 		/* Just use the default ftrace_ops */
--		function_trace_op = &ftrace_list_end;
-+		set_function_trace_op = &ftrace_list_end;
- 		func = ftrace_ops_list_func;
- 	}
++	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[DES_BLOCK_SIZE];
++		u8 key[DES3_KEY_SIZE];
++	} param;
  
-+	/* If there's no change, then do nothing more here */
-+	if (ftrace_trace_function == func)
-+		return;
-+
-+	/*
-+	 * If we are using the list function, it doesn't care
-+	 * about the function_trace_ops.
-+	 */
-+	if (func == ftrace_ops_list_func) {
-+		ftrace_trace_function = func;
-+		/*
-+		 * Don't even bother setting function_trace_ops,
-+		 * it would be racy to do so anyway.
-+		 */
-+		return;
-+	}
-+
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+	/*
-+	 * For static tracing, we need to be a bit more careful.
-+	 * The function change takes affect immediately. Thus,
-+	 * we need to coorditate the setting of the function_trace_ops
-+	 * with the setting of the ftrace_trace_function.
-+	 *
-+	 * Set the function to the list ops, which will call the
-+	 * function we want, albeit indirectly, but it handles the
-+	 * ftrace_ops and doesn't depend on function_trace_op.
-+	 */
-+	ftrace_trace_function = ftrace_ops_list_func;
-+	/*
-+	 * Make sure all CPUs see this. Yes this is slow, but static
-+	 * tracing is slow and nasty to have enabled.
-+	 */
-+	schedule_on_each_cpu(ftrace_sync);
-+	/* Now all cpus are using the list ops. */
-+	function_trace_op = set_function_trace_op;
-+	/* Make sure the function_trace_op is visible on all CPUs */
-+	smp_wmb();
-+	/* Nasty way to force a rmb on all cpus */
-+	smp_call_function(ftrace_sync_ipi, NULL, 1);
-+	/* OK, we are all set to update the ftrace_trace_function now! */
-+#endif /* !CONFIG_DYNAMIC_FTRACE */
-+
- 	ftrace_trace_function = func;
- }
+ 	if (!nbytes)
+ 		goto out;
  
-@@ -410,17 +472,6 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
- 	return 0;
- }
+-	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
  
--static void ftrace_sync(struct work_struct *work)
--{
--	/*
--	 * This function is just a stub to implement a hard force
--	 * of synchronize_sched(). This requires synchronizing
--	 * tasks even in userspace and idle.
--	 *
--	 * Yes, function tracing is rude.
--	 */
--}
--
- static int __unregister_ftrace_function(struct ftrace_ops *ops)
+-		ret = crypt_s390_kmc(func, iv, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
+ 
+ out:
+ 	return ret;
+@@ -179,22 +185,20 @@ static int cbc_des_encrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
  {
- 	int ret;
-@@ -1952,8 +2003,14 @@ void ftrace_modify_all_code(int command)
- 	else if (command & FTRACE_DISABLE_CALLS)
- 		ftrace_replace_code(0);
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
  
--	if (command & FTRACE_UPDATE_TRACE_FUNC)
-+	if (command & FTRACE_UPDATE_TRACE_FUNC) {
-+		function_trace_op = set_function_trace_op;
-+		smp_wmb();
-+		/* If irqs are disabled, we are in stop machine */
-+		if (!irqs_disabled())
-+			smp_call_function(ftrace_sync_ipi, NULL, 1);
- 		ftrace_update_ftrace_func(ftrace_trace_function);
-+	}
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
+ }
  
- 	if (command & FTRACE_START_FUNC_RET)
- 		ftrace_enable_ftrace_graph_caller();
+ static int cbc_des_decrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des_alg = {
+@@ -327,22 +331,20 @@ static int cbc_des3_encrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des3_decrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des3_alg = {
 -- 
 1.9.0
 
