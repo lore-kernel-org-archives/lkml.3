@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037AbaBUNBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47614 "EHLO
+	id S933160AbaBUNCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:02:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47685 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932858AbaBUNBu (ORCPT
+	with ESMTP id S933075AbaBUNCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:50 -0500
+	Fri, 21 Feb 2014 08:02:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 12/60] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
-Date: Fri, 21 Feb 2014 13:00:39 +0000
-Message-Id: <1392987687-15367-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 24/60] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
+Date: Fri, 21 Feb 2014 13:00:51 +0000
+Message-Id: <1392987687-15367-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
+commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
 
-Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
-compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
-options -fprofile-arcs and -O2, this flag causes gcc to generate
-broken constructor code. As a result, a 64 bit x86 kernel compiled
-with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
-file" and runs into sproadic BUGs during boot.
+[ Partial commit backported to 3.4. The ftrace_sync() code by this is
+  required for other fixes that 3.4 needs. ]
 
-The gcc people indicate that these kinds of problems are endemic when
-using ad hoc calling conventions.  It is therefore best to treat any
-file compiled with ad hoc calling conventions as an isolated
-environment and avoid things like profiling or coverage analysis,
-since those subsystems assume a "normal" calling conventions.
+ftrace_trace_function is a variable that holds what function will be called
+directly by the assembly code (mcount). If just a single function is
+registered and it handles recursion itself, then the assembly will call that
+function directly without any helper function. It also passes in the
+ftrace_op that was registered with the callback. The ftrace_op to send is
+stored in the function_trace_op variable.
 
-This patch avoids the bug by excluding lib/hweight.o from coverage
-profiling.
+The ftrace_trace_function and function_trace_op needs to be coordinated such
+that the called callback wont be called with the wrong ftrace_op, otherwise
+bad things can happen if it expected a different op. Luckily, there's no
+callback that doesn't use the helper functions that requires this. But
+there soon will be and this needs to be fixed.
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Use a set_function_trace_op to store the ftrace_op to set the
+function_trace_op to when it is safe to do so (during the update function
+within the breakpoint or stop machine calls). Or if dynamic ftrace is not
+being used (static tracing) then we have to do a bit more synchronization
+when the ftrace_trace_function is set as that takes affect immediately
+(as oppose to dynamic ftrace doing it with the modification of the trampoline).
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/trace/ftrace.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/lib/Makefile b/lib/Makefile
-index 8c31a0c..f1ab4e00 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -41,6 +41,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
- lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
- lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 524243e..6aa8159 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -222,6 +222,23 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
+ }
  
-+GCOV_PROFILE_hweight.o := n
- CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
- obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
- 
++static void ftrace_sync(struct work_struct *work)
++{
++	/*
++	 * This function is just a stub to implement a hard force
++	 * of synchronize_sched(). This requires synchronizing
++	 * tasks even in userspace and idle.
++	 *
++	 * Yes, function tracing is rude.
++	 */
++}
++
++static void ftrace_sync_ipi(void *data)
++{
++	/* Probably not needed, but do it anyway */
++	smp_rmb();
++}
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
 -- 
 1.9.0
 
