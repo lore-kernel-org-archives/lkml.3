@@ -1,16 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaBUTNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:13:25 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51072 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457AbaBUTNX (ORCPT
+	id S1754951AbaBUTQd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:16:33 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:48285 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaBUTQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:13:23 -0500
-Date: Fri, 21 Feb 2014 11:13:18 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Matz <matz@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	Fri, 21 Feb 2014 14:16:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHWkzRQZ8+gOGMFNyTKjFNzpUv6d_J1G9KL0x_iCa=YCgvEojQ@mail.gmail.com>
+References: <CA+55aFwUnRVk6q3VZeYjWfduoHcExW=Pht6jgp=4bBSaLHNPMA@mail.gmail.com>
+	<20140218030002.GA15857@linux.vnet.ibm.com>
+	<CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	<CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	<1392740258.18779.7732.camel@triegel.csb>
+	<CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	<1392752867.18779.8120.camel@triegel.csb>
+	<CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	<20140220040102.GM4250@linux.vnet.ibm.com>
+	<CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+	<20140220083032.GN4250@linux.vnet.ibm.com>
+	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	<CAHWkzRQZ8+gOGMFNyTKjFNzpUv6d_J1G9KL0x_iCa=YCgvEojQ@mail.gmail.com>
+Date: Fri, 21 Feb 2014 11:16:30 -0800
+X-Google-Sender-Auth: knC962WRcH1KSTdHgKcunzGxj6w
+Message-ID: <CA+55aFyDQ-9mJJUUXqp+XWrpA8JMP0=exKa=JpiaNM9wAAsCrA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "p796231 ." <Peter.Sewell@cl.cam.ac.uk>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
@@ -19,140 +37,106 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140221191318.GK4250@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
- <20140220083032.GN4250@linux.vnet.ibm.com>
- <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
- <20140220181116.GT4250@linux.vnet.ibm.com>
- <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
- <20140220185608.GX4250@linux.vnet.ibm.com>
- <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
- <20140220221027.GC4250@linux.vnet.ibm.com>
- <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
- <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022119-9332-0000-0000-0000033028E0
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>, Mark Batty <mbatty@cantab.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 07:35:37PM +0100, Michael Matz wrote:
-> Hi,
-> 
-> On Thu, 20 Feb 2014, Linus Torvalds wrote:
-> 
-> > But I'm pretty sure that any compiler guy must *hate* that current odd
-> > dependency-generation part, and if I was a gcc person, seeing that
-> > bugzilla entry Torvald pointed at, I would personally want to
-> > dismember somebody with a rusty spoon..
-> 
-> Yes.  Defining dependency chains in the way the standard currently seems 
-> to do must come from people not writing compilers.  There's simply no 
-> sensible way to implement it without being really conservative, because 
-> the depchains can contain arbitrary constructs including stores, 
-> loads and function calls but must still be observed.  
-> 
-> And with conservative I mean "everything is a source of a dependency, and 
-> hence can't be removed, reordered or otherwise fiddled with", and that 
-> includes code sequences where no atomic objects are anywhere in sight [1].
-> In the light of that the only realistic way (meaning to not have to 
-> disable optimization everywhere) to implement consume as currently 
-> specified is to map it to acquire.  At which point it becomes pointless.
+On Fri, Feb 21, 2014 at 10:25 AM, Peter Sewell
+<Peter.Sewell@cl.cam.ac.uk> wrote:
+>
+> If one thinks this is too fragile, then simply using memory_order_acquire
+> and paying the resulting barrier cost (and perhaps hoping that compilers
+> will eventually be able to optimise some cases of those barriers to
+> hardware-level dependencies) is the obvious alternative.
 
-No, only memory_order_consume loads and [[carries_dependency]]
-function arguments are sources of dependency chains.
+No, the obvious alternative is to do what we do already, and just do
+it by hand. Using acquire is *worse* than what we have now.
 
-> > So I suspect there are a number of people who would be *more* than
-> > happy with a change to those odd dependency rules.
-> 
-> I can't say much about your actual discussion related to semantics of 
-> atomics, not my turf.  But the "carries a dependency" relation is not 
-> usefully implementable.
-> 
-> 
-> Ciao,
-> Michael.
-> [1] Simple example of what type of transformations would be disallowed:
-> 
-> int getzero (int i) { return i - i; }
+Maybe for some other users, the thing falls out differently.
 
-This needs to be as follows:
+> Many concurrent things will "accidentally" work on x86 - consume is not
+> special in that respect.
 
-[[carries_dependency]] int getzero(int i [[carries_dependency]])
-{
-	return i - i;
-}
+No. But if you have something that is mis-designed, easy to get wrong,
+and untestable, any sane programmer will go "that's bad".
 
-Otherwise dependencies won't get carried through it.
+> There are two difficulties with this, if I understand correctly what you're
+> proposing.
+>
+> The first is knowing where to stop.
 
-> Should be optimizable to "return 0;", right?  Not with carries a 
-> dependency in place:
-> 
-> int jeez (int idx) {
->   int i = atomic_load(idx, memory_order_consume); // A
->   int j = getzero (i);                            // B
->   return array[j];                                // C
-> }
-> 
-> As I read "carries a dependency" there's a dependency from A to C. 
-> Now suppose we would optimize getzero in the obvious way, then inline, and 
-> boom, dependency gone.  So we wouldn't be able to optimize any function 
-> when we don't control all its users, for fear that it _might_ be used in 
-> some dependency chain where it then matters that we possibly removed some 
-> chain elements due to the transformation.  We would have to retain 'i-i' 
-> before inlining, and if the function then is inlined into a context where 
-> depchains don't matter, could _then_ optmize it to zero.  But that's 
-> insane, especially considering that it's hard to detect if a given context 
-> doesn't care for depchains, after all the depchain relation is constructed 
-> exactly so that it bleeds into nearly everywhere.  So we would most of 
-> the time have to assume that the ultimate context will be depchain-aware 
-> and therefore disable many transformations.
+No.
 
-Any function that does not contain a memory_order_consume load and that
-doesn't have any arguments marked [[carries_dependency]] can be optimized
-just as before.
+Read my suggestion. Knowing where to stop is *trivial*.
 
-> There'd be one solution to the above, we would have to invent some special 
-> operands and markers that explicitely model "carries-a-dep", ala this:
-> 
-> int getzero (int i) {
->   #RETURN.dep = i.dep
->   return 0;
-> }
+Either the dependency is immediate and obvious, or you treat it like an acquire.
 
-The above is already handled by the [[carries_dependency]] attribute,
-see above.
+Seriously. Any compiler that doesn't turn the dependency chain into
+SSA or something pretty much equivalent is pretty much a joke. Agreed?
 
-> int jeez (int idx) {
->   # i.dep = idx.dep
->   int i = atomic_load(idx, memory_order_consume); // A
->   # j.dep = i.dep
->   int j = getzero (i);                            // B
->   # RETURN.dep = j.dep + array.dep
->   return array[j];                                // C
-> }
-> 
-> Then inlining getzero would merely add another "# j.dep = i.dep" relation, 
-> so depchains are still there but the value optimization can happen before 
-> inlining.  Having to do something like that I'd find disgusting, and 
-> rather rewrite consume into acquire :)  Or make the depchain relation 
-> somehow realistically implementable.
+So we can pretty much assume that the compiler will have some
+intermediate representation as part of optimization that is basically
+SSA.
 
-I was actually OK with arithmetic cancellation breaking the dependency
-chains.  Others on the committee felt otherwise, and I figured that
-(1) I wouldn't be writing that kind of function anyway and (2) they
-knew more about writing compilers than I.  I would still be OK saying
-that things like "i-i", "i*0", "i%1", "i&0", "i|~0" and so on just
-break the dependency chain.
+So what you do is,
 
-							Thanx, Paul
+ - build the SSA by doing all the normal parsing and possible
+tree-level optimizations you already do even before getting to the SSA
+stage
 
+ - do all the normal optimizations/simplifications/cse/etc that you do
+normally on SSA
+
+ - add *one* new rule to your SSA simplification that goes something like this:
+
+   * when you see a load op that is marked with a "consume" barrier,
+just follow the usage chain that comes from that.
+   * if you hit a normal arithmetic op, just follow the result chain of that
+   * if you hit a memory operation address use, stop and say "looks good"
+   * it you hit anything else (including a copy/phi/whatever), abort
+   * if nothing aborted as part of the walk, you can now just remove
+the "consume" barrier.
+
+You can fancy it up and try to follow more cases, but realistically
+the only case that really matters is the "consume" being fed directly
+into one or more loads, with possibly an offset calculation in
+between. There are certainly more cases you could *try* to remove the
+barrier, but the thing is, it's never incorrect to not remove it, so
+any time you get bored or hit any complication at all, just do the
+"abort" part.
+
+I *guarantee* that if you describe this to a compiler writer, he will
+tell you that my scheme is about a billion times simpler than the
+current standard wording. Especially after you've pointed him to that
+gcc bugzilla entry and explained to him about how the current standard
+cares about those kinds of made-up syntactic chains that he likely
+removed quite early, possibly even as he was generating the semantic
+tree.
+
+Try it. I dare you. So if you want to talk about "difficulties", the
+current C standard loses.
+
+> The second is the proposal in later mails to use some notion of  "semantic"
+> dependency instead of this syntactic one.
+
+Bah.
+
+The C standard does that all over. It's called "as-is". The C standard
+talks about how the compiler can do pretty much whatever it likes, as
+long as the end result acts the same in the virtual C machine.
+
+So claiming that "semantics" being meaningful is somehow complex is
+bogus. People do that all the time. If you make it clear that the
+dependency chain is through the *value*, not syntax, and that the
+value can be optimized all the usual ways, it's quite clear what the
+end result is. Any operation that actually meaningfully uses the value
+is serialized with the load, and if there is no meaningful use that
+would affect the end result in the virtual machine, then there is no
+barrier.
+
+Why would this be any different, especially since it's easy to
+understand both for a human and a compiler?
+
+               Linus
