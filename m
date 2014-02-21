@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350AbaBUNaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:30:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47177 "EHLO
+	id S933358AbaBUNay (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:30:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47171 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932493AbaBUMvQ (ORCPT
+	with ESMTP id S932485AbaBUMvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:16 -0500
+	Fri, 21 Feb 2014 07:51:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Beomho Seo <beomho.seo@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 090/121] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
-Date: Fri, 21 Feb 2014 12:48:34 +0000
-Message-Id: <1392986945-9693-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/121] block: Fix nr_vecs for inline integrity vectors
+Date: Fri, 21 Feb 2014 12:48:33 +0000
+Message-Id: <1392986945-9693-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,70 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Beomho Seo <beomho.seo@samsung.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
+commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
 
-This effects the reported scale of the raw values, and thus userspace
-applications that use this value.
+Commit 9f060e2231ca changed the way we handle allocations for the
+integrity vectors. When the vectors are inline there is no associated
+slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
+against BIP_INLINE_VECS in that case.
 
-One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
-ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
-always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
-As a result, read_raw call back function return accurate scale value.
-
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Reported-by: David Milburn <dmilburn@redhat.com>
+Tested-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/magnetometer/ak8975.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ fs/bio-integrity.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
-index 7105f22..9edf4c9 100644
---- a/drivers/iio/magnetometer/ak8975.c
-+++ b/drivers/iio/magnetometer/ak8975.c
-@@ -85,6 +85,7 @@
- #define AK8975_MAX_CONVERSION_TIMEOUT	500
- #define AK8975_CONVERSION_DONE_POLL_TIME 10
- #define AK8975_DATA_READY_TIMEOUT	((100*HZ)/1000)
-+#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
- 
- /*
-  * Per-instance context data for the device.
-@@ -265,15 +266,15 @@ static int ak8975_setup(struct i2c_client *client)
-  *
-  * Since 1uT = 100 gauss, our final scale factor becomes:
-  *
-- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
-- * Hadj = H * ((ASA + 128) * 30 / 256
-+ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
-+ * Hadj = H * ((ASA + 128) * 0.003) / 256
-  *
-  * Since ASA doesn't change, we cache the resultant scale factor into the
-  * device context in ak8975_setup().
-  */
--	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
--	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
--	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
-+	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
-+	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
-+	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
- 
- 	return 0;
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 45e944f..8dccf73 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
  }
-@@ -428,8 +429,9 @@ static int ak8975_read_raw(struct iio_dev *indio_dev,
- 	case IIO_CHAN_INFO_RAW:
- 		return ak8975_read_axis(indio_dev, chan->address, val);
- 	case IIO_CHAN_INFO_SCALE:
--		*val = data->raw_to_gauss[chan->address];
--		return IIO_VAL_INT;
-+		*val = 0;
-+		*val2 = data->raw_to_gauss[chan->address];
-+		return IIO_VAL_INT_PLUS_MICRO;
+ EXPORT_SYMBOL(bio_integrity_free);
+ 
++static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
++{
++	if (bip->bip_slab == BIO_POOL_NONE)
++		return BIP_INLINE_VECS;
++
++	return bvec_nr_vecs(bip->bip_slab);
++}
++
+ /**
+  * bio_integrity_add_page - Attach integrity metadata
+  * @bio:	bio to update
+@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_vec *iv;
+ 
+-	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
++	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
+ 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
+ 		return 0;
  	}
- 	return -EINVAL;
- }
 -- 
 1.9.0
 
