@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297AbaBUBai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:30:38 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:50740 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337AbaBUBag (ORCPT
+	id S1755064AbaBUBjS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:39:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:65033 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412AbaBUBjQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:30:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140218205925.11014.14973.stgit@bhelgaas-glaptop.roam.corp.google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 20 Feb 2014 18:30:15 -0700
-Message-ID: <CAErSpo7z9-gTGLHT8gOGC-KHek-kzNBtWVMWQEU8DWn3PekmTw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] Remove dead code
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Joerg Roedel <joro@8bytes.org>, Sudeep Dutt <sudeep.dutt@intel.com>,
+	Thu, 20 Feb 2014 20:39:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,515,1389772800"; 
+   d="scan'208";a="486930847"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Aaron F Brown <aaron.f.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: RE: [PATCH v4 0/5] Enabling the asynchronous threads for other
+ phases
+Thread-Topic: [PATCH v4 0/5] Enabling the asynchronous threads for other
+ phases
+Thread-Index: AQHPLFJ9ymjMhS7FYk21DdHyegrk4pq+8JEg
+Date: Fri, 21 Feb 2014 01:38:45 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C27D32@SHSMSX101.ccr.corp.intel.com>
+References: <y> <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
+In-Reply-To: <1392690528-10024-1-git-send-email-chuansheng.liu@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 1:59 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> This is v2 of my rework of part of Stephen's patch [1].  My v1 posting,
-> with a little discussion, is here [2].
->
-> This removes SR-IOV migration support, which seems to be unused.
->
-> Changes since v1:
->   - Drop the removal of MMIO exclusivity.
->   - Add a few includes of <linux/irqreturn.h>.  The SR-IOV migration
->     support included irqreturn.h via linux/pci.h, and a few drivers relied
->     on that.  So this v2 series updates those drivers to include
->     irqreturn.h directly.
->
-> Unless there's objection, I'd like to merge all these through my PCI tree
-> for v3.15.
+Hello Rafael,
 
-I applied these to my pci/dead-code branch, which is now in -next, for v3.15.
+> -----Original Message-----
+> From: Liu, Chuansheng
+> Sent: Tuesday, February 18, 2014 10:29 AM
+> To: rjw@rjwysocki.net; gregkh@linuxfoundation.org; Brown, Len;
+> pavel@ucw.cz
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi; Liu,
+> Chuansheng
+> Subject: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
+> 
+> Hello,
+> 
+> This patch series are for enabling the asynchronous threads for the phases
+> resume_noirq, resume_early, suspend_noirq and suspend_late.
+> 
 
-> Bjorn
->
-> [1] http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
-> [2] https://lkml.kernel.org/r/20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com
->
-> ---
->
-> Bjorn Helgaas (4):
->       misc: mic: Add include of <linux/irqreturn.h>
->       mei: Add include of <linux/irqreturn.h>
->       iommu/amd: Add include of <linux/irqreturn.h>
->       PCI: Remove unused SR-IOV VF Migration support
->
->
->  Documentation/PCI/pci-iov-howto.txt |    4 -
->  drivers/iommu/amd_iommu_types.h     |    1
->  drivers/misc/mei/hw-me.h            |    1
->  drivers/misc/mic/card/mic_device.h  |    1
->  drivers/misc/mic/host/mic_device.h  |    1
->  drivers/pci/iov.c                   |  119 -----------------------------------
->  drivers/pci/pci.h                   |    4 -
->  include/linux/pci.h                 |    4 -
->  8 files changed, 4 insertions(+), 131 deletions(-)
+After dig more about async threads, I found dpm_prepare/complete phases need
+them also.
+
+dpm_prepare()
+  -- > call pci_pm_prepare() one by one
+      -- > call pm_runtime_resume() one by one
+        -- > call pci_set_power_state to D3HOT -- > D0
+
+It will cause much time delaying due to d3_delay.
+And I made one draft patch to implement the asynchronous threads for dpm_prepare(),
+it is really save much time.
+
+If you like it, I can prepare another series patches for dpm_prepare() and dpm_complete(),
+thanks.
+
+Best Regards,
