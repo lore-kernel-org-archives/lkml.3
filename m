@@ -1,212 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503AbaBUOCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:02:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46693 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754740AbaBUMtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:49:12 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 002/121] ftrace: Have function graph only trace based on global_ops filters
-Date: Fri, 21 Feb 2014 12:47:06 +0000
-Message-Id: <1392986945-9693-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755414AbaBUOFC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:05:02 -0500
+Received: from 8bytes.org ([85.214.48.195]:43930 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494AbaBUOFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 09:05:00 -0500
+Date: Fri, 21 Feb 2014 15:04:54 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Fixes for Linux v3.14-rc3
+Message-ID: <20140221140452.GA5472@8bytes.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Feb 21 15:04:57 2014
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53075d0920861639110949
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Hi Linus,
 
-commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-Doing some different tests, I discovered that function graph tracing, when
-filtered via the set_ftrace_filter and set_ftrace_notrace files, does
-not always keep with them if another function ftrace_ops is registered
-to trace functions.
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-The reason is that function graph just happens to trace all functions
-that the function tracer enables. When there was only one user of
-function tracing, the function graph tracer did not need to worry about
-being called by functions that it did not want to trace. But now that there
-are other users, this becomes a problem.
+are available in the git repository at:
 
-For example, one just needs to do the following:
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.14-rc3
 
- # cd /sys/kernel/debug/tracing
- # echo schedule > set_ftrace_filter
- # echo function_graph > current_tracer
- # cat trace
-[..]
- 0)               |  schedule() {
- ------------------------------------------
- 0)    <idle>-0    =>   rcu_pre-7
- ------------------------------------------
+for you to fetch changes up to 972157cac528f6cfd1f7e640139287951066106e:
 
- 0) ! 2980.314 us |  }
- 0)               |  schedule() {
- ------------------------------------------
- 0)   rcu_pre-7    =>    <idle>-0
- ------------------------------------------
+  arm/smmu: Use irqsafe spinlock for domain lock (2014-02-20 13:04:47 +0100)
 
- 0) + 20.701 us   |  }
+----------------------------------------------------------------
+IOMMU Fixes for Linux v3.14-rc3
 
- # echo 1 > /proc/sys/kernel/stack_tracer_enabled
- # cat trace
-[..]
- 1) + 20.825 us   |      }
- 1) + 21.651 us   |    }
- 1) + 30.924 us   |  } /* SyS_ioctl */
- 1)               |  do_page_fault() {
- 1)               |    __do_page_fault() {
- 1)   0.274 us    |      down_read_trylock();
- 1)   0.098 us    |      find_vma();
- 1)               |      handle_mm_fault() {
- 1)               |        _raw_spin_lock() {
- 1)   0.102 us    |          preempt_count_add();
- 1)   0.097 us    |          do_raw_spin_lock();
- 1)   2.173 us    |        }
- 1)               |        do_wp_page() {
- 1)   0.079 us    |          vm_normal_page();
- 1)   0.086 us    |          reuse_swap_page();
- 1)   0.076 us    |          page_move_anon_rmap();
- 1)               |          unlock_page() {
- 1)   0.082 us    |            page_waitqueue();
- 1)   0.086 us    |            __wake_up_bit();
- 1)   1.801 us    |          }
- 1)   0.075 us    |          ptep_set_access_flags();
- 1)               |          _raw_spin_unlock() {
- 1)   0.098 us    |            do_raw_spin_unlock();
- 1)   0.105 us    |            preempt_count_sub();
- 1)   1.884 us    |          }
- 1)   9.149 us    |        }
- 1) + 13.083 us   |      }
- 1)   0.146 us    |      up_read();
+The fixes are only for the ARM-SMMU driver. Here is the summary from
+Will Deacon:
 
-When the stack tracer was enabled, it enabled all functions to be traced, which
-now the function graph tracer also traces. This is a side effect that should
-not occur.
+  - Andreas Herrmann took the driver for a run with a real SATA
+    controller, which caused the new mutex-based locking to explode
+    since we require mappings in atomic context
 
-To fix this a test is added when the function tracing is changed, as well as when
-the graph tracer is enabled, to see if anything other than the ftrace global_ops
-function tracer is enabled. If so, then the graph tracer calls a test trampoline
-that will look at the function that is being traced and compare it with the
-filters defined by the global_ops.
+  - Yifan fixed an issue with the page table creation, which then caused
+    breakages with the way in which we flush descriptors out to the
+    table walker
 
-As an optimization, if there's no other function tracers registered, or if
-the only registered function tracers also use the global ops, the function
-graph infrastructure will call the registered function graph callback directly
-and not go through the test trampoline.
+  - I ran the driver on a system where the SMMU is hooked into a
+    coherent interconnect for table walks, and noticed a shareability
+    mismatch between the CPU and the SMMU
 
-Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/trace/ftrace.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
+These issues are all fixed here and have been tested on both arm and
+arm64 based systems.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index aba7446..63b236f 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -297,6 +297,12 @@ static void ftrace_sync_ipi(void *data)
- 	smp_rmb();
- }
- 
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static void update_function_graph_func(void);
-+#else
-+static inline void update_function_graph_func(void) { }
-+#endif
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
-@@ -329,6 +335,8 @@ static void update_ftrace_function(void)
- 	if (ftrace_trace_function == func)
- 		return;
- 
-+	update_function_graph_func();
-+
- 	/*
- 	 * If we are using the list function, it doesn't care
- 	 * about the function_trace_ops.
-@@ -4825,6 +4833,7 @@ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
- trace_func_graph_ret_t ftrace_graph_return =
- 			(trace_func_graph_ret_t)ftrace_stub;
- trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
-+static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
- 
- /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
- static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
-@@ -4966,6 +4975,30 @@ static struct ftrace_ops fgraph_ops __read_mostly = {
- 				FTRACE_OPS_FL_RECURSION_SAFE,
- };
- 
-+static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
-+{
-+	if (!ftrace_ops_test(&global_ops, trace->func, NULL))
-+		return 0;
-+	return __ftrace_graph_entry(trace);
-+}
-+
-+/*
-+ * The function graph tracer should only trace the functions defined
-+ * by set_ftrace_filter and set_ftrace_notrace. If another function
-+ * tracer ops is registered, the graph tracer requires testing the
-+ * function against the global ops, and not just trace any function
-+ * that any ftrace_ops registered.
-+ */
-+static void update_function_graph_func(void)
-+{
-+	if (ftrace_ops_list == &ftrace_list_end ||
-+	    (ftrace_ops_list == &global_ops &&
-+	     global_ops.next == &ftrace_list_end))
-+		ftrace_graph_entry = __ftrace_graph_entry;
-+	else
-+		ftrace_graph_entry = ftrace_graph_entry_test;
-+}
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4990,7 +5023,16 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	}
- 
- 	ftrace_graph_return = retfunc;
--	ftrace_graph_entry = entryfunc;
-+
-+	/*
-+	 * Update the indirect function to the entryfunc, and the
-+	 * function that gets called to the entry_test first. Then
-+	 * call the update fgraph entry function to determine if
-+	 * the entryfunc should be called directly or not.
-+	 */
-+	__ftrace_graph_entry = entryfunc;
-+	ftrace_graph_entry = ftrace_graph_entry_test;
-+	update_function_graph_func();
- 
- 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
-@@ -5009,6 +5051,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
-+	__ftrace_graph_entry = ftrace_graph_entry_stub;
- 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
--- 
-1.9.0
+Besides that I put a fix on-top to make the spinlock irq-safe, so that the
+code-paths can be used in the DMA-API.
+
+----------------------------------------------------------------
+Joerg Roedel (2):
+      Merge branch 'for-joerg/arm-smmu/fixes' of git://git.kernel.org/.../will/linux into iommu/fixes
+      arm/smmu: Use irqsafe spinlock for domain lock
+
+Will Deacon (4):
+      iommu/arm-smmu: really fix page table locking
+      iommu/arm-smmu: fix table flushing during initial allocations
+      iommu/arm-smmu: set CBARn.BPSHCFG to NSH for s1-s2-bypass contexts
+      iommu/arm-smmu: fix compilation issue when !CONFIG_ARM_AMBA
+
+Yifan Zhang (1):
+      iommu/arm-smmu: fix pud/pmd entry fill sequence
+
+ drivers/iommu/arm-smmu.c |  105 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 63 insertions(+), 42 deletions(-)
+
+Please pull.
+
+Thanks,
+
+	Joerg
+
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTB10EAAoJECvwRC2XARrj03gQAMpnhWNyV/aiu0Xr5ah8DfMa
+T/dFu4BrwezXWKfDoqs8Fzb6ySqzET7uLz+pymPheHmyAVmGH5noZ88eN3m7tjg2
+/MJZmkDblY7TRSnqUZowfkY72j9y26nMKYagWG5FrAV5zGJuwK9Kz4OdR2crnks0
+cpVPm6ZI+ahtbTiNAco0hFYBAGF78qLhTjRfuKzi7exvXYV0k8+gJkjrms3A7pCj
+qONr5fwJz7e7fxVc23I1MUUavA9mtfQqK7LLgVl4dyILx/E3YOxtmUUMmDbW3vxU
+H4rJh1U25vO2gxBe0Dfnb8AmC2JwQbxIKifW0/5BP6K773QdfHYICPSk8fHIqkG1
+EV4XIHmfQCEmqkmAGFapJpfcXEmi84ImBqnuWYW5/Wtu5zJGb84oQEZGLbPqPjPj
+j2boChFuzYLLF9YDjbGGW2uluO6z/9XY7cstqNVTiTOxR10t/dmpXmD3OI7fCdQl
+EySlEw1UZMnNgeNCCfrun05+a1+EZ6M2MbYg5mAorIPeLn9JG+sXzj5Pvv7rg77S
+43VSr5gxALLKrBU4+eN2JVj6HIDwVXvEe5exVe/lABIbrmRpd763dcBgoa9+yhOL
+vM1iOU5AP9w4b8Xg1eK8B6L36n0+A9sV4yq84I/w4j+Q5/fD7bZSkPgsStt8c5Hf
+AYFevvG/C4/lbjNCvj+g
+=zgKU
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
+
 
