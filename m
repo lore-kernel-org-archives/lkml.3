@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaBUE7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:59:50 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:54946 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaBUE7s (ORCPT
+	id S1750976AbaBUFFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 00:05:09 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:51570 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaBUFFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:59:48 -0500
-From: behanw@converseincode.com
-To: rob@landley.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] Documentation: LLVMLinux: Update Documentation/dontdiff
-Date: Thu, 20 Feb 2014 20:59:42 -0800
-Message-Id: <1392958782-27426-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 21 Feb 2014 00:05:07 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <5306DE24.8090407@roeck-us.net>
+Date: Thu, 20 Feb 2014 21:03:32 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/99] 3.13.5-stable review
+References: <20140220235118.191692546@linuxfoundation.org>
+In-Reply-To: <20140220235118.191692546@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On 02/20/2014 03:51 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.13.5 release.
+> There are 99 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sat Feb 22 23:51:00 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Clang has a few other kinds of derived files which shouldn't be added to a
-patch. Add them to the Documentation/dontdiff file to prevent this.
+Build results:
+	total: 126 pass: 122 skipped: 4 fail: 0
 
-Author:  PaX Team <pageexec@freemail.hu>
-ML-Post: http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
-URL:     http://llvm.linuxfoundation.org
-Merge:   Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- Documentation/dontdiff | 3 +++
- 1 file changed, 3 insertions(+)
+qemu tests all passed.
 
-diff --git a/Documentation/dontdiff b/Documentation/dontdiff
-index b89a739..9de9813 100644
---- a/Documentation/dontdiff
-+++ b/Documentation/dontdiff
-@@ -1,5 +1,6 @@
- *.a
- *.aux
-+*.bc
- *.bin
- *.bz2
- *.cis
-@@ -21,6 +22,7 @@
- *.i
- *.jpeg
- *.ko
-+*.ll
- *.log
- *.lst
- *.lzma
-@@ -35,6 +37,7 @@
- *.out
- *.patch
- *.pdf
-+*.plist
- *.png
- *.pot
- *.ps
--- 
-1.8.3.2
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
 
