@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204AbaBUQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:53:56 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35965 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754838AbaBUQxw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:53:52 -0500
-Message-ID: <5307849A.9050209@hurleysoftware.com>
-Date: Fri, 21 Feb 2014 11:53:46 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933237AbaBUQyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:54:05 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:53818 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933206AbaBUQyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:54:01 -0500
+Date: Fri, 21 Feb 2014 10:53:59 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>, rja@sgi.com
+Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
+Message-ID: <20140221165354.GO16114@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230> <20140220212854.GO17949@sgi.com> <1392932363.20109.11.camel@x230> <20140220220656.GT17949@sgi.com> <1392935204.20109.17.camel@x230> <20140220224529.GV17949@sgi.com> <1392937781.20109.24.camel@x230> <20140220235904.GZ17949@sgi.com> <1392941592.20109.36.camel@x230>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
-References: <1392929071-16555-1-git-send-email-tj@kernel.org> <1392929071-16555-5-git-send-email-tj@kernel.org> <5306AF8E.3080006@hurleysoftware.com> <20140221015935.GF6897@htj.dyndns.org> <5306B4DF.4000901@hurleysoftware.com> <20140221021341.GG6897@htj.dyndns.org> <5306E06C.5020805@hurleysoftware.com> <20140221100301.GA14653@mtj.dyndns.org> <53074BE4.1020307@hurleysoftware.com> <20140221130614.GH6897@htj.dyndns.org>
-In-Reply-To: <20140221130614.GH6897@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392941592.20109.36.camel@x230>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Fri, Feb 21, 2014 at 12:13:13AM +0000, Matthew Garrett wrote:
+> On Thu, 2014-02-20 at 17:59 -0600, Russ Anderson wrote:
+> > On Thu, Feb 20, 2014 at 11:09:42PM +0000, Matthew Garrett wrote:
+> > > On Thu, 2014-02-20 at 16:45 -0600, Russ Anderson wrote:
+> > > > 
+> > > > The ACPI spec requires IPMI functionality before a module loads at
+> > > > boot time?  And the kernel is *broken* if it does not support ACIP IPMI
+> > > > functionality before module load time?  Really?
+> > > 
+> > > There's no mechanism to ensure that IPMI support will be loaded before
+> > > ACPI calls attempt to access IPMI operation regions. Really.
+> > 
+> > And no mechanism can be added to ensure that ACPI call are
+> > not attempted before IPMI is initialized?  A flag or lock
+> > or exported symbol indicating IPMI support is ready.
+> 
+> ACPI functions are a black box to drivers. You make an ACPI call, the
+> AML code does something. We could block there, but what's the driver
+> supposed to do at that point? The core could call out to a module
+> loader, but if the driver is built in and IPMI isn't then you'll end up
+> with a 60 second pause in boot and a driver that doesn't work. 
 
-On 02/21/2014 08:06 AM, Tejun Heo wrote:
-> Hello,
->
-> On Fri, Feb 21, 2014 at 07:51:48AM -0500, Peter Hurley wrote:
->> I think the vast majority of kernel code which uses the workqueue
->> assumes there is a memory ordering guarantee.
->
-> Not really.  Workqueues haven't even guaranteed non-reentrancy until
-> recently, forcing everybody to lock explicitly in the work function.
-> I don't think there'd be many, if any, use cases which depend on
-> ordering guarantee on duplicate queueing.
+When you say "if the driver is built in" which driver are you
+talking about?  I thought the issue was making sure ipmi_si 
+driver was loaded before power meter driver.
 
-I added some in 3.12 :)
 
->> Another way to look at this problem is that process_one_work()
->> doesn't become the existing instance _until_ PENDING is cleared.
->
-> Sure, having that guarantee definitely is nicer and all we need seems
-> to be mb_after_unlock in the execution path.  Please feel free to
-> submit a patch.
 
-Ok, I can do that. But AFAIK it'll have to be an smp_rmb(); there is
-no mb__after unlock.
+> > > > > ACPI 4.0 includes support for IPMI operation regions. Modular IPMI means
+> > > > > that the kernel will spend a significant amount of time (potentially
+> > > > > until a user manually loads a driver) failing to implement part of the
+> > > > > IPMI specification. That's a problem, and the correct fix is to ensure
+> > > > > that the kernel always implements IPMI support.
+> > > > 
+> > > > The ACPI spec says ipmi_si cannot be a driver?  Really?
+> > > > What is the real problem you are trying to solve?
+> > > 
+> > > The most straightforward case is that of an ACPI power meter.
+> > 
+> > So it is just a matter of making sure ipmi_si modules loads before
+> > the ACPI power meter module loads, right?  module dependency issue.
+> 
+> No, because the power meter driver has no way of knowing that a vendor
+> has implemented this interface via IPMI. *Any* ACPI entry point could
+> theoretically reference IPMI code, even the _INI method that's called
+> during ACPI core init. If it does, and if you don't have built-in ACPI
+> support, you'd fail ACPI initialisation and things would go downhill
+> from there.
 
-[ After thinking about it some, I don't think preventing speculative
-   writes before clearing PENDING if useful or necessary, so that's
-   why I'm suggesting only the rmb. ]
+Again, it sounds like as long as ipmi_si driver is loaded before
+power meter driver, power meter driver is fine.
 
->>> add such guarantee, not sure how much it'd matter but it's not like
->>> it's gonna cost a lot either.
->>>
->>> This doesn't have much to do with the current series tho.  In fact,
->>> PREPARE_WORK can't ever be made to give such guarantee.
->>
->> Yes, I agree that PREPARE_DELAYED_WORK was also broken usage with the
->> same problem. [And there are other bugs in that firewire device work
->> code which I'm working on.]
->>
->>> The function pointer has to fetched before clearing of PENDING.
->>
->> Why?
->>
->> As long as the load takes place within the pool->lock, I don't think
->> it matters (especially now PREPARE_WORK is removed).
->
-> Hmmm... I was talking about PREPARE_WORK().  Clearing PENDING means
-> that the work item is released from the worker context and may be
-> freed or reused at any time (hmm... this may not be true anymore as
-> non-syncing variants of cancel_work are gone), so clearing PENDING
-> should be the last access to the work item and thus we can't use that
-> as the barrier event for fetching its work function.
 
-Yeah, it seems like the work item lifetime is at least guaranteed
-while either PENDING is set _or_ while the pool->lock is held
-after PENDING is cleared.
 
-Regards,
-Peter Hurley
-
+-- 
+Russ Anderson,  Kernel and Performance Software Team Manager
+SGI - Silicon Graphics Inc          rja@sgi.com
