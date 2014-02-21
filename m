@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809AbaBUVbe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:31:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59268 "EHLO
+	id S1755901AbaBUVbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:31:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59275 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735AbaBUVbb (ORCPT
+	with ESMTP id S1755824AbaBUVbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:31:31 -0500
-Date: Fri, 21 Feb 2014 13:30:54 -0800
+	Fri, 21 Feb 2014 16:31:39 -0500
+Date: Fri, 21 Feb 2014 13:31:05 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-3f1d2a318171bf61850d4e5a72031271e5aada76@git.kernel.org>
+Message-ID: <tip-nnzddp5c4fijyzzxxrwlxghf@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, rostedt@goodmis.org, tkhai@yandex.ru,
-        tglx@linutronix.de, juri.lelli@gmail.com, dan.carpenter@oracle.com
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de,
+        juri.lelli@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, rostedt@goodmis.org, tkhai@yandex.ru,
-        tglx@linutronix.de, dan.carpenter@oracle.com, juri.lelli@gmail.com
-In-Reply-To: <20140212094930.GB3545@laptop.programming.kicks-ass.net>
-References: <20140212094930.GB3545@laptop.programming.kicks-ass.net>
+        rostedt@goodmis.org, peterz@infradead.org, tglx@linutronix.de,
+        juri.lelli@gmail.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix hotplug task migration
-Git-Commit-ID: 3f1d2a318171bf61850d4e5a72031271e5aada76
+Subject: [tip:sched/core] sched: Remove some #ifdeffery
+Git-Commit-ID: dc87734106bb6e97c92d8bd81f261fb71976ec2c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,184 +31,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3f1d2a318171bf61850d4e5a72031271e5aada76
-Gitweb:     http://git.kernel.org/tip/3f1d2a318171bf61850d4e5a72031271e5aada76
+Commit-ID:  dc87734106bb6e97c92d8bd81f261fb71976ec2c
+Gitweb:     http://git.kernel.org/tip/dc87734106bb6e97c92d8bd81f261fb71976ec2c
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 12 Feb 2014 10:49:30 +0100
+AuthorDate: Wed, 12 Feb 2014 15:47:29 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 21 Feb 2014 21:43:18 +0100
 
-sched: Fix hotplug task migration
+sched: Remove some #ifdeffery
 
-Dan Carpenter reported:
+Remove a few gratuitous #ifdefs in pick_next_task*().
 
-> kernel/sched/rt.c:1347 pick_next_task_rt() warn: variable dereferenced before check 'prev' (see line 1338)
-> kernel/sched/deadline.c:1011 pick_next_task_dl() warn: variable dereferenced before check 'prev' (see line 1005)
-
-Kirill also spotted that migrate_tasks() will have an instant NULL
-deref because pick_next_task() will immediately deref prev.
-
-Instead of fixing all the corner cases because migrate_tasks() can
-pass in a NULL prev task in the unlikely case of hot-un-plug, provide
-a fake task such that we can remove all the NULL checks from the far
-more common paths.
-
-A further problem; not previously spotted; is that because we pushed
-pre_schedule() and idle_balance() into pick_next_task() we now need to
-avoid those getting called and pulling more tasks on our dying CPU.
-
-We avoid pull_{dl,rt}_task() by setting fake_task.prio to MAX_PRIO+1.
-We also note that since we call pick_next_task() exactly the amount of
-times we have runnable tasks present, we should never land in
-idle_balance().
-
-Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
-Cc: Juri Lelli <juri.lelli@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Kirill Tkhai <tkhai@yandex.ru>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140212094930.GB3545@laptop.programming.kicks-ass.net
+Link: http://lkml.kernel.org/n/tip-nnzddp5c4fijyzzxxrwlxghf@git.kernel.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/core.c      | 18 +++++++++++++++++-
- kernel/sched/deadline.c  |  3 +--
- kernel/sched/fair.c      |  5 ++---
- kernel/sched/idle_task.c |  3 +--
- kernel/sched/rt.c        |  3 +--
+ kernel/sched/deadline.c  | 31 +++++++++++++++++++++++++------
+ kernel/sched/idle_task.c |  4 ----
+ kernel/sched/rt.c        | 41 ++++++++++++++++++++++++++++++-----------
  kernel/sched/sched.h     |  5 +++++
- kernel/sched/stop_task.c |  3 +--
- 7 files changed, 28 insertions(+), 12 deletions(-)
+ 4 files changed, 60 insertions(+), 21 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index fb9764f..49db434 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4681,6 +4681,22 @@ static void calc_load_migrate(struct rq *rq)
- 		atomic_long_add(delta, &calc_load_tasks);
- }
- 
-+static void put_prev_task_fake(struct rq *rq, struct task_struct *prev)
-+{
-+}
-+
-+static const struct sched_class fake_sched_class = {
-+	.put_prev_task = put_prev_task_fake,
-+};
-+
-+static struct task_struct fake_task = {
-+	/*
-+	 * Avoid pull_{rt,dl}_task()
-+	 */
-+	.prio = MAX_PRIO + 1,
-+	.sched_class = &fake_sched_class,
-+};
-+
- /*
-  * Migrate all tasks from the rq, sleeping tasks will be migrated by
-  * try_to_wake_up()->select_task_rq().
-@@ -4721,7 +4737,7 @@ static void migrate_tasks(unsigned int dead_cpu)
- 		if (rq->nr_running == 1)
- 			break;
- 
--		next = pick_next_task(rq, NULL);
-+		next = pick_next_task(rq, &fake_task);
- 		BUG_ON(!next);
- 		next->sched_class->put_prev_task(rq, next);
- 
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index ed31ef6..bfeb84e 100644
+index bfeb84e..3185b77 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -1008,8 +1008,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 	if (unlikely(!dl_rq->dl_nr_running))
- 		return NULL;
+@@ -214,6 +214,16 @@ static inline int has_pushable_dl_tasks(struct rq *rq)
  
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	put_prev_task(rq, prev);
+ static int push_dl_task(struct rq *rq);
  
- 	dl_se = pick_next_dl_entity(rq, dl_rq);
- 	BUG_ON(!dl_se);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 40c758b..e884e45 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4690,7 +4690,7 @@ again:
- 	if (!cfs_rq->nr_running)
- 		goto idle;
- 
--	if (!prev || prev->sched_class != &fair_sched_class)
-+	if (prev->sched_class != &fair_sched_class)
- 		goto simple;
- 
- 	/*
-@@ -4766,8 +4766,7 @@ simple:
- 	if (!cfs_rq->nr_running)
- 		goto idle;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	put_prev_task(rq, prev);
- 
- 	do {
- 		se = pick_next_entity(cfs_rq, NULL);
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index f7d03af..53ff9e7 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -26,8 +26,7 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
- static struct task_struct *
- pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- {
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	put_prev_task(rq, prev);
- 
- 	schedstat_inc(rq, sched_goidle);
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 72f9ec7..65c2d68 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1344,8 +1344,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 	if (rt_rq_throttled(rt_rq))
- 		return NULL;
- 
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	put_prev_task(rq, prev);
- 
- 	p = _pick_next_task_rt(rq);
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 92018f9..d276147 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1147,6 +1147,11 @@ struct sched_class {
- #endif
- };
- 
-+static inline void put_prev_task(struct rq *rq, struct task_struct *prev)
++static inline bool need_pull_dl_task(struct rq *rq, struct task_struct *prev)
 +{
-+	prev->sched_class->put_prev_task(rq, prev);
++	return dl_task(prev);
 +}
 +
- #define sched_class_highest (&stop_sched_class)
- #define for_each_class(class) \
-    for (class = sched_class_highest; class; class = class->next)
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index a4147c9..d6ce65d 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -31,8 +31,7 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
- 	if (!stop || !stop->on_rq)
++static inline void set_post_schedule(struct rq *rq)
++{
++	rq->post_schedule = has_pushable_dl_tasks(rq);
++}
++
+ #else
+ 
+ static inline
+@@ -236,6 +246,19 @@ void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ {
+ }
+ 
++static inline bool need_pull_dl_task(struct rq *rq, struct task_struct *prev)
++{
++	return false;
++}
++
++static inline int pull_dl_task(struct rq *rq)
++{
++	return 0;
++}
++
++static inline void set_post_schedule(struct rq *rq)
++{
++}
+ #endif /* CONFIG_SMP */
+ 
+ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags);
+@@ -1000,10 +1023,8 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+ 
+ 	dl_rq = &rq->dl;
+ 
+-#ifdef CONFIG_SMP
+-	if (dl_task(prev))
++	if (need_pull_dl_task(rq, prev))
+ 		pull_dl_task(rq);
+-#endif
+ 
+ 	if (unlikely(!dl_rq->dl_nr_running))
  		return NULL;
+@@ -1024,9 +1045,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+ 		start_hrtick_dl(rq, p);
+ #endif
  
--	if (prev)
--		prev->sched_class->put_prev_task(rq, prev);
-+	put_prev_task(rq, prev);
+-#ifdef CONFIG_SMP
+-	rq->post_schedule = has_pushable_dl_tasks(rq);
+-#endif /* CONFIG_SMP */
++	set_post_schedule(rq);
  
- 	stop->se.exec_start = rq_clock_task(rq);
+ 	return p;
+ }
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index 53ff9e7..1f37258 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -29,9 +29,7 @@ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
+ 	put_prev_task(rq, prev);
  
+ 	schedstat_inc(rq, sched_goidle);
+-#ifdef CONFIG_SMP
+ 	idle_enter_fair(rq);
+-#endif
+ 	return rq->idle;
+ }
+ 
+@@ -50,10 +48,8 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
+ 
+ static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
+ {
+-#ifdef CONFIG_SMP
+ 	idle_exit_fair(rq);
+ 	rq_last_tick_reset(rq);
+-#endif
+ }
+ 
+ static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 65c2d68..3e488ca 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -231,6 +231,12 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
+ 
+ static int pull_rt_task(struct rq *this_rq);
+ 
++static inline bool need_pull_rt_task(struct rq *rq, struct task_struct *prev)
++{
++	/* Try to pull RT tasks here if we lower this rq's prio */
++	return rq->rt.highest_prio.curr > prev->prio;
++}
++
+ static inline int rt_overloaded(struct rq *rq)
+ {
+ 	return atomic_read(&rq->rd->rto_count);
+@@ -317,6 +323,15 @@ static inline int has_pushable_tasks(struct rq *rq)
+ 	return !plist_head_empty(&rq->rt.pushable_tasks);
+ }
+ 
++static inline void set_post_schedule(struct rq *rq)
++{
++	/*
++	 * We detect this state here so that we can avoid taking the RQ
++	 * lock again later if there is no need to push
++	 */
++	rq->post_schedule = has_pushable_tasks(rq);
++}
++
+ static void enqueue_pushable_task(struct rq *rq, struct task_struct *p)
+ {
+ 	plist_del(&p->pushable_tasks, &rq->rt.pushable_tasks);
+@@ -361,6 +376,19 @@ void dec_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+ {
+ }
+ 
++static inline bool need_pull_rt_task(struct rq *rq, struct task_struct *prev)
++{
++	return false;
++}
++
++static inline int pull_rt_task(struct rq *this_rq)
++{
++	return 0;
++}
++
++static inline void set_post_schedule(struct rq *rq)
++{
++}
+ #endif /* CONFIG_SMP */
+ 
+ static inline int on_rt_rq(struct sched_rt_entity *rt_se)
+@@ -1332,11 +1360,8 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	struct task_struct *p;
+ 	struct rt_rq *rt_rq = &rq->rt;
+ 
+-#ifdef CONFIG_SMP
+-	/* Try to pull RT tasks here if we lower this rq's prio */
+-	if (rq->rt.highest_prio.curr > prev->prio)
++	if (need_pull_rt_task(rq, prev))
+ 		pull_rt_task(rq);
+-#endif
+ 
+ 	if (!rt_rq->rt_nr_running)
+ 		return NULL;
+@@ -1352,13 +1377,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	if (p)
+ 		dequeue_pushable_task(rq, p);
+ 
+-#ifdef CONFIG_SMP
+-	/*
+-	 * We detect this state here so that we can avoid taking the RQ
+-	 * lock again later if there is no need to push
+-	 */
+-	rq->post_schedule = has_pushable_tasks(rq);
+-#endif
++	set_post_schedule(rq);
+ 
+ 	return p;
+ }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index d276147..caf4abd 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1172,6 +1172,11 @@ extern void trigger_load_balance(struct rq *rq);
+ extern void idle_enter_fair(struct rq *this_rq);
+ extern void idle_exit_fair(struct rq *this_rq);
+ 
++#else
++
++static inline void idle_enter_fair(struct rq *rq) { }
++static inline void idle_exit_fair(struct rq *rq) { }
++
+ #endif
+ 
+ extern void sysrq_sched_debug_show(void);
