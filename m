@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaBUMtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:49:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46829 "EHLO
+	id S932194AbaBUMuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46865 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaBUMtt (ORCPT
+	with ESMTP id S932094AbaBUMt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:49:49 -0500
+	Fri, 21 Feb 2014 07:49:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nathan Lynch <nathan_lynch@mentor.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 028/121] arm64: vdso: fix coarse clock handling
-Date: Fri, 21 Feb 2014 12:47:32 +0000
-Message-Id: <1392986945-9693-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 036/121] mm: __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
+Date: Fri, 21 Feb 2014 12:47:40 +0000
+Message-Id: <1392986945-9693-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Lynch <nathan_lynch@mentor.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 069b918623e1510e58dacf178905a72c3baa3ae4 upstream.
+commit 227d53b397a32a7614667b3ecaf1d89902fb6c12 upstream.
 
-When __kernel_clock_gettime is called with a CLOCK_MONOTONIC_COARSE or
-CLOCK_REALTIME_COARSE clock id, it returns incorrectly to whatever the
-caller has placed in x2 ("ret x2" to return from the fast path).  Fix
-this by saving x30/LR to x2 only in code that will call
-__do_get_tspec, restoring x30 afterward, and using a plain "ret" to
-return from the routine.
+To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
+During aio buffer migration, we have a possibility to see the following
+call stack.
 
-Also: while the resulting tv_nsec value for CLOCK_REALTIME and
-CLOCK_MONOTONIC must be computed using intermediate values that are
-left-shifted by cs_shift (x12, set by __do_get_tspec), the results for
-coarse clocks should be calculated using unshifted values
-(xtime_coarse_nsec is in units of actual nanoseconds).  The current
-code shifts intermediate values by x12 unconditionally, but x12 is
-uninitialized when servicing a coarse clock.  Fix this by setting x12
-to 0 once we know we are dealing with a coarse clock id.
+aio_migratepage  [disable interrupt]
+  migrate_page_copy
+    clear_page_dirty_for_io
+      set_page_dirty
+        __set_page_dirty_buffers
+          __set_page_dirty
+            spin_lock_irq
 
-Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+This mean, current aio migration is a deadlockable.  spin_lock_irqsave
+is a safer alternative and we should use it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reported-by: David Rientjes rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/kernel/vdso/gettimeofday.S | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/buffer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/kernel/vdso/gettimeofday.S b/arch/arm64/kernel/vdso/gettimeofday.S
-index f0a6d10..fe652ff 100644
---- a/arch/arm64/kernel/vdso/gettimeofday.S
-+++ b/arch/arm64/kernel/vdso/gettimeofday.S
-@@ -103,6 +103,8 @@ ENTRY(__kernel_clock_gettime)
- 	bl	__do_get_tspec
- 	seqcnt_check w9, 1b
- 
-+	mov	x30, x2
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 4d74335..a9863a8 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -654,14 +654,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+ static void __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
+ {
+-	spin_lock_irq(&mapping->tree_lock);
++	unsigned long flags;
 +
- 	cmp	w0, #CLOCK_MONOTONIC
- 	b.ne	6f
++	spin_lock_irqsave(&mapping->tree_lock, flags);
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(warn && !PageUptodate(page));
+ 		account_page_dirtied(page, mapping);
+ 		radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 	}
+-	spin_unlock_irq(&mapping->tree_lock);
++	spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ }
  
-@@ -118,6 +120,9 @@ ENTRY(__kernel_clock_gettime)
- 	ccmp	w0, #CLOCK_MONOTONIC_COARSE, #0x4, ne
- 	b.ne	8f
- 
-+	/* xtime_coarse_nsec is already right-shifted */
-+	mov	x12, #0
-+
- 	/* Get coarse timespec. */
- 	adr	vdso_data, _vdso_data
- 3:	seqcnt_acquire
-@@ -156,7 +161,7 @@ ENTRY(__kernel_clock_gettime)
- 	lsr	x11, x11, x12
- 	stp	x10, x11, [x1, #TSPEC_TV_SEC]
- 	mov	x0, xzr
--	ret	x2
-+	ret
- 7:
- 	mov	x30, x2
- 8:	/* Syscall fallback. */
 -- 
 1.9.0
 
