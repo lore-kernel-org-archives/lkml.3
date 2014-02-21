@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620AbaBUPsp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:48:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316AbaBUPrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:47:40 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Jon Mason <jon.mason@intel.com>,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 2/4] ntb: Use pci_msix_vec_count() to obtain number of MSI-Xs
-Date: Fri, 21 Feb 2014 16:49:30 +0100
-Message-Id: <342d032b652517e2084ba97962ed017a25bf10bd.1392996332.git.agordeev@redhat.com>
-In-Reply-To: <cover.1392996332.git.agordeev@redhat.com>
-References: <cover.1392996332.git.agordeev@redhat.com>
+	id S932516AbaBUPuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:50:23 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:49111 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188AbaBUPuU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:50:20 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-1a-530775ba843c
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: kishon@ti.com
+Cc: linux-kernel@vger.kernel.org, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH v2 1/2] phy: Select PHY_EXYNOS_MIPI_VIDEO by default for
+ ARCH_EXYNOS
+Date: Fri, 21 Feb 2014 16:50:01 +0100
+Message-id: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHJMWRmVeSWpSXmKPExsVy+t9jAd1dpezBBjv3mlpcXniJ1eLC0x42
+	i02Pr7FaXN41h81ixvl9TBaH37SzOrB5bF5S79G3ZRWjx/Eb25k8Pm+SC2CJ4rJJSc3JLEst
+	0rdL4MqY/jau4DBnRe+xFYwNjI/Yuxg5OSQETCR2nWxhhbDFJC7cW8/WxcjFISSwiFFi+88V
+	jBBOB5PE9E+rGEGq2AQMJXqP9gHZHBwiAoISnz6BhZkF1jNK3PtjBmILC4RJfJv9jQXEZhFQ
+	lfj+7BVYDa+Am8SFac2sIK0SAgoScybZTGDkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
+	dxMjOBSeSe9gXNVgcYhRgINRiYfXIZU9WIg1say4MvcQowQHs5IIb3M0UIg3JbGyKrUoP76o
+	NCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgsEwenVAPj/INqXAfCT3E0mk448KGr6+an
+	0raVv6U3nUz9377yk7qC+G5Ns9u77Y7fMN9vNym4LNVvVdlbx6QpRR5LVq1TaDDZ/mB79h5f
+	A5OOEMOn3XtjDTuf8YYFG/g/WOD13JMhXW7Vp+b/p+dKXOd56Op64PEzjbkS97Zem79o9eZ6
+	uQXvGVetddXoVGIpzkg01GIuKk4EAHoc9e0BAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: linux-pci@vger.kernel.org
----
- drivers/ntb/ntb_hw.c |   15 ++++-----------
- drivers/ntb/ntb_hw.h |    2 --
- 2 files changed, 4 insertions(+), 13 deletions(-)
+Instead of requiring user to figure out when PHY_EXYNOS_MIPI_VIDEO needs
+to be selected select it by default for Exynos SoCs. Also enable it when
+COMPILE_TEST is selected. If required the MIPI CSIS/DPHY driver can be
+then disabled or compiled in as module.
 
-diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
-index 487169dd..53468f4 100644
---- a/drivers/ntb/ntb_hw.c
-+++ b/drivers/ntb/ntb_hw.c
-@@ -1085,19 +1085,12 @@ static int ntb_setup_msix(struct ntb_device *ndev)
- 	struct msix_entry *msix;
- 	int msix_entries;
- 	int rc, i;
--	u16 val;
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Changes since first version:
+ - use ARCH_EXYNOS instead of "ARCH_EXYNOS4 || ARCH_EXYNOS5"
+ - add dependency on COMPILE_TEST, and ARCH_S5PV210 for
+   PHY_EXYNOS_MIPI_VIDEO
+---
+ drivers/phy/Kconfig |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index afa2354..ebd455c 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -16,8 +16,11 @@ config GENERIC_PHY
+ 	  framework should select this config.
  
--	if (!pdev->msix_cap) {
--		rc = -EIO;
--		goto err;
--	}
--
--	rc = pci_read_config_word(pdev, pdev->msix_cap + PCI_MSIX_FLAGS, &val);
--	if (rc)
-+	msix_entries = pci_msix_vec_count(pdev);
-+	if (msix_entries < 0) {
-+		rc = msix_entries;
- 		goto err;
--
--	msix_entries = msix_table_size(val);
--	if (msix_entries > ndev->limits.msix_cnt) {
-+	} else if (msix_entries > ndev->limits.msix_cnt) {
- 		rc = -EINVAL;
- 		goto err;
- 	}
-diff --git a/drivers/ntb/ntb_hw.h b/drivers/ntb/ntb_hw.h
-index bbdb7ed..d307107 100644
---- a/drivers/ntb/ntb_hw.h
-+++ b/drivers/ntb/ntb_hw.h
-@@ -60,8 +60,6 @@
- #define PCI_DEVICE_ID_INTEL_NTB_SS_HSX		0x2F0F
- #define PCI_DEVICE_ID_INTEL_NTB_B2B_BWD		0x0C4E
- 
--#define msix_table_size(control)	((control & PCI_MSIX_FLAGS_QSIZE)+1)
--
- #ifndef readq
- static inline u64 readq(void __iomem *addr)
- {
+ config PHY_EXYNOS_MIPI_VIDEO
+-	depends on HAS_IOMEM
+ 	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
++	depends on HAS_IOMEM
++	depends on ARCH_S5PV210 || ARCH_EXYNOS || COMPILE_TEST
++	select GENERIC_PHY
++	default y
+ 	help
+ 	  Support for MIPI CSI-2 and MIPI DSI DPHY found on Samsung S5P
+ 	  and EXYNOS SoCs.
 -- 
-1.7.7.6
+1.7.9.5
 
