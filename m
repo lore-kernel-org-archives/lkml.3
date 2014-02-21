@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485AbaBUQPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:15:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52205 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756040AbaBUQPb (ORCPT
+	id S1756040AbaBUQSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:18:51 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:36360 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaBUQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:15:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: monstr@monstr.eu
-Cc: balbi@ti.com, Mark Rutland <mark.rutland@arm.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-Date: Fri, 21 Feb 2014 17:15:04 +0100
-Message-ID: <1684019.mmMhl0O7OE@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <530775EB.6030004@monstr.eu>
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local> <20140221154244.GG31902@saruman.home> <530775EB.6030004@monstr.eu>
+	Fri, 21 Feb 2014 11:18:49 -0500
+Message-ID: <53077C5F.9000407@monstr.eu>
+Date: Fri, 21 Feb 2014 17:18:39 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:16kdMkugV2iXCvfsz3mjR0KOou0CkUZ64bpbUpkVP89
- 8ZHJ5sbSRfXAd1sHz8hgfxlwvf0r1W+M22RmqGnL5IjYhG3R7s
- +Dt4LbDxnTinzteFnbR+oJwqLGqHLVhMgngHiNH427orMyEj/o
- 0laGdu5NRvP1bXQeyXSrjJGDCO1Mb77wtzvaoDY87adNOuw0lW
- SrBc/QBVYLTjOyLq8BnAprmZqPwwTGrkkPLzFjgYnyK0Cvt3Av
- YjoyAHX5AuVd/1yc4vEvDjt3i2ZMnYjoC36f0/zTNQjOd7ispA
- mCONO2QYKoEBJB9nZeyMdlXoiKuRMLhBpe3oYvR5ts9PjoGRnv
- ppgfw1yz/dzpMRxgGvbg=
+To: balbi@ti.com
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
+Subject: Re: SPDX-License-Identifier
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local> <20140220182257.GF23217@saruman.home> <5306F458.9010706@monstr.eu> <20140221160442.GA17506@kroah.com> <5307790A.4050806@monstr.eu> <20140221161246.GM31902@saruman.home>
+In-Reply-To: <20140221161246.GM31902@saruman.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="brFbRgBoQkFlWOGGAcHlDx0s14HCmm55Q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 February 2014 16:51:07 Michal Simek wrote:
-> > | 
-> > |     if (res->flags & IORESOURCE_CACHEABLE)
-> > |             dest_ptr = devm_ioremap(dev, res->start, size);
-> > |     else
-> > |             dest_ptr = devm_ioremap_nocache(dev, res->start, size);
-> 
-> I have read it just not sure if IORESOURCE_CACHEABLE is setup by default
-> or not.
-> If yes, then you have to setup res->flags in your driver and have to
-> check it.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--brFbRgBoQkFlWOGGAcHlDx0s14HCmm55Q
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-ioremap() and ioremap_nocache() are the same on all architectures.
-If you want a cacheable mapping, you need to call ioremap_cache(),
-which unfortunately doesn't exist on all architectures and also
-doesn't have a devm_* variant.
+On 02/21/2014 05:12 PM, Felipe Balbi wrote:
+> On Fri, Feb 21, 2014 at 05:04:26PM +0100, Michal Simek wrote:
+>> On 02/21/2014 05:04 PM, Greg Kroah-Hartman wrote:
+>>> On Fri, Feb 21, 2014 at 07:38:16AM +0100, Michal Simek wrote:
+>>>> BTW: u-boot started to use SPDX-License-Identifier
+>>>> which will be nice to start to use.
+>>>
+>>> I agree, feel free to start sending patches to use this type of
+>>> identifier for drivers.
+>>
+>> But we probably need to add that Licenses to one location.
+>> Documentation/Licenses?
+>=20
+> Just add to the drivers themselves, just like u-boot is doing. A simple=
+:
+>=20
+> 	$ git grep -e SPDX-License-Identifier
+>=20
+> will tell you filename and license. Or did I misunderstand your questio=
+n ?
 
-I don't know how the above code made it into devm_ioremap_resource(),
-it's clearly bogus. The only time we ever set IORESOURCE_CACHEABLE
-is for ROM BARs on PCI, which in turn are rarely used in the kernel.
-It's never set for any platform devices, aside from one use
-in arch/arm/mach-clps711x/board-cdb89712.c.
+But for doing this it is probably necessary to have location where
+you will place that licenses and you will explain what it is how
+it is done by Wolfgang in this commit.
 
-	Arnd
+http://git.denx.de/?p=3Du-boot.git;a=3Dcommitdiff;h=3Deca3aeb352c964bdb28=
+b8e191d6326370245e03f
+
+Then yes, adding one line is enough.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--brFbRgBoQkFlWOGGAcHlDx0s14HCmm55Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMHfF8ACgkQykllyylKDCGx9wCcDZZzXwHg6Ezw1RDRWt7TaPGj
+zz8An0mrz5/JxUx5fyLUJzyTwFJOF2Se
+=F3mL
+-----END PGP SIGNATURE-----
+
+--brFbRgBoQkFlWOGGAcHlDx0s14HCmm55Q--
