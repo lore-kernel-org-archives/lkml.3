@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415AbaBUNFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:05:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47870 "EHLO
+	id S933334AbaBUNCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:02:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47851 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933339AbaBUNCw (ORCPT
+	with ESMTP id S932788AbaBUNCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:52 -0500
+	Fri, 21 Feb 2014 08:02:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 59/60] s390: fix kernel crash due to linkage stack instructions
-Date: Fri, 21 Feb 2014 13:01:26 +0000
-Message-Id: <1392987687-15367-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 55/60] lockd: send correct lock when granting a delayed lock.
+Date: Fri, 21 Feb 2014 13:01:22 +0000
+Message-Id: <1392987687-15367-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
+commit 2ec197db1a56c9269d75e965f14c344b58b2a4f6 upstream.
 
-The kernel currently crashes with a low-address-protection exception
-if a user space process executes an instruction that tries to use the
-linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
-of the dispatchable-unit-control-table to point to a dummy ASTE.
-Set up control register 15 to point to an empty linkage stack with no
-room left.
+If an NFS client attempts to get a lock (using NLM) and the lock is
+not available, the server will remember the request and when the lock
+becomes available it will send a GRANT request to the client to
+provide the lock.
 
-A user space process with a linkage stack instruction will still crash
-but with a different exception which is correctly translated to a
-segmentation fault instead of a kernel oops.
+If the client already held an adjacent lock, the GRANT callback will
+report the union of the existing and new locks, which can confuse the
+client.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+This happens because __posix_lock_file (called by vfs_lock_file)
+updates the passed-in file_lock structure when adjacent or
+over-lapping locks are found.
+
+To avoid this problem we take a copy of the two fields that can
+be changed (fl_start and fl_end) before the call and restore them
+afterwards.
+An alternate would be to allocate a 'struct file_lock', initialise it,
+use locks_copy_lock() to take a copy, then locks_release_private()
+after the vfs_lock_file() call.  But that is a lot more work.
+
+Reported-by: Olaf Kirch <okir@suse.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+--
+v1 had a couple of issues (large on-stack struct and didn't really work properly).
+This version is much better tested.
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/kernel/head64.S | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/lockd/svclock.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/s390/kernel/head64.S b/arch/s390/kernel/head64.S
-index 99348c0..78be245 100644
---- a/arch/s390/kernel/head64.S
-+++ b/arch/s390/kernel/head64.S
-@@ -61,7 +61,7 @@ ENTRY(startup_continue)
- 	.quad	0			# cr12: tracing off
- 	.quad	0			# cr13: home space segment table
- 	.quad	0xc0000000		# cr14: machine check handling off
--	.quad	0			# cr15: linkage stack operations
-+	.quad	.Llinkage_stack		# cr15: linkage stack operations
- .Lpcmsk:.quad	0x0000000180000000
- .L4malign:.quad 0xffffffffffc00000
- .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
-@@ -69,12 +69,15 @@ ENTRY(startup_continue)
- .Lparmaddr:
- 	.quad	PARMAREA
- 	.align	64
--.Lduct: .long	0,0,0,0,.Lduald,0,0,0
-+.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
- 	.long	0,0,0,0,0,0,0,0
-+.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
- 	.align	128
- .Lduald:.rept	8
- 	.long	0x80000000,0,0,0	# invalid access-list entries
- 	.endr
-+.Llinkage_stack:
-+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
+index aff1c61..43ccfd6 100644
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -769,6 +769,7 @@ nlmsvc_grant_blocked(struct nlm_block *block)
+ 	struct nlm_file		*file = block->b_file;
+ 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
+ 	int			error;
++	loff_t			fl_start, fl_end;
  
- ENTRY(_ehead)
+ 	dprintk("lockd: grant blocked lock %p\n", block);
  
+@@ -786,9 +787,16 @@ nlmsvc_grant_blocked(struct nlm_block *block)
+ 	}
+ 
+ 	/* Try the lock operation again */
++	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
++	 * them unchanged for the GRANT_MSG
++	 */
+ 	lock->fl.fl_flags |= FL_SLEEP;
++	fl_start = lock->fl.fl_start;
++	fl_end = lock->fl.fl_end;
+ 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
+ 	lock->fl.fl_flags &= ~FL_SLEEP;
++	lock->fl.fl_start = fl_start;
++	lock->fl.fl_end = fl_end;
+ 
+ 	switch (error) {
+ 	case 0:
 -- 
 1.9.0
 
