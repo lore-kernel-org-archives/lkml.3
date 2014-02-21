@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893AbaBUVOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:14:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59022 "EHLO
+	id S1755924AbaBUVOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:14:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59027 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851AbaBUVOa (ORCPT
+	with ESMTP id S1755851AbaBUVOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:14:30 -0500
-Date: Fri, 21 Feb 2014 13:13:57 -0800
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-e9d9768824a18212712ae3afbebd5bfef05176f4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1392132015-14521-9-git-send-email-eranian@google.com>
-References: <1392132015-14521-9-git-send-email-eranian@google.com>
+	Fri, 21 Feb 2014 16:14:34 -0500
+Date: Fri, 21 Feb 2014 13:14:08 -0800
+From: tip-bot for Markus Metzger <tipbot@zytor.com>
+Message-ID: <tip-a3ef2229c94ff70998724cb64b9cb4c77db9e950@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, markus.t.metzger@intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, markus.t.metzger@intel.com, ak@linux.intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1392425048-5309-1-git-send-email-andi@firstfloor.org>
+References: <1392425048-5309-1-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/uncore: use MiB unit for events for SNB/
- IVB/HSW IMC
-Git-Commit-ID: e9d9768824a18212712ae3afbebd5bfef05176f4
+Subject: [tip:perf/urgent] perf, nmi: Fix unknown NMI warning
+Git-Commit-ID: a3ef2229c94ff70998724cb64b9cb4c77db9e950
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,51 +33,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9d9768824a18212712ae3afbebd5bfef05176f4
-Gitweb:     http://git.kernel.org/tip/e9d9768824a18212712ae3afbebd5bfef05176f4
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 11 Feb 2014 16:20:14 +0100
+Commit-ID:  a3ef2229c94ff70998724cb64b9cb4c77db9e950
+Gitweb:     http://git.kernel.org/tip/a3ef2229c94ff70998724cb64b9cb4c77db9e950
+Author:     Markus Metzger <markus.t.metzger@intel.com>
+AuthorDate: Fri, 14 Feb 2014 16:44:08 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 21 Feb 2014 21:49:08 +0100
+CommitDate: Fri, 21 Feb 2014 22:09:01 +0100
 
-perf/x86/uncore: use MiB unit for events for SNB/IVB/HSW IMC
+perf, nmi: Fix unknown NMI warning
 
-This patch makes perf use Mebibytes to display the counts
-of uncore_imc/data_reads/ and uncore_imc/data_writes.
+When using BTS on Core i7-4*, I get the below kernel warning.
 
-1MiB = 1024*1024 bytes.
+$ perf record -c 1 -e branches:u ls
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317893] Uhhuh. NMI received for unknown reason 31 on CPU 2.
 
-Cc: mingo@elte.hu
-Cc: acme@redhat.com
-Cc: ak@linux.intel.com
-Cc: zheng.z.yan@intel.com
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317920] Do you have a strange power saving mode enabled?
+
+Message from syslogd@labpc1501 at Nov 11 15:49:25 ...
+ kernel:[  438.317945] Dazed and confused, but trying to continue
+
+Make intel_pmu_handle_irq() take the full exit path when returning early.
+
+Cc: eranian@google.com
 Cc: peterz@infradead.org
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: mingo@kernel.org
+Signed-off-by: Markus Metzger <markus.t.metzger@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1392132015-14521-9-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/r/1392425048-5309-1-git-send-email-andi@firstfloor.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 7760aee..de5c568 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1679,12 +1679,12 @@ enum {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0fa4f24..698ae77 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1361,10 +1361,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+-	if (!status) {
+-		intel_pmu_enable_all(0);
+-		return handled;
+-	}
++	if (!status)
++		goto done;
  
- static struct uncore_event_desc snb_uncore_imc_events[] = {
- 	INTEL_UNCORE_EVENT_DESC(data_reads,  "event=0x01"),
--	INTEL_UNCORE_EVENT_DESC(data_reads.scale, "64"),
--	INTEL_UNCORE_EVENT_DESC(data_reads.unit, "bytes"),
-+	INTEL_UNCORE_EVENT_DESC(data_reads.scale, "6.103515625e-5"),
-+	INTEL_UNCORE_EVENT_DESC(data_reads.unit, "MiB"),
- 
- 	INTEL_UNCORE_EVENT_DESC(data_writes, "event=0x02"),
--	INTEL_UNCORE_EVENT_DESC(data_writes.scale, "64"),
--	INTEL_UNCORE_EVENT_DESC(data_writes.unit, "bytes"),
-+	INTEL_UNCORE_EVENT_DESC(data_writes.scale, "6.103515625e-5"),
-+	INTEL_UNCORE_EVENT_DESC(data_writes.unit, "MiB"),
- 
- 	{ /* end: all zeroes */ },
- };
+ 	loops = 0;
+ again:
