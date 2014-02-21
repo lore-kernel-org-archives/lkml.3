@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004AbaBUNBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47588 "EHLO
+	id S933162AbaBUNY5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:24:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47599 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932985AbaBUNBo (ORCPT
+	with ESMTP id S932996AbaBUNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:44 -0500
+	Fri, 21 Feb 2014 08:01:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@fedoraproject.org>, Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 06/60] [media] mxl111sf: Fix unintentional garbage stack read
-Date: Fri, 21 Feb 2014 13:00:33 +0000
-Message-Id: <1392987687-15367-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 10/60] SELinux:  Fix kernel BUG on empty security contexts.
+Date: Fri, 21 Feb 2014 13:00:37 +0000
+Message-Id: <1392987687-15367-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +27,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@fedoraproject.org>
+From: Stephen Smalley <sds@tycho.nsa.gov>
 
-commit 866e8d8a9dc1ebb4f9e67197e264ac2df81f7d4b upstream.
+commit 2172fa709ab32ca60e86179dc67d0857be8e2c98 upstream.
 
-mxl111sf_read_reg takes an address of a variable to write to as an argument.
-drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes
-passes several uninitialized stack variables to this routine, expecting
-them to be filled in.  In the event that something unexpected happens when
-reading from the chip, we end up doing a pr_debug of the value passed in,
-revealing whatever garbage happened to be on the stack.
+Setting an empty security context (length=0) on a file will
+lead to incorrectly dereferencing the type and other fields
+of the security context structure, yielding a kernel BUG.
+As a zero-length security context is never valid, just reject
+all such security contexts whether coming from userspace
+via setxattr or coming from the filesystem upon a getxattr
+request by SELinux.
 
-Change the pr_debug to match what happens in the 'success' case, where we
-assign buf[1] to *data.
+Setting a security context value (empty or otherwise) unknown to
+SELinux in the first place is only possible for a root process
+(CAP_MAC_ADMIN), and, if running SELinux in enforcing mode, only
+if the corresponding SELinux mac_admin permission is also granted
+to the domain by policy.  In Fedora policies, this is only allowed for
+specific domains such as livecd for setting down security contexts
+that are not defined in the build host policy.
 
-Spotted with Coverity (Bugs 731910 through 731917)
+Reproducer:
+su
+setenforce 0
+touch foo
+setfattr -n security.selinux foo
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[ luis: backported to 3.5:
-  - file rename: drivers/media/usb/dvb-usb-v2/mxl111sf.c ->
-    drivers/media/dvb/dvb-usb/mxl111sf.c
-  - replaced pr_debug() by deb_reg() ]
+Caveat:
+Relabeling or removing foo after doing the above may not be possible
+without booting with SELinux disabled.  Any subsequent access to foo
+after doing the above will also trigger the BUG.
+
+BUG output from Matthew Thode:
+[  473.893141] ------------[ cut here ]------------
+[  473.962110] kernel BUG at security/selinux/ss/services.c:654!
+[  473.995314] invalid opcode: 0000 [#6] SMP
+[  474.027196] Modules linked in:
+[  474.058118] CPU: 0 PID: 8138 Comm: ls Tainted: G      D   I
+3.13.0-grsec #1
+[  474.116637] Hardware name: Supermicro X8ST3/X8ST3, BIOS 2.0
+07/29/10
+[  474.149768] task: ffff8805f50cd010 ti: ffff8805f50cd488 task.ti:
+ffff8805f50cd488
+[  474.183707] RIP: 0010:[<ffffffff814681c7>]  [<ffffffff814681c7>]
+context_struct_compute_av+0xce/0x308
+[  474.219954] RSP: 0018:ffff8805c0ac3c38  EFLAGS: 00010246
+[  474.252253] RAX: 0000000000000000 RBX: ffff8805c0ac3d94 RCX:
+0000000000000100
+[  474.287018] RDX: ffff8805e8aac000 RSI: 00000000ffffffff RDI:
+ffff8805e8aaa000
+[  474.321199] RBP: ffff8805c0ac3cb8 R08: 0000000000000010 R09:
+0000000000000006
+[  474.357446] R10: 0000000000000000 R11: ffff8805c567a000 R12:
+0000000000000006
+[  474.419191] R13: ffff8805c2b74e88 R14: 00000000000001da R15:
+0000000000000000
+[  474.453816] FS:  00007f2e75220800(0000) GS:ffff88061fc00000(0000)
+knlGS:0000000000000000
+[  474.489254] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  474.522215] CR2: 00007f2e74716090 CR3: 00000005c085e000 CR4:
+00000000000207f0
+[  474.556058] Stack:
+[  474.584325]  ffff8805c0ac3c98 ffffffff811b549b ffff8805c0ac3c98
+ffff8805f1190a40
+[  474.618913]  ffff8805a6202f08 ffff8805c2b74e88 00068800d0464990
+ffff8805e8aac860
+[  474.653955]  ffff8805c0ac3cb8 000700068113833a ffff880606c75060
+ffff8805c0ac3d94
+[  474.690461] Call Trace:
+[  474.723779]  [<ffffffff811b549b>] ? lookup_fast+0x1cd/0x22a
+[  474.778049]  [<ffffffff81468824>] security_compute_av+0xf4/0x20b
+[  474.811398]  [<ffffffff8196f419>] avc_compute_av+0x2a/0x179
+[  474.843813]  [<ffffffff8145727b>] avc_has_perm+0x45/0xf4
+[  474.875694]  [<ffffffff81457d0e>] inode_has_perm+0x2a/0x31
+[  474.907370]  [<ffffffff81457e76>] selinux_inode_getattr+0x3c/0x3e
+[  474.938726]  [<ffffffff81455cf6>] security_inode_getattr+0x1b/0x22
+[  474.970036]  [<ffffffff811b057d>] vfs_getattr+0x19/0x2d
+[  475.000618]  [<ffffffff811b05e5>] vfs_fstatat+0x54/0x91
+[  475.030402]  [<ffffffff811b063b>] vfs_lstat+0x19/0x1b
+[  475.061097]  [<ffffffff811b077e>] SyS_newlstat+0x15/0x30
+[  475.094595]  [<ffffffff8113c5c1>] ? __audit_syscall_entry+0xa1/0xc3
+[  475.148405]  [<ffffffff8197791e>] system_call_fastpath+0x16/0x1b
+[  475.179201] Code: 00 48 85 c0 48 89 45 b8 75 02 0f 0b 48 8b 45 a0 48
+8b 3d 45 d0 b6 00 8b 40 08 89 c6 ff ce e8 d1 b0 06 00 48 85 c0 49 89 c7
+75 02 <0f> 0b 48 8b 45 b8 4c 8b 28 eb 1e 49 8d 7d 08 be 80 01 00 00 e8
+[  475.255884] RIP  [<ffffffff814681c7>]
+context_struct_compute_av+0xce/0x308
+[  475.296120]  RSP <ffff8805c0ac3c38>
+[  475.328734] ---[ end trace f076482e9d754adc ]---
+
+Reported-by:  Matthew Thode <mthode@mthode.org>
+Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb/dvb-usb/mxl111sf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/selinux/ss/services.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/media/dvb/dvb-usb/mxl111sf.c b/drivers/media/dvb/dvb-usb/mxl111sf.c
-index cd84279..086fb8a 100644
---- a/drivers/media/dvb/dvb-usb/mxl111sf.c
-+++ b/drivers/media/dvb/dvb-usb/mxl111sf.c
-@@ -101,7 +101,7 @@ int mxl111sf_read_reg(struct mxl111sf_state *state, u8 addr, u8 *data)
- 		ret = -EINVAL;
- 	}
+diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+index 4321b8f..c0c3e4e 100644
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -1231,6 +1231,10 @@ static int security_context_to_sid_core(const char *scontext, u32 scontext_len,
+ 	struct context context;
+ 	int rc = 0;
  
--	deb_reg("R: (0x%02x, 0x%02x)\n", addr, *data);
-+	deb_reg("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
- fail:
- 	return ret;
- }
++	/* An empty security context is never valid. */
++	if (!scontext_len)
++		return -EINVAL;
++
+ 	if (!ss_initialized) {
+ 		int i;
+ 
 -- 
 1.9.0
 
