@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbaBUPz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:55:59 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:9612 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932145AbaBUPz6 (ORCPT
+	id S932430AbaBUP6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:58:21 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42056 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932145AbaBUP6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:55:58 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f796d000005a13-9f-5307770b9534
-Content-transfer-encoding: 8BIT
-Message-id: <53077707.9060409@samsung.com>
-Date: Fri, 21 Feb 2014 16:55:51 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [PATCH] phy: restrict Samsung S5P/Exynos drivers to the respective
- architectures
-References: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-reply-to: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xq7rc5ezBBl8WqVocvF9v0bx4PZvF
-	5YWXWC1WTd3JYnHhaQ+bxdmmN+wWmx5fY7W4vGsOm8X6Ga9ZLG5PnMzowOWxf+4ado/NS+o9
-	+v8aePRtWcXocfzGdiaPz5vkAtiiuGxSUnMyy1KL9O0SuDI6byxjLjjCXbHt0GL2BsalnF2M
-	nBwSAiYS+5+sYYewxSQu3FvP1sXIxSEksJRRYuXOHSwgCV4BQYkfk+8B2RwczALyEkcuZYOE
-	mQXUJSbNW8QMUf+JUeLpys2MEPVaEp8WXAKzWQRUJTbvPMYEYrMJGEr0Hu0Di4sKREi8OjsR
-	bL6IgKfE7tZbYIuZBc4wSXzb18kMkhAWiJe49PMk2HVCAn4Smz9eBbM5BfwlVnc/Y5zAKDAL
-	yX2zEO6bheS+BYzMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFC4uDLDsbFx6wOMQpwMCrx
-	8DqksgcLsSaWFVfmHmKU4GBWEuFtjgYK8aYkVlalFuXHF5XmpBYfYmTi4JRqYMxofLrieNSd
-	Fw/MVYPklurptKxjfBbeu+L4/oMHeJSUaldVZzzWsqlc2XnZKmyzdFzWmd+Pf3Jy2JpWvch6
-	G1XVVh/XHnmI61N8nPjn2udFR1WOlZwLc5U4eHCJqNWew72p4Y4PbjlY/1MwSNKI5zJP9i67
-	/p3p+YpF7bMTGAtmbl3zbHptihJLcUaioRZzUXEiAN1xPjRhAgAA
+	Fri, 21 Feb 2014 10:58:20 -0500
+Message-ID: <53077799.6030700@hurleysoftware.com>
+Date: Fri, 21 Feb 2014 10:58:17 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Grant Edwards <grant.b.edwards@gmail.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: Re: locking changes in tty broke low latency feature
+References: <20140218093829.GC1741@redhat.com>	<5303DABD.9000302@hurleysoftware.com>	<20140219130308.GC1851@redhat.com>	<le2nmd$p1$1@ger.gmane.org>	<5304EC33.5040502@hurleysoftware.com>	<20140219191717.486ac4d0@alan.etchedpixels.co.uk>	<53051276.2070601@hurleysoftware.com>	<20140219214242.406e705b@alan.etchedpixels.co.uk>	<5305664C.7080701@hurleysoftware.com> <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
+In-Reply-To: <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Alan,
 
-On 21/02/14 15:05, Uwe Kleine-König wrote:
-> Enabling these drivers on platforms not created by Samsung is useless
-> unless you're doing compile tests. So don't offer the users to enable
-> them without COMPILE_TEST for configs with S5P/Exynos disabled.
+On 02/21/2014 10:39 AM, One Thousand Gnomes wrote:
+>> Ok, so this is still only about "best effort", and really bad
+>> worst case behavior (that the tty core has no control over) is ok.
+>>
+>> Going to great lengths to trim one wakeup when nouveau disables interrupts
+>> for 2ms seemed like a waste of time.
+>
+> If it used to work and it doesn't now it's a regression. It's also a
+> nasty one if you've removed the facility for it.
 
-Thanks for the patch, I've already sent something similar to Kishon, but
-I've messed up the mailing list address. A bit improved v2 I just posted
-can be found here:
+I think the consensus is to leave the low_latency facility in, but
+remove it's connection to the tty buffers.
 
-https://patchwork.kernel.org/patch/3698271/
-https://patchwork.kernel.org/patch/3698251/
+If the known-to-be-already-in-non-interrupt-context drivers want,
+I can add a different function for executing flush_to_ldisc()
+directly. But I don't want to do that without a use-case and test
+subject.
 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/phy/Kconfig | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index c7a551c2d5f1..82a98f1a5ec2 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -18,6 +18,7 @@ config GENERIC_PHY
->  config PHY_EXYNOS_MIPI_VIDEO
->  	depends on HAS_IOMEM
->  	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
-> +	depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
->  	help
->  	  Support for MIPI CSI-2 and MIPI DSI DPHY found on Samsung S5P
->  	  and EXYNOS SoCs.
-> @@ -54,6 +55,7 @@ config TWL4030_USB
->  config PHY_EXYNOS_DP_VIDEO
->  	tristate "EXYNOS SoC series Display Port PHY driver"
->  	depends on OF
-> +	depends on ARCH_EXYNOS || COMPILE_TEST
->  	select GENERIC_PHY
->  	help
->  	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
-> 
+>> This change makes flush_to_ldisc() itself safely callable from
+>> interrupt context, and:
+>> 1. doesn't lose data (ie., buffers if the ldisc is filling up)
+>> 2. automatically picks the optimum handling whether the input worker
+>>      is running or not
+>> 3. doesn't require more locks to exclude flushing or the input worker
+>
+> Yep
+>
+>> Putting aside for a moment the issue of termios safety inside
+>> the throttle and unthrottle driver methods, the exclusion locks here could
+>> be spinlocks if the drivers can be audited/fixed to not sleep here.
+>
+> That was basically insoluble when the lock first went in. We tried with a
+> spinlock but a lot of USB widgets need to go and chatter with the device
+> when you do flow control. Flow control is fundamentally ordered but
+> asynchronous however so if the right fix was to make the USB dongles
+> queue the work then no harm is done (and the queued flow control
+> assertion would worst case be no different to a non queued one from a
+> queued flush_to_ldisc)
+
+Oh. That's not something I want to take on.
+
+>> Then that just leaves the termios lock, which is a non-trivial problem, and
+>> I'm not convinced RCU will magically fix it.
+>
+> If you pass a snapshot of the termios state down then I think it does,
+> but it's still not remotely trivial.
+
+That was my thought too -- that only dependency injection would work.
+Which would require adding that to most, if not all, driver methods, which
+seems way too painful.
+
+> First question though comes before all of this - and that is do we need
+> low_latency at all any more or is the current scheduling logic now good
+> enough to do the job anyway.
+
+Right.
+
+Based on my recent test, I think low_latency doesn't need to be a knob for
+the tty core. Drivers can continue to use it to mess with their rx fifo
+settings and such like.
+
+I plan on sending Greg a patch to do just that, probably this weekend.
 
 Regards,
-Sylwester
+Peter Hurley
+
