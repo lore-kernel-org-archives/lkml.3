@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaBUCth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:49:37 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:65038 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168AbaBUCtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:49:35 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5306BEBD.1040906@roeck-us.net>
-Date: Thu, 20 Feb 2014 18:49:33 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 00/40] 3.13.4-stable review
-References: <20140218224433.337299968@linuxfoundation.org> <20140219043026.GA15371@roeck-us.net> <20140220183220.GD15290@kroah.com> <20140220232332.GA3584@roeck-us.net> <20140220233201.GA6349@kroah.com>
-In-Reply-To: <20140220233201.GA6349@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753014AbaBUCtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:49:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:48446 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752913AbaBUCtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 21:49:39 -0500
+Date: Fri, 21 Feb 2014 13:49:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20140221134933.ccf25d5023ecb3c48ee3cf7d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Feb_2014_13_49_33_+1100_f.MgZ7l9YvWUHzj3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 03:32 PM, Greg Kroah-Hartman wrote:
-> On Thu, Feb 20, 2014 at 03:23:32PM -0800, Guenter Roeck wrote:
->> On Thu, Feb 20, 2014 at 10:32:20AM -0800, Greg Kroah-Hartman wrote:
->>> On Tue, Feb 18, 2014 at 08:30:26PM -0800, Guenter Roeck wrote:
->>>> On Tue, Feb 18, 2014 at 02:47:01PM -0800, Greg Kroah-Hartman wrote:
->>>>> This is the start of the stable review cycle for the 3.13.4 release.
->>>>> There are 40 patches in this series, all will be posted as a response
->>>>> to this one.  If anyone has any issues with these being applied, please
->>>>> let me know.
->>>>>
->>>>> Responses should be made by Thu Feb 20 22:44:22 UTC 2014.
->>>>> Anything received after that time might be too late.
->>>>>
->>>>
->>>> Build results:
->>>>      total: 126 pass: 122 skipped: 4 fail: 0
->>>>
->>>> qemu tests all passed.
->>>>
->>>> Details are available at http://server.roeck-us.net:8010/builders.
->>>>
->>>> Results are as expected.
->>>
->>> Thanks for testing and letting me know.  Interesting that the pstate
->>> buggy patch didn't hit your build system testing...
->>>
->> Nothing is perfect :-(. You mean the one where your builder
->> takes much more time to build the kernel with the patch applied,
->> or was here another one ?
->
-> That same patch caused a bunch of boot-time failures on some systems.
-> But not all of them, I think it depended on the hardware present.
->
+--Signature=_Fri__21_Feb_2014_13_49_33_+1100_f.MgZ7l9YvWUHzj3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My tests are not sophisticated enough to catch that kind of problem,
-sorry. I am more surprised that Fenguang's test robot didn't find it;
-that thing seems to catch pretty much everything nowadays.
+Hi all,
 
-Guenter
+Today's linux-next merge of the net-next tree got a conflict in
+net/ipv6/sit.c between commit cf71d2bc0b8a ("sit: fix panic with route
+cache in ip tunnels") from the  tree and commit 1c213bd24ad0 ("net:
+introduce netdev_alloc_pcpu_stats() for drivers") from the net-next tree.
 
+I fixed it up (I think ... see below) and can carry the fix as necessary
+(no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/ipv6/sit.c
+index b4d74c86586c,958027be0e94..000000000000
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@@ -1376,18 -1368,6 +1375,12 @@@ static int ipip6_tunnel_init(struct net
+  	if (!dev->tstats)
+  		return -ENOMEM;
+ =20
+- 	for_each_possible_cpu(i) {
+- 		struct pcpu_sw_netstats *ipip6_tunnel_stats;
+- 		ipip6_tunnel_stats =3D per_cpu_ptr(dev->tstats, i);
+- 		u64_stats_init(&ipip6_tunnel_stats->syncp);
+- 	}
+-=20
+ +	tunnel->dst_cache =3D alloc_percpu(struct ip_tunnel_dst);
+ +	if (!tunnel->dst_cache) {
+ +		free_percpu(dev->tstats);
+ +		return -ENOMEM;
+ +	}
+ +
+  	return 0;
+  }
+ =20
+@@@ -1412,18 -1391,6 +1404,12 @@@ static int __net_init ipip6_fb_tunnel_i
+  	if (!dev->tstats)
+  		return -ENOMEM;
+ =20
+- 	for_each_possible_cpu(i) {
+- 		struct pcpu_sw_netstats *ipip6_fb_stats;
+- 		ipip6_fb_stats =3D per_cpu_ptr(dev->tstats, i);
+- 		u64_stats_init(&ipip6_fb_stats->syncp);
+- 	}
+-=20
+ +	tunnel->dst_cache =3D alloc_percpu(struct ip_tunnel_dst);
+ +	if (!tunnel->dst_cache) {
+ +		free_percpu(dev->tstats);
+ +		return -ENOMEM;
+ +	}
+ +
+  	dev_hold(dev);
+  	rcu_assign_pointer(sitn->tunnels_wc[0], tunnel);
+  	return 0;
+
+--Signature=_Fri__21_Feb_2014_13_49_33_+1100_f.MgZ7l9YvWUHzj3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIbBAEBCAAGBQJTBr7BAAoJEMDTa8Ir7ZwVSmMP+NsNzBm9WT/xBA+QYW1hOMIk
+FZC4p0vxTu2IE9yFuRkEW+6E3mE08j2uRhI4uQn3vKXaguEGh6o/qJNXi0PL9NxU
+RbxufCZTbolKvSLNdYrzSRHbaCrWL8YbXAhmuYoXgClm5IxC2MuIScyitDoZGlNs
+DJr4Q3foSRQOTH8j3ScgSA+YKe4U7KIdFTdraWjYu36Mzcv7/1t2jrvzn+l/I+/w
+1gzVpL8MYwX7J3NabqDqtM6FZfLbO/ZGQ2bhNADMUZcW2OskIeMU2sfOXwPNapnW
+MqrzzWD8FdvPN47atMzz/VzqJsf432WtT5vSg1NHue7lmwYF13J396XILIrE1aox
+cCOGMzgjz1qczWSOLMO/0bGvuUQAxGPFRdNWb5XRIvePQw+CUlLAHYdcVW2T6wsG
+26kvCrE3gsrWGtUB1bFNd3L3hjmXdJR7LQC3+vcJcfrYvKP2M11Z+fLpQzFjUOzG
+B+OYw5VbpF0/2OpzVoV8uSBJA/lxRvlAIvsmnyHGKPF7010NX2PiW9nSZNGhKI3S
+/Cp2hUAvAyIDcDM4QfN54neGEvDxHc0A1fhRrO95qjcga53zQAvST5WY93FuWycF
+J3rGrVXtEBOJ0RMW0BSN6m0sPnDOHRX2/dmvTqqjBy3Q29BnduirIzz513gbNp1Q
+MLvUCsthQsbXhpDem08=
+=LCl/
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Feb_2014_13_49_33_+1100_f.MgZ7l9YvWUHzj3--
