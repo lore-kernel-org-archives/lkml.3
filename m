@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020AbaBUNBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47592 "EHLO
+	id S932863AbaBUNX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:23:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932986AbaBUNBo (ORCPT
+	with ESMTP id S932986AbaBUNBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:44 -0500
+	Fri, 21 Feb 2014 08:01:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 09/60] ALSA: hda - Improve loopback path lookups for AD1983
-Date: Fri, 21 Feb 2014 13:00:36 +0000
-Message-Id: <1392987687-15367-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 13/60] mm/swap: fix race on swap_info reuse between swapoff and swapon
+Date: Fri, 21 Feb 2014 13:00:40 +0000
+Message-Id: <1392987687-15367-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-commit 276ab336b4c6e483d12fd46cbf24f97f71867710 upstream.
+commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
 
-AD1983 has flexible loopback routes and the generic parser would take
-wrong path confusingly instead of taking individual paths via NID 0x0c
-and 0x0d.  For avoiding it, limit the connections at these widgets so
-that the parser can think more straightforwardly.  This fixes the
-regression of the missing line-in loopback on Dell machine.
+swapoff clear swap_info's SWP_USED flag prematurely and free its
+resources after that.  A concurrent swapon will reuse this swap_info
+while its previous resources are not cleared completely.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70011
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+These late freed resources are:
+ - p->percpu_cluster
+ - swap_cgroup_ctrl[type]
+ - block_device setting
+ - inode->i_flags &= ~S_SWAPFILE
+
+This patch clears the SWP_USED flag after all its resources are freed,
+so that swapon can reuse this swap_info by alloc_swap_info() safely.
+
+[akpm@linux-foundation.org: tidy up code comment]
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_analog.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/swapfile.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index b1180b5..65e0494 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -3575,6 +3575,8 @@ static const char * const ad1884_slave_vols[] = {
- static int patch_ad1884(struct hda_codec *codec)
- {
- 	struct ad198x_spec *spec;
-+	static hda_nid_t conn_0c[] = { 0x08 };
-+	static hda_nid_t conn_0d[] = { 0x09 };
- 	int err;
- 
- 	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
-@@ -3590,6 +3592,10 @@ static int patch_ad1884(struct hda_codec *codec)
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 71373d0..222928f 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1642,7 +1642,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	p->max = 0;
+ 	swap_map = p->swap_map;
+ 	p->swap_map = NULL;
+-	p->flags = 0;
+ 	frontswap_invalidate_area(type);
+ 	spin_unlock(&swap_lock);
+ 	mutex_unlock(&swapon_mutex);
+@@ -1662,6 +1661,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 		mutex_unlock(&inode->i_mutex);
  	}
- 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
- 
-+	/* limit the loopback routes not to confuse the parser */
-+	snd_hda_override_conn_list(codec, 0x0c, ARRAY_SIZE(conn_0c), conn_0c);
-+	snd_hda_override_conn_list(codec, 0x0d, ARRAY_SIZE(conn_0d), conn_0d);
+ 	filp_close(swap_file, NULL);
 +
- 	spec->multiout.max_channels = 2;
- 	spec->multiout.num_dacs = ARRAY_SIZE(ad1884_dac_nids);
- 	spec->multiout.dac_nids = ad1884_dac_nids;
++	/*
++	 * Clear the SWP_USED flag after all resources are freed so that swapon
++	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
++	 * not hold p->lock after we cleared its SWP_WRITEOK.
++	 */
++	spin_lock(&swap_lock);
++	p->flags = 0;
++	spin_unlock(&swap_lock);
++
+ 	err = 0;
+ 	atomic_inc(&proc_poll_event);
+ 	wake_up_interruptible(&proc_poll_wait);
 -- 
 1.9.0
 
