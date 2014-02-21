@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933198AbaBUNxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:53:20 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:64729 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283AbaBUNxQ (ORCPT
+	id S1755934AbaBUMtq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:49:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46805 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911AbaBUMtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:53:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392984758-10127-1-git-send-email-k.kozlowski@samsung.com>
-References: <1392984758-10127-1-git-send-email-k.kozlowski@samsung.com>
-Date: Fri, 21 Feb 2014 19:23:14 +0530
-Message-ID: <CAK9yfHwr8=T8yTFgtf1D_cBoQsY8NyAgs7VvpiED2BWtOjYmrw@mail.gmail.com>
-Subject: Re: [PATCH v2] regulator: max14577: Fix invalid return value on DT
- parse success
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Feb 2014 07:49:42 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 023/121] drm/vmwgfx: Fix regression caused by "drm/ttm: make ttm reservation calls behave like reservation calls"
+Date: Fri, 21 Feb 2014 12:47:27 +0000
+Message-Id: <1392986945-9693-24-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 February 2014 17:42, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> This fixes bug introduced in 667a6b7a (regulator: max14577: Add missing
-> of_node_put). The DTS parsing function returned number of matched
-> regulators as success status which then was compared against 0 in probe.
->
-> Result was a probe fail after successful parsing the DTS:
-> max14577-regulator: probe of max14577-regulator failed with error 2
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
 
-Looks good.
-Reviewed-by: Sachin Kamat <sachin.kamat@linaro.org>
+------------------
 
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
+commit cf5e3413337309050c05e13dcebe85b7194a21e5 upstream.
+
+The call to ttm_eu_backoff_reservation() as part of an error path would cause
+a lock imbalance if the reservation ticket was not initialized. This error is
+easily triggered from user-space by submitting a bogus command stream.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Jerome Glisse <jglisse@redhat.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+index 599f646..8b059eb 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+@@ -1483,11 +1483,11 @@ int vmw_execbuf_process(struct drm_file *file_priv,
+ 	ret = vmw_cmd_check_all(dev_priv, sw_context, kernel_commands,
+ 				command_size);
+ 	if (unlikely(ret != 0))
+-		goto out_err;
++		goto out_err_nores;
+ 
+ 	ret = vmw_resources_reserve(sw_context);
+ 	if (unlikely(ret != 0))
+-		goto out_err;
++		goto out_err_nores;
+ 
+ 	ret = ttm_eu_reserve_buffers(&ticket, &sw_context->validate_nodes);
+ 	if (unlikely(ret != 0))
+@@ -1569,10 +1569,11 @@ int vmw_execbuf_process(struct drm_file *file_priv,
+ 	return 0;
+ 
+ out_err:
+-	vmw_resource_relocations_free(&sw_context->res_relocations);
+-	vmw_free_relocations(sw_context);
+ 	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
++out_err_nores:
+ 	vmw_resource_list_unreserve(&sw_context->resource_list, true);
++	vmw_resource_relocations_free(&sw_context->res_relocations);
++	vmw_free_relocations(sw_context);
+ 	vmw_clear_validations(sw_context);
+ 	if (unlikely(dev_priv->pinned_bo != NULL &&
+ 		     !dev_priv->query_cid_valid))
 -- 
-With warm regards,
-Sachin
+1.9.0
+
