@@ -1,149 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077AbaBURQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:16:16 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:47578 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932734AbaBURQN (ORCPT
+	id S933133AbaBURSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:18:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21480 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932385AbaBURSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:16:13 -0500
+	Fri, 21 Feb 2014 12:18:48 -0500
+Message-ID: <53078A53.9030302@oracle.com>
+Date: Fri, 21 Feb 2014 12:18:11 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Fri, 21 Feb 2014 18:16:10 +0100
-Message-ID: <CAJZ5v0jZrD+jML2hT7v=gYog1TuXK-VK2DjoPthNbMpoPxnbmg@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management fixes for v3.14-rc4
-From: Rafael Wysocki <rjwysocki@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, mpm@selenic.com,
+        cpw@sgi.com, kosaki.motohiro@jp.fujitsu.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, xemul@parallels.com, riel@redhat.com,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/11] mempolicy: apply page table walker on queue_pages_range()
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-12-git-send-email-n-horiguchi@ah.jp.nec.com> <5306F29D.8070600@gmail.com> <530785b2.d55c8c0a.3868.ffffa4e1SMTPIN_ADDED_BROKEN@mx.google.com>
+In-Reply-To: <530785b2.d55c8c0a.3868.ffffa4e1SMTPIN_ADDED_BROKEN@mx.google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/21/2014 11:58 AM, Naoya Horiguchi wrote:
+> Hi Sasha,
+> 
+> On Fri, Feb 21, 2014 at 01:30:53AM -0500, Sasha Levin wrote:
+>> On 02/10/2014 04:44 PM, Naoya Horiguchi wrote:
+>>> queue_pages_range() does page table walking in its own way now,
+>>> so this patch rewrites it with walk_page_range().
+>>> One difficulty was that queue_pages_range() needed to check vmas
+>>> to determine whether we queue pages from a given vma or skip it.
+>>> Now we have test_walk() callback in mm_walk for that purpose,
+>>> so we can do the replacement cleanly. queue_pages_test_walk()
+>>> depends on not only the current vma but also the previous one,
+>>> so we use queue_pages->prev to keep it.
+>>>
+>>> ChangeLog v2:
+>>> - rebase onto mmots
+>>> - add VM_PFNMAP check on queue_pages_test_walk()
+>>>
+>>> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>> ---
+>>
+>> Hi Naoya,
+>>
+>> I'm seeing another spew in today's -next, and it seems to be related
+>> to this patch. Here's the spew (with line numbers instead of kernel
+>> addresses):
+> 
+> Thanks. (line numbers translation is very helpful.)
+> 
+> This bug looks strange to me.
+> "kernel BUG at mm/hugetlb.c:3580" means we try to do isolate_huge_page()
+> for !PageHead page. But the caller queue_pages_hugetlb() gets the page
+> with "page = pte_page(huge_ptep_get(pte))", so it should be the head page!
+> 
+> mm/hugetlb.c:3580 is VM_BUG_ON_PAGE(!PageHead(page), page), so we expect to
+> have dump_page output at this point, is that in your kernel log?
 
-Please pull from the git repository at
+This is usually a sign of a race between that code and thp splitting, see
+https://lkml.org/lkml/2013/12/23/457 for example.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.14-rc4
-
-to receive ACPI and power management fixes for v3.14-rc4
-with top-most commit fee5ae96e0bc48b13f97512aef91d5aea60240a5
-
-  Merge branch 'pm-cpufreq'
-
-on top of commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2
-
-  Linux 3.14-rc3
-
-These include two fixes for recent regressions related to ACPI, a
-cpufreq fix for breakage overlooked by a previous fix commit, two
-intel_pstate fixes for stuff added during the 3.13 cycle that need
-to go into -stable, three fixes for older bugs that also are -stable
-candidates, ACPI video blacklist changes related to BIOSes that
-behave in a special way on Windows 8, several build fixes for
-CONFIG_PM_SLEEP unset in ACPI drivers and an ACPI driver
-cleanup.
-
-Specifics:
-
- - Fix for a recent probing regression in the nouveau driver introduced
-   by an ACPI change related to the handling of _DSM from Jiang Liu.
-
- - Fix for a dock station sysfs attribute that stopped working correctly
-   after recent changes in the ACPI core.
-
- - cpufreq fix taking care of broken code related to CPU removal and
-   overlooked by a previous recent fix in that area.  From Viresh Kumar.
-
- - Two intel_pstate fixes related to Baytrail support added during
-   the 3.13 cycle (candidates for -stable) from Dirk Brandewie.
-
- - ACPI video fix removing duplicate brightness values from the _BCL
-   table which makes its user space interface behave sanely.  From
-   Hans de Goede.
-
- - Fix for the powernow-k8 cpufreq driver making it initialize its
-   per-CPU data structures correctly from Srivatsa S. Bhat.
-
- - Fix for an obscure memory leak in the ACPI PCI interrupt allocation
-   code (related to ISA) from Tomasz Nowicki.
-
- - ACPI video blacklist changes moving several systems that should
-   use the native backlight interface instead of the ACPI one from
-   the general ACPI _OSI blacklist the the ACPI video driver's
-   blacklist where they belong.  This consists of an ACPI video
-   driver update from Aaron Lu and a revert of a previous commit
-   adding systems to the ACPI _OSI blacklist requested by
-   Takashi Iwai.  All of that has been tested by the involved
-   reporters and should not cause any fallout to happen.
-
- - Several fixes for build issues in ACPI drivers occuring when
-   CONFIG_PM_SLEEP is unset from Shuah Khan.
-
- - Fix for an sscanf() format string in the ACPI Smart Battery
-   Subsystem (SBS) driver from Luis G.F.
-
-Thanks!
+I forgot to add the dump_page output to my extraction process and the complete logs all long gone.
+I'll grab it when it happens again.
 
 
----------------
-
-Aaron Lu (1):
-      ACPI / video: Add systems that should favour native backlight interface
-
-Dirk Brandewie (2):
-      intel_pstate: Use LFM bus ratio as min ratio/P state
-      intel_pstate: Add support for Baytrail turbo P states
-
-Hans de Goede (1):
-      ACPI / video: Filter the _BCL table for duplicate brightness values
-
-Jiang Liu (1):
-      ACPI / nouveau: fix probing regression related to _DSM
-
-Luis G.F (1):
-      ACPI / SBS: Fix incorrect sscanf() string
-
-Rafael J. Wysocki (2):
-      ACPI / dock: Make 'docked' sysfs attribute work as documented
-      Revert "ACPI: Blacklist Win8 OSI for some HP laptop 2013 models"
-
-Shuah Khan (6):
-      ACPI / AC: fix AC driver compile error when CONFIG_PM_SLEEP is undefined
-      ACPI / battery: fix battery driver compile error when
-CONFIG_PM_SLEEP is undefined
-      ACPI / button: fix button driver compile error when
-CONFIG_PM_SLEEP is undefined
-      ACPI / fan: fix fan driver compile error when CONFIG_PM_SLEEP is undefined
-      ACPI / SBS: fix SBS driver compile error when CONFIG_PM_SLEEP is undefined
-      ACPI / thermal: fix thermal driver compile error when
-CONFIG_PM_SLEEP is undefined
-
-Srivatsa S. Bhat (1):
-      cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-
-Tomasz Nowicki (1):
-      ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
-
-Viresh Kumar (1):
-      cpufreq: remove sysfs link when a cpu != policy->cpu, is removed
-
----------------
-
- drivers/acpi/ac.c                      |   2 +
- drivers/acpi/battery.c                 |   2 +
- drivers/acpi/blacklist.c               |  58 -------------
- drivers/acpi/button.c                  |   2 +
- drivers/acpi/dock.c                    |   8 +-
- drivers/acpi/fan.c                     |   3 +
- drivers/acpi/pci_irq.c                 |   1 +
- drivers/acpi/sbs.c                     |   4 +-
- drivers/acpi/thermal.c                 |   2 +
- drivers/acpi/video.c                   | 147 +++++++++++++++++++++++++++++++--
- drivers/acpi/video_detect.c            |  16 ----
- drivers/cpufreq/cpufreq.c              |   3 +-
- drivers/cpufreq/intel_pstate.c         |  17 +++-
- drivers/cpufreq/powernow-k8.c          |  10 ++-
- drivers/gpu/drm/nouveau/nouveau_acpi.c |  26 +++++-
- 15 files changed, 204 insertions(+), 97 deletions(-)
+Thanks,
+Sasha
