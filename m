@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367AbaBUNC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:02:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47860 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788AbaBUNCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:49 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 57/60] EDAC: Correct workqueue setup path
-Date: Fri, 21 Feb 2014 13:01:24 +0000
-Message-Id: <1392987687-15367-58-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S933387AbaBUNDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:03:10 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:58345 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932661AbaBUNCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 08:02:55 -0500
+X-IronPort-AV: E=Sophos;i="4.97,518,1389744000"; 
+   d="scan'208";a="104651946"
+Message-ID: <53074E6B.6030006@citrix.com>
+Date: Fri, 21 Feb 2014 13:02:35 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, <kvm@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <bridge@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com> <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com> <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com> <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com> <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com> <20140219090855.610c0e04@nehalam.linuxnetplumber.net> <CAB=NE6UAqoiFAJdckE1d7cgMZnU6_=8X+N=tSc6qH2bgH08M7Q@mail.gmail.com> <20140220091958.62a8b444@nehalam.linuxnetplumber.net> <CAB=NE6WnMFkH7JPNt+ROiWEvhvZ03vdGr21STf75DV9fRaK=PA@mail.gmail.com>
+In-Reply-To: <CAB=NE6WnMFkH7JPNt+ROiWEvhvZ03vdGr21STf75DV9fRaK=PA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.31 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Borislav Petkov <bp@suse.de>
-
-commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
-
-We're using edac_mc_workq_setup() both on the init path, when
-we load an edac driver and when we change the polling period
-(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
-
-On that second path we don't need to init the workqueue which has been
-initialized already.
-
-Thanks to Tejun for workqueue insights.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/edac/edac_mc.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index de5ba86e..5d4321e 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -483,7 +483,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  *
-  *		called with the mem_ctls_mutex held
-  */
--static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
-+static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
-+				bool init)
- {
- 	debugf0("%s()\n", __func__);
- 
-@@ -491,7 +492,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- 	if (mci->op_state != OP_RUNNING_POLL)
- 		return;
- 
--	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+	if (init)
-+		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+
- 	queue_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
- }
- 
-@@ -551,7 +554,7 @@ void edac_mc_reset_delay_period(int value)
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
- 
--		edac_mc_workq_setup(mci, (unsigned long) value);
-+		edac_mc_workq_setup(mci, (unsigned long) value, false);
- 	}
- 
- 	mutex_unlock(&mem_ctls_mutex);
-@@ -700,7 +703,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
- 		/* This instance is NOW RUNNING */
- 		mci->op_state = OP_RUNNING_POLL;
- 
--		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
-+		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
- 	} else {
- 		mci->op_state = OP_RUNNING_INTERRUPT;
- 	}
--- 
-1.9.0
+On 20/02/14 20:24, Luis R. Rodriguez wrote:
+> On Thu, Feb 20, 2014 at 9:19 AM, Stephen Hemminger
+> <stephen@networkplumber.org> wrote:
+>> On Wed, 19 Feb 2014 09:59:33 -0800 "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+>>> On Wed, Feb 19, 2014 at 9:08 AM, Stephen Hemminger <stephen@networkplumber.org> wrote:
+>>>>
+>>>> Please only use the netlink/sysfs flags fields that already exist
+>>>> for new features.
+>>>
+>>> Sure, but what if we know a driver in most cases wants the root block
+>>> and we'd want to make it the default, thereby only requiring userspace
+>>> for toggling it off.
+>>
+>> Something in userspace has to put the device into the bridge.
+>> Fix the port setup in that tool via the netlink or sysfs flags in
+>> the bridge. It should not have to be handled in the bridge looking
+>> at magic flags in the device.
+>
+> Agreed that's the best strategy and I'll work on sending patches to
+> brctl to enable the root_block preference. This approach however also
+I don't think brctl should deal with any Xen specific stuff. I assume 
+there is a misunderstanding in this thread: when I (and possibly other 
+Xen folks) talk about "userspace" or "toolstack" here, I mean Xen 
+specific tools which use e.g. brctl to set up bridges. Not brctl itself.
+> requires a userspace upgrade. I'm trying to see if we can get an
+> old-nasty-cryptic-hack practice removed from the kernel and we'd try
+> to prevent future drivers from using it -- without requiring userspace
+> upgrade. In this case the bad practice is to using a high static MAC
+> address for mimicking a root block default preference. In order to
+> remove that *without* requiring a userspace upgrade the dev->priv_flag
+> approach is the only thing I can think of. If this would go in we'd
+> replace the high static MAC address with a random MAC address to
+> prevent IPv6 SLAAC / DAD conflicts. I'd document this flag and
+> indicate with preference for userspace to be the one tuning these
+> knobs.
+>
+> Without this we'd have to keep the high static MAC address on upstream
+> drivers and let userspace do the random'ization if it confirms the
+> userspace knob to turn the root block flag is available. Is the
+> priv_flag approach worth the compromise to remove the root block hack
+> practice?
+>
+>    Luis
+>
 
