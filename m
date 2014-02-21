@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478AbaBURgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:36:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3794 "EHLO mga02.intel.com"
+	id S933507AbaBURg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:36:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40837 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933198AbaBURgm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:36:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
-   d="scan'208,223";a="487301496"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
-Subject: [PATCH] KVM: x86: expose ADX feature to guest
-Thread-Topic: [PATCH] KVM: x86: expose ADX feature to guest
-Thread-Index: Ac8vK2my5KNlzGauQ0KFfJzcg9es4w==
-Date: Fri, 21 Feb 2014 17:36:12 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509B37@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933198AbaBURgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 12:36:55 -0500
+Message-ID: <53078E9B.5010806@ti.com>
+Date: Fri, 21 Feb 2014 11:36:27 -0600
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "nsekhar@ti.com" <nsekhar@ti.com>
+Subject: Re: [PATCH] ARM: EDMA: Use platform_get_resource functions for DT
+References: <1392956661-28787-1-git-send-email-joelf@ti.com> <20140221121548.GF8783@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140221121548.GF8783@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0750e335eb5860b0b483e217e8a08bd743cbba16 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Thu, 20 Feb 2014 17:39:32 +0800
-Subject: [PATCH] KVM: x86: expose ADX feature to guest
+On 02/21/2014 06:15 AM, Mark Rutland wrote:
+>> Also, while at it get rid of the assumption in the code that "CC" is at reg
+>> index 0 in the DT and xbar is at offset 1. Instead use reg-names to get the
+>> memory resource in concern keeping things much cleaner and simpler. This also
+>> makes it possible to have multiple channel controllers.
+> 
+> While this is nice I think we have to have a fallback to the existing
+> behaviour if there's no reg-names property present, unless we know for
+> certain no-one is possibly using an existing DTB.
 
-ADCX and ADOX instructions perform an unsigned addition with Carry flag and
-Overflow flag respectively.
+Yes, its true it break existing DTBs but currently only 2 TI SoCs use EDMA this
+way, the vast majority of EDMA users are yet to follow where we can do it right.
+ Further, the old bindings are really limiting specially the 2 CC case and if
+additionally memory maps are used in the future. So keeping the old binding is
+limiting in this regard.
 
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- arch/x86/kvm/cpuid.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Here is what the platform_data used to look like when used by mach-davinci:
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index abe18b4..a951ae4 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -303,7 +303,8 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	/* cpuid 7.0.ebx */
- 	const u32 kvm_supported_word9_x86_features =
- 		F(FSGSBASE) | F(BMI1) | F(HLE) | F(AVX2) | F(SMEP) |
--		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(RDSEED);
-+		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(RDSEED) |
-+		F(ADX);
- 
- 	/* all calls to cpuid_count() should be made on the same cpu */
- 	get_cpu();
--- 
-1.7.1
+static struct resource da850_edma_resources[] = {
+        {
+                .name   = "edma_cc0",
+                .start  = DA8XX_TPCC_BASE,
+                .end    = DA8XX_TPCC_BASE + SZ_32K - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+        {
+                .name   = "edma_tc0",
+                .start  = DA8XX_TPTC0_BASE,
+                .end    = DA8XX_TPTC0_BASE + SZ_1K - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+        {
+                .name   = "edma_tc1",
+                .start  = DA8XX_TPTC1_BASE,
+                .end    = DA8XX_TPTC1_BASE + SZ_1K - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+        {
+                .name   = "edma_cc1",
+                .start  = DA850_TPCC1_BASE,
+                .end    = DA850_TPCC1_BASE + SZ_32K - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+
+As you can see, there are several memory maps and different interpretations.
+Considering this, IMO- it makes sense to pay a small price to keep the semantics
+sane.
+
+On the other hand, the other 2 options are:
+1. We add a fallback if reg-names look up fails.
+2. We inject reg-names property into edma DT nodes that don't have them, and
+make sure all future dtsi with edma nodes mention the reg-names property.
+
+These 2 are a bit error prone though, for example if someone deliberately
+forgets to mention reg-names, and the code still works, but misbehaves in some way.
+
+Regards,
+-Joel
+
