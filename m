@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819AbaBUWqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:46:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25754 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaBUWql (ORCPT
+	id S1756014AbaBUWqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:46:50 -0500
+Received: from smtprelay0203.hostedemail.com ([216.40.44.203]:51498 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755500AbaBUWqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:46:41 -0500
-Message-ID: <5307D74C.5070002@oracle.com>
-Date: Fri, 21 Feb 2014 17:46:36 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm:  kernel BUG at mm/huge_memory.c:1371!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 21 Feb 2014 17:46:47 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3876:3877:4321:5007:6114:6119:6642:7652:8603:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: use85_7534d6f790b2c
+X-Filterd-Recvd-Size: 3006
+Message-ID: <1393022803.2594.27.camel@joe-AO722>
+Subject: [PATCH net-next] ath9k: Use static const
+From: Joe Perches <joe@perches.com>
+To: QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Feb 2014 14:46:43 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Trivially reduces text size too.
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the 
-following (now with pretty line numbers!) spew:
+$ size drivers/net/wireless/ath/ath9k/debug.o*
+   text	   data	    bss	    dec	    hex	filename
+  34436	   2528	   5128	  42092	   a46c	drivers/net/wireless/ath/ath9k/debug.o.new
+  34464	   2528	   5128	  42120	   a488	drivers/net/wireless/ath/ath9k/debug.o.old
 
-[  746.125099] kernel BUG at mm/huge_memory.c:1371!
-[  746.125775] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  746.126774] Dumping ftrace buffer:
-[  746.127484]    (ftrace buffer empty)
-[  746.127781] Modules linked in:
-[  746.128358] CPU: 2 PID: 19816 Comm: trinity-c127 Tainted: G        W 
-3.14.0-rc3-next-20140221-sasha-00008-g0e660cf-dirty #114
-[  746.130196] task: ffff8803a7cc3000 ti: ffff8803a7f1c000 task.ti: ffff8803a7f1c000
-[  746.130317] RIP: 0010:[<mm/huge_memory.c:1371>]  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
-[  746.130317] RSP: 0018:ffff8803a7f1dca8  EFLAGS: 00010246
-[  746.130317] RAX: ffff8801ab4ac000 RBX: ffff8803a7f1ddd8 RCX: 000000000000002e
-[  746.130317] RDX: 0000000000000000 RSI: ffff8803a7cc3d00 RDI: 000000000172c000
-[  746.130317] RBP: ffff8803a7f1dce8 R08: 0000000000000000 R09: 0000000000000000
-[  746.130317] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0006a8fa00
-[  746.130317] R13: ffffea0005cb0000 R14: 00007f784f800000 R15: 00007f785750bfff
-[  746.130317] FS:  00007f785afbc700(0000) GS:ffff8801abc00000(0000) knlGS:0000000000000000
-[  746.130317] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  746.130317] CR2: 0000000000000010 CR3: 00000003a9739000 CR4: 00000000000006e0
-[  746.130317] DR0: 0000000000693000 DR1: 0000000000000000 DR2: 0000000000000000
-[  746.130317] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[  746.130317] Stack:
-[  746.130317]  00000000000004de ffff8803a9777390 ffff8803a7f1dce8 ffff8803a2afd3e0
-[  746.130317]  00007f784f800000 00007f785750c000 ffff8803a7f1ddd8 00007f785750bfff
-[  746.130317]  ffff8803a7f1dd78 ffffffff81285536 00000000001d8500 00007f784fa00000
-[  746.130317] Call Trace:
-[  746.130317]  [<mm/memory.c:1231 mm/memory.c:1265 mm/memory.c:1290>] unmap_page_range+0x2c6/0x410
-[  746.130317]  [<mm/memory.c:1338>] unmap_single_vma+0xf1/0x110
-[  746.130317]  [<mm/memory.c:1390>] zap_page_range+0x121/0x170
-[  746.130317]  [<mm/madvise.c:271 mm/madvise.c:371>] madvise_vma+0x180/0x1c0
-[  746.130317]  [<mm/madvise.c:518 mm/madvise.c:448>] SyS_madvise+0x17e/0x250
-[  746.130317]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-[  746.152464] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 
-45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 26 29 f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 
-03 f0 48 ff 48
-[  746.152464] RIP  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
-[  746.152464]  RSP <ffff8803a7f1dca8>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/ath/ath9k/debug.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/debug.c b/drivers/net/wireless/ath/ath9k/debug.c
+index ab7264c..9131175 100644
+--- a/drivers/net/wireless/ath/ath9k/debug.c
++++ b/drivers/net/wireless/ath/ath9k/debug.c
+@@ -135,7 +135,8 @@ static ssize_t read_file_ani(struct file *file, char __user *user_buf,
+ 	struct ath_softc *sc = file->private_data;
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_hw *ah = sc->sc_ah;
+-	unsigned int len = 0, size = 1024;
++	unsigned int len = 0;
++	const unsigned int size = 1024;
+ 	ssize_t retval = 0;
+ 	char *buf;
+ 
+@@ -307,13 +308,13 @@ static ssize_t read_file_antenna_diversity(struct file *file,
+ 	struct ath_antenna_stats *as_main = &sc->debug.stats.ant_stats[ANT_MAIN];
+ 	struct ath_antenna_stats *as_alt = &sc->debug.stats.ant_stats[ANT_ALT];
+ 	struct ath_hw_antcomb_conf div_ant_conf;
+-	unsigned int len = 0, size = 1024;
++	unsigned int len = 0;
++	const unsigned int size = 1024;
+ 	ssize_t retval = 0;
+ 	char *buf;
+-	char *lna_conf_str[4] = {"LNA1_MINUS_LNA2",
+-				 "LNA2",
+-				 "LNA1",
+-				 "LNA1_PLUS_LNA2"};
++	static const char *lna_conf_str[4] = {
++		"LNA1_MINUS_LNA2", "LNA2", "LNA1", "LNA1_PLUS_LNA2"
++	};
+ 
+ 	buf = kzalloc(size, GFP_KERNEL);
+ 	if (buf == NULL)
+@@ -716,10 +717,13 @@ static ssize_t read_file_queues(struct file *file, char __user *user_buf,
+ 	struct ath_softc *sc = file->private_data;
+ 	struct ath_txq *txq;
+ 	char *buf;
+-	unsigned int len = 0, size = 1024;
++	unsigned int len = 0;
++	const unsigned int size = 1024;
+ 	ssize_t retval = 0;
+ 	int i;
+-	char *qname[4] = {"VO", "VI", "BE", "BK"};
++	static const char *qname[4] = {
++		"VO", "VI", "BE", "BK"
++	};
+ 
+ 	buf = kzalloc(size, GFP_KERNEL);
+ 	if (buf == NULL)
 
 
-Thanks,
-Sasha
