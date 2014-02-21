@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaBUH2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 02:28:08 -0500
-Received: from mga11.intel.com ([192.55.52.93]:17454 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203AbaBUH2F convert rfc822-to-8bit (ORCPT
+	id S1753798AbaBUH2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 02:28:50 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:36806 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464AbaBUH2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 02:28:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,517,1389772800"; 
-   d="scan'208";a="485334874"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Thomas Renninger <trenn@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "ck@conrad-kostecki.de" <ck@conrad-kostecki.de>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [Devel] [PATCH 1/4] ACPI: Provide support for ACPI table adding
-	via OS
-Thread-Topic: [Devel] [PATCH 1/4] ACPI: Provide support for ACPI table
- adding	via OS
-Thread-Index: AQHPLNl+pwKMYdvgHUOy81VxONa4eZq/UpBQ
-Date: Fri, 21 Feb 2014 07:28:02 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024B23DE@SHSMSX101.ccr.corp.intel.com>
-References: <530265A3.3020302@zytor.com>
- <1392747763-3384-2-git-send-email-trenn@suse.de>
- <7af8855f-8055-467c-89c0-bcab453f3969@email.android.com>
- <1568883.1dLS7uNIC1@skinner>
-In-Reply-To: <1568883.1dLS7uNIC1@skinner>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Feb 2014 02:28:49 -0500
 MIME-Version: 1.0
+In-Reply-To: <1392961903.5451.58.camel@marge.simpson.net>
+References: <20140220122311.GO27965@twins.programming.kicks-ass.net>
+	<1392949390-9867-1-git-send-email-leiwen@marvell.com>
+	<1392961903.5451.58.camel@marge.simpson.net>
+Date: Fri, 21 Feb 2014 15:28:48 +0800
+Message-ID: <CALZhoSTUZpL5th8HuN_pMe7UHt1PMVO7h9_DsChyz8eW3vctvw@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: keep quiescent cpu out of idle balance loop
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Lei Wen <leiwen@marvell.com>, Peter Zijlstra <peterz@infradead.org>,
+        mingo@redhat.com, preeti.lkml@gmail.com, daniel.lezcano@linaro.org,
+        viresh.kumar@linaro.org, xjian@marvell.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas
+Mike,
 
-> From: Devel [mailto:devel-bounces@acpica.org] On Behalf Of Thomas Renninger
-> Sent: Wednesday, February 19, 2014 2:44 AM
-> 
-> On Tuesday, February 18, 2014 10:27:23 AM H. Peter Anvin wrote:
-> > Why can't you add SSDTs? It would be particularly useful.
-> 
-> There are 2 ways how ACPI tables get added:
->    - Via pointer from a root table (XSDT or RSDT iirc)
->    - Via load statement inside of ACPI context when ACPI BIOS
->      code gets executed (iirc the physical address is passed).
-> 
-> The latter is only for SSDTs.
-> The problem is that you if you add an SSDT early, it might
-> have been intended for overriding when an SSDT gets dynamically
-> loaded later when the system is up which is particular useful as
-> well if you want to debug this specific BIOS table.
-> 
-> This could be workarounded via a boot param:
-> acpi=allow_ssdt_adding
-> But this is not nice. Maybe someone has a more elegant idea.
-> Something could still be added if someone is really needing this.
+On Fri, Feb 21, 2014 at 1:51 PM, Mike Galbraith <bitbucket@online.de> wrote:
+> On Fri, 2014-02-21 at 10:23 +0800, Lei Wen wrote:
+>> Cpu which is put into quiescent mode, would remove itself
+>> from kernel's sched_domain, and want others not disturb its
+>> task running. But current scheduler would not checking whether
+>> that cpu is setting in such mode, and still insist the quiescent
+>> cpu to response the nohz load balance.
+>
+> Let's isolate some CPUs.
+>
+> Setup:
+> /-----"system" CPU0
+> \
+>   \---"rtcpus" CPUs1-3
+>
+> crash> runqueues
+> PER-CPU DATA TYPE:
+>   struct rq runqueues;
+> PER-CPU ADDRESSES:
+>   [0]: ffff88022fc12c00
+>   [1]: ffff88022fc92c00
+>   [2]: ffff88022fd12c00
+>   [3]: ffff88022fd92c00
+> crash> struct rq ffff88022fd92c00 | grep sd
+>   sd = 0x0,  <== yup, CPU3 is isolated bit of silicon
+> crash> struct rq ffff88022fd92c00 | grep rd
+>   rd = 0xffffffff81bffe60 <def_root_domain>,
+> crash> struct -x root_domain 0xffffffff81bffe60
+> ...
+>   span = {{
+>       bits = {0xe} <== "rtcpus"
+>     }},
+> crash> struct rq ffff88022fc12c00 | grep rd
+>   rd = 0xffff8802242c5800,
+> crash> struct -x root_domain 0xffff8802242c5800
+> ...
+>   span = {{
+>       bits = {0x1} <== "system"
+>     }},
+>
+> Turn off load balancing in "system" as well now, CPU0 loses its 'sd',
+> and becomes an isolated island identical to "rtcpus" CPUs, and thus..
+>
+>   span = {{
+>       bits = {0xf} <== oh darn
+>     }},
+>
+> .."system" and "rtcpus" merge, all CPUs having NULL sd, as they are now
+> all remote silicon islands, but they now also share rd again, as if you
+> had never diddled domains in the first place.
 
-I'm not sure if you are talking about the issue that:
-If a system booted using customized DSDT embedded with SSDT, it also requires dynamic SSDT loading be prevented in ACPICA.
+Great catch for it!
+Actually, what I have experiment is as:
+1. set top cpuset as disable load balance
+2. set 0-2 cpus to "system", and enable its load balance
+3. set 3 cpu to "rt" and disable load balance.
 
-Thanks and best regards
--Lv
+While by this way, root span always covering [0-2] which is seen
+by cpu 0-2, as you also mentioned.
+And it is true that if I disable load balance, I would see span mask
+get them merged.
 
+So how about below change?
++       if (!this_rq()->sd)
++               return;
+Suppose isolated cpu would lose its sd, could you help
+confirm it from crash too?
 
-> 
->      Thomas
-> _______________________________________________
-> Devel mailing list
-> Devel@acpica.org
-> https://lists.acpica.org/mailman/listinfo/devel
+Or, you think it is wrong to do merge job when system group disable
+the load balance?
+
+Thanks,
+Lei
