@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaBUWDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:03:50 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11798 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbaBUWDs (ORCPT
+	id S1755447AbaBUWEI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:04:08 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:47055 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbaBUWEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:03:48 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19wrNIhmOpMp7VxzS3F7AFBWzJXJqsuUFc=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2155A52FB93
-Date: Fri, 21 Feb 2014 17:03:30 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL V2] irqchip: mvebu fixes for v3.14
-Message-ID: <20140221220330.GN7862@titan.lakedaemon.net>
-References: <20140218162210.GU7862@titan.lakedaemon.net>
+	Fri, 21 Feb 2014 17:04:06 -0500
+Date: Fri, 21 Feb 2014 14:04:03 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Marcelo Tosatti <mtosatti@redhat.com>
+cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+In-Reply-To: <20140221191055.GD19955@amt.cnet>
+Message-ID: <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
+References: <20140217085622.39b39cac@redhat.com> <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com> <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com> <20140220022254.GA25898@amt.cnet>
+ <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com> <20140220213407.GA11048@amt.cnet> <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com> <20140221022800.GA30230@amt.cnet> <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
+ <20140221191055.GD19955@amt.cnet>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140218162210.GU7862@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Fri, 21 Feb 2014, Marcelo Tosatti wrote:
 
-Here it is.  Sorry for the delay.  I was under the weather past couple
-days.
+> > I agree that your customer wants a non-default distribution of 1GB 
+> > hugepages, yes, that's clear.  The questions that have not been answered: 
+> > why must it be done this way as opposed to runtime?  If 1GB hugepages 
+> > could be dynamically allocated, would your customer be able to use it?  If 
+> > not, why not?  If dynamic allocation resolves all the issues, then is this 
+> > patchset a needless maintenance burden if we had such support today?
+> 
+> It must be done this way because:
+> 
+> 1) its the only interface which is easily backportable.
+> 
 
-thx,
+There's no pending patchset that adds dynamic allocation of GB hugepages 
+so you can't comment on what is easily backportable and which isn't.
 
-Jason.
+> 2) it improves the kernel command line interface from incomplete
+> (lacking the ability to specify node<->page correlation), to 
+> a complete interface.
+> 
 
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+If GB hugepages can be allocated dynamically, I really think we should be 
+able to remove hugepagesz= entirely for x86 after a few years of 
+supporting it for backwards compatibility, even though Linus has insisted 
+that we never break userspace in the past (which should discourage us 
+from adding additional command line interfaces which are obsoleted in the 
+future, such as in this case).
 
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-mvebu.git tags/irqchip-mvebu-fixes-3.14
-
-for you to fetch changes up to d86e9af6336c0ad586a5dbd70064253d40bbb5ff:
-
-  irqchip: orion: Fix getting generic chip pointer. (2014-02-21 21:46:56 +0000)
-
-----------------------------------------------------------------
-irqchip mvebu fixes for v3.14
-
- - orion:
-    - fixes for clearing bridge cause register, and clearing stale interrupts
-
-----------------------------------------------------------------
-Andrew Lunn (1):
-      irqchip: orion: Fix getting generic chip pointer.
-
-Sebastian Hesselbarth (3):
-      irqchip: orion: clear bridge cause register on init
-      irqchip: orion: use handle_edge_irq on bridge irqs
-      irqchip: orion: clear stale interrupts in irq_startup
-
- drivers/irqchip/irq-orion.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+Still waiting on an answer to whether your customer would be able to 
+dynamically allocate 1GB hugepages at runtime if we had such support and, 
+if not, please show why not?
