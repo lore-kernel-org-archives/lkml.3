@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243AbaBUR4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:56:14 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42633 "EHLO
+	id S1756212AbaBUR4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:56:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42636 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973AbaBUR4H (ORCPT
+	with ESMTP id S1756118AbaBUR4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 12:56:07 -0500
-Message-Id: <20140221173936.583477951@linutronix.de>
+Message-Id: <20140221174639.461201411@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Fri, 21 Feb 2014 17:56:14 -0000
+Date: Fri, 21 Feb 2014 17:56:15 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -17,7 +17,9 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Anton Vorontsov <anton@enomsg.org>,
         Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
         cw00.choi@samsung.com
-Subject: [RFC patch 0/5] hrtimers: Add deferrable mode
+Subject: [RFC patch 1/5] hrtimer: Always check for HRTIMER_MODE_REL
+References: <20140221173936.583477951@linutronix.de>
+Content-Disposition: inline; filename=hrtimer-check-for-not-relative.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,31 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Deferrable timers are beneficial for power saving. They behave like
-standard timers except that their expiry can be delayed up to the
-expiry of the next non deferred timer. That prevents them from waking
-up cpus from deep idle periods.
+We have not just HRTIMER_MODE_REL and HRTIMER_MODE_ABS, so a direct
+check for mode == HRTIMER_MODE_ABS is not sufficient.
 
-Right now deferrable timers are only available in the timer wheel and
-therefor not available to user space applications. Though user space
-applications want to optimize their timer usage for power consumption
-as well, so exposing deferred timers via the existing timer APIs is
-required.
+Always check for the HRTIMER_MODE_REL bit.
 
-There is no way to bring back timer wheel timers to user space
-interfaces as they would reintroduce the problems of CLOCK_REALTIME
-and clock setting again and add quite some mess to the various
-interfaces.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/hrtimer.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So the proper solution is to extend the hrtimer functionality with
-a deferrable mode.
+Index: tip/kernel/hrtimer.c
+===================================================================
+--- tip.orig/kernel/hrtimer.c
++++ tip/kernel/hrtimer.c
+@@ -1186,7 +1186,7 @@ static void __hrtimer_init(struct hrtime
+ 
+ 	cpu_base = &__raw_get_cpu_var(hrtimer_bases);
+ 
+-	if (clock_id == CLOCK_REALTIME && mode != HRTIMER_MODE_ABS)
++	if (clock_id == CLOCK_REALTIME && (mode & HRTIMER_MODE_REL))
+ 		clock_id = CLOCK_MONOTONIC;
+ 
+ 	base = hrtimer_clockid_to_base(clock_id);
+@@ -1620,7 +1620,7 @@ long hrtimer_nanosleep(struct timespec *
+ 		goto out;
+ 
+ 	/* Absolute timers do not update the rmtp value and restart: */
+-	if (mode == HRTIMER_MODE_ABS) {
++	if (!(mode & HRTIMER_MODE_REL)) {
+ 		ret = -ERESTARTNOHAND;
+ 		goto out;
+ 	}
 
-The following series adds the functionality and makes it accessible
-via the clock_nanosleep, timer_settime and timerfd_settime syscalls.
-
-This series is RFC and largely untested.
-
-Thanks,
-
-	tglx
 
