@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391AbaBUNck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:32:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47134 "EHLO
+	id S933404AbaBUNdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:33:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47124 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449AbaBUMvG (ORCPT
+	with ESMTP id S932440AbaBUMvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:06 -0500
+	Fri, 21 Feb 2014 07:51:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Bolle <pebolle@tiscali.nl>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/121] raw: test against runtime value of max_raw_minors
-Date: Fri, 21 Feb 2014 12:48:27 +0000
-Message-Id: <1392986945-9693-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 081/121] Drivers: hv: vmbus: Specify the target CPU that should receive notification
+Date: Fri, 21 Feb 2014 12:48:25 +0000
+Message-Id: <1392986945-9693-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
+commit e28bab4828354583bb66ac09021ca69b341a7db4 upstream.
 
-bind_get() checks the device number it is called with. It uses
-MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
-time while the actual number of raw devices can be set at runtime. This
-means the test can either be too strict or too lenient. And if the test
-ends up being too lenient bind_get() might try to access memory beyond
-what was allocated for "raw_devices".
+During the initial VMBUS connect phase, starting with WS2012 R2, we should
+specify the VPCU in the guest that should receive the notification. Fix this
+issue. This fix is required to properly connect to the host in the kexeced
+kernel.
 
-So check against the runtime value (max_raw_minors) in this function.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/raw.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/connection.c | 2 ++
+ include/linux/hyperv.h  | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index f3223aa..6e8d65e 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
- 	struct raw_device_data *rawdev;
- 	struct block_device *bdev;
+diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
+index ec3b8cd..0742931 100644
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -80,6 +80,8 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
+ 	msg->monitor_page2 = virt_to_phys(
+ 			(void *)((unsigned long)vmbus_connection.monitor_pages +
+ 				 PAGE_SIZE));
++	if (version == VERSION_WIN8)
++		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
  
--	if (number <= 0 || number >= MAX_RAW_MINORS)
-+	if (number <= 0 || number >= max_raw_minors)
- 		return -EINVAL;
- 
- 	rawdev = &raw_devices[number];
+ 	/*
+ 	 * Add to list before we send the request since we may
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index fae8bac..e0e64d1 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -894,7 +894,7 @@ struct vmbus_channel_relid_released {
+ struct vmbus_channel_initiate_contact {
+ 	struct vmbus_channel_message_header header;
+ 	u32 vmbus_version_requested;
+-	u32 padding2;
++	u32 target_vcpu; /* The VCPU the host should respond to */
+ 	u64 interrupt_page;
+ 	u64 monitor_page1;
+ 	u64 monitor_page2;
 -- 
 1.9.0
 
