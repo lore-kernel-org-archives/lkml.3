@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421AbaBUVeX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:34:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59413 "EHLO
+	id S1756450AbaBUVee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:34:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59422 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398AbaBUVeU (ORCPT
+	with ESMTP id S1756428AbaBUVea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:34:20 -0500
-Date: Fri, 21 Feb 2014 13:33:41 -0800
+	Fri, 21 Feb 2014 16:34:30 -0500
+Date: Fri, 21 Feb 2014 13:33:53 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-c30f4ba1cb3f89cefba728f5289caf3c0fc7149d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        josh@joshtriplett.org, yangds.fnst@cn.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        josh@joshtriplett.org, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
+Message-ID: <tip-82abc86e6bcd0ab6b2efad1d8201abb463422034@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
+In-Reply-To: <bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com>
+References: <bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] rcu: Use MAX_NICE to replace hard coding of 19.
-Git-Commit-ID: c30f4ba1cb3f89cefba728f5289caf3c0fc7149d
+Subject: [tip:sched/core] sched:
+  Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
+Git-Commit-ID: 82abc86e6bcd0ab6b2efad1d8201abb463422034
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,63 +34,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c30f4ba1cb3f89cefba728f5289caf3c0fc7149d
-Gitweb:     http://git.kernel.org/tip/c30f4ba1cb3f89cefba728f5289caf3c0fc7149d
+Commit-ID:  82abc86e6bcd0ab6b2efad1d8201abb463422034
+Gitweb:     http://git.kernel.org/tip/82abc86e6bcd0ab6b2efad1d8201abb463422034
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 11 Feb 2014 15:34:49 +0800
+AuthorDate: Tue, 11 Feb 2014 15:34:50 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 21 Feb 2014 21:43:20 +0100
 
-rcu: Use MAX_NICE to replace hard coding of 19.
+sched: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
 
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/rcu/torture.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/auto_group.c |  2 +-
+ kernel/sched/core.c       | 12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
-index 732f8ae..219761d 100644
---- a/kernel/rcu/torture.c
-+++ b/kernel/rcu/torture.c
-@@ -805,7 +805,7 @@ rcu_torture_writer(void *arg)
- 	static DEFINE_RCU_RANDOM(rand);
+diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
+index 4a07353..e73efba 100644
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -203,7 +203,7 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
+ 	struct autogroup *ag;
+ 	int err;
  
- 	VERBOSE_PRINTK_STRING("rcu_torture_writer task started");
--	set_user_nice(current, 19);
-+	set_user_nice(current, MAX_NICE);
+-	if (nice < -20 || nice > 19)
++	if (nice < MIN_NICE || nice > MAX_NICE)
+ 		return -EINVAL;
  
- 	do {
- 		schedule_timeout_uninterruptible(1);
-@@ -871,7 +871,7 @@ rcu_torture_fakewriter(void *arg)
- 	DEFINE_RCU_RANDOM(rand);
+ 	err = security_task_setnice(current, nice);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67a24fa..67fcadb 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3001,7 +3001,7 @@ void set_user_nice(struct task_struct *p, long nice)
+ 	unsigned long flags;
+ 	struct rq *rq;
  
- 	VERBOSE_PRINTK_STRING("rcu_torture_fakewriter task started");
--	set_user_nice(current, 19);
-+	set_user_nice(current, MAX_NICE);
+-	if (task_nice(p) == nice || nice < -20 || nice > 19)
++	if (task_nice(p) == nice || nice < MIN_NICE || nice > MAX_NICE)
+ 		return;
+ 	/*
+ 	 * We have to be careful, if called from sys_setpriority(),
+@@ -3080,10 +3080,10 @@ SYSCALL_DEFINE1(nice, int, increment)
+ 		increment = 40;
  
- 	do {
- 		schedule_timeout_uninterruptible(1 + rcu_random(&rand)%10);
-@@ -987,7 +987,7 @@ rcu_torture_reader(void *arg)
- 	unsigned long long ts;
+ 	nice = task_nice(current) + increment;
+-	if (nice < -20)
+-		nice = -20;
+-	if (nice > 19)
+-		nice = 19;
++	if (nice < MIN_NICE)
++		nice = MIN_NICE;
++	if (nice > MAX_NICE)
++		nice = MAX_NICE;
  
- 	VERBOSE_PRINTK_STRING("rcu_torture_reader task started");
--	set_user_nice(current, 19);
-+	set_user_nice(current, MAX_NICE);
- 	if (irqreader && cur_ops->irq_capable)
- 		setup_timer_on_stack(&t, rcu_torture_timer, 0);
+ 	if (increment < 0 && !can_nice(current, nice))
+ 		return -EPERM;
+@@ -3631,7 +3631,7 @@ static int sched_copy_attr(struct sched_attr __user *uattr,
+ 	 * XXX: do we want to be lenient like existing syscalls; or do we want
+ 	 * to be strict and return an error on out-of-bounds values?
+ 	 */
+-	attr->sched_nice = clamp(attr->sched_nice, -20, 19);
++	attr->sched_nice = clamp(attr->sched_nice, MIN_NICE, MAX_NICE);
  
-@@ -1584,7 +1584,7 @@ static int rcu_torture_barrier_cbs(void *arg)
- 
- 	init_rcu_head_on_stack(&rcu);
- 	VERBOSE_PRINTK_STRING("rcu_torture_barrier_cbs task started");
--	set_user_nice(current, 19);
-+	set_user_nice(current, MAX_NICE);
- 	do {
- 		wait_event(barrier_cbs_wq[myid],
- 			   (newphase =
+ out:
+ 	return ret;
