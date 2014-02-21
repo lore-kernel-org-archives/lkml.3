@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287AbaBUN26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:28:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47189 "EHLO
+	id S932500AbaBUMvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47154 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512AbaBUMvT (ORCPT
+	with ESMTP id S932468AbaBUMvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:19 -0500
+	Fri, 21 Feb 2014 07:51:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 092/121] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
-Date: Fri, 21 Feb 2014 12:48:36 +0000
-Message-Id: <1392986945-9693-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 086/121] staging: comedi: adv_pci1710: fix analog output readback value
+Date: Fri, 21 Feb 2014 12:48:30 +0000
+Message-Id: <1392986945-9693-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -31,66 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
+commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+The last value written to a analog output channel is cached in the
+private data of this driver for readback.
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
+Currently, the wrong value is cached in the (*insn_write) functions.
+The current code stores the data[n] value for readback afer the loop
+has written all the values. At this time 'n' points past the end of
+the data array.
 
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
+Fix the functions by using a local variable to hold the data being
+written to the analog output channel. This variable is then used
+after the loop is complete to store the readback value. The current
+value is retrieved before the loop in case no values are actually
+written..
 
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
-
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/adv_pci1710.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..9de2026 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
+diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+index f847bbc..acb66a9 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -489,6 +489,7 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+ 	struct pci1710_private *devpriv = dev->private;
++	unsigned int val;
+ 	int n, chan, range, ofs;
+ 
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -504,11 +505,14 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
+ 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
+ 		ofs = PCI171x_DA1;
  	}
++	val = devpriv->ao_data[chan];
+ 
+-	for (n = 0; n < insn->n; n++)
+-		outw(data[n], dev->iobase + ofs);
++	for (n = 0; n < insn->n; n++) {
++		val = data[n];
++		outw(val, dev->iobase + ofs);
++	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ 
+@@ -678,6 +682,7 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
+ 	struct pci1710_private *devpriv = dev->private;
++	unsigned int val;
+ 	int n, rangereg, chan;
+ 
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -687,13 +692,15 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
+ 		outb(rangereg, dev->iobase + PCI1720_RANGE);
+ 		devpriv->da_ranges = rangereg;
+ 	}
++	val = devpriv->ao_data[chan];
+ 
+ 	for (n = 0; n < insn->n; n++) {
+-		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
++		val = data[n];
++		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
+ 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
+ 	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ }
 -- 
 1.9.0
 
