@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaBUWkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:40:40 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36181 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024AbaBUWkg (ORCPT
+	id S932085AbaBUWoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:44:09 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:52868 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568AbaBUWoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:40:36 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCHv2 3/3] staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
-Date: Fri, 21 Feb 2014 14:40:27 -0800
-Message-Id: <1393022427-14364-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
-References: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
+	Fri, 21 Feb 2014 17:44:07 -0500
+Date: Fri, 21 Feb 2014 14:44:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andi Kleen <andi@firstfloor.org>
+cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, davidlohr@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+In-Reply-To: <20140221223616.GG22728@two.firstfloor.org>
+Message-ID: <alpine.DEB.2.02.1402211440120.20113@chino.kir.corp.google.com>
+References: <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com> <20140220022254.GA25898@amt.cnet> <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com> <20140220213407.GA11048@amt.cnet>
+ <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com> <20140221022800.GA30230@amt.cnet> <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com> <20140221191055.GD19955@amt.cnet> <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
+ <20140221223616.GG22728@two.firstfloor.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a more clear explanation of the option in the prompt, and
-make the config depend on ANDROID_BINDER_IPC being selected.
+On Fri, 21 Feb 2014, Andi Kleen wrote:
 
-Also sets the default to y, which matches AOSP.
+> > > 2) it improves the kernel command line interface from incomplete
+> > > (lacking the ability to specify node<->page correlation), to 
+> > > a complete interface.
+> > > 
+> > 
+> > If GB hugepages can be allocated dynamically, I really think we should be 
+> > able to remove hugepagesz= entirely for x86 after a few years of 
+> > supporting it for backwards compatibility, even though Linus has insisted 
+> 
+> That doesn't make any sense. Why break a perfectly fine interface?
+> 
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/Kconfig | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+I think doing hugepagesz= and not default_hugepagesz= is more of a hack 
+just because we lack support for dynamically allocating some class of 
+hugepage sizes and this is the only way to currently do it; if we had 
+support for doing it at runtime then that hack probably isn't needed.  You 
+would still be able to do default_hugepagesz=1G and allocate a ton of them 
+when fragmentation is a concern and it can only truly be done at boot.  
+Even then, with such a large size it doesn't seem absolutely necessary 
+since you'd either be (a) oom as a result of all those hugepages or (b) 
+there would be enough memory for initscripts to do this at runtime, this 
+isn't the case with 2MB.
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 3559690..1c779ef 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -21,8 +21,9 @@ config ANDROID_BINDER_IPC
- 	  between said processes.
- 
- config ANDROID_BINDER_IPC_32BIT
--	bool "Use old 32-bit binder api"
--	depends on !64BIT
-+	bool "Use old (Android 4.4 and earlier) 32-bit binder API"
-+	depends on !64BIT && ANDROID_BINDER_IPC
-+	default y
- 	---help---
- 	  The Binder API has been changed to support both 32 and 64bit
- 	  applications in a mixed environment.
--- 
-1.8.3.2
-
+But, like I said, I'm not sure we'd ever be able to totally remove it 
+because of backwards compatibility, but the point is that nobody would 
+have to use it anymore as a hack for 1GB.
