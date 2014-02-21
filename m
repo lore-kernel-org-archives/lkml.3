@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaBUNHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:07:30 -0500
-Received: from mailgw.ibu.edu.tr ([194.27.225.200]:27038 "EHLO
-	mailgw.ibu.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755996AbaBUNHY (ORCPT
+	id S1756036AbaBUNII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:08:08 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:56391 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969AbaBUNIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:07:24 -0500
-Date: Fri, 21 Feb 2014 14:57:30 +0200 (EET)
-From: Yung kyu kim <nihatdurak@ibu.edu.tr>
-Reply-To: Yung kyu kim <1469813849@qq.com>
-Message-ID: <1864269874.49541.1392987450430.JavaMail.root@posta>
-Subject: [!! SPAM]Foreign Stakeholder Needed!!!
+	Fri, 21 Feb 2014 08:08:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.69.4]
-X-Mailer: Zimbra 6.0.8_GA_2661 (zclient/6.0.8_GA_2661)
-To: undisclosed-recipients:;
-X-SMTP-Filter: SurGATE SMTP Filter EngineRelease 4.0 ($Revision: 523 $)
-X-SurGATE-Result: 84.15 points (Spam)
-X-SurGATE-Reason: 
+In-Reply-To: <53073B1A.3040709@gmail.com>
+References: <53073B1A.3040709@gmail.com>
+Date: Fri, 21 Feb 2014 14:08:03 +0100
+Message-ID: <CAFLxGvygOyXrMt=UBnMUziVFG40sEQvRquGKV8kyrhdp-_NrgQ@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request at 0000000100000003 -
+ Oops: 0000 [#1] SMP
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: poma <pomidorabelisima@gmail.com>
+Cc: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, eparis@parisplace.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 21, 2014 at 12:40 PM, poma <pomidorabelisima@gmail.com> wrote:
+>
+> Affected kernels - 3.14.0-0.rc3*:
+>
+> - 3.14.0-0.rc3.git0.1
+>   http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
+>
+> - 3.14.0-0.rc3.git0.7 based on 3.14.0-0.rc3.git0.1
+>
+> - 3.14.0-0.rc3.git2.1
+>   http://koji.fedoraproject.org/koji/buildinfo?buildID=499061
+>
+> - 3.14.0-0.rc3.git5.1
+>   http://koji.fedoraproject.org/koji/buildinfo?buildID=499636
+>
+> Memtest86+ 4.20 - OK
+> http://goo.gl/1nm1nV
+>
+> RHBZ
+> https://bugzilla.redhat.com/show_bug.cgi?id=1067919
+>
+> messages-Oops-es-3.14.0-0.rc3
+> https://bugzilla.redhat.com/attachment.cgi?id=865926
 
+Maybe commits 7053aee26a3548ebaba046ae2e52396ccf56ac6c (fsnotify: do
+not share events between notification groups)
+and 85816794240b9659e66e4d9b0df7c6e814e5f603 (fanotify: Fix use after
+free for permission events) introduced this regression.
 
+CC'ing more guys.
 
-Hello,
-
-The Project is about the exportation of 100,000 barrels of Light Crude
-Oil daily out from Iraq to Turkey through my client's company in Iraq
-at the rate of $92.00 per barrel. This amount to $9,200,000 daily. I ask
-for your support as a foreigner to handle this business project with my
-client and you are not expected to invest in Iraq
-
-If yes, let me know and we will discuss this project proper.
-
-Kim.
-Contact My Private Email : 1469813849@qq.com
+-- 
+Thanks,
+//richard
