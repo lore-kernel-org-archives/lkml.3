@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325AbaBUAaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:30:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45815 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704AbaBTXwa (ORCPT
+	id S932342AbaBUAar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:30:47 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:42735 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328AbaBUAap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:30 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thomas Raschbacher <lordvan@lordvan.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [PATCH 3.12 55/82] usb-storage: enable multi-LUN scanning when needed
-Date: Thu, 20 Feb 2014 15:52:38 -0800
-Message-Id: <20140220235021.135749141@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Feb 2014 19:30:45 -0500
 MIME-Version: 1.0
+In-Reply-To: <53068F5C.9000008@zytor.com>
+References: <53068F5C.9000008@zytor.com>
+Date: Thu, 20 Feb 2014 16:30:44 -0800
+X-Google-Sender-Auth: W85SfvWK_dUusjyHkC5mHXHl_mQ
+Message-ID: <CA+55aFw211LMAk=CSgOo26a-1QqpSEjmJZNJ4TSnbPnJUjPwOQ@mail.gmail.com>
+Subject: Re: "m" constraints, jumps, and alternatives
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Feb 20, 2014 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Another option is to say "don't do that then", and weed out the current
+> uses of "m" and instead force the pointer in question explicitly into a
+> register.
 
-------------------
+Passing addresses in registers is usually a *horrible* thing for the
+kernel, because most of the time they are actually offsets within some
+structure, and the address is almost invariably of the type
+"offset(%register)". Which means that if you have to pass it as a pure
+register, you are now (a) wasting a register and (b) adding an extra
+"lea" or similar instruction just to do so.
 
-From: Alan Stern <stern@rowland.harvard.edu>
+Sadly, there is no good constraint for something like that. There's
+"o" for "offsetable", but that is actually perfectly fine with a
+PC-relative thing.
 
-commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
+My preferred solution would be to (a) just say that it cannot be done
+for replacement instructions (but is ok for the original
+non-replacement one) and (b) perhaps have some build-time check of
+just the replacement tables.
 
-People sometimes create their own custom-configured kernels and forget
-to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
-in a USB storage device (such as a card reader) with more than one
-LUN.
+So then we'd at least get a build-time failure, and any users could be
+taught that they have to use some obfuscation macro - I know we have
+them, I can't recall their name, we've used them for the percpu stuff
+- to force the address to be in a register rather than to be
+%rip-relative.
 
-Fortunately, we can tell fairly easily when a storage device claims to
-have more than one LUN.  When that happens, this patch asks the SCSI
-layer to probe all the LUNs automatically, regardless of the config
-setting.
+Does that sound doable at all?
 
-The patch also updates the Kconfig help text for usb-storage,
-explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/storage/Kconfig    |    4 +++-
- drivers/usb/storage/scsiglue.c |    6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -18,7 +18,9 @@ config USB_STORAGE
- 
- 	  This option depends on 'SCSI' support being enabled, but you
- 	  probably also need 'SCSI device support: SCSI disk support'
--	  (BLK_DEV_SD) for most USB storage devices.
-+	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
-+	  will require 'Probe all LUNs on each SCSI device'
-+	  (SCSI_MULTI_LUN).
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called usb-storage.
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi
- 
- static int slave_alloc (struct scsi_device *sdev)
- {
-+	struct us_data *us = host_to_us(sdev->host);
-+
- 	/*
- 	 * Set the INQUIRY transfer length to 36.  We don't use any of
- 	 * the extra data and many devices choke if asked for more or
-@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_devi
- 	 */
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
- 
-+	/* Tell the SCSI layer if we know there is more than one LUN */
-+	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
-+		sdev->sdev_bflags |= BLIST_FORCELUN;
-+
- 	return 0;
- }
- 
-
-
+             Linus
