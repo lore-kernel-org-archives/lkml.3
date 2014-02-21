@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaBUNKC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:10:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47821 "EHLO
+	id S933261AbaBUNCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:02:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47798 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267AbaBUNCk (ORCPT
+	with ESMTP id S932788AbaBUNCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:40 -0500
+	Fri, 21 Feb 2014 08:02:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Beomho Seo <beomho.seo@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 49/60] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
-Date: Fri, 21 Feb 2014 13:01:16 +0000
-Message-Id: <1392987687-15367-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 45/60] tty: n_gsm: Fix for modems with brk in modem status control
+Date: Fri, 21 Feb 2014 13:01:12 +0000
+Message-Id: <1392987687-15367-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,71 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Beomho Seo <beomho.seo@samsung.com>
+From: Lars Poeschel <poeschel@lemonage.de>
 
-commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
+commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
 
-This effects the reported scale of the raw values, and thus userspace
-applications that use this value.
+3GPP TS 07.10 states in section 5.4.6.3.7:
+"The length byte contains the value 2 or 3 ... depending on the break
+signal." The break byte is optional and if it is sent, the length is
+3. In fact the driver was not able to work with modems that send this
+break byte in their modem status control message. If the modem just
+sends the break byte if it is really set, then weird things might
+happen.
+The code for deconding the modem status to the internal linux
+presentation in gsm_process_modem has already a big comment about
+this 2 or 3 byte length thing and it is already able to decode the
+brk, but the code calling the gsm_process_modem function in
+gsm_control_modem does not encode it and hand it over the right way.
+This patch fixes this.
+Without this fix if the modem sends the brk byte in it's modem status
+control message the driver will hang when opening a muxed channel.
 
-One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
-ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
-always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
-As a result, read_raw call back function return accurate scale value.
-
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-[ luis: backported to 3.5: ak8975 driver is in staging, adjusted file name ]
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/iio/magnetometer/ak8975.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/tty/n_gsm.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
-index 5834e4a..575256b 100644
---- a/drivers/staging/iio/magnetometer/ak8975.c
-+++ b/drivers/staging/iio/magnetometer/ak8975.c
-@@ -82,6 +82,7 @@
-  */
- #define AK8975_MAX_CONVERSION_TIMEOUT	500
- #define AK8975_CONVERSION_DONE_POLL_TIME 10
-+#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
- 
- /*
-  * Per-instance context data for the device.
-@@ -223,15 +224,15 @@ static int ak8975_setup(struct i2c_client *client)
-  *
-  * Since 1uT = 100 gauss, our final scale factor becomes:
-  *
-- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
-- * Hadj = H * ((ASA + 128) * 30 / 256
-+ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
-+ * Hadj = H * ((ASA + 128) * 0.003) / 256
-  *
-  * Since ASA doesn't change, we cache the resultant scale factor into the
-  * device context in ak8975_setup().
-  */
--	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
--	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
--	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
-+	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
-+	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
-+	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
- 
- 	return 0;
- }
-@@ -434,8 +435,9 @@ static int ak8975_read_raw(struct iio_dev *indio_dev,
- 	case IIO_CHAN_INFO_RAW:
- 		return ak8975_read_axis(indio_dev, chan->address, val);
- 	case IIO_CHAN_INFO_SCALE:
--		*val = data->raw_to_gauss[chan->address];
--		return IIO_VAL_INT;
-+		*val = 0;
-+		*val2 = data->raw_to_gauss[chan->address];
-+		return IIO_VAL_INT_PLUS_MICRO;
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 4a418e4..acc0eab 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1091,6 +1091,7 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
+ {
+ 	unsigned int addr = 0;
+ 	unsigned int modem = 0;
++	unsigned int brk = 0;
+ 	struct gsm_dlci *dlci;
+ 	int len = clen;
+ 	u8 *dp = data;
+@@ -1117,6 +1118,16 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
+ 		if (len == 0)
+ 			return;
  	}
- 	return -EINVAL;
- }
++	len--;
++	if (len > 0) {
++		while (gsm_read_ea(&brk, *dp++) == 0) {
++			len--;
++			if (len == 0)
++				return;
++		}
++		modem <<= 7;
++		modem |= (brk & 0x7f);
++	}
+ 	tty = tty_port_tty_get(&dlci->port);
+ 	gsm_process_modem(tty, dlci, modem, clen);
+ 	if (tty) {
 -- 
 1.9.0
 
