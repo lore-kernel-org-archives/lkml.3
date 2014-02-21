@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948AbaBUM7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:59:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47230 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932518AbaBUMv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:29 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+	id S932960AbaBUM75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:59:57 -0500
+Received: from smtp4.epfl.ch ([128.178.224.219]:50591 "EHLO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932518AbaBUM7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:59:55 -0500
+Message-ID: <53074DC6.8070801@epfl.ch>
+Date: Fri, 21 Feb 2014 13:59:50 +0100
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Luis Henriques <luis.henriques@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 100/121] block: add cond_resched() to potentially long running ioctl discard loop
-Date: Fri, 21 Feb 2014 12:48:44 +0000
-Message-Id: <1392986945-9693-101-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+CC: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3.11 032/121] pinctrl: do not init debugfs entries for
+ unimplemented functionalities
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com> <1392986945-9693-33-git-send-email-luis.henriques@canonical.com>
+In-Reply-To: <1392986945-9693-33-git-send-email-luis.henriques@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On 02/21/2014 01:47 PM, Luis Henriques wrote:
+> 3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+> 
 
-From: Jens Axboe <axboe@fb.com>
+This was nack'ed by Greg KH a few days ago. Please see [1].
 
-commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
+Regards,
+Florian
 
-When mkfs issues a full device discard and the device only
-supports discards of a smallish size, we can loop in
-blkdev_issue_discard() for a long time. If preempt isn't enabled,
-this can turn into a softlock situation and the kernel will
-start complaining.
+[1] http://www.spinics.net/lists/stable/msg35959.html
 
-Add an explicit cond_resched() at the end of the loop to avoid
-that.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- block/blk-lib.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d6f50d5..9a32f58 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -121,6 +121,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
-+
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
- 	blk_finish_plug(&plug);
- 
--- 
-1.9.0
-
+> ------------------
+> 
+> From: Florian Vaussard <florian.vaussard@epfl.ch>
+> 
+> commit e7f2a444891cb39f11d5429467d0fd7e011fe7fe upstream.
+> 
+> Commit c420619 "pinctrl: pinconf: remove checks on ops->pin_config_get"
+> removed the check on (ops != NULL) when performing pinconf_pins_show() or
+> pinconf_groups_show(). As these entries are always enabled, even if
+> pinconf is not supported, reading will result in an oops due to NULL
+> ops.
+> 
+> Instead of checking for ops, remove the corresponding debugfs entries if
+> pinconf and/or pinmux are not implemented.
+> 
+> Tested on OMAP3 (pinctrl-single).
+> 
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  drivers/pinctrl/core.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index dbcf284..dec5787 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -1621,8 +1621,10 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
+>  			    device_root, pctldev, &pinctrl_groups_ops);
+>  	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
+>  			    device_root, pctldev, &pinctrl_gpioranges_ops);
+> -	pinmux_init_device_debugfs(device_root, pctldev);
+> -	pinconf_init_device_debugfs(device_root, pctldev);
+> +	if (pctldev->desc->pmxops)
+> +		pinmux_init_device_debugfs(device_root, pctldev);
+> +	if (pctldev->desc->confops)
+> +		pinconf_init_device_debugfs(device_root, pctldev);
+>  }
+>  
+>  static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
+> 
