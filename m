@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826AbaBUMyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:54:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47315 "EHLO
+	id S932850AbaBUMzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:55:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47310 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932668AbaBUMvu (ORCPT
+	with ESMTP id S932661AbaBUMvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:50 -0500
+	Fri, 21 Feb 2014 07:51:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steve French <smfrench@gmail.com>,
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 115/121] Add protocol specific operation for CIFS xattrs
-Date: Fri, 21 Feb 2014 12:48:59 +0000
-Message-Id: <1392986945-9693-116-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/121] xen/p2m: check MFN is in range before using the m2p table
+Date: Fri, 21 Feb 2014 12:48:56 +0000
+Message-Id: <1392986945-9693-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +30,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit d979f3b0a1f0b5499ab85e68cdf02b56852918b6 upstream.
+commit 0160676bba69523e8b0ac83f306cce7d342ed7c8 upstream.
 
-Changeset 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 added protocol
-operations for get/setxattr to avoid calling cifs operations
-on smb2/smb3 mounts for xattr operations and this changeset
-adds the calls to cifs specific protocol operations for xattrs
-(in order to reenable cifs support for xattrs which was
-temporarily disabled by the previous changeset.  We do not
-have SMB2/SMB3 worker function for setting xattrs yet so
-this only enables it for cifs.
+On hosts with more than 168 GB of memory, a 32-bit guest may attempt
+to grant map an MFN that is error cannot lookup in its mapping of the
+m2p table.  There is an m2p lookup as part of m2p_add_override() and
+m2p_remove_override().  The lookup falls off the end of the mapped
+portion of the m2p and (because the mapping is at the highest virtual
+address) wraps around and the lookup causes a fault on what appears to
+be a user space address.
 
-CCing stable since without these two small changsets (its
-small coreq 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 is
-also needed) calling getfattr/setfattr on smb2/smb3 mounts
-causes problems.
+do_page_fault() (thinking it's a fault to a userspace address), tries
+to lock mm->mmap_sem.  If the gntdev device is used for the grant map,
+m2p_add_override() is called from from gnttab_mmap() with mm->mmap_sem
+already locked.  do_page_fault() then deadlocks.
 
-Signed-off-by: Steve French <smfrench@gmail.com>
-Reviewed-by: Shirish Pargaonkar <spargaonkar@suse.com>
-[ luis: backported to 3.11: adjusted context ]
+The deadlock would most commonly occur when a 64-bit guest is started
+and xenconsoled attempts to grant map its console ring.
+
+Introduce mfn_to_pfn_no_overrides() which checks the MFN is within the
+mapped portion of the m2p table before accessing the table and use
+this in m2p_add_override(), m2p_remove_override(), and mfn_to_pfn()
+(which already had the correct range check).
+
+All faults caused by accessing the non-existant parts of the m2p are
+thus within the kernel address space and exception_fixup() is called
+without trying to lock mm->mmap_sem.
+
+This means that for MFNs that are outside the mapped range of the m2p
+then mfn_to_pfn() will always look in the m2p overrides.  This is
+correct because it must be a foreign MFN (and the PFN in the m2p in
+this case is only relevant for the other domain).
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@citrix.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+--
+v3: check for auto_translated_physmap in mfn_to_pfn_no_overrides()
+v2: in mfn_to_pfn() look in m2p_overrides if the MFN is out of
+    range as it's probably foreign.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/inode.c   | 13 +++++++++----
- fs/cifs/smb1ops.c |  4 ++++
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/xen/page.h | 31 ++++++++++++++++++++-----------
+ arch/x86/xen/p2m.c              | 10 ++++------
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 993983c..40a982d 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -491,10 +491,15 @@ static int cifs_sfu_mode(struct cifs_fattr *fattr, const unsigned char *path,
- 		return PTR_ERR(tlink);
- 	tcon = tlink_tcon(tlink);
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 6aef9fb..b913915 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -79,30 +79,38 @@ static inline int phys_to_machine_mapping_valid(unsigned long pfn)
+ 	return get_phys_to_machine(pfn) != INVALID_P2M_ENTRY;
+ }
  
--	rc = CIFSSMBQAllEAs(xid, tcon, path, "SETFILEBITS",
--			    ea_value, 4 /* size of buf */, cifs_sb->local_nls,
--			    cifs_sb->mnt_cifs_flags &
--				CIFS_MOUNT_MAP_SPECIAL_CHR);
-+	if (tcon->ses->server->ops->query_all_EAs == NULL) {
-+		cifs_put_tlink(tlink);
-+		return -EOPNOTSUPP;
-+	}
+-static inline unsigned long mfn_to_pfn(unsigned long mfn)
++static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
+ {
+ 	unsigned long pfn;
+-	int ret = 0;
++	int ret;
+ 
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return mfn;
+ 
+-	if (unlikely(mfn >= machine_to_phys_nr)) {
+-		pfn = ~0;
+-		goto try_override;
+-	}
+-	pfn = 0;
++	if (unlikely(mfn >= machine_to_phys_nr))
++		return ~0;
 +
-+	rc = tcon->ses->server->ops->query_all_EAs(xid, tcon, path,
-+			"SETFILEBITS", ea_value, 4 /* size of buf */,
-+			cifs_sb->local_nls,
-+			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
- 	cifs_put_tlink(tlink);
- 	if (rc < 0)
- 		return (int)rc;
-diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-index 6094397..7bdd38e 100644
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -945,6 +945,10 @@ struct smb_version_operations smb1_operations = {
- 	.mand_unlock_range = cifs_unlock_range,
- 	.push_mand_locks = cifs_push_mandatory_locks,
- 	.query_mf_symlink = open_query_close_cifs_symlink,
-+#ifdef CONFIG_CIFS_XATTR
-+	.query_all_EAs = CIFSSMBQAllEAs,
-+	.set_EA = CIFSSMBSetEA,
-+#endif /* CIFS_XATTR */
- };
+ 	/*
+ 	 * The array access can fail (e.g., device space beyond end of RAM).
+ 	 * In such cases it doesn't matter what we return (we return garbage),
+ 	 * but we must handle the fault without crashing!
+ 	 */
+ 	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-try_override:
+-	/* ret might be < 0 if there are no entries in the m2p for mfn */
+ 	if (ret < 0)
+-		pfn = ~0;
+-	else if (get_phys_to_machine(pfn) != mfn)
++		return ~0;
++
++	return pfn;
++}
++
++static inline unsigned long mfn_to_pfn(unsigned long mfn)
++{
++	unsigned long pfn;
++
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return mfn;
++
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) != mfn) {
+ 		/*
+ 		 * If this appears to be a foreign mfn (because the pfn
+ 		 * doesn't map back to the mfn), then check the local override
+@@ -111,6 +119,7 @@ try_override:
+ 		 * m2p_find_override_pfn returns ~0 if it doesn't find anything.
+ 		 */
+ 		pfn = m2p_find_override_pfn(mfn, ~0);
++	}
  
- struct smb_version_values smb1_values = {
+ 	/* 
+ 	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 95fb2aa..1563444 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -878,7 +878,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
+-	int ret = 0;
+ 
+ 	pfn = page_to_pfn(page);
+ 	if (!PageHighMem(page)) {
+@@ -925,8 +924,8 @@ int m2p_add_override(unsigned long mfn, struct page *page,
+ 	 * frontend pages while they are being shared with the backend,
+ 	 * because mfn_to_pfn (that ends up being called by GUPF) will
+ 	 * return the backend pfn rather than the frontend pfn. */
+-	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) == mfn)
+ 		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+ 
+ 	return 0;
+@@ -941,7 +940,6 @@ int m2p_remove_override(struct page *page,
+ 	unsigned long uninitialized_var(address);
+ 	unsigned level;
+ 	pte_t *ptep = NULL;
+-	int ret = 0;
+ 
+ 	pfn = page_to_pfn(page);
+ 	mfn = get_phys_to_machine(pfn);
+@@ -1019,8 +1017,8 @@ int m2p_remove_override(struct page *page,
+ 	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
+ 	 * pfn again. */
+ 	mfn &= ~FOREIGN_FRAME_BIT;
+-	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
+-	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
++	pfn = mfn_to_pfn_no_overrides(mfn);
++	if (get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
+ 			m2p_find_override(mfn) == NULL)
+ 		set_phys_to_machine(pfn, mfn);
+ 
 -- 
 1.9.0
 
