@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaBUS5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 13:57:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbaBUS5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:57:05 -0500
-Date: Fri, 21 Feb 2014 19:58:59 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] xen-pciback: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140221185858.GB18725@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
- <5304CC49.7020000@oracle.com>
- <5304D063.90000@oracle.com>
- <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
- <5304DABD.9000605@oracle.com>
- <20140221165235.GF17353@dhcp-26-207.brq.redhat.com>
- <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
- <53079BFE.3010702@oracle.com>
+	id S1753549AbaBUTAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:00:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57686 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaBUTAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 14:00:10 -0500
+Date: Fri, 21 Feb 2014 11:01:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/66] 3.10.32-stable review
+Message-ID: <20140221190137.GB25991@kroah.com>
+References: <20140220234909.482516304@linuxfoundation.org>
+ <5306DF9C.5050408@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53079BFE.3010702@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5306DF9C.5050408@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 01:33:34PM -0500, Boris Ostrovsky wrote:
-> Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+On Thu, Feb 20, 2014 at 09:09:48PM -0800, Guenter Roeck wrote:
+> On 02/20/2014 03:50 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.10.32 release.
+> >There are 66 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Sat Feb 22 23:48:52 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 126 pass: 111 skipped: 4 fail: 11
+> 
+> qemu tests all passed. Results are not as expected. New failures are
+> due to
+> 
+> Guenter Roeck <linux@roeck-us.net>
+>     iio: max1363: Use devm_regulator_get_optional for optional regulator
+> 
+> [Oops]
 
-Thank you, Boris!
-Whom should I ask this patch for inclusion?
+This patch is now dropped, thanks.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+greg k-h
