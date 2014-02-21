@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640AbaBUBMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:12:54 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:44539 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932623AbaBUBMv (ORCPT
+	id S932656AbaBUBNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:13:11 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:44956 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaBUBNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:12:51 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: JBottomley@parallels.com
-Cc: jayamohan.kallickal@emulex.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
-Date: Fri, 21 Feb 2014 10:12:45 +0900
-Message-ID: <8505576.9F9pTSfgP9@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Thu, 20 Feb 2014 20:13:07 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s1L1CZcD026191, This message is accepted by code: ctloc85258
+Message-ID: <5306A8C3.8080703@realsil.com.cn>
+Date: Fri, 21 Feb 2014 09:15:47 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: <chris@printf.net>, <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH v2 0/3] mmc: rtsx: fix bug and support nonblocking request
+References: <cover.1392626511.git.micky_ching@realsil.com.cn>
+In-Reply-To: <cover.1392626511.git.micky_ching@realsil.com.cn>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b483ef302f7d77c586949ae170754d589e8a4935 Mon Sep 17 00:00:00 2001
-From: Daeseok Youn <daeseok.youn@gmail.com>
-Date: Fri, 21 Feb 2014 08:39:08 +0900
-Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
+Hi Chris,
 
-sparse says:
+Could you please give me some idea about this patch-set?
+I send this patch-set many times, but didn't get any reply.
 
-drivers/scsi/be2iscsi/be_cmds.c:27:32: warning:
- Using plain integer as NULL pointer
-drivers/scsi/be2iscsi/be_cmds.c:28:34: warning:
- Using plain integer as NULL pointer
-drivers/scsi/be2iscsi/be_cmds.c:29:34: warning:
- Using plain integer as NULL pointer
+Best Regards.
+micky <micky_ching@realsil.com.cn>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/scsi/be2iscsi/be_cmds.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c
-index 3338391..1ec9793 100644
---- a/drivers/scsi/be2iscsi/be_cmds.c
-+++ b/drivers/scsi/be2iscsi/be_cmds.c
-@@ -24,9 +24,9 @@
- int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)
- {
- 	u32 sreset;
--	u8 *pci_reset_offset = 0;
--	u8 *pci_online0_offset = 0;
--	u8 *pci_online1_offset = 0;
-+	u8 *pci_reset_offset = NULL;
-+	u8 *pci_online0_offset = NULL;
-+	u8 *pci_online1_offset = NULL;
- 	u32 pconline0 = 0;
- 	u32 pconline1 = 0;
- 	u32 i;
--- 
-1.7.9.5
-
+On 02/17/2014 04:45 PM, micky_ching@realsil.com.cn wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
+>
+> First we fix the card poweroff bug: the card power is not shutdown when sd/mmc
+> card removed, this will make UHS-card failed to running in high speed mode if we
+> insert the card again.
+>
+> We offer a concise tuning searching method, it is much easier to read.
+>
+> At last we add support for nonblocking request, which will improve card read
+> speed at about 10% write speed about 5% normally.
+>
+> Micky Ching (3):
+>    mmc: rtsx: fix card poweroff bug
+>    mmc: rtsx: modify phase searching method for tuning
+>    mmc: rtsx: add support for pre_req and post_req
+>
+>   drivers/mfd/rtsx_pcr.c            |  132 ++++++---
+>   drivers/mmc/host/rtsx_pci_sdmmc.c |  529 ++++++++++++++++++++++++++-----------
+>   include/linux/mfd/rtsx_common.h   |    1 +
+>   include/linux/mfd/rtsx_pci.h      |    8 +-
+>   4 files changed, 481 insertions(+), 189 deletions(-)
+>
+> --
+> 1.7.9.5
+> .
+>
 
