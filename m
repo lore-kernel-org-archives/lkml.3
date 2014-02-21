@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaBUGmr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 01:42:47 -0500
-Received: from ozlabs.org ([203.10.76.45]:58648 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752483AbaBUGmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 01:42:45 -0500
-Date: Fri, 21 Feb 2014 17:42:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: linux-next: manual merge of the akpm-current tree with the sparc
- tree
-Message-Id: <20140221174238.acefa05c8a5e71b06155d32d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Feb_2014_17_42_38_+1100_yzsTBUhy9Lf7rqfi"
+	id S1754144AbaBUGnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 01:43:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48690 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093AbaBUGnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 01:43:49 -0500
+Message-ID: <5306F588.10309@oracle.com>
+Date: Fri, 21 Feb 2014 01:43:20 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, mpm@selenic.com,
+        cpw@sgi.com, kosaki.motohiro@jp.fujitsu.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, xemul@parallels.com, riel@redhat.com,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] pagewalk: update page table walker core
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-2-git-send-email-n-horiguchi@ah.jp.nec.com> <5306942C.2070902@gmail.com> <5306c629.012ce50a.6c48.ffff9844SMTPIN_ADDED_BROKEN@mx.google.com>
+In-Reply-To: <5306c629.012ce50a.6c48.ffff9844SMTPIN_ADDED_BROKEN@mx.google.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Feb_2014_17_42_38_+1100_yzsTBUhy9Lf7rqfi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/20/2014 10:20 PM, Naoya Horiguchi wrote:
+> Hi Sasha,
+> 
+> On Thu, Feb 20, 2014 at 06:47:56PM -0500, Sasha Levin wrote:
+>> Hi Naoya,
+>>
+>> This patch seems to trigger a NULL ptr deref here. I didn't have a change to look into it yet
+>> but here's the spew:
+> 
+> Thanks for reporting.
+> I'm not sure what caused this bug from the kernel message. But in my guessing,
+> it seems that the NULL pointer is deep inside lockdep routine __lock_acquire(),
+> so if we find out which pointer was NULL, it might be useful to bisect which
+> the proble is (page table walker or lockdep, or both.)
 
-Hi Andrew,
+This actually points to walk_pte_range() trying to lock a NULL spinlock. It happens when we call
+pte_offset_map_lock() and get a NULL ptl out of pte_lockptr().
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-drivers/sbus/char/jsflash.c between commit 967f038e491b ("Sparc:
-sparc_cpu_model isn't in asm/system.h any more [ver #2]") from the sparc
-tree and commit 695f43eb1721 ("asm/system.h: sparc: sparc_cpu_model isn't
-in asm/system.h any more") from the akpm-current tree.
+> BTW, just from curiousity, in my build environment many of kernel functions
+> are inlined, so should not be shown in kernel message. But in your report
+> we can see the symbols like walk_pte_range() and __lock_acquire() which never
+> appear in my kernel. How did you do it? I turned off CONFIG_OPTIMIZE_INLINING,
+> but didn't make it.
 
-I fixed it up (I used the version from the sparc tree) and can carry the
-fix as necessary (no action is required).
+I'm really not sure. I've got a bunch of debug options enabled and it just seems to do the trick.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Try CONFIG_READABLE_ASM maybe?
 
---Signature=_Fri__21_Feb_2014_17_42_38_+1100_yzsTBUhy9Lf7rqfi
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks,
+Sasha
 
-iQIcBAEBCAAGBQJTBvViAAoJEMDTa8Ir7ZwVSekP/1sjt7ciNsvozzB96Tzthqb7
-OPRxuIZCKLYFAnckRes01mk4VoN2UqDfKS093fr+pTIGZK1I1eQlMy3J++EvAUv2
-RTRK/Hx3lS+qQ3maGwetv7mh/Xnx876ik/i65814J92mB3mwl0+/d45fCZsLykRJ
-BpzKv2iN9Z5osrccXFawzvUl9agNxK5yqPgXKfCWAT3mhdxb9CqkPagWd2Q8gQHf
-qQzgDxKUK8TFBsQBiA6Nva8NxdQ5NSfx8eCL7OuI93AdUdGf7y7lXetkxMBPl1eq
-oaJVF0CNcIYyn0yWFdM9rnquwWxOM8cHo5dYhyXKU2Br8EFkKHxSyevRqsil9IIZ
-g3eOokewFmkmAeJodLnDMKfsZtlHKdCzzWyHk8snLmoPqL5gH/wtfIEejr8kDo3x
-bNqVgIEUdU37RrJp6Sej7x/3muQALlzpXAjzEekJUe5iuGV3vVO2G9WSsiKMvNiS
-1zQtCVZl3VksFwnQ+llvrNmTH5F0aCoG7jndG9/vvFciStgNiCym01v51cVUVdWd
-aeN24kLc/DvX2u8V8X3tc6eLYQ9Pt2nNHgjCVUTx4yDU46XldaEvFkG8viPmkmQ9
-nt97i4BAmNAoZrseVnGfQEbU1rTtnUvmPWFnFrqThF+BKCQS9G1aQAZfDrl8VYgU
-d0gcdQ3Pg/kXnqh/DTIT
-=d3q7
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Feb_2014_17_42_38_+1100_yzsTBUhy9Lf7rqfi--
