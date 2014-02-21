@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054AbaBUNB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47630 "EHLO
+	id S933020AbaBUNBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:01:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47592 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040AbaBUNBx (ORCPT
+	with ESMTP id S932986AbaBUNBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:53 -0500
+	Fri, 21 Feb 2014 08:01:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 14/60] mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
-Date: Fri, 21 Feb 2014 13:00:41 +0000
-Message-Id: <1392987687-15367-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 09/60] ALSA: hda - Improve loopback path lookups for AD1983
+Date: Fri, 21 Feb 2014 13:00:36 +0000
+Message-Id: <1392987687-15367-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -31,89 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
+commit 276ab336b4c6e483d12fd46cbf24f97f71867710 upstream.
 
-During aio stress test, we observed the following lockdep warning.  This
-mean AIO+numa_balancing is currently deadlockable.
+AD1983 has flexible loopback routes and the generic parser would take
+wrong path confusingly instead of taking individual paths via NID 0x0c
+and 0x0d.  For avoiding it, limit the connections at these widgets so
+that the parser can think more straightforwardly.  This fixes the
+regression of the missing line-in loopback on Dell machine.
 
-The problem is, aio_migratepage disable interrupt, but
-__set_page_dirty_nobuffers unintentionally enable it again.
-
-Generally, all helper function should use spin_lock_irqsave() instead of
-spin_lock_irq() because they don't know caller at all.
-
-   other info that might help us debug this:
-    Possible unsafe locking scenario:
-
-          CPU0
-          ----
-     lock(&(&ctx->completion_lock)->rlock);
-     <Interrupt>
-       lock(&(&ctx->completion_lock)->rlock);
-
-    *** DEADLOCK ***
-
-      dump_stack+0x19/0x1b
-      print_usage_bug+0x1f7/0x208
-      mark_lock+0x21d/0x2a0
-      mark_held_locks+0xb9/0x140
-      trace_hardirqs_on_caller+0x105/0x1d0
-      trace_hardirqs_on+0xd/0x10
-      _raw_spin_unlock_irq+0x2c/0x50
-      __set_page_dirty_nobuffers+0x8c/0xf0
-      migrate_page_copy+0x434/0x540
-      aio_migratepage+0xb1/0x140
-      move_to_new_page+0x7d/0x230
-      migrate_pages+0x5e5/0x700
-      migrate_misplaced_page+0xbc/0xf0
-      do_numa_page+0x102/0x190
-      handle_pte_fault+0x241/0x970
-      handle_mm_fault+0x265/0x370
-      __do_page_fault+0x172/0x5a0
-      do_page_fault+0x1a/0x70
-      page_fault+0x28/0x30
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=70011
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/page-writeback.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_analog.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 31ea8e2..82a1891 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1987,11 +1987,12 @@ int __set_page_dirty_nobuffers(struct page *page)
- 	if (!TestSetPageDirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
- 		struct address_space *mapping2;
-+		unsigned long flags;
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index b1180b5..65e0494 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3575,6 +3575,8 @@ static const char * const ad1884_slave_vols[] = {
+ static int patch_ad1884(struct hda_codec *codec)
+ {
+ 	struct ad198x_spec *spec;
++	static hda_nid_t conn_0c[] = { 0x08 };
++	static hda_nid_t conn_0d[] = { 0x09 };
+ 	int err;
  
- 		if (!mapping)
- 			return 1;
+ 	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
+@@ -3590,6 +3592,10 @@ static int patch_ad1884(struct hda_codec *codec)
+ 	}
+ 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
  
--		spin_lock_irq(&mapping->tree_lock);
-+		spin_lock_irqsave(&mapping->tree_lock, flags);
- 		mapping2 = page_mapping(page);
- 		if (mapping2) { /* Race with truncate? */
- 			BUG_ON(mapping2 != mapping);
-@@ -2000,7 +2001,7 @@ int __set_page_dirty_nobuffers(struct page *page)
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
--		spin_unlock_irq(&mapping->tree_lock);
-+		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 		if (mapping->host) {
- 			/* !PageAnon && !swapper_space */
- 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++	/* limit the loopback routes not to confuse the parser */
++	snd_hda_override_conn_list(codec, 0x0c, ARRAY_SIZE(conn_0c), conn_0c);
++	snd_hda_override_conn_list(codec, 0x0d, ARRAY_SIZE(conn_0d), conn_0d);
++
+ 	spec->multiout.max_channels = 2;
+ 	spec->multiout.num_dacs = ARRAY_SIZE(ad1884_dac_nids);
+ 	spec->multiout.dac_nids = ad1884_dac_nids;
 -- 
 1.9.0
 
