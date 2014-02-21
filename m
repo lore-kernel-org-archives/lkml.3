@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249AbaBUNsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:48:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46934 "EHLO
+	id S932167AbaBUMuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46873 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125AbaBUMuK (ORCPT
+	with ESMTP id S932125AbaBUMuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:10 -0500
+	Fri, 21 Feb 2014 07:50:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/121] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-Date: Fri, 21 Feb 2014 12:47:46 +0000
-Message-Id: <1392986945-9693-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 035/121] mm: __set_page_dirty_nobuffers() uses spin_lock_irqsave() instead of spin_lock_irq()
+Date: Fri, 21 Feb 2014 12:47:39 +0000
+Message-Id: <1392986945-9693-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -30,50 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 04005f6011e3b504cd4d791d9769f7cb9a3b2eae upstream.
+commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
 
-A think-o in the calculation of the monotonic -> tai time offset
-results in CLOCK_TAI timers and nanosleeps to expire late (the
-latency is ~2x the tai offset).
+During aio stress test, we observed the following lockdep warning.  This
+mean AIO+numa_balancing is currently deadlockable.
 
-Fix this by adding the tai offset from the realtime offset instead
-of subtracting.
+The problem is, aio_migratepage disable interrupt, but
+__set_page_dirty_nobuffers unintentionally enable it again.
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Generally, all helper function should use spin_lock_irqsave() instead of
+spin_lock_irq() because they don't know caller at all.
+
+   other info that might help us debug this:
+    Possible unsafe locking scenario:
+
+          CPU0
+          ----
+     lock(&(&ctx->completion_lock)->rlock);
+     <Interrupt>
+       lock(&(&ctx->completion_lock)->rlock);
+
+    *** DEADLOCK ***
+
+      dump_stack+0x19/0x1b
+      print_usage_bug+0x1f7/0x208
+      mark_lock+0x21d/0x2a0
+      mark_held_locks+0xb9/0x140
+      trace_hardirqs_on_caller+0x105/0x1d0
+      trace_hardirqs_on+0xd/0x10
+      _raw_spin_unlock_irq+0x2c/0x50
+      __set_page_dirty_nobuffers+0x8c/0xf0
+      migrate_page_copy+0x434/0x540
+      aio_migratepage+0xb1/0x140
+      move_to_new_page+0x7d/0x230
+      migrate_pages+0x5e5/0x700
+      migrate_misplaced_page+0xbc/0xf0
+      do_numa_page+0x102/0x190
+      handle_pte_fault+0x241/0x970
+      handle_mm_fault+0x265/0x370
+      __do_page_fault+0x172/0x5a0
+      do_page_fault+0x1a/0x70
+      page_fault+0x28/0x30
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/timekeeping.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page-writeback.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index f223826..cd0c384 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -77,7 +77,7 @@ static void tk_set_wall_to_mono(struct timekeeper *tk, struct timespec wtm)
- 	tk->wall_to_monotonic = wtm;
- 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
- 	tk->offs_real = timespec_to_ktime(tmp);
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
- }
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 1c21100..7298e74 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2024,11 +2024,12 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+ 		struct address_space *mapping2;
++		unsigned long flags;
  
- static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
-@@ -595,7 +595,7 @@ s32 timekeeping_get_tai_offset(void)
- static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
- {
- 	tk->tai_offset = tai_offset;
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
- }
+ 		if (!mapping)
+ 			return 1;
  
- /**
+-		spin_lock_irq(&mapping->tree_lock);
++		spin_lock_irqsave(&mapping->tree_lock, flags);
+ 		mapping2 = page_mapping(page);
+ 		if (mapping2) { /* Race with truncate? */
+ 			BUG_ON(mapping2 != mapping);
+@@ -2037,7 +2038,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 			radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 		}
+-		spin_unlock_irq(&mapping->tree_lock);
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+ 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
 -- 
 1.9.0
 
