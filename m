@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191AbaBUWtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:49:53 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35459 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787AbaBUWtw (ORCPT
+	id S1755841AbaBUWvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:51:45 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:38957 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049AbaBUWvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:49:52 -0500
-Date: Fri, 21 Feb 2014 14:49:49 -0800
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        gtdev@spearhead.de, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 1/1] serial: 8250_pci: fix support for MosChip 98xx boards
-Message-ID: <20140221224949.GL16209@ovro.caltech.edu>
-References: <1393022777-5959-1-git-send-email-iws@ovro.caltech.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393022777-5959-1-git-send-email-iws@ovro.caltech.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (ovro.ovro.caltech.edu [0.0.0.0]); Fri, 21 Feb 2014 14:49:51 -0800 (PST)
+	Fri, 21 Feb 2014 17:51:43 -0500
+From: Marcin Lulek <admin@webreactor.eu>
+To: Marcin Lulek <info@webreactor.eu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Add device id for Thrustmaster GPX Gamepad for joystick/xpad.c driver
+Date: Fri, 21 Feb 2014 23:51:21 +0100
+Message-Id: <1393023081-31679-1-git-send-email-info@webreactor.eu>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:46:17PM -0800, Ira W. Snyder wrote:
-> From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-> 
-> Commit 7808edcd306f22aeb23775d34e70b7fa2f58b852 "Basic support for
-> Moschip 9900 family I/O chips" broke support for the 98xx boards. This
-> is due to a missing check for the 99xx family inside the newly added
-> pci_netmos_9900_setup() function, which is now used for all boards in
-> the Moschip family.
-> 
-> The code for skipping BARs is incorrect for the 98xx boards. Using it
-> causes two serial ports to be left undetected on my 9865 board.
-> 
-> By checking for the 99xx boards and using the new code exclusively for
-> them, all of my serial ports are now detected.
-> 
-> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> ---
-> 
-> Here is the lspci output for my 9865 board. On the 05:00.2 device, the
-> middle two serial ports (I/O ports 0x1010 and 0x1008) are left unused
-> and undetected without this patch.
-> 
-> After the patch, they work perfectly.
-> 
-> 05:00.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-> 	Subsystem: Device a000:1000
-> 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 21
-> 	I/O ports at 1028 [size=8]
-> 	Memory at e0104000 (32-bit, non-prefetchable) [size=4K]
-> 	Memory at e0103000 (32-bit, non-prefetchable) [size=4K]
-> 	Capabilities: <access denied>
-> 	Kernel driver in use: serial
-> 	Kernel modules: parport_pc
-> 
-> 05:00.1 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-> 	Subsystem: Device a000:1000
-> 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 22
-> 	I/O ports at 1020 [size=8]
-> 	Memory at e0102000 (32-bit, non-prefetchable) [size=4K]
-> 	Memory at e0101000 (32-bit, non-prefetchable) [size=4K]
-> 	Capabilities: <access denied>
-> 	Kernel driver in use: serial
-> 	Kernel modules: parport_pc
-> 
-> 05:00.2 Communication controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller
-> 	Subsystem: Device a000:3004
-> 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 23
-> 	I/O ports at 1018 [size=8]
-> 	I/O ports at 1010 [size=8]
-> 	I/O ports at 1008 [size=8]
-> 	I/O ports at 1000 [size=8]
-> 	Memory at e0100000 (32-bit, non-prefetchable) [size=4K]
-> 	Capabilities: <access denied>
-> 	Kernel driver in use: serial
-> 
->  drivers/tty/serial/8250/8250_pci.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-> index 50228eed3b6f..374551f196c5 100644
-> --- a/drivers/tty/serial/8250/8250_pci.c
-> +++ b/drivers/tty/serial/8250/8250_pci.c
-> @@ -783,7 +783,8 @@ static int pci_netmos_9900_setup(struct serial_private *priv,
->  {
->  	unsigned int bar;
->  
-> -	if ((priv->dev->subsystem_device & 0xff00) == 0x3000) {
-> +	if ((priv->dev->subsystem_device & 0xff00) == 0x3000 &&
-> +		(priv->dev->device & 0xff00) == 0x9900) {
->  		/* netmos apparently orders BARs by datasheet layout, so serial
->  		 * ports get BARs 0 and 3 (or 1 and 4 for memmapped)
->  		 */
-> -- 
-> 1.8.3.2
-> 
+Signed-off-by: Marcin Lulek <info@webreactor.eu>
+---
+ drivers/input/joystick/xpad.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Adding some CC's that were missed the first time. Greg's email address
-has changed.
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 603fe0d..b94668f 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -124,6 +124,7 @@ static const struct xpad_device {
+ 	{ 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+ 	{ 0x045e, 0x0719, "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+ 	{ 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
++	{ 0x24c6, 0x5b02, "Thrustmaster, Inc. GPX Controller", 0, XTYPE_XBOX360 },
+ 	{ 0x046d, 0xc21d, "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
+ 	{ 0x046d, 0xc21f, "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
+ 	{ 0x046d, 0xc242, "Logitech Chillstream Controller", 0, XTYPE_XBOX360 },
+-- 
+1.8.3.2
 
-Apologies,
-Ira
