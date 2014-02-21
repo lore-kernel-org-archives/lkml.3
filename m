@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882AbaBUWTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:19:35 -0500
-Received: from smtprelay0098.hostedemail.com ([216.40.44.98]:49609 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752899AbaBUWTe (ORCPT
+	id S1754918AbaBUW3r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:29:47 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35507 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936AbaBUW3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:19:34 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3866:3867:3870:3874:4605:5007:6119:7652:9592:10004:10400:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: paste99_190f857ebe113
-X-Filterd-Recvd-Size: 2802
-Message-ID: <1393021170.2594.24.camel@joe-AO722>
-Subject: [PATCH] capability: Use current logging styles
-From: Joe Perches <joe@perches.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Feb 2014 14:19:30 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Feb 2014 17:29:46 -0500
+Date: Fri, 21 Feb 2014 14:29:47 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Christian Daudt <bcm@fixthebug.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Matt Porter <mporter@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sherman Yin <syin@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arm@kernel.org
+Subject: Re: [GIT PULL] bcm pinctrl rename
+Message-ID: <20140221222947.GB13233@quad.lixom.net>
+References: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prefix logging output with "capability: " via pr_fmt.
-Convert printks to pr_<level>.
-Use pr_<level>_once instead of guard flags.
-Coalesce formats.
+On Wed, Feb 12, 2014 at 09:20:13AM -0800, Christian Daudt wrote:
+> The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+> 
+>   Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/broadcom/bcm11351.git tags/bcm-for-3.14-pinctrl-rename
+> 
+> for you to fetch changes up to f5310a1712b68c7f83539fce6ebbfb6f0f510f5b:
+> 
+>   Update dtsi with new pinctrl compatible string (2014-02-12 09:06:53 -0800)
+> 
+> ----------------------------------------------------------------
+> Renaming pinctrl code to keep in line with rest of bcm mobile
+> 
+> Given that this driver has been in the works for a while, it
+> was written prior to the code standardizing on bcm-based naming.
+> this patchset brings it in line with the remainder of the code.
+> 
+> ----------------------------------------------------------------
+> Sherman Yin (4):
+>       pinctrl: Rename Broadcom Capri pinctrl binding
+>       pinctrl: Rename Broadcom Capri pinctrl driver
+>       Update bcm_defconfig with new pinctrl CONFIG
+>       Update dtsi with new pinctrl compatible string
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/capability.c | 29 ++++++++++-------------------
- 1 file changed, 10 insertions(+), 19 deletions(-)
+Hi,
 
-diff --git a/kernel/capability.c b/kernel/capability.c
-index 34019c5..a8d63df 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -7,6 +7,8 @@
-  * 30 May 2002:	Cleanup, Robert M. Love <rml@tech9.net>
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/audit.h>
- #include <linux/capability.h>
- #include <linux/mm.h>
-@@ -42,15 +44,10 @@ __setup("no_file_caps", file_caps_disable);
- 
- static void warn_legacy_capability_use(void)
- {
--	static int warned;
--	if (!warned) {
--		char name[sizeof(current->comm)];
--
--		printk(KERN_INFO "warning: `%s' uses 32-bit capabilities"
--		       " (legacy support in use)\n",
--		       get_task_comm(name, current));
--		warned = 1;
--	}
-+	char name[sizeof(current->comm)];
-+
-+	pr_info_once("warning: `%s' uses 32-bit capabilities (legacy support in use)\n",
-+		     get_task_comm(name, current));
- }
- 
- /*
-@@ -71,16 +68,10 @@ static void warn_legacy_capability_use(void)
- 
- static void warn_deprecated_v2(void)
- {
--	static int warned;
-+	char name[sizeof(current->comm)];
- 
--	if (!warned) {
--		char name[sizeof(current->comm)];
--
--		printk(KERN_INFO "warning: `%s' uses deprecated v2"
--		       " capabilities in a way that may be insecure.\n",
--		       get_task_comm(name, current));
--		warned = 1;
--	}
-+	pr_info_once("warning: `%s' uses deprecated v2 capabilities in a way that may be insecure\n",
-+		     get_task_comm(name, current));
- }
- 
- /*
-@@ -380,7 +371,7 @@ bool has_capability_noaudit(struct task_struct *t, int cap)
- bool ns_capable(struct user_namespace *ns, int cap)
- {
- 	if (unlikely(!cap_valid(cap))) {
--		printk(KERN_CRIT "capable() called with invalid cap=%u\n", cap);
-+		pr_crit("capable() called with invalid cap=%u\n", cap);
- 		BUG();
- 	}
- 
+(As per irc discussion). The rename isn't the right thing to do at this
+time in the release, but the binding needs to be tweaked before it ships
+in a full release, or we'll always need to live with it.
+
+So, I'll be happy to take the bindings piece and the dtsi piece (and the
+small edit to the driver to change the compatible string match table),
+but the file rename and Kconfig entry edit is 3.15 material.
+
+Please send new pull request with just that (or, if you prefer, just send the
+patches and we can apply them too).
 
 
+-Olof
