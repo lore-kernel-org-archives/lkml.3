@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113AbaBUNCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:02:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47671 "EHLO
+	id S1756143AbaBUNSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:18:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47710 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932858AbaBUNCD (ORCPT
+	with ESMTP id S933115AbaBUNCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:03 -0500
+	Fri, 21 Feb 2014 08:02:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 22/60] ahci: Use PCI_VENDOR_ID_MARVELL_EXT for 0x1b4b
-Date: Fri, 21 Feb 2014 13:00:49 +0000
-Message-Id: <1392987687-15367-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 28/60] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
+Date: Fri, 21 Feb 2014 13:00:55 +0000
+Message-Id: <1392987687-15367-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Myron Stowe <myron.stowe@redhat.com>
+From: Hartmut Knaack <knaack.h@gmx.de>
 
-commit 69fd3157363935b1e052bd76b8f8ec65e494306e upstream.
+commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
 
-With the 0x1b4b vendor ID #define in place, convert hard-coded ID
-values.
+Only free an IRQ in error_free_irq, if it has been requested previously.
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Jeff Garzik <jgarzik@pobox.com>
+Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/iio/adc/ad799x_core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 77795cf..0afabef 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -427,17 +427,17 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	/* Marvell */
- 	{ PCI_VDEVICE(MARVELL, 0x6145), board_ahci_mv },	/* 6145 */
- 	{ PCI_VDEVICE(MARVELL, 0x6121), board_ahci_mv },	/* 6121 */
--	{ PCI_DEVICE(0x1b4b, 0x9123),
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9123),
- 	  .class = PCI_CLASS_STORAGE_SATA_AHCI,
- 	  .class_mask = 0xffffff,
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
--	{ PCI_DEVICE(0x1b4b, 0x9125),
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
--	{ PCI_DEVICE(0x1b4b, 0x917a),
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
--	{ PCI_DEVICE(0x1b4b, 0x9192),
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
--	{ PCI_DEVICE(0x1b4b, 0x91a3),
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
- 	  .driver_data = board_ahci_yes_fbs },
+diff --git a/drivers/staging/iio/adc/ad799x_core.c b/drivers/staging/iio/adc/ad799x_core.c
+index 80e0c6e..b50d1df 100644
+--- a/drivers/staging/iio/adc/ad799x_core.c
++++ b/drivers/staging/iio/adc/ad799x_core.c
+@@ -911,7 +911,8 @@ static int __devinit ad799x_probe(struct i2c_client *client,
+ 	return 0;
+ 
+ error_free_irq:
+-	free_irq(client->irq, indio_dev);
++	if (client->irq > 0)
++		free_irq(client->irq, indio_dev);
+ error_cleanup_ring:
+ 	ad799x_ring_cleanup(indio_dev);
+ error_disable_reg:
 -- 
 1.9.0
 
