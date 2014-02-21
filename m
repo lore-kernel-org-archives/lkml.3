@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaBUUnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 15:43:51 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:63784 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632AbaBUUns (ORCPT
+	id S1755371AbaBUUoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 15:44:18 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39893 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaBUUoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 15:43:48 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 3/3] staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
-Date: Fri, 21 Feb 2014 12:43:34 -0800
-Message-Id: <1393015414-12499-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393015414-12499-1-git-send-email-john.stultz@linaro.org>
-References: <1393015414-12499-1-git-send-email-john.stultz@linaro.org>
+	Fri, 21 Feb 2014 15:44:16 -0500
+X-Originating-IP: 173.246.103.110
+Date: Fri, 21 Feb 2014 12:44:01 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Jiri Slaby <jslaby@suse.cz>,
+        Eric Paris <eparis@redhat.com>, Dwight Engen <dwight.engen@oracle.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs, kernel: Support disabling the uselib syscall
+Message-ID: <20140221204144.GA3861@jtriplet-mobl1>
+References: <20140221181103.GA5773@jtriplet-mobl1>
+ <20140221121627.19e5d04dbba25984d4be8a15@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221121627.19e5d04dbba25984d4be8a15@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a more clear explanation of the option in the prompt, and
-make the config depend on ANDROID_BINDER_IPC being selected.
+On Fri, Feb 21, 2014 at 12:16:27PM -0800, Andrew Morton wrote:
+> On Fri, 21 Feb 2014 10:11:06 -0800 Josh Triplett <josh@joshtriplett.org> wrote:
+> > uselib hasn't been used since libc5; glibc does not use it.  Support
+> > turning it off.
+> > 
+> > When disabled, also omit the load_elf_library implementation from
+> > binfmt_elf.c, which only uselib invokes.
+> > 
+> > bloat-o-meter:
+> > add/remove: 0/4 grow/shrink: 0/1 up/down: 0/-785 (-785)
+> > function                                     old     new   delta
+> > padzero                                       39      36      -3
+> > uselib_flags                                  20       -     -20
+> > sys_uselib                                   168       -    -168
+> > SyS_uselib                                   168       -    -168
+> > load_elf_library                             426       -    -426
+> > 
+> 
+> The patch disables CONFIG_USELIB by default.  This important decision
+> should be mentioned and justified in the changelog, please.
 
-Also sets the default to y, which matches AOSP.
+Gah, that was not intentional.  Will fix in v2.  I did very
+intentionally not make it require CONFIG_EXPERT or CONFIG_EMBEDDED,
+since (like CONFIG_BINFMT_AOUT) almost everyone will want it disabled,
+but I had intended to make it "default y".
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/Kconfig | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> > +#ifdef CONFIG_USELIB
+> 
+> I wonder if CONFIG_SYS_USELIB would be a better identifier.  We haven't
+> done anything consistent here.
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 3559690..1c779ef 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -21,8 +21,9 @@ config ANDROID_BINDER_IPC
- 	  between said processes.
- 
- config ANDROID_BINDER_IPC_32BIT
--	bool "Use old 32-bit binder api"
--	depends on !64BIT
-+	bool "Use old (Android 4.4 and earlier) 32-bit binder API"
-+	depends on !64BIT && ANDROID_BINDER_IPC
-+	default y
- 	---help---
- 	  The Binder API has been changed to support both 32 and 64bit
- 	  applications in a mixed environment.
--- 
-1.8.3.2
+As far as I can tell, there's no use of CONFIG_SYS_* or any other
+consistent prefix for configuring out syscalls; all such symbols appear
+unprefixed.  I think it would make sense to have a single common menu
+and prefix for configuring out unused syscalls, but given the large
+number of existing Kconfig options for that, I think that change ought
+to occur as a separate patch series that isn't also trying to add a new
+such option.
 
+Perhaps Dave Hansen (CCed) might be interested in incorporating such a
+change into his ongoing kconfig consolidation and reorganization?
+
+- Josh Triplett
