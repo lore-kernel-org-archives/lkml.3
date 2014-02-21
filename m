@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234AbaBUNzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:55:16 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59066 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259AbaBUNy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:54:56 -0500
-Date: Fri, 21 Feb 2014 14:54:54 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        tomi.valkeinen@ti.com, plagnioj@jcrosoft.com
-Subject: Re: [PATCH v5] video: add OpenCores VGA/LCD framebuffer driver
-Message-ID: <20140221135454.GA12555@pengutronix.de>
-References: <1389384793-4710-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+	id S933360AbaBUNza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:55:30 -0500
+Received: from mout.gmx.net ([212.227.17.20]:62537 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933091AbaBUNzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 08:55:22 -0500
+From: Marc Dietrich <marvin24@gmx.de>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
+        Rhyland Klein <rklein@nvidia.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] net: rfkill: gpio: remove unused and obsolete platform parameters
+Date: Fri, 21 Feb 2014 14:55:14 +0100
+Message-ID: <1723302.jKkc8NDNRI@fb07-iapwap2>
+User-Agent: KMail/4.12.2 (Linux/3.14.0-rc3-12.gfc9498b-desktop+; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <1392900697-27577-2-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com> <1392900697-27577-2-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1389384793-4710-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Provags-ID: V03:K0:IUfkgzMFeKUUnV5/dbJb5ZtCPxOUE4W8yi7hNcWNW9mDlTzLfre
+ 94bgIa94KbVecwMxuqxB1AImxR7+XSLnLI3E1cYnuO69jU0B/oxciRRgXLp5XFoz2sfANqX
+ vunI3qhJd64aqbGsya+5MnYUN2GVyLk8Paqw9dk3fl4/Kjx/xPVTe5f/nJ6MtaeX8TVxA9O
+ IYIPJOGH4FUOsY7Hf/Hew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Heikki,
 
-On Fri, Jan 10, 2014 at 10:13:13PM +0200, Stefan Kristiansson wrote:
-> This adds support for the VGA/LCD core available from OpenCores:
-> http://opencores.org/project,vga_lcd
+Am Donnerstag, 20. Februar 2014, 14:51:34 schrieb Heikki Krogerus:
+> After upgrading to descriptor based gpios, the gpio numbers
+> are not used anymore. The power_clk_name and the platform
+> specific setup and close hooks are not used by anybody, and
+> we should not encourage use of such things, so removing them.
+
+arch/arm/mach-tegra/board-paz00.c is still using platform data. Is there some 
+prerequisite patch I'm missing (3.14-rc3) or how can this file be converted? 
+We are waiting for DT support to arrive so we can finally remove this file.
+
+Marc
+
 > 
-> The driver have been tested together with both OpenRISC and
-> ARM (socfpga) processors.
-> 
-> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 > ---
-> Changes in v2:
-> - Add Microblaze as an example user and fix a typo in Xilinx Zynq
+>  include/linux/rfkill-gpio.h | 10 ----------
+>  net/rfkill/rfkill-gpio.c    | 15 +--------------
+>  2 files changed, 1 insertion(+), 24 deletions(-)
 > 
-> Changes in v3:
-> - Use devm_kzalloc instead of kzalloc
-> - Remove superflous MODULE #ifdef
+> diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
+> index 4d09f6e..20bcb55 100644
+> --- a/include/linux/rfkill-gpio.h
+> +++ b/include/linux/rfkill-gpio.h
+> @@ -27,21 +27,11 @@
+>   * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
+> * for unused gpio's, the expected value is -1.
+>   * @name:		name for the gpio rf kill instance
+> - * @reset_gpio:		GPIO which is used for reseting rfkill switch
+> - * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
+> - * @power_clk_name:	[optional] name of clk to turn off while blocked
+> - * @gpio_runtime_close:	clean up platform specific gpio configuration
+> - * @gpio_runtime_setup:	set up platform specific gpio configuration
+>   */
 > 
-> Changes in v4:
-> - Remove 'default n' in Kconfig
-> - Simplify ioremap/request_mem_region by using devm_ioremap_resource
-> - Remove release_mem_region
+>  struct rfkill_gpio_platform_data {
+>  	char			*name;
+> -	int			reset_gpio;
+> -	int			shutdown_gpio;
+> -	const char		*power_clk_name;
+>  	enum rfkill_type	type;
+> -	void	(*gpio_runtime_close)(struct platform_device *);
+> -	int	(*gpio_runtime_setup)(struct platform_device *);
+>  };
 > 
-> Changes in v5:
-> - Remove static structs to support multiple devices
-> ---
->  drivers/video/Kconfig  |  16 ++
->  drivers/video/Makefile |   1 +
->  drivers/video/ocfb.c   | 440 +++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 457 insertions(+)
->  create mode 100644 drivers/video/ocfb.c
+>  #endif /* __RFKILL_GPIO_H */
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> index bd2a5b9..0adda44 100644
+> --- a/net/rfkill/rfkill-gpio.c
+> +++ b/net/rfkill/rfkill-gpio.c
+> @@ -87,7 +87,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+> {
+>  	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+>  	struct rfkill_gpio_data *rfkill;
+> -	const char *clk_name = NULL;
+>  	struct gpio_desc *gpio;
+>  	int ret;
+>  	int len;
+> @@ -101,7 +100,6 @@ static int rfkill_gpio_probe(struct platform_device
+> *pdev) if (ret)
+>  			return ret;
+>  	} else if (pdata) {
+> -		clk_name = pdata->power_clk_name;
+>  		rfkill->name = pdata->name;
+>  		rfkill->type = pdata->type;
+>  	} else {
+> @@ -120,7 +118,7 @@ static int rfkill_gpio_probe(struct platform_device
+> *pdev) snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
+> snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
 > 
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 84b685f..8e41a1e 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -979,6 +979,22 @@ config FB_PVR2
->  	  (<file:drivers/video/pvr2fb.c>). Please see the file
->  	  <file:Documentation/fb/pvr2fb.txt>.
->  
-> +config FB_OPENCORES
-> +	tristate "OpenCores VGA/LCD core 2.0 framebuffer support"
-> +	depends on FB
+> -	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
+> +	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
+> 
+>  	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+>  	if (!IS_ERR(gpio)) {
+> @@ -146,14 +144,6 @@ static int rfkill_gpio_probe(struct platform_device
+> *pdev) return -EINVAL;
+>  	}
+> 
+> -	if (pdata && pdata->gpio_runtime_setup) {
+> -		ret = pdata->gpio_runtime_setup(pdev);
+> -		if (ret) {
+> -			dev_err(&pdev->dev, "can't set up gpio\n");
+> -			return ret;
+> -		}
+> -	}
+> -
+>  	rfkill->rfkill_dev = rfkill_alloc(rfkill->name, &pdev->dev,
+>  					  rfkill->type, &rfkill_gpio_ops,
+>  					  rfkill);
+> @@ -174,10 +164,7 @@ static int rfkill_gpio_probe(struct platform_device
+> *pdev) static int rfkill_gpio_remove(struct platform_device *pdev)
+>  {
+>  	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
+> -	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+> 
+> -	if (pdata && pdata->gpio_runtime_close)
+> -		pdata->gpio_runtime_close(pdev);
+>  	rfkill_unregister(rfkill->rfkill_dev);
+>  	rfkill_destroy(rfkill->rfkill_dev);
 
-Maybe add something like:
-
-	depends on ARCH_SOCFPGA || ARCH_ZYNQ || MICROBLAZE || OPENRISC || COMPILE_TEST
-
-(Sorry for being late with that suggestion, this attracted my attention
-only during make oldconfig on v3.14-rc, so if you agree this is a good
-idea you need a seperate patch :-)
-
-Best regards
-Uwe
-
-> +	select FB_CFB_FILLRECT
-> +	select FB_CFB_COPYAREA
-> +	select FB_CFB_IMAGEBLIT
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
