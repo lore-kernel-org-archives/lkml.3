@@ -1,73 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779AbaBUMxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:53:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53753 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755825AbaBUMxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:53:21 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <53073962020000780011E2DE@nat28.tlf.novell.com>
-References: <53073962020000780011E2DE@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 1/3] x86/hash: fix build failure with older binutils
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 21 Feb 2014 04:51:53 -0800
-To: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-CC: davem@davemloft.net, dborkman@redhat.com, ffusco@redhat.com,
-        tgraf@redhat.com, linux-kernel@vger.kernel.org
-Message-ID: <68ae560f-8cf7-4083-816f-3fa78aed9a87@email.android.com>
+	id S932696AbaBUMvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47299 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581AbaBUMvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:51:47 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 111/121] x86: mm: change tlb_flushall_shift for IvyBridge
+Date: Fri, 21 Feb 2014 12:48:55 +0000
+Message-Id: <1392986945-9693-112-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How old?
+3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
 
-On February 21, 2014 2:32:50 AM PST, Jan Beulich <JBeulich@suse.com> wrote:
->Just like for other ISA extension instruction uses we should check
->whether the assembler actually supports them. The fallback here simply
->is to encode an instruction  with fixed operands (%eax and %ecx).
->
->Signed-off-by: Jan Beulich <jbeulich@suse.com>
->Cc: Francesco Fusco <ffusco@redhat.com>
->Cc: Daniel Borkmann <dborkman@redhat.com>
->Cc: Thomas Graf <tgraf@redhat.com>
->Cc: David S. Miller <davem@davemloft.net>
->---
-> arch/x86/Makefile   |    1 +
-> arch/x86/lib/hash.c |    4 ++++
-> 2 files changed, 5 insertions(+)
->
->--- 3.14-rc3-x86-hash-crc32.orig/arch/x86/Makefile
->+++ 3.14-rc3-x86-hash-crc32/arch/x86/Makefile
->@@ -152,6 +152,7 @@ cfi-sections := $(call as-instr,.cfi_sec
-> 
-> # does binutils support specific instructions?
-> asinstr := $(call as-instr,fxsaveq (%rax),-DCONFIG_AS_FXSAVEQ=1)
->+asinstr += $(call as-instr,crc32l
->%eax$(comma)%eax,-DCONFIG_AS_CRC32=1)
->avx_instr := $(call as-instr,vxorps
->%ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_AVX=1)
->avx2_instr :=$(call as-instr,vpbroadcastb
->%xmm0$(comma)%ymm1,-DCONFIG_AS_AVX2=1)
-> 
->--- 3.14-rc3-x86-hash-crc32.orig/arch/x86/lib/hash.c
->+++ 3.14-rc3-x86-hash-crc32/arch/x86/lib/hash.c
->@@ -39,7 +39,11 @@
-> 
-> static inline u32 crc32_u32(u32 crc, u32 val)
-> {
->+#ifdef CONFIG_AS_CRC32
-> 	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
->+#else
->+	asm (".byte 0xf2, 0x0f, 0x38, 0xf1, 0xc1" : "+a" (crc) : "c" (val));
->+#endif
-> 	return crc;
-> }
-> 
+------------------
 
+From: Mel Gorman <mgorman@suse.de>
+
+commit f98b7a772ab51b52ca4d2a14362fc0e0c8a2e0f3 upstream.
+
+There was a large performance regression that was bisected to
+commit 611ae8e3 ("x86/tlb: enable tlb flush range support for
+x86").  This patch simply changes the default balance point
+between a local and global flush for IvyBridge.
+
+In the interest of allowing the tests to be reproduced, this
+patch was tested using mmtests 0.15 with the following
+configurations
+
+	configs/config-global-dhp__tlbflush-performance
+	configs/config-global-dhp__scheduler-performance
+	configs/config-global-dhp__network-performance
+
+Results are from two machines
+
+Ivybridge   4 threads:  Intel(R) Core(TM) i3-3240 CPU @ 3.40GHz
+Ivybridge   8 threads:  Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz
+
+Page fault microbenchmark showed nothing interesting.
+
+Ebizzy was configured to run multiple iterations and threads.
+Thread counts ranged from 1 to NR_CPUS*2. For each thread count,
+it ran 100 iterations and each iteration lasted 10 seconds.
+
+Ivybridge 4 threads
+                    3.13.0-rc7            3.13.0-rc7
+                       vanilla           altshift-v3
+Mean   1     6395.44 (  0.00%)     6789.09 (  6.16%)
+Mean   2     7012.85 (  0.00%)     8052.16 ( 14.82%)
+Mean   3     6403.04 (  0.00%)     6973.74 (  8.91%)
+Mean   4     6135.32 (  0.00%)     6582.33 (  7.29%)
+Mean   5     6095.69 (  0.00%)     6526.68 (  7.07%)
+Mean   6     6114.33 (  0.00%)     6416.64 (  4.94%)
+Mean   7     6085.10 (  0.00%)     6448.51 (  5.97%)
+Mean   8     6120.62 (  0.00%)     6462.97 (  5.59%)
+
+Ivybridge 8 threads
+                     3.13.0-rc7            3.13.0-rc7
+                        vanilla           altshift-v3
+Mean   1      7336.65 (  0.00%)     7787.02 (  6.14%)
+Mean   2      8218.41 (  0.00%)     9484.13 ( 15.40%)
+Mean   3      7973.62 (  0.00%)     8922.01 ( 11.89%)
+Mean   4      7798.33 (  0.00%)     8567.03 (  9.86%)
+Mean   5      7158.72 (  0.00%)     8214.23 ( 14.74%)
+Mean   6      6852.27 (  0.00%)     7952.45 ( 16.06%)
+Mean   7      6774.65 (  0.00%)     7536.35 ( 11.24%)
+Mean   8      6510.50 (  0.00%)     6894.05 (  5.89%)
+Mean   12     6182.90 (  0.00%)     6661.29 (  7.74%)
+Mean   16     6100.09 (  0.00%)     6608.69 (  8.34%)
+
+Ebizzy hits the worst case scenario for TLB range flushing every
+time and it shows for these Ivybridge CPUs at least that the
+default choice is a poor on.  The patch addresses the problem.
+
+Next was a tlbflush microbenchmark written by Alex Shi at
+http://marc.info/?l=linux-kernel&m=133727348217113 .  It
+measures access costs while the TLB is being flushed.  The
+expectation is that if there are always full TLB flushes that
+the benchmark would suffer and it benefits from range flushing
+
+There are 320 iterations of the test per thread count.  The
+number of entries is randomly selected with a min of 1 and max
+of 512.  To ensure a reasonably even spread of entries, the full
+range is broken up into 8 sections and a random number selected
+within that section.
+
+iteration 1, random number between 0-64
+iteration 2, random number between 64-128 etc
+
+This is still a very weak methodology.  When you do not know
+what are typical ranges, random is a reasonable choice but it
+can be easily argued that the opimisation was for smaller ranges
+and an even spread is not representative of any workload that
+matters.  To improve this, we'd need to know the probability
+distribution of TLB flush range sizes for a set of workloads
+that are considered "common", build a synthetic trace and feed
+that into this benchmark.  Even that is not perfect because it
+would not account for the time between flushes but there are
+limits of what can be reasonably done and still be doing
+something useful.  If a representative synthetic trace is
+provided then this benchmark could be revisited and the shift values retuned.
+
+Ivybridge 4 threads
+                        3.13.0-rc7            3.13.0-rc7
+                           vanilla           altshift-v3
+Mean       1       10.50 (  0.00%)       10.50 (  0.03%)
+Mean       2       17.59 (  0.00%)       17.18 (  2.34%)
+Mean       3       22.98 (  0.00%)       21.74 (  5.41%)
+Mean       5       47.13 (  0.00%)       46.23 (  1.92%)
+Mean       8       43.30 (  0.00%)       42.56 (  1.72%)
+
+Ivybridge 8 threads
+                         3.13.0-rc7            3.13.0-rc7
+                            vanilla           altshift-v3
+Mean       1         9.45 (  0.00%)        9.36 (  0.93%)
+Mean       2         9.37 (  0.00%)        9.70 ( -3.54%)
+Mean       3         9.36 (  0.00%)        9.29 (  0.70%)
+Mean       5        14.49 (  0.00%)       15.04 ( -3.75%)
+Mean       8        41.08 (  0.00%)       38.73 (  5.71%)
+Mean       13       32.04 (  0.00%)       31.24 (  2.49%)
+Mean       16       40.05 (  0.00%)       39.04 (  2.51%)
+
+For both CPUs, average access time is reduced which is good as
+this is the benchmark that was used to tune the shift values in
+the first place albeit it is now known *how* the benchmark was
+used.
+
+The scheduler benchmarks were somewhat inconclusive.  They
+showed gains and losses and makes me reconsider how stable those
+benchmarks really are or if something else might be interfering
+with the test results recently.
+
+Network benchmarks were inconclusive.  Almost all results were
+flat except for netperf-udp tests on the 4 thread machine.
+These results were unstable and showed large variations between
+reboots.  It is unknown if this is a recent problems but I've
+noticed before that netperf-udp results tend to vary.
+
+Based on these results, changing the default for Ivybridge seems
+like a logical choice.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Tested-by: Davidlohr Bueso <davidlohr@hp.com>
+Reviewed-by: Alex Shi <alex.shi@linaro.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-cqnadffh1tiqrshthRj3Esge@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kernel/cpu/intel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index a51efc9..87c0be5 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -628,7 +628,7 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+ 		tlb_flushall_shift = 5;
+ 		break;
+ 	case 0x63a: /* Ivybridge */
+-		tlb_flushall_shift = 1;
++		tlb_flushall_shift = 2;
+ 		break;
+ 	default:
+ 		tlb_flushall_shift = 6;
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.9.0
+
