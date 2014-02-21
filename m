@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbaBUWzM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:55:12 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:40470 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaBUWzK (ORCPT
+	id S1756195AbaBUW7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:59:50 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:58595 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754996AbaBUW7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:55:10 -0500
-Date: Fri, 21 Feb 2014 23:55:08 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, davidlohr@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140221225508.GH22728@two.firstfloor.org>
-References: <20140220022254.GA25898@amt.cnet>
- <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140220213407.GA11048@amt.cnet>
- <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
- <20140221022800.GA30230@amt.cnet>
- <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
- <20140221191055.GD19955@amt.cnet>
- <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
- <20140221223616.GG22728@two.firstfloor.org>
- <alpine.DEB.2.02.1402211440120.20113@chino.kir.corp.google.com>
+	Fri, 21 Feb 2014 17:59:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqwbAFPZB1N5LJYe/2dsb2JhbABagwY7gwilWAMFkluFU4EMF3SCZhwjGCQ0BSUDIRMUh3DLZBaNd1eEPwSYM5Iog0EogS0BHgY
+Date: Sat, 22 Feb 2014 09:59:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [GIT PULL] xfs: fixes for 3.14-rc3
+Message-ID: <20140221225943.GR13647@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402211440120.20113@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But, like I said, I'm not sure we'd ever be able to totally remove it 
-> because of backwards compatibility, but the point is that nobody would 
-> have to use it anymore as a hack for 1GB.
+Hi Linus,
 
-Again it's a perfectly fine and widely used interface. Any talk of removing
-it is wrong.
+This is the first pull request I've had to do for you, so I'm still
+sorting things out. The reason I'm sending this and not Ben should
+be obvious from the first commit below - SGI has stepped down from
+the XFS maintainership role. As such, I'd like to take another
+opportunity to thank them for their many years of effort maintaining
+XFS and supporting the XFS community that they developed from the
+ground up.
 
--Andi
+So I haven't had time to work things like signed tags into my
+workflows yet, so this is just a repo branch I'm asking you to pull
+from. And yes, I named the branch -rc4 because I wanted the fixes in
+-rc4, not because the branch was for merging into -rc3. Probably not
+right, either.
+
+Anyway, I should have everything sorted out by the time the next
+merge window comes around. If there's anything that you don't like
+in the pull req, feel free to flame me unmercifully.
+
+The changes are fixes for recent regressions and important thinkos
+in verification code:
+
+	- a log vector buffer alignment issue on ia32
+	- timestamps on truncate got mangled
+	- primary superblock CRC validation fixes and error message
+	  sanitisation
+
+Cheers,
+
+Dave.
+
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs.git xfs-fixes-for-3.14-rc4
+
+for you to fetch changes up to 5ef11eb0700f806c4671ba33e5befa784a2f70ef:
+
+  xfs: limit superblock corruption errors to actual corruption (2014-02-19 15:39:35 +1100)
+
+----------------------------------------------------------------
+Ben Myers (1):
+      MAINTAINERS: SGI no longer maintaining XFS
+
+Christoph Hellwig (1):
+      xfs: ensure correct timestamp updates from truncate
+
+Dave Chinner (1):
+      xfs: ensure correct log item buffer alignment
+
+Eric Sandeen (3):
+      xfs: xfs_sb_read_verify() doesn't flag bad crcs on primary sb
+      xfs: skip verification on initial "guess" superblock read
+      xfs: limit superblock corruption errors to actual corruption
+
+ MAINTAINERS          |    1 -
+ fs/xfs/xfs_iops.c    |   16 ++++++++--------
+ fs/xfs/xfs_log_cil.c |   19 +++++++++++++++----
+ fs/xfs/xfs_mount.c   |   24 ++++++++++++++++--------
+ fs/xfs/xfs_sb.c      |   10 ++++------
+ 5 files changed, 43 insertions(+), 27 deletions(-)
+-- 
+Dave Chinner
+david@fromorbit.com
