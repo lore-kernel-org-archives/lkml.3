@@ -1,69 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176AbaBUQvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:51:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932889AbaBUQvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:51:43 -0500
-Date: Fri, 21 Feb 2014 17:53:40 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v2] xen-pciback: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
- <5304CC49.7020000@oracle.com>
- <5304D063.90000@oracle.com>
- <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
- <5304DABD.9000605@oracle.com>
- <20140221165235.GF17353@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140221165235.GF17353@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933192AbaBUQwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:52:54 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:47203 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127AbaBUQww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:52:52 -0500
+Date: Fri, 21 Feb 2014 17:53:05 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
+Message-Id: <20140221175305.1e170b45be08fe05c93a33b4@gmail.com>
+In-Reply-To: <20140221173641.a060b3d6c0993c21e77f29c2@gmail.com>
+References: <230991392848160@web13m.yandex.ru>
+	<20140221103715.GP9987@twins.programming.kicks-ass.net>
+	<20140221173641.a060b3d6c0993c21e77f29c2@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On Fri, 21 Feb 2014 17:36:41 +0100
+Juri Lelli <juri.lelli@gmail.com> wrote:
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-pci@vger.kernel.org
----
- drivers/xen/xen-pciback/pciback_ops.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> On Fri, 21 Feb 2014 11:37:15 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
+> > > Since deadline tasks share rt bandwidth, we must care about
+> > > bandwidth timer set. Otherwise rt_time may grow up to infinity
+> > > in update_curr_dl(), if there are no other available RT tasks
+> > > on top level bandwidth.
+> > > 
+> > > I'm going to decide the problem the way below. Almost untested
+> > > because of I skipped almost all of recent patches which haveto be applied from lkml.
+> > > 
+> > > Please say, if I skipped anything in idea. Maybe better put
+> > > start_top_rt_bandwidth() into set_curr_task_dl()?
+> > 
+> > How about we only increment rt_time when there's an RT bandwidth timer
+> > active?
+> > 
+> > 
+> > ---
+> > --- a/kernel/sched/rt.c
+> > +++ b/kernel/sched/rt.c
+> > @@ -568,6 +568,12 @@ static inline struct rt_bandwidth *sched
+> >  
+> >  #endif /* CONFIG_RT_GROUP_SCHED */
+> >  
+> > +bool sched_rt_bandwidth_active(struct rt_rq *rt_rq)
+> > +{
+> > +	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+> > +	return hrtimer_active(&rt_b->rt_period_timer);
+> > +}
+> > +
+> >  #ifdef CONFIG_SMP
+> >  /*
+> >   * We ran out of runtime, see if we can borrow some from our neighbours.
+> > --- a/kernel/sched/deadline.c
+> > +++ b/kernel/sched/deadline.c
+> > @@ -587,6 +587,8 @@ int dl_runtime_exceeded(struct rq *rq, s
+> >  	return 1;
+> >  }
+> >  
+> > +extern bool sched_rt_bandwidth_active(struct rt_rq *rt_rq);
+> > +
+> >  /*
+> >   * Update the current task's runtime statistics (provided it is still
+> >   * a -deadline task and has not been removed from the dl_rq).
+> > @@ -650,11 +652,13 @@ static void update_curr_dl(struct rq *rq
+> >  		struct rt_rq *rt_rq = &rq->rt;
+> >  
+> >  		raw_spin_lock(&rt_rq->rt_runtime_lock);
+> > -		rt_rq->rt_time += delta_exec;
+> >  		/*
+> >  		 * We'll let actual RT tasks worry about the overflow here, we
+> > -		 * have our own CBS to keep us inline -- see above.
+> > +		 * have our own CBS to keep us inline; only account when RT
+> > +		 * bandwidth is relevant.
+> >  		 */
+> > +		if (sched_rt_bandwidth_active(rt_rq))
+> > +			rt_rq->rt_time += delta_exec;
+> >  		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+> >  	}
+> >  }
+> 
+> So, I ran some tests with the above and I'd like to share with you what
+> I've found. You can find here a trace-cmd trace that should be feeded
+> to kernelshark to be able to understand what follows (or feel free to
+> reproduce same scenario :)):
+> http://retis.sssup.it/~jlelli/traces/trace_rt_time.dat
+> 
+> Here you have a DL task (4/10) and a while(1) RT task, both running
+> inside a rt_bw of 0.5. RT tasks is activated 500ms after DL. As I
+> filtered in sched_rt_period_timer(), you can search for time instants
+> when the rt_bw is replenished. It is evident that the first time after
+> rt timer is activated back (search for start_bandwidth_timer), we can
+> eat some bw to FAIR tasks (if any). This is due to the fact that we
+> reset rt_bw budget at this time, start decrementing rt_time for both DL
 
-diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
-index 64eb0cd..929dd46 100644
---- a/drivers/xen/xen-pciback/pciback_ops.c
-+++ b/drivers/xen/xen-pciback/pciback_ops.c
-@@ -213,8 +213,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
- 		entries[i].vector = op->msix_entries[i].vector;
- 	}
- 
--	result = pci_enable_msix(dev, entries, op->value);
--
-+	result = pci_enable_msix_exact(dev, entries, op->value);
- 	if (result == 0) {
- 		for (i = 0; i < op->value; i++) {
- 			op->msix_entries[i].entry = entries[i].entry;
--- 
-1.7.7.6
+The reset happens when rt_bw replenishment timer fires, after a bit:
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+ sched_rt_period_timer <-- __run_hrtimer
+
+Apologies,
+
+- Juri
+
+> and RT tasks, throttle RT tasks when rt_time > runtime, but, since DL
+> tasks acually executes inside their own server, they don't care about
+> rt_bw. Good news is that steady state is ok: keeping track of overruns
+> we are able to stop eating bw to other guys.
+> 
+> My thougths:
+> 
+>  - Peter's patch is an easy fix to Kirill's problem (RT tasks were
+>    throttled too early);
+>  - something to add to this solution could be to pre-calculate bw of
+>    ready DL tasks and subtract it to rt_bw at replenishment time, but
+>    it sounds quite awkward, pessimistic, and I'm not sure it is gonna
+>    work;
+>  - we are stealing bw to best-effort tasks, and just at the beginning
+>    of the transistion, is it really a problem?
+>  - I mean, if you want guarantees make your tasks DL! :);
+>  - in the long run we are gonna have RT tasks scheduled inside CBS
+>    servers, and all this will be properly fixed up.
+> 
+> Comments?
+> 
+> BTW, rt timer activation/deactivation should probably be fixed for
+> !RT_GROUP_SCHED with something like this:
+> 
+> ---
+>  kernel/sched/rt.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index 6161de8..274f992 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -86,12 +86,12 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
+>  	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
+>  }
+>  
+> -#ifdef CONFIG_RT_GROUP_SCHED
+>  static void destroy_rt_bandwidth(struct rt_bandwidth *rt_b)
+>  {
+>  	hrtimer_cancel(&rt_b->rt_period_timer);
+>  }
+>  
+> +#ifdef CONFIG_RT_GROUP_SCHED
+>  #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
+>  
+>  static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
+> @@ -1017,8 +1017,12 @@ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>  	start_rt_bandwidth(&def_rt_bandwidth);
+>  }
+>  
+> -static inline
+> -void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
+> +static void
+> +dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+> +{
+> +	if (!rt_rq->rt_nr_running)
+> +		destroy_rt_bandwidth(&def_rt_bandwidth);
+> +}
+>  
+>  #endif /* CONFIG_RT_GROUP_SCHED */
+>  
