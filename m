@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135AbaBUQ5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:57:36 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:52630 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441AbaBUQ5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:57:35 -0500
-Date: Fri, 21 Feb 2014 11:57:30 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
-Message-ID: <20140221165730.GA10929@htj.dyndns.org>
-References: <1392929071-16555-5-git-send-email-tj@kernel.org>
- <5306AF8E.3080006@hurleysoftware.com>
- <20140221015935.GF6897@htj.dyndns.org>
- <5306B4DF.4000901@hurleysoftware.com>
- <20140221021341.GG6897@htj.dyndns.org>
- <5306E06C.5020805@hurleysoftware.com>
- <20140221100301.GA14653@mtj.dyndns.org>
- <53074BE4.1020307@hurleysoftware.com>
- <20140221130614.GH6897@htj.dyndns.org>
- <5307849A.9050209@hurleysoftware.com>
+	id S933349AbaBUQ5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:57:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932441AbaBUQ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:57:51 -0500
+Date: Fri, 21 Feb 2014 17:59:47 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] virtio: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140221165946.GJ17353@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-9-git-send-email-agordeev@redhat.com>
+ <87eh2yblsk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5307849A.9050209@hurleysoftware.com>
+In-Reply-To: <87eh2yblsk.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yo,
+Hi Rusty et al,
 
-On Fri, Feb 21, 2014 at 11:53:46AM -0500, Peter Hurley wrote:
-> Ok, I can do that. But AFAIK it'll have to be an smp_rmb(); there is
-> no mb__after unlock.
+Based on recently accepted to the mainline pci_enable_msix_exact() function,
+I am sending a updated version of the patch. Please, let me know if it does
+not work for you and you need and incremental update from the previous version.
 
-We do have smp_mb__after_unlock_lock().
+Thanks!
 
-> [ After thinking about it some, I don't think preventing speculative
->   writes before clearing PENDING if useful or necessary, so that's
->   why I'm suggesting only the rmb. ]
-
-But smp_mb__after_unlock_lock() would be cheaper on most popular
-archs, I think.
-
-Thanks.
 
 -- 
-tejun
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
