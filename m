@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaBUMt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:49:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46729 "EHLO
+	id S1755654AbaBUMtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:49:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46724 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755575AbaBUMtV (ORCPT
+	with ESMTP id S1754336AbaBUMtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:49:21 -0500
+	Fri, 21 Feb 2014 07:49:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 007/121] pinctrl: vt8500: Change devicetree data parsing
-Date: Fri, 21 Feb 2014 12:47:11 +0000
-Message-Id: <1392986945-9693-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 008/121] ALSA: usb-audio: Add missing kconfig dependecy
+Date: Fri, 21 Feb 2014 12:47:12 +0000
+Message-Id: <1392986945-9693-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f17248ed868767567298e1cdf06faf8159a81f7c upstream.
+commit 4fa71c1550a857ff1dbfe9e99acc1f4cfec5f0d0 upstream.
 
-Due to an assumption in the VT8500 pinctrl driver, the value passed
-from devicetree for 'wm,pull' was not explicitly translated before
-being passed to pinconf.
+The commit 44dcbbb1cd61 introduced the usage of bitreverse helpers but
+forgot to add the dependency.  This patch adds the selection for
+CONFIG_BITREVERSE.
 
-Since v3.10, changes to 'enum pin_config_param', PIN_CONFIG_BIAS_PULL_(UP/DOWN)
-no longer map 1-to-1 with the expected values in devicetree.
-
-This patch adds a small translation between the devicetree values (0..2)
-and the enum pin_config_param equivalent values.
-
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Fixes: 44dcbbb1cd61 ('ALSA: snd-usb: add support for bit-reversed byte formats')
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pinctrl/vt8500/pinctrl-wmt.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ sound/usb/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
-index 0cc4335..829eb87 100644
---- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
-+++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
-@@ -276,7 +276,20 @@ static int wmt_pctl_dt_node_to_map_pull(struct wmt_pinctrl_data *data,
- 	if (!configs)
- 		return -ENOMEM;
- 
--	configs[0] = pull;
-+	switch (pull) {
-+	case 0:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		break;
-+	case 1:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_DOWN;
-+		break;
-+	case 2:
-+		configs[0] = PIN_CONFIG_BIAS_PULL_UP;
-+		break;
-+	default:
-+		configs[0] = PIN_CONFIG_BIAS_DISABLE;
-+		dev_err(data->dev, "invalid pull state %d - disabling\n", pull);
-+	}
- 
- 	map->type = PIN_MAP_TYPE_CONFIGS_PIN;
- 	map->data.configs.group_or_pin = data->groups[group];
+diff --git a/sound/usb/Kconfig b/sound/usb/Kconfig
+index de9408b..e05a86b 100644
+--- a/sound/usb/Kconfig
++++ b/sound/usb/Kconfig
+@@ -14,6 +14,7 @@ config SND_USB_AUDIO
+ 	select SND_HWDEP
+ 	select SND_RAWMIDI
+ 	select SND_PCM
++	select BITREVERSE
+ 	help
+ 	  Say Y here to include support for USB audio and USB MIDI
+ 	  devices.
 -- 
 1.9.0
 
