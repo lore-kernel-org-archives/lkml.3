@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735AbaBUOFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:05:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38759 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239AbaBUOFq (ORCPT
+	id S1755985AbaBUOGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:06:13 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:50520 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931AbaBUOGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:05:46 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: [PATCH] phy: restrict Samsung S5P/Exynos drivers to the respective architectures
-Date: Fri, 21 Feb 2014 15:05:26 +0100
-Message-Id: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.8.5.3
+	Fri, 21 Feb 2014 09:06:10 -0500
+Message-ID: <53075D4D.1090600@monstr.eu>
+Date: Fri, 21 Feb 2014 15:06:05 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local> <20140220182257.GF23217@saruman.home> <20140221120454.GD8783@e106331-lin.cambridge.arm.com> <5307576F.5050506@monstr.eu> <20140221135713.GB20449@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140221135713.GB20449@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling these drivers on platforms not created by Samsung is useless
-unless you're doing compile tests. So don't offer the users to enable
-them without COMPILE_TEST for configs with S5P/Exynos disabled.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/phy/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+>> If we can point to standard interrupt description then please point me=
+ to
+>> exact description you would like to see here and we can change it.
+>=20
+> Unfortunately I'm not aware of a generic interrupts document. I just
+> don't see the point in each document listing interrupt-parent as a
+> requiredp roeprty when it's not. That said this is a trivial detail and=
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index c7a551c2d5f1..82a98f1a5ec2 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -18,6 +18,7 @@ config GENERIC_PHY
- config PHY_EXYNOS_MIPI_VIDEO
- 	depends on HAS_IOMEM
- 	tristate "S5P/EXYNOS SoC series MIPI CSI-2/DSI PHY driver"
-+	depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
- 	help
- 	  Support for MIPI CSI-2 and MIPI DSI DPHY found on Samsung S5P
- 	  and EXYNOS SoCs.
-@@ -54,6 +55,7 @@ config TWL4030_USB
- config PHY_EXYNOS_DP_VIDEO
- 	tristate "EXYNOS SoC series Display Port PHY driver"
- 	depends on OF
-+	depends on ARCH_EXYNOS || COMPILE_TEST
- 	select GENERIC_PHY
- 	help
- 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
--- 
-1.8.5.3
+> not really a blocker.
 
+I agree with you that copying this part again and again is just problemat=
+ic.
+Time to time I see that IRQs doesn't need to be described too.
+
+I am also not sure if kernel can work without interrupt-parent at all.
+I expect that it won't work and because we have interrupt parent in every=
+
+node (which is generated) it is probably required in our setup.
+
+As you said it is just trivial detail for me too.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMHXU0ACgkQykllyylKDCEMmwCdE/CIJmrj0m8iKa00Jbx1tZg0
+baIAn1bkwI6GSQtk98aB70blb4+1wezR
+=sQB7
+-----END PGP SIGNATURE-----
+
+--CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN--
