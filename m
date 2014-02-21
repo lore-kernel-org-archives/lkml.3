@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267AbaBUN1Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:27:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47567 "EHLO
+	id S933238AbaBUN1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:27:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47568 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932771AbaBUNBi (ORCPT
+	with ESMTP id S932839AbaBUNBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 08:01:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yijing Wang <wangyijing@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 01/60] PCI: Enable ARI if dev and upstream bridge support it; disable otherwise
-Date: Fri, 21 Feb 2014 13:00:28 +0000
-Message-Id: <1392987687-15367-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 03/60] crypto: s390 - fix des and des3_ede cbc concurrency issue
+Date: Fri, 21 Feb 2014 13:00:30 +0000
+Message-Id: <1392987687-15367-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,75 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yijing Wang <wangyijing@huawei.com>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit b0cc6020e1cc62f1253215f189611b34be4a83c7 upstream.
+commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
 
-Currently, we enable ARI in a device's upstream bridge if the bridge and
-the device support it.  But we never disable ARI, even if the device is
-removed and replaced with a device that doesn't support ARI.
+In s390 des and des3_ede cbc mode the iv value is not protected
+against concurrency access and modifications from another running
+en/decrypt operation which is using the very same tfm struct
+instance. This fix copies the iv to the local stack before
+the crypto operation and stores the value back when done.
 
-This means that if we hot-remove an ARI device and replace it with a
-non-ARI multi-function device, we find only function 0 of the new device
-because the upstream bridge still has ARI enabled, and next_ari_fn()
-only returns function 0 for the new non-ARI device.
-
-This patch disables ARI in the upstream bridge if the device doesn't
-support ARI.  See the PCIe spec, r3.0, sec 6.13.
-
-[bhelgaas: changelog, function comment]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-[ luis: backported to 3.5: used Yijing Wang's backport to 3.4 ]
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/pci.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/s390/crypto/des_s390.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index fa7c0f0..caeddd4 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1974,6 +1974,9 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
- /**
-  * pci_enable_ari - enable ARI forwarding if hardware support it
-  * @dev: the PCI device
-+ *
-+ * If @dev and its upstream bridge both support ARI, enable ARI in the
-+ * bridge.  Otherwise, disable ARI in the bridge.
-  */
- void pci_enable_ari(struct pci_dev *dev)
- {
-@@ -1985,10 +1988,6 @@ void pci_enable_ari(struct pci_dev *dev)
- 	if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
- 		return;
- 
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
--	if (!pos)
--		return;
--
- 	bridge = dev->bus->self;
- 	if (!bridge || !pci_is_pcie(bridge))
- 		return;
-@@ -2007,10 +2006,14 @@ void pci_enable_ari(struct pci_dev *dev)
- 		return;
- 
- 	pci_read_config_word(bridge, pos + PCI_EXP_DEVCTL2, &ctrl);
--	ctrl |= PCI_EXP_DEVCTL2_ARI;
-+	if (pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI)) {
-+		ctrl |= PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 1;
-+	} else {
-+		ctrl &= ~PCI_EXP_DEVCTL2_ARI;
-+		bridge->ari_enabled = 0;
-+	}
- 	pci_write_config_word(bridge, pos + PCI_EXP_DEVCTL2, ctrl);
--
--	bridge->ari_enabled = 1;
+diff --git a/arch/s390/crypto/des_s390.c b/arch/s390/crypto/des_s390.c
+index 00d649c..5fe77d5 100644
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -106,29 +106,35 @@ static int ecb_desall_crypt(struct blkcipher_desc *desc, long func,
  }
  
- /**
+ static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
+-			    u8 *iv, struct blkcipher_walk *walk)
++			    struct blkcipher_walk *walk)
+ {
++	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	int ret = blkcipher_walk_virt(desc, walk);
+ 	unsigned int nbytes = walk->nbytes;
++	struct {
++		u8 iv[DES_BLOCK_SIZE];
++		u8 key[DES3_KEY_SIZE];
++	} param;
+ 
+ 	if (!nbytes)
+ 		goto out;
+ 
+-	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
++	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
+ 	do {
+ 		/* only use complete blocks */
+ 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
+ 		u8 *out = walk->dst.virt.addr;
+ 		u8 *in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_kmc(func, iv, out, in, n);
++		ret = crypt_s390_kmc(func, &param, out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
+ 		nbytes &= DES_BLOCK_SIZE - 1;
+ 		ret = blkcipher_walk_done(desc, walk, nbytes);
+ 	} while ((nbytes = walk->nbytes));
+-	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
++	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
+ 
+ out:
+ 	return ret;
+@@ -181,22 +187,20 @@ static int cbc_des_encrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des_decrypt(struct blkcipher_desc *desc,
+ 			   struct scatterlist *dst, struct scatterlist *src,
+ 			   unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des_alg = {
+@@ -333,22 +337,20 @@ static int cbc_des3_encrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
+ }
+ 
+ static int cbc_des3_decrypt(struct blkcipher_desc *desc,
+ 			    struct scatterlist *dst, struct scatterlist *src,
+ 			    unsigned int nbytes)
+ {
+-	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct blkcipher_walk walk;
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+-	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
++	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
+ }
+ 
+ static struct crypto_alg cbc_des3_alg = {
 -- 
 1.9.0
 
