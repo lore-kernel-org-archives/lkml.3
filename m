@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaBUTLk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:11:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47543 "EHLO mx1.redhat.com"
+	id S1754808AbaBUTMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:12:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57590 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457AbaBUTLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:11:38 -0500
-Date: Fri, 21 Feb 2014 16:10:55 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140221191055.GD19955@amt.cnet>
-References: <20140217085622.39b39cac@redhat.com>
- <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
- <20140218123013.GA20609@amt.cnet>
- <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
- <20140220022254.GA25898@amt.cnet>
- <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140220213407.GA11048@amt.cnet>
- <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
- <20140221022800.GA30230@amt.cnet>
- <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
+	id S1754457AbaBUTMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 14:12:30 -0500
+Message-ID: <5307A503.1080605@zytor.com>
+Date: Fri, 21 Feb 2014 11:12:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ak@linux.intel.com, linux-tip-commits@vger.kernel.org,
+        Joe Mario <jmario@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [tip:x86/asmlinkage] lto: Handle LTO common symbols in module
+ loader
+References: <1391846481-31491-5-git-send-email-ak@linux.intel.com> <tip-80375980f1608f43b47abc2671456b23ec68c434@git.kernel.org> <87ios99y6u.fsf@rustcorp.com.au>
+In-Reply-To: <87ios99y6u.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:07:08AM -0800, David Rientjes wrote:
-> On Thu, 20 Feb 2014, Marcelo Tosatti wrote:
+On 02/20/2014 03:11 PM, Rusty Russell wrote:
+> tip-bot for Joe Mario <tipbot@zytor.com> writes:
+>> Commit-ID:  80375980f1608f43b47abc2671456b23ec68c434
+>> Gitweb:     http://git.kernel.org/tip/80375980f1608f43b47abc2671456b23ec68c434
+>> Author:     Joe Mario <jmario@redhat.com>
+>> AuthorDate: Sat, 8 Feb 2014 09:01:09 +0100
+>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Thu, 13 Feb 2014 20:24:50 -0800
+>>
+>> lto: Handle LTO common symbols in module loader
+>>
+>> Here is the workaround I made for having the kernel not reject modules
+>> built with -flto.  The clean solution would be to get the compiler to not
+>> emit the symbol.  Or if it has to emit the symbol, then emit it as
+>> initialized data but put it into a comdat/linkonce section.
 > 
-> > > 1GB is of such granularity that you'd typically either be (a) oom so that 
-> > > your userspace couldn't even start, or (b) have enough memory such that 
-> > > userspace would be able to start and allocate them dynamically through an 
-> > > initscript.
-> > 
-> > There are a number of kernel command line parameters which can be
-> > modified in runtime as well.
-> > 
+> Gah, as I said, fix the damn comment!
 > 
-> We could also make the kernel command line implement a shell scripting 
-> language of your choice.  There's no technical objection to it, of course 
-> you can do it, but is it in the interest of the kernel in terms of 
-> maintainability?
+>>  		case SHN_COMMON:
+>> +			/* Ignore common symbols */
+>> +			if (!strncmp(name, "__gnu_lto", 9))
+>> +				break;
+>> +
+>>  			/* We compiled with -fno-common.  These are not
 > 
-> > You are asking what is the use-case.
-> > 
+> /* Ignore common symbols */ is so bad, it's not even wrong.
 > 
-> I'm asking what the use case is because it's still not explained.  You say 
-> a customer wants 8 1GB hugepages on node 0 on a 32GB machine.  Perfectly 
-> understandable.  The only thing missing, and is practically begging to be 
-> answered in this thread, is why must it be done on the command line?  That 
-> would be the justification for the patchset.  Andrew asked for Luiz to 
-> elaborate originally and even today the use case is not well described.
 
-It is explained. You deleted it while replying (feel free to ask for
-more information there and it will be provided).
+Joe, Andi, could one of you submit an incremental patch to clean up this
+comment?
 
-> If you're asking for a maintenance burden to be accepted forever, it seems 
-> like as part of your due diligence that you would show why it must be done 
-> that way.  
+	-hpa
 
-It does not have to be maintained forever. See 
-27be457000211a6903968dfce06d5f73f051a217 for one or git log for many
-commands which have been removed.
 
-If it becomes a maintenance burden, it can be removed.
-
-> Being the easiest or "pragmatic" is not it, there is a much 
-> larger set of people who would be interested in dynamic allocation, myself 
-> and Google included.
-
-OK.
-
-> > A particular distribution is irrelevant. What you want is a non default
-> > distribution of 1GB hugepages.
-> > 
-> > Can you agree with that ? (forget about particular values, please).
-> > 
-> 
-> I agree that your customer wants a non-default distribution of 1GB 
-> hugepages, yes, that's clear.  The questions that have not been answered: 
-> why must it be done this way as opposed to runtime?  If 1GB hugepages 
-> could be dynamically allocated, would your customer be able to use it?  If 
-> not, why not?  If dynamic allocation resolves all the issues, then is this 
-> patchset a needless maintenance burden if we had such support today?
-
-It must be done this way because:
-
-1) its the only interface which is easily backportable.
-
-2) it improves the kernel command line interface from incomplete
-(lacking the ability to specify node<->page correlation), to 
-a complete interface.
-
-And also, the existance of the command line interface does not interfere in
-any way with the dynamic allocation in userspace (just as you can
-allocate 2M pages via kernel command line _and_ allocate during
-runtime).
