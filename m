@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaBULJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 06:09:07 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:46312 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343AbaBULJF (ORCPT
+	id S1755129AbaBULK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 06:10:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37813 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016AbaBULK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 06:09:05 -0500
+	Fri, 21 Feb 2014 06:10:27 -0500
+Date: Fri, 21 Feb 2014 12:10:35 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Subject: RE: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
+ wait-forever
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C287C7@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.02.1402211209500.21251@ionos.tec.linutronix.de>
+References: <y> <1392020037-5484-1-git-send-email-chuansheng.liu@intel.com> <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de> <27240C0AC20F114CBF8149A2696CBE4A01C269E8@SHSMSX101.ccr.corp.intel.com> <alpine.DEB.2.02.1402201218310.4468@ionos.tec.linutronix.de>
+ <27240C0AC20F114CBF8149A2696CBE4A01C27CF7@SHSMSX101.ccr.corp.intel.com> <alpine.DEB.2.02.1402211006130.4468@ionos.tec.linutronix.de> <27240C0AC20F114CBF8149A2696CBE4A01C287C7@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
-References: <1392273476-32736-1-git-send-email-sachin.kamat@linaro.org>
-	<1392273476-32736-3-git-send-email-sachin.kamat@linaro.org>
-Date: Fri, 21 Feb 2014 16:39:04 +0530
-Message-ID: <CAK9yfHy-tB2ai16-yq5cqmFYt65+_0Q0E=5-pA_T5da9cjtrQg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] Documentation: mfd: Add binding document for S2MPA01
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 February 2014 12:07, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Added initial binding documentation for S2MPA01 MFD.
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
-> Changes since v2:
-> * Re-worded as suggested by Mark Rutland
-> ---
->  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   90 +++++++++++++++++++++
->  1 file changed, 90 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
->
+On Fri, 21 Feb 2014, Liu, Chuansheng wrote:
+> Hello Thomas,
+> 
+> > -----Original Message-----
+> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> > Sent: Friday, February 21, 2014 6:34 PM
+> > To: Liu, Chuansheng
+> > Cc: linux-kernel@vger.kernel.org; Wang, Xiaoming
+> > Subject: RE: [PATCH 1/2] genirq: Fix the possible synchronize_irq() wait-forever
+> > 
+> > On Fri, 21 Feb 2014, Liu, Chuansheng wrote:
+> > > But feels there is another case which the synchronize_irq waited there
+> > forever,
+> > > it is no waking up action from irq_thread().
+> > >
+> > > CPU0                                  CPU1
+> > > disable_irq()                         irq_thread()
+> > >   synchronize_irq()
+> > >     wait_event()
+> > >      adding the __wait into the queue  wake_threads_waitq
+> > >        test threads_active==0
+> > > 					 atomic_dec_and_test(threads_active) 1 -- > 0
+> > >
+> > waitqueue_active(&desc->wait_for_threads)
+> > >                                   <== Here without smp_mb(), CPU1
+> > maybe detect
+> > >                                       the queue is still empty??
+> > >      schedule()
+> > >
+> > > It will cause although the threads_active is 0, but irq_thread() didn't do the
+> > waking up action.
+> > > Is it reasonable? Then maybe we can add one smp_mb() before
+> > waitqueue_active.
+> > 
+> > I think you have a point there, but not on x86 wherre the atomic_dec
+> > and the spinlock on the queueing side are full barriers. For non-x86
+> > there is definitely a potential issue.
+> > 
+> But even on X86, spin_unlock has no full barrier, the following scenario:
+> CPU0                   CPU1
+> spin_lock               
+>                        atomic_dec_and_test 
+> insert into queue         
+> spin_unlock
+>                        checking waitqueue_active
 
-Mark,
-Any comments on this patch?
+But CPU0 sees the 0, right?
 
--- 
-With warm regards,
-Sachin
+Thanks,
+
+	tglx
