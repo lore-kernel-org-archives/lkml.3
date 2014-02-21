@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526AbaBUP7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:59:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56875 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244AbaBUP7g (ORCPT
+	id S932601AbaBUP7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:59:47 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:64948 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244AbaBUP7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:59:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, kishon@ti.com,
-        linux-samsung-soc@vger.kernel.org, jg1.han@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] phy: Select PHY_EXYNOS_DP_VIDEO by default for ARCH_EXYNOS
-Date: Fri, 21 Feb 2014 16:59 +0100
-Message-ID: <1753680.KKj0Q1erxA@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1392997802-29050-2-git-send-email-s.nawrocki@samsung.com>
-References: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com> <1392997802-29050-2-git-send-email-s.nawrocki@samsung.com>
+	Fri, 21 Feb 2014 10:59:43 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aZ+aK4M3nR7HYXa+fXSQNBwRJomRT+G/QKHgD45h605
- NrAQkawSzPKs4vBeGlhfmIXKFDKwSA5Fj9LoqdV64GULfNLO3l
- oJqAEsYUnzBMYfvtdFi743CxuoMS9V7LnchPv6xuucrOFkLpkM
- uISF8j3KYRS2qiXzajm0iACmMcBAo1QAdxWC7MhgjnVrB9NN19
- SUShpbHKplcqsx8wI7/t0YMMCCtFjJGjZOxgLWUkTsUfHD/EXh
- DX2YLrUH1Fb9NiK+jfVkzvLAIDq+80e/kRk+otNDcBcfXfZhpD
- JQRzbGWvsThMclFVO206tb4ajVGTYtIzc8aOP0K9X1AIh3Cbmi
- 3gJNwseXOqjYvKwPbkjE=
+In-Reply-To: <53074E69.4060206@citrix.com>
+References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
+ <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com>
+ <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com>
+ <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com>
+ <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
+ <530600C5.3070107@citrix.com> <CAB=NE6WKhBJyyUO5o8B53J+F4PqF2PHvvbV3=yS3qs0ZDRKH7Q@mail.gmail.com>
+ <53074E69.4060206@citrix.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 21 Feb 2014 07:59:20 -0800
+X-Google-Sender-Auth: nyC9iEkqBouGXG4SEmKLeD9xVBo
+Message-ID: <CAB=NE6Xx1f2zYaTP=h-319_T4UtsXVjn0+ZPrSuCqXJ6hk5Jhw@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
+ from becoming the root bridge
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        bridge@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 February 2014 16:50:02 Sylwester Nawrocki wrote:
->  config PHY_EXYNOS_DP_VIDEO
->         tristate "EXYNOS SoC series Display Port PHY driver"
->         depends on OF
-> +       depends on ARCH_EXYNOS || COMPILE_TEST
-> +       default y
->         select GENERIC_PHY
->         help
-> 
+On Fri, Feb 21, 2014 at 5:02 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
+> On 20/02/14 20:01, Luis R. Rodriguez wrote:
+>>
+>> On Thu, Feb 20, 2014 at 5:19 AM, Zoltan Kiss <zoltan.kiss@citrix.com>
+>> wrote:
+>>>
+>>> How about this: netback sets the root_block flag and a random MAC by
+>>> default. So the default behaviour won't change, DAD will be happy, and
+>>> userspace don't have to do anything unless it's using netback for STP
+>>> root
+>>> bridge (I don't think there are too many toolstacks doing that), in which
+>>> case it has to remove the root_block flag instead of setting a random
+>>> MAC.
+>>
+>>
+>> :D that's exactly what I ended up proposing too. I mentioned how
+>> xen-netback could do this as well, we'd keep or rename the flag I
+>> added, and then the bridge could would look at it and enable the root
+>> block if the flag is set. Stephen however does not like having the
+>> bridge code look at magic flags for this behavior and would prefer for
+>> us to get the tools to ask for the root block. Let's follow more up on
+>> that thread
+>
+> We don't need that new flag, just forget about it.
 
-That would turn them on automatically if you enable COMPILE_TEST, which
-is probably not what you want.
+Unless I'm missing something the root_block flag is a bridge port
+primitive. This means we can't set it *until* the interface gets added
+to a bridge, and even then, its a knob that would be available only to
+the bridge.
 
-How about "default ARCH_EXYNOS"?
+> Another problem with the random addresses, pointed out by Ian earlier, that
+> when adding/removing interfaces, the bridge does recalculate it's MAC
+> address, and choose the lowest one. In the general usecase I think that's
+> normal, but in case of Xen networking, we would like to keep the bridge
+> using the physical interface's MAC, because the local port of the bridge is
+> used for Dom0 network traffic, therefore changing the bridge MAC when a
+> netback device has lower MAC breaks that traffic.
 
-	Arnd
+This is a good reason then to actually have an interface general
+specific knob to annotate to the bridge that we'd prefer to root_block
+by default, the alternative as you point out below is to have the xen
+/ kvm utils to set the bridge MAC address statically, but that'll
+requires a userspace upgrade. I'm looking for a kernel solution that
+is backwards compatible with old userspace.
+
+> I think the best is to
+> address this from userspace: if it set the MAC of the bridge explicitly,
+> dev_set_mac_address() does dev->addr_assign_type = NET_ADDR_SET;, so
+> br_stp_recalculate_bridge_id() will exit before changing anything.
+
+That will certainly work for new xen / kvm util userspace.
+
+  Luis
