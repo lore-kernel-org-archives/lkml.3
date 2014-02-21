@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaBUWiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:38:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49931 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636AbaBUWh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:37:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,521,1389772800"; 
-   d="scan'208";a="459694903"
-Date: Fri, 21 Feb 2014 14:37:56 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-tip-commits@vger.kernel.org, Joe Mario <jmario@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [tip:x86/asmlinkage] lto: Handle LTO common symbols in module
- loader
-Message-ID: <20140221223756.GF12219@tassilo.jf.intel.com>
-References: <1391846481-31491-5-git-send-email-ak@linux.intel.com>
- <tip-80375980f1608f43b47abc2671456b23ec68c434@git.kernel.org>
- <87ios99y6u.fsf@rustcorp.com.au>
- <5307A503.1080605@zytor.com>
+	id S1755078AbaBUWkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:40:33 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45464 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771AbaBUWkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 17:40:31 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: [PATCHv2 0/3] Binder ABI updates for 64bit systems for staging-next
+Date: Fri, 21 Feb 2014 14:40:24 -0800
+Message-Id: <1393022427-14364-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5307A503.1080605@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>  		case SHN_COMMON:
-> >> +			/* Ignore common symbols */
-> >> +			if (!strncmp(name, "__gnu_lto", 9))
-> >> +				break;
-> >> +
-> >>  			/* We compiled with -fno-common.  These are not
-> > 
-> > /* Ignore common symbols */ is so bad, it's not even wrong.
-> > 
-> 
-> Joe, Andi, could one of you submit an incremental patch to clean up this
-> comment?
+Again, wanted to re-submit to staging-next two changes from
+the AOSP common.git android-3.10 branch, which provide ABI
+fixes and introduce a new ABI and protocol version for binder,
+along with compatibility support for existing systems.
 
-You can just remove the patch. It was only needed for fat LTO,
-which I stopped supporting.
+This new ABI allows for both 32bit and 64bit applications
+to co-exist, which wasn't previously possible due to word
+size assumptions in the binder protocol.
 
--Andi
+Also included is a minor tweak from me to make the Kconfig
+compatibility entry a bit more clear.
+
+The changes have been updated to improve their commit message
+since the last time they were submitted. Thanks to Arve for the
+extra context and Serban for help with the wording.
+
+
+v2:
+* Further tweak commit message to make it more clear the binder
+  protocol version is increased only when the
+  CONFIG_ANDROID_BINDER_IPC_32BIT option is disabled.
+
+
+thanks
+-john
+
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+
+
+Arve Hjønnevåg (1):
+  staging: binder: Support concurrent 32 bit and 64 bit processes.
+
+John Stultz (1):
+  staging: binder: Improve Kconfig entry for ANDROID_BINDER_IPC_32BIT
+
+Serban Constantinescu (1):
+  staging: binder: Fix ABI for 64bit Android
+
+ drivers/staging/android/Kconfig        |  13 ++
+ drivers/staging/android/binder.c       | 268 ++++++++++++++++++---------------
+ drivers/staging/android/binder.h       |   4 +
+ drivers/staging/android/binder_trace.h |  14 +-
+ drivers/staging/android/uapi/binder.h  |  77 ++++++----
+ 5 files changed, 224 insertions(+), 152 deletions(-)
+
+-- 
+1.8.3.2
+
