@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164AbaBULjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 06:39:13 -0500
-Received: from forward11.mail.yandex.net ([95.108.130.93]:53251 "EHLO
-	forward11.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825AbaBULjM (ORCPT
+	id S1755239AbaBULkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 06:40:16 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:36886 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173AbaBULkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 06:39:12 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Feb 2014 06:39:12 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20140221103715.GP9987@twins.programming.kicks-ass.net>
-References: <230991392848160@web13m.yandex.ru> <20140221103715.GP9987@twins.programming.kicks-ass.net>
-Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
+	Fri, 21 Feb 2014 06:40:14 -0500
+Message-ID: <53073B1A.3040709@gmail.com>
+Date: Fri, 21 Feb 2014 12:40:10 +0100
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Message-Id: <128831392982418@web15j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 21 Feb 2014 15:33:38 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+To: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>,
+        "Justin M. Forbes" <jforbes@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: BUG: unable to handle kernel paging request at 0000000100000003 -
+ Oops: 0000 [#1] SMP
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Affected kernels - 3.14.0-0.rc3*:
 
-21.02.2014, 14:37, "Peter Zijlstra" <peterz@infradead.org>:
-> On Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
->
->> šSince deadline tasks share rt bandwidth, we must care about
->> šbandwidth timer set. Otherwise rt_time may grow up to infinity
->> šin update_curr_dl(), if there are no other available RT tasks
->> šon top level bandwidth.
->>
->> šI'm going to decide the problem the way below. Almost untested
->> šbecause of I skipped almost all of recent patches which haveto be applied from lkml.
->>
->> šPlease say, if I skipped anything in idea. Maybe better put
->> šstart_top_rt_bandwidth() into set_curr_task_dl()?
->
-> How about we only increment rt_time when there's an RT bandwidth timer
-> active?
+- 3.14.0-0.rc3.git0.1
+  http://koji.fedoraproject.org/koji/buildinfo?buildID=498711
 
-This case RT and DL may eat all the time:
+- 3.14.0-0.rc3.git0.7 based on 3.14.0-0.rc3.git0.1
 
---------------  time ------------------>
-|RT's working |DL's working|
-----------------------------
-|rt_runtime   |            |
-----------------------------
-|        rt_period         |
+- 3.14.0-0.rc3.git2.1
+  http://koji.fedoraproject.org/koji/buildinfo?buildID=499061
 
-Or at least more, than it's allowed.
+- 3.14.0-0.rc3.git5.1
+  http://koji.fedoraproject.org/koji/buildinfo?buildID=499636
+
+Memtest86+ 4.20 - OK
+http://goo.gl/1nm1nV
+
+RHBZ
+https://bugzilla.redhat.com/show_bug.cgi?id=1067919
+
+messages-Oops-es-3.14.0-0.rc3
+https://bugzilla.redhat.com/attachment.cgi?id=865926
 
 
-It looks like, if we want to limit time of high priority classes
-execution, we have to set the timer anyway.
+poma
 
-> ---
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -568,6 +568,12 @@ static inline struct rt_bandwidth *sched
-
-[snipped by dumb mail client]
