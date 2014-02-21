@@ -1,139 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaBUC6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:58:17 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:29131 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaBUC6Q (ORCPT
+	id S1753058AbaBUDEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 22:04:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48383 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaBUDEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:58:16 -0500
-Message-ID: <5306C03B.4060808@huawei.com>
-Date: Fri, 21 Feb 2014 10:55:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 20 Feb 2014 22:04:13 -0500
+Date: Thu, 20 Feb 2014 19:03:43 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-896dc5064083063981954f142e43548765199792@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com, hpa@zytor.com,
+        mingo@kernel.org, rjw@rjwysocki.net, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
+        hpa@linux.intel.com
+In-Reply-To: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/acpi] x86, acpi:
+  Fix bug in associating hot-added CPUs with corresponding NUMA node
+Git-Commit-ID: 896dc5064083063981954f142e43548765199792
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2] sysfs: fix namespace refcnt leak
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mount() and kill_sb() is not a one-to-one match, we shoudn't get
-ns refcnt unconditionally in sysfs_mount(), and instead we should
-get the refcnt only when kernfs_mount() allocated a new superblock.
+Commit-ID:  896dc5064083063981954f142e43548765199792
+Gitweb:     http://git.kernel.org/tip/896dc5064083063981954f142e43548765199792
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 20 Jan 2014 10:31:54 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 20 Feb 2014 19:01:22 -0800
 
-v2:
-- Changed the name of the new argument, suggested by Tejun.
-- Made the argument optional, suggested by Tejun.
+x86, acpi: Fix bug in associating hot-added CPUs with corresponding NUMA node
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Current ACPI cpu hotplug driver fails to associate hot-added CPUs with
+corresponding NUMA node when doing socket online. The code path to
+associate CPU with NUMA node is as below:
+acpi_processor_add()
+    ->acpi_processor_get_info()
+	->acpi_processor_hotadd_init()
+	    ->acpi_map_lsapic()
+		->_acpi_map_lsapic()
+		    ->acpi_map_cpu2node()
+cpu_subsys_online()
+    ->try_online_node()
+	->node_set_online()
+
+When doing socket online, a new NUMA node is introduced in addition to
+hot-added CPU and memory device. And the new NUMA node is marked as
+online when onlining hot-added CPUs through sysfs interface
+/sys/devices/system/cpu/cpuxx/online.
+
+On the other hand, acpi_map_cpu2node() will only build the CPU to node
+map if corresponding NUMA node is already online, so it always fails
+to associate hot-added CPUs with corresponding NUMA node because the
+NUMA node is still in offline state.
+
+For the fix, we could safely remove the "node_online(node)" check in
+function acpi_map_cpu2node() because it's only called for hot-added CPUs
+by acpi_processor_hotadd_init().
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Link: http://lkml.kernel.org/r/1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
+ arch/x86/kernel/acpi/boot.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-This fix is for 3.14.
-
----
- fs/kernfs/mount.c      | 8 +++++++-
- fs/sysfs/mount.c       | 5 +++--
- include/linux/kernfs.h | 9 +++++----
- 3 files changed, 15 insertions(+), 7 deletions(-)
-
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index 405279b..47f4efd 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -132,6 +132,7 @@ const void *kernfs_super_ns(struct super_block *sb)
-  * @flags: mount flags specified for the mount
-  * @root: kernfs_root of the hierarchy being mounted
-  * @ns: optional namespace tag of the mount
-+ * @new_sb_created: tell the caller if we allocated a new superblock
-  *
-  * This is to be called from each kernfs user's file_system_type->mount()
-  * implementation, which should pass through the specified @fs_type and
-@@ -141,7 +142,8 @@ const void *kernfs_super_ns(struct super_block *sb)
-  * The return value can be passed to the vfs layer verbatim.
-  */
- struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--			       struct kernfs_root *root, const void *ns)
-+			       struct kernfs_root *root, const void *ns,
-+			       bool *new_sb_created)
- {
- 	struct super_block *sb;
- 	struct kernfs_super_info *info;
-@@ -159,6 +161,10 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
- 		kfree(info);
- 	if (IS_ERR(sb))
- 		return ERR_CAST(sb);
-+
-+	if (new_sb_created)
-+		*new_sb_created = !sb->s_root;
-+
- 	if (!sb->s_root) {
- 		error = kernfs_fill_super(sb);
- 		if (error) {
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 5c7fdd9..f5bea79 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -27,6 +27,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- {
- 	struct dentry *root;
- 	void *ns;
-+	bool new_sb;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 1dac942..9f46f2b 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -613,10 +613,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ 	int nid;
  
- 	if (!(flags & MS_KERNMOUNT)) {
- 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
-@@ -37,8 +38,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	}
- 
- 	ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
--	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns);
--	if (IS_ERR(root))
-+	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns, &new_sb);
-+	if (IS_ERR(root) || !new_sb)
- 		kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
- 	return root;
- }
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 649497a..ea3f5d2 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -279,7 +279,8 @@ void kernfs_notify(struct kernfs_node *kn);
- 
- const void *kernfs_super_ns(struct super_block *sb);
- struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--			       struct kernfs_root *root, const void *ns);
-+			       struct kernfs_root *root, const void *ns,
-+			       bool *new_sb_created);
- void kernfs_kill_sb(struct super_block *sb);
- 
- void kernfs_init(void);
-@@ -372,7 +373,7 @@ static inline const void *kernfs_super_ns(struct super_block *sb)
- 
- static inline struct dentry *
- kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--		struct kernfs_root *root, const void *ns)
-+		struct kernfs_root *root, const void *ns, bool *new_sb_created)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline void kernfs_kill_sb(struct super_block *sb) { }
-@@ -430,9 +431,9 @@ static inline int kernfs_rename(struct kernfs_node *kn,
- 
- static inline struct dentry *
- kernfs_mount(struct file_system_type *fs_type, int flags,
--	     struct kernfs_root *root)
-+	     struct kernfs_root *root, bool *new_sb_created)
- {
--	return kernfs_mount_ns(fs_type, flags, root, NULL);
-+	return kernfs_mount_ns(fs_type, flags, root, NULL, new_sb_created);
+ 	nid = acpi_get_node(handle);
+-	if (nid == -1 || !node_online(nid))
+-		return;
+-	set_apicid_to_node(physid, nid);
+-	numa_set_node(cpu, nid);
++	if (nid != -1) {
++		set_apicid_to_node(physid, nid);
++		numa_set_node(cpu, nid);
++	}
+ #endif
  }
  
- #endif	/* __LINUX_KERNFS_H */
--- 
-1.8.0.2
-
