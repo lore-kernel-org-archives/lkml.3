@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054AbaBUNIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:08:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47836 "EHLO
+	id S1756100AbaBUNJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:09:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47830 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933285AbaBUNCm (ORCPT
+	with ESMTP id S933282AbaBUNCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:42 -0500
+	Fri, 21 Feb 2014 08:02:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 52/60] ring-buffer: Fix first commit on sub-buffer having non-zero delta
-Date: Fri, 21 Feb 2014 13:01:19 +0000
-Message-Id: <1392987687-15367-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 50/60] fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
+Date: Fri, 21 Feb 2014 13:01:17 +0000
+Message-Id: <1392987687-15367-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +31,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d651aa1d68a2f0a7ee65697b04c6a92f8c0a12f2 upstream.
+commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
 
-Each sub-buffer (buffer page) has a full 64 bit timestamp. The events on
-that page use a 27 bit delta against that timestamp in order to save on
-bits written to the ring buffer. If the time between events is larger than
-what the 27 bits can hold, a "time extend" event is added to hold the
-entire 64 bit timestamp again and the events after that hold a delta from
-that timestamp.
+Recently due to a spike in connections per second memcached on 3
+separate boxes triggered the OOM killer from accept.  At the time the
+OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
+problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
+hold a bitmap, and there was sufficient fragmentation that the largest
+page available was 8KiB.
 
-As a "time extend" is always paired with an event, it is logical to just
-allocate the event with the time extend, to make things a bit more efficient.
+I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
+but I do agree that order 3 allocations are very likely to succeed.
 
-Unfortunately, when the pairing code was written, it removed the "delta = 0"
-from the first commit on a page, causing the events on the page to be
-slightly skewed.
+There are always pathologies where order > 0 allocations can fail when
+there are copious amounts of free memory available.  Using the pigeon
+hole principle it is easy to show that it requires 1 page more than 50%
+of the pages being free to guarantee an order 1 (8KiB) allocation will
+succeed, 1 page more than 75% of the pages being free to guarantee an
+order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
+the pages being free to guarantee an order 3 allocate will succeed.
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+A server churning memory with a lot of small requests and replies like
+memcached is a common case that if anything can will skew the odds
+against large pages being available.
+
+Therefore let's not give external applications a practical way to kill
+linux server applications, and specify __GFP_NORETRY to the kmalloc in
+alloc_fdmem.  Unless I am misreading the code and by the time the code
+reaches should_alloc_retry in __alloc_pages_slowpath (where
+__GFP_NORETRY becomes signification).  We have already tried everything
+reasonable to allocate a page and the only thing left to do is wait.  So
+not waiting and falling back to vmalloc immediately seems like the
+reasonable thing to do even if there wasn't a chance of triggering the
+OOM killer.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ring_buffer.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 35bf8f7..177fa4a 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2236,6 +2236,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
- 
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
-+
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
+diff --git a/fs/file.c b/fs/file.c
+index ba3f605..d512ca5 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -47,7 +47,7 @@ static void *alloc_fdmem(size_t size)
+ 	 * vmalloc() if the allocation size will be considered "large" by the VM.
+ 	 */
+ 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
+-		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
+ 		if (data != NULL)
+ 			return data;
+ 	}
 -- 
 1.9.0
 
