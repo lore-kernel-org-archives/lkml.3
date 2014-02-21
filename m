@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaBUCuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:50:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65424 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753187AbaBUCuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:50:03 -0500
-Message-Id: <20140221025001.623267630@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 20 Feb 2014 21:49:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 05/18] ftrace: Add private data to ftrace_ops
-References: <20140221024906.901631810@goodmis.org>
+	id S1753686AbaBUCvD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:51:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:44751 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899AbaBUCu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 21:50:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,516,1389772800"; 
+   d="scan'208";a="485232165"
+Message-ID: <5306BD8D.3030606@intel.com>
+Date: Fri, 21 Feb 2014 10:44:29 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-ftrace-Add-private-data-to-ftrace_ops.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+References: <1392230186-16130-1-git-send-email-qiaowei.ren@intel.com> <1392230186-16130-3-git-send-email-qiaowei.ren@intel.com> <52FBD74F.7050203@mit.edu>
+In-Reply-To: <52FBD74F.7050203@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On 02/13/2014 04:19 AM, Andy Lutomirski wrote:
+> On 02/12/2014 10:36 AM, Qiaowei Ren wrote:
+>> An access to an invalid bound directory entry will cause a #BR
+>> exception. This patch hook #BR exception handler to allocate
+>> one bound table and bind it with that buond directory entry.
+>>
+>> This will avoid the need of forwarding the #BR exception
+>> to the user space when bound directory has invalid entry.
+>>
+>> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+>> ---
+>> +void do_mpx_bt_fault(struct xsave_struct *xsave_buf)
+>> +{
+>> +	unsigned long status;
+>> +	unsigned long bd_entry, bd_base;
+>> +	unsigned long bd_size = 1UL << (MPX_L1_BITS+MPX_L1_SHIFT);
+>> +
+>> +	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
+>> +	status = xsave_buf->bndcsr.status_reg;
+>> +
+>> +	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
+>> +	if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
+>> +		allocate_bt(bd_entry);
+>> +}
+>
+> This still just loops on failure, right?
+>
+Seems like that SIGBUS should be raised if the allocation fail.
 
-Passing data to the function callback was originally done by adding the
-ftrace_ops in another structure, and using the container_of() to get
-the field. But this adds a bit more complexity than it is worth, and
-adding a simple .private field to ftrace_ops makes things a lot easier.
+	if (!do_mpx_bt_fault(xsave_buf))
+		force_sig(SIGBUS, tsk);
 
-But be warned, the .private data should not be freed once it is used
-unless the ftrace_ops itself has gone through the necessary freeing
-routines. A simple synchronize_sched() is not enough as functions
-can be traced that are called outside the view of RCU and all its
-concoctions.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f4233b1..ef1607e 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -105,11 +105,23 @@ enum {
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
- };
- 
-+/*
-+ * Note, ftrace_ops can be referenced outside of RCU protection.
-+ * (Although, for perf, the control ops prevent that). If ftrace_ops is
-+ * allocated and not part of kernel core data, the unregistering of it will
-+ * perform a scheduling on all CPUs to make sure that there are no more users.
-+ * Depending on the load of the system that may take a bit of time.
-+ *
-+ * Any private data added must also take care not to be freed and if private
-+ * data is added to a ftrace_ops that is in core code, the user of the
-+ * ftrace_ops must perform a schedule_on_each_cpu() before freeing it.
-+ */
- struct ftrace_ops {
- 	ftrace_func_t			func;
- 	struct ftrace_ops		*next;
- 	unsigned long			flags;
- 	int __percpu			*disabled;
-+	void				*private;
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	struct ftrace_hash		*notrace_hash;
- 	struct ftrace_hash		*filter_hash;
--- 
-1.8.5.3
-
+Thanks,
+Qiaowei
 
