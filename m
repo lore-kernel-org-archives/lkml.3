@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499AbaBUSYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 13:24:35 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:22365 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755136AbaBUSYe (ORCPT
+	id S1755639AbaBUSb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 13:31:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21790 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313AbaBUSb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:24:34 -0500
-Date: Fri, 21 Feb 2014 18:24:24 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>, Lan Tianyu <tianyu.lan@intel.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>, patches@linaro.org,
-        linaro-acpi@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Joe Perches <joe@perches.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 2/5] ACPI / processor_core: Rework _PDC related
- stuff to make it more arch-independent
-Message-ID: <20140221182424.GA5751@arm.com>
-References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org>
- <1392740638-2479-3-git-send-email-hanjun.guo@linaro.org>
- <3459962.GkY99aHQbc@vostro.rjw.lan>
+	Fri, 21 Feb 2014 13:31:58 -0500
+Message-ID: <53079BFE.3010702@oracle.com>
+Date: Fri, 21 Feb 2014 13:33:34 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3459962.GkY99aHQbc@vostro.rjw.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2] xen-pciback: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+References: <1392804931-30671-10-git-send-email-agordeev@redhat.com> <5304CC49.7020000@oracle.com> <5304D063.90000@oracle.com> <20140219160501.GA32067@dhcp-26-207.brq.redhat.com> <5304DABD.9000605@oracle.com> <20140221165235.GF17353@dhcp-26-207.brq.redhat.com> <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On 02/21/2014 11:53 AM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: linux-pci@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 01:50:22AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, February 19, 2014 12:23:55 AM Hanjun Guo wrote:
-> > _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
-> > rework the code to make it more arch-independent, no functional change
-> > in this patch.
-> > 
-> > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> 
-> I've queued up patches [1,3-5/5] from this series for 3.15 (modulo changelog
-> modifications), but this one should be CCed to the x86 and ia64 maintainers.
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-Thanks for taking these patches. I would however hold onto patch 3/5 as
-this is still under discussion. Basically for patches specific to ARM
-ACPI I would really like to see more acks before being merged as that's
-a new thing for us.
+> ---
+>   drivers/xen/xen-pciback/pciback_ops.c |    3 +--
+>   1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
+> index 64eb0cd..929dd46 100644
+> --- a/drivers/xen/xen-pciback/pciback_ops.c
+> +++ b/drivers/xen/xen-pciback/pciback_ops.c
+> @@ -213,8 +213,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
+>   		entries[i].vector = op->msix_entries[i].vector;
+>   	}
+>   
+> -	result = pci_enable_msix(dev, entries, op->value);
+> -
+> +	result = pci_enable_msix_exact(dev, entries, op->value);
+>   	if (result == 0) {
+>   		for (i = 0; i < op->value; i++) {
+>   			op->msix_entries[i].entry = entries[i].entry;
 
-Thanks.
-
--- 
-Catalin
