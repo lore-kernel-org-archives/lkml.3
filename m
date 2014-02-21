@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625AbaBUVbT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:31:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59249 "EHLO
+	id S1755809AbaBUVbe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:31:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59268 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532AbaBUVbP (ORCPT
+	with ESMTP id S1755735AbaBUVbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:31:15 -0500
-Date: Fri, 21 Feb 2014 13:30:43 -0800
+	Fri, 21 Feb 2014 16:31:31 -0500
+Date: Fri, 21 Feb 2014 13:30:54 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-6e83125c6b151afa139c8852c099d6d92954fe3b@git.kernel.org>
+Message-ID: <tip-3f1d2a318171bf61850d4e5a72031271e5aada76@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
+        peterz@infradead.org, rostedt@goodmis.org, tkhai@yandex.ru,
+        tglx@linutronix.de, juri.lelli@gmail.com, dan.carpenter@oracle.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <20140211151148.GP27965@twins.programming.kicks-ass.net>
-References: <20140211151148.GP27965@twins.programming.kicks-ass.net>
+        peterz@infradead.org, rostedt@goodmis.org, tkhai@yandex.ru,
+        tglx@linutronix.de, dan.carpenter@oracle.com, juri.lelli@gmail.com
+In-Reply-To: <20140212094930.GB3545@laptop.programming.kicks-ass.net>
+References: <20140212094930.GB3545@laptop.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Remove idle_balance()
-  declaration in sched.h
-Git-Commit-ID: 6e83125c6b151afa139c8852c099d6d92954fe3b
+Subject: [tip:sched/core] sched: Fix hotplug task migration
+Git-Commit-ID: 3f1d2a318171bf61850d4e5a72031271e5aada76
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,169 +33,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e83125c6b151afa139c8852c099d6d92954fe3b
-Gitweb:     http://git.kernel.org/tip/6e83125c6b151afa139c8852c099d6d92954fe3b
+Commit-ID:  3f1d2a318171bf61850d4e5a72031271e5aada76
+Gitweb:     http://git.kernel.org/tip/3f1d2a318171bf61850d4e5a72031271e5aada76
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 11 Feb 2014 16:11:48 +0100
+AuthorDate: Wed, 12 Feb 2014 10:49:30 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 21 Feb 2014 21:43:17 +0100
+CommitDate: Fri, 21 Feb 2014 21:43:18 +0100
 
-sched/fair: Remove idle_balance() declaration in sched.h
+sched: Fix hotplug task migration
 
-Remove idle_balance() from the public life; also reduce some #ifdef
-clutter by folding the pick_next_task_fair() idle path into
+Dan Carpenter reported:
+
+> kernel/sched/rt.c:1347 pick_next_task_rt() warn: variable dereferenced before check 'prev' (see line 1338)
+> kernel/sched/deadline.c:1011 pick_next_task_dl() warn: variable dereferenced before check 'prev' (see line 1005)
+
+Kirill also spotted that migrate_tasks() will have an instant NULL
+deref because pick_next_task() will immediately deref prev.
+
+Instead of fixing all the corner cases because migrate_tasks() can
+pass in a NULL prev task in the unlikely case of hot-un-plug, provide
+a fake task such that we can remove all the NULL checks from the far
+more common paths.
+
+A further problem; not previously spotted; is that because we pushed
+pre_schedule() and idle_balance() into pick_next_task() we now need to
+avoid those getting called and pulling more tasks on our dying CPU.
+
+We avoid pull_{dl,rt}_task() by setting fake_task.prio to MAX_PRIO+1.
+We also note that since we call pick_next_task() exactly the amount of
+times we have runnable tasks present, we should never land in
 idle_balance().
 
-Cc: mingo@kernel.org
-Reported-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
+Cc: Juri Lelli <juri.lelli@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140211151148.GP27965@twins.programming.kicks-ass.net
+Link: http://lkml.kernel.org/r/20140212094930.GB3545@laptop.programming.kicks-ass.net
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c  | 47 +++++++++++++++++++++++++++++------------------
- kernel/sched/sched.h |  7 -------
- 2 files changed, 29 insertions(+), 25 deletions(-)
+ kernel/sched/core.c      | 18 +++++++++++++++++-
+ kernel/sched/deadline.c  |  3 +--
+ kernel/sched/fair.c      |  5 ++---
+ kernel/sched/idle_task.c |  3 +--
+ kernel/sched/rt.c        |  3 +--
+ kernel/sched/sched.h     |  5 +++++
+ kernel/sched/stop_task.c |  3 +--
+ 7 files changed, 28 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 280da89..40c758b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2374,13 +2374,13 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
- 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
- 	}
- }
--#else
-+#else /* CONFIG_FAIR_GROUP_SCHED */
- static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 						 int force_update) {}
- static inline void __update_tg_runnable_avg(struct sched_avg *sa,
- 						  struct cfs_rq *cfs_rq) {}
- static inline void __update_group_entity_contrib(struct sched_entity *se) {}
--#endif
-+#endif /* CONFIG_FAIR_GROUP_SCHED */
- 
- static inline void __update_task_entity_contrib(struct sched_entity *se)
- {
-@@ -2571,6 +2571,8 @@ void idle_exit_fair(struct rq *this_rq)
- 	update_rq_runnable_avg(this_rq, 0);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index fb9764f..49db434 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4681,6 +4681,22 @@ static void calc_load_migrate(struct rq *rq)
+ 		atomic_long_add(delta, &calc_load_tasks);
  }
  
-+static int idle_balance(struct rq *this_rq);
-+
- #else /* CONFIG_SMP */
- 
- static inline void update_entity_load_avg(struct sched_entity *se,
-@@ -2584,6 +2586,12 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
- 					   int sleep) {}
- static inline void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq,
- 					      int force_update) {}
-+
-+static inline int idle_balance(struct rq *rq)
++static void put_prev_task_fake(struct rq *rq, struct task_struct *prev)
 +{
-+	return 0;
 +}
 +
- #endif /* CONFIG_SMP */
++static const struct sched_class fake_sched_class = {
++	.put_prev_task = put_prev_task_fake,
++};
++
++static struct task_struct fake_task = {
++	/*
++	 * Avoid pull_{rt,dl}_task()
++	 */
++	.prio = MAX_PRIO + 1,
++	.sched_class = &fake_sched_class,
++};
++
+ /*
+  * Migrate all tasks from the rq, sleeping tasks will be migrated by
+  * try_to_wake_up()->select_task_rq().
+@@ -4721,7 +4737,7 @@ static void migrate_tasks(unsigned int dead_cpu)
+ 		if (rq->nr_running == 1)
+ 			break;
  
- static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-@@ -4677,7 +4685,7 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- 	struct sched_entity *se;
- 	struct task_struct *p;
+-		next = pick_next_task(rq, NULL);
++		next = pick_next_task(rq, &fake_task);
+ 		BUG_ON(!next);
+ 		next->sched_class->put_prev_task(rq, next);
  
--again: __maybe_unused
-+again:
- #ifdef CONFIG_FAIR_GROUP_SCHED
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index ed31ef6..bfeb84e 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1008,8 +1008,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+ 	if (unlikely(!dl_rq->dl_nr_running))
+ 		return NULL;
+ 
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
++	put_prev_task(rq, prev);
+ 
+ 	dl_se = pick_next_dl_entity(rq, dl_rq);
+ 	BUG_ON(!dl_se);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 40c758b..e884e45 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4690,7 +4690,7 @@ again:
  	if (!cfs_rq->nr_running)
  		goto idle;
-@@ -4775,18 +4783,8 @@ simple:
- 	return p;
  
- idle:
--#ifdef CONFIG_SMP
--	idle_enter_fair(rq);
--	/*
--	 * We must set idle_stamp _before_ calling idle_balance(), such that we
--	 * measure the duration of idle_balance() as idle time.
--	 */
--	rq->idle_stamp = rq_clock(rq);
--	if (idle_balance(rq)) { /* drops rq->lock */
--		rq->idle_stamp = 0;
-+	if (idle_balance(rq)) /* drops rq->lock */
- 		goto again;
--	}
--#endif
- 
- 	return NULL;
- }
-@@ -6634,7 +6632,7 @@ out:
-  * idle_balance is called by schedule() if this_cpu is about to become
-  * idle. Attempts to pull tasks from other CPUs.
-  */
--int idle_balance(struct rq *this_rq)
-+static int idle_balance(struct rq *this_rq)
- {
- 	struct sched_domain *sd;
- 	int pulled_task = 0;
-@@ -6642,8 +6640,15 @@ int idle_balance(struct rq *this_rq)
- 	u64 curr_cost = 0;
- 	int this_cpu = this_rq->cpu;
- 
-+	idle_enter_fair(this_rq);
-+	/*
-+	 * We must set idle_stamp _before_ calling idle_balance(), such that we
-+	 * measure the duration of idle_balance() as idle time.
-+	 */
-+	this_rq->idle_stamp = rq_clock(this_rq);
-+
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
--		return 0;
-+		goto out;
+-	if (!prev || prev->sched_class != &fair_sched_class)
++	if (prev->sched_class != &fair_sched_class)
+ 		goto simple;
  
  	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-@@ -6692,8 +6697,10 @@ int idle_balance(struct rq *this_rq)
- 	 * While browsing the domains, we released the rq lock.
- 	 * A task could have be enqueued in the meantime
- 	 */
--	if (this_rq->nr_running && !pulled_task)
--		return 1;
-+	if (this_rq->nr_running && !pulled_task) {
-+		pulled_task = 1;
-+		goto out;
-+	}
+@@ -4766,8 +4766,7 @@ simple:
+ 	if (!cfs_rq->nr_running)
+ 		goto idle;
  
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
-@@ -6706,6 +6713,10 @@ int idle_balance(struct rq *this_rq)
- 	if (curr_cost > this_rq->max_idle_balance_cost)
- 		this_rq->max_idle_balance_cost = curr_cost;
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
++	put_prev_task(rq, prev);
  
-+out:
-+	if (pulled_task)
-+		this_rq->idle_stamp = 0;
-+
- 	return pulled_task;
- }
+ 	do {
+ 		se = pick_next_entity(cfs_rq, NULL);
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index f7d03af..53ff9e7 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -26,8 +26,7 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *
+ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
+ {
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
++	put_prev_task(rq, prev);
+ 
+ 	schedstat_inc(rq, sched_goidle);
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 72f9ec7..65c2d68 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1344,8 +1344,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	if (rt_rq_throttled(rt_rq))
+ 		return NULL;
+ 
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
++	put_prev_task(rq, prev);
+ 
+ 	p = _pick_next_task_rt(rq);
  
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 1bf34c2..92018f9 100644
+index 92018f9..d276147 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -1163,17 +1163,10 @@ extern const struct sched_class idle_sched_class;
- extern void update_group_power(struct sched_domain *sd, int cpu);
- 
- extern void trigger_load_balance(struct rq *rq);
--extern int idle_balance(struct rq *this_rq);
- 
- extern void idle_enter_fair(struct rq *this_rq);
- extern void idle_exit_fair(struct rq *this_rq);
- 
--#else	/* CONFIG_SMP */
--
--static inline void idle_balance(int cpu, struct rq *rq)
--{
--}
--
+@@ -1147,6 +1147,11 @@ struct sched_class {
  #endif
+ };
  
- extern void sysrq_sched_debug_show(void);
++static inline void put_prev_task(struct rq *rq, struct task_struct *prev)
++{
++	prev->sched_class->put_prev_task(rq, prev);
++}
++
+ #define sched_class_highest (&stop_sched_class)
+ #define for_each_class(class) \
+    for (class = sched_class_highest; class; class = class->next)
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index a4147c9..d6ce65d 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -31,8 +31,7 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
+ 	if (!stop || !stop->on_rq)
+ 		return NULL;
+ 
+-	if (prev)
+-		prev->sched_class->put_prev_task(rq, prev);
++	put_prev_task(rq, prev);
+ 
+ 	stop->se.exec_start = rq_clock_task(rq);
+ 
