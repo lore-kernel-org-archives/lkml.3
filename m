@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357AbaBUAbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:31:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45805 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681AbaBTXw3 (ORCPT
+	id S932375AbaBUAbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:31:40 -0500
+Received: from ringil.hengli.com.au ([178.18.16.133]:49101 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932360AbaBUAbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:29 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Subject: [PATCH 3.12 53/82] usb-storage: add unusual-devs entry for BlackBerry 9000
-Date: Thu, 20 Feb 2014 15:52:36 -0800
-Message-Id: <20140220235021.077832344@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Feb 2014 19:31:37 -0500
+Date: Fri, 21 Feb 2014 08:31:27 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, svarbanov@mm-sol.com
+Subject: Re: [PATCH v3] hwrng: msm: switch Kconfig to ARCH_QCOM depends
+Message-ID: <20140221003127.GA24448@gondor.apana.org.au>
+References: <1392933533-10191-1-git-send-email-galak@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392933533-10191-1-git-send-email-galak@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Feb 20, 2014 at 03:58:53PM -0600, Kumar Gala wrote:
+> We've split Qualcomm MSM support into legacy and multiplatform.  The RNG
+> driver is only relevant on the multiplatform supported SoCs so switch the
+> Kconfig depends to ARCH_QCOM.
+> 
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: Stanimir Varbanov <svarbanov@mm-sol.com>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
 
-------------------
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
-
-This patch adds an unusual-devs entry for the BlackBerry 9000.  This
-fixes Bugzilla #22442.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1455,6 +1455,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_CAPACITY ),
- 
-+/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
-+UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
-+		"Research In Motion",
-+		"BlackBerry Bold 9000",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
-+
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
-
-
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
