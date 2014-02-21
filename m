@@ -1,132 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751AbaBUMwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:52:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47346 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932124AbaBUMwP (ORCPT
+	id S932717AbaBUMv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:56 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34654 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932581AbaBUMvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:52:15 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/121] drivers/edac/edac_mc_sysfs.c: poll timeout cannot be zero
-Date: Fri, 21 Feb 2014 12:49:03 +0000
-Message-Id: <1392986945-9693-120-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 21 Feb 2014 07:51:54 -0500
+Message-ID: <53074BE4.1020307@hurleysoftware.com>
+Date: Fri, 21 Feb 2014 07:51:48 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+References: <1392929071-16555-1-git-send-email-tj@kernel.org> <1392929071-16555-5-git-send-email-tj@kernel.org> <5306AF8E.3080006@hurleysoftware.com> <20140221015935.GF6897@htj.dyndns.org> <5306B4DF.4000901@hurleysoftware.com> <20140221021341.GG6897@htj.dyndns.org> <5306E06C.5020805@hurleysoftware.com> <20140221100301.GA14653@mtj.dyndns.org>
+In-Reply-To: <20140221100301.GA14653@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+On 02/21/2014 05:03 AM, Tejun Heo wrote:
+> On Fri, Feb 21, 2014 at 12:13:16AM -0500, Peter Hurley wrote:
+>> CPU 0                            | CPU 1
+>>                                   |
+>>   INIT_WORK(fw_device_workfn)     |
+>>                                   |
+>>   workfn = funcA                  |
+>>   queue_work_on()                 |
+>>   .                               | process_one_work()
+>>   .                               |   ..
+>>   .                               |   worker->current_func = work->func
+>>   .                               |
+>>   .                               |   speculative load of workfn = funcA
+>>   .                               |   .
+>>   workfn = funcB                  |   .
+>>   queue_work_on()                 |   .
+>>     local_irq_save()              |   .
+>>     test_and_set_bit() == 1       |   .
+>>                                   |   set_work_pool_and_clear_pending()
+>>     work is not queued            |     smp_wmb
+>>      funcB never runs             |     set_work_data()
+>>                                   |       atomic_set()
+>>                                   |   spin_unlock_irq()
+>>                                   |
+>>                                   |   worker->current_func(work)  @ fw_device_workfn
+>>                                   |      workfn()  @ funcA
+>>
+>>
+>> The speculative load of workfn on CPU 1 is valid because no rmb will occur
+>> between the load and the execution of workfn() on CPU 1.
+>>
+>> Thus funcB will never execute because, in this circumstance, a second
+>> worker is not queued (because PENDING had not yet been cleared).
+>
+> There's no right or wrong execution.  Executions of either funcA or
+> funcB are correct results.  The only memory ordering guarantee
+> workqueue gives is that anything written before the work item is
+> queued will be visible when that instance starts executing.  When a
+> work item is not queued, no ordering is guaranteed between the
+> queueing attempt and the execution of the existing instance.
 
-------------------
+I think the vast majority of kernel code which uses the workqueue
+assumes there is a memory ordering guarantee.
 
-From: Prarit Bhargava <prarit@redhat.com>
+Meaning that if a work item is not queue-able then the previously
+queued instance _has not yet started_ and so, by deduction, must be
+able to see the newly written values.
 
-commit 79040cad3f8235937e229f1b9401ba36dd5ad69b upstream.
+Consider:
 
-If you do
+    add something important to list to work on
+    queue work
 
-  echo 0 > /sys/module/edac_core/parameters/edac_mc_poll_msec
+or
 
-the following stack trace is output because the edac module is not
-designed to poll with a timeout of zero.
+    update index in buffer indicating more data
+    queue work
 
-  WARNING: CPU: 12 PID: 0 at lib/list_debug.c:33 __list_add+0xac/0xc0()
-  list_add corruption. prev->next should be next (ffff8808291dd1b8), but was           (null). (prev=ffff8808286fe3f8).
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Not tainted 3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    __list_add+0xac/0xc0
-    __internal_add_timer+0xab/0x130
-    internal_add_timer+0x17/0x40
-    mod_timer_pinned+0xca/0x170
-    intel_pstate_timer_func+0x28a/0x380
-    call_timer_fn+0x36/0x100
-    run_timer_softirq+0x1ff/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
+Neither of these uses expect that the workqueue does not guarantee
+that this latest data is acted upon.
 
-  kernel BUG at kernel/timer.c:1084!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 12 PID: 0 Comm: swapper/12 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Call Trace:
-   <IRQ>
-    run_timer_softirq+0x245/0x2f0
-    __do_softirq+0xf5/0x2e0
-    irq_exit+0x10d/0x120
-    smp_apic_timer_interrupt+0x45/0x60
-    apic_timer_interrupt+0x6d/0x80
-   <EOI>
-    cpuidle_idle_call+0xb9/0x1f0
-    arch_cpu_idle+0xe/0x30
-    cpu_startup_entry+0x9e/0x240
-    start_secondary+0x1e4/0x290
-  RIP   cascade+0x93/0xa0
+Another way to look at this problem is that process_one_work()
+doesn't become the existing instance _until_ PENDING is cleared.
 
-  WARNING: CPU: 36 PID: 1154 at kernel/workqueue.c:1461 __queue_delayed_work+0xed/0x1a0()
-  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
-  CPU: 36 PID: 1154 Comm: kworker/u481:3 Tainted: G        W    3.13.0+ #1
-  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
-  Workqueue: edac-poller edac_mc_workq_function [edac_core]
-  Call Trace:
-    dump_stack+0x45/0x56
-    warn_slowpath_common+0x7d/0xa0
-    warn_slowpath_null+0x1a/0x20
-    __queue_delayed_work+0xed/0x1a0
-    queue_delayed_work_on+0x27/0x50
-    edac_mc_workq_function+0x72/0xa0 [edac_core]
-    process_one_work+0x17b/0x460
-    worker_thread+0x11b/0x400
-    kthread+0xd2/0xf0
-    ret_from_fork+0x7c/0xb0
+> We can
+> add such guarantee, not sure how much it'd matter but it's not like
+> it's gonna cost a lot either.
+>
+> This doesn't have much to do with the current series tho.  In fact,
+> PREPARE_WORK can't ever be made to give such guarantee.
 
-This patch adds a range check in the edac_mc_poll_msec code to check for 0.
+Yes, I agree that PREPARE_DELAYED_WORK was also broken usage with the
+same problem. [And there are other bugs in that firewire device work
+code which I'm working on.]
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/edac/edac_mc_sysfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> The function pointer has to fetched before clearing of PENDING.
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 9f7e0e60..c855b71 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -61,7 +61,7 @@ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
- 	ret = kstrtol(val, 0, &l);
- 	if (ret)
- 		return ret;
--	if ((int)l != l)
-+	if (!l || ((int)l != l))
- 		return -EINVAL;
- 	*((int *)kp->arg) = l;
- 
--- 
-1.9.0
+Why?
+
+As long as the load takes place within the pool->lock, I don't think
+it matters (especially now PREPARE_WORK is removed).
+
+Regards,
+Peter Hurley
 
