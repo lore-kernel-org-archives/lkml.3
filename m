@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299AbaBUQy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:54:29 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:38111 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483AbaBUQy0 (ORCPT
+	id S933327AbaBUQzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:55:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56277 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbaBUQxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:54:26 -0500
-Date: Fri, 21 Feb 2014 11:54:21 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Marc Carino <marc.ceeeee@gmail.com>, Christian Daudt <bcm@fixthebug.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6 0/8] ARM: brcmstb: Add Broadcom STB SoC support
-Message-ID: <20140221165421.GM5038@beef>
-References: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
- <CAGVrzcZTHZYaB7sEDxFrP3PzZh0y-daS0gqg2Z4PUzuWGFeiSw@mail.gmail.com>
+	Fri, 21 Feb 2014 11:53:54 -0500
+Date: Fri, 21 Feb 2014 08:56:33 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Michal Simek <monstr@monstr.eu>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
+Subject: Re: SPDX-License-Identifier
+Message-ID: <20140221165633.GA5465@kroah.com>
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
+ <20140220182257.GF23217@saruman.home>
+ <5306F458.9010706@monstr.eu>
+ <20140221160442.GA17506@kroah.com>
+ <5307790A.4050806@monstr.eu>
+ <20140221161246.GM31902@saruman.home>
+ <53077C5F.9000407@monstr.eu>
+ <20140221162045.GN31902@saruman.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGVrzcZTHZYaB7sEDxFrP3PzZh0y-daS0gqg2Z4PUzuWGFeiSw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140221162045.GN31902@saruman.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 04:41:32PM -0800, Florian Fainelli wrote:
-> Matt,
+On Fri, Feb 21, 2014 at 10:20:45AM -0600, Felipe Balbi wrote:
+> Hi,
 > 
-> 2014-02-03 13:30 GMT-08:00 Marc Carino <marc.ceeeee@gmail.com>:
-> > This patchset contains the board support package for the
-> > Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-> > minimal set of code needed for a BCM7445-based board to boot
-> > the Linux kernel.
+> On Fri, Feb 21, 2014 at 05:18:39PM +0100, Michal Simek wrote:
+> > On 02/21/2014 05:12 PM, Felipe Balbi wrote:
+> > > On Fri, Feb 21, 2014 at 05:04:26PM +0100, Michal Simek wrote:
+> > >> On 02/21/2014 05:04 PM, Greg Kroah-Hartman wrote:
+> > >>> On Fri, Feb 21, 2014 at 07:38:16AM +0100, Michal Simek wrote:
+> > >>>> BTW: u-boot started to use SPDX-License-Identifier
+> > >>>> which will be nice to start to use.
+> > >>>
+> > >>> I agree, feel free to start sending patches to use this type of
+> > >>> identifier for drivers.
+> > >>
+> > >> But we probably need to add that Licenses to one location.
+> > >> Documentation/Licenses?
+> > > 
+> > > Just add to the drivers themselves, just like u-boot is doing. A simple:
+> > > 
+> > > 	$ git grep -e SPDX-License-Identifier
+> > > 
+> > > will tell you filename and license. Or did I misunderstand your question ?
+> > 
+> > But for doing this it is probably necessary to have location where
+> > you will place that licenses and you will explain what it is how
+> > it is done by Wolfgang in this commit.
+> > 
+> > http://git.denx.de/?p=u-boot.git;a=commitdiff;h=eca3aeb352c964bdb28b8e191d6326370245e03f
+> > 
+> > Then yes, adding one line is enough.
 > 
-> If you are happy with this round of changes, can you also carry those
-> patches in your tree for 3.15?
+> spdx.org has all licenses, why don't we just rely on that instead of
+> adding every other license to the kernel source ?
 
-I had to add a couple trivial comments on the dts that I missed back in
-v2.
+Yes, all that will be acceptable is a one-line identifier in the file.
+No need to have all the different licenses in the kernel source, that's
+crazy and not needed at all.
 
-More importantly, you'll need to collect some acks on various pieces. In
-particular the power/reset driver needs a maintainer ack to go in via
-arm-soc. I'd also like to see an ack from Arnd since he provided a lot
-of the comments. Also, we need Russell's ack on the debug and proc-v7.S
-patches.
+I've told the SPDX people this in the past, and they keep promising that
+they will do the comment work, but it's been months and I have yet to
+see a single patch...
 
-I'll note that the drivers/power maintainers aren't cced on this posting
-so they probably didn't notice that driver.
-
--Matt
+greg k-h
