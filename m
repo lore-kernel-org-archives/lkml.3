@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaBUTbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:31:16 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:36567 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931AbaBUTay (ORCPT
+	id S1753103AbaBUTl0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:41:26 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:58997 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751030AbaBUTlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:30:54 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH RFC 2/2] net: macb: DMA-unmap full rx-buffer
-Date: Fri, 21 Feb 2014 11:30:25 -0800
-Message-Id: <1393011025-18537-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.0.1.g4196000
-In-Reply-To: <1393011025-18537-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393011025-18537-1-git-send-email-soren.brinkmann@xilinx.com>
+	Fri, 21 Feb 2014 14:41:08 -0500
+Date: Fri, 21 Feb 2014 20:41:06 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Stanislav Kholmanskikh <stanislav.kholmanskikh@oracle.com>
+Subject: [GIT PULL REQUEST] watchdog - v3.14-rc4 Fixes
+Message-ID: <20140221194106.GN1484@spo001.leaseweb.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocating RX buffers a fixed size is used, while freeing is based
-on actually received bytes, resulting in the following kernel warning
-when CONFIG_DMA_API_DEBUG is enabled:
- WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:1051 check_unmap+0x258/0x894()
- macb e000b000.ethernet: DMA-API: device driver frees DMA memory with different size [device address=0x000000002d170040] [map size=1536 bytes] [unmap size=60 bytes]
- Modules linked in:
- CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc3-xilinx-00220-g49f84081ce4f #65
- [<c001516c>] (unwind_backtrace) from [<c0011df8>] (show_stack+0x10/0x14)
- [<c0011df8>] (show_stack) from [<c03c775c>] (dump_stack+0x7c/0xc8)
- [<c03c775c>] (dump_stack) from [<c00245cc>] (warn_slowpath_common+0x60/0x84)
- [<c00245cc>] (warn_slowpath_common) from [<c0024670>] (warn_slowpath_fmt+0x2c/0x3c)
- [<c0024670>] (warn_slowpath_fmt) from [<c0227d44>] (check_unmap+0x258/0x894)
- [<c0227d44>] (check_unmap) from [<c0228588>] (debug_dma_unmap_page+0x64/0x70)
- [<c0228588>] (debug_dma_unmap_page) from [<c02ab78c>] (gem_rx+0x118/0x170)
- [<c02ab78c>] (gem_rx) from [<c02ac4d4>] (macb_poll+0x24/0x94)
- [<c02ac4d4>] (macb_poll) from [<c031222c>] (net_rx_action+0x6c/0x188)
- [<c031222c>] (net_rx_action) from [<c0028a28>] (__do_softirq+0x108/0x280)
- [<c0028a28>] (__do_softirq) from [<c0028e8c>] (irq_exit+0x84/0xf8)
- [<c0028e8c>] (irq_exit) from [<c000f360>] (handle_IRQ+0x68/0x8c)
- [<c000f360>] (handle_IRQ) from [<c0008528>] (gic_handle_irq+0x3c/0x60)
- [<c0008528>] (gic_handle_irq) from [<c0012904>] (__irq_svc+0x44/0x78)
- Exception stack(0xc056df20 to 0xc056df68)
- df20: 00000001 c0577430 00000000 c0577430 04ce8e0d 00000002 edfce238 00000000
- df40: 04e20f78 00000002 c05981f4 00000000 00000008 c056df68 c0064008 c02d7658
- df60: 20000013 ffffffff
- [<c0012904>] (__irq_svc) from [<c02d7658>] (cpuidle_enter_state+0x54/0xf8)
- [<c02d7658>] (cpuidle_enter_state) from [<c02d77dc>] (cpuidle_idle_call+0xe0/0x138)
- [<c02d77dc>] (cpuidle_idle_call) from [<c000f660>] (arch_cpu_idle+0x8/0x3c)
- [<c000f660>] (arch_cpu_idle) from [<c006bec4>] (cpu_startup_entry+0xbc/0x124)
- [<c006bec4>] (cpu_startup_entry) from [<c053daec>] (start_kernel+0x350/0x3b0)
- ---[ end trace d5fdc38641bd3a11 ]---
- Mapped at:
-  [<c0227184>] debug_dma_map_page+0x48/0x11c
-  [<c02ab32c>] gem_rx_refill+0x154/0x1f8
-  [<c02ac7b4>] macb_open+0x270/0x3e0
-  [<c03152e0>] __dev_open+0x7c/0xfc
-  [<c031554c>] __dev_change_flags+0x8c/0x140
+Hi Linus,
 
-Fixing this by passing the same size which is passed during mapping the
-memory to the unmap function as well.
+Please pull from 'master' branch of
+	git://www.linux-watchdog.org/linux-watchdog.git
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/net/ethernet/cadence/macb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It corrects the error code when no device was found for w83697hf_wdt.
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 64eeab6f9971..f325bc5c779f 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -730,7 +730,7 @@ static int gem_rx(struct macb *bp, int budget)
- 		skb_put(skb, len);
- 		addr = MACB_BF(RX_WADDR, MACB_BFEXT(RX_WADDR, addr));
- 		dma_unmap_single(&bp->pdev->dev, addr,
--				 len, DMA_FROM_DEVICE);
-+				 bp->rx_buffer_size, DMA_FROM_DEVICE);
+This will update the following files:
+
+ w83697hf_wdt.c |    2 +-
+ 1 files changed, 1 insertion(+), 1 deletion(-)
+
+with these Changes:
+
+commit 0cb1c3e853e0d0f996f4e11863407bf31e6b7343
+Author: Stanislav Kholmanskikh <stanislav.kholmanskikh@oracle.com>
+Date:   Mon Jan 27 11:04:33 2014 +0400
+
+    watchdog: w83697hf_wdt: return ENODEV if no device was found
+    
+    Most WDT driver modules return ENODEV during modprobe if
+    no valid device was found, but w83697hf_wdt returns EIO.
+    
+    Let w83697hf_wdt return ENODEV.
+    
+    Signed-off-by: Stanislav Kholmanskikh <stanislav.kholmanskikh@oracle.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/w83697hf_wdt.c b/drivers/watchdog/w83697hf_wdt.c
+index aaf2995..68b45fc 100644
+--- a/drivers/watchdog/w83697hf_wdt.c
++++ b/drivers/watchdog/w83697hf_wdt.c
+@@ -402,7 +402,7 @@ static int __init wdt_init(void)
  
- 		skb->protocol = eth_type_trans(skb, bp->dev);
- 		skb_checksum_none_assert(skb);
--- 
-1.9.0.1.g4196000
-
+ 	if (!found) {
+ 		pr_err("No W83697HF/HG could be found\n");
+-		ret = -EIO;
++		ret = -ENODEV;
+ 		goto out;
+ 	}
+ 
