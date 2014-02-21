@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaBUCet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:34:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:51319 "EHLO ozlabs.org"
+	id S1752439AbaBUCqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:46:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16708 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752660AbaBUCer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:34:47 -0500
-Date: Fri, 21 Feb 2014 13:34:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>,
-        Aaron Durbin <adurbin@chromium.org>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20140221133441.77e6ef11dfad31bb90a12d8a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3"
+	id S1751600AbaBUCp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 21:45:59 -0500
+Date: Thu, 20 Feb 2014 21:45:53 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com
+Subject: Re: [PATCH 09/21] perf, c2c: Add rbtree sorted on mmap2 data
+Message-ID: <20140221024553.GZ25953@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <1392053356-23024-10-git-send-email-dzickus@redhat.com>
+ <20140218130405.GI4343@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140218130405.GI4343@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 18, 2014 at 02:04:05PM +0100, Jiri Olsa wrote:
+> On Mon, Feb 10, 2014 at 12:29:04PM -0500, Don Zickus wrote:
+> > In order for the c2c tool to work correctly, it needs to properly
+> > sort all the records on uniquely identifiable data addresses.  These
+> > unique addresses are converted from virtual addresses provided by the
+> > hardware into a kernel address using an mmap2 record as the decoder.
+> > 
+> 
+> SNIP
+> 
+> > +static int physid_cmp(struct c2c_entry *left, struct c2c_entry *right)
+> > +{
+> > +	u64 l, r;
+> > +	struct map *l_map = left->mi->daddr.map;
+> > +	struct map *r_map = right->mi->daddr.map;
+> > +
+> > +	/* group event types together */
+> > +	if (left->cpumode > right->cpumode) return 1;
+> > +	if (left->cpumode < right->cpumode) return -1;
+> > +
+> > +	if (l_map->maj > r_map->maj) return 1;
+> > +	if (l_map->maj < r_map->maj) return -1;
+> > +
+> > +	if (l_map->min > r_map->min) return 1;
+> > +	if (l_map->min < r_map->min) return -1;
+> > +
+> > +	if (l_map->ino > r_map->ino) return 1;
+> > +	if (l_map->ino < r_map->ino) return -1;
+> > +
+> > +	if (l_map->ino_generation > r_map->ino_generation) return 1;
+> > +	if (l_map->ino_generation < r_map->ino_generation) return -1;
+> > +
+> > +	/*
+> > +	 * Addresses with no major/minor numbers are assumed to be
+> > +	 * anonymous in userspace.  Sort those on pid then address.
+> > +	 *
+> > +	 * The kernel and non-zero major/minor mapped areas are
+> > +	 * assumed to be unity mapped.  Sort those on address then pid.
+> > +	 */
+> > +
+> > +	/* al_addr does all the right addr - start + offset calculations */
+> > +	l = left->mi->daddr.al_addr;
+> > +	r = right->mi->daddr.al_addr;
+> > +
+> > +	if (l_map->maj || l_map->min) {
+> > +		/* mmapped areas */
+> > +
+> > +		/* hack to mark similar regions, 'right' is new entry */
+> > +		/* entries with same maj/min/ino/inogen are in same address space */
+> > +		right->color = REGION_SAME;
+> > +
+> > +		if (l > r) return 1;
+> > +		if (l < r) return -1;
+> > +
+> > +		/* sorting by iaddr makes calculations easier later */
+> > +		if (left->mi->iaddr.al_addr > right->mi->iaddr.al_addr) return 1;
+> > +		if (left->mi->iaddr.al_addr < right->mi->iaddr.al_addr) return -1;
+> > +
+> > +		if (left->thread->pid_ > right->thread->pid_) return 1;
+> > +		if (left->thread->pid_ < right->thread->pid_) return -1;
+> > +
+> > +		if (left->thread->tid > right->thread->tid) return 1;
+> > +		if (left->thread->tid < right->thread->tid) return -1;
+> > +	} else if (left->cpumode == PERF_RECORD_MISC_KERNEL) {
+> > +		/* kernel mapped areas where 'start' doesn't matter */
+> > +
+> > +		/* hack to mark similar regions, 'right' is new entry */
+> > +		/* whole kernel region is in the same address space */
+> > +		right->color = REGION_SAME;
+> > +
+> > +		if (l > r) return 1;
+> > +		if (l < r) return -1;
+> > +
+> > +		/* sorting by iaddr makes calculations easier later */
+> > +		if (left->mi->iaddr.al_addr > right->mi->iaddr.al_addr) return 1;
+> > +		if (left->mi->iaddr.al_addr < right->mi->iaddr.al_addr) return -1;
+> > +
+> > +		if (left->thread->pid_ > right->thread->pid_) return 1;
+> > +		if (left->thread->pid_ < right->thread->pid_) return -1;
+> > +
+> > +		if (left->thread->tid > right->thread->tid) return 1;
+> > +		if (left->thread->tid < right->thread->tid) return -1;
+> > +	} else {
+> > +		/* userspace anonymous */
+> > +		if (left->thread->pid_ > right->thread->pid_) return 1;
+> > +		if (left->thread->pid_ < right->thread->pid_) return -1;
+> > +
+> > +		if (left->thread->tid > right->thread->tid) return 1;
+> > +		if (left->thread->tid < right->thread->tid) return -1;
+> > +
+> > +		/* hack to mark similar regions, 'right' is new entry */
+> > +		/* userspace anonymous address space is contained within pid */
+> > +		right->color = REGION_SAME;
+> > +
+> > +		if (l > r) return 1;
+> > +		if (l < r) return -1;
+> > +
+> > +		/* sorting by iaddr makes calculations easier later */
+> > +		if (left->mi->iaddr.al_addr > right->mi->iaddr.al_addr) return 1;
+> > +		if (left->mi->iaddr.al_addr < right->mi->iaddr.al_addr) return -1;
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> 
+> there's sort object doing exatly this over hist_entry's
+> 
+> Is there any reason not to use hist_entries?
 
-Hi all,
+So looking over hist_entry, I realize, what do I gain?  I implemented it
+and realized I had to add, 'cpumode', 'tid' and a 'private' field to
+struct hist_entry.  Then because I have my own report implementation, I
+still have to copy and paste a ton of stuff from builtin-report over to
+here (including callchain support).
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/mwifiex/pcie.c between commit bb8e6a1ee881
-("mwifiex: add NULL check for PCIe Rx skb") from the  tree and commit
-dbccc92b5d54 ("mwifiex: balance dma map/unmap sizes") from the net-next
-tree.
+Not unless you are expecting me to add giant chunks of code to
+builtin-report.c?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/mwifiex/pcie.c
-index 7fe7b53fb17a,d11d4acf0890..000000000000
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@@ -1211,15 -1217,7 +1217,13 @@@ static int mwifiex_pcie_process_recv_da
-  		rd_index =3D card->rxbd_rdptr & reg->rx_mask;
-  		skb_data =3D card->rx_buf_list[rd_index];
- =20
- +		/* If skb allocation was failed earlier for Rx packet,
- +		 * rx_buf_list[rd_index] would have been left with a NULL.
- +		 */
- +		if (!skb_data)
- +			return -ENOMEM;
- +
-- 		MWIFIEX_SKB_PACB(skb_data, &buf_pa);
-- 		pci_unmap_single(card->dev, buf_pa, MWIFIEX_RX_DATA_BUF_SIZE,
-- 				 PCI_DMA_FROMDEVICE);
-+ 		mwifiex_unmap_pci_memory(adapter, skb_data, PCI_DMA_FROMDEVICE);
-  		card->rx_buf_list[rd_index] =3D NULL;
- =20
-  		/* Get data length from interface header -
-
---Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTBrtFAAoJEMDTa8Ir7ZwVJ7QP/RVnuT9xAxC1BjeHRcl4rWRz
-jo1+3HxM093AyfZDinbll7CaWejVU4zz9OvMMAoN3vK/BIzDfERTMh27TDMbWoUm
-XlxbsgLO7ZU9x9btdELjrkzh7fpvtQ7cufpXOB2yEpVAOI/fxPN5QChKBFMBo3cv
-3Qz6GBnCwOXWJAEzepDDFiOcyHmTUSKNwMbuqBRiOV/OmD0cs8rrJqCYvC5AKHN8
-s7KidZEUEavT2ZwBsyzvN4t3u9oEykaXcrqV5WajSGkT1Rc66LWDkeURCyOnCKjB
-Zr6gvEB+3xe4e5JZJQBSZxIPaKwX/BJGs0fWyrN311zh9vRgvAoBxnSk30XwyChj
-yffttfLvkBbchcXMx4SOJJl35GuNObJ+ZMEqS7oZ19pIwUhnCzlmg5EdfRVSB5Te
-xxTZvmmn6Ph5sFbbwkkX0X5TitO54hDvgX2jow1y7/St3geNeQt6CpfTNMLikIOi
-QR8e4Ip9pzEhfh6X1lua0V8L0SMQahbUlLg/KED+EQyEQRJNL/bQNTvsNzVZYw/E
-9xggp9uDw6feLrEvjyUME7RBJfUL+bXY1TStzclyVl1UiX+pYQi1L2qlGnlnFqKA
-8UBC9bj+T//JRHGD9WE7FkeMLg5PMp94sEbjtXIvG4M2FixFmWZrzYNvdeTvvcu8
-QX4eh38PZNDrn+zh9HeK
-=3Dxu
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3--
+Don
