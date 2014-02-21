@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaBUJ4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 04:56:14 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:52264 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391AbaBUJ4K (ORCPT
+	id S1754740AbaBUKDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 05:03:10 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:54230 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411AbaBUKDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 04:56:10 -0500
-Date: Fri, 21 Feb 2014 10:56:07 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
-Message-ID: <20140221095604.GI22574@ulmo.nvidia.com>
-References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
- <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
+	Fri, 21 Feb 2014 05:03:06 -0500
+Date: Fri, 21 Feb 2014 05:03:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140221100301.GA14653@mtj.dyndns.org>
+References: <1392929071-16555-1-git-send-email-tj@kernel.org>
+ <1392929071-16555-5-git-send-email-tj@kernel.org>
+ <5306AF8E.3080006@hurleysoftware.com>
+ <20140221015935.GF6897@htj.dyndns.org>
+ <5306B4DF.4000901@hurleysoftware.com>
+ <20140221021341.GG6897@htj.dyndns.org>
+ <5306E06C.5020805@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WR+jf/RUebEcofwt"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <5306E06C.5020805@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 21, 2014 at 12:13:16AM -0500, Peter Hurley wrote:
+> CPU 0                            | CPU 1
+>                                  |
+>  INIT_WORK(fw_device_workfn)     |
+>                                  |
+>  workfn = funcA                  |
+>  queue_work_on()                 |
+>  .                               | process_one_work()
+>  .                               |   ..
+>  .                               |   worker->current_func = work->func
+>  .                               |
+>  .                               |   speculative load of workfn = funcA
+>  .                               |   .
+>  workfn = funcB                  |   .
+>  queue_work_on()                 |   .
+>    local_irq_save()              |   .
+>    test_and_set_bit() == 1       |   .
+>                                  |   set_work_pool_and_clear_pending()
+>    work is not queued            |     smp_wmb
+>     funcB never runs             |     set_work_data()
+>                                  |       atomic_set()
+>                                  |   spin_unlock_irq()
+>                                  |
+>                                  |   worker->current_func(work)  @ fw_device_workfn
+>                                  |      workfn()  @ funcA
+> 
+> 
+> The speculative load of workfn on CPU 1 is valid because no rmb will occur
+> between the load and the execution of workfn() on CPU 1.
+> 
+> Thus funcB will never execute because, in this circumstance, a second
+> worker is not queued (because PENDING had not yet been cleared).
 
---WR+jf/RUebEcofwt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's no right or wrong execution.  Executions of either funcA or
+funcB are correct results.  The only memory ordering guarantee
+workqueue gives is that anything written before the work item is
+queued will be visible when that instance starts executing.  When a
+work item is not queued, no ordering is guaranteed between the
+queueing attempt and the execution of the existing instance.  We can
+add such guarantee, not sure how much it'd matter but it's not like
+it's gonna cost a lot either.
 
-On Mon, Jan 27, 2014 at 11:18:51PM +0100, David Herrmann wrote:
-> Hi
->=20
-> On Thu, Jan 23, 2014 at 3:14 PM, David Herrmann <dh.herrmann@gmail.com> w=
-rote:
-> > Hi
-> >
-> > Another round of SimpleDRM patches. I somehow lost track of the last on=
-es and as
-> > this is a major rewrite, I'll just start at v1 again.
-> >
-> > Some comments up-front:
-> >
-> >  - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussion=
-s. I
-> >    included them in this series as the other patches depend on them. Co=
-uld you
-> >    pick them up for the x86 tree? The other 9 patches won't make it in =
-3.14 so
-> >    no reason to put them through the DRM tree.
-> >    All mentioned issues should be addressed. If there's still sth missi=
-ng,
-> >    please let me know.
-> >
-> >  - The DRM patches depend on my "DRM Anonymous Inode" patches. But it s=
-hould be
-> >    trivial to apply them on drm-next (I think only one line needs to be=
- changed:
-> >    i_mapping =3D> dev_mapping).
-> >
-> >  - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it=
- works
-> >    fine. The DRM backend is only tested with some DRM tests I have loca=
-lly. I
-> >    have no idea how to make Xorg pick up a specific /dev/dri/card0 card=
-=2E It
-> >    always tells me "no screens found" (as the underlying device is not =
-marked as
-> >    boot_vga..). If someone knows how to tell Xorg to use card0, I'd gla=
-dly test
-> >    this. But I'm no longer used to writing xorg.confs..
->=20
-> For completeness, I tested this with Xorg+xf86-video-modesetting and
-> it works just fine. The xorg.conf I used can be found below. If this
-> driver gets upstreamed, I will try to make the X11 auto-loader detect
-> it just like any other platform-device.
+This doesn't have much to do with the current series tho.  In fact,
+PREPARE_WORK can't ever be made to give such guarantee.  The function
+pointer has to fetched before clearing of PENDING.
 
-I recently posted patches[0] to the xorg-devel mailing list that I think
-should solve that issue.
-
-Thierry
-
-[0]: http://lists.x.org/archives/xorg-devel/2014-February/040568.html
-
---WR+jf/RUebEcofwt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTByK0AAoJEN0jrNd/PrOhgesP/iVDOlFV9SkAv8OK1GY4dmfs
-cqOKH9TaKTBenMRgEb276Rm7nbdbRzmkM+GVjjhLQiYa5JTs9CGxcaulhWMFCrcf
-BeUkDBFnh8QRcMBBS6l+d1hZT9yNvSv85VqIfkdkEtwzIBznRo48gnhOdlq3AMyl
-l2f/hkUkDzImIRdZZpawk5NIZqqb5FWNjUL7p9Hn8q1jN89J3RvL8Gaagaa0XTJK
-ccCfHQR36AbLC8PlO1B4Ovc909clsWRelzWm+615lNBBMm+GCGhzGDCGHzsJ+r7G
-HWMsy73ORiemlDm2/dYvKAqcYy+UULm3foeIBqiBQDF9Fd7eJFtOcTDeTaI4HN+O
-XQsvRnlxNbLC8r6f1odpqnl373dEnEnqNSCe8nkEkC8UgERTy7+ZOzUKR4F9BgkQ
-U0LJRM4fS7BpkrhjxJR9JhrI7gCKimRhwItQXNYxr34BKdJxxQr8t53hxKJscFNj
-5WxGW1S/r4TvOdFbShdu+nSE72TuzLzI7ew3kCB9gC45JbNgcZ4ahfNiX1OJPJso
-tNZSiVL76pWVNnplfIeOny8j6gk2cwZnk/yZrUDot/RQiMom8fHFOSpt4fW9zgHB
-5Pu73hj8EkUAUSrX6AtbS2NgRqFY7X5PGEsTb0otxHESFeA0r5rsls79KBQxkqe/
-UNkQwLbcE+Tuv/+WVmfj
-=gS6g
------END PGP SIGNATURE-----
-
---WR+jf/RUebEcofwt--
+-- 
+tejun
