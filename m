@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaBUM11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:27:27 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:63463 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaBUM0V (ORCPT
+	id S1755518AbaBUM1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:27:50 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:56314 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436AbaBUM0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:26:21 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-c5-530745eb45e1
+	Fri, 21 Feb 2014 07:26:19 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-be-530745ea4c5f
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
@@ -28,26 +28,26 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v5 10/11] arm64: add support for reserved memory defined by
+Subject: [PATCH v5 09/11] arm: add support for reserved memory defined by
  device tree
-Date: Fri, 21 Feb 2014 13:25:26 +0100
-Message-id: <1392985527-6260-11-git-send-email-m.szyprowski@samsung.com>
+Date: Fri, 21 Feb 2014 13:25:25 +0100
+Message-id: <1392985527-6260-10-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
 References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyWReUiTYQDGe7fv2nD1NU3eJCSEiAyvinyJJRaJb4oWGERF1JrDGW7KlpYS
-	ZfNgm9cySikzTa2YOscKPFDRMY+8SpwapUtZl2eKUqBT8sv/fvweHp4/HoYvfkj4MImqW3K1
-	SprkRwmJ/s2e0YC5CDoueG1gL9oo7qbRkjaHj36/ygfohX2IREXzlSTqcDcBNF+gI1CzeRGg
-	Qe08jRr1pTRadUzzkNU1RqLK3GoCjbSUUajePkkjy0wnD9WMD/NQRU82idwlvqhvfIVCdfYq
-	GhlL6gmU02an0UajlUCznbkEaiidI5CpxQ3QzHIvEb4P15XXAby+Vgzw3CMjwCOFBTzc/HSS
-	xvnz2SS2mvQUnhhrpfDb6vv4y6aLjx29WhKb3bM8XLQRjJ+3FAJc+M4E8IrV9/zuy0JJvDwp
-	MU2uDgq7LlTkTelAyhv6jjPvF5UJ9JQBCBjIHoN2p42/zd7wo7NhywsZMVsD4PfMDoILxGwe
-	D3Y/hhxTbAg0LBj+l73YSgBXygmuwGe/UlA3nM/jAk/2EsxasACOCfYAzLG30xyLWAz1rvek
-	ATBba/thWbGE04ItPdDxk+a0mI2EZt1NIxBVgB0msEeeKkvR3EhQhgRqpEpNqiohUJastILt
-	G1ebQFX3CRtgGeDnIUqBVJyYlKZp0pU2ABm+n5eoM4iOE4vipekZcnXyNXVqklxjAzxG4JMJ
-	Kv+Mek9m9V2sd8We3fWhP6DrttE2cRVKdLK04+62k3cXj9bmMp8jl6dlXQnQ99lojONJbO/f
-	hNDBB23jKjBVa3GGDQ1End5J36M2uhZazc0mf/0FtcU3ql37MmwyOvqbOlTZ/cPzyqdT+Ydj
-	Xq9LwhWCMxEeRzKSlxznDh0cVvgRGoU0xJ+v1kj/AfeAx2KkAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t/xq7qvXNmDDfa+57b4O+kYu8WHplZm
+	i/fLehgt5h85x2rR/2Yhq8WBPzsYLd70drBY7Fz3jtHibNMbdovtnTPYLb5cechksenxNVaL
+	hW1LWCwu75rDZrH2yF12iw0vDzJZLL1+kcliwfEWVos/0+UsTl3/zGax5shidosJ09eyWLTu
+	PcJu8Xf7JhaLVwfbWCzWz3jNYrFq1x9Gi5cfT7A4yHismbeG0eP3r0mMHq8nT2D0uNzXy+Sx
+	c9Zddo+eNy2sHptWdbJ53Lm2h81j85J6j9v/HjN7XDnRxOqx7s8rJo/+vwYec3f1MXr0bVnF
+	6PF5k1yAYBSXTUpqTmZZapG+XQJXxuOtH9gLnrJXTH3ewdjAuIati5GTQ0LARGLdu9nsELaY
+	xIV764HiXBxCAksZJVZcuswM4XQzSbxtWMIKUsUmYCjR9bYLrFtEYCGjxOd5LCBFzAL32SQ6
+	LvYwgSSEBcIlDi+aB1bEIqAq8X76TLAVvAIeEg93LACq4QBapyAxZ5INSJgTKHzmwHN2kLCQ
+	gLvEuo6sCYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKExOOXHYyLj1kdYhTgYFTi
+	4S2QYAsWYk0sK67MPcQowcGsJMJ7UJ89WIg3JbGyKrUoP76oNCe1+BAjEwenVANj7fJdkzkT
+	L7/OSNmWGRfovL3y0+mj3N5Od5MfV/ztKkq8cC/n+yPdj3H6s1UUXoieO8by6nb1l91nXxpF
+	abVKPZs5X8rkht8SjfZzHm8j/Zu0NTkyTwrLMRWbHYi+9dI5+5FfhrDdkWu5H72VTnlmPnlz
+	q/f0f8l2+S9/JxsfbDNJ9vDeFcqmxFKckWioxVxUnAgAx96RFqUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -56,34 +56,35 @@ Enable reserved memory initialization from device tree.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- arch/arm64/Kconfig   |    1 +
- arch/arm64/mm/init.c |    1 +
- 2 files changed, 2 insertions(+)
+ arch/arm/Kconfig   |    1 +
+ arch/arm/mm/init.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 27bbcfc7202a..6abf15407dca 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -43,6 +43,7 @@ config ARM64
- 	select NO_BOOTMEM
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e25419817791..d0262bea8020 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1918,6 +1918,7 @@ config USE_OF
+ 	select IRQ_DOMAIN
  	select OF
  	select OF_EARLY_FLATTREE
 +	select OF_RESERVED_MEM
- 	select PERF_USE_VMALLOC
- 	select POWER_RESET
- 	select POWER_SUPPLY
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index d0b4c2efda90..3fb8d50dfdaa 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -160,6 +160,7 @@ void __init arm64_memblock_init(void)
- 		memblock_reserve(base, size);
- 	}
+ 	help
+ 	  Include support for flattened device tree machine descriptions.
+ 
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 804d61566a53..2a77ba8796ae 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -323,6 +323,8 @@ void __init arm_memblock_init(struct meminfo *mi,
+ 	if (mdesc->reserve)
+ 		mdesc->reserve();
  
 +	early_init_fdt_scan_reserved_mem();
- 	dma_contiguous_reserve(0);
- 
- 	memblock_allow_resize();
++
+ 	/*
+ 	 * reserve memory for DMA contigouos allocations,
+ 	 * must come from DMA area inside low memory
 -- 
 1.7.9.5
 
