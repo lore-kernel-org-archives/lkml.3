@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaBUPvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:51:20 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34733 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425AbaBUPvS (ORCPT
+	id S932678AbaBUPva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:51:30 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:43408 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425AbaBUPv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:51:18 -0500
-Message-ID: <530775EB.6030004@monstr.eu>
-Date: Fri, 21 Feb 2014 16:51:07 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local> <20140220182257.GF23217@saruman.home> <20140221120454.GD8783@e106331-lin.cambridge.arm.com> <5307576F.5050506@monstr.eu> <20140221154244.GG31902@saruman.home>
-In-Reply-To: <20140221154244.GG31902@saruman.home>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="OQoae23AXrotEhf3NrbaLv7qPAsXCjTKx"
+	Fri, 21 Feb 2014 10:51:27 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-60-530775fe3ea0
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: kishon@ti.com
+Cc: linux-kernel@vger.kernel.org, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [PATCH v2 2/2] phy: Select PHY_EXYNOS_DP_VIDEO by default for
+ ARCH_EXYNOS
+Date: Fri, 21 Feb 2014 16:50:02 +0100
+Message-id: <1392997802-29050-2-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com>
+References: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjluLIzCtJLcpLzFFi42I5/e+xgO6/UvZgg+tv1SwuL7zEanHhaQ+b
+	xabH11gtLu+aw2Yx4/w+JovDb9pZHdg8Ni+p9+jbsorR4/iN7UwenzfJBbBEcdmkpOZklqUW
+	6dslcGUcbdrPVLCSo2Liae0GxhdsXYycHBICJhKXL9yBssUkLtxbD2RzcQgJLGKUWLLnKjuE
+	08Ek8WPfLxaQKjYBQ4neo32MXYwcHCICghKfPjGChJkF1jNK3PtjBmILC4RI7On9xwRiswio
+	Shxdfw5sAa+Am8S1K+2sIK0SAgoScybZgIQ5BdwlTu6AmC4EVPL76WH2CYy8CxgZVjGKphYk
+	FxQnpeca6RUn5haX5qXrJefnbmIEh84z6R2MqxosDjEKcDAq8fA6pLIHC7EmlhVX5h5ilOBg
+	VhLhbY4GCvGmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamD0
+	Ob1G+lafXdo+L5XJjq6vBXU5tkhPnujdskx63Vyvky/lz2eZRnzgZa+uX3y8c8/jlXzck26s
+	tG4vWOx5ttzecMl85rt6NtxNd9mUbgd8Sph/jbfzy46g6km3sxprWYrsOJmi8m5PDmlyEC0+
+	G3D46R/J9uDdfVNyHLftzFnbNWXih5Zp0TFKLMUZiYZazEXFiQCUqZD1GQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---OQoae23AXrotEhf3NrbaLv7qPAsXCjTKx
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Instead of requiring user to figure out when PHY_EXYNOS_DP_VIDEO needs
+to be selected select it by default for Exynos SoCs. Also enable it
+when COMPILE_TEST is selected. If required the display port PHY driver
+can be then disabled or compiled in as module.
 
-On 02/21/2014 04:42 PM, Felipe Balbi wrote:
-> Hi,
->=20
-> On Fri, Feb 21, 2014 at 02:41:03PM +0100, Michal Simek wrote:
->>>>> +	/* Map the registers */
->>>>> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>>> +	udc->base_address =3D devm_ioremap_nocache(&pdev->dev, res->start=
-,
->>>>> +						 resource_size(res));
->>>>
->>>> use devm_ioremap_resource() instead.
->>>
->>> Also, res might be NULL. You should check that before dereferencing i=
-t.
->>
->> yes it is necessary for both cases with devm_ioremap_nocache
->> or with devm_ioremap_resource.
->=20
-> read the source Luke:
->=20
-> | void __iomem *devm_ioremap_resource(struct device *dev, struct resour=
-ce *res)
-> | {
-> | 	resource_size_t size;
-> | 	const char *name;
-> | 	void __iomem *dest_ptr;
-> |=20
-> | 	BUG_ON(!dev);
-> |=20
-> | 	if (!res || resource_type(res) !=3D IORESOURCE_MEM) {
->             ^^^^
-> 	    already done for you
->=20
-> | 		dev_err(dev, "invalid resource\n");
-> | 		return ERR_PTR(-EINVAL);
-> | 	}
-> |=20
-> | 	size =3D resource_size(res);
-> | 	name =3D res->name ?: dev_name(dev);
-> |=20
-> | 	if (!devm_request_mem_region(dev, res->start, size, name)) {
-> | 		dev_err(dev, "can't request region for resource %pR\n", res);
-> | 		return ERR_PTR(-EBUSY);
-> | 	}
-> |=20
-> | 	if (res->flags & IORESOURCE_CACHEABLE)
-> | 		dest_ptr =3D devm_ioremap(dev, res->start, size);
-> | 	else
-> | 		dest_ptr =3D devm_ioremap_nocache(dev, res->start, size);
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Changes since first version:
+ - use ARCH_EXYNOS instead of "ARCH_EXYNOS4 || ARCH_EXYNOS5"
+ - add dependency on COMPILE_TEST
+---
+ drivers/phy/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-I have read it just not sure if IORESOURCE_CACHEABLE is setup by default
-or not.
-If yes, then you have to setup res->flags in your driver and have to
-check it.
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index ebd455c..4218c99 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -57,6 +57,8 @@ config TWL4030_USB
+ config PHY_EXYNOS_DP_VIDEO
+ 	tristate "EXYNOS SoC series Display Port PHY driver"
+ 	depends on OF
++	depends on ARCH_EXYNOS || COMPILE_TEST
++	default y
+ 	select GENERIC_PHY
+ 	help
+ 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
+-- 
+1.7.9.5
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---OQoae23AXrotEhf3NrbaLv7qPAsXCjTKx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMHdewACgkQykllyylKDCHguwCfa4W5mcq1rUx/9Jb+tuQPx+Fc
-EF4AoIBOoCOdqeZPYXNlb4630mjo+vY5
-=kCfQ
------END PGP SIGNATURE-----
-
---OQoae23AXrotEhf3NrbaLv7qPAsXCjTKx--
