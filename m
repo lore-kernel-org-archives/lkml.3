@@ -1,68 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaBUEaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:30:20 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43295 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468AbaBUEaR (ORCPT
+	id S1753434AbaBUEcD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 23:32:03 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42648 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102AbaBUEcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:30:17 -0500
-From: behanw@converseincode.com
-To: rob@landley.net, paul.gortmaker@windriver.com, rdunlap@infradead.org,
-        geert@linux-m68k.org
-Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] module: LLVMLinux: Fix section mismatch issues on alias usage
-Date: Thu, 20 Feb 2014 20:28:29 -0800
-Message-Id: <1392956909-22715-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 20 Feb 2014 23:32:02 -0500
+Message-ID: <5306D65F.4030705@oracle.com>
+Date: Thu, 20 Feb 2014 23:30:23 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] pagewalk: update page table walker core
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-2-git-send-email-n-horiguchi@ah.jp.nec.com> <5306942C.2070902@gmail.com>
+In-Reply-To: <5306942C.2070902@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On 02/20/2014 06:47 PM, Sasha Levin wrote:
+> Hi Naoya,
+>
+> This patch seems to trigger a NULL ptr deref here. I didn't have a change to look into it yet
+> but here's the spew:
+>
+> [  281.650503] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+> [  281.651577] IP: [<ffffffff811a31fc>] __lock_acquire+0xbc/0x580
+> [  281.652453] PGD 40b88d067 PUD 40b88c067 PMD 0
+> [  281.653143] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  281.653869] Dumping ftrace buffer:
+> [  281.654430]    (ftrace buffer empty)
+> [  281.654975] Modules linked in:
+> [  281.655441] CPU: 4 PID: 12314 Comm: trinity-c361 Tainted: G        W
+> 3.14.0-rc3-next-20140220-sasha-00008-gab7e7ac-dirty #113
+> [  281.657622] task: ffff8804242ab000 ti: ffff880424348000 task.ti: ffff880424348000
+> [  281.658503] RIP: 0010:[<ffffffff811a31fc>]  [<ffffffff811a31fc>] __lock_acquire+0xbc/0x580
+> [  281.660025] RSP: 0018:ffff880424349ab8  EFLAGS: 00010002
+> [  281.660761] RAX: 0000000000000086 RBX: 0000000000000018 RCX: 0000000000000000
+> [  281.660761] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+> [  281.660761] RBP: ffff880424349b28 R08: 0000000000000001 R09: 0000000000000000
+> [  281.660761] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8804242ab000
+> [  281.660761] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000001
+> [  281.660761] FS:  00007f36534b0700(0000) GS:ffff88052bc00000(0000) knlGS:0000000000000000
+> [  281.660761] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  281.660761] CR2: 0000000000000018 CR3: 000000040b88e000 CR4: 00000000000006e0
+> [  281.660761] Stack:
+> [  281.660761]  ffff880424349ae8 ffffffff81180695 ffff8804242ab038 0000000000000004
+> [  281.660761]  00000000001d8500 ffff88052bdd8500 ffff880424349b18 ffffffff81180915
+> [  281.660761]  ffffffff876a68b0 ffff8804242ab000 0000000000000000 0000000000000001
+> [  281.660761] Call Trace:
+> [  281.660761]  [<ffffffff81180695>] ? sched_clock_local+0x25/0x90
+> [  281.660761]  [<ffffffff81180915>] ? sched_clock_cpu+0xc5/0x110
+> [  281.660761]  [<ffffffff811a3842>] lock_acquire+0x182/0x1d0
+> [  281.660761]  [<ffffffff812990d8>] ? walk_pte_range+0xb8/0x170
+> [  281.660761]  [<ffffffff811a3daa>] ? __lock_release+0x1da/0x1f0
+> [  281.660761]  [<ffffffff8438ae5b>] _raw_spin_lock+0x3b/0x70
+> [  281.660761]  [<ffffffff812990d8>] ? walk_pte_range+0xb8/0x170
+> [  281.660761]  [<ffffffff812990d8>] walk_pte_range+0xb8/0x170
+> [  281.660761]  [<ffffffff812993a1>] walk_pmd_range+0x211/0x240
+> [  281.660761]  [<ffffffff812994fb>] walk_pud_range+0x12b/0x160
+> [  281.660761]  [<ffffffff81299639>] walk_pgd_range+0x109/0x140
+> [  281.660761]  [<ffffffff812996a5>] __walk_page_range+0x35/0x40
+> [  281.660761]  [<ffffffff81299862>] walk_page_range+0xf2/0x130
+> [  281.660761]  [<ffffffff812a8ccc>] queue_pages_range+0x6c/0x90
+> [  281.660761]  [<ffffffff812a8d80>] ? queue_pages_hugetlb+0x90/0x90
+> [  281.660761]  [<ffffffff812a8cf0>] ? queue_pages_range+0x90/0x90
+> [  281.660761]  [<ffffffff812a8f50>] ? change_prot_numa+0x30/0x30
+> [  281.660761]  [<ffffffff812ac9f1>] do_mbind+0x311/0x330
+> [  281.660761]  [<ffffffff811815c1>] ? vtime_account_user+0x91/0xa0
+> [  281.660761]  [<ffffffff8124f1a8>] ? context_tracking_user_exit+0xa8/0x1c0
+> [  281.660761]  [<ffffffff812aca99>] SYSC_mbind+0x89/0xb0
+> [  281.660761]  [<ffffffff812acac9>] SyS_mbind+0x9/0x10
+> [  281.660761]  [<ffffffff84395360>] tracesys+0xdd/0xe2
+> [  281.660761] Code: c2 04 47 49 85 be fa 0b 00 00 48 c7 c7 bb 85 49 85 e8 d9 7b f9 ff 31 c0 e9 9c
+> 04 00 00 66 90 44 8b 1d a9 b8 ac 04 45 85 db 74 0c <48> 81 3b 40 61 3f 87 75 06 0f 1f 00 45 31 c0 83
+> fe 01 77 0c 89
+> [  281.660761] RIP  [<ffffffff811a31fc>] __lock_acquire+0xbc/0x580
+> [  281.660761]  RSP <ffff880424349ab8>
+> [  281.660761] CR2: 0000000000000018
+> [  281.660761] ---[ end trace b6e188d329664196 ]---
 
-Attribute aliases don't inherit the link section name when compiled with clang.
-As a result, the linking section needs to be explicitly specified when building
-a module. This behavior is undefined in the standard which is why it differs from
-compiler to compiler.
+Out of curiosity, I'm testing out a new piece of code to make decoding this dump a bit easier. Let 
+me know if it helped at all. Lines are based on -next from today:
 
-Author:  PaX Team <pageexec@freemail.hu>
-ML-Post: http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
-URL:     http://llvm.linuxfoundation.org
-Merge:   Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- include/linux/init.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+[  281.650503] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+[  281.651577] IP: [<kernel/locking/lockdep.c:3069>] __lock_acquire+0xbc/0x580
+[  281.652453] PGD 40b88d067 PUD 40b88c067 PMD 0
+[  281.653143] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  281.653869] Dumping ftrace buffer:
+[  281.654430]    (ftrace buffer empty)
+[  281.654975] Modules linked in:
+[  281.655441] CPU: 4 PID: 12314 Comm: trinity-c361 Tainted: G        W 
+3.14.0-rc3-next-20140220-sasha-00008-gab7e7ac-dirty #113
+[  281.657622] task: ffff8804242ab000 ti: ffff880424348000 task.ti: ffff880424348000
+[  281.658503] RIP: 0010:[<kernel/locking/lockdep.c:3069>]  [<kernel/locking/lockdep.c:3069>] 
+__lock_acquire+0xbc/0x580
+[  281.660025] RSP: 0018:ffff880424349ab8  EFLAGS: 00010002
+[  281.660761] RAX: 0000000000000086 RBX: 0000000000000018 RCX: 0000000000000000
+[  281.660761] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+[  281.660761] RBP: ffff880424349b28 R08: 0000000000000001 R09: 0000000000000000
+[  281.660761] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8804242ab000
+[  281.660761] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000001
+[  281.660761] FS:  00007f36534b0700(0000) GS:ffff88052bc00000(0000) knlGS:0000000000000000
+[  281.660761] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  281.660761] CR2: 0000000000000018 CR3: 000000040b88e000 CR4: 00000000000006e0
+[  281.660761] Stack:
+[  281.660761]  ffff880424349ae8 ffffffff81180695 ffff8804242ab038 0000000000000004
+[  281.660761]  00000000001d8500 ffff88052bdd8500 ffff880424349b18 ffffffff81180915
+[  281.660761]  ffffffff876a68b0 ffff8804242ab000 0000000000000000 0000000000000001
+[  281.660761] Call Trace:
+[  281.660761]  [<kernel/sched/clock.c:206>] ? sched_clock_local+0x25/0x90
+[  281.660761]  [<arch/x86/include/asm/preempt.h:98 kernel/sched/clock.c:312>] ? 
+sched_clock_cpu+0xc5/0x110
+[  281.660761]  [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] 
+lock_acquire+0x182/0x1d0
+[  281.660761]  [<include/linux/spinlock.h:303 mm/pagewalk.c:33>] ? walk_pte_range+0xb8/0x170
+[  281.660761]  [<kernel/locking/lockdep.c:3506>] ? __lock_release+0x1da/0x1f0
+[  281.660761]  [<include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151>] 
+_raw_spin_lock+0x3b/0x70
+[  281.660761]  [<include/linux/spinlock.h:303 mm/pagewalk.c:33>] ? walk_pte_range+0xb8/0x170
+[  281.660761]  [<include/linux/spinlock.h:303 mm/pagewalk.c:33>] walk_pte_range+0xb8/0x170
+[  281.660761]  [<mm/pagewalk.c:90>] walk_pmd_range+0x211/0x240
+[  281.660761]  [<mm/pagewalk.c:128>] walk_pud_range+0x12b/0x160
+[  281.660761]  [<mm/pagewalk.c:165>] walk_pgd_range+0x109/0x140
+[  281.660761]  [<mm/pagewalk.c:259>] __walk_page_range+0x35/0x40
+[  281.660761]  [<mm/pagewalk.c:332>] walk_page_range+0xf2/0x130
+[  281.660761]  [<mm/mempolicy.c:637>] queue_pages_range+0x6c/0x90
+[  281.660761]  [<mm/mempolicy.c:492>] ? queue_pages_hugetlb+0x90/0x90
+[  281.660761]  [<mm/mempolicy.c:521>] ? queue_pages_range+0x90/0x90
+[  281.660761]  [<mm/mempolicy.c:573>] ? change_prot_numa+0x30/0x30
+[  281.660761]  [<mm/mempolicy.c:1241>] do_mbind+0x311/0x330
+[  281.660761]  [<kernel/sched/cputime.c:681>] ? vtime_account_user+0x91/0xa0
+[  281.660761]  [<arch/x86/include/asm/atomic.h:26 include/linux/jump_label.h:148 
+include/trace/events/context_tracking.h:47 kernel/context_tracking.c:178>] ? 
+context_tracking_user_exit+0xa8/0x1c0
+[  281.660761]  [<mm/mempolicy.c:1356>] SYSC_mbind+0x89/0xb0
+[  281.660761]  [<mm/mempolicy.c:1340>] SyS_mbind+0x9/0x10
+[  281.660761]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+[  281.660761] Code: c2 04 47 49 85 be fa 0b 00 00 48 c7 c7 bb 85 49 85 e8 d9 7b f9 ff 31 c0 e9 9c 
+04 00 00 66 90 44 8b 1d a9 b8 ac 04 45 85 db 74 0c <48> 81 3b 40 61 3f 87 75 06 0f 1f 00 45 31 c0 83 
+fe 01 77 0c 89
+[  281.660761] RIP  [<kernel/locking/lockdep.c:3069>] __lock_acquire+0xbc/0x580
+[  281.660761]  RSP <ffff880424349ab8>
+[  281.660761] CR2: 0000000000000018
+[  281.660761] ---[ end trace b6e188d329664196 ]---
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index e168880..384ec5e 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -297,13 +297,14 @@ void __init parse_early_options(char *cmdline);
- #define module_init(initfn)					\
- 	static inline initcall_t __inittest(void)		\
- 	{ return initfn; }					\
--	int init_module(void) __attribute__((alias(#initfn)));
-+	int init_module(void) __section(.init) __attribute__((alias(#initfn)));
- 
- /* This is only required if you want to be unloadable. */
- #define module_exit(exitfn)					\
- 	static inline exitcall_t __exittest(void)		\
- 	{ return exitfn; }					\
--	void cleanup_module(void) __attribute__((alias(#exitfn)));
-+	void cleanup_module(void) __section(.exit)              \
-+		__attribute__((alias(#exitfn)));
- 
- #define __setup_param(str, unique_id, fn)	/* nothing */
- #define __setup(str, func) 			/* nothing */
--- 
-1.8.3.2
+
+Thanks,
+Sasha
 
