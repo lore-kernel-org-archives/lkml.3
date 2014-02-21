@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbaBUNSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:18:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47710 "EHLO
+	id S1756182AbaBUNTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:19:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47705 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115AbaBUNCM (ORCPT
+	with ESMTP id S933101AbaBUNCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:12 -0500
+	Fri, 21 Feb 2014 08:02:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>,
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guillaume Morin <guillaume@morinfr.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 28/60] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
-Date: Fri, 21 Feb 2014 13:00:55 +0000
-Message-Id: <1392987687-15367-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 27/60] printk: Fix scheduling-while-atomic problem in console_cpu_notify()
+Date: Fri, 21 Feb 2014 13:00:54 +0000
+Message-Id: <1392987687-15367-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hartmut Knaack <knaack.h@gmx.de>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
+commit 85eae82a0855d49852b87deac8653e4ebc8b291f upstream.
 
-Only free an IRQ in error_free_irq, if it has been requested previously.
+The console_cpu_notify() function runs with interrupts disabled in the
+CPU_DYING case.  It therefore cannot block, for example, as will happen
+when it calls console_lock().  Therefore, remove the CPU_DYING leg of
+the switch statement to avoid this problem.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guillaume Morin <guillaume@morinfr.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/iio/adc/ad799x_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/printk.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/iio/adc/ad799x_core.c b/drivers/staging/iio/adc/ad799x_core.c
-index 80e0c6e..b50d1df 100644
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -911,7 +911,8 @@ static int __devinit ad799x_probe(struct i2c_client *client,
- 	return 0;
- 
- error_free_irq:
--	free_irq(client->irq, indio_dev);
-+	if (client->irq > 0)
-+		free_irq(client->irq, indio_dev);
- error_cleanup_ring:
- 	ad799x_ring_cleanup(indio_dev);
- error_disable_reg:
+diff --git a/kernel/printk.c b/kernel/printk.c
+index e959512..0d430b1 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1827,7 +1827,6 @@ static int __cpuinit console_cpu_notify(struct notifier_block *self,
+ 	switch (action) {
+ 	case CPU_ONLINE:
+ 	case CPU_DEAD:
+-	case CPU_DYING:
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_UP_CANCELED:
+ 		console_lock();
 -- 
 1.9.0
 
