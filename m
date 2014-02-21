@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506AbaBUN5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:57:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46779 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806AbaBUMte (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755810AbaBUMte (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Feb 2014 07:49:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46758 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708AbaBUMta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:49:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Zhang, Xiong Y" <xiong.y.zhang@intel.com>,
+Cc: Dave Jones <davej@fedoraproject.org>, Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 018/121] intel_pstate: Correct calculation of min pstate value
-Date: Fri, 21 Feb 2014 12:47:22 +0000
-Message-Id: <1392986945-9693-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 012/121] [media] mxl111sf: Fix unintentional garbage stack read
+Date: Fri, 21 Feb 2014 12:47:16 +0000
+Message-Id: <1392986945-9693-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -29,42 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Dave Jones <davej@fedoraproject.org>
 
-commit 7244cb62d96e735847dc9d08f870550df896898c upstream.
+commit 866e8d8a9dc1ebb4f9e67197e264ac2df81f7d4b upstream.
 
-The minimum pstate is supposed to be a percentage of the maximum P
-state available.  Calculate min using max pstate and not the
-current max which may have been limited by the user
+mxl111sf_read_reg takes an address of a variable to write to as an argument.
+drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes
+passes several uninitialized stack variables to this routine, expecting
+them to be filled in.  In the event that something unexpected happens when
+reading from the chip, we end up doing a pr_debug of the value passed in,
+revealing whatever garbage happened to be on the stack.
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Zhang, Xiong Y <xiong.y.zhang@intel.com>
+Change the pr_debug to match what happens in the 'success' case, where we
+assign buf[1] to *data.
+
+Spotted with Coverity (Bugs 731910 through 731917)
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/media/usb/dvb-usb-v2/mxl111sf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 50392ac..e52e542 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -366,12 +366,13 @@ static int intel_pstate_turbo_pstate(void)
- static void intel_pstate_get_min_max(struct cpudata *cpu, int *min, int *max)
- {
- 	int max_perf = cpu->pstate.turbo_pstate;
-+	int max_perf_adj;
- 	int min_perf;
- 	if (limits.no_turbo)
- 		max_perf = cpu->pstate.max_pstate;
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf.c b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+index 2627553..3b948e3 100644
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+@@ -105,7 +105,7 @@ int mxl111sf_read_reg(struct mxl111sf_state *state, u8 addr, u8 *data)
+ 		ret = -EINVAL;
+ 	}
  
--	max_perf = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
--	*max = clamp_t(int, max_perf,
-+	max_perf_adj = fp_toint(mul_fp(int_tofp(max_perf), limits.max_perf));
-+	*max = clamp_t(int, max_perf_adj,
- 			cpu->pstate.min_pstate, cpu->pstate.turbo_pstate);
- 
- 	min_perf = fp_toint(mul_fp(int_tofp(max_perf), limits.min_perf));
+-	pr_debug("R: (0x%02x, 0x%02x)\n", addr, *data);
++	pr_debug("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
+ fail:
+ 	return ret;
+ }
 -- 
 1.9.0
 
