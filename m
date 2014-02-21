@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaBUPkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:40:05 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36387 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131AbaBUPkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:40:03 -0500
-Date: Fri, 21 Feb 2014 15:39:46 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Grant Edwards <grant.b.edwards@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: locking changes in tty broke low latency feature
-Message-ID: <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
-In-Reply-To: <5305664C.7080701@hurleysoftware.com>
-References: <20140218093829.GC1741@redhat.com>
-	<5303DABD.9000302@hurleysoftware.com>
-	<20140219130308.GC1851@redhat.com>
-	<le2nmd$p1$1@ger.gmane.org>
-	<5304EC33.5040502@hurleysoftware.com>
-	<20140219191717.486ac4d0@alan.etchedpixels.co.uk>
-	<53051276.2070601@hurleysoftware.com>
-	<20140219214242.406e705b@alan.etchedpixels.co.uk>
-	<5305664C.7080701@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932418AbaBUPka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:40:30 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:54405 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932131AbaBUPk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:40:27 -0500
+Date: Fri, 21 Feb 2014 09:39:05 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
+Message-ID: <20140221153905.GE31902@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
+ <20140220182257.GF23217@saruman.home>
+ <a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lqaZmxkhekPBfBzr"
+Content-Disposition: inline
+In-Reply-To: <a39ce44a-2f92-4067-be6d-7311a78bb195@VA3EHSMHS013.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, so this is still only about "best effort", and really bad
-> worst case behavior (that the tty core has no control over) is ok.
-> 
-> Going to great lengths to trim one wakeup when nouveau disables interrupts
-> for 2ms seemed like a waste of time.
+--lqaZmxkhekPBfBzr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If it used to work and it doesn't now it's a regression. It's also a
-nasty one if you've removed the facility for it.
+Hi,
 
-> This change makes flush_to_ldisc() itself safely callable from
-> interrupt context, and:
-> 1. doesn't lose data (ie., buffers if the ldisc is filling up)
-> 2. automatically picks the optimum handling whether the input worker
->     is running or not
-> 3. doesn't require more locks to exclude flushing or the input worker
+On Fri, Feb 21, 2014 at 11:27:07AM +0000, Subbaraya Sundeep Bhatta wrote:
+> > From the looks of it, I doubt this was actually tested, you need a lot
+> > of work on this driver.
+> Tested on both ARM and Microblaze architectures with Mass storage gadget.
+> Will send a v2 after addressing all your comments.
 
-Yep
+clearly you didn't try to remove and reinsert the module or you would
+see a whole bunch of errors.
 
-> Putting aside for a moment the issue of termios safety inside
-> the throttle and unthrottle driver methods, the exclusion locks here could
-> be spinlocks if the drivers can be audited/fixed to not sleep here.
+> This email and any attachments are intended for the sole use of the
+> named recipient(s) and contain(s) confidential information that may be
+> proprietary, privileged or copyrighted under applicable law. If you
+> are not the intended recipient, do not read, copy, or forward this
+> email message or any attachments. Delete this email message and any
+> attachments immediately.
 
-That was basically insoluble when the lock first went in. We tried with a
-spinlock but a lot of USB widgets need to go and chatter with the device
-when you do flow control. Flow control is fundamentally ordered but
-asynchronous however so if the right fix was to make the USB dongles
-queue the work then no harm is done (and the queued flow control
-assertion would worst case be no different to a non queued one from a
-queued flush_to_ldisc)
+remove this footer message, btw, when sending emails to public mailing
+lists.
 
-> Then that just leaves the termios lock, which is a non-trivial problem, and
-> I'm not convinced RCU will magically fix it.
+--=20
+balbi
 
-If you pass a snapshot of the termios state down then I think it does,
-but it's still not remotely trivial.
+--lqaZmxkhekPBfBzr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-First question though comes before all of this - and that is do we need
-low_latency at all any more or is the current scheduling logic now good
-enough to do the job anyway.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Alan
+iQIcBAEBAgAGBQJTB3MZAAoJEIaOsuA1yqREw7MP/2PCe42dNMiNbseVBAcFyptt
+LF85jcqOebK2WykWV0HacXmaP2LN+d8VOTMQyJXIFuNlQoocPQnX4GoGS8YMs8GF
+zPvrhGAiX/qHFl9GF46IWQWAVbNRHzJwdUnKSJH5X+MM80ya1jWCV7X7mDA/YPDE
+rH2MlxNq4pqJQfr18m6i7R5gQDzVtVwUTBXsbIWtR4HA5/KvYA/Tj9Orl51MqZuw
+epw/JX+FXgq0QbDfQKIVzTlvlReGCSdsN+5zQZ+pLv3PK6q+xBf1DfcZ3CSvz39F
+uXpn8M8xaj9V74l8M/E2FWBLAknbarTDGjW3E5ZHiMuYVc2oUihYWH03qa10kyxf
+YQ5GlRXs5medfBunZXs8gyaPb6RDwbSyQeSJxKFC+0nRUUTI091pS+SerOaRG+Ap
+u23BrWoiG4bTq/sw4a8NFpsMbnQEAIFw1WHRv8VgJYt1Pzof6ukjWMFacgvptSHY
+dWsWdIwVKROb9uip5o9qjVecx3+TP2nKnfnDIPgAUoSq1Yel7PlU4wdZrqKL9ojq
+Usa6Hubr6yrdH/XROvGOb4n1zS03NQle7BRVq+p073u3ikHI2oHFPTh1NLC1bcKU
+VATUQ5mNBnsBtrvUKvsyFbc03PwCTQCFilYwIINXBXDv5YAWkkumDnRM4VNmxeLs
+j86qJpSn/D4sq7RlvVcw
+=TYDi
+-----END PGP SIGNATURE-----
+
+--lqaZmxkhekPBfBzr--
