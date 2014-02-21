@@ -1,78 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaBUCyD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:54:03 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65424 "EHLO
+	id S1754201AbaBUCyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:54:01 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3616 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753198AbaBUCuF (ORCPT
+	by vger.kernel.org with ESMTP id S1753213AbaBUCuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Feb 2014 21:50:05 -0500
-Message-Id: <20140221025001.930593103@goodmis.org>
+Message-Id: <20140221025003.592091532@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 20 Feb 2014 21:49:13 -0500
+Date: Thu, 20 Feb 2014 21:49:23 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 07/18] tracing: Disable tracers before deletion of instance
+        Namhyung Kim <namhyung@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [for-next][PATCH 17/18] tracing: Add trace_clock=<clock> kernel parameter
 References: <20140221024906.901631810@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0007-tracing-Disable-tracers-before-deletion-of-instance.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0017-tracing-Add-trace_clock-clock-kernel-parameter.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-When an instance is about to be deleted, make sure the tracer
-is set to nop. If it isn't reset the tracer and set it to the nop
-tracer, otherwise memory leaks and bad pointers may result.
+Being able to change the trace clock at boot can be advantageous if
+you need a better source of when things happen across CPUs. The default
+trace clock is the fastest, but it uses local clocks which may not be
+synced across CPUs and it does not let you know when events took place
+with respect to events on other CPUs.
 
+The global trace clock can help in this case, and if you do not care
+about timings, the counter "clock" is the best, as that is just a  simple
+atomic counter that is incremented for every event.
+
+Usage is to add "trace_clock=counter" on the kernel command line. You
+can replace counter with "global" or any of the clocks listed in
+/sys/kernel/debug/tracing/trace_clock
+
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Appreciated-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ kernel/trace/trace.c | 61 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 45 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index da9543c..7d5913b 100644
+index d95ec28..c90f55d 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -3907,6 +3907,23 @@ create_trace_option_files(struct trace_array *tr, struct tracer *tracer);
- static void
- destroy_trace_option_files(struct trace_option_dentry *topts);
+@@ -181,6 +181,17 @@ static int __init set_trace_boot_options(char *str)
+ }
+ __setup("trace_options=", set_trace_boot_options);
  
-+/*
-+ * Used to clear out the tracer before deletion of an instance.
-+ * Must have trace_types_lock held.
-+ */
-+static void tracing_set_nop(struct trace_array *tr)
++static char trace_boot_clock_buf[MAX_TRACER_SIZE] __initdata;
++static char *trace_boot_clock __initdata;
++
++static int __init set_trace_boot_clock(char *str)
 +{
-+	if (tr->current_trace == &nop_trace)
-+		return;
-+	
-+	tr->current_trace->enabled = false;
++	strlcpy(trace_boot_clock_buf, str, MAX_TRACER_SIZE);
++	trace_boot_clock = trace_boot_clock_buf;
++	return 0;
++}
++__setup("trace_clock=", set_trace_boot_clock);
 +
-+	if (tr->current_trace->reset)
-+		tr->current_trace->reset(tr);
-+
-+	tr->current_trace = &nop_trace;
+ 
+ unsigned long long ns2usecs(cycle_t nsec)
+ {
+@@ -4746,25 +4757,10 @@ static int tracing_clock_show(struct seq_file *m, void *v)
+ 	return 0;
+ }
+ 
+-static ssize_t tracing_clock_write(struct file *filp, const char __user *ubuf,
+-				   size_t cnt, loff_t *fpos)
++static int tracing_set_clock(struct trace_array *tr, const char *clockstr)
+ {
+-	struct seq_file *m = filp->private_data;
+-	struct trace_array *tr = m->private;
+-	char buf[64];
+-	const char *clockstr;
+ 	int i;
+ 
+-	if (cnt >= sizeof(buf))
+-		return -EINVAL;
+-
+-	if (copy_from_user(&buf, ubuf, cnt))
+-		return -EFAULT;
+-
+-	buf[cnt] = 0;
+-
+-	clockstr = strstrip(buf);
+-
+ 	for (i = 0; i < ARRAY_SIZE(trace_clocks); i++) {
+ 		if (strcmp(trace_clocks[i].name, clockstr) == 0)
+ 			break;
+@@ -4792,6 +4788,32 @@ static ssize_t tracing_clock_write(struct file *filp, const char __user *ubuf,
+ 
+ 	mutex_unlock(&trace_types_lock);
+ 
++	return 0;
 +}
 +
- static int tracing_set_tracer(struct trace_array *tr, const char *buf)
- {
- 	static struct trace_option_dentry *topts;
-@@ -6142,6 +6159,7 @@ static int instance_delete(const char *name)
++static ssize_t tracing_clock_write(struct file *filp, const char __user *ubuf,
++				   size_t cnt, loff_t *fpos)
++{
++	struct seq_file *m = filp->private_data;
++	struct trace_array *tr = m->private;
++	char buf[64];
++	const char *clockstr;
++	int ret;
++
++	if (cnt >= sizeof(buf))
++		return -EINVAL;
++
++	if (copy_from_user(&buf, ubuf, cnt))
++		return -EFAULT;
++
++	buf[cnt] = 0;
++
++	clockstr = strstrip(buf);
++
++	ret = tracing_set_clock(tr, clockstr);
++	if (ret)
++		return ret;
++
+ 	*fpos += cnt;
  
- 	list_del(&tr->list);
+ 	return cnt;
+@@ -6574,6 +6596,13 @@ __init static int tracer_alloc_buffers(void)
  
-+	tracing_set_nop(tr);
- 	event_trace_del_tracer(tr);
- 	debugfs_remove_recursive(tr->dir);
- 	free_percpu(tr->trace_buffer.data);
+ 	trace_init_cmdlines();
+ 
++	if (trace_boot_clock) {
++		ret = tracing_set_clock(&global_trace, trace_boot_clock);
++		if (ret < 0)
++			pr_warning("Trace clock %s not defined, going back to default\n",
++				   trace_boot_clock);
++	}
++
+ 	/*
+ 	 * register_tracer() might reference current_trace, so it
+ 	 * needs to be set before we register anything. This is
 -- 
 1.8.5.3
 
