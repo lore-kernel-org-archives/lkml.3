@@ -1,202 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaBUXui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:50:38 -0500
-Received: from forward11.mail.yandex.net ([95.108.130.93]:41500 "EHLO
-	forward11.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaBUXug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:50:36 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20140221175305.1e170b45be08fe05c93a33b4@gmail.com>
-References: <230991392848160@web13m.yandex.ru>
-	<20140221103715.GP9987@twins.programming.kicks-ass.net>
-	<20140221173641.a060b3d6c0993c21e77f29c2@gmail.com> <20140221175305.1e170b45be08fe05c93a33b4@gmail.com>
-Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
+	id S1754659AbaBUXv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:51:56 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:55749 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753922AbaBUXvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 18:51:54 -0500
+Date: Sat, 22 Feb 2014 01:51:45 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
+Message-ID: <20140221235145.GA18046@node.dhcp.inet.fi>
+References: <5307D74C.5070002@oracle.com>
 MIME-Version: 1.0
-Message-Id: <57671393026602@web10j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 22 Feb 2014 03:50:02 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5307D74C.5070002@oracle.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running latest -next
+> kernel I've stumbled on the following (now with pretty line numbers!) spew:
+> 
+> [  746.125099] kernel BUG at mm/huge_memory.c:1371!
 
+It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
+I don't see dump_page() output.
 
-21.02.2014, 20:52, "Juri Lelli" <juri.lelli@gmail.com>:
-> On Fri, 21 Feb 2014 17:36:41 +0100
-> Juri Lelli <juri.lelli@gmail.com> wrote:
->
->> šOn Fri, 21 Feb 2014 11:37:15 +0100
->> šPeter Zijlstra <peterz@infradead.org> wrote:
->>> šOn Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
->>>> šSince deadline tasks share rt bandwidth, we must care about
->>>> šbandwidth timer set. Otherwise rt_time may grow up to infinity
->>>> šin update_curr_dl(), if there are no other available RT tasks
->>>> šon top level bandwidth.
->>>>
->>>> šI'm going to decide the problem the way below. Almost untested
->>>> šbecause of I skipped almost all of recent patches which haveto be applied from lkml.
->>>>
->>>> šPlease say, if I skipped anything in idea. Maybe better put
->>>> šstart_top_rt_bandwidth() into set_curr_task_dl()?
->>> šHow about we only increment rt_time when there's an RT bandwidth timer
->>> šactive?
->>>
->>> š---
->>> š--- a/kernel/sched/rt.c
->>> š+++ b/kernel/sched/rt.c
->>> š@@ -568,6 +568,12 @@ static inline struct rt_bandwidth *sched
->>>
->>> šš#endif /* CONFIG_RT_GROUP_SCHED */
->>>
->>> š+bool sched_rt_bandwidth_active(struct rt_rq *rt_rq)
->>> š+{
->>> š+ struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
->>> š+ return hrtimer_active(&rt_b->rt_period_timer);
->>> š+}
->>> š+
->>> šš#ifdef CONFIG_SMP
->>> šš/*
->>> ššš* We ran out of runtime, see if we can borrow some from our neighbours.
->>> š--- a/kernel/sched/deadline.c
->>> š+++ b/kernel/sched/deadline.c
->>> š@@ -587,6 +587,8 @@ int dl_runtime_exceeded(struct rq *rq, s
->>> ššššššššššreturn 1;
->>> šš}
->>>
->>> š+extern bool sched_rt_bandwidth_active(struct rt_rq *rt_rq);
->>> š+
->>> šš/*
->>> ššš* Update the current task's runtime statistics (provided it is still
->>> ššš* a -deadline task and has not been removed from the dl_rq).
->>> š@@ -650,11 +652,13 @@ static void update_curr_dl(struct rq *rq
->>> ššššššššššššššššššstruct rt_rq *rt_rq = &rq->rt;
->>>
->>> ššššššššššššššššššraw_spin_lock(&rt_rq->rt_runtime_lock);
->>> š- rt_rq->rt_time += delta_exec;
->>> šššššššššššššššššš/*
->>> ššššššššššššššššššš* We'll let actual RT tasks worry about the overflow here, we
->>> š- * have our own CBS to keep us inline -- see above.
->>> š+ * have our own CBS to keep us inline; only account when RT
->>> š+ * bandwidth is relevant.
->>> ššššššššššššššššššš*/
->>> š+ if (sched_rt_bandwidth_active(rt_rq))
->>> š+ rt_rq->rt_time += delta_exec;
->>> ššššššššššššššššššraw_spin_unlock(&rt_rq->rt_runtime_lock);
->>> šššššššššš}
->>> šš}
->> šSo, I ran some tests with the above and I'd like to share with you what
->> šI've found. You can find here a trace-cmd trace that should be feeded
->> što kernelshark to be able to understand what follows (or feel free to
->> šreproduce same scenario :)):
->> šhttp://retis.sssup.it/~jlelli/traces/trace_rt_time.dat
->>
->> šHere you have a DL task (4/10) and a while(1) RT task, both running
->> šinside a rt_bw of 0.5. RT tasks is activated 500ms after DL. As I
->> šfiltered in sched_rt_period_timer(), you can search for time instants
->> šwhen the rt_bw is replenished. It is evident that the first time after
->> šrt timer is activated back (search for start_bandwidth_timer), we can
->> šeat some bw to FAIR tasks (if any). This is due to the fact that we
->> šreset rt_bw budget at this time, start decrementing rt_time for both DL
->
-> The reset happens when rt_bw replenishment timer fires, after a bit:
->
-> šsched_rt_period_timer <-- __run_hrtimer
+> [  746.125775] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  746.126774] Dumping ftrace buffer:
+> [  746.127484]    (ftrace buffer empty)
+> [  746.127781] Modules linked in:
+> [  746.128358] CPU: 2 PID: 19816 Comm: trinity-c127 Tainted: G        W
+> 3.14.0-rc3-next-20140221-sasha-00008-g0e660cf-dirty #114
+> [  746.130196] task: ffff8803a7cc3000 ti: ffff8803a7f1c000 task.ti: ffff8803a7f1c000
+> [  746.130317] RIP: 0010:[<mm/huge_memory.c:1371>]  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
+> [  746.130317] RSP: 0018:ffff8803a7f1dca8  EFLAGS: 00010246
+> [  746.130317] RAX: ffff8801ab4ac000 RBX: ffff8803a7f1ddd8 RCX: 000000000000002e
+> [  746.130317] RDX: 0000000000000000 RSI: ffff8803a7cc3d00 RDI: 000000000172c000
+> [  746.130317] RBP: ffff8803a7f1dce8 R08: 0000000000000000 R09: 0000000000000000
+> [  746.130317] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0006a8fa00
+> [  746.130317] R13: ffffea0005cb0000 R14: 00007f784f800000 R15: 00007f785750bfff
+> [  746.130317] FS:  00007f785afbc700(0000) GS:ffff8801abc00000(0000) knlGS:0000000000000000
+> [  746.130317] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  746.130317] CR2: 0000000000000010 CR3: 00000003a9739000 CR4: 00000000000006e0
+> [  746.130317] DR0: 0000000000693000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  746.130317] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [  746.130317] Stack:
+> [  746.130317]  00000000000004de ffff8803a9777390 ffff8803a7f1dce8 ffff8803a2afd3e0
+> [  746.130317]  00007f784f800000 00007f785750c000 ffff8803a7f1ddd8 00007f785750bfff
+> [  746.130317]  ffff8803a7f1dd78 ffffffff81285536 00000000001d8500 00007f784fa00000
+> [  746.130317] Call Trace:
+> [  746.130317]  [<mm/memory.c:1231 mm/memory.c:1265 mm/memory.c:1290>] unmap_page_range+0x2c6/0x410
+> [  746.130317]  [<mm/memory.c:1338>] unmap_single_vma+0xf1/0x110
+> [  746.130317]  [<mm/memory.c:1390>] zap_page_range+0x121/0x170
+> [  746.130317]  [<mm/madvise.c:271 mm/madvise.c:371>] madvise_vma+0x180/0x1c0
+> [  746.130317]  [<mm/madvise.c:518 mm/madvise.c:448>] SyS_madvise+0x17e/0x250
+> [  746.130317]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+> [  746.152464] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03
+> 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 26 29 f9 ff
+> <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 ff 48
+> [  746.152464] RIP  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
+> [  746.152464]  RSP <ffff8803a7f1dca8>
+> 
+> 
+> Thanks,
+> Sasha
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Juri, sorry, I forgot to wrote I mean the situation when only one task is on_rq
-at every moment.
-
-DL, RT, DL, RT, ...
-
-rt_runtime = n;
-rt_period  = 2n;
-
-| DL's working, RT's sleeping  | RT's working, DL's sleeping  |   all sleep               |
-------------------------------------------------------------------------------------------|
-| (1)     duration = n         | (2)     duration = n         | (3)     duration = n      |  (repeat)
-|------------------------------|------------------------------|---------------------------|
-| (rt_bw timer is not running) |                   (rt_bw timer is running)               |
-
-
-According to the patch, rt_bw timer is working only if we have queued RT task.
-
-In the case above part (1) has no queued RT tasks, so timer is not working.
-rt_time is not being increased too.
-
-We have ratio 2/3.
-
-Thanks,
-Kirill
-
->
-> Apologies,
->
-> - Juri
->
->> šand RT tasks, throttle RT tasks when rt_time > runtime, but, since DL
->> štasks acually executes inside their own server, they don't care about
->> šrt_bw. Good news is that steady state is ok: keeping track of overruns
->> šwe are able to stop eating bw to other guys.
->>
->> šMy thougths:
->>
->> šš- Peter's patch is an easy fix to Kirill's problem (RT tasks were
->> ššššthrottled too early);
->> šš- something to add to this solution could be to pre-calculate bw of
->> ššššready DL tasks and subtract it to rt_bw at replenishment time, but
->> ššššit sounds quite awkward, pessimistic, and I'm not sure it is gonna
->> ššššwork;
->> šš- we are stealing bw to best-effort tasks, and just at the beginning
->> ššššof the transistion, is it really a problem?
->> šš- I mean, if you want guarantees make your tasks DL! :);
->> šš- in the long run we are gonna have RT tasks scheduled inside CBS
->> ššššservers, and all this will be properly fixed up.
->>
->> šComments?
->>
->> šBTW, rt timer activation/deactivation should probably be fixed for
->> š!RT_GROUP_SCHED with something like this:
->>
->> š---
->> šškernel/sched/rt.c | šš10 +++++++---
->> šš1 file changed, 7 insertions(+), 3 deletions(-)
->>
->> šdiff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->> šindex 6161de8..274f992 100644
->> š--- a/kernel/sched/rt.c
->> š+++ b/kernel/sched/rt.c
->> š@@ -86,12 +86,12 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
->> ššššššššššraw_spin_lock_init(&rt_rq->rt_runtime_lock);
->> šš}
->>
->> š-#ifdef CONFIG_RT_GROUP_SCHED
->> ššstatic void destroy_rt_bandwidth(struct rt_bandwidth *rt_b)
->> šš{
->> ššššššššššhrtimer_cancel(&rt_b->rt_period_timer);
->> šš}
->>
->> š+#ifdef CONFIG_RT_GROUP_SCHED
->> šš#define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
->>
->> ššstatic inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
->> š@@ -1017,8 +1017,12 @@ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->> ššššššššššstart_rt_bandwidth(&def_rt_bandwidth);
->> šš}
->>
->> š-static inline
->> š-void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
->> š+static void
->> š+dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->> š+{
->> š+ if (!rt_rq->rt_nr_running)
->> š+ destroy_rt_bandwidth(&def_rt_bandwidth);
->> š+}
->>
->> šš#endif /* CONFIG_RT_GROUP_SCHED */
+-- 
+ Kirill A. Shutemov
