@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaBUWoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:44:09 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:52868 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568AbaBUWoH (ORCPT
+	id S1755577AbaBUWqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:46:21 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35438 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaBUWqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:44:07 -0500
-Date: Fri, 21 Feb 2014 14:44:05 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andi Kleen <andi@firstfloor.org>
-cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, davidlohr@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-In-Reply-To: <20140221223616.GG22728@two.firstfloor.org>
-Message-ID: <alpine.DEB.2.02.1402211440120.20113@chino.kir.corp.google.com>
-References: <20140218123013.GA20609@amt.cnet> <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com> <20140220022254.GA25898@amt.cnet> <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com> <20140220213407.GA11048@amt.cnet>
- <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com> <20140221022800.GA30230@amt.cnet> <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com> <20140221191055.GD19955@amt.cnet> <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
- <20140221223616.GG22728@two.firstfloor.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 21 Feb 2014 17:46:19 -0500
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, gtdev@spearhead.de, "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH 1/1] serial: 8250_pci: fix support for MosChip 98xx boards
+Date: Fri, 21 Feb 2014 14:46:17 -0800
+Message-Id: <1393022777-5959-1-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.8.3.2
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (ovro.ovro.caltech.edu [0.0.0.0]); Fri, 21 Feb 2014 14:46:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014, Andi Kleen wrote:
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 
-> > > 2) it improves the kernel command line interface from incomplete
-> > > (lacking the ability to specify node<->page correlation), to 
-> > > a complete interface.
-> > > 
-> > 
-> > If GB hugepages can be allocated dynamically, I really think we should be 
-> > able to remove hugepagesz= entirely for x86 after a few years of 
-> > supporting it for backwards compatibility, even though Linus has insisted 
-> 
-> That doesn't make any sense. Why break a perfectly fine interface?
-> 
+Commit 7808edcd306f22aeb23775d34e70b7fa2f58b852 "Basic support for
+Moschip 9900 family I/O chips" broke support for the 98xx boards. This
+is due to a missing check for the 99xx family inside the newly added
+pci_netmos_9900_setup() function, which is now used for all boards in
+the Moschip family.
 
-I think doing hugepagesz= and not default_hugepagesz= is more of a hack 
-just because we lack support for dynamically allocating some class of 
-hugepage sizes and this is the only way to currently do it; if we had 
-support for doing it at runtime then that hack probably isn't needed.  You 
-would still be able to do default_hugepagesz=1G and allocate a ton of them 
-when fragmentation is a concern and it can only truly be done at boot.  
-Even then, with such a large size it doesn't seem absolutely necessary 
-since you'd either be (a) oom as a result of all those hugepages or (b) 
-there would be enough memory for initscripts to do this at runtime, this 
-isn't the case with 2MB.
+The code for skipping BARs is incorrect for the 98xx boards. Using it
+causes two serial ports to be left undetected on my 9865 board.
 
-But, like I said, I'm not sure we'd ever be able to totally remove it 
-because of backwards compatibility, but the point is that nobody would 
-have to use it anymore as a hack for 1GB.
+By checking for the 99xx boards and using the new code exclusively for
+them, all of my serial ports are now detected.
+
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+---
+
+Here is the lspci output for my 9865 board. On the 05:00.2 device, the
+middle two serial ports (I/O ports 0x1010 and 0x1008) are left unused
+and undetected without this patch.
+
+After the patch, they work perfectly.
+
+05:00.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
+	Subsystem: Device a000:1000
+	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 21
+	I/O ports at 1028 [size=8]
+	Memory at e0104000 (32-bit, non-prefetchable) [size=4K]
+	Memory at e0103000 (32-bit, non-prefetchable) [size=4K]
+	Capabilities: <access denied>
+	Kernel driver in use: serial
+	Kernel modules: parport_pc
+
+05:00.1 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
+	Subsystem: Device a000:1000
+	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 22
+	I/O ports at 1020 [size=8]
+	Memory at e0102000 (32-bit, non-prefetchable) [size=4K]
+	Memory at e0101000 (32-bit, non-prefetchable) [size=4K]
+	Capabilities: <access denied>
+	Kernel driver in use: serial
+	Kernel modules: parport_pc
+
+05:00.2 Communication controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller
+	Subsystem: Device a000:3004
+	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 23
+	I/O ports at 1018 [size=8]
+	I/O ports at 1010 [size=8]
+	I/O ports at 1008 [size=8]
+	I/O ports at 1000 [size=8]
+	Memory at e0100000 (32-bit, non-prefetchable) [size=4K]
+	Capabilities: <access denied>
+	Kernel driver in use: serial
+
+ drivers/tty/serial/8250/8250_pci.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 50228eed3b6f..374551f196c5 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -783,7 +783,8 @@ static int pci_netmos_9900_setup(struct serial_private *priv,
+ {
+ 	unsigned int bar;
+ 
+-	if ((priv->dev->subsystem_device & 0xff00) == 0x3000) {
++	if ((priv->dev->subsystem_device & 0xff00) == 0x3000 &&
++		(priv->dev->device & 0xff00) == 0x9900) {
+ 		/* netmos apparently orders BARs by datasheet layout, so serial
+ 		 * ports get BARs 0 and 3 (or 1 and 4 for memmapped)
+ 		 */
+-- 
+1.8.3.2
+
