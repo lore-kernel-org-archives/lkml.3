@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaBUMiS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:38:18 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54668 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754569AbaBUMiQ (ORCPT
+	id S1755344AbaBUMo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:44:26 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:43524 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086AbaBUMoY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:38:16 -0500
-Date: Fri, 21 Feb 2014 12:37:04 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Larry Bassel <lbassel@codeaurora.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Jiang Liu <liuj97@gmail.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vitaly Andrianov <vitalya@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
-Message-ID: <20140221123645.GA2578@e103592.cambridge.arm.com>
-References: <1392339850-18686-1-git-send-email-keescook@chromium.org>
- <1392339850-18686-3-git-send-email-keescook@chromium.org>
- <20140214162257.GB2331@e103592.cambridge.arm.com>
- <CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
- <20140217123415.GA2182@e103592.cambridge.arm.com>
- <CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Feb 2014 07:44:24 -0500
+Date: Fri, 21 Feb 2014 13:44:38 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
+Message-Id: <20140221134438.ab2d02c4165fa2a6cbd663be@gmail.com>
+In-Reply-To: <311621392984565@web3h.yandex.ru>
+References: <230991392848160@web13m.yandex.ru>
+	<20140221103715.GP9987@twins.programming.kicks-ass.net>
+	<128831392982418@web15j.yandex.ru>
+	<311621392984565@web3h.yandex.ru>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:10:03AM -0800, Kees Cook wrote:
-> On Mon, Feb 17, 2014 at 4:34 AM, Dave Martin <Dave.Martin@arm.com> wrote:
-> > On Fri, Feb 14, 2014 at 11:11:07AM -0800, Kees Cook wrote:
-> >> On Fri, Feb 14, 2014 at 8:22 AM, Dave Martin <Dave.Martin@arm.com> wrote:
-> >> > On Thu, Feb 13, 2014 at 05:04:10PM -0800, Kees Cook wrote:
-> >> >> Introduce "CONFIG_DEBUG_RODATA" to mostly match the x86 config, though
-> >> >> the behavior is different: it depends on STRICT_KERNMEM_PERMS, which
-> >> >> sets rodata read-only (but executable), where as this option additionally
-> >> >> splits rodata from the kernel text (resulting in potentially more memory
-> >> >> lost to padding) and sets it non-executable as well. The end result is
-> >> >> that on builds with CONFIG_DEBUG_RODATA=y (like x86) the rodata with be
-> >> >> marked purely read-only.
-> >> >
-> >> > This triggers an Oops in kexec, because we have a block of code in .text
-> >> > which is a template for generating baremetal code to relocate the new
-> >> > kernel, and some literal words are written into it before copying.
-> >>
-> >> You're writing into the text area? I would imagine that
-> >> CONFIG_ARM_KERNMEM_PERMS would break that. However, that's not the
-> >> right place to be building code -- shouldn't the module area be used
-> >> for that?
-> >>
-> >> > Possibly this should be in .rodata, not .text.
-> >>
-> >> Well, rodata should be neither writable nor executable.
-> >
-> > We're not writing into code exactly.
-> >
-> > This code is never executed in-place in vmlinux.  It gets copied, and
-> > only copies are ever executed.
-> >
-> > Some pointers and offsets get poked into the code to configure it.
-> >
-> > I think it would be better simply to put the code in .rodata, and
-> > poke paramaters into the copy, not the original -- but that's a bit
-> > more awkward to code up, since the values can't be poked simply by
-> > writing global variables.
-> 
-> Okay, interesting. I'll be curious to see what the patch for this looks like.
-> 
-> >> > There may be a few other instances of this kind of thing.
-> >>
-> >> This config will certainly find them! :) But, that's why it's behind a config.
-> >
-> > I haven't tested exhaustively, but it think this is sufficient for a
-> > Tested-by.  The patch does seem to be doing what it is intended to
-> > do, and doesn't seem to be triggering false positives all over the
-> > place.
-> 
-> Great, thanks for taking the time to check on it!
-> 
-> Should I send this to the patch tracker, or wait for more feedback?
+On Fri, 21 Feb 2014 16:09:25 +0400
+Kirill Tkhai <tkhai@yandex.ru> wrote:
 
-It would be good if someone who's more familiar with the parms and
-vmlinux.lds stuff could take a look at it, though I don't see any
-obvious problem yet.
+> 
+> 
+> 21.02.2014, 15:39, "Kirill Tkhai" <tkhai@yandex.ru>:
+> > 21.02.2014, 14:37, "Peter Zijlstra" <peterz@infradead.org>:
+> >
+> >>  On Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
+> >>>   Since deadline tasks share rt bandwidth, we must care about
+> >>>   bandwidth timer set. Otherwise rt_time may grow up to infinity
+> >>>   in update_curr_dl(), if there are no other available RT tasks
+> >>>   on top level bandwidth.
+> >>>
+> >>>   I'm going to decide the problem the way below. Almost untested
+> >>>   because of I skipped almost all of recent patches which haveto be applied from lkml.
+> >>>
+> >>>   Please say, if I skipped anything in idea. Maybe better put
+> >>>   start_top_rt_bandwidth() into set_curr_task_dl()?
+> >>  How about we only increment rt_time when there's an RT bandwidth timer
+> >>  active?
+> >
+> > This case RT and DL may eat all the time:
+> >
+> > --------------  time ------------------>
+> > |RT's working |DL's working|
+> > ----------------------------
+> > |rt_runtime   |            |
+> > ----------------------------
+> > |        rt_period         |
+> >
+> > Or at least more, than it's allowed.
+> >
+> > It looks like, if we want to limit time of high priority classes
+> > execution, we have to set the timer anyway.
+> 
+> Oh, above is confusing. Sorry.
+> 
+> I mean one RT task and
+> 
+> -----------------  time -------------------------->
+> |DL's working    |RT's working| |DL's working    |
+> --------------------------------------------------
+> |                |rt_runtime  | |                |
+> --------------------------------------------------
+> |                |   rt_period  |                |
+> 
+> In this case FAIR receives less ratio, than (rt_period-rt_runtime)/rt_period.
+> 
 
-If you don't receive further comments, you could try reposting once
-to alert people to the fact that you're still waiting.
+DL tasks won't be allowed to run in this situation, as their bw exceedes
+rt_runtime/rt_period.
 
-Cheers
----Dave
+Thanks,
+
+- Juri
