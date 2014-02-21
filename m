@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaBUTvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:51:45 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39735 "EHLO
+	id S1755248AbaBUTwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:52:45 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39722 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753996AbaBUTtu (ORCPT
+	with ESMTP id S1753459AbaBUTti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:49:50 -0500
+	Fri, 21 Feb 2014 14:49:38 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Gregory Clement <gregory.clement@free-electrons.com>,
         b.brezillon@overkiz.com,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 5/9] ARM: at91: prepare sam9 dt boards transition to common clk
-Date: Fri, 21 Feb 2014 20:48:54 +0100
-Message-Id: <1393012138-17255-6-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 1/9] ARM: at91: prepare at91sam9rl DT transition
+Date: Fri, 21 Feb 2014 20:48:50 +0100
+Message-Id: <1393012138-17255-2-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -25,68 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <b.brezillon@overkiz.com>
+Add the new names, coming from DT, for the clock lookups.
 
-This patch prepare the transition to common clk for sam9 dt boards by
-replacing the timer init callback.
-
-Clocks registration cannot be done in early init callback (as formerly done
-by the old clk implementation) because it requires dynamic allocation
-which is not ready yet during early init.
-
-In the other hand, at91 clocks must be registered before
-at91sam926x_pit_init is called because PIT (Periodic Interval Timer) driver
-request the master clk (mck).
-
-A new function (at91sam9_dt_timer_init) is created to fullfil these needs.
-This function registers all at91 clks using the dt definition before
-calling the PIT init function.
-The device tree clock registration is enabled only if common clk is
-selected. Else the old clk registration is been done during
-at91_dt_initialize call.
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/board-dt-sam9.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/at91sam9rl.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
-index 3dab868b02fa..575b0be66ca8 100644
---- a/arch/arm/mach-at91/board-dt-sam9.c
-+++ b/arch/arm/mach-at91/board-dt-sam9.c
-@@ -13,6 +13,7 @@
- #include <linux/gpio.h>
- #include <linux/of.h>
- #include <linux/of_irq.h>
-+#include <linux/clk-provider.h>
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 3651517abedf..d6ee8bb47213 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -196,6 +196,22 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_ID("pioB", &pioB_clk),
+ 	CLKDEV_CON_ID("pioC", &pioC_clk),
+ 	CLKDEV_CON_ID("pioD", &pioD_clk),
++	/* more lookup table for DT entries */
++	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
++	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
++	CLKDEV_CON_DEV_ID("usart", "ffffb400.serial", &usart1_clk),
++	CLKDEV_CON_DEV_ID("usart", "ffffb800.serial", &usart2_clk),
++	CLKDEV_CON_DEV_ID("usart", "ffffbc00.serial", &usart3_clk),
++	CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
++	CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
++	CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
++	CLKDEV_CON_DEV_ID("mci_clk", "fffa4000.mmc", &mmc_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffa8000.i2c", &twi0_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi1_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
++	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
+ };
  
- #include <asm/setup.h>
- #include <asm/irq.h>
-@@ -25,6 +26,14 @@
- #include "generic.h"
- 
- 
-+static void __init sam9_dt_timer_init(void)
-+{
-+#if defined(CONFIG_COMMON_CLK)
-+	of_clk_init(NULL);
-+#endif
-+	at91sam926x_pit_init();
-+}
-+
- static const struct of_device_id irq_of_match[] __initconst = {
- 
- 	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
-@@ -43,7 +52,7 @@ static const char *at91_dt_board_compat[] __initdata = {
- 
- DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
- 	/* Maintainer: Atmel */
--	.init_time	= at91sam926x_pit_init,
-+	.init_time	= sam9_dt_timer_init,
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic_handle_irq,
- 	.init_early	= at91_dt_initialize,
+ static struct clk_lookup usart_clocks_lookups[] = {
 -- 
 1.8.3.2
 
