@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaBUCWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:22:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43323 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759AbaBUCWd convert rfc822-to-8bit (ORCPT
+	id S1752695AbaBUCXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:23:42 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:6755 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751163AbaBUCXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:22:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,516,1389772800"; 
-   d="scan'208";a="478861411"
-From: "Cui, Dexuan" <dexuan.cui@intel.com>
-To: Pasi K?rkk?inen <pasik@iki.fi>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Tian, Kevin" <kevin.tian@intel.com>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: RE: [Xen-devel] [Announcement] Updates to XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-Thread-Topic: [Xen-devel] [Announcement] Updates to XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-Thread-Index: Ac8uCM+UTJUf7TAWTkKmKWKJu37vjgAHsPmAACDtz+A=
-Date: Fri, 21 Feb 2014 02:22:11 +0000
-Message-ID: <A25F549E4D43CD42B4C02DF47A1913231105A665@SHSMSX103.ccr.corp.intel.com>
-References: <A25F549E4D43CD42B4C02DF47A19132311058FC7@SHSMSX103.ccr.corp.intel.com>
- <20140220183613.GJ3200@reaktio.net>
-In-Reply-To: <20140220183613.GJ3200@reaktio.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Feb 2014 21:23:41 -0500
+From: Lei Wen <leiwen@marvell.com>
+To: Peter Zijlstra <peterz@infradead.org>, Lei Wen <leiwen@marvell.com>,
+        <mingo@redhat.com>, <preeti.lkml@gmail.com>,
+        <daniel.lezcano@linaro.org>, <viresh.kumar@linaro.org>,
+        <xjian@marvell.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] sched: keep quiescent cpu out of idle balance loop
+Date: Fri, 21 Feb 2014 10:23:10 +0800
+Message-ID: <1392949390-9867-1-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140220122311.GO27965@twins.programming.kicks-ass.net>
+References: <20140220122311.GO27965@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-21_01:2014-02-21,2014-02-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402200179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pasi Kärkkäinen wrote on 2014-02-21:
-> On Thu, Feb 20, 2014 at 07:59:04AM +0000, Cui, Dexuan wrote:
->> Hi all,
->> We're pleased to announce an update to XenGT since its first disclosure in
->> last Sep.
-> 
-> Are you going to work on upstreaming this stuff? Xen 4.4 will be
-> released soon(ish), so the Xen 4.5 development window starts in the near
-> future and hopefully this stuff can be upstreamed then..
-Hi Pasi,
-We do plan to upstream but not give a timeframe so far.
+Cpu which is put into quiescent mode, would remove itself
+from kernel's sched_domain, and want others not disturb its
+task running. But current scheduler would not checking whether
+that cpu is setting in such mode, and still insist the quiescent
+cpu to response the nohz load balance.
 
-> Also: Haswell ("4th generation Intel core CPU") is listed as a requirement in
-> the Setup Guide PDF..
-> will there be support for SNB/IVB GPUs aswell?
-There is no plan for SNB/IVB.
+Fix it by preventing such cpu set nohz.idle_cpus_mask in the
+first place.
 
-Thanks,
--- Dexuan
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 235cfa7..66194fc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6883,6 +6883,13 @@ void nohz_balance_enter_idle(int cpu)
+ 	if (!cpu_active(cpu))
+ 		return;
+ 
++	/*
++	 * If this cpu is kept outside of root domain, we don't bother
++	 * to ask it for nohz balance.
++	 */
++	if (!cpumask_test_cpu(cpu, this_rq()->rd->span))
++		return;
++
+ 	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+ 		return;
+ 
+-- 
+1.8.3.2
 
