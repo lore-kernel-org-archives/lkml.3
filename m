@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaBUMub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47001 "EHLO
+	id S932264AbaBUMuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144AbaBUMu1 (ORCPT
+	with ESMTP id S932144AbaBUMuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:27 -0500
+	Fri, 21 Feb 2014 07:50:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 056/121] ath9k_htc: make ->sta_rc_update atomic for most calls
-Date: Fri, 21 Feb 2014 12:48:00 +0000
-Message-Id: <1392986945-9693-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 049/121] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+Date: Fri, 21 Feb 2014 12:47:53 +0000
+Message-Id: <1392986945-9693-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,71 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 2fa4cb905605c863bf570027233af7afd8149ae4 upstream.
+commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
 
-sta_rc_update() callback must be atomic, hence we can not take mutexes
-or do other operations, which can sleep in ath9k_htc_sta_rc_update().
+If kvm_io_bus_register_dev() fails then it returns success but it should
+return an error code.
 
-I think we can just return from ath9k_htc_sta_rc_update(), if it is
-called without IEEE80211_RC_SUPP_RATES_CHANGED bit. That will help
-with scheduling while atomic bug for most cases (except mesh and IBSS
-modes).
+I also did a little cleanup like removing an impossible NULL test.
 
-For mesh and IBSS I do not see other solution like creating additional
-workqueue, because sending firmware command require us to sleep, but
-this can be done in additional patch.
-
-Patch partially fixes bug:
-https://bugzilla.redhat.com/show_bug.cgi?id=990955
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ virt/kvm/coalesced_mmio.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-index de02522..c3e1dd2 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -1340,21 +1340,22 @@ static void ath9k_htc_sta_rc_update(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_htc_target_rate trate;
+diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
+index 88b2fe3..00d8642 100644
+--- a/virt/kvm/coalesced_mmio.c
++++ b/virt/kvm/coalesced_mmio.c
+@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio(struct kvm *kvm,
+ 	list_add_tail(&dev->list, &kvm->coalesced_zones);
+ 	mutex_unlock(&kvm->slots_lock);
  
-+	if (!(changed & IEEE80211_RC_SUPP_RATES_CHANGED))
-+		return;
-+
- 	mutex_lock(&priv->mutex);
- 	ath9k_htc_ps_wakeup(priv);
+-	return ret;
++	return 0;
  
--	if (changed & IEEE80211_RC_SUPP_RATES_CHANGED) {
--		memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
--		ath9k_htc_setup_rate(priv, sta, &trate);
--		if (!ath9k_htc_send_rate_cmd(priv, &trate))
--			ath_dbg(common, CONFIG,
--				"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
--				sta->addr, be32_to_cpu(trate.capflags));
--		else
--			ath_dbg(common, CONFIG,
--				"Unable to update supported rates for sta: %pM\n",
--				sta->addr);
--	}
-+	memset(&trate, 0, sizeof(struct ath9k_htc_target_rate));
-+	ath9k_htc_setup_rate(priv, sta, &trate);
-+	if (!ath9k_htc_send_rate_cmd(priv, &trate))
-+		ath_dbg(common, CONFIG,
-+			"Supported rates for sta: %pM updated, rate caps: 0x%X\n",
-+			sta->addr, be32_to_cpu(trate.capflags));
-+	else
-+		ath_dbg(common, CONFIG,
-+			"Unable to update supported rates for sta: %pM\n",
-+			sta->addr);
+ out_free_dev:
+ 	mutex_unlock(&kvm->slots_lock);
+-
+ 	kfree(dev);
  
- 	ath9k_htc_ps_restore(priv);
- 	mutex_unlock(&priv->mutex);
+-	if (dev == NULL)
+-		return -ENXIO;
+-
+-	return 0;
++	return ret;
+ }
+ 
+ int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
 -- 
 1.9.0
 
