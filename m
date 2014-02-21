@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323AbaBUN3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:29:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47179 "EHLO
+	id S933350AbaBUNaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:30:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47177 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498AbaBUMvR (ORCPT
+	with ESMTP id S932493AbaBUMvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:17 -0500
+	Fri, 21 Feb 2014 07:51:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Beomho Seo <beomho.seo@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/121] iio: adis16400: Set timestamp as the last element in chan_spec
-Date: Fri, 21 Feb 2014 12:48:35 +0000
-Message-Id: <1392986945-9693-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/121] iio: ak8975: Fix calculation formula for convert micro tesla to gauss unit
+Date: Fri, 21 Feb 2014 12:48:34 +0000
+Message-Id: <1392986945-9693-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,86 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
+From: Beomho Seo <beomho.seo@samsung.com>
 
-commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
+commit bef44abccb2677e8d16e50b75316d4fd1061be81 upstream.
 
-This is necessary since timestamp is calculated as the last element
-in iio_compute_scan_bytes().
+This effects the reported scale of the raw values, and thus userspace
+applications that use this value.
 
-Without this fix any userspace code reading the layout of the buffer via
-sysfs will incorrectly interpret the data leading some nasty corruption.
+One micro tesla equal 0.01 gauss. So I have fixed calculation formula And add RAW_TO_GAUSS macro.
+ASA is in the range of 0 to 255. If multiply 0.003, calculation result(in_magn_[*]_scale) is
+always 0. So multiply 3000 and return and IIO_VAL_INT_PLUS_MICRO.
+As a result, read_raw call back function return accurate scale value.
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/imu/adis16400.h      |  1 +
- drivers/iio/imu/adis16400_core.c | 10 +++++-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/iio/magnetometer/ak8975.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/iio/imu/adis16400.h b/drivers/iio/imu/adis16400.h
-index 2f8f9d6..0916bf6 100644
---- a/drivers/iio/imu/adis16400.h
-+++ b/drivers/iio/imu/adis16400.h
-@@ -189,6 +189,7 @@ enum {
- 	ADIS16300_SCAN_INCLI_X,
- 	ADIS16300_SCAN_INCLI_Y,
- 	ADIS16400_SCAN_ADC,
-+	ADIS16400_SCAN_TIMESTAMP,
- };
+diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
+index 7105f22..9edf4c9 100644
+--- a/drivers/iio/magnetometer/ak8975.c
++++ b/drivers/iio/magnetometer/ak8975.c
+@@ -85,6 +85,7 @@
+ #define AK8975_MAX_CONVERSION_TIMEOUT	500
+ #define AK8975_CONVERSION_DONE_POLL_TIME 10
+ #define AK8975_DATA_READY_TIMEOUT	((100*HZ)/1000)
++#define RAW_TO_GAUSS(asa) ((((asa) + 128) * 3000) / 256)
  
- #ifdef CONFIG_IIO_BUFFER
-diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
-index e58c529..d6ece2d 100644
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16400_channels[] = {
- 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
- 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(12)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+ /*
+  * Per-instance context data for the device.
+@@ -265,15 +266,15 @@ static int ak8975_setup(struct i2c_client *client)
+  *
+  * Since 1uT = 100 gauss, our final scale factor becomes:
+  *
+- * Hadj = H * ((ASA + 128) / 256) * 3/10 * 100
+- * Hadj = H * ((ASA + 128) * 30 / 256
++ * Hadj = H * ((ASA + 128) / 256) * 3/10 * 1/100
++ * Hadj = H * ((ASA + 128) * 0.003) / 256
+  *
+  * Since ASA doesn't change, we cache the resultant scale factor into the
+  * device context in ak8975_setup().
+  */
+-	data->raw_to_gauss[0] = ((data->asa[0] + 128) * 30) >> 8;
+-	data->raw_to_gauss[1] = ((data->asa[1] + 128) * 30) >> 8;
+-	data->raw_to_gauss[2] = ((data->asa[2] + 128) * 30) >> 8;
++	data->raw_to_gauss[0] = RAW_TO_GAUSS(data->asa[0]);
++	data->raw_to_gauss[1] = RAW_TO_GAUSS(data->asa[1]);
++	data->raw_to_gauss[2] = RAW_TO_GAUSS(data->asa[2]);
  
- static const struct iio_chan_spec adis16448_channels[] = {
-@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16448_channels[] = {
- 		},
- 	},
- 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16350_channels[] = {
-@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16350_channels[] = {
- 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16300_channels[] = {
-@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16300_channels[] = {
- 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
- 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
- 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
--	IIO_CHAN_SOFT_TIMESTAMP(14)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16334_channels[] = {
-@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16334_channels[] = {
- 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
- 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(8)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static struct attribute *adis16400_attributes[] = {
+ 	return 0;
+ }
+@@ -428,8 +429,9 @@ static int ak8975_read_raw(struct iio_dev *indio_dev,
+ 	case IIO_CHAN_INFO_RAW:
+ 		return ak8975_read_axis(indio_dev, chan->address, val);
+ 	case IIO_CHAN_INFO_SCALE:
+-		*val = data->raw_to_gauss[chan->address];
+-		return IIO_VAL_INT;
++		*val = 0;
++		*val2 = data->raw_to_gauss[chan->address];
++		return IIO_VAL_INT_PLUS_MICRO;
+ 	}
+ 	return -EINVAL;
+ }
 -- 
 1.9.0
 
