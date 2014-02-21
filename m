@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaBUXIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:08:35 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10121 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754226AbaBUXId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:08:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19gvWaAdSjOfpPOxheIXlbH
-Date: Fri, 21 Feb 2014 15:08:21 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Subject: Re: [PATCHv2] ARM: OMAP2+: Add support for thumb mode on DT booted
- N900
-Message-ID: <20140221230821.GB5342@atomide.com>
-References: <1391603582-11371-1-git-send-email-sre@debian.org>
- <1392672658-13866-1-git-send-email-sre@debian.org>
+	id S1753696AbaBUXNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:13:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:3841 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686AbaBUXNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 18:13:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,521,1389772800"; 
+   d="scan'208";a="485741750"
+Date: Fri, 21 Feb 2014 16:13:01 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NTB: Fix typo in setting one translation register
+Message-ID: <20140221231300.GA3112@jonmason-lab>
+References: <1392998841-17728-1-git-send-email-roland@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392672658-13866-1-git-send-email-sre@debian.org>
+In-Reply-To: <1392998841-17728-1-git-send-email-roland@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Reichel <sre@debian.org> [140217 13:33]:
-> Without enabling the workaround for ARM errata 430973 thumb
-> compiled userland crashes randomly on the Nokia N900.
+On Fri, Feb 21, 2014 at 08:07:21AM -0800, Roland Dreier wrote:
+> From: Roland Dreier <roland@purestorage.com>
 > 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> In the code for Xeon devices in back-to-back mode with xeon_errata_workaround
+> disabled, the downstream device puts the wrong value in SNB_B2B_XLAT_OFFSETL
+> (SNB_MBAR01_DSD_ADDR vs. SNB_MBAR01_USD_ADDR).
+> 
+> This was spotted while reading code, since the typo has no practical effect,
+> at least for now: the low 32 bits of both constants are actually identical
+> anyway.  However, it's clearer and safer to use the right name.
+
+Good catch.  Applied.
+
+> 
+> Signed-off-by: Roland Dreier <roland@purestorage.com>
 > ---
-> Hi,
+>  drivers/ntb/ntb_hw.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> This is PATCHv2 for the thumb errata workaround for N900 DT
-> boot, which should go into 3.14-rc.
+> diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+> index 170e8e60cdb7..2774d356b689 100644
+> --- a/drivers/ntb/ntb_hw.c
+> +++ b/drivers/ntb/ntb_hw.c
+> @@ -785,7 +785,7 @@ static int ntb_xeon_setup(struct ntb_device *ndev)
+>  				/* B2B_XLAT_OFFSET is a 64bit register, but can
+>  				 * only take 32bit writes
+>  				 */
+> -				writel(SNB_MBAR01_DSD_ADDR & 0xffffffff,
+> +				writel(SNB_MBAR01_USD_ADDR & 0xffffffff,
+>  				       ndev->reg_base + SNB_B2B_XLAT_OFFSETL);
+>  				writel(SNB_MBAR01_USD_ADDR >> 32,
+>  				       ndev->reg_base + SNB_B2B_XLAT_OFFSETU);
+> -- 
+> 1.9.0
 > 
-> Changes since PATCHv1:
->  * Add Reviewed-By: Pavel Machek
->  * Add more verbose warning about the errata as suggested by Pavel
-> 
-> I did not increase the verbose level, since the next higher verbose
-> level is pr_err and the message is not an error.
-> 
-> I think it would make sense to update the Kconfig entry for the errata to
-> enable the workaround by default for the Nokia N900. That should be done in
-> its own patch, though.
-> 
-> Apart from that it would be nice if errata workaround could be enabled
-> via DeviceTree instead of kernel configuration. This will require some
-> discussion though, so I think we should start with this patch for now.
-
-Thanks applying into omap-for-v3.14/fixes.
-
-Tony
