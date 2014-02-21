@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446AbaBUMvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:51:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47107 "EHLO
+	id S932535AbaBUMvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47192 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144AbaBUMvA (ORCPT
+	with ESMTP id S932518AbaBUMvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:00 -0500
+	Fri, 21 Feb 2014 07:51:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Stancek <jstancek@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 078/121] mei: clear write cb from waiting list on reset
-Date: Fri, 21 Feb 2014 12:48:22 +0000
-Message-Id: <1392986945-9693-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/121] mm: fix page leak at nfs_symlink()
+Date: Fri, 21 Feb 2014 12:48:37 +0000
+Message-Id: <1392986945-9693-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Rafael Aquini <aquini@redhat.com>
 
-commit 30c54df7cb9b15b222529a028390b9c9582dd65e upstream.
+commit a0b54adda3fe4b4cc6d28f2a9217cd35d1aa888c upstream.
 
-Clear write callbacks sitting in write_waiting list on reset.
-Otherwise these callbacks are left dangling and cause memory leak.
+Changes in commit a0b8cab3b9b2 ("mm: remove lru parameter from
+__pagevec_lru_add and remove parts of pagevec API") have introduced a
+call to add_to_page_cache_lru() which causes a leak in nfs_symlink() as
+now the page gets an extra refcount that is not dropped.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Jan Stancek observed and reported the leak effect while running test8
+from Connectathon Testsuite.  After several iterations over the test
+case, which creates several symlinks on a NFS mountpoint, the test
+system was quickly getting into an out-of-memory scenario.
+
+This patch fixes the page leak by dropping that extra refcount
+add_to_page_cache_lru() is grabbing.
+
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/client.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/nfs/dir.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 21d3f5a..e019165 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -915,8 +915,16 @@ void mei_cl_all_read_wakeup(struct mei_device *dev)
- void mei_cl_all_write_clear(struct mei_device *dev)
- {
- 	struct mei_cl_cb *cb, *next;
-+	struct list_head *list;
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index e474ca2b..7d9261a 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1813,6 +1813,11 @@ int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
+ 							GFP_KERNEL)) {
+ 		SetPageUptodate(page);
+ 		unlock_page(page);
++		/*
++		 * add_to_page_cache_lru() grabs an extra page refcount.
++		 * Drop it here to avoid leaking this page later.
++		 */
++		page_cache_release(page);
+ 	} else
+ 		__free_page(page);
  
--	list_for_each_entry_safe(cb, next, &dev->write_list.list, list) {
-+	list = &dev->write_list.list;
-+	list_for_each_entry_safe(cb, next, list, list) {
-+		list_del(&cb->list);
-+		mei_io_cb_free(cb);
-+	}
-+
-+	list = &dev->write_waiting_list.list;
-+	list_for_each_entry_safe(cb, next, list, list) {
- 		list_del(&cb->list);
- 		mei_io_cb_free(cb);
- 	}
 -- 
 1.9.0
 
