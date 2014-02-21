@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaBUJjB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 04:39:01 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38941 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754491AbaBUJi6 (ORCPT
+	id S1754746AbaBUJmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 04:42:33 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57645 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499AbaBUJmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 04:38:58 -0500
-Date: Fri, 21 Feb 2014 09:38:55 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm5102: Remove cache_bypass from manual register
-	patching
-Message-ID: <20140221093855.GC5438@opensource.wolfsonmicro.com>
-References: <1392913608-23479-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140220233058.GC12197@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140220233058.GC12197@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Fri, 21 Feb 2014 04:42:31 -0500
+Message-ID: <1392975715.5451.118.camel@marge.simpson.net>
+Subject: Re: [PATCH v3] sched: keep quiescent cpu out of idle balance loop
+From: Mike Galbraith <bitbucket@online.de>
+To: Lei Wen <leiwen@marvell.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        preeti.lkml@gmail.com, daniel.lezcano@linaro.org,
+        viresh.kumar@linaro.org, xjian@marvell.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 21 Feb 2014 10:41:55 +0100
+In-Reply-To: <1392974108-28778-1-git-send-email-leiwen@marvell.com>
+References: <1392971691.5451.84.camel@marge.simpson.net>
+	 <1392974108-28778-1-git-send-email-leiwen@marvell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:+EOqtrADGTsOp2pAL+okrB5GyL473AbrJbjTIL9sk7L
+ 0BoFHcLHtEdlmz4UFqZUHGO74Ut4kZGE4r0OqfVhNp1P8matna
+ PNqrpjFNAQoXqzIRKtIG0CjKa3s7wywpEbN7R3fn04JfkFl7wS
+ AUA1G5A9nEN+YcBr2MX842AT7E/LBCIczL1SP0vxHLHVHBfzwr
+ vC9kaDfXZNp6h51QpfGx+lgAFfiXmk8mxcpHe6e/CUWi4wKJMZ
+ OBHLACd+wd8UJDQ9vNc7sAYrBrg4xqj2ndISdVcMUB8jVy/Ozy
+ 1XEJf+L/m3w4pWfAseAghR4+Frfxslne8JlDRzZzZts2cH3olj
+ +E+3lLUfrgl1G5okBpMzQFiO1RL7epbzwVQrLaFPlh1n3KjPc4
+ lsaVHtaW35TUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 08:30:58AM +0900, Mark Brown wrote:
-> On Thu, Feb 20, 2014 at 04:26:48PM +0000, Charles Keepax wrote:
-> 
-> > As the cache_bypass is not strictly necessary for applying the patches
-> > (the device is always powered on whilst it is applied) remove the calls
-> > to regcache_cache_bypass to avoid this situation.
-> 
-> That's not why the cache bypass is there, the cache bypass is there to
-> make sure we don't cache the writes and hence reapply them while
-> restoring the cache.  This would cause breakage with writes which change
-> register defaults (where it would overwrite previously cached writes) or
-> need to be done in that specific sequence.  A bypassed write goes
-> straight to the hardware so it can't work if the device is powered off.
+On Fri, 2014-02-21 at 17:15 +0800, Lei Wen wrote:
 
-I guess there are two parts here applying the hardware patch and
-the manual application of the register patch. Applying the
-hardware patch restores registers once it is finished anyway, and
-the actual patch is applied by the write sequencer so will go
-straight to the hardware. So that really doesn't need the
-cache_bypass.
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 235cfa7..af30b6a 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -6883,6 +6883,14 @@ void nohz_balance_enter_idle(int cpu)
+>  	if (!cpu_active(cpu))
+>  		return;
+>  
+> +	/*
+> +	 * If this cpu is isolated, its rq's sd member would becomes NULL.
+> +	 * Base on this observation, we could exclude this cpu from nohz
+> +	 * idle balance, so that it would not be disturbed.
+> +	 */
+> +	if (!this_rq()->sd)
+> +		return;
+> +
+>  	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
+>  		return;
 
-Good point on the manual patch application it could potentially
-clobber some user setup. Although the current register patch
-should not cause any issues on this front.
+What about nohz_balance_exit_idle()?
 
-> Given that this is happening on resume I expect you can achieve
-> sufficient exclusion by making sure that everything that writes to the
-> device holds a runtim PM reference which you ought to be doing anyway,
-> the PM infrastructure makes sure that only one resume can run at once.
-> However I expect that's going to be annoying with ASoC where you don't
-> really want to boot the device just to change controls (but perhaps with
-> autosuspend it's not too bad, most likely the device will be getting
-> powered up shortly anyway if userspace is fiddling with the controls).
+I think Peter queued a patchlet to tell nohz balancing to go away.
 
-Yeah I had considered this and I agree it should work but I had
-decided against it because of the powering up for each control
-write.
-
-> Being able to use the regular patch infrastructure would of course be
-> nicer but you're going to need to add a callback to allow you to run the
-> hardware patch in that case.
-
-I had considered adding bypassed versions of regmap_write and
-read. That way you could ensure that the bypass was only active
-whilst the regmap lock was held and avoid the problem that way.
-What do you think to that idea?
-
-> You probably also want to be applying the patch using async writes to
-> improve performance but that's separate and just an optimisation.
-
-Good point I shall have a look at this.
-
-Thanks,
-Charles
+-Mike
 
