@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350AbaBUMuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47008 "EHLO
+	id S932334AbaBUMuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270AbaBUMu3 (ORCPT
+	with ESMTP id S932258AbaBUMuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:29 -0500
+	Fri, 21 Feb 2014 07:50:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 058/121] ar5523: fix usb id for Gigaset.
-Date: Fri, 21 Feb 2014 12:48:02 +0000
-Message-Id: <1392986945-9693-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/121] s390/dump: Fix dump memory detection
+Date: Fri, 21 Feb 2014 12:47:59 +0000
+Message-Id: <1392986945-9693-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 4fcfc7443d072582b5047b8b391d711590e5645c upstream.
+commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
 
-Raw id and FW id should be switched.
+Dumps created by kdump or zfcpdump can contain invalid memory holes when
+dumping z/VM systems that have memory pressure.
 
-Tested-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+For example:
+
+   # zgetdump -i /proc/vmcore.
+   Memory map:
+   0000000000000000 - 0000000000bfffff (12 MB)
+   0000000000e00000 - 00000000014fffff (7 MB)
+   000000000bd00000 - 00000000f3bfffff (3711 MB)
+
+The memory detection function find_memory_chunks() issues tprot to
+find valid memory chunks. In case of CMM it can happen that pages are
+marked as unstable via set_page_unstable() in arch_free_page().
+If z/VM has released that pages, tprot returns -EFAULT and indicates
+a memory hole.
+
+So fix this and switch off CMM in case of kdump or zfcpdump.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ar5523/ar5523.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/mm/page-states.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ar5523/ar5523.c b/drivers/net/wireless/ath/ar5523/ar5523.c
-index 17d7fec..57fc06e 100644
---- a/drivers/net/wireless/ath/ar5523/ar5523.c
-+++ b/drivers/net/wireless/ath/ar5523/ar5523.c
-@@ -1764,7 +1764,7 @@ static struct usb_device_id ar5523_id_table[] = {
- 	AR5523_DEVICE_UX(0x2001, 0x3a04),	/* Dlink / DWLAG122 */
- 	AR5523_DEVICE_UG(0x1690, 0x0712),	/* Gigaset / AR5523 */
- 	AR5523_DEVICE_UG(0x1690, 0x0710),	/* Gigaset / SMCWUSBTG */
--	AR5523_DEVICE_UG(0x129b, 0x160c),	/* Gigaset / USB stick 108
-+	AR5523_DEVICE_UG(0x129b, 0x160b),	/* Gigaset / USB stick 108
- 						   (CyberTAN Technology) */
- 	AR5523_DEVICE_UG(0x16ab, 0x7801),	/* Globalsun / AR5523_1 */
- 	AR5523_DEVICE_UX(0x16ab, 0x7811),	/* Globalsun / AR5523_2 */
+diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
+index a90d45e..27c50f4 100644
+--- a/arch/s390/mm/page-states.c
++++ b/arch/s390/mm/page-states.c
+@@ -12,6 +12,8 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <asm/setup.h>
++#include <asm/ipl.h>
+ 
+ #define ESSA_SET_STABLE		1
+ #define ESSA_SET_UNUSED		2
+@@ -41,6 +43,14 @@ void __init cmma_init(void)
+ 
+ 	if (!cmma_flag)
+ 		return;
++	/*
++	 * Disable CMM for dump, otherwise  the tprot based memory
++	 * detection can fail because of unstable pages.
++	 */
++	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
++		cmma_flag = 0;
++		return;
++	}
+ 	asm volatile(
+ 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
+ 		"0:     la      %0,0\n"
 -- 
 1.9.0
 
