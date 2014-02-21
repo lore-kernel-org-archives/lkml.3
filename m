@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaBUJQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 04:16:11 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:48736 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754468AbaBUJQH (ORCPT
+	id S1754621AbaBUJSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 04:18:37 -0500
+Received: from relay.parallels.com ([195.214.232.42]:48682 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837AbaBUJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 04:16:07 -0500
-From: Lei Wen <leiwen@marvell.com>
-To: Mike Galbraith <bitbucket@online.de>, Lei Wen <leiwen@marvell.com>,
-        Peter Zijlstra <peterz@infradead.org>, <mingo@redhat.com>,
-        <preeti.lkml@gmail.com>, <daniel.lezcano@linaro.org>,
-        <viresh.kumar@linaro.org>, <xjian@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] sched: keep quiescent cpu out of idle balance loop
-Date: Fri, 21 Feb 2014 17:15:08 +0800
-Message-ID: <1392974108-28778-1-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1392971691.5451.84.camel@marge.simpson.net>
-References: <1392971691.5451.84.camel@marge.simpson.net>
+	Fri, 21 Feb 2014 04:18:33 -0500
+Message-ID: <530719E4.5060409@parallels.com>
+Date: Fri, 21 Feb 2014 13:18:28 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-21_03:2014-02-21,2014-02-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402210013
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Weng Meiling <wengmeiling.weng@huawei.com>, <greg@kroah.com>,
+        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd superblock's
+ one
+References: <20131230142339.16166.28243.stgit@localhost.localdomain> <20140103222226.GD5164@fieldses.org> <52FEC818.7030604@huawei.com> <20140217221900.GA8401@fieldses.org> <53037A03.4020603@parallels.com> <20140218154406.GD4319@fieldses.org> <530486D9.7010502@parallels.com> <20140219145043.GC8401@fieldses.org> <5304C66A.4030603@parallels.com> <20140220213124.GC13433@fieldses.org>
+In-Reply-To: <20140220213124.GC13433@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.29]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cpu which is put into quiescent mode, would set its sd
-member as NULL, and want others not disturb its task running.
-But current scheduler would not checking whether that cpu is
-setting in such mode, and still insist the quiescent
-cpu to response the nohz load balance.
+21.02.2014 01:31, J. Bruce Fields пишет:
+> On Wed, Feb 19, 2014 at 06:57:46PM +0400, Stanislav Kinsbursky wrote:
+>> 19.02.2014 18:50, J. Bruce Fields пишет:
+>>> On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
+>>>> 18.02.2014 19:44, J. Bruce Fields пишет:
+>>>>> On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
+>>>>>> 18.02.2014 02:19, J. Bruce Fields пишет:
+>>>>>>> On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
+>>>>>>>> Hi Bruce,
+>>>>>>>>
+>>>>>>>> The upstream has merged your git tree for-3.14, but there is no this patch?
+>>>>>>>> Do you forget this patch?
+>>>>>>>
+>>>>>>> Apologies, I'm not sure what happened.
+>>>>>>>
+>>>>>>> Looking back at it....  The patch causes all my pynfs reboot recovery
+>>>>>>> tests to fail.  They're just doing a "systemctl restart
+>>>>>>> nfs-server.service", and "systemctl status nfs-server.service" shows in
+>>>>>>> part
+>>>>>>>
+>>>>>>> 	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
+>>>>>>>
+>>>>>>> So the patch is causing rpc.nfsd to fail?  No network namespaces should
+>>>>>>> be involved.
+>>>>>>>
+>>>>>>> I haven't investigated any further.
+>>>>>>>
+>>>>>>
+>>>>>> Hi Bruce,
+>>>>>> Are you sure, that exactly this patch broke your pynfs tests?
+>>>>>> BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
+>>>>>> What do you think?
+>>>>>
+>>>>> It's really just "systemctl restart nfs-server.service" that the patch
+>>>>> breaks, pynfs isn't involved much.
+>>>>>
+>>>>> The patch I'm actually using follows, but I believe the only difference
+>>>>> is in the printk message?
+>>>>>
+>>>>
+>>>> Yep, looks true.
+>>>> That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
+>>>
+>>> OK, I'll take a closer look and let you know what I find.
+>>>
+>>
+>> Thank you, Bruce!
+>
+> rpc.nfsd's attempt to bind port 2049 the second time is failing with
+> EADDRINUSE.
+>
+> svc_alien_sock isn't failing, so the only different here is that we're
+> running sockfd_lookup....
+>
+> Does that take a reference on the fd or the sock that needs to be put?
+>
 
-Fix it by preventing such cpu set nohz.idle_cpus_mask in the
-first place.
+Yes, you right. I missed it, sorry.
+Thank you. Will resend.
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <bitbucket@online.de>
----
-Much thanks to Mike Pointing out the root span would be merged when the
-last cpu becomes isolated from the crash result checking!
+> --b.
+>
 
- kernel/sched/fair.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 235cfa7..af30b6a 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6883,6 +6883,14 @@ void nohz_balance_enter_idle(int cpu)
- 	if (!cpu_active(cpu))
- 		return;
- 
-+	/*
-+	 * If this cpu is isolated, its rq's sd member would becomes NULL.
-+	 * Base on this observation, we could exclude this cpu from nohz
-+	 * idle balance, so that it would not be disturbed.
-+	 */
-+	if (!this_rq()->sd)
-+		return;
-+
- 	if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
- 		return;
- 
 -- 
-1.8.3.2
-
+Best regards,
+Stanislav Kinsbursky
