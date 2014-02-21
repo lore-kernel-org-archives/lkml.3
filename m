@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933358AbaBUNay (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:30:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47171 "EHLO
+	id S932482AbaBUMvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47149 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932485AbaBUMvP (ORCPT
+	with ESMTP id S932144AbaBUMvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:15 -0500
+	Fri, 21 Feb 2014 07:51:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@fb.com>,
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 089/121] block: Fix nr_vecs for inline integrity vectors
-Date: Fri, 21 Feb 2014 12:48:33 +0000
-Message-Id: <1392986945-9693-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/121] tty: Set correct tty name in 'active' sysfs attribute
+Date: Fri, 21 Feb 2014 12:48:29 +0000
+Message-Id: <1392986945-9693-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 087787959ce851d7bbb19f10f6e9241b7f85a3ca upstream.
+commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
 
-Commit 9f060e2231ca changed the way we handle allocations for the
-integrity vectors. When the vectors are inline there is no associated
-slab and consequently bvec_nr_vecs() returns 0. Ensure that we check
-against BIP_INLINE_VECS in that case.
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console.
 
-Reported-by: David Milburn <dmilburn@redhat.com>
-Tested-by: David Milburn <dmilburn@redhat.com>
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+The console structure doesn't refer to any device in sysfs, only the tty
+the console is running on has.  So we need to print out the tty names in
+'active', not the console names.
+
+This resolves an issue on s390 platforms in determining the correct
+console device to use.
+
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/bio-integrity.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-tty |  3 ++-
+ drivers/tty/tty_io.c                | 25 ++++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 45e944f..8dccf73 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -114,6 +114,14 @@ void bio_integrity_free(struct bio *bio)
+diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
+index ad22fb0..a2ccec3 100644
+--- a/Documentation/ABI/testing/sysfs-tty
++++ b/Documentation/ABI/testing/sysfs-tty
+@@ -3,7 +3,8 @@ Date:		Nov 2010
+ Contact:	Kay Sievers <kay.sievers@vrfy.org>
+ Description:
+ 		 Shows the list of currently configured
+-		 console devices, like 'tty1 ttyS0'.
++		 tty devices used for the console,
++		 like 'tty1 ttyS0'.
+ 		 The last entry in the file is the active
+ 		 device connected to /dev/console.
+ 		 The file supports poll() to detect virtual
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 20689b9..ced6b3e 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1263,16 +1263,17 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+  *	@p: output buffer of at least 7 bytes
+  *
+  *	Generate a name from a driver reference and write it to the output
+- *	buffer.
++ *	buffer. Return the number of bytes written.
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
  }
- EXPORT_SYMBOL(bio_integrity_free);
  
-+static inline unsigned int bip_integrity_vecs(struct bio_integrity_payload *bip)
-+{
-+	if (bip->bip_slab == BIO_POOL_NONE)
-+		return BIP_INLINE_VECS;
-+
-+	return bvec_nr_vecs(bip->bip_slab);
-+}
-+
  /**
-  * bio_integrity_add_page - Attach integrity metadata
-  * @bio:	bio to update
-@@ -129,7 +137,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
- 	struct bio_integrity_payload *bip = bio->bi_integrity;
- 	struct bio_vec *iv;
- 
--	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
-+	if (bip->bip_vcnt >= bip_integrity_vecs(bip)) {
- 		printk(KERN_ERR "%s: bip_vec full\n", __func__);
- 		return 0;
+@@ -3539,9 +3540,19 @@ static ssize_t show_cons_active(struct device *dev,
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
  	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		struct tty_driver *driver;
++		const char *name = cs[i]->name;
++		int index = cs[i]->index;
++
++		driver = cs[i]->device(cs[i], &index);
++		if (driver) {
++			count += tty_line_name(driver, index, buf + count);
++			count += sprintf(buf + count, "%c", i ? ' ':'\n');
++		} else
++			count += sprintf(buf + count, "%s%d%c",
++					 name, index, i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
 -- 
 1.9.0
 
