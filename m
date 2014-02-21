@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaBUE6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:58:51 -0500
+	id S1753550AbaBUE67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 23:58:59 -0500
 Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:58830
 	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674AbaBUE6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:58:50 -0500
+	id S1753515AbaBUE64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 23:58:56 -0500
 x-originating-ip: 72.167.245.219
 From: Haiyang Zhang <haiyangz@microsoft.com>
 To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, akpm@linux-foundation.org,
@@ -14,26 +14,60 @@ To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, akpm@linux-foundation.org,
 Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
         jasowang@redhat.com, linux-kernel@vger.kernel.org,
         driverdev-devel@linuxdriverproject.org
-Subject: [PATCH v2,0/2] Re-sending two patches for hyperv_fb
-Date: Thu, 20 Feb 2014 21:50:09 -0800
-Message-Id: <1392961811-11960-1-git-send-email-haiyangz@microsoft.com>
+Subject: [PATCH v2,1/2] hyperv_fb: Add screen refresh after pause/resume operation
+Date: Thu, 20 Feb 2014 21:50:10 -0800
+Message-Id: <1392961811-11960-2-git-send-email-haiyangz@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1392961811-11960-1-git-send-email-haiyangz@microsoft.com>
+References: <1392961811-11960-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They were sent out during tree closing, I'm re-sending them now.
+This is necessary because after VM is pause/resumed, some portion of
+the screen may need refresh.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
-v2: 
-  Updated the variable type gen2vm to int, because efi_enabled() returns int.
+ drivers/video/hyperv_fb.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-Haiyang Zhang (2):
-  hyperv_fb: Add screen refresh after pause/resume operation
-  hyperv_fb: Add support for Gen2 VM
-
- drivers/video/hyperv_fb.c |   70 ++++++++++++++++++++++++++++++++-------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
-
+diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
+index 130708f..bbcc8c0 100644
+--- a/drivers/video/hyperv_fb.c
++++ b/drivers/video/hyperv_fb.c
+@@ -218,6 +218,7 @@ struct hvfb_par {
+ 
+ 	struct delayed_work dwork;
+ 	bool update;
++	bool xrefresh;
+ 
+ 	u32 pseudo_palette[16];
+ 	u8 init_buf[MAX_VMBUS_PKT_SIZE];
+@@ -369,7 +370,7 @@ static void synthvid_recv_sub(struct hv_device *hdev)
+ 			synthvid_send_situ(hdev);
+ 		}
+ 
+-		par->update = msg->feature_chg.is_dirt_needed;
++		par->xrefresh = par->update = msg->feature_chg.is_dirt_needed;
+ 		if (par->update)
+ 			schedule_delayed_work(&par->dwork, HVFB_UPDATE_DELAY);
+ 	}
+@@ -522,6 +523,13 @@ static void hvfb_update_work(struct work_struct *w)
+ {
+ 	struct hvfb_par *par = container_of(w, struct hvfb_par, dwork.work);
+ 	struct fb_info *info = par->info;
++	char *argv[] = {"/usr/bin/xrefresh", "-display", ":0.0", NULL};
++	char *envp[] = {"HOME=/", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
++
++	if (par->xrefresh) {
++		par->xrefresh = false;
++		call_usermodehelper(argv[0], argv, envp, UMH_NO_WAIT);
++	}
+ 
+ 	if (par->fb_ready)
+ 		synthvid_update(info);
 -- 
 1.7.4.1
 
