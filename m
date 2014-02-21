@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaBUMvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:51:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47237 "EHLO
+	id S932918AbaBUM6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:58:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47254 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554AbaBUMvc (ORCPT
+	with ESMTP id S932584AbaBUMvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:32 -0500
+	Fri, 21 Feb 2014 07:51:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/121] target: Fix free-after-use regression in PR unregister
-Date: Fri, 21 Feb 2014 12:48:45 +0000
-Message-Id: <1392986945-9693-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/121] x86, smap: Don't enable SMAP if CONFIG_X86_SMAP is disabled
+Date: Fri, 21 Feb 2014 12:48:48 +0000
+Message-Id: <1392986945-9693-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit fc09149df6e20cfbb0bb86f10899607c321a31eb upstream.
+commit 03bbd596ac04fef47ce93a730b8f086d797c3021 upstream.
 
-This patch addresses a >= v3.11 free-after-use regression
-in core_scsi3_emulate_pro_register() that was introduced
-in the following commit:
+If SMAP support is not compiled into the kernel, don't enable SMAP in
+CR4 -- in fact, we should clear it, because the kernel doesn't contain
+the proper STAC/CLAC instructions for SMAP support.
 
-commit bc118fe4c4a8cfa453491ba77c0a146a6d0e73e0
-Author: Andy Grover <agrover@redhat.com>
-Date:   Thu May 16 10:41:04 2013 -0700
+Found by Fengguang Wu's test system.
 
-    target: Further refactoring of core_scsi3_emulate_pro_register()
-
-To avoid the free-after-use, save an type value before hand, and
-only call core_scsi3_put_pr_reg() with a valid *pr_reg.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/target_core_pr.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/common.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
-index adec5a8..3408fdd 100644
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -2009,7 +2009,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
- 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
- 	unsigned char isid_buf[PR_REG_ISID_LEN], *isid_ptr = NULL;
- 	sense_reason_t ret = TCM_NO_SENSE;
--	int pr_holder = 0;
-+	int pr_holder = 0, type;
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 25eb274..3a2e113 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -284,8 +284,13 @@ static __always_inline void setup_smap(struct cpuinfo_x86 *c)
+ 	raw_local_save_flags(eflags);
+ 	BUG_ON(eflags & X86_EFLAGS_AC);
  
- 	if (!se_sess || !se_lun) {
- 		pr_err("SPC-3 PR: se_sess || struct se_lun is NULL!\n");
-@@ -2131,6 +2131,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
- 			ret = TCM_RESERVATION_CONFLICT;
- 			goto out;
- 		}
-+		type = pr_reg->pr_res_type;
- 
- 		spin_lock(&pr_tmpl->registration_lock);
- 		/*
-@@ -2161,6 +2162,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
- 		 * Release the calling I_T Nexus registration now..
- 		 */
- 		__core_scsi3_free_registration(cmd->se_dev, pr_reg, NULL, 1);
-+		pr_reg = NULL;
- 
- 		/*
- 		 * From spc4r17, section 5.7.11.3 Unregistering
-@@ -2174,8 +2176,8 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
- 		 * RESERVATIONS RELEASED.
- 		 */
- 		if (pr_holder &&
--		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
--		     pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
-+		    (type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
-+		     type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
- 			list_for_each_entry(pr_reg_p,
- 					&pr_tmpl->registration_list,
- 					pr_reg_list) {
-@@ -2194,7 +2196,8 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
- 	ret = core_scsi3_update_and_write_aptpl(dev, aptpl);
- 
- out:
--	core_scsi3_put_pr_reg(pr_reg);
-+	if (pr_reg)
-+		core_scsi3_put_pr_reg(pr_reg);
- 	return ret;
+-	if (cpu_has(c, X86_FEATURE_SMAP))
++	if (cpu_has(c, X86_FEATURE_SMAP)) {
++#ifdef CONFIG_X86_SMAP
+ 		set_in_cr4(X86_CR4_SMAP);
++#else
++		clear_in_cr4(X86_CR4_SMAP);
++#endif
++	}
  }
  
+ /*
 -- 
 1.9.0
 
