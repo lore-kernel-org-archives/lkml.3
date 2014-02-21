@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172AbaBUR4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:56:11 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42638 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114AbaBUR4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756103AbaBUR4H (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Feb 2014 12:56:07 -0500
-Message-Id: <20140221174639.557494772@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Fri, 21 Feb 2014 17:56:16 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com
-Subject: [RFC patch 2/5] hrtimer: Make use of the active bases bitfield
-References: <20140221173936.583477951@linutronix.de>
-Content-Disposition: inline; filename=hrtimer-use-active-bases.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Received: from mga01.intel.com ([192.55.52.88]:2547 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755973AbaBURzx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 12:55:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
+   d="scan'208,223";a="485606025"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
+Subject: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
+Thread-Topic: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
+Thread-Index: Ac8vLiYATjj1h4DwSXOSL0K4eXhHUw==
+Date: Fri, 21 Feb 2014 17:55:47 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509BFC@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of looping through all bases, find the active ones via the
-cpu_base->active_bases bit field.
+>From 7d1b41c3fdf71e4c73280e117948102f54f74be7 Mon Sep 17 00:00:00 2001
+From: Liu Jinsong <jinsong.liu@intel.com>
+Date: Sat, 22 Feb 2014 08:10:17 +0800
+Subject: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Add MSR_IA32_BNDCFGS to msrs_to_save, and corresponding logic
+to kvm_get/set_msr().
+
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
 ---
- kernel/hrtimer.c |   33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+ arch/x86/kvm/vmx.c |    6 ++++++
+ arch/x86/kvm/x86.c |    2 +-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-Index: tip/kernel/hrtimer.c
-===================================================================
---- tip.orig/kernel/hrtimer.c
-+++ tip/kernel/hrtimer.c
-@@ -1284,7 +1284,8 @@ void hrtimer_interrupt(struct clock_even
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
--	int i, retries = 0;
-+	unsigned long bases;
-+	int retries = 0;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 35d285f..2839c2f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2484,6 +2484,9 @@ static int vmx_get_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 *pdata)
+ 	case MSR_IA32_SYSENTER_ESP:
+ 		data = vmcs_readl(GUEST_SYSENTER_ESP);
+ 		break;
++	case MSR_IA32_BNDCFGS:
++		data = vmcs_readl(GUEST_BNDCFGS);
++		break;
+ 	case MSR_IA32_FEATURE_CONTROL:
+ 		if (!nested_vmx_allowed(vcpu))
+ 			return 1;
+@@ -2552,6 +2555,9 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 	case MSR_IA32_SYSENTER_ESP:
+ 		vmcs_writel(GUEST_SYSENTER_ESP, data);
+ 		break;
++	case MSR_IA32_BNDCFGS:
++		vmcs_writel(GUEST_BNDCFGS, data);
++		break;
+ 	case MSR_IA32_TSC:
+ 		kvm_write_tsc(vcpu, msr_info);
+ 		break;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 7c52acb..89e4e27 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -882,7 +882,7 @@ static u32 msrs_to_save[] = {
+ 	MSR_CSTAR, MSR_KERNEL_GS_BASE, MSR_SYSCALL_MASK, MSR_LSTAR,
+ #endif
+ 	MSR_IA32_TSC, MSR_IA32_CR_PAT, MSR_VM_HSAVE_PA,
+-	MSR_IA32_FEATURE_CONTROL
++	MSR_IA32_FEATURE_CONTROL, MSR_IA32_BNDCFGS
+ };
  
- 	BUG_ON(!cpu_base->hres_active);
- 	cpu_base->nr_events++;
-@@ -1302,16 +1303,18 @@ retry:
- 	 * this CPU.
- 	 */
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
-+	bases = cpu_base->active_bases;
- 
--	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
-+	while (bases) {
- 		struct hrtimer_clock_base *base;
- 		struct timerqueue_node *node;
- 		ktime_t basenow;
-+		int idx;
- 
--		if (!(cpu_base->active_bases & (1 << i)))
--			continue;
-+		idx = __ffs(bases);
-+		bases &= ~(1 << idx);
- 
--		base = cpu_base->clock_base + i;
-+		base = cpu_base->clock_base + idx;
- 		basenow = ktime_add(now, base->offset);
- 
- 		while ((node = timerqueue_getnext(&base->active))) {
-@@ -1479,18 +1482,24 @@ void hrtimer_run_pending(void)
-  */
- void hrtimer_run_queues(void)
- {
--	struct timerqueue_node *node;
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--	struct hrtimer_clock_base *base;
--	int index, gettime = 1;
-+	unsigned long bases;
-+	int gettime = 1;
- 
- 	if (hrtimer_hres_active())
- 		return;
- 
--	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
--		base = &cpu_base->clock_base[index];
--		if (!timerqueue_getnext(&base->active))
--			continue;
-+	bases = cpu_base->active_bases;
-+
-+	while (bases) {
-+		struct hrtimer_clock_base *base;
-+		struct timerqueue_node *node;
-+		int idx;
-+
-+		idx = __ffs(bases);
-+		bases &= ~(1 << idx);
-+
-+		base = &cpu_base->clock_base[idx];
- 
- 		if (gettime) {
- 			hrtimer_get_softirq_time(cpu_base);
-
-
+ static unsigned num_msrs_to_save;
+-- 
+1.7.1
