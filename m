@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151AbaBUTwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:52:01 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43489 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083AbaBUTv7 (ORCPT
+	id S1754949AbaBUTvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:51:45 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39735 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753996AbaBUTtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:51:59 -0500
-Date: Fri, 21 Feb 2014 20:51:59 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Mike Galbraith <bitbucket@online.de>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] rapidio/tsi721: fix tasklet termination in dma channel
- release
-In-Reply-To: <1393010358-6837-1-git-send-email-alexandre.bounine@idt.com>
-Message-ID: <alpine.DEB.2.02.1402212047080.21251@ionos.tec.linutronix.de>
-References: <1393010358-6837-1-git-send-email-alexandre.bounine@idt.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 21 Feb 2014 14:49:50 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        b.brezillon@overkiz.com,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 5/9] ARM: at91: prepare sam9 dt boards transition to common clk
+Date: Fri, 21 Feb 2014 20:48:54 +0100
+Message-Id: <1393012138-17255-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014, Alexandre Bounine wrote:
-> This patch is a modification of the patch originally proposed
-> by Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-> This new version disables DMA channel interrupts and ensures that the tasklet
-> wil not be scheduled again before calling tasklet_kill().
-> 
-> Unfortunately the updated patch was not released at that time due to planned
-> rework of Tsi721 mport driver to use threaded interrupts (which has yet to
-> happen).
-> Recently the issue was reported again: https://lkml.org/lkml/2014/2/19/762.
-> 
-> Description from the original Xiaotian's patch:
-> 
-> "Some drivers use tasklet_disable in device remove/release process, 
-> tasklet_disable will inc tasklet->count and return. If the tasklet is 
-> not handled yet under some softirq pressure, the tasklet will be 
-> placed on the tasklet_vec, never have a chance to be excuted. This 
-> might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, 
-> but tasklet is disabled. tasklet_kill should be used in this case."
-> 
-> This patch is applicable to kernel versions starting from v3.5.
-> 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: Matt Porter <mporter@kernel.crashing.org>
-> Cc: Xiaotian Feng <xtfeng@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Mike Galbraith <bitbucket@online.de>
-> Cc: <stable@vger.kernel.org>
+From: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+This patch prepare the transition to common clk for sam9 dt boards by
+replacing the timer init callback.
+
+Clocks registration cannot be done in early init callback (as formerly done
+by the old clk implementation) because it requires dynamic allocation
+which is not ready yet during early init.
+
+In the other hand, at91 clocks must be registered before
+at91sam926x_pit_init is called because PIT (Periodic Interval Timer) driver
+request the master clk (mck).
+
+A new function (at91sam9_dt_timer_init) is created to fullfil these needs.
+This function registers all at91 clks using the dt definition before
+calling the PIT init function.
+The device tree clock registration is enabled only if common clk is
+selected. Else the old clk registration is been done during
+at91_dt_initialize call.
+
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/board-dt-sam9.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
+index 3dab868b02fa..575b0be66ca8 100644
+--- a/arch/arm/mach-at91/board-dt-sam9.c
++++ b/arch/arm/mach-at91/board-dt-sam9.c
+@@ -13,6 +13,7 @@
+ #include <linux/gpio.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
++#include <linux/clk-provider.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/irq.h>
+@@ -25,6 +26,14 @@
+ #include "generic.h"
+ 
+ 
++static void __init sam9_dt_timer_init(void)
++{
++#if defined(CONFIG_COMMON_CLK)
++	of_clk_init(NULL);
++#endif
++	at91sam926x_pit_init();
++}
++
+ static const struct of_device_id irq_of_match[] __initconst = {
+ 
+ 	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
+@@ -43,7 +52,7 @@ static const char *at91_dt_board_compat[] __initdata = {
+ 
+ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
+ 	/* Maintainer: Atmel */
+-	.init_time	= at91sam926x_pit_init,
++	.init_time	= sam9_dt_timer_init,
+ 	.map_io		= at91_map_io,
+ 	.handle_irq	= at91_aic_handle_irq,
+ 	.init_early	= at91_dt_initialize,
+-- 
+1.8.3.2
+
