@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578AbaBUMvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:51:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47221 "EHLO
+	id S932735AbaBUMv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554AbaBUMv1 (ORCPT
+	with ESMTP id S932581AbaBUMv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:27 -0500
+	Fri, 21 Feb 2014 07:51:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Raymond Wanyoike <raymond.wanyoike@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Borislav Petkov <bp@suse.de>, Doug Thompson <dougthompson@xmission.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/121] usb: option: blacklist ZTE MF667 net interface
-Date: Fri, 21 Feb 2014 12:48:42 +0000
-Message-Id: <1392986945-9693-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 120/121] EDAC: Poll timeout cannot be zero, p2
+Date: Fri, 21 Feb 2014 12:49:04 +0000
+Message-Id: <1392986945-9693-121-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Raymond Wanyoike <raymond.wanyoike@gmail.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit 3635c7e2d59f7861afa6fa5e87e2a58860ff514d upstream.
+commit 9da21b1509d8aa7ab4846722817d16c72d656c91 upstream.
 
-Interface #5 of 19d2:1270 is a net interface which has been submitted to the
-qmi_wwan driver so consequently remove it from the option driver.
+Sanitize code even more to accept unsigned longs only and to not allow
+polling intervals below 1 second as this is unnecessary and doesn't make
+much sense anyway for polling errors.
 
-Signed-off-by: Raymond Wanyoike <raymond.wanyoike@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+Cc: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/edac/edac_mc.c       |  4 ++--
+ drivers/edac/edac_mc_sysfs.c | 10 ++++++----
+ drivers/edac/edac_module.h   |  2 +-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 5c86f57..216d20a 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1362,7 +1362,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index 89e1090..705f0a3 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -601,7 +601,7 @@ static void edac_mc_workq_teardown(struct mem_ctl_info *mci)
+  *	user space has updated our poll period value, need to
+  *	reset our workq delays
+  */
+-void edac_mc_reset_delay_period(int value)
++void edac_mc_reset_delay_period(unsigned long value)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct list_head *item;
+@@ -611,7 +611,7 @@ void edac_mc_reset_delay_period(int value)
+ 	list_for_each(item, &mc_devices) {
+ 		mci = list_entry(item, struct mem_ctl_info, link);
+ 
+-		edac_mc_workq_setup(mci, (unsigned long) value);
++		edac_mc_workq_setup(mci, value);
+ 	}
+ 
+ 	mutex_unlock(&mem_ctls_mutex);
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index c855b71..e5bdf21 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -52,18 +52,20 @@ int edac_mc_get_poll_msec(void)
+ 
+ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
+ {
+-	long l;
++	unsigned long l;
+ 	int ret;
+ 
+ 	if (!val)
+ 		return -EINVAL;
+ 
+-	ret = kstrtol(val, 0, &l);
++	ret = kstrtoul(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if (!l || ((int)l != l))
++
++	if (l < 1000)
+ 		return -EINVAL;
+-	*((int *)kp->arg) = l;
++
++	*((unsigned long *)kp->arg) = l;
+ 
+ 	/* notify edac_mc engine to reset the poll period */
+ 	edac_mc_reset_delay_period(l);
+diff --git a/drivers/edac/edac_module.h b/drivers/edac/edac_module.h
+index 3d139c6..f2118bf 100644
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -52,7 +52,7 @@ extern void edac_device_workq_setup(struct edac_device_ctl_info *edac_dev,
+ extern void edac_device_workq_teardown(struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_reset_delay_period(struct edac_device_ctl_info
+ 					   *edac_dev, unsigned long value);
+-extern void edac_mc_reset_delay_period(int value);
++extern void edac_mc_reset_delay_period(unsigned long value);
+ 
+ extern void *edac_align_ptr(void **p, unsigned size, int n_elems);
+ 
 -- 
 1.9.0
 
