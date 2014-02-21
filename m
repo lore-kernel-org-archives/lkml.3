@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441AbaBUNqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:46:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46952 "EHLO
+	id S933218AbaBUNqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:46:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46954 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199AbaBUMuN (ORCPT
+	with ESMTP id S932094AbaBUMuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 07:50:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Richard Yao <ryao@gentoo.org>, "David S. Miller" <davem@davemloft.net>,
+        Andy Lutomirski <luto@amacapital.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 046/121] staging:iio:ad799x fix error_free_irq which was freeing an irq that may not have been requested
-Date: Fri, 21 Feb 2014 12:47:50 +0000
-Message-Id: <1392986945-9693-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/121] 9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
+Date: Fri, 21 Feb 2014 12:47:49 +0000
+Message-Id: <1392986945-9693-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hartmut Knaack <knaack.h@gmx.de>
+From: Richard Yao <ryao@gentoo.org>
 
-commit 38408d056188be29a6c4e17f3703c796551bb330 upstream.
+commit b6f52ae2f0d32387bde2b89883e3b64d88b9bfe8 upstream.
 
-Only free an IRQ in error_free_irq, if it has been requested previously.
+The 9p-virtio transport does zero copy on things larger than 1024 bytes
+in size. It accomplishes this by returning the physical addresses of
+pages to the virtio-pci device. At present, the translation is usually a
+bit shift.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+That approach produces an invalid page address when we read/write to
+vmalloc buffers, such as those used for Linux kernel modules. Any
+attempt to load a Linux kernel module from 9p-virtio produces the
+following stack.
+
+[<ffffffff814878ce>] p9_virtio_zc_request+0x45e/0x510
+[<ffffffff814814ed>] p9_client_zc_rpc.constprop.16+0xfd/0x4f0
+[<ffffffff814839dd>] p9_client_read+0x15d/0x240
+[<ffffffff811c8440>] v9fs_fid_readn+0x50/0xa0
+[<ffffffff811c84a0>] v9fs_file_readn+0x10/0x20
+[<ffffffff811c84e7>] v9fs_file_read+0x37/0x70
+[<ffffffff8114e3fb>] vfs_read+0x9b/0x160
+[<ffffffff81153571>] kernel_read+0x41/0x60
+[<ffffffff810c83ab>] copy_module_from_fd.isra.34+0xfb/0x180
+
+Subsequently, QEMU will die printing:
+
+qemu-system-x86_64: virtio: trying to map MMIO memory
+
+This patch enables 9p-virtio to correctly handle this case. This not
+only enables us to load Linux kernel modules off virtfs, but also
+enables ZFS file-based vdevs on virtfs to be used without killing QEMU.
+
+Special thanks to both Avi Kivity and Alexander Graf for their
+interpretation of QEMU backtraces. Without their guidence, tracking down
+this bug would have taken much longer. Also, special thanks to Linus
+Torvalds for his insightful explanation of why this should use
+is_vmalloc_addr() instead of is_vmalloc_or_module_addr():
+
+https://lkml.org/lkml/2014/2/8/272
+
+Signed-off-by: Richard Yao <ryao@gentoo.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/iio/adc/ad799x_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/9p/trans_virtio.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/iio/adc/ad799x_core.c b/drivers/staging/iio/adc/ad799x_core.c
-index 2b2049c..2c3af3f 100644
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -644,7 +644,8 @@ static int ad799x_probe(struct i2c_client *client,
- 	return 0;
- 
- error_free_irq:
--	free_irq(client->irq, indio_dev);
-+	if (client->irq > 0)
-+		free_irq(client->irq, indio_dev);
- error_cleanup_ring:
- 	ad799x_ring_cleanup(indio_dev);
- error_disable_reg:
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index 990afab..c76a438 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -340,7 +340,10 @@ static int p9_get_mapped_pages(struct virtio_chan *chan,
+ 		int count = nr_pages;
+ 		while (nr_pages) {
+ 			s = rest_of_page(data);
+-			pages[index++] = kmap_to_page(data);
++			if (is_vmalloc_addr(data))
++				pages[index++] = vmalloc_to_page(data);
++			else
++				pages[index++] = kmap_to_page(data);
+ 			data += s;
+ 			nr_pages--;
+ 		}
 -- 
 1.9.0
 
