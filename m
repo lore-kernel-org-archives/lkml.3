@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaBUM3B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:29:01 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:52946 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaBUM0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755367AbaBUM0O (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Feb 2014 07:26:14 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-92-530745e39c67
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:63423 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211AbaBUM0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:26:10 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-7e-530745de7324
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
@@ -28,177 +28,143 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v5 04/11] drivers: of: add support for custom reserved memory
- drivers
-Date: Fri, 21 Feb 2014 13:25:20 +0100
-Message-id: <1392985527-6260-5-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v5 00/11] reserved-memory regions/CMA in devicetree, again
+Date: Fri, 21 Feb 2014 13:25:16 +0100
+Message-id: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
-References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyXRe0hTYRgGcL+zc5mjwWmZHKSWDQRJvFXQR0gNwvpACGFBFkEuXWo4XVuT
-	LKHhjbmmznnFu03NhrpYpU6s3BoqlpZ4mVBqc6E4l2ZKUE7J6X8/nveB54+XzeLp8CB2WsYD
-	iTxDnC4gOfjH3eHpcFcsJYryzEO4ox+i4K/cAhZcb9cC2GQfJ2Cpp4WAg94+AD3FahxautcA
-	HMv1ULC3qIaCW1NODJpdMwRsKWzF4WR/PQm77HMUfLlixWCbYwKDzcP5BPRW8+GoY5OEnXYD
-	BXXVXTgseGun4E6vGYduayEOTTWrODT2ewFc2RjBhcdQZ2MnQNv/9ACtlusAmiwpxpCldo5C
-	Wk8+gczGIhJ9mxkg0avWJ+jrrouFpkZyCdTtdWOodCcKNfSXAFTy2gjQppkff/gmJyZZkp6W
-	JZFHXkjkpH5w1uIye8hDq+UNpgImvgb4sxn6LLPbU0UeOJD5Mm/aN49uA8z0iuzATzHGVCPw
-	maSjGc1PzX4ngG4BzGYjrgEcNoteIBn1hBbzHY7Q15k+QzXwGadDmC3PCOEzl77CFC993zN7
-	byyYqdfH+GJ/GjGfBpcpX8zbq3Sr7+kAtxn4GcFRiTJJpriTIo2OUIilCmVGSkRSptQMDr64
-	1QcMQ+dtgGYDwSGujCFFPEKcpciW2gDDZgkCuNZISsTjJouzH0nkmbflynSJwgYwtn+QCmiD
-	hapnsXnyi++XF3vWLTa/z3GG+7aOUFZRXcPvtccF4dcaxtpPuOPr6tRhCVdfVD2fSBLOnibc
-	o6IzfFw/61RJXWHnqhor+PGLdkdCYhN2d/sdGWhOy7u1s1FZXrZMLnXEJt/4c/zkXwcR6kwZ
-	HxAqf5QtVIKKnMv2nEthcQJckSqOPsWSK8T/AR5uRaKjAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRbUhTYQCFe+/ul6vBbVlcREQGBYZORcmXEBEqew0NYRBYga55UcPp2FXL
+	/mimolPnmJBipi41Ym4ay3AuE7XlJLESTaPaStTUub6cUdi0mv57DjyH8+PQAvGWIIjOzS/k
+	1PnyPAkpxCd3HG8iXGcoWdSTZ3FwWz9Owe/llQL47X4dgO32lwRs8BgIOOKzAuipr8bhYO9X
+	AKfKPRQcqGmm4ObsAgYti3MENFR14XDG1kpCs91JwYdroxjsnp/GYIejgoC+phD4Yt5LQpO9
+	k4K6JjMOK5/aKbg9YMGhe7QKh33N6zg02nwArv2YwBODkanNBNCfLT1A6406gGa09RgabHFS
+	qM5TQSCLsYZEH+aGSPSoqxS931kUoNmJcgL1+twYatiOQndtWoC0/UaAvJaQtIMXhfFZXF5u
+	MaeOTMgU5nidN4FqKfx6T/sIXgYMEg2gaZaJZX23AzQg4D8eYV+7+kgNENJiphuw7l8DxF6o
+	xdhhrwfzWyQTzWq+aEg/BzIGwHrbcL8kYD6SbPV03a50iDnHvnL9BX7GmaPslOPObkHEnGU3
+	Bp3E3nIo26qP14H9HWCfERzmihQq/kq2MlrKy5V8UX62VFGgtIC9vzatoHP85BhgaCA5IFKx
+	pExMyIv5EuUYYGmBJFA0GknJxKIseckNTl2QoS7K4/gxgNEBQWVAwTcu9/Npirjl4RRdxlKQ
+	VGZaSZ75rH/3swVMpE+a5cc3umJCuYRSt7WWL1y5rF0Ns0VuskPPL8Q/aDx1TL2weLXt8ekT
+	n2rJ847wMFdw0vAQSq2gIxqmZQpVwqXgzORbSanjTIemwGouTv+9UKKJsadwemliYc/qvWtv
+	YyU4nyOPPi5Q8/J/GaUS940CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for custom reserved memory drivers. Call their init() function
-for each reserved region and prepare for using operations provided by them
-with by the reserved_mem->ops array.
+Hi all!
 
-Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
+Ok, I hope that this is the last update of the patches which add basic
+support for dynamic allocation of memory reserved regions defined in
+device tree.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/of/of_reserved_mem.c      |   29 +++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h |   11 +++++++++++
- include/linux/of_reserved_mem.h   |   33 +++++++++++++++++++++++++++++++++
- 3 files changed, 73 insertions(+)
+This time I've mainly sliced the main patch into several smaller pieces
+to make the changes easier to understand and fixes some minor coding
+style issues.
 
-diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
-index c7ca6a4a42d1..97de6f882f85 100644
---- a/drivers/of/of_reserved_mem.c
-+++ b/drivers/of/of_reserved_mem.c
-@@ -170,6 +170,33 @@ static int __init __reserved_mem_alloc_size(unsigned long node,
- 	return 0;
- }
- 
-+static const struct of_device_id __rmem_of_table_sentinel
-+	__used __section(__reservedmem_of_table_end);
-+
-+/**
-+ * res_mem_init_node() - call region specific reserved memory init code
-+ */
-+static int __init __reserved_mem_init_node(struct reserved_mem *rmem)
-+{
-+	extern const struct of_device_id __reservedmem_of_table[];
-+	const struct of_device_id *i;
-+
-+	for (i = __reservedmem_of_table; i < &__rmem_of_table_sentinel; i++) {
-+		reservedmem_of_init_fn initfn = i->data;
-+		const char *compat = i->compatible;
-+
-+		if (!of_flat_dt_is_compatible(rmem->fdt_node, compat))
-+			continue;
-+
-+		if (initfn(rmem, rmem->fdt_node, rmem->name) == 0) {
-+			pr_info("Reserved memory: initialized node %s, compatible id %s\n",
-+				rmem->name, compat);
-+			return 0;
-+		}
-+	}
-+	return -ENOENT;
-+}
-+
- /**
-  * fdt_init_reserved_mem - allocate and init all saved reserved memory regions
-  */
-@@ -184,5 +211,7 @@ void __init fdt_init_reserved_mem(void)
- 		if (rmem->size == 0)
- 			err = __reserved_mem_alloc_size(node, rmem->name,
- 						 &rmem->base, &rmem->size);
-+		if (err == 0)
-+			__reserved_mem_init_node(rmem);
- 	}
- }
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index bc2121fa9132..f10f64fcc815 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -167,6 +167,16 @@
- #define CLK_OF_TABLES()
- #endif
- 
-+#ifdef CONFIG_OF_RESERVED_MEM
-+#define RESERVEDMEM_OF_TABLES()				\
-+	. = ALIGN(8);					\
-+	VMLINUX_SYMBOL(__reservedmem_of_table) = .;	\
-+	*(__reservedmem_of_table)			\
-+	*(__reservedmem_of_table_end)
-+#else
-+#define RESERVEDMEM_OF_TABLES()
-+#endif
-+
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
- 	VMLINUX_SYMBOL(__dtb_start) = .;				\
-@@ -490,6 +500,7 @@
- 	TRACE_SYSCALLS()						\
- 	MEM_DISCARD(init.rodata)					\
- 	CLK_OF_TABLES()							\
-+	RESERVEDMEM_OF_TABLES()						\
- 	CLKSRC_OF_TABLES()						\
- 	KERNEL_DTB()							\
- 	IRQCHIP_OF_MATCH_TABLE()
-diff --git a/include/linux/of_reserved_mem.h b/include/linux/of_reserved_mem.h
-index 89226ed7d954..f707176619a3 100644
---- a/include/linux/of_reserved_mem.h
-+++ b/include/linux/of_reserved_mem.h
-@@ -1,21 +1,54 @@
- #ifndef __OF_RESERVED_MEM_H
- #define __OF_RESERVED_MEM_H
- 
-+struct device;
-+struct of_phandle_args;
-+struct reserved_mem_ops;
-+
- struct reserved_mem {
- 	const char			*name;
- 	unsigned long			fdt_node;
-+	const struct reserved_mem_ops	*ops;
- 	phys_addr_t			base;
- 	phys_addr_t			size;
-+	void				*priv;
-+};
-+
-+struct reserved_mem_ops {
-+	void	(*device_init)(struct reserved_mem *rmem,
-+			       struct device *dev,
-+			       struct of_phandle_args *args);
-+	void	(*device_release)(struct reserved_mem *rmem,
-+				  struct device *dev);
- };
- 
-+typedef int (*reservedmem_of_init_fn)(struct reserved_mem *rmem,
-+				      unsigned long node, const char *uname);
-+
- #ifdef CONFIG_OF_RESERVED_MEM
- void fdt_init_reserved_mem(void);
- void fdt_reserved_mem_save_node(unsigned long node, const char *uname,
- 			       phys_addr_t base, phys_addr_t size);
-+
-+#define RESERVEDMEM_OF_DECLARE(name, compat, init)			\
-+	static const struct of_device_id __reservedmem_of_table_##name	\
-+		__used __section(__reservedmem_of_table)		\
-+		 = { .compatible = compat,				\
-+		     .data = (init == (reservedmem_of_init_fn)NULL) ?	\
-+				init : init }
-+
- #else
- static inline void fdt_init_reserved_mem(void) { }
- static inline void fdt_reserved_mem_save_node(unsigned long node,
- 		const char *uname, phys_addr_t base, phys_addr_t size) { }
-+
-+#define RESERVEDMEM_OF_DECLARE(name, compat, init)			\
-+	static const struct of_device_id __reservedmem_of_table_##name	\
-+		__attribute__((unused))					\
-+		 = { .compatible = compat,				\
-+		     .data = (init == (reservedmem_of_init_fn)NULL) ?	\
-+				init : init }
-+
- #endif
- 
- #endif /* __OF_RESERVED_MEM_H */
+The initial code for this feature were posted here [1], merged as commit
+9d8eab7af79cb4ce2de5de39f82c455b1f796963 ("drivers: of: add
+initialization code for dma reserved memory") and later reverted by
+commit 1931ee143b0ab72924944bc06e363d837ba05063. For more information,
+see [2]. Finally a new bindings has been proposed [3] and Josh
+Cartwright a few days ago prepared some code which implements those
+bindings [4]. This finally pushed me again to find some time to finish
+this task and review the code. Josh agreed to give me the ownership of
+this series to continue preparing them for mainline inclusion.
+
+For more information please refer to the changlelog and links below.
+
+[1]: http://lkml.kernel.org/g/1377527959-5080-1-git-send-email-m.szyprowski@samsung.com
+[2]: http://lkml.kernel.org/g/1381476448-14548-1-git-send-email-m.szyprowski@samsung.com
+[3]: http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
+[4]: http://thread.gmane.org/gmane.linux.documentation/19579
+
+Changelog:
+
+v5:
+- sliced main patch into several smaller patches on Grant's request
+- fixed coding style issues pointed by Grant
+- use node->phandle value directly instead of parsing properties manually
+
+v4: https://lkml.org/lkml/2014/2/20/150
+- dynamic allocations are processed after all static reservations has been
+  done
+- moved code for handling static reservations to drivers/of/fdt.c
+- removed node matching by string comparison, now phandle values are used
+  directly
+- moved code for DMA and CMA handling directly to
+  drivers/base/dma-{coherent,contiguous}.c
+- added checks for proper #size-cells, #address-cells, ranges properties
+  in /reserved-memory node
+- even more code cleanup
+- added init code for ARM64 and PowerPC
+
+v3: http://article.gmane.org/gmane.linux.documentation/20169/
+- refactored memory reservation code, created common code to parse reg, size,
+  align, alloc-ranges properties
+- added support for multiple tuples in 'reg' property
+- memory is reserved regardless of presence of the driver for its compatible
+- prepared arch specific hooks for memory reservation (defaults use memblock
+  calls)
+- removed node matching by string during device initialization
+- CMA init code: added checks for required region alignment
+- more code cleanup here and there
+
+v2: http://thread.gmane.org/gmane.linux.documentation/19870/
+- removed copying of the node name
+- split shared-dma-pool handling into separate files (one for CMA and one
+  for dma_declare_coherent based implementations) for making the code easier
+  to understand
+- added support for AMBA devices, changed prototypes to use struct decice
+  instead of struct platform_device
+- renamed some functions to better match other names used in drivers/of/
+- restructured the rest of the code a bit for better readability
+- added 'reusable' property to exmaple linux,cma node in documentation
+- exclusive dma (dma_coherent) is used for only handling 'shared-dma-pool'
+  regions without 'reusable' property and CMA is used only for handling
+  'shared-dma-pool' regions with 'reusable' property.
+
+v1: http://thread.gmane.org/gmane.linux.documentation/19579
+- initial version prepared by Josh Cartwright
+
+Summary:
+
+Grant Likely (1):
+  of: document bindings for reserved-memory nodes
+
+Marek Szyprowski (10):
+  drivers: of: add initialization code for static reserved memory
+  drivers: of: add initialization code for dynamic reserved memory
+  drivers: of: add support for custom reserved memory drivers
+  drivers: of: add automated assignment of reserved regions to client
+    devices
+  drivers: of: initialize and assign reserved memory to newly created
+    devices
+  drivers: dma-coherent: add initialization from device tree
+  drivers: dma-contiguous: add initialization from device tree
+  arm: add support for reserved memory defined by device tree
+  arm64: add support for reserved memory defined by device tree
+  powerpc: add support for reserved memory defined by device tree
+
+ .../bindings/reserved-memory/reserved-memory.txt   |  138 ++++++++++
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/mm/init.c                                 |    2 +
+ arch/arm64/Kconfig                                 |    1 +
+ arch/arm64/mm/init.c                               |    1 +
+ arch/powerpc/Kconfig                               |    1 +
+ arch/powerpc/kernel/prom.c                         |    3 +
+ drivers/base/dma-coherent.c                        |   41 +++
+ drivers/base/dma-contiguous.c                      |  130 +++++++--
+ drivers/of/Kconfig                                 |    6 +
+ drivers/of/Makefile                                |    1 +
+ drivers/of/fdt.c                                   |  134 +++++++++
+ drivers/of/of_reserved_mem.c                       |  291 ++++++++++++++++++++
+ drivers/of/platform.c                              |    7 +
+ include/asm-generic/vmlinux.lds.h                  |   11 +
+ include/linux/of_fdt.h                             |    3 +
+ include/linux/of_reserved_mem.h                    |   61 ++++
+ 17 files changed, 810 insertions(+), 22 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+ create mode 100644 drivers/of/of_reserved_mem.c
+ create mode 100644 include/linux/of_reserved_mem.h
+
 -- 
 1.7.9.5
 
