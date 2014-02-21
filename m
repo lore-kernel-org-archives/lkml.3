@@ -1,75 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460AbaBUOfT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:35:19 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:64663 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342AbaBUOfQ (ORCPT
+	id S1755501AbaBUOh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:37:26 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:40751 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460AbaBUOhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:35:16 -0500
-Date: Fri, 21 Feb 2014 09:37:14 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: x86_pmu_start WARN_ON.
-In-Reply-To: <alpine.DEB.2.10.1402201438480.24360@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1402210931410.6395@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402130910520.22057@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu> <20140217152859.GF15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
- <20140220100830.GN6835@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu> <20140220182300.GN9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402201352010.24360@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402201414380.24360@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402201438480.24360@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 21 Feb 2014 09:37:23 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1392986945-9693-86-git-send-email-luis.henriques@canonical.com>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com> <1392986945-9693-86-git-send-email-luis.henriques@canonical.com>
+From: Ray Strode <halfline@gmail.com>
+Date: Fri, 21 Feb 2014 09:37:01 -0500
+Message-ID: <CAA_Uwz+DZJ0f6ow3YSsSK9HDt639P7Up4_5ienoJO5VW4ZhF2Q@mail.gmail.com>
+Subject: Re: [PATCH 3.11 085/121] tty: Set correct tty name in 'active' sysfs attribute
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
+        Hannes Reinecke <hare@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-and the perf_fuzzer overnight triggered this possibly related warning
-in x86_pmu_stop()
+This broke plymouth, i think.  Plymouth used the herustic:
+"/sys/class/tty/console/active contains something other than tty0" to
+mean "probably has serial consoles, force verbose messages instead of
+a splash screen".  Now on a normal system it contains tty1.
 
-I assume it's this code (the line numbers don't match up for some reason).
+I pushed a commit to plymouth that gets it working again, but it could
+cause compatiblity concerns if new kernels are pushed to old releases.
 
-        if (__test_and_clear_bit(hwc->idx, cpuc->active_mask)) {
-                x86_pmu.disable(event);
-                cpuc->events[hwc->idx] = NULL;
-                WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-                hwc->state |= PERF_HES_STOPPED;
-        }
+--Ray
 
-so possibly also related to PERF_HES_STOPPED?
-
-
-[25526.987821] ------------[ cut here ]------------
-[25526.988047] WARNING: CPU: 1 PID: 3849 at arch/x86/kernel/cpu/perf_event.c:1221 x86_pmu_stop+0x71/0xa6()
-[25526.988047] Modules linked in: cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_conservative f71882fg mcs7830 usbnet ohci_pci evdev video wmi psmouse serio_raw coretemp i2c_nforce2 ohci_hcd acpi_cpufreq processor pcspkr thermal_sys button sg ehci_pci ehci_hcd sd_mod usbcore usb_common
-[25526.988047] CPU: 1 PID: 3849 Comm: perf_fuzzer Tainted: G        W    3.14.0-rc3+ #17
-[25526.988047] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[25526.988047]  00000000000004c5 ffff88011fc83ca8 ffffffff81530d11 00000000000004c5
-[25526.988047]  0000000000000000 ffff88011fc83ce8 ffffffff8103fce4 ffff88011fc83d28
-[25526.988047]  ffffffff81012ca0 ffff8800c9be6000 0000000000000004 ffff88011fc8b940
-[25526.988047] Call Trace:
-[25526.988047]  <IRQ>  [<ffffffff81530d11>] dump_stack+0x49/0x60
-[25526.988047]  [<ffffffff8103fce4>] warn_slowpath_common+0x81/0x9b
-[25526.988047]  [<ffffffff81012ca0>] ? x86_pmu_stop+0x71/0xa6
-[25526.988047]  [<ffffffff8103fd18>] warn_slowpath_null+0x1a/0x1c
-[25526.988047]  [<ffffffff81012ca0>] x86_pmu_stop+0x71/0xa6
-[25526.988047]  [<ffffffff81012e7b>] x86_pmu_del+0x3d/0xb8
-[25526.988047]  [<ffffffff810ca936>] event_sched_out+0x92/0x121
-[25526.988047]  [<ffffffff810cd124>] group_sched_in+0xf7/0x147
-[25526.988047]  [<ffffffff810cd2d2>] ctx_sched_in+0x15e/0x185
-[25526.988047]  [<ffffffff810cd362>] perf_event_sched_in+0x69/0x71
-[25526.988047]  [<ffffffff810cd594>] perf_cpu_hrtimer_handler+0x13a/0x1b0
-[25526.988047]  [<ffffffff8105e5b5>] __run_hrtimer+0xba/0x145
-[25526.988047]  [<ffffffff810cd45a>] ? __perf_install_in_context+0xf0/0xf0
-[25526.988047]  [<ffffffff8105e88a>] hrtimer_interrupt+0xd5/0x1c3
-[25526.988047]  [<ffffffff8102b593>] local_apic_timer_interrupt+0x58/0x5d
-[25526.988047]  [<ffffffff8102bf4f>] smp_trace_apic_timer_interrupt+0x53/0x91
-[25526.988047]  [<ffffffff8153bafa>] trace_apic_timer_interrupt+0x6a/0x70
-[25526.988047]  <EOI>  [<ffffffff8153ade6>] ? system_call_fastpath+0x1a/0x1f
-[25526.988047] ---[ end trace d5252ca58550eb43 ]---
-
+On Fri, Feb 21, 2014 at 7:48 AM, Luis Henriques
+<luis.henriques@canonical.com> wrote:
+> 3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Hannes Reinecke <hare@suse.de>
+>
+> commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
+>
+> The 'active' sysfs attribute should refer to the currently active tty
+> devices the console is running on, not the currently active console.
+>
+> The console structure doesn't refer to any device in sysfs, only the tty
+> the console is running on has.  So we need to print out the tty names in
+> 'active', not the console names.
+>
+> This resolves an issue on s390 platforms in determining the correct
+> console device to use.
+>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: David Herrmann <dh.herrmann@gmail.com>
+> Signed-off-by: Werner Fink <werner@suse.de>
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> ---
+>  Documentation/ABI/testing/sysfs-tty |  3 ++-
+>  drivers/tty/tty_io.c                | 25 ++++++++++++++++++-------
+>  2 files changed, 20 insertions(+), 8 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-tty b/Documentation/ABI/testing/sysfs-tty
+> index ad22fb0..a2ccec3 100644
+> --- a/Documentation/ABI/testing/sysfs-tty
+> +++ b/Documentation/ABI/testing/sysfs-tty
+> @@ -3,7 +3,8 @@ Date:           Nov 2010
+>  Contact:       Kay Sievers <kay.sievers@vrfy.org>
+>  Description:
+>                  Shows the list of currently configured
+> -                console devices, like 'tty1 ttyS0'.
+> +                tty devices used for the console,
+> +                like 'tty1 ttyS0'.
+>                  The last entry in the file is the active
+>                  device connected to /dev/console.
+>                  The file supports poll() to detect virtual
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 20689b9..ced6b3e 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1263,16 +1263,17 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+>   *     @p: output buffer of at least 7 bytes
+>   *
+>   *     Generate a name from a driver reference and write it to the output
+> - *     buffer.
+> + *     buffer. Return the number of bytes written.
+>   *
+>   *     Locking: None
+>   */
+> -static void tty_line_name(struct tty_driver *driver, int index, char *p)
+> +static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+>  {
+>         if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+> -               strcpy(p, driver->name);
+> +               return sprintf(p, "%s", driver->name);
+>         else
+> -               sprintf(p, "%s%d", driver->name, index + driver->name_base);
+> +               return sprintf(p, "%s%d", driver->name,
+> +                              index + driver->name_base);
+>  }
+>
+>  /**
+> @@ -3539,9 +3540,19 @@ static ssize_t show_cons_active(struct device *dev,
+>                 if (i >= ARRAY_SIZE(cs))
+>                         break;
+>         }
+> -       while (i--)
+> -               count += sprintf(buf + count, "%s%d%c",
+> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
+> +       while (i--) {
+> +               struct tty_driver *driver;
+> +               const char *name = cs[i]->name;
+> +               int index = cs[i]->index;
+> +
+> +               driver = cs[i]->device(cs[i], &index);
+> +               if (driver) {
+> +                       count += tty_line_name(driver, index, buf + count);
+> +                       count += sprintf(buf + count, "%c", i ? ' ':'\n');
+> +               } else
+> +                       count += sprintf(buf + count, "%s%d%c",
+> +                                        name, index, i ? ' ':'\n');
+> +       }
+>         console_unlock();
+>
+>         return count;
+> --
+> 1.9.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
