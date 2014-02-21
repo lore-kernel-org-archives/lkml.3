@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaBUCyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:54:43 -0500
-Received: from yotta.elopez.com.ar ([31.220.24.173]:51715 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897AbaBUCyl (ORCPT
+	id S1754093AbaBUCx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:53:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23969 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753221AbaBUCuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:54:41 -0500
-Message-ID: <5306BFC4.5000005@elopez.com.ar>
-Date: Thu, 20 Feb 2014 23:53:56 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Feb 2014 21:50:05 -0500
+Message-Id: <20140221025002.829581354@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 20 Feb 2014 21:49:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [for-next][PATCH 12/18] tracing/uprobes: Rename uprobe_{trace,perf}_print() functions
+References: <20140221024906.901631810@goodmis.org>
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Andy Gross <agross@codeaurora.org>
-Subject: Re: [PATCH v3 2/2] i2c: New bus driver for the Qualcomm QUP I2C controller
-References: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com> <1392943090-30556-3-git-send-email-bjorn.andersson@sonymobile.com>
-In-Reply-To: <1392943090-30556-3-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0012-tracing-uprobes-Rename-uprobe_-trace-perf-_print-fun.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+From: Namhyung Kim <namhyung@kernel.org>
 
-El 20/02/14 21:38, Bjorn Andersson escribió:
-> This bus driver supports the QUP i2c hardware controller in the Qualcomm SOCs.
-> The Qualcomm Universal Peripheral Engine (QUP) is a general purpose data path
-> engine with input/output FIFOs and an embedded i2c mini-core. The driver
-> supports FIFO mode (for low bandwidth applications) and block mode (interrupt
-> generated for each block-size data transfer).
->
-> Cc: Andy Gross <agross@codeaurora.org>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
+The uprobe_{trace,perf}_print functions are misnomers since what they
+do is not printing.  There's also a real print function named
+print_uprobe_event() so they'll only increase confusion IMHO.
 
-I'm not familiar with the subsystem nor the hardware, so I had a look 
-around for general stuff. I have some minor comments to make on the 
-probe code.
+Rename them with double underscores to follow convention of kprobe.
 
-(snip)
-> +static int qup_i2c_probe(struct platform_device *pdev)
-> +{
-> +	static const int blk_sizes[] = {4, 16, 32};
-> +	struct device_node *node = pdev->dev.of_node;
-> +	struct qup_i2c_dev *qup;
-> +	unsigned long one_bit_t;
-> +	struct resource *res;
-> +	u32 val, io_mode, hw_ver, size;
-> +	int ret, fs_div, hs_div;
-> +	int src_clk_freq;
-> +	int clk_freq;
-> +
-> +	qup = devm_kzalloc(&pdev->dev, sizeof(*qup), GFP_KERNEL);
-> +	if (!qup)
-> +		return -ENOMEM;
-> +
-> +	qup->dev = &pdev->dev;
-> +	init_completion(&qup->xfer);
-> +	platform_set_drvdata(pdev, qup);
-> +
-> +	clk_freq = 100000;
-> +	if (!of_property_read_u32(node, "clock-frequency", &val))
-> +		clk_freq = val;
+Link: http://lkml.kernel.org/r/1389946120-19610-2-git-send-email-namhyung@kernel.org
 
-val will be modified only if no error occurs, so you may rewrite this 
-bit as
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_uprobe.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-+	u32 clk_freq = 100000;
-...
-+	of_property_read_u32(node, "clock-frequency", &clk_freq)
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 79e52d9..c5d2612 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -758,7 +758,7 @@ static void uprobe_buffer_put(struct uprobe_cpu_buffer *ucb)
+ 	mutex_unlock(&ucb->mutex);
+ }
+ 
+-static void uprobe_trace_print(struct trace_uprobe *tu,
++static void __uprobe_trace_func(struct trace_uprobe *tu,
+ 				unsigned long func, struct pt_regs *regs)
+ {
+ 	struct uprobe_trace_entry_head *entry;
+@@ -807,14 +807,14 @@ out:
+ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ {
+ 	if (!is_ret_probe(tu))
+-		uprobe_trace_print(tu, 0, regs);
++		__uprobe_trace_func(tu, 0, regs);
+ 	return 0;
+ }
+ 
+ static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+ 				struct pt_regs *regs)
+ {
+-	uprobe_trace_print(tu, func, regs);
++	__uprobe_trace_func(tu, func, regs);
+ }
+ 
+ /* Event entry printers */
+@@ -1014,7 +1014,7 @@ static bool uprobe_perf_filter(struct uprobe_consumer *uc,
+ 	return ret;
+ }
+ 
+-static void uprobe_perf_print(struct trace_uprobe *tu,
++static void __uprobe_perf_func(struct trace_uprobe *tu,
+ 				unsigned long func, struct pt_regs *regs)
+ {
+ 	struct ftrace_event_call *call = &tu->tp.call;
+@@ -1078,14 +1078,14 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ 		return UPROBE_HANDLER_REMOVE;
+ 
+ 	if (!is_ret_probe(tu))
+-		uprobe_perf_print(tu, 0, regs);
++		__uprobe_perf_func(tu, 0, regs);
+ 	return 0;
+ }
+ 
+ static void uretprobe_perf_func(struct trace_uprobe *tu, unsigned long func,
+ 				struct pt_regs *regs)
+ {
+-	uprobe_perf_print(tu, func, regs);
++	__uprobe_perf_func(tu, func, regs);
+ }
+ #endif	/* CONFIG_PERF_EVENTS */
+ 
+-- 
+1.8.5.3
 
-> +
-> +	/* We support frequencies up to FAST Mode (400KHz) */
-> +	if (clk_freq <= 0 || clk_freq > 400000) {
 
-And you can drop the < check when it's unsigned.
-
-> +		dev_err(qup->dev, "clock frequency not supported %d\n",
-> +			clk_freq);
-> +		return -EIO;
-
-EIO?
-
-Cheers,
-
-Emilio
