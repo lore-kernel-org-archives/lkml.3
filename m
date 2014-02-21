@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001AbaBUQa6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:30:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:53436 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218AbaBUQa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:30:56 -0500
-Date: Fri, 21 Feb 2014 10:30:53 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch v6 1/2] dmaengine: qcom_bam_dma: Add device tree binding
-Message-ID: <20140221163053.GA3102@qualcomm.com>
-References: <1392964986-5207-1-git-send-email-agross@codeaurora.org>
- <1392964986-5207-2-git-send-email-agross@codeaurora.org>
- <20140221092657.GD7541@e106331-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140221092657.GD7541@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933023AbaBUQbf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:31:35 -0500
+Received: from plane.gmane.org ([80.91.229.3]:46093 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932264AbaBUQbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:31:34 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Grant Edwards <grant.b.edwards@gmail.com>
+Subject: Re: locking changes in tty broke low latency feature
+Date: Fri, 21 Feb 2014 16:31:03 +0000 (UTC)
+Message-ID: <le7v07$9gn$1@ger.gmane.org>
+References: <20140218093829.GC1741@redhat.com>
+ <5303DABD.9000302@hurleysoftware.com> <20140219130308.GC1851@redhat.com>
+ <le2nmd$p1$1@ger.gmane.org> <5304EC33.5040502@hurleysoftware.com>
+ <20140219191717.486ac4d0@alan.etchedpixels.co.uk>
+ <53051276.2070601@hurleysoftware.com>
+ <20140219214242.406e705b@alan.etchedpixels.co.uk>
+ <5305664C.7080701@hurleysoftware.com>
+ <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
+ <53077799.6030700@hurleysoftware.com>
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: c-24-118-110-103.hsd1.mn.comcast.net
+User-Agent: slrn/1.0.1 (Linux)
+Cc: linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 09:26:57AM +0000, Mark Rutland wrote:
-> On Fri, Feb 21, 2014 at 06:43:04AM +0000, Andy Gross wrote:
-> > Add device tree binding support for the QCOM BAM DMA driver.
-> > 
-[snip]
-> > +Required properties:
-> > +- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
-> > +		Must be "qcom,bam-v1.4.1" for MSM8974 V2
-> 
-> This looks a bit odd. How about:
-> 
-> - compatible: must contain:
->   * "qcom,bam-v1.4.0" for MSM8974 V1
->   * "qcom,bam-v1.4.1" for MSM8974 V2
-> 
+On 2014-02-21, Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Agreed.  I'll fix that.
+> I think the consensus is to leave the low_latency facility in, but
+> remove it's connection to the tty buffers.
+>
+> If the known-to-be-already-in-non-interrupt-context drivers want,
+> I can add a different function for executing flush_to_ldisc()
+> directly. But I don't want to do that without a use-case and test
+> subject.
 
-> > +- reg: Address range for DMA registers
-> > +- interrupts: single interrupt for this controller
-> 
-> This device only has a single interrupt? Or there's only one we care
-> about at the moment?
-> 
+Three of the drivers I maintain have modes where they handle all rx
+data in non-interrupt contexts, but I'm not convinced (or even
+suspicious) that there would be any noticeable benefit from such a
+function.  If, at some point in the future, it becomes apparent that
+there is "too much latency" in certain cases then perhaps it can be
+looked at again -- but I think doing it now is premature optimization.
+That said, all things being equal, it would be nice to avoid anything
+that would make such an addition impossible in the future.
 
-Yes only a single interrupt.  I can remove the s.
+>> First question though comes before all of this - and that is do we need
+>> low_latency at all any more or is the current scheduling logic now good
+>> enough to do the job anyway.
+>
+> Right.
+>
+> Based on my recent test, I think low_latency doesn't need to be a
+> knob for the tty core.
 
-> > +- #dma-cells: must be <1>
-> > +- clocks: required clock
-> > +- clock-names: name of clock
-> 
-> Either describe the _exact_ name this binding expects for any clocks
-> input, or get rid of clock-names. I would prefer the former.
+I Agree: there doesn't seem to be any evidence that it's needed by the
+tty/ldisc layer.
 
-So then I'd use the full name in the driver file.  That's fine.
+> Drivers can continue to use it to mess with their rx fifo settings
+> and such like.
 
-[snip]
-> > +Client:
-> > +Required properties:
-> > +- dmas: List of dma channel requests
-> > +- dma-names: Names of aforementioned requested channels
-> 
-> Do we really need to describe the client binding? Do we not have a
-> generic DMA binding doc we can refer to?
-> 
+Excellent.  One of my serial_core drivers still has (in it's default
+configuration) 10ms of latency that I can choose to eliminate on a
+per-port bases (at the cost of extra CPU cycles) when the low_latency
+flag is set.
 
-Originally there was more information in the entry.  It was pared down over time
-and I didn't go back to referencing the generic doc.  I'll do this and that'll
-fix this and your next comment.
+> I plan on sending Greg a patch to do just that, probably this weekend.
 
-[snip]
+Cool.  Thanks much for your attention to this.
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Grant
+
