@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaBUM0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:26:55 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:56324 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086AbaBUM0W (ORCPT
+	id S932077AbaBUM0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:26:21 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:63450 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415AbaBUM0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:26:22 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-cc-530745ecc22e
+	Fri, 21 Feb 2014 07:26:17 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-ab-530745e7c978
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
@@ -28,71 +28,89 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v5 11/11] powerpc: add support for reserved memory defined by
- device tree
-Date: Fri, 21 Feb 2014 13:25:27 +0100
-Message-id: <1392985527-6260-12-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v5 07/11] drivers: dma-coherent: add initialization from device
+ tree
+Date: Fri, 21 Feb 2014 13:25:23 +0100
+Message-id: <1392985527-6260-8-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
 References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t/xq7pvXNmDDZp3aVr8nXSM3eJDUyuz
-	xftlPYwW84+cY7Xof7OQ1eLAnx2MFm96O1gsdq57x2hxtukNu8X2zhnsFl+uPGSy2PT4GqvF
-	wrYlLBaXd81hs1h75C67xYaXB5ksll6/yGSx4HgLq8Wf6XIWp65/ZrNYc2Qxu8WE6WtZLFr3
-	HmG3+Lt9E4vFq4NtLBbrZ7xmsVi16w+jxcuPJ1gcZDzWzFvD6PH71yRGj9eTJzB6XO7rZfLY
-	Oesuu0fPmxZWj02rOtk87lzbw+axeUm9x+1/j5k9rpxoYvVY9+cVk0f/XwOPubv6GD36tqxi
-	9Pi8SS5AMIrLJiU1J7MstUjfLoEr40nfbqaCJZwVm+euZmlgvM3excjJISFgIjHh8FM2CFtM
-	4sK99UA2F4eQwFJGiVe9t6GcbiaJva+fg3WwCRhKdL3tAusQEVjIKPF5HgtIEbPAfTaJjos9
-	TCAJYYFoia/fZjOC2CwCqhJ9jw6ygti8Ah4Stz68BxrEAbROQWLOJBuQMCdQ+MyB52BhIQF3
-	iXUdWRMYeRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECInHLzsYFx+zOsQowMGoxMNb
-	IMEWLMSaWFZcmXuIUYKDWUmE96A+e7AQb0piZVVqUX58UWlOavEhRiYOTqkGxjnTrb7+1j16
-	w/3ObsUH6x+47dxw7+vlrcLvOdxmx73pD9txaUbj/nceX9wn3ha7M+Nbc0VeZtRWtndv5aT2
-	34rckLx8EZPE6+mXpv06/zXY89IH2Tipp7OYTmsJzZGV92Ro97con73W7XjuRQPrDXsKtil2
-	LNH/3jx530LLtgoGlfX3zjcff6SsxFKckWioxVxUnAgA1iN3T6UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRX0hTcRTH/d3d3XudTm5L5YeE2KAXQ6cQ+StMyqh+0EOC0EMItnQ5y+nY
+	UlyBTdM159S5KG34FzVo6dQZqaPIyXCyTDQ3DUojLUydlk17qE1y+vY53/M55zwchiMwkjFM
+	fuEdiaJQXCCkeOS7XacnYeUCnZk07Y1HAeM4jX5VVHHQz2d6gNocU1xU7+3golH/MEDeWi2J
+	RiybAL2v8NJoqLqJRtvurwSyLs9xUYemi0SztmYK9ToWaNS/aidQ9/wMgdqdlVzkb4xFrnkf
+	hXocnTQyNPaSqOqNg0aBISuJ1uwaEvU1rZPIbPMDtLo1QZ49gntaewD+99cI8PojA8CzdbUE
+	HjEt0FjvreRiq7mawp/nXlN4sOs+/rS7zMHuiQoutvjXCFwfSMIttjqA616aAfZZYzMOXeOl
+	5koK8kskClHadZ7UuLEC5B8jSisHNRw1GA7XgVAGsifgwE4tfcDRcHqxj9IBHiNguwH8oPXR
+	B0UNAacadWTQothkqNvQUUGOZDsA9LWSQYnDfqGgdkZPBBuH2atQ1/YKBJlkj8HB56v7A3z2
+	Enxs+rO3ldk7FwebjanBOJTFcHJ0ZT8W7CkW7S0D4LeDEDOIkhTnyJU38mTJiUqxTFlcmJeY
+	UySzgoM/bg+DzvHTY4BlgDCcL4dUpoArLlGqZGMAMhxhJN8uojMF/Fyx6q5EUZStKC6QKMcA
+	wYTGqIFU1FDjXJKjc+Bt3EJzlCWMSngQYcpRnwxJkaY+XfLkm6wtNzUZ6uwf+WGnftuiB1yG
+	tOMXM4o8lvKspYSs71uqEvUVVycjLdvpL0+ZDCyqxJvZDZMPtU/KROlUq9tu6WNyb3tfbDqP
+	Spbj9XHnL3/znnH5eKXp97QevjtJSCql4uR4jkIp/g8wMGKzpQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable reserved memory initialization from device tree.
+Add support for handling 'shared-dma-pool' reserved-memory device tree
+nodes.
+
+Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- arch/powerpc/Kconfig       |    1 +
- arch/powerpc/kernel/prom.c |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/base/dma-coherent.c |   41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 957bf344c0f5..3b6617fed8fc 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -90,6 +90,7 @@ config PPC
- 	select BINFMT_ELF
- 	select OF
- 	select OF_EARLY_FLATTREE
-+	select OF_RESERVED_MEM
- 	select HAVE_FTRACE_MCOUNT_RECORD
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FUNCTION_TRACER
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index f58c0d3aaeb4..591986215801 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -33,6 +33,7 @@
- #include <linux/irq.h>
- #include <linux/memblock.h>
- #include <linux/of.h>
-+#include <linux/of_fdt.h>
- 
- #include <asm/prom.h>
- #include <asm/rtas.h>
-@@ -588,6 +589,8 @@ static void __init early_reserve_mem_dt(void)
- 			memblock_reserve(base, size);
- 		}
- 	}
-+
-+	early_init_fdt_scan_reserved_mem();
+diff --git a/drivers/base/dma-coherent.c b/drivers/base/dma-coherent.c
+index bc256b641027..2343ba5d6d43 100644
+--- a/drivers/base/dma-coherent.c
++++ b/drivers/base/dma-coherent.c
+@@ -218,3 +218,44 @@ int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
+ 	return 0;
  }
- 
- static void __init early_reserve_mem(void)
+ EXPORT_SYMBOL(dma_mmap_from_coherent);
++
++/*
++ * Support for reserved memory regions defined in device tree
++ */
++#ifdef CONFIG_OF_RESERVED_MEM
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/of_reserved_mem.h>
++
++static void rmem_dma_device_init(struct reserved_mem *rmem,
++			struct device *dev, struct of_phandle_args *args)
++{
++	dma_declare_coherent_memory(dev, rmem->base, rmem->base,
++		rmem->size, DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
++}
++
++static void rmem_dma_device_release(struct reserved_mem *rmem,
++				    struct device *dev)
++{
++	dma_release_declared_memory(dev);
++}
++
++static const struct reserved_mem_ops rmem_dma_ops = {
++	.device_init	= rmem_dma_device_init,
++	.device_release	= rmem_dma_device_release,
++};
++
++static int __init rmem_dma_setup(struct reserved_mem *rmem,
++				 unsigned long node,
++				 const char *uname)
++{
++	if (of_get_flat_dt_prop(node, "reusable", NULL))
++		return -EINVAL;
++
++	rmem->ops = &rmem_dma_ops;
++	pr_info("Reserved memory: created DMA memory pool at %pa, size %ld MiB\n",
++		&rmem->base, (unsigned long)rmem->size / SZ_1M);
++	return 0;
++}
++RESERVEDMEM_OF_DECLARE(dma, "shared-dma-pool", rmem_dma_setup);
++#endif
 -- 
 1.7.9.5
 
