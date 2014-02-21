@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369AbaBUR1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:27:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44400 "EHLO
+	id S933414AbaBUR2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:28:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44442 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255AbaBUR1N (ORCPT
+	with ESMTP id S932255AbaBUR2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:27:13 -0500
-Date: Fri, 21 Feb 2014 18:26:33 +0100
+	Fri, 21 Feb 2014 12:28:35 -0500
+Date: Fri, 21 Feb 2014 18:28:11 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
         linux-arch@vger.kernel.org, x86@kernel.org,
@@ -29,35 +29,25 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
 Subject: Re: [PATCH v4 3/3] qspinlock, x86: Add x86 specific optimization for
  2 contending tasks
-Message-ID: <20140221172633.GR9987@twins.programming.kicks-ass.net>
+Message-ID: <20140221172811.GS9987@twins.programming.kicks-ass.net>
 References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com>
  <1392669684-4807-4-git-send-email-Waiman.Long@hp.com>
- <20140221121222.GQ9987@twins.programming.kicks-ass.net>
- <530787F3.6020400@hp.com>
- <53078865.8060808@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53078865.8060808@hp.com>
+In-Reply-To: <1392669684-4807-4-git-send-email-Waiman.Long@hp.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 12:09:57PM -0500, Waiman Long wrote:
-> On 02/21/2014 12:08 PM, Waiman Long wrote:
-> >On 02/21/2014 07:12 AM, Peter Zijlstra wrote:
-> >>
-> >>Why is this x86 only code?
-> >
-> >The code is making use of the fact that byte write is atomic which is true
-> >in x86 and probably in a few other architectures. I could pull these codes
-> >into the generic qspinlock.c file and set a flag in the asm header file to
-> >activate it if it is what you want.
-> >
-> >-Longman
-> 
-> BTW, I also assume that 8-bit and 16-bit cmpxchg() and xchg() are available.
+On Mon, Feb 17, 2014 at 03:41:24PM -0500, Waiman Long wrote:
+> +	struct {
+> +		u8  lock;	/* Lock bit	*/
+> +		u8  wait;	/* Waiting bit	*/
+> +		u16 qcode;	/* Queue code	*/
+> +	};
 
-Right, screw Alpha :-) Just pull it into the generic code; its far too
-much code to replicate per arch.
+16 bit code would result in 14 bits for the CPU number, that's only 16k,
+I think SGI actually had a machine with that many CPUs in.
+
