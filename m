@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392AbaBUXCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:02:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60363 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755500AbaBUXCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:02:10 -0500
-Message-ID: <5307DAC7.3090002@zytor.com>
-Date: Fri, 21 Feb 2014 15:01:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755968AbaBUXIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:08:35 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:10121 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754226AbaBUXId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 18:08:33 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19gvWaAdSjOfpPOxheIXlbH
+Date: Fri, 21 Feb 2014 15:08:21 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: [PATCHv2] ARM: OMAP2+: Add support for thumb mode on DT booted
+ N900
+Message-ID: <20140221230821.GB5342@atomide.com>
+References: <1391603582-11371-1-git-send-email-sre@debian.org>
+ <1392672658-13866-1-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, Jianguo Wu <wujianguo@huawei.com>,
-        Andy Honig <ahonig@google.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] x86, kaslr: randomize module base load address
-References: <20140221202110.GA29885@www.outflux.net>	<20140221123658.5752f75eea6506d17bfa313b@linux-foundation.org>	<CAGXu5jLGBJp7oKXjausV70bXF-RTVDXxdZriS0cJ7X6NO90Ybg@mail.gmail.com>	<20140221131531.2db80023c59895a930cf374f@linux-foundation.org>	<5307C2A2.5010006@zytor.com> <20140221132708.52054104059b785080c76e3b@linux-foundation.org>
-In-Reply-To: <20140221132708.52054104059b785080c76e3b@linux-foundation.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392672658-13866-1-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 01:27 PM, Andrew Morton wrote:
-> On Fri, 21 Feb 2014 13:18:26 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
+* Sebastian Reichel <sre@debian.org> [140217 13:33]:
+> Without enabling the workaround for ARM errata 430973 thumb
+> compiled userland crashes randomly on the Nokia N900.
 > 
->> On 02/21/2014 01:15 PM, Andrew Morton wrote:
->>>>
->>>> I've been slapped down for adding more config options in the past, and
->>>> I think it's unlikely that people using CONFIG_RANDOMIZE_BASE won't
->>>> want the modules base randomized too. I think this is a safe default,
->>>> but if you see it as a requirement, I can change it.
->>>
->>> I think there were issues with some embedded systems where it's
->>> hard/impossible to provide/alter boot parameters.
->>>
->>
->> We now allow kernel parameters to be compiled into the kernel image for
->> that reason.
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> ---
+> Hi,
 > 
-> We do?  What's that Kconfig variable called?
+> This is PATCHv2 for the thumb errata workaround for N900 DT
+> boot, which should go into 3.14-rc.
 > 
+> Changes since PATCHv1:
+>  * Add Reviewed-By: Pavel Machek
+>  * Add more verbose warning about the errata as suggested by Pavel
+> 
+> I did not increase the verbose level, since the next higher verbose
+> level is pr_err and the message is not an error.
+> 
+> I think it would make sense to update the Kconfig entry for the errata to
+> enable the workaround by default for the Nokia N900. That should be done in
+> its own patch, though.
+> 
+> Apart from that it would be nice if errata workaround could be enabled
+> via DeviceTree instead of kernel configuration. This will require some
+> discussion though, so I think we should start with this patch for now.
 
-CONFIG_CMDLINE and CONFIG_CMDLINE_OVERRIDE.  They seem to be
-x86-specific at this time, although I think some other arches have
-similar hacks.
+Thanks applying into omap-for-v3.14/fixes.
 
-	-hpa
-
+Tony
