@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905AbaBUNEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:04:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47874 "EHLO
+	id S933415AbaBUNFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:05:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47870 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933350AbaBUNCx (ORCPT
+	with ESMTP id S933339AbaBUNCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:53 -0500
+	Fri, 21 Feb 2014 08:02:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 60/60] block: add cond_resched() to potentially long running ioctl discard loop
-Date: Fri, 21 Feb 2014 13:01:27 +0000
-Message-Id: <1392987687-15367-61-git-send-email-luis.henriques@canonical.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 59/60] s390: fix kernel crash due to linkage stack instructions
+Date: Fri, 21 Feb 2014 13:01:26 +0000
+Message-Id: <1392987687-15367-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -26,45 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
+commit 8d7f6690cedb83456edd41c9bd583783f0703bf0 upstream.
 
-When mkfs issues a full device discard and the device only
-supports discards of a smallish size, we can loop in
-blkdev_issue_discard() for a long time. If preempt isn't enabled,
-this can turn into a softlock situation and the kernel will
-start complaining.
+The kernel currently crashes with a low-address-protection exception
+if a user space process executes an instruction that tries to use the
+linkage stack. Set the base-ASTE origin and the subspace-ASTE origin
+of the dispatchable-unit-control-table to point to a dummy ASTE.
+Set up control register 15 to point to an empty linkage stack with no
+room left.
 
-Add an explicit cond_resched() at the end of the loop to avoid
-that.
+A user space process with a linkage stack instruction will still crash
+but with a different exception which is correctly translated to a
+segmentation fault instead of a kernel oops.
 
-Signed-off-by: Jens Axboe <axboe@fb.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-lib.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/s390/kernel/head64.S | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b4..36751e2 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -101,6 +101,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+diff --git a/arch/s390/kernel/head64.S b/arch/s390/kernel/head64.S
+index 99348c0..78be245 100644
+--- a/arch/s390/kernel/head64.S
++++ b/arch/s390/kernel/head64.S
+@@ -61,7 +61,7 @@ ENTRY(startup_continue)
+ 	.quad	0			# cr12: tracing off
+ 	.quad	0			# cr13: home space segment table
+ 	.quad	0xc0000000		# cr14: machine check handling off
+-	.quad	0			# cr15: linkage stack operations
++	.quad	.Llinkage_stack		# cr15: linkage stack operations
+ .Lpcmsk:.quad	0x0000000180000000
+ .L4malign:.quad 0xffffffffffc00000
+ .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
+@@ -69,12 +69,15 @@ ENTRY(startup_continue)
+ .Lparmaddr:
+ 	.quad	PARMAREA
+ 	.align	64
+-.Lduct: .long	0,0,0,0,.Lduald,0,0,0
++.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
+ 	.long	0,0,0,0,0,0,0,0
++.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
+ 	.align	128
+ .Lduald:.rept	8
+ 	.long	0x80000000,0,0,0	# invalid access-list entries
+ 	.endr
++.Llinkage_stack:
++	.long	0,0,0x89000000,0,0,0,0x8a000000,0
  
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
-+
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
+ ENTRY(_ehead)
  
- 	/* Wait for bios in-flight */
 -- 
 1.9.0
 
