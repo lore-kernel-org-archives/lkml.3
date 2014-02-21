@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaBUWKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:10:34 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:45152 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147AbaBUWKc convert rfc822-to-8bit (ORCPT
+	id S1755966AbaBUWLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:11:13 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:55759 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361AbaBUWLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:10:32 -0500
+	Fri, 21 Feb 2014 17:11:09 -0500
+Date: Fri, 21 Feb 2014 22:10:54 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Michael Matz <matz@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+In-Reply-To: <20140221191318.GK4250@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
+References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+ <20140220083032.GN4250@linux.vnet.ibm.com>
+ <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+ <20140220181116.GT4250@linux.vnet.ibm.com>
+ <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+ <20140220185608.GX4250@linux.vnet.ibm.com>
+ <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
+ <20140220221027.GC4250@linux.vnet.ibm.com>
+ <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
+ <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de> <20140221191318.GK4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <5307CD6B.4090702@linaro.org>
-References: <1393015414-12499-1-git-send-email-john.stultz@linaro.org>
-	<1393015414-12499-3-git-send-email-john.stultz@linaro.org>
-	<CAMP5Xgf1cMUEk5Z3KQvnUNTzvo12URYX_w4m+SyH8WEF=1kKhg@mail.gmail.com>
-	<5307C553.9040504@linaro.org>
-	<CAMP5XgciqfYJEML8Rhb0w2pk6gboOciK2rczEc4ZdDC_-pgkNQ@mail.gmail.com>
-	<5307CD6B.4090702@linaro.org>
-Date: Fri, 21 Feb 2014 14:10:32 -0800
-Message-ID: <CAMP5XgdYF-zHmoXN1LMrRDzcacv2UAXiVxYc7AoA+BrURSDk+A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] staging: binder: Support concurrent 32 bit and 64 bit processes.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 21 Feb 2014 22:10:57.0947 (UTC) FILETIME=[CC0FAEB0:01CF2F51]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 2:04 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 02/21/2014 01:56 PM, Arve Hjønnevåg wrote:
->> On Fri, Feb 21, 2014 at 1:29 PM, John Stultz <john.stultz@linaro.org> wrote:
->>> On 02/21/2014 12:59 PM, Arve Hjønnevåg wrote:
->>>> On Fri, Feb 21, 2014 at 12:43 PM, John Stultz <john.stultz@linaro.org> wrote:
->>>>> From: Arve Hjønnevåg <arve@android.com>
->>>>>
->>>>> For 64bit systems we want to use the same binder interface for 32bit and
->>>>> 64bit processes. Thus the size and the layout of the structures passed
->>>>> between the kernel and the userspace has to be the same for both 32 and
->>>>> 64bit processes.
->>>>>
->>>>> This change replaces all the uses of void* and size_t with
->>>>> binder_uintptr_t and binder_size_t. These are then typedefed to specific
->>>>> sizes depending on the use of the interface, as follows:
->>>>>        * __u32 - on legacy 32bit only userspace
->>>>>        * __u64 - on mixed 32/64bit userspace where all processes use the same
->>>>> interface.
->>>>>
->>>>> This change also increments the BINDER_CURRENT_PROTOCOL_VERSION to 8 and
->>>>> hooks the compat_ioctl entry for the mixed 32/64bit Android userspace.
->>>>>
->>>> It only increments the version to 8 if the old 32 bit interface is not selected.
->>>>
->>>>> This patch also provides a CONFIG_ANDROID_BINDER_IPC_32BIT option for
->>>>> compatability, which if set which enables the old protocol on 32 bit
->>>>> systems.
->>> Ok. I thought that point was covered by the detail on
->>> CONFIG_ANDROID_BINDER_IPC_32BIT, but maybe its not explicit enough.
->>>
->>> Would you be ok with:
->>>
->>> This change also increments the BINDER_CURRENT_PROTOCOL_VERSION to 8 and
->>> hooks the compat_ioctl entry for the mixed 32/64bit Android userspace.
->>>
->>> This patch also provides a CONFIG_ANDROID_BINDER_IPC_32BIT option for
->>> compatability, which if set which enables the old protocol, setting
->>> BINDER_CURRENT_PROTOCOL_VERSION to 7, on 32 bit systems.
->>>
->>> ?
->>>
->> Yes, but replacing "This change" with "Selecting the 64 bit interface"
->> would also work.
->
-> Ok.. I might stick to my wording above since with this patch, the 64bit
-> interface is now the unconditional case, with the 32bit interface having
-> the config option. So it might be more clear as there is no 64bit
-> interface option to select.
->
-> I'll add that bit and resend. Everything else in the patch series ok by you?
->
+On Fri, 21 Feb 2014, Paul E. McKenney wrote:
 
-Assuming you did not change the code, yes.
+> This needs to be as follows:
+> 
+> [[carries_dependency]] int getzero(int i [[carries_dependency]])
+> {
+> 	return i - i;
+> }
+> 
+> Otherwise dependencies won't get carried through it.
+
+C11 doesn't have attributes at all (and no specification regarding calls 
+and dependencies that I can see).  And the way I read the C++11 
+specification of carries_dependency is that specifying carries_dependency 
+is purely about increasing optimization of the caller: that if it isn't 
+specified, then the caller doesn't know what dependencies might be 
+carried.  "Note: The carries_dependency attribute does not change the 
+meaning of the program, but may result in generation of more efficient 
+code. - end note".
 
 -- 
-Arve Hjønnevåg
+Joseph S. Myers
+joseph@codesourcery.com
