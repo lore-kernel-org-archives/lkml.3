@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaBUXRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 18:17:36 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24517 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753116AbaBUXRc (ORCPT
+	id S1754518AbaBUXSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 18:18:41 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:40110 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551AbaBUXSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 18:17:32 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18hysKRez0CjrkTdpDfWJ5R
-Date: Fri, 21 Feb 2014 15:17:15 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: linux@arm.linux.org.uk, nm@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH 1/1] ARM: OMAP: Kill warning in CPUIDLE code with
- !CONFIG_SMP
-Message-ID: <20140221231714.GC5342@atomide.com>
-References: <1392623575-4884-1-git-send-email-mugunthanvnm@ti.com>
+	Fri, 21 Feb 2014 18:18:37 -0500
+X-Greylist: delayed 22862 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Feb 2014 18:18:37 EST
+Date: Fri, 21 Feb 2014 18:18:33 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140221231833.GC12830@htj.dyndns.org>
+References: <20140221015935.GF6897@htj.dyndns.org>
+ <5306B4DF.4000901@hurleysoftware.com>
+ <20140221021341.GG6897@htj.dyndns.org>
+ <5306E06C.5020805@hurleysoftware.com>
+ <20140221100301.GA14653@mtj.dyndns.org>
+ <53074BE4.1020307@hurleysoftware.com>
+ <20140221130614.GH6897@htj.dyndns.org>
+ <5307849A.9050209@hurleysoftware.com>
+ <20140221165730.GA10929@htj.dyndns.org>
+ <5307DAC9.2020103@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392623575-4884-1-git-send-email-mugunthanvnm@ti.com>
+In-Reply-To: <5307DAC9.2020103@hurleysoftware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mugunthan V N <mugunthanvnm@ti.com> [140216 23:56]:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Fri, Feb 21, 2014 at 06:01:29PM -0500, Peter Hurley wrote:
+> smp_mb__after_unlock_lock() is only for ordering memory operations
+> between two spin-locked sections on either the same lock or by
+> the same task/cpu. Like:
 > 
-> for non SMP build, NR_CPUS is 1 and hence the code complains with below
-> warnings.
+>    i = 1
+>    spin_unlock(lock1)
+>    spin_lock(lock2)
+>    smp_mb__after_unlock_lock()
+>    j = 1
 > 
-> arch/arm/mach-omap2/cpuidle44xx.c:207:8: warning: array subscript is above array bounds [-Warray-bounds]
-> arch/arm/mach-omap2/cpuidle44xx.c:212:11: warning: array subscript is above array bounds [-Warray-bounds]
+> This guarantees that the store to j happens after the store to i.
+> Without it, a cpu can
 > 
-> Kill it by making array size fixed.
-> 
-> Acked-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+>    spin_lock(lock2)
+>    j = 1
+>    i = 1
+>    spin_unlock(lock1)
 
-Thanks applying into omap-for-v3.14/fixes.
+Hmmm?  I'm pretty sure that's a full barrier.  Local processor is
+always in order (w.r.t. the compiler).
 
-Tony
+Thanks.
+
+-- 
+tejun
