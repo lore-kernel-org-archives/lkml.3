@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931AbaBUNel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:34:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47094 "EHLO
+	id S1756001AbaBUNei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:34:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47102 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932404AbaBUMuu (ORCPT
+	with ESMTP id S932410AbaBUMux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:50 -0500
+	Fri, 21 Feb 2014 07:50:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 075/121] drm/radeon: fix UVD IRQ support on 7xx
-Date: Fri, 21 Feb 2014 12:48:19 +0000
-Message-Id: <1392986945-9693-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 077/121] ALSA: hda - Fix mic capture on Sony VAIO Pro 11
+Date: Fri, 21 Feb 2014 12:48:21 +0000
+Message-Id: <1392986945-9693-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 858a41c853cef2cb01de34dae334c19c1c15b237 upstream.
+commit f88abaa0d0dc0d1f1a9ae21f8e822918e5aadfdf upstream.
 
-Otherwise decoding isn't really useable.
+The very same fixup is needed to make the mic on Sony VAIO Pro 11
+working as well as VAIO Pro 13 model.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-and-tested-by: Hendrik-Jan Heins <hjheins@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 30320a5..093afb9 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -4626,6 +4626,10 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 124: /* UVD */
-+			DRM_DEBUG("IH: UVD int: 0x%08x\n", src_data);
-+			radeon_fence_process(rdev, R600_RING_TYPE_UVD_INDEX);
-+			break;
- 		case 176: /* CP_INT in ring buffer */
- 		case 177: /* CP_INT in IB1 */
- 		case 178: /* CP_INT in IB2 */
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 841478b..3bebaaf 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3825,6 +3825,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x8398, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "ASUS P1005", ALC269_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x8516, "ASUS X101CH", ALC269_FIXUP_ASUS_X101),
++	SND_PCI_QUIRK(0x104d, 0x90b5, "Sony VAIO Pro 11", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x90b6, "Sony VAIO Pro 13", ALC286_FIXUP_SONY_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIXUP_SONY_VAIO_GPIO2),
+ 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 -- 
 1.9.0
 
