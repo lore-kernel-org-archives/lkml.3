@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389AbaBUNhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:37:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47073 "EHLO
+	id S932368AbaBUMun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47017 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932288AbaBUMuo (ORCPT
+	with ESMTP id S932288AbaBUMub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:44 -0500
+	Fri, 21 Feb 2014 07:50:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pontus Fuchs <pontus.fuchs@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 070/121] nl80211: Reset split_start when netlink skb is exhausted
-Date: Fri, 21 Feb 2014 12:48:14 +0000
-Message-Id: <1392986945-9693-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/121] spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->lsb is true
+Date: Fri, 21 Feb 2014 12:48:04 +0000
+Message-Id: <1392986945-9693-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pontus Fuchs <pontus.fuchs@gmail.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit f12cb2893069495726c21a4b0178705dacfecfe0 upstream.
+commit f7db1588d6028c97c098bb6445eaabc56a25fed8 upstream.
 
-When the netlink skb is exhausted split_start is left set. In the
-subsequent retry, with a larger buffer, the dump is continued from the
-failing point instead of from the beginning.
+Otherwise, spi_setup() fails with unsupported mode bits message.
 
-This was causing my rt28xx based USB dongle to now show up when
-running "iw list" with an old iw version without split dump support.
-
-Fixes: 3713b4e364ef ("nl80211: allow splitting wiphy information in dumps")
-Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-[avoid the entire workaround when state->split is set]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/wireless/nl80211.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/spi/spi-nuc900.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 7956f41..95b8565 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1613,9 +1613,10 @@ static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callback *cb)
- 				 * We can then retry with the larger buffer.
- 				 */
- 				if ((ret == -ENOBUFS || ret == -EMSGSIZE) &&
--				    !skb->len &&
-+				    !skb->len && !state->split &&
- 				    cb->min_dump_alloc < 4096) {
- 					cb->min_dump_alloc = 4096;
-+					state->split_start = 0;
- 					rtnl_unlock();
- 					return 1;
- 				}
+diff --git a/drivers/spi/spi-nuc900.c b/drivers/spi/spi-nuc900.c
+index 150d854..49626e9 100644
+--- a/drivers/spi/spi-nuc900.c
++++ b/drivers/spi/spi-nuc900.c
+@@ -374,6 +374,8 @@ static int nuc900_spi_probe(struct platform_device *pdev)
+ 	init_completion(&hw->done);
+ 
+ 	master->mode_bits          = SPI_MODE_0;
++	if (hw->pdata->lsb)
++		master->mode_bits |= SPI_LSB_FIRST;
+ 	master->num_chipselect     = hw->pdata->num_cs;
+ 	master->bus_num            = hw->pdata->bus_num;
+ 	hw->bitbang.master         = hw->master;
 -- 
 1.9.0
 
