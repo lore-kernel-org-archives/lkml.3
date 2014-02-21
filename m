@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790AbaBUJrD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 04:47:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575AbaBUJq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 04:46:59 -0500
-Message-ID: <5307208B.8030908@redhat.com>
-Date: Fri, 21 Feb 2014 10:46:51 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754797AbaBUJ4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 04:56:14 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:52264 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391AbaBUJ4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 04:56:10 -0500
+Date: Fri, 21 Feb 2014 10:56:07 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
+Message-ID: <20140221095604.GI22574@ulmo.nvidia.com>
+References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+ <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
 MIME-Version: 1.0
-To: Chris Rankin <rankincj@yahoo.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: PWC webcam and setpwc tool no longer working with 3.12.11 kernel
-References: <1392924626.38711.YahooMailNeo@web120304.mail.ne1.yahoo.com>
-In-Reply-To: <1392924626.38711.YahooMailNeo@web120304.mail.ne1.yahoo.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WR+jf/RUebEcofwt"
+Content-Disposition: inline
+In-Reply-To: <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 02/20/2014 08:30 PM, Chris Rankin wrote:
-> 
-> 
-> Hi,
-> 
-> I have an old Logitech webcam, with USB IDs 046d:08b3. When I try to use this camera now, I see this error in the dmesg log:
-> 
-> [ 2883.852464] pwc: isoc_init() submit_urb 0 failed with error -28
-> 
-> 
-> This error is apparently ENOSPC, which made me suspect that I was trying to use a mode that would require compression.
+--WR+jf/RUebEcofwt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ENOSPC actually means that the data the cam is trying to send is too big for the available
-bandwidth. So if anything you need to enable compression, but if compression is supported
-then it will get enabled by default.
+On Mon, Jan 27, 2014 at 11:18:51PM +0100, David Herrmann wrote:
+> Hi
+>=20
+> On Thu, Jan 23, 2014 at 3:14 PM, David Herrmann <dh.herrmann@gmail.com> w=
+rote:
+> > Hi
+> >
+> > Another round of SimpleDRM patches. I somehow lost track of the last on=
+es and as
+> > this is a major rewrite, I'll just start at v1 again.
+> >
+> > Some comments up-front:
+> >
+> >  - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussion=
+s. I
+> >    included them in this series as the other patches depend on them. Co=
+uld you
+> >    pick them up for the x86 tree? The other 9 patches won't make it in =
+3.14 so
+> >    no reason to put them through the DRM tree.
+> >    All mentioned issues should be addressed. If there's still sth missi=
+ng,
+> >    please let me know.
+> >
+> >  - The DRM patches depend on my "DRM Anonymous Inode" patches. But it s=
+hould be
+> >    trivial to apply them on drm-next (I think only one line needs to be=
+ changed:
+> >    i_mapping =3D> dev_mapping).
+> >
+> >  - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it=
+ works
+> >    fine. The DRM backend is only tested with some DRM tests I have loca=
+lly. I
+> >    have no idea how to make Xorg pick up a specific /dev/dri/card0 card=
+=2E It
+> >    always tells me "no screens found" (as the underlying device is not =
+marked as
+> >    boot_vga..). If someone knows how to tell Xorg to use card0, I'd gla=
+dly test
+> >    this. But I'm no longer used to writing xorg.confs..
+>=20
+> For completeness, I tested this with Xorg+xf86-video-modesetting and
+> it works just fine. The xorg.conf I used can be found below. If this
+> driver gets upstreamed, I will try to make the X11 auto-loader detect
+> it just like any other platform-device.
 
-This is likely caused by the camera being plugged into a usb-bus which already is used
-by other reserved-bandwidth devices such as mice, keyboard, usb soundcards, etc.
+I recently posted patches[0] to the xorg-devel mailing list that I think
+should solve that issue.
 
-See which bus the cam is on in lsusb, and try plugging it into a different port until
-it shows up on a different bus.
+Thierry
 
-If possible USB-3 ports are preferred over USB-2 ports or connecting through an USB-2
-hub. USB-2's USB-1 emulation has some issues, which means we cannot use full USB-1 bandwidth
-there.
+[0]: http://lists.x.org/archives/xorg-devel/2014-February/040568.html
 
-> However, when I tried using setpwc to configure the camera's options I received more errors:
-> $ setpwc -c 3
-> setpwc v1.3, (C) 2003-2006 by folkert@vanheusden.com
-> Error while doing ioctl VIDIOCPWCSCQUAL: Inappropriate ioctl for device
-> 
-> 
-> Has the kernel-to-userspace interface for PWC devices changed? Because how else could this IOCTL be "inappropriate"? Is there an alternative to setpwc, please?
+--WR+jf/RUebEcofwt
+Content-Type: application/pgp-signature
 
-Yes, the pwc driver was the only driver using its own custom ioctls instead of standard
-v4l2 controls for many settings. The old ioctls have been deprecated for a while already
-and have recently been removed.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-You can control the camera with the v4l2-ctl app which is part of v4l-utils, or if you
-want something graphical with qv4l2 which is also part of v4l-utils. More in general
-any v4l controls app using the standard API-s should work, ie gtk-v4l or v4l2ucp should
-work fine too.
+iQIcBAEBAgAGBQJTByK0AAoJEN0jrNd/PrOhgesP/iVDOlFV9SkAv8OK1GY4dmfs
+cqOKH9TaKTBenMRgEb276Rm7nbdbRzmkM+GVjjhLQiYa5JTs9CGxcaulhWMFCrcf
+BeUkDBFnh8QRcMBBS6l+d1hZT9yNvSv85VqIfkdkEtwzIBznRo48gnhOdlq3AMyl
+l2f/hkUkDzImIRdZZpawk5NIZqqb5FWNjUL7p9Hn8q1jN89J3RvL8Gaagaa0XTJK
+ccCfHQR36AbLC8PlO1B4Ovc909clsWRelzWm+615lNBBMm+GCGhzGDCGHzsJ+r7G
+HWMsy73ORiemlDm2/dYvKAqcYy+UULm3foeIBqiBQDF9Fd7eJFtOcTDeTaI4HN+O
+XQsvRnlxNbLC8r6f1odpqnl373dEnEnqNSCe8nkEkC8UgERTy7+ZOzUKR4F9BgkQ
+U0LJRM4fS7BpkrhjxJR9JhrI7gCKimRhwItQXNYxr34BKdJxxQr8t53hxKJscFNj
+5WxGW1S/r4TvOdFbShdu+nSE72TuzLzI7ew3kCB9gC45JbNgcZ4ahfNiX1OJPJso
+tNZSiVL76pWVNnplfIeOny8j6gk2cwZnk/yZrUDot/RQiMom8fHFOSpt4fW9zgHB
+5Pu73hj8EkUAUSrX6AtbS2NgRqFY7X5PGEsTb0otxHESFeA0r5rsls79KBQxkqe/
+UNkQwLbcE+Tuv/+WVmfj
+=gS6g
+-----END PGP SIGNATURE-----
 
-Regards,
-
-Hans
+--WR+jf/RUebEcofwt--
