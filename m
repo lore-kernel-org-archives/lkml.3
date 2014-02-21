@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaBUULB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 15:11:01 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:40376 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117AbaBUULA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 15:11:00 -0500
-Date: Fri, 21 Feb 2014 12:10:31 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ming Lei <tom.leiming@gmail.com>, Andy Honig <ahonig@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org
-Subject: [PATCH] kallsyms: fix absolute addresses for kASLR
-Message-ID: <20140221201031.GA8089@www.outflux.net>
+	id S1753223AbaBUUQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 15:16:00 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52011 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752417AbaBUUP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 15:15:59 -0500
+X-Sasl-enc: E31gk+oWty8L/xw6x+bjPaABa9ZLQSc7i8fFbm3sSYAq 1393013750
+Date: Fri, 21 Feb 2014 17:15:47 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: linux-kernel@vger.kernel.org, Burt Triplett <burt@pbjtriplett.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Intel microcode extended signature table support in Linux/BITS
+Message-ID: <20140221201547.GB722@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 8bit
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Honig <ahonig@google.com>
+I am directing this question to you hoping one of you can either address it
+directly, or forward it internally at Intel.
 
-Currently symbols that are absolute addresses are incorrectly
-displayed in /proc/kallsyms if the kernel is loaded with kASLR.
+We have code in the Linux kernel to support microcode extended signature
+tables which has never been tested as far as I know, as there are no public
+test vectors of microcode update containers with extended signature tables.
 
-The problem was that the scripts/kallsyms.c file which generates
-the array of symbol names and addresses uses an relocatable value
-for all symbols, even absolute symbols.  This patch fixes that.
+IMHO, untested kernel code is never a good thing, and useless untested
+kernel code is even worse.
 
-Several kallsyms output in different boot states for comparison:
+So, the first question would be whether microcode extended signature tables
+are ever going to be used by Intel?
 
-$ egrep '_(stext|_per_cpu_(start|end))' /root/kallsyms.nokaslr
-0000000000000000 D __per_cpu_start
-0000000000014280 D __per_cpu_end
-ffffffff810001c8 T _stext
-$ egrep '_(stext|_per_cpu_(start|end))' /root/kallsyms.kaslr1
-000000001f200000 D __per_cpu_start
-000000001f214280 D __per_cpu_end
-ffffffffa02001c8 T _stext
-$ egrep '_(stext|_per_cpu_(start|end))' /root/kallsyms.kaslr2
-000000000d400000 D __per_cpu_start
-000000000d414280 D __per_cpu_end
-ffffffff8e4001c8 T _stext
-$ egrep '_(stext|_per_cpu_(start|end))' /root/kallsyms.kaslr-fixed
-0000000000000000 D __per_cpu_start
-0000000000014280 D __per_cpu_end
-ffffffffadc001c8 T _stext
+If that code is going to remain unused, we probably should remove support
+for Intel microcode extended signatures from Linux.
 
-Signed-off-by: Andy Honig <ahonig@google.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- scripts/kallsyms.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Anyway, there is an incompatibility between the code in Linux and also in
+Intel BITS, and what is documented in the SDM (Intel® 64 and IA-32
+Architectures Software Developer Manual).
 
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 10085de886fe..276e84b8a8e5 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -330,8 +330,7 @@ static void write_src(void)
- 				printf("\tPTR\t_text + %#llx\n",
- 					table[i].addr - _text);
- 			else
--				printf("\tPTR\t_text - %#llx\n",
--					_text - table[i].addr);
-+				printf("\tPTR\t%#llx\n", table[i].addr);
- 		} else {
- 			printf("\tPTR\t%#llx\n", table[i].addr);
- 		}
+So, for the second question, could someone at Intel please clarify the
+following point?
+
+In the Intel® 64 and IA-32 Architectures Software Developer Manual (SDM) vol
+3A page 9-30, table 9-6, last row, the description of the extended signature
+table checksum ("Checksum[n]" in table 9-6) makes it clear one is supposed
+to strip out the extended signature table entirely from the microcode
+container when one applies the extended signature to the main microcode
+header.
+
+However, this removal of the extended signature table also implies in a
+change of the "Total Size" field of the main microcode header (table 9-6).
+Therefore, the "CheckSum[n]" field of table 9-6 has to take into account
+this change in the "Total Size" field.
+
+Two public implementations of extended microcode signature table support
+(Linux kernel and Intel BITS) do NOT take into account the required change
+to "Total Size" in order to strip the extended microcode signature table,
+and thus will not validate microcode with extended signature tables that
+follow the SDM.
+
+So, which is correct: the code in Linux and BITS, or the text of the SDM?
+
+As a sidenote, the way the SDM documents the extended signature table
+implies no extra padding can be added after the extended signature table.
+
+Such padding would be required to satisfy the SDM requirement that "Total
+Size" be a multiple of 1024, unless the padding is done inside the microcode
+opaque data itself (payload).  This seems suboptimal, as it ties the
+container strongly to the payload/opaque data... maybe the multiple-of-1024
+requirement for Total Size is superfluous for variable-size microcode
+containers?
+
 -- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
