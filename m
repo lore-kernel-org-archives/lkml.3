@@ -1,113 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaBUEXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:23:12 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64770 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752456AbaBUEXK (ORCPT
+	id S1752903AbaBUEZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 23:25:04 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50353 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbaBUEZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:23:10 -0500
-Date: Thu, 20 Feb 2014 23:23:08 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 0/4] x86: Fix ftrace recovery when code modification
- failed
-Message-ID: <20140220232308.3709bd83@gandalf.local.home>
-In-Reply-To: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
-References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 20 Feb 2014 23:25:01 -0500
+From: Joel Fernandes <joelf@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: <nsekhar@ti.com>, Joel Fernandes <joelf@ti.com>
+Subject: [PATCH] ARM: EDMA: Use platform_get_resource functions for DT
+Date: Thu, 20 Feb 2014 22:24:21 -0600
+Message-ID: <1392956661-28787-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014 16:22:49 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
+Currently, EDMA driver uses of_address_to_resource for getting Channel
+controller and x-bar register resources. Use platform_get_resource_by_name
+instead regardless of whether its DT-boot or not, document the new reg-names
+properties.
 
-> Ftrace modifies function calls using Int3 breakpoints on x86. It patches
-> all functions in parallel to reduce the number of sync() calls. There is
-> a code that removes pending Int3 breakpoints when something goes wrong.
-> 
-> The recovery does not work on x86_64. I simulated an error in
-> ftrace_replace_code() and the system got rebooted.
+Also, while at it get rid of the assumption in the code that "CC" is at reg
+index 0 in the DT and xbar is at offset 1. Instead use reg-names to get the
+memory resource in concern keeping things much cleaner and simpler. This also
+makes it possible to have multiple channel controllers.
 
-Thanks for the report, I just did the same and it caused a reboot too.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ Documentation/devicetree/bindings/dma/ti-edma.txt |    7 ++++++
+ arch/arm/boot/dts/am33xx.dtsi                     |    1 +
+ arch/arm/boot/dts/am4372.dtsi                     |    1 +
+ arch/arm/common/edma.c                            |   28 ++++++++++-----------
+ 4 files changed, 22 insertions(+), 15 deletions(-)
 
-> 
-> This patch set fixes the recovery code, improves debugging of this
-> type of problem, and does some clean up.
-> 
-> BTW: It is an echo from the patch set that tried to use text_poke_bp()
-> instead of the ftrace-specific Int3 based patching code. Ftrace has
-> some specific restrictions. I did not find a way how to make the 
-> universal text_poke_bp effective, safe, and clean to be usable
-> there.
-> 
-> The patch set is against linux/tip. Last commit is a5b3cca53c43c3ba7
-> (Merge tag 'v3.14-rc3')
-> 
-> Petr Mladek (4):
->   x86: Clean up remove_breakpoint() in ftrace code
->   x86: Fix ftrace patching recovery code to work on x86_64
->   x86: BUG when ftrace patching recovery fails
->   x86: Fix order of warning messages when ftrace modifies code
-> 
->  arch/x86/kernel/ftrace.c | 67 ++++++++++++++++++++++++------------------------
->  1 file changed, 34 insertions(+), 33 deletions(-)
-> 
-
-That's quite a bit of changes. I did a quick debug analysis of it, and
-found two bugs.
-
-One, I shouldn't be using direct access to the ip with
-probe_kernel_write(), I need to do the within() magic (also have a
-ftrace_write() wrapper now).
-
-The second bug is that I need to do another run_sync() after the fix
-up. Can you see if this patch fixes the issue?
-
--- Steve
-
- ftrace.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index e625319..6b566c8 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -455,7 +455,7 @@ static int remove_breakpoint(struct dyn_ftrace *rec)
- 	}
+diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
+index 9fbbdb7..176e42b 100644
+--- a/Documentation/devicetree/bindings/dma/ti-edma.txt
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -8,6 +8,12 @@ Required properties:
+               Clients should use a single channel number per DMA request.
+ - dma-channels: Specify total DMA channels per CC
+ - reg: Memory map for accessing module
++- reg-names: Since there can be different memory regions, each reg
++  entry should correspond to one of the following reg-names (X being 0 to N):
++	edma_ccX: memory map for Xth Channel Controller
++	edma_tcX: memory map for Xth Transfer Controller
++	Additionally there can be a memory map for xbar (in control module):
++		edma_xbar: memory map for xbar access.
+ - interrupt-parent: Interrupt controller the interrupt is routed through
+ - interrupts: Exactly 3 interrupts need to be specified in the order:
+               1. Transfer completion interrupt.
+@@ -21,6 +27,7 @@ Example:
  
-  update:
--	return probe_kernel_write((void *)ip, &nop[0], 1);
-+	return ftrace_write(ip, nop, 1);
- }
+ edma: edma@49000000 {
+ 	reg = <0x49000000 0x10000>;
++	reg-names = "edma_cc0";
+ 	interrupt-parent = <&intc>;
+ 	interrupts = <12 13 14>;
+ 	compatible = "ti,edma3";
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 2b66e67..55f5723 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -123,6 +123,7 @@
+ 			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+ 			reg =	<0x49000000 0x10000>,
+ 				<0x44e10f90 0x10>;
++			reg-names = "edma_cc0", "edma_xbar";
+ 			interrupts = <12 13 14>;
+ 			#dma-cells = <1>;
+ 			dma-channels = <64>;
+diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+index babdc84..1323a97 100644
+--- a/arch/arm/boot/dts/am4372.dtsi
++++ b/arch/arm/boot/dts/am4372.dtsi
+@@ -100,6 +100,7 @@
+ 			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+ 			reg =	<0x49000000 0x10000>,
+ 				<0x44e10f90 0x10>;
++			reg-names = "edma_cc0", "edma_xbar";
+ 			interrupts = <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>,
+ 					<GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
+ 					<GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index dc95efc..ae0ccae 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1458,10 +1458,11 @@ static int edma_xbar_event_map(struct device *dev,
+ 			       struct edma_soc_info *pdata, int len)
+ {
+ 	int ret, i;
+-	struct resource res;
++	struct resource *res;
+ 	void __iomem *xbar;
+ 	const s16 (*xbar_chans)[2];
+ 	u32 shift, offset, mux;
++	struct platform_device *pdev;
  
- static int add_update_code(unsigned long ip, unsigned const char *new)
-@@ -634,6 +634,7 @@ void ftrace_replace_code(int enable)
- 		rec = ftrace_rec_iter_record(iter);
- 		remove_breakpoint(rec);
- 	}
-+	run_sync();
- }
+ 	xbar_chans = devm_kzalloc(dev,
+ 				  len/sizeof(s16) + 2*sizeof(s16),
+@@ -1469,11 +1470,14 @@ static int edma_xbar_event_map(struct device *dev,
+ 	if (!xbar_chans)
+ 		return -ENOMEM;
  
- static int
-@@ -664,7 +665,7 @@ ftrace_modify_code(unsigned long ip, unsigned const
-char *old_code, return ret;
+-	ret = of_address_to_resource(node, 1, &res);
+-	if (ret)
++	pdev = to_platform_device(dev);
++	res = platform_get_resource_byname(pdev,
++					   IORESOURCE_MEM,
++					   "edma_xbar");
++	if (!res)
+ 		return -EIO;
  
-  fail_update:
--	probe_kernel_write((void *)ip, &old_code[0], 1);
-+	ftrace_write(ip, old_code, 1);
- 	goto out;
- }
+-	xbar = devm_ioremap(dev, res.start, resource_size(&res));
++	xbar = devm_ioremap(dev, res->start, resource_size(res));
+ 	if (!xbar)
+ 		return -ENOMEM;
  
+@@ -1614,7 +1618,6 @@ static int edma_probe(struct platform_device *pdev)
+ 	int			irq[EDMA_MAX_CC] = {0, 0};
+ 	int			err_irq[EDMA_MAX_CC] = {0, 0};
+ 	struct resource		*r[EDMA_MAX_CC] = {NULL};
+-	struct resource		res[EDMA_MAX_CC];
+ 	char			res_name[10];
+ 	char			irq_name[10];
+ 	struct device_node	*node = pdev->dev.of_node;
+@@ -1653,16 +1656,11 @@ static int edma_probe(struct platform_device *pdev)
+ 				return -ENODEV;
+ 			break;
+ 		}
+-		if (node) {
+-			ret = of_address_to_resource(node, j, &res[j]);
+-			if (!ret)
+-				r[j] = &res[j];
+-		} else {
+-			sprintf(res_name, "edma_cc%d", j);
+-			r[j] = platform_get_resource_byname(pdev,
+-						IORESOURCE_MEM,
+-						res_name);
+-		}
++
++		sprintf(res_name, "edma_cc%d", j);
++		r[j] = platform_get_resource_byname(pdev,
++					IORESOURCE_MEM,
++					res_name);
+ 		if (!r[j]) {
+ 			if (found)
+ 				break;
+-- 
+1.7.9.5
 
