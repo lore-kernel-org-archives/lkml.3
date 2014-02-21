@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326AbaBUR5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:57:16 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42643 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125AbaBUR4I (ORCPT
+	id S932344AbaBUR53 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:57:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:8960 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932262AbaBUR5Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:56:08 -0500
-Message-Id: <20140221174639.769401182@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Fri, 21 Feb 2014 17:56:17 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [RFC patch 4/5] posix-timers: Expose deferrable mode to user space
-References: <20140221173936.583477951@linutronix.de>
-Content-Disposition: inline; filename=posix-timer-wire-up-deferrables.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 21 Feb 2014 12:57:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
+   d="scan'208,223";a="479267464"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
+Subject: [PATCH v4 3/3] KVM: x86: Enable Intel MPX for guest
+Thread-Topic: [PATCH v4 3/3] KVM: x86: Enable Intel MPX for guest
+Thread-Index: Ac8vLlqhffa0mA48RJ+9cL55JkIR2w==
+Date: Fri, 21 Feb 2014 17:57:15 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509C2B@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the deferrable timer mode to user space by adding a new
-TIMER_IS_DEFERRABLE flag.
+>From 8b3a3b1f08c166e0c2cdc6162e6fa95d9c7ad2ec Mon Sep 17 00:00:00 2001
+From: Liu Jinsong <jinsong.liu@intel.com>
+Date: Sat, 22 Feb 2014 08:53:27 +0800
+Subject: [PATCH v4 3/3] KVM: x86: Enable Intel MPX for guest
 
-The deferrable mode is available for the syscalls clock_nanosleep()
-and timer_settime(). For both syscalls TIMER_IS_DEFERRABLE is handed
-in via the 'flags' argument. TIMER_ABSTIME and TIMER_IS_DEFERRABLE can
-be ored together.
+This patch enable Intel MPX feature to guest.
 
-If a timer is started with this flag, the expiry of the timer is
-relaxed. The timer is guaranteed to not expire before the given expiry
-time, but the expiry can be delayed to the point where a non
-deferrable timer expires. Deferred timers are not waking up a cpu from
-a deep idle period.
-
-Applications using the TIMER_IS_DEFERRABLE flag work on older kernels
-as well, but the timers won't have the deferrable functionality.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
 ---
- include/uapi/linux/time.h |    4 ++++
- kernel/posix-timers.c     |   10 +++++++---
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ arch/x86/kvm/cpuid.c |    2 +-
+ arch/x86/kvm/x86.c   |    6 ++++++
+ arch/x86/kvm/x86.h   |    3 ++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-Index: tip/include/uapi/linux/time.h
-===================================================================
---- tip.orig/include/uapi/linux/time.h
-+++ tip/include/uapi/linux/time.h
-@@ -63,7 +63,11 @@ struct itimerval {
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index b241325..b377d83 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -303,7 +303,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 	/* cpuid 7.0.ebx */
+ 	const u32 kvm_supported_word9_x86_features =
+ 		F(FSGSBASE) | F(BMI1) | F(HLE) | F(AVX2) | F(SMEP) |
+-		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(RDSEED) |
++		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(MPX) | F(RDSEED) |
+ 		F(ADX);
  
- /*
-  * The various flags for setting POSIX.1b interval timers:
-+ *
-+ * We keep that in sync with the TFD_TIMER_ flags
-  */
- #define TIMER_ABSTIME			0x01
-+/* Reserved for TFD_ONLY flag		0x02 */
-+#define TIMER_IS_DEFERRABLE		0x04
+ 	/* all calls to cpuid_count() should be made on the same cpu */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 89e4e27..3570e71 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ 	u64 old_xcr0 = vcpu->arch.xcr0;
+ 	u64 valid_bits;
  
- #endif /* _UAPI_LINUX_TIME_H */
-Index: tip/kernel/posix-timers.c
-===================================================================
---- tip.orig/kernel/posix-timers.c
-+++ tip/kernel/posix-timers.c
-@@ -846,6 +846,7 @@ common_timer_set(struct k_itimer *timr,
- 		return 0;
- 
- 	mode = flags & TIMER_ABSTIME ? HRTIMER_MODE_ABS : HRTIMER_MODE_REL;
-+	mode |= flags & TIMER_DEFERRABLE ? HRTIMER_MODE_DEFERRABLE : 0;
- 	hrtimer_init(&timr->it.real.timer, timr->it_clock, mode);
- 	timr->it.real.timer.function = posix_timer_fn;
- 
-@@ -1079,9 +1080,12 @@ SYSCALL_DEFINE2(clock_getres, const cloc
- static int common_nsleep(const clockid_t which_clock, int flags,
- 			 struct timespec *tsave, struct timespec __user *rmtp)
- {
--	return hrtimer_nanosleep(tsave, rmtp, flags & TIMER_ABSTIME ?
--				 HRTIMER_MODE_ABS : HRTIMER_MODE_REL,
--				 which_clock);
-+	enum hrtimer_mode mode;
++	if (!kvm_x86_ops->mpx_supported || !kvm_x86_ops->mpx_supported())
++		xcr0 &= ~(XSTATE_BNDREGS | XSTATE_BNDCSR);
 +
-+	mode = flags & TIMER_ABSTIME ? HRTIMER_MODE_ABS : HRTIMER_MODE_REL;
-+	mode |= flags & TIMER_DEFERRABLE ? HRTIMER_MODE_DEFERRABLE : 0;
-+
-+	return hrtimer_nanosleep(tsave, rmtp, mode, which_clock);
- }
+ 	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
+ 	if (index != XCR_XFEATURE_ENABLED_MASK)
+ 		return 1;
+@@ -616,6 +619,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+ 	if (xcr0 & ~valid_bits)
+ 		return 1;
  
- SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
-
-
++	if ((!(xcr0 & XSTATE_BNDREGS)) != (!(xcr0 & XSTATE_BNDCSR)))
++		return 1;
++
+ 	kvm_put_guest_xcr0(vcpu);
+ 	vcpu->arch.xcr0 = xcr0;
+ 
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index 8da5823..392ecbf 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -122,7 +122,8 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
+ 	gva_t addr, void *val, unsigned int bytes,
+ 	struct x86_exception *exception);
+ 
+-#define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
++#define KVM_SUPPORTED_XCR0     (XSTATE_FP | XSTATE_SSE | XSTATE_YMM \
++				| XSTATE_BNDREGS | XSTATE_BNDCSR)
+ extern u64 host_xcr0;
+ 
+ extern unsigned int min_timer_period_us;
+-- 
+1.7.1
