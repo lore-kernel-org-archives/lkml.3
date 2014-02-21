@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357AbaBUUtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 15:49:19 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:55001 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaBUUtR (ORCPT
+	id S1754857AbaBUUvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 15:51:19 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:44326 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417AbaBUUvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 15:49:17 -0500
-Date: Fri, 21 Feb 2014 12:49:07 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] mtd: nand: MTD_NAND_SH_FLCTL should depend on HAS_DMA
-Message-ID: <20140221204907.GA18743@ld-irv-0074>
-References: <1393012474-22399-1-git-send-email-geert@linux-m68k.org>
- <8022927.N4UoME29Ho@avalon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8022927.N4UoME29Ho@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Feb 2014 15:51:18 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 21 Feb 2014 21:45:48 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140221214548.4dd6373c@stein>
+In-Reply-To: <1392929071-16555-5-git-send-email-tj@kernel.org>
+References: <1392929071-16555-1-git-send-email-tj@kernel.org>
+	<1392929071-16555-5-git-send-email-tj@kernel.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Fri, Feb 21, 2014 at 09:27:27PM +0100, Laurent Pinchart wrote:
-> On Friday 21 February 2014 20:54:34 Geert Uytterhoeven wrote:
-> > If NO_DMA=y:
-> > 
-> >     drivers/built-in.o: In function `flctl_dma_fifo0_transfer':
-> >     sh_flctl.c:(.text+0x210398): undefined reference to `dma_map_single'
-> >     sh_flctl.c:(.text+0x2104b0): undefined reference to `dma_unmap_single'
-> > 
-> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Feb 20 Tejun Heo wrote:
+> PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+> and a nasty surprise in terms of reentrancy guarantee as workqueue
+> considers work items to be different if they don't have the same work
+> function.
 > 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> firewire core-device and sbp2 have been been multiplexing work items
+> with multiple work functions.  Introduce fw_device_workfn() and
+> sbp2_lu_workfn() which invoke fw_device->workfn and
+> sbp2_logical_unit->workfn respectively and always use the two
+> functions as the work functions and update the users to set the
+> ->workfn fields instead of overriding work functions using
+> PREPARE_DELAYED_WORK().
 > 
-> > ---
-> >  drivers/mtd/nand/Kconfig |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> > index 90ff447bf043..e7786913280a 100644
-> > --- a/drivers/mtd/nand/Kconfig
-> > +++ b/drivers/mtd/nand/Kconfig
-> > @@ -458,6 +458,7 @@ config MTD_NAND_MXC
-> > 
-> >  config MTD_NAND_SH_FLCTL
-> >  	tristate "Support for NAND on Renesas SuperH FLCTL"
-> > +	depends on HAS_DMA
-> >  	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
-> >  	help
-> >  	  Several Renesas SuperH CPU has FLCTL. This option enables support
+> It would probably be best to route this with other related updates
+> through the workqueue tree.
+> 
+> Compile tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> Cc: linux1394-devel@lists.sourceforge.net
 
-It looks like Richard beat you to this. I have a similar patch queued up
-in l2-mtd.git:
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 4c8a074b3abab5a5d77c9a19f2fa5fb9d50f9908
-Author: Richard Weinberger <richard@nod.at>
-Date:   Fri Jan 31 13:39:07 2014 +0100
+And lightly runtime-tested as well.
 
-    mtd: nand: flctl: Add dependency on HAS_IOMEM and HAS_DMA
+This doesn't actually touch sbp-target; the following Cc's could be
+dropped:
 
-Thanks,
-Brian
+> Cc: Chris Boot <bootc@bootc.net>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: target-devel@vger.kernel.org
+> ---
+>  drivers/firewire/core-device.c | 22 +++++++++++++++-------
+>  drivers/firewire/sbp2.c        | 17 +++++++++++++----
+>  include/linux/firewire.h       |  1 +
+>  3 files changed, 29 insertions(+), 11 deletions(-)
+
+-- 
+Stefan Richter
+-=====-====- --=- =-=-=
+http://arcgraph.de/sr/
