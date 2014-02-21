@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaBUENY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 23:13:24 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:52671 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294AbaBUENW convert rfc822-to-8bit (ORCPT
+	id S1753371AbaBUENa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 23:13:30 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:49195 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaBUEN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 23:13:22 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: linux-kernel@vger.kernel.org
-Subject: progress, marching to the rear
-Date: Thu, 20 Feb 2014 23:13:11 -0500
+	Thu, 20 Feb 2014 23:13:28 -0500
+Date: Thu, 20 Feb 2014 20:13:25 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Alexey Perevalov <a.perevalov@samsung.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org, anton@nomsg.org, kyungmin.park@samsung.com,
+        cw00.choi@samsung.com, akpm@linux-foundation.org
+Subject: Re: [PATCH v3 4/6] timerfd: Factor out timer-type unspecific
+ timerfd_expire()
+Message-ID: <20140221041325.GA19817@teo>
+References: <1392885633-7787-1-git-send-email-a.perevalov@samsung.com>
+ <1392885633-7787-5-git-send-email-a.perevalov@samsung.com>
+ <alpine.DEB.2.02.1402201136500.4468@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201402202313.11871.gheskett@wdtv.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402201136500.4468@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally found a keyboard I can use when the boots fails to the
-initramfs: prompt.  ps2 plug on it.
+On Thu, Feb 20, 2014 at 11:52:03AM +0100, Thomas Gleixner wrote:
+> > From: Anton Vorontsov <anton@enomsg.org>
+> > 
+> > There is nothing hrtimer-specific inside the timerfd_tmrproc(), except
+> > the function prototype. We're about to add other timer types, so factor
+> > out generic timerfd_expire() helper from timerfd_tmrproc().
+> 
+> This changelog is completely useless. How is timerfd_tmrproc, which is
+> not a function but a function pointer, related to the patch?
+> 
+> Moving duplicated code to a common function is nice, but ....
 
->From the messages it leaves on screen, it is NOT finding the drive plugged 
-into the mobo SATA1 connector when I try to boot to a 3.13.1-2-3 kernel.
+> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> > Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
+... 
+> Warnings are there to be ignored and testing of user space
+> interfaces after a change is overrated, right?
+> 
+> Aside of that you just blindly copied the original code w/o fixing up
+> the now unnecessary line breaks.
 
-So just to verify I am looking in the right place in the /sys directory, I 
-believe I was in drivers/pci/sata_nv when I took the pix now up on my web 
-page.  
+Alexey,
 
-This is an ASUS M2N SLI Deluxe mobo, 8 Gigs of ram, phenom 9550 running 
-slow at 2.1 Ghz.  This needs the sata_nv module to work with this hardware.
+While I appreciate the desire to be careful with authorship and stuff,
+please remove my name as an author of this patch -- the current code has
+nothing to do with my original work, and I surely don't want to take any
+responsibility for it. This is a common practice if you modify someone's
+patch to a great extend.
 
-There are 4 drives in this box, and they are all working just fine when 
-booted to 3.12.9, but that pix I just posted to my web page in the link 
-below, in the Genes-os9-stf/LCNC link looks like there are only 3, and the 
-first one has been enumerated to pci 5:0. Then 5:1 and 5:2 if I am reading 
-that right.  But that same location in the 3.12.9 boot also only shows 3 
-"devices" so obviously I don't know what I am doing.  Again...
+Thomas is bashing the thing, which has my name on it; although _my_ patch
+did not produce any warnings, came with a completely different changelog,
+and served completely different purposes.
 
-So, when all I have is the initramfs: prompt, where in the /sys tree can I 
-verify that all 4 drives are present and awake?
+Instead of rushing with resending yet another series, please actually read
+Thomas' review.
 
-Thanks.
+Thanks,
 
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
+Anton
