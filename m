@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaBUSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 13:00:09 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:52954 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790AbaBUSAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:00:07 -0500
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Feb 2014 13:00:06 EST
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com
-Subject: Re: [PATCH v2 2/2] phy: Select PHY_EXYNOS_DP_VIDEO by default for ARCH_EXYNOS
-Date: Fri, 21 Feb 2014 18:54:07 +0100
-Message-ID: <1413607.hGO0bhiXpo@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <530783E4.6090206@samsung.com>
-References: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com> <1888663.ccFYmJ9QJl@wuerfel> <530783E4.6090206@samsung.com>
+	id S1755985AbaBUSBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 13:01:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:45408 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754909AbaBUSBL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 13:01:11 -0500
+Date: Fri, 21 Feb 2014 13:01:02 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 0/4] x86: Fix ftrace recovery when code modification
+ failed
+Message-ID: <20140221130102.31253ad2@gandalf.local.home>
+In-Reply-To: <20140221163351.GA1833@pathway.suse.cz>
+References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
+	<20140220232308.3709bd83@gandalf.local.home>
+	<20140221163351.GA1833@pathway.suse.cz>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qG/Kqt1/s5el3wXz2PUMJXh3N4ybNWfx2W3QUnVmqe5
- i0ie6j/0dysZMQX8GJ0XxyA5az1SKJFztwZ6hwXAsV5A8mmIez
- TtjtWoe2RmsoDkyDa9R0EszrTgQyVdxbVfcG6hW8i2pSiEZ5i5
- GD9AxPBDLkeRNptdqBEZ6ma1wag+TvMzJEpaWsilHesQyjcFo9
- mKvusgV5s32D+daaOvalKw0aDLTqwH19vSu5NtEQrCabTcar5D
- lC0I7ChYqQJplxc8tsALH4fgwm177QPtOdfiqQ9CQKN0x0GbHd
- oU3P9Sg58IGUVb6AC3zdOjU+iOEbwPkazSL2KQiTuS8/sBhQvf
- DFx0bh4b2Lp0NnNtI71g=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 February 2014 17:50:44 Sylwester Nawrocki wrote:
-> On 21/02/14 17:41, Arnd Bergmann wrote:
-> > On Friday 21 February 2014 17:25:04 Sylwester Nawrocki wrote:
-> >> > 
-> >> > Hmm, good point, I will modify it that way.
-> >> > 
-> >> > For patch 1/2 I guess it should be:
-> >> > 
-> >> > "default ARCH_S5PV210 || ARCH_EXYNOS"
-> >> > 
-> >> > or rather
-> >> > 
-> >> > "default y if ARCH_S5PV210 || ARCH_EXYNOS" ?
-> >
-> > Right. I'd probably use the first syntax, but it doesn't really matter.
+On Fri, 21 Feb 2014 17:33:52 +0100
+Petr Mládek <pmladek@suse.cz> wrote:
+ 
+> Yes, it works but I would still do few more changes:
 > 
-> Oops, I've already sent patch using the second one, as it seemed
-> more common.
+>      + run_sync() also in ftrace_modify_code() in the recovery
+>        part; I would solve this by moving the "out" label.
 
-As I said, it doesn't matter.
+Sounds good.
 
-	Arnd
+> 
+>      + print some warning in update_ftrace_func() when
+>        ftrace_modify_code() fails; otherwise, the error
+>        is silently ignored
+
+The error is passed down to the callers. Any warning should happen
+there. We can move that up to the generic code. Otherwise, this is a
+x86 only fix, and we leave all the other archs broken.
+
+ftrace_modify_all_code() looks to be where the warnings should be. And
+yes, any warning should also call ftrace_bug(). That can be done via a
+FTRACE_WARN_ON().
+
+> 
+>      + BUG when the breakpoint cannot be removed; the system
+>        silently crash anyway because the breakpoint will not
+>        be handled
+> 
+> I wonder if we should call FTRACE_WARN_ON_ONCE that calls
+> "ftrace_kill" when update_ftrace_func() fails.
+
+Don't need the _ONCE() version. Something like this (I'll let you make
+the patch ;-)
+
+	int ret = 0;
+
+	if (update)
+		ret = ftrace_update_ftrace_func(ftrace_ops_list_func);
+	if (ret)
+		goto out;
+
+	if (command & FTRACE_UPDATE_CALLS)
+		ret = ftrace_replace_code(1);
+	else if (command & FTRACE_DISABLE_CALLS)
+		ret = ftrace_replace_code(0);
+
+	if (ret)
+		goto out;
+
+	if (update && ftrace_trace_function != ftrace_ops_list_func) {
+		function_trace_op = set_function_trace_op;
+		smp_wmb();
+		/* If irqs are disabled, we are in stop machine */
+		if (!irqs_disabled())
+			smp_call_function(ftrace_sync_ipi, NULL, 1);
+		ret = ftrace_update_ftrace_func(ftrace_trace_function);
+	}
+
+	if (ret)
+		goto out;
+
+	if (command & FTRACE_START_FUNC_RET)
+		ret = ftrace_enable_ftrace_graph_caller();
+	else if (command & FTRACE_STOP_FUNC_RET)
+		ret = ftrace_disable_ftrace_graph_caller();
+
+out:
+	FTRACE_WARN_ON(ret);
+
+Or if you want to keep where it failed, just replace the if (ret) goto
+out, with:
+
+	if (FTRACE_WARN_ON(ret))
+		return;
+
+That may actually be better.
+
+I've already added my patch. I'll push it up to my ftrace/urgent branch
+at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+
+And you can write a patch based on that.
+
+Thanks!
+
+-- Steve
+
