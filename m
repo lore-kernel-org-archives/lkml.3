@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261AbaBUNCh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:02:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47798 "EHLO
+	id S932620AbaBUNLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:11:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788AbaBUNCe (ORCPT
+	with ESMTP id S933238AbaBUNCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:34 -0500
+	Fri, 21 Feb 2014 08:02:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars Poeschel <poeschel@lemonage.de>,
+Cc: Paul Bolle <pebolle@tiscali.nl>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 45/60] tty: n_gsm: Fix for modems with brk in modem status control
-Date: Fri, 21 Feb 2014 13:01:12 +0000
-Message-Id: <1392987687-15367-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 44/60] raw: test against runtime value of max_raw_minors
+Date: Fri, 21 Feb 2014 13:01:11 +0000
+Message-Id: <1392987687-15367-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars Poeschel <poeschel@lemonage.de>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 3ac06b905655b3ef2fd2196bab36e4587e1e4e4f upstream.
+commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
 
-3GPP TS 07.10 states in section 5.4.6.3.7:
-"The length byte contains the value 2 or 3 ... depending on the break
-signal." The break byte is optional and if it is sent, the length is
-3. In fact the driver was not able to work with modems that send this
-break byte in their modem status control message. If the modem just
-sends the break byte if it is really set, then weird things might
-happen.
-The code for deconding the modem status to the internal linux
-presentation in gsm_process_modem has already a big comment about
-this 2 or 3 byte length thing and it is already able to decode the
-brk, but the code calling the gsm_process_modem function in
-gsm_control_modem does not encode it and hand it over the right way.
-This patch fixes this.
-Without this fix if the modem sends the brk byte in it's modem status
-control message the driver will hang when opening a muxed channel.
+bind_get() checks the device number it is called with. It uses
+MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
+time while the actual number of raw devices can be set at runtime. This
+means the test can either be too strict or too lenient. And if the test
+ends up being too lenient bind_get() might try to access memory beyond
+what was allocated for "raw_devices".
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+So check against the runtime value (max_raw_minors) in this function.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/n_gsm.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/char/raw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 4a418e4..acc0eab 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1091,6 +1091,7 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
- {
- 	unsigned int addr = 0;
- 	unsigned int modem = 0;
-+	unsigned int brk = 0;
- 	struct gsm_dlci *dlci;
- 	int len = clen;
- 	u8 *dp = data;
-@@ -1117,6 +1118,16 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
- 		if (len == 0)
- 			return;
- 	}
-+	len--;
-+	if (len > 0) {
-+		while (gsm_read_ea(&brk, *dp++) == 0) {
-+			len--;
-+			if (len == 0)
-+				return;
-+		}
-+		modem <<= 7;
-+		modem |= (brk & 0x7f);
-+	}
- 	tty = tty_port_tty_get(&dlci->port);
- 	gsm_process_modem(tty, dlci, modem, clen);
- 	if (tty) {
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 54a3a6d..5959669 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
+ 	struct raw_device_data *rawdev;
+ 	struct block_device *bdev;
+ 
+-	if (number <= 0 || number >= MAX_RAW_MINORS)
++	if (number <= 0 || number >= max_raw_minors)
+ 		return -EINVAL;
+ 
+ 	rawdev = &raw_devices[number];
 -- 
 1.9.0
 
