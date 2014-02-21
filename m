@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaBUCuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:50:06 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:23969 "EHLO
+	id S1754271AbaBUCyD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:54:03 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:65424 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753185AbaBUCuD (ORCPT
+	by vger.kernel.org with ESMTP id S1753198AbaBUCuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:50:03 -0500
-Message-Id: <20140221025001.199452871@goodmis.org>
+	Thu, 20 Feb 2014 21:50:05 -0500
+Message-Id: <20140221025001.930593103@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 20 Feb 2014 21:49:08 -0500
+Date: Thu, 20 Feb 2014 21:49:13 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 02/18] tracing: Pass trace_array to flag_changed callback
+Subject: [for-next][PATCH 07/18] tracing: Disable tracers before deletion of instance
 References: <20140221024906.901631810@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tracing-Pass-trace_array-to-flag_changed-callback.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0007-tracing-Disable-tracers-before-deletion-of-instance.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,76 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-As options (flags) may affect instances instead of being global
-the flag_changed() callbacks need to receive the trace_array descriptor
-of the instance they will be modifying.
+When an instance is about to be deleted, make sure the tracer
+is set to nop. If it isn't reset the tracer and set it to the nop
+tracer, otherwise memory leaks and bad pointers may result.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c              | 2 +-
- kernel/trace/trace.h              | 2 +-
- kernel/trace/trace_irqsoff.c      | 4 +++-
- kernel/trace/trace_sched_wakeup.c | 4 +++-
- 4 files changed, 8 insertions(+), 4 deletions(-)
+ kernel/trace/trace.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d7dfc7e..ee8da93 100644
+index da9543c..7d5913b 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -3393,7 +3393,7 @@ int set_tracer_flag(struct trace_array *tr, unsigned int mask, int enabled)
+@@ -3907,6 +3907,23 @@ create_trace_option_files(struct trace_array *tr, struct tracer *tracer);
+ static void
+ destroy_trace_option_files(struct trace_option_dentry *topts);
  
- 	/* Give the tracer a chance to approve the change */
- 	if (tr->current_trace->flag_changed)
--		if (tr->current_trace->flag_changed(tr->current_trace, mask, !!enabled))
-+		if (tr->current_trace->flag_changed(tr, mask, !!enabled))
- 			return -EINVAL;
- 
- 	if (enabled)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 649a23d..36e4473 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -358,7 +358,7 @@ struct tracer {
- 	int			(*set_flag)(struct trace_array *tr,
- 					    u32 old_flags, u32 bit, int set);
- 	/* Return 0 if OK with change, else return non-zero */
--	int			(*flag_changed)(struct tracer *tracer,
-+	int			(*flag_changed)(struct trace_array *tr,
- 						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index fd99b0c..4bf812f 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -572,8 +572,10 @@ static void irqsoff_function_set(int set)
- 		unregister_irqsoff_function(is_graph());
- }
- 
--static int irqsoff_flag_changed(struct tracer *tracer, u32 mask, int set)
-+static int irqsoff_flag_changed(struct trace_array *tr, u32 mask, int set)
- {
-+	struct tracer *tracer = tr->current_trace;
++/*
++ * Used to clear out the tracer before deletion of an instance.
++ * Must have trace_types_lock held.
++ */
++static void tracing_set_nop(struct trace_array *tr)
++{
++	if (tr->current_trace == &nop_trace)
++		return;
++	
++	tr->current_trace->enabled = false;
 +
- 	if (mask & TRACE_ITER_FUNCTION)
- 		irqsoff_function_set(set);
- 
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index f0bbdc2..e14da5e 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -179,8 +179,10 @@ static void wakeup_function_set(int set)
- 		unregister_wakeup_function(is_graph());
- }
- 
--static int wakeup_flag_changed(struct tracer *tracer, u32 mask, int set)
-+static int wakeup_flag_changed(struct trace_array *tr, u32 mask, int set)
- {
-+	struct tracer *tracer = tr->current_trace;
++	if (tr->current_trace->reset)
++		tr->current_trace->reset(tr);
 +
- 	if (mask & TRACE_ITER_FUNCTION)
- 		wakeup_function_set(set);
++	tr->current_trace = &nop_trace;
++}
++
+ static int tracing_set_tracer(struct trace_array *tr, const char *buf)
+ {
+ 	static struct trace_option_dentry *topts;
+@@ -6142,6 +6159,7 @@ static int instance_delete(const char *name)
  
+ 	list_del(&tr->list);
+ 
++	tracing_set_nop(tr);
+ 	event_trace_del_tracer(tr);
+ 	debugfs_remove_recursive(tr->dir);
+ 	free_percpu(tr->trace_buffer.data);
 -- 
 1.8.5.3
 
