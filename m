@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802AbaBUNMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:12:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47773 "EHLO
+	id S932824AbaBUNNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:13:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47760 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212AbaBUNC1 (ORCPT
+	with ESMTP id S933197AbaBUNCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:27 -0500
+	Fri, 21 Feb 2014 08:02:24 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ulrich Hahn <uhahn@eanco.de>, Johan Hovold <johan@hovold.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 40/60] USB: ftdi_sio: add Tagsys RFID Reader IDs
-Date: Fri, 21 Feb 2014 13:01:07 +0000
-Message-Id: <1392987687-15367-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 38/60] usb-storage: add unusual-devs entry for BlackBerry 9000
+Date: Fri, 21 Feb 2014 13:01:05 +0000
+Message-Id: <1392987687-15367-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Hahn <uhahn@eanco.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
+commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
 
-Adding two more IDs to the ftdi_sio usb serial driver.
-It now connects Tagsys RFID readers.
-There might be more IDs out there for other Tagsys models.
+This patch adds an unusual-devs entry for the BlackBerry 9000.  This
+fixes Bugzilla #22442.
 
-Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
-Cc: Johan Hovold <johan@hovold.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
+Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/usb/storage/unusual_devs.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 33e7aec..ab8b689 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -203,6 +203,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index eb03021..1e2d369 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -364,6 +364,12 @@
- /* Sprog II (Andrew Crosland's SprogII DCC interface) */
- #define FTDI_SPROG_II		0xF0C8
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index d904c59..e72f39a 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1441,6 +1441,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0100,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_FIX_CAPACITY ),
  
-+/*
-+ * Two of the Tagsys RFID Readers
-+ */
-+#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
-+#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
++/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
++UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
++		"Research In Motion",
++		"BlackBerry Bold 9000",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
 +
- /* an infrared receiver for user access control with IR tags */
- #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
- 
+ /* Reported by Michael Stattmann <michael@stattmann.com> */
+ UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
+ 		"Sony Ericsson",
 -- 
 1.9.0
 
