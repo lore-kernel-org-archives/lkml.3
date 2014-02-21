@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620AbaBUBMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:12:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45266 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaBTXu2 (ORCPT
+	id S932640AbaBUBMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:12:54 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:44539 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932623AbaBUBMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:28 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.4 14/25] usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
-Date: Thu, 20 Feb 2014 15:51:30 -0800
-Message-Id: <20140220234842.881740644@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
-References: <20140220234842.483343851@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Feb 2014 20:12:51 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: JBottomley@parallels.com
+Cc: jayamohan.kallickal@emulex.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
+Date: Fri, 21 Feb 2014 10:12:45 +0900
+Message-ID: <8505576.9F9pTSfgP9@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+>From b483ef302f7d77c586949ae170754d589e8a4935 Mon Sep 17 00:00:00 2001
+From: Daeseok Youn <daeseok.youn@gmail.com>
+Date: Fri, 21 Feb 2014 08:39:08 +0900
+Subject: [PATCH] [SCSI] be2iscsi: use NULL instead of 0 for pointer
 
-------------------
+sparse says:
 
-From: Alan Stern <stern@rowland.harvard.edu>
+drivers/scsi/be2iscsi/be_cmds.c:27:32: warning:
+ Using plain integer as NULL pointer
+drivers/scsi/be2iscsi/be_cmds.c:28:34: warning:
+ Using plain integer as NULL pointer
+drivers/scsi/be2iscsi/be_cmds.c:29:34: warning:
+ Using plain integer as NULL pointer
 
-commit a9c143c82608bee2a36410caa56d82cd86bdc7fa upstream.
-
-The Cypress ATACB unusual-devs entry for the Super Top SATA bridge
-causes problems.  Although it was originally reported only for
-bcdDevice = 0x160, its range was much larger.  This resulted in a bug
-report for bcdDevice 0x220, so the range was capped at 0x219.  Now
-Milan reports errors with bcdDevice 0x150.
-
-Therefore this patch restricts the range to just 0x160.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Milan Svoboda <milan.svoboda@centrum.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/be2iscsi/be_cmds.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
- 
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c
+index 3338391..1ec9793 100644
+--- a/drivers/scsi/be2iscsi/be_cmds.c
++++ b/drivers/scsi/be2iscsi/be_cmds.c
+@@ -24,9 +24,9 @@
+ int beiscsi_pci_soft_reset(struct beiscsi_hba *phba)
+ {
+ 	u32 sreset;
+-	u8 *pci_reset_offset = 0;
+-	u8 *pci_online0_offset = 0;
+-	u8 *pci_online1_offset = 0;
++	u8 *pci_reset_offset = NULL;
++	u8 *pci_online0_offset = NULL;
++	u8 *pci_online1_offset = NULL;
+ 	u32 pconline0 = 0;
+ 	u32 pconline1 = 0;
+ 	u32 i;
+-- 
+1.7.9.5
 
 
