@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564AbaBUNK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:10:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47803 "EHLO
+	id S932673AbaBUNLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:11:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47788 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633AbaBUNCf (ORCPT
+	with ESMTP id S933234AbaBUNCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:35 -0500
+	Fri, 21 Feb 2014 08:02:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+Cc: Martyn Welch <martyn.welch@ge.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 46/60] staging: comedi: adv_pci1710: fix analog output readback value
-Date: Fri, 21 Feb 2014 13:01:13 +0000
-Message-Id: <1392987687-15367-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 43/60] VME: Correct read/write alignment algorithm
+Date: Fri, 21 Feb 2014 13:01:10 +0000
+Message-Id: <1392987687-15367-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,89 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Martyn Welch <martyn.welch@ge.com>
 
-commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
+commit f0342e66b397947ed8c3eef8c37b5ca2d5b1bb50 upstream.
 
-The last value written to a analog output channel is cached in the
-private data of this driver for readback.
+In order to ensure the correct width cycles on the VME bus, the VME bridge
+drivers implement an algorithm to utilise the largest possible width reads and
+writes whilst maintaining natural alignment constraints. The algorithm
+currently looks at the start address rather than the current read/write address
+when determining whether a 16-bit width cycle is required to get to 32-bit
+alignment.  This results in incorrect alignment,
 
-Currently, the wrong value is cached in the (*insn_write) functions.
-The current code stores the data[n] value for readback afer the loop
-has written all the values. At this time 'n' points past the end of
-the data array.
-
-Fix the functions by using a local variable to hold the data being
-written to the analog output channel. This variable is then used
-after the loop is complete to store the readback value. The current
-value is retrieved before the loop in case no values are actually
-written..
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Jim Strouth <james.strouth@ge.com>
+Tested-by: Jim Strouth <james.strouth@ge.com>
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
+[ luis: backported to 3.5:
+  - dropped changes to tsi148_master_read() and tsi148_master_write() ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/vme/bridges/vme_ca91cx42.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index de8c98c..555790c 100644
---- a/drivers/staging/comedi/drivers/adv_pci1710.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -387,6 +387,7 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
- 				 struct comedi_subdevice *s,
- 				 struct comedi_insn *insn, unsigned int *data)
- {
-+	unsigned int val;
- 	int n, chan, range, ofs;
- 
- 	chan = CR_CHAN(insn->chanspec);
-@@ -402,11 +403,14 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
- 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
- 		ofs = PCI171x_DA1;
+diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
+index e0df92e..7ee77a2 100644
+--- a/drivers/vme/bridges/vme_ca91cx42.c
++++ b/drivers/vme/bridges/vme_ca91cx42.c
+@@ -882,7 +882,7 @@ static ssize_t ca91cx42_master_read(struct vme_master_resource *image,
+ 		if (done == count)
+ 			goto out;
  	}
-+	val = devpriv->ao_data[chan];
- 
--	for (n = 0; n < insn->n; n++)
--		outw(data[n], dev->iobase + ofs);
-+	for (n = 0; n < insn->n; n++) {
-+		val = data[n];
-+		outw(val, dev->iobase + ofs);
-+	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
- 
-@@ -555,6 +559,7 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
- 				 struct comedi_subdevice *s,
- 				 struct comedi_insn *insn, unsigned int *data)
- {
-+	unsigned int val;
- 	int n, rangereg, chan;
- 
- 	chan = CR_CHAN(insn->chanspec);
-@@ -564,13 +569,15 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
- 		outb(rangereg, dev->iobase + PCI1720_RANGE);
- 		devpriv->da_ranges = rangereg;
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			*(u8 *)(buf + done) = ioread8(addr + done);
+ 			done += 1;
+@@ -936,7 +936,7 @@ static ssize_t ca91cx42_master_write(struct vme_master_resource *image,
+ 		if (done == count)
+ 			goto out;
  	}
-+	val = devpriv->ao_data[chan];
- 
- 	for (n = 0; n < insn->n; n++) {
--		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
-+		val = data[n];
-+		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
- 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
- 	}
- 
--	devpriv->ao_data[chan] = data[n];
-+	devpriv->ao_data[chan] = val;
- 
- 	return n;
- }
+-	if ((uintptr_t)addr & 0x2) {
++	if ((uintptr_t)(addr + done) & 0x2) {
+ 		if ((count - done) < 2) {
+ 			iowrite8(*(u8 *)(buf + done), addr + done);
+ 			done += 1;
 -- 
 1.9.0
 
