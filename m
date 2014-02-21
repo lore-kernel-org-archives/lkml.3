@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334AbaBUMuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46993 "EHLO
+	id S933480AbaBUNkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:40:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47041 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258AbaBUMuZ (ORCPT
+	with ESMTP id S932325AbaBUMuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:25 -0500
+	Fri, 21 Feb 2014 07:50:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 055/121] s390/dump: Fix dump memory detection
-Date: Fri, 21 Feb 2014 12:47:59 +0000
-Message-Id: <1392986945-9693-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/121] usb-storage: enable multi-LUN scanning when needed
+Date: Fri, 21 Feb 2014 12:48:08 +0000
+Message-Id: <1392986945-9693-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
+commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
 
-Dumps created by kdump or zfcpdump can contain invalid memory holes when
-dumping z/VM systems that have memory pressure.
+People sometimes create their own custom-configured kernels and forget
+to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
+in a USB storage device (such as a card reader) with more than one
+LUN.
 
-For example:
+Fortunately, we can tell fairly easily when a storage device claims to
+have more than one LUN.  When that happens, this patch asks the SCSI
+layer to probe all the LUNs automatically, regardless of the config
+setting.
 
-   # zgetdump -i /proc/vmcore.
-   Memory map:
-   0000000000000000 - 0000000000bfffff (12 MB)
-   0000000000e00000 - 00000000014fffff (7 MB)
-   000000000bd00000 - 00000000f3bfffff (3711 MB)
+The patch also updates the Kconfig help text for usb-storage,
+explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
 
-The memory detection function find_memory_chunks() issues tprot to
-find valid memory chunks. In case of CMM it can happen that pages are
-marked as unstable via set_page_unstable() in arch_free_page().
-If z/VM has released that pages, tprot returns -EFAULT and indicates
-a memory hole.
-
-So fix this and switch off CMM in case of kdump or zfcpdump.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/mm/page-states.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/storage/Kconfig    | 4 +++-
+ drivers/usb/storage/scsiglue.c | 6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
-index a90d45e..27c50f4 100644
---- a/arch/s390/mm/page-states.c
-+++ b/arch/s390/mm/page-states.c
-@@ -12,6 +12,8 @@
- #include <linux/mm.h>
- #include <linux/gfp.h>
- #include <linux/init.h>
-+#include <asm/setup.h>
-+#include <asm/ipl.h>
+diff --git a/drivers/usb/storage/Kconfig b/drivers/usb/storage/Kconfig
+index 8470e1b..1dd0604 100644
+--- a/drivers/usb/storage/Kconfig
++++ b/drivers/usb/storage/Kconfig
+@@ -18,7 +18,9 @@ config USB_STORAGE
  
- #define ESSA_SET_STABLE		1
- #define ESSA_SET_UNUSED		2
-@@ -41,6 +43,14 @@ void __init cmma_init(void)
+ 	  This option depends on 'SCSI' support being enabled, but you
+ 	  probably also need 'SCSI device support: SCSI disk support'
+-	  (BLK_DEV_SD) for most USB storage devices.
++	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
++	  will require 'Probe all LUNs on each SCSI device'
++	  (SCSI_MULTI_LUN).
  
- 	if (!cmma_flag)
- 		return;
-+	/*
-+	 * Disable CMM for dump, otherwise  the tprot based memory
-+	 * detection can fail because of unstable pages.
-+	 */
-+	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
-+		cmma_flag = 0;
-+		return;
-+	}
- 	asm volatile(
- 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
- 		"0:     la      %0,0\n"
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called usb-storage.
+diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
+index 5db1532..bb7bf19 100644
+--- a/drivers/usb/storage/scsiglue.c
++++ b/drivers/usb/storage/scsiglue.c
+@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi_Host *host)
+ 
+ static int slave_alloc (struct scsi_device *sdev)
+ {
++	struct us_data *us = host_to_us(sdev->host);
++
+ 	/*
+ 	 * Set the INQUIRY transfer length to 36.  We don't use any of
+ 	 * the extra data and many devices choke if asked for more or
+@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_device *sdev)
+ 	 */
+ 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
+ 
++	/* Tell the SCSI layer if we know there is more than one LUN */
++	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
++		sdev->sdev_bflags |= BLIST_FORCELUN;
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.0
 
