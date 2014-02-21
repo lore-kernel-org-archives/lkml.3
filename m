@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933577AbaBUNte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:49:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46903 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139AbaBUMuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932146AbaBUMuG (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Feb 2014 07:50:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46875 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126AbaBUMuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:50:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/121] timekeeping: Fix lost updates to tai adjustment
-Date: Fri, 21 Feb 2014 12:47:42 +0000
-Message-Id: <1392986945-9693-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/121] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
+Date: Fri, 21 Feb 2014 12:47:41 +0000
+Message-Id: <1392986945-9693-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -30,55 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit f55c07607a38f84b5c7e6066ee1cfe433fa5643c upstream.
+commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
 
-Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
-call timekeeping_update() after any adjustment to the timekeeping
-structure in order to make sure that any adjustments to the structure
-persist.
+With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
+handling") I changed the type of the len parameter of the
+lookup_dcookie() syscall.
 
-Unfortunately, the updates to the tai offset via adjtimex do not
-trigger this update, causing adjustments to the tai offset to be
-made and then over-written by the previous value at the next
-update_wall_time() call.
+However I missed that there was still a stale declaration in
+arch/tile/..  which now causes a compile error on tile:
 
-This patch resovles the issue by calling timekeeping_update()
-right after setting the tai offset.
+  In file included from fs/dcookies.c:28:0:
+  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
+  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
 
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Simply remove the declaration in the tile architecture, which is only a
+leftover from before the different compat lookup_dcookie() versions have
+been merged.  The correct declaration is now in include/linux/compat.h
+
+The build error was reported by Fenguang's build bot.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/timekeeping.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/tile/include/asm/compat.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5cf6c70..22f3ae2 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -610,6 +610,7 @@ void timekeeping_set_tai_offset(s32 tai_offset)
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
- 	write_seqcount_begin(&timekeeper_seq);
- 	__timekeeping_set_tai_offset(tk, tai_offset);
-+	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 	clock_was_set();
-@@ -1697,7 +1698,7 @@ int do_adjtimex(struct timex *txc)
- 
- 	if (tai != orig_tai) {
- 		__timekeeping_set_tai_offset(tk, tai);
--		update_pvclock_gtod(tk, true);
-+		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
- 		clock_was_set_delayed();
- 	}
- 	write_seqcount_end(&timekeeper_seq);
+diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
+index 78f1f2d..ffd4493 100644
+--- a/arch/tile/include/asm/compat.h
++++ b/arch/tile/include/asm/compat.h
+@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd, char __user *ubuf, size_t count,
+ 			u32 dummy, u32 low, u32 high);
+ long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
+ 			 u32 dummy, u32 low, u32 high);
+-long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
+ long compat_sys_sync_file_range2(int fd, unsigned int flags,
+ 				 u32 offset_lo, u32 offset_hi,
+ 				 u32 nbytes_lo, u32 nbytes_hi);
 -- 
 1.9.0
 
