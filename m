@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaBUWLS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:11:18 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:43873 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802AbaBUWLL (ORCPT
+	id S1756060AbaBUWLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:11:50 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:47983 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaBUWLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:11:11 -0500
-Date: Fri, 21 Feb 2014 23:09:53 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: =?utf-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
-Cc: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        fengguang.wu@intel.com, Tomas Henzl <thenzl@redhat.com>,
-        =?utf-8?B?5ZCz56Kn5ra8?= <billion.wu@areca.com.tw>
-Subject: Re: [PATCH v1.3 11/11] arcmsr: Adding support Areca
- ARC1214/1224/1264/1284 SATA 6Gb raid controllers
-Message-ID: <20140221220953.GA14729@electric-eye.fr.zoreil.com>
-References: <CAKiknE-7TOGtN01xsXyay2gv69ruVvAEq22ozu=vTzh_R=SxuQ@mail.gmail.com>
+	Fri, 21 Feb 2014 17:11:49 -0500
+Date: Fri, 21 Feb 2014 17:13:50 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKiknE-7TOGtN01xsXyay2gv69ruVvAEq22ozu=vTzh_R=SxuQ@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-黃清隆 <ching2048@areca.com.tw> :
-[...]
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c  2014-02-20 19:11:05.000000000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c  2014-02-21 01:47:26.000000000 +0800
-[...]
-> @@ -2894,6 +3372,89 @@ polling_hbc_ccb_retry:
->  }
+
+cc'ing x32 people
+
+On Fri, 21 Feb 2014, Vince Weaver wrote:
+
+> So I'm not sure who exactly to report this to.  Some perf people CC'd as
+> I trigger it while using the perf_fuzzer.
 > 
->  static int
-> +arcmsr_hbaD_polling_ccbdone(struct AdapterControlBlock *acb,
-> +                               struct CommandControlBlock *poll_ccb)
-> +{
-> +       bool error;
-> +       uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
-> +       int rtn, doneq_index, index_stripped, outbound_write_pointer;
-> +       unsigned long flags;
-> +       struct ARCMSR_CDB *arcmsr_cdb;
-> +       struct CommandControlBlock *pCCB;
-> +       struct MessageUnit_D *pmu = acb->pmuD;
-> +
-> +       spin_lock_irqsave(&acb->doneq_lock, flags);
-> +polling_hbaD_ccb_retry:
-> +       poll_count++;
-> +       while (1) {
-> +               outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
-> +               doneq_index = pmu->doneq_index;
-> +               if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
-> +                       if (poll_ccb_done) {
-> +                               rtn = SUCCESS;
-> +                               break;
-> +                       } else {
-> +                               msleep(25);
+> This is with 3.14-rc3 on a core2 machine, although I've had the reboots 
+> happen throughout at least 3.14-rc*
+> 
+> I'm having a hard time coming up with a reproducible test case.  Using the 
+> random seed that caused the below will cause the perf_fuzzer to segfault 
+> but not reboot.
+> 
+> The log isn't very helpful, it reboots so fast that the oops doesn't 
+> finish printing and the serial log just moves to the bootloader...
+> 
+> [ 4466.804123] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+> [ 4466.808014] IP: [<ffffffff81111783>] cache_reap+0x5e/0x1c5
+> [ 4466.808014] PGD 0 
+> [ 4466.808014] Oops: 0000 [#1] GNU GRUB  version 2.00-17
 
-msleep with spinlock held.
+Maybe related, this is on an x32-compiled binary.
 
--- 
-Ueimor
+When trying to reproduce the perf_fuzzer myseriously segfaults on what 
+appears to be perfectly valid mmap'd perf ring-buffers.
+
+(running under gdb)
+
+Program received signal SIGSEGV, Segmentation fault.
+0x0041efbb in __memset_sse2 ()
+
+=> 0x0041efbb <+2203>:  movdqa %xmm0,(%rdi)
+
+rdi            0xf7f61000       4160098304
+
+f7f61000-f7f72000 rw-s 00000000 00:08 4475  anon_inode:[perf_event]
+
+So I'm not sure if somehow something is wrong with the page mapping, that 
+makes a valid write fail and sometimes (possibly due to address space 
+randomization) reboot the system?
+
+Vince
+
