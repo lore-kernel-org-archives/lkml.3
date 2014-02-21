@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaBUWqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:46:21 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:35438 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaBUWqT (ORCPT
+	id S1755819AbaBUWqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:46:42 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25754 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674AbaBUWql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:46:19 -0500
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de, gtdev@spearhead.de, "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 1/1] serial: 8250_pci: fix support for MosChip 98xx boards
-Date: Fri, 21 Feb 2014 14:46:17 -0800
-Message-Id: <1393022777-5959-1-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.8.3.2
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (ovro.ovro.caltech.edu [0.0.0.0]); Fri, 21 Feb 2014 14:46:18 -0800 (PST)
+	Fri, 21 Feb 2014 17:46:41 -0500
+Message-ID: <5307D74C.5070002@oracle.com>
+Date: Fri, 21 Feb 2014 17:46:36 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: mm:  kernel BUG at mm/huge_memory.c:1371!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Hi all,
 
-Commit 7808edcd306f22aeb23775d34e70b7fa2f58b852 "Basic support for
-Moschip 9900 family I/O chips" broke support for the 98xx boards. This
-is due to a missing check for the 99xx family inside the newly added
-pci_netmos_9900_setup() function, which is now used for all boards in
-the Moschip family.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the 
+following (now with pretty line numbers!) spew:
 
-The code for skipping BARs is incorrect for the 98xx boards. Using it
-causes two serial ports to be left undetected on my 9865 board.
+[  746.125099] kernel BUG at mm/huge_memory.c:1371!
+[  746.125775] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  746.126774] Dumping ftrace buffer:
+[  746.127484]    (ftrace buffer empty)
+[  746.127781] Modules linked in:
+[  746.128358] CPU: 2 PID: 19816 Comm: trinity-c127 Tainted: G        W 
+3.14.0-rc3-next-20140221-sasha-00008-g0e660cf-dirty #114
+[  746.130196] task: ffff8803a7cc3000 ti: ffff8803a7f1c000 task.ti: ffff8803a7f1c000
+[  746.130317] RIP: 0010:[<mm/huge_memory.c:1371>]  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
+[  746.130317] RSP: 0018:ffff8803a7f1dca8  EFLAGS: 00010246
+[  746.130317] RAX: ffff8801ab4ac000 RBX: ffff8803a7f1ddd8 RCX: 000000000000002e
+[  746.130317] RDX: 0000000000000000 RSI: ffff8803a7cc3d00 RDI: 000000000172c000
+[  746.130317] RBP: ffff8803a7f1dce8 R08: 0000000000000000 R09: 0000000000000000
+[  746.130317] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0006a8fa00
+[  746.130317] R13: ffffea0005cb0000 R14: 00007f784f800000 R15: 00007f785750bfff
+[  746.130317] FS:  00007f785afbc700(0000) GS:ffff8801abc00000(0000) knlGS:0000000000000000
+[  746.130317] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  746.130317] CR2: 0000000000000010 CR3: 00000003a9739000 CR4: 00000000000006e0
+[  746.130317] DR0: 0000000000693000 DR1: 0000000000000000 DR2: 0000000000000000
+[  746.130317] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[  746.130317] Stack:
+[  746.130317]  00000000000004de ffff8803a9777390 ffff8803a7f1dce8 ffff8803a2afd3e0
+[  746.130317]  00007f784f800000 00007f785750c000 ffff8803a7f1ddd8 00007f785750bfff
+[  746.130317]  ffff8803a7f1dd78 ffffffff81285536 00000000001d8500 00007f784fa00000
+[  746.130317] Call Trace:
+[  746.130317]  [<mm/memory.c:1231 mm/memory.c:1265 mm/memory.c:1290>] unmap_page_range+0x2c6/0x410
+[  746.130317]  [<mm/memory.c:1338>] unmap_single_vma+0xf1/0x110
+[  746.130317]  [<mm/memory.c:1390>] zap_page_range+0x121/0x170
+[  746.130317]  [<mm/madvise.c:271 mm/madvise.c:371>] madvise_vma+0x180/0x1c0
+[  746.130317]  [<mm/madvise.c:518 mm/madvise.c:448>] SyS_madvise+0x17e/0x250
+[  746.130317]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+[  746.152464] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 
+45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 26 29 f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 
+03 f0 48 ff 48
+[  746.152464] RIP  [<mm/huge_memory.c:1371>] zap_huge_pmd+0x17a/0x200
+[  746.152464]  RSP <ffff8803a7f1dca8>
 
-By checking for the 99xx boards and using the new code exclusively for
-them, all of my serial ports are now detected.
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
-
-Here is the lspci output for my 9865 board. On the 05:00.2 device, the
-middle two serial ports (I/O ports 0x1010 and 0x1008) are left unused
-and undetected without this patch.
-
-After the patch, they work perfectly.
-
-05:00.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-	Subsystem: Device a000:1000
-	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 21
-	I/O ports at 1028 [size=8]
-	Memory at e0104000 (32-bit, non-prefetchable) [size=4K]
-	Memory at e0103000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: serial
-	Kernel modules: parport_pc
-
-05:00.1 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-	Subsystem: Device a000:1000
-	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 22
-	I/O ports at 1020 [size=8]
-	Memory at e0102000 (32-bit, non-prefetchable) [size=4K]
-	Memory at e0101000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: serial
-	Kernel modules: parport_pc
-
-05:00.2 Communication controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller
-	Subsystem: Device a000:3004
-	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 23
-	I/O ports at 1018 [size=8]
-	I/O ports at 1010 [size=8]
-	I/O ports at 1008 [size=8]
-	I/O ports at 1000 [size=8]
-	Memory at e0100000 (32-bit, non-prefetchable) [size=4K]
-	Capabilities: <access denied>
-	Kernel driver in use: serial
-
- drivers/tty/serial/8250/8250_pci.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 50228eed3b6f..374551f196c5 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -783,7 +783,8 @@ static int pci_netmos_9900_setup(struct serial_private *priv,
- {
- 	unsigned int bar;
- 
--	if ((priv->dev->subsystem_device & 0xff00) == 0x3000) {
-+	if ((priv->dev->subsystem_device & 0xff00) == 0x3000 &&
-+		(priv->dev->device & 0xff00) == 0x9900) {
- 		/* netmos apparently orders BARs by datasheet layout, so serial
- 		 * ports get BARs 0 and 3 (or 1 and 4 for memmapped)
- 		 */
--- 
-1.8.3.2
-
+Thanks,
+Sasha
