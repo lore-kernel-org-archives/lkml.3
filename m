@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaBUGj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 01:39:56 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:17976 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752514AbaBUGjy (ORCPT
+	id S1753966AbaBUGmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 01:42:06 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57194 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483AbaBUGmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 01:39:54 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhgEALbyBlOl5H4JgWdsb2JhbABZhkm+FIEkDgEBFiYogiYBBSdSEAhJVwcSiAXNPReOZAeEOASYNJVoKA
-From: Alistair Popple <alistair@popple.id.au>
-To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Cc: Alistair Popple <alistair@popple.id.au>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 3/7] IBM Akebono: Add support to the OHCI platform driver for PPC476GTR
-Date: Fri, 21 Feb 2014 17:31:29 +1100
-Message-Id: <1392964293-13687-4-git-send-email-alistair@popple.id.au>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1392964293-13687-1-git-send-email-alistair@popple.id.au>
-References: <1392964293-13687-1-git-send-email-alistair@popple.id.au>
+	Fri, 21 Feb 2014 01:42:01 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] video: da8xx-fb: fix typos
+Date: Fri, 21 Feb 2014 12:11:04 +0530
+Message-Id: <1392964864-25371-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IBM Akebono board uses the PPC476GTR SoC which has a OHCI
-compliant USB host interface. This patch adds support for it to the
-OHCI platform driver.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-As we use device tree to pass platform specific data instead of
-platform data we remove the check for platform data and instead
-provide reasonable defaults if no platform data is present. This is
-similar to what is currently done in ehci-platform.c.
+This patch fixes couple of typos in the comments
+for da8xx-fb.c file.
 
-Signed-off-by: Alistair Popple <alistair@popple.id.au>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/usb/host/ohci-platform.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ drivers/video/da8xx-fb.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index f351ff5..e5a5979 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -23,6 +23,8 @@
- #include <linux/usb/ohci_pdriver.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index a1d74dd..dced43a 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -265,7 +265,7 @@ static void lcd_enable_raster(void)
+ 		lcdc_write(0, LCD_CLK_RESET_REG);
+ 	mdelay(1);
  
- #include "ohci.h"
+-	/* Above reset sequence doesnot reset register context */
++	/* Above reset sequence does not reset register context */
+ 	reg = lcdc_read(LCD_RASTER_CTRL_REG);
+ 	if (!(reg & LCD_RASTER_ENABLE))
+ 		lcdc_write(reg | LCD_RASTER_ENABLE, LCD_RASTER_CTRL_REG);
+@@ -357,7 +357,7 @@ static void lcd_blit(int load_mode, struct da8xx_fb_par *par)
+ 	lcd_enable_raster();
+ }
  
-@@ -55,6 +57,8 @@ static const struct ohci_driver_overrides platform_overrides __initconst = {
- 	.reset =	ohci_platform_reset,
- };
- 
-+static struct usb_ohci_pdata ohci_platform_defaults;
-+
- static int ohci_platform_probe(struct platform_device *dev)
+-/* Configure the Burst Size and fifo threhold of DMA */
++/* Configure the Burst Size and fifo threshold of DMA */
+ static int lcd_cfg_dma(int burst_size, int fifo_th)
  {
- 	struct usb_hcd *hcd;
-@@ -63,14 +67,16 @@ static int ohci_platform_probe(struct platform_device *dev)
- 	int irq;
- 	int err = -ENOMEM;
+ 	u32 reg;
+@@ -393,7 +393,7 @@ static void lcd_cfg_ac_bias(int period, int transitions_per_int)
+ {
+ 	u32 reg;
  
--	if (!pdata) {
--		WARN_ON(1);
--		return -ENODEV;
--	}
--
- 	if (usb_disabled())
- 		return -ENODEV;
- 
-+	/*
-+	 * Platforms using DT don't always provide platform data.
-+	 * This should provide reasonable defaults.
-+	 */
-+	if (!pdata)
-+		dev->dev.platform_data = pdata = &ohci_platform_defaults;
-+
- 	irq = platform_get_irq(dev, 0);
- 	if (irq < 0) {
- 		dev_err(&dev->dev, "no irq provided");
-@@ -178,6 +184,11 @@ static int ohci_platform_resume(struct device *dev)
- #define ohci_platform_resume	NULL
- #endif /* CONFIG_PM */
- 
-+static const struct of_device_id ohci_of_match[] = {
-+	{ .compatible = "usb-ohci", },
-+	{},
-+};
-+
- static const struct platform_device_id ohci_platform_table[] = {
- 	{ "ohci-platform", 0 },
- 	{ }
-@@ -198,6 +209,7 @@ static struct platform_driver ohci_platform_driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= "ohci-platform",
- 		.pm	= &ohci_platform_pm_ops,
-+		.of_match_table = ohci_of_match,
- 	}
- };
- 
+-	/* Set the AC Bias Period and Number of Transisitons per Interrupt */
++	/* Set the AC Bias Period and Number of Transitions per Interrupt */
+ 	reg = lcdc_read(LCD_RASTER_TIMING_2_REG) & 0xFFF00000;
+ 	reg |= LCD_AC_BIAS_FREQUENCY(period) |
+ 		LCD_AC_BIAS_TRANSITIONS_PER_INT(transitions_per_int);
 -- 
-1.7.10.4
+1.7.9.5
 
