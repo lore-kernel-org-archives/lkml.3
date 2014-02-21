@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaBUJSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 04:18:37 -0500
-Received: from relay.parallels.com ([195.214.232.42]:48682 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaBUJSd (ORCPT
+	id S1754547AbaBUJ1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 04:27:32 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65422 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754351AbaBUJ11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 04:18:33 -0500
-Message-ID: <530719E4.5060409@parallels.com>
-Date: Fri, 21 Feb 2014 13:18:28 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 21 Feb 2014 04:27:27 -0500
+Date: Fri, 21 Feb 2014 09:26:57 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch v6 1/2] dmaengine: qcom_bam_dma: Add device tree binding
+Message-ID: <20140221092657.GD7541@e106331-lin.cambridge.arm.com>
+References: <1392964986-5207-1-git-send-email-agross@codeaurora.org>
+ <1392964986-5207-2-git-send-email-agross@codeaurora.org>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Weng Meiling <wengmeiling.weng@huawei.com>, <greg@kroah.com>,
-        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH] nfsd: check passed socket's net matches NFSd superblock's
- one
-References: <20131230142339.16166.28243.stgit@localhost.localdomain> <20140103222226.GD5164@fieldses.org> <52FEC818.7030604@huawei.com> <20140217221900.GA8401@fieldses.org> <53037A03.4020603@parallels.com> <20140218154406.GD4319@fieldses.org> <530486D9.7010502@parallels.com> <20140219145043.GC8401@fieldses.org> <5304C66A.4030603@parallels.com> <20140220213124.GC13433@fieldses.org>
-In-Reply-To: <20140220213124.GC13433@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.29]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392964986-5207-2-git-send-email-agross@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-21.02.2014 01:31, J. Bruce Fields пишет:
-> On Wed, Feb 19, 2014 at 06:57:46PM +0400, Stanislav Kinsbursky wrote:
->> 19.02.2014 18:50, J. Bruce Fields пишет:
->>> On Wed, Feb 19, 2014 at 02:26:33PM +0400, Stanislav Kinsbursky wrote:
->>>> 18.02.2014 19:44, J. Bruce Fields пишет:
->>>>> On Tue, Feb 18, 2014 at 07:19:31PM +0400, Stanislav Kinsbursky wrote:
->>>>>> 18.02.2014 02:19, J. Bruce Fields пишет:
->>>>>>> On Sat, Feb 15, 2014 at 09:51:20AM +0800, Weng Meiling wrote:
->>>>>>>> Hi Bruce,
->>>>>>>>
->>>>>>>> The upstream has merged your git tree for-3.14, but there is no this patch?
->>>>>>>> Do you forget this patch?
->>>>>>>
->>>>>>> Apologies, I'm not sure what happened.
->>>>>>>
->>>>>>> Looking back at it....  The patch causes all my pynfs reboot recovery
->>>>>>> tests to fail.  They're just doing a "systemctl restart
->>>>>>> nfs-server.service", and "systemctl status nfs-server.service" shows in
->>>>>>> part
->>>>>>>
->>>>>>> 	ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS $RPCNFSDCOUNT (code=exited, status=1/FAILURE)
->>>>>>>
->>>>>>> So the patch is causing rpc.nfsd to fail?  No network namespaces should
->>>>>>> be involved.
->>>>>>>
->>>>>>> I haven't investigated any further.
->>>>>>>
->>>>>>
->>>>>> Hi Bruce,
->>>>>> Are you sure, that exactly this patch broke your pynfs tests?
->>>>>> BTW, systemd manipulates namespaces. Maybe the patch revealed some pynfs internal bugs?
->>>>>> What do you think?
->>>>>
->>>>> It's really just "systemctl restart nfs-server.service" that the patch
->>>>> breaks, pynfs isn't involved much.
->>>>>
->>>>> The patch I'm actually using follows, but I believe the only difference
->>>>> is in the printk message?
->>>>>
->>>>
->>>> Yep, looks true.
->>>> That's strange: "systemctl restart nfs-server.service" works for me on Fedora 18 with kernel, based on your repo.
->>>
->>> OK, I'll take a closer look and let you know what I find.
->>>
->>
->> Thank you, Bruce!
->
-> rpc.nfsd's attempt to bind port 2049 the second time is failing with
-> EADDRINUSE.
->
-> svc_alien_sock isn't failing, so the only different here is that we're
-> running sockfd_lookup....
->
-> Does that take a reference on the fd or the sock that needs to be put?
->
+On Fri, Feb 21, 2014 at 06:43:04AM +0000, Andy Gross wrote:
+> Add device tree binding support for the QCOM BAM DMA driver.
+> 
+> Acked-by: Kumar Gala <galak@codeaurora.org>
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  .../devicetree/bindings/dma/qcom_bam_dma.txt       |   48 ++++++++++++++++++++
+>  1 file changed, 48 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+> new file mode 100644
+> index 0000000..86344f1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+> @@ -0,0 +1,48 @@
+> +QCOM BAM DMA controller
+> +
+> +Required properties:
+> +- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
+> +		Must be "qcom,bam-v1.4.1" for MSM8974 V2
 
-Yes, you right. I missed it, sorry.
-Thank you. Will resend.
+This looks a bit odd. How about:
 
-> --b.
->
+- compatible: must contain:
+  * "qcom,bam-v1.4.0" for MSM8974 V1
+  * "qcom,bam-v1.4.1" for MSM8974 V2
 
+> +- reg: Address range for DMA registers
+> +- interrupts: single interrupt for this controller
 
--- 
-Best regards,
-Stanislav Kinsbursky
+This device only has a single interrupt? Or there's only one we care
+about at the moment?
+
+> +- #dma-cells: must be <1>
+> +- clocks: required clock
+> +- clock-names: name of clock
+
+Either describe the _exact_ name this binding expects for any clocks
+input, or get rid of clock-names. I would prefer the former.
+
+> +- qcom,ee : indicates the active Execution Environment identifier (0-7)
+> +
+> +Example:
+> +
+> +	uart-bam: dma@f9984000 = {
+> +		compatible = "qcom,bam-v1.4.1";
+> +		reg = <0xf9984000 0x15000>;
+> +		interrupts = <0 94 0>;
+> +		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
+> +		clock-names = "bam_clk";
+> +		#dma-cells = <1>;
+> +		qcom,ee = <0>;
+> +	};
+> +
+> +Client:
+> +Required properties:
+> +- dmas: List of dma channel requests
+> +- dma-names: Names of aforementioned requested channels
+
+Do we really need to describe the client binding? Do we not have a
+generic DMA binding doc we can refer to?
+
+> +
+> +Clients must use the format described in the dma.txt file, using a two cell
+> +specifier for each channel.
+> +
+> +The three cells in order are:
+> +  1. A phandle pointing to the DMA controller
+> +  2. The channel number
+
+s/three/two/
+
+I think this can go if we refer to a generic document for the client
+binding and state in the #dma-cells description that the single dma cell
+is the channel number.
+
+Thanks,
+Mark.
