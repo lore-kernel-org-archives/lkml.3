@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaBUMc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:32:57 -0500
-Received: from www.linutronix.de ([62.245.132.108]:38422 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494AbaBUMcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:32:55 -0500
-Date: Fri, 21 Feb 2014 13:32:53 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Mike Galbraith <bitbucket@online.de>, Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>, tglx@linutronix.de
-Subject: [PATCH RT] fs: jbd2: pull your plug when waiting for space
-Message-ID: <20140221123253.GA12822@linutronix.de>
+	id S1755479AbaBUMfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:35:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884AbaBUMfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:35:05 -0500
+Date: Fri, 21 Feb 2014 09:34:56 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
+        akpm@linux-foundation.org, james.leddy@redhat.com
+Subject: Re: [PATCH] fs/proc/meminfo: meminfo_proc_show(): fix typo in comment
+Message-ID: <20140221123456.GB10170@localhost.localdomain>
+References: <20140218170027.00bcf592@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140218170027.00bcf592@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two cps in parallel managed to stall the the ext4 fs. It seems that
-journal code is either waiting for locks or sleeping waiting for
-something to happen. This seems similar to what Mike observed on ext3,
-here is his description:
+On Tue, Feb 18, 2014 at 05:00:27PM -0500, Luiz Capitulino wrote:
+> It should read "reclaimable slab" and not "reclaimable swap".
+> 
+> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> ---
+>  fs/proc/meminfo.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+> index 136e548..7445af0 100644
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -73,7 +73,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>  	available += pagecache;
+>  
+>  	/*
+> -	 * Part of the reclaimable swap consists of items that are in use,
+> +	 * Part of the reclaimable slab consists of items that are in use,
+>  	 * and cannot be freed. Cap this estimate at the low watermark.
+>  	 */
+>  	available += global_page_state(NR_SLAB_RECLAIMABLE) -
+> -- 
+> 1.8.1.4
 
-|With an -rt kernel, and a heavy sync IO load, tasks can jam
-|up on journal locks without unplugging, which can lead to
-|terminal IO starvation.  Unplug and schedule when waiting
-|for space.
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
-This is on v3.2-RT. This cp testcase triggers about once in four runs.
-It did not trigger once in 20 runs on v3.12-RT.
-This brings me to the question: could it been fixed in the meantime and
-we not need the jbd patches in latest -RT is there a better testcase?
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- fs/jbd2/checkpoint.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
-index 16a698b..c6443c3 100644
---- a/fs/jbd2/checkpoint.c
-+++ b/fs/jbd2/checkpoint.c
-@@ -129,6 +129,8 @@ void __jbd2_log_wait_for_space(journal_t *journal)
- 		if (journal->j_flags & JBD2_ABORT)
- 			return;
- 		write_unlock(&journal->j_state_lock);
-+		if (current->plug)
-+			io_schedule();
- 		mutex_lock(&journal->j_checkpoint_mutex);
- 
- 		/*
--- 
-1.9.0.rc3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
