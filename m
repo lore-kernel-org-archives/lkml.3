@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaBUWgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 17:36:20 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:40442 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103AbaBUWgS (ORCPT
+	id S1755579AbaBUWht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 17:37:49 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36091 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890AbaBUWhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 17:36:18 -0500
-Date: Fri, 21 Feb 2014 23:36:16 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140221223616.GG22728@two.firstfloor.org>
-References: <20140218123013.GA20609@amt.cnet>
- <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
- <20140220022254.GA25898@amt.cnet>
- <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
- <20140220213407.GA11048@amt.cnet>
- <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
- <20140221022800.GA30230@amt.cnet>
- <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
- <20140221191055.GD19955@amt.cnet>
- <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
+	Fri, 21 Feb 2014 17:37:47 -0500
+Date: Fri, 21 Feb 2014 14:37:41 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Cc: Michael Matz <matz@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140221223741.GO4250@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+ <20140220181116.GT4250@linux.vnet.ibm.com>
+ <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+ <20140220185608.GX4250@linux.vnet.ibm.com>
+ <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
+ <20140220221027.GC4250@linux.vnet.ibm.com>
+ <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
+ <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
+ <20140221191318.GK4250@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402211358030.4682@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022122-0928-0000-0000-000006B10351
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 2) it improves the kernel command line interface from incomplete
-> > (lacking the ability to specify node<->page correlation), to 
-> > a complete interface.
-> > 
+On Fri, Feb 21, 2014 at 10:10:54PM +0000, Joseph S. Myers wrote:
+> On Fri, 21 Feb 2014, Paul E. McKenney wrote:
 > 
-> If GB hugepages can be allocated dynamically, I really think we should be 
-> able to remove hugepagesz= entirely for x86 after a few years of 
-> supporting it for backwards compatibility, even though Linus has insisted 
+> > This needs to be as follows:
+> > 
+> > [[carries_dependency]] int getzero(int i [[carries_dependency]])
+> > {
+> > 	return i - i;
+> > }
+> > 
+> > Otherwise dependencies won't get carried through it.
+> 
+> C11 doesn't have attributes at all (and no specification regarding calls 
+> and dependencies that I can see).  And the way I read the C++11 
+> specification of carries_dependency is that specifying carries_dependency 
+> is purely about increasing optimization of the caller: that if it isn't 
+> specified, then the caller doesn't know what dependencies might be 
+> carried.  "Note: The carries_dependency attribute does not change the 
+> meaning of the program, but may result in generation of more efficient 
+> code. - end note".
 
-That doesn't make any sense. Why break a perfectly fine interface?
+Good point -- I am so used to them being in gcc that I missed that.
 
--Andi
+In which case, it seems to me that straight C11 is within its rights
+to emit a memory barrier just before control passes into a function
+that either it can't see or that it chose to apply dependency-breaking
+optimizations to.
+
+							Thanx, Paul
 
