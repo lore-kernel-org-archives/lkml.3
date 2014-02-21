@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725AbaBUMxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:53:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47328 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699AbaBUMvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:55 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jingoo Han <jg1.han@samsung.com>, Borislav Petkov <bp@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 118/121] EDAC: Replace strict_strtol() with kstrtol()
-Date: Fri, 21 Feb 2014 12:49:02 +0000
-Message-Id: <1392986945-9693-119-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S932779AbaBUMxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:53:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53753 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825AbaBUMxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:53:21 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <53073962020000780011E2DE@nat28.tlf.novell.com>
+References: <53073962020000780011E2DE@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 1/3] x86/hash: fix build failure with older binutils
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 21 Feb 2014 04:51:53 -0800
+To: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
+CC: davem@davemloft.net, dborkman@redhat.com, ffusco@redhat.com,
+        tgraf@redhat.com, linux-kernel@vger.kernel.org
+Message-ID: <68ae560f-8cf7-4083-816f-3fa78aed9a87@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
+How old?
 
-------------------
+On February 21, 2014 2:32:50 AM PST, Jan Beulich <JBeulich@suse.com> wrote:
+>Just like for other ISA extension instruction uses we should check
+>whether the assembler actually supports them. The fallback here simply
+>is to encode an instruction  with fixed operands (%eax and %ecx).
+>
+>Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>Cc: Francesco Fusco <ffusco@redhat.com>
+>Cc: Daniel Borkmann <dborkman@redhat.com>
+>Cc: Thomas Graf <tgraf@redhat.com>
+>Cc: David S. Miller <davem@davemloft.net>
+>---
+> arch/x86/Makefile   |    1 +
+> arch/x86/lib/hash.c |    4 ++++
+> 2 files changed, 5 insertions(+)
+>
+>--- 3.14-rc3-x86-hash-crc32.orig/arch/x86/Makefile
+>+++ 3.14-rc3-x86-hash-crc32/arch/x86/Makefile
+>@@ -152,6 +152,7 @@ cfi-sections := $(call as-instr,.cfi_sec
+> 
+> # does binutils support specific instructions?
+> asinstr := $(call as-instr,fxsaveq (%rax),-DCONFIG_AS_FXSAVEQ=1)
+>+asinstr += $(call as-instr,crc32l
+>%eax$(comma)%eax,-DCONFIG_AS_CRC32=1)
+>avx_instr := $(call as-instr,vxorps
+>%ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_AVX=1)
+>avx2_instr :=$(call as-instr,vpbroadcastb
+>%xmm0$(comma)%ymm1,-DCONFIG_AS_AVX2=1)
+> 
+>--- 3.14-rc3-x86-hash-crc32.orig/arch/x86/lib/hash.c
+>+++ 3.14-rc3-x86-hash-crc32/arch/x86/lib/hash.c
+>@@ -39,7 +39,11 @@
+> 
+> static inline u32 crc32_u32(u32 crc, u32 val)
+> {
+>+#ifdef CONFIG_AS_CRC32
+> 	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
+>+#else
+>+	asm (".byte 0xf2, 0x0f, 0x38, 0xf1, 0xc1" : "+a" (crc) : "c" (val));
+>+#endif
+> 	return crc;
+> }
+> 
 
-From: Jingoo Han <jg1.han@samsung.com>
-
-commit c542b53da9ffa4fe9de61149818a06aacae531f8 upstream.
-
-The usage of strict_strtol() is not preferred, because strict_strtol()
-is obsolete. Thus, kstrtol() should be used.
-
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/edac/edac_mc_sysfs.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index e7c32c4..9f7e0e60 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -58,8 +58,10 @@ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
- 	if (!val)
- 		return -EINVAL;
- 
--	ret = strict_strtol(val, 0, &l);
--	if (ret == -EINVAL || ((int)l != l))
-+	ret = kstrtol(val, 0, &l);
-+	if (ret)
-+		return ret;
-+	if ((int)l != l)
- 		return -EINVAL;
- 	*((int *)kp->arg) = l;
- 
 -- 
-1.9.0
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
