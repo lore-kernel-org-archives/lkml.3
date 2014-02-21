@@ -1,297 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaBUO7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:59:18 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36380 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751325AbaBUO7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:59:16 -0500
-Date: Fri, 21 Feb 2014 15:59:10 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz
-Subject: Re: [PATCH 06/11] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20140221145910.GE11531@pd.tnic>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-7-git-send-email-vgoyal@redhat.com>
+	id S932125AbaBUPD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:03:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40029 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028AbaBUPD1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:03:27 -0500
+Date: Fri, 21 Feb 2014 16:03:12 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140221150312.GF3104@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402131234160.22113@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402131700090.24354@vincent-weaver-1.um.maine.edu>
+ <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
+ <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu>
+ <20140220182300.GN9987@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390849071-21989-7-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140220182300.GN9987@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 01:57:46PM -0500, Vivek Goyal wrote:
-> This patch implements the in kernel kexec functionality. It implements a
-> new system call kexec_file_load. I think parameter list of this system
-> call will change as I have not done the kernel image signature handling
-> yet. I have been told that I might have to pass the detached signature
-> and size as part of system call.
+On Thu, Feb 20, 2014 at 07:23:00PM +0100, Peter Zijlstra wrote:
+> This is I think the relevant bit:
 > 
-> Previously segment list was prepared in user space. Now user space just
-> passes kernel fd, initrd fd and command line and kernel will create a
-> segment list internally.
-> 
-> This patch contains generic part of the code. Actual segment preparation
-> and loading is done by arch and image specific loader. Which comes in
-> next patch.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
 
-You might want to run it through checkpatch - some of them are actually,
-to my surprise, legitimate :)
+So we add the insn:p event (fd[23])
 
-Just some minor nitpicks below...
+At this point we should have:
 
-> ---
->  arch/x86/kernel/machine_kexec_64.c |  50 ++++
->  arch/x86/syscalls/syscall_64.tbl   |   1 +
->  include/linux/kexec.h              |  55 +++++
->  include/linux/syscalls.h           |   3 +
->  include/uapi/linux/kexec.h         |   4 +
->  kernel/kexec.c                     | 495 ++++++++++++++++++++++++++++++++++++-
->  kernel/sys_ni.c                    |   1 +
->  7 files changed, 605 insertions(+), 4 deletions(-)
+  n_events = 2, n_added = 1, n_txn = 1
 
-...
+>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
 
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index d8188b3..51b56cd 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -121,13 +121,58 @@ struct kimage {
->  #define KEXEC_TYPE_DEFAULT 0
->  #define KEXEC_TYPE_CRASH   1
->  	unsigned int preserve_context : 1;
-> +	/* If set, we are using file mode kexec syscall */
-> +	unsigned int file_mode : 1;
->  
->  #ifdef ARCH_HAS_KIMAGE_ARCH
->  	struct kimage_arch arch;
->  #endif
-> +
-> +	/* Additional Fields for file based kexec syscall */
-> +	void *kernel_buf;
-> +	unsigned long kernel_buf_len;
-> +
-> +	void *initrd_buf;
-> +	unsigned long initrd_buf_len;
-> +
-> +	char *cmdline_buf;
-> +	unsigned long cmdline_buf_len;
-> +
-> +	/* index of file handler in array */
-> +	int file_handler_idx;
-> +
-> +	/* Image loader handling the kernel can store a pointer here */
-> +	void * image_loader_data;
->  };
->  
-> +/*
-> + * Keeps a track of buffer parameters as provided by caller for requesting
-> + * memory placement of buffer.
-> + */
-> +struct kexec_buf {
-> +	struct kimage *image;
-> +	char *buffer;
-> +	unsigned long bufsz;
-> +	unsigned long memsz;
-> +	unsigned long buf_align;
-> +	unsigned long buf_min;
-> +	unsigned long buf_max;
-> +	int top_down;		/* allocate from top of memory hole */
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
 
-Looks like this wants to be a bool.
+group_sched_in()
+  pmu->start_txn() /* nop - BP pmu */
+  event_sched_in()
+     event->pmu->add()
 
-...
+So here we should end up with:
 
-> diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-> index d6629d4..5fddb1b 100644
-> --- a/include/uapi/linux/kexec.h
-> +++ b/include/uapi/linux/kexec.h
-> @@ -13,6 +13,10 @@
->  #define KEXEC_PRESERVE_CONTEXT	0x00000002
->  #define KEXEC_ARCH_MASK		0xffff0000
->  
-> +/* Kexec file load interface flags */
-> +#define KEXEC_FILE_UNLOAD	0x00000001
-> +#define KEXEC_FILE_ON_CRASH	0x00000002
+0: n_events = 3, n_added = 2, n_txn = 2
+4: n_events = 4, n_added = 3, n_txn = 3
 
-BIT()
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
 
-> +
->  /* These values match the ELF architecture values.
->   * Unless there is a good reason that should continue to be the case.
->   */
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index c0944b2..b28578a 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -123,6 +123,11 @@ static struct page *kimage_alloc_page(struct kimage *image,
->  				       gfp_t gfp_mask,
->  				       unsigned long dest);
->  
-> +void kimage_set_start_addr(struct kimage *image, unsigned long start)
-> +{
-> +	image->start = start;
-> +}
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
 
-Why a separate function? It is used only once in the next patch.
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
 
-...
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
 
-> +static int kimage_file_prepare_segments(struct kimage *image, int kernel_fd,
-> +		int initrd_fd, const char __user *cmdline_ptr,
-> +		unsigned long cmdline_len)
-> +{
-> +	int ret = 0;
-> +	void *ldata;
-> +
-> +	ret = copy_file_from_fd(kernel_fd, &image->kernel_buf,
-> +					&image->kernel_buf_len);
-> +	if (ret)
-> +		goto out;
-> +
-> +	/* Call arch image probe handlers */
-> +	ret = arch_kexec_kernel_image_probe(image, image->kernel_buf,
-> +						image->kernel_buf_len);
-> +
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = copy_file_from_fd(initrd_fd, &image->initrd_buf,
-> +					&image->initrd_buf_len);
-> +	if (ret)
-> +		goto out;
-> +
-> +	image->cmdline_buf = vzalloc(cmdline_len);
-> +	if (!image->cmdline_buf)
-> +		goto out;
-> +
-> +	ret = copy_from_user(image->cmdline_buf, cmdline_ptr, cmdline_len);
-> +	if (ret) {
-> +		ret = -EFAULT;
-> +		goto out;
-> +	}
-> +
-> +	image->cmdline_buf_len = cmdline_len;
-> +
-> +	/* command line should be a string with last byte null */
-> +	if (image->cmdline_buf[cmdline_len - 1] != '\0') {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	/* Call arch image load handlers */
-> +	ldata = arch_kexec_kernel_image_load(image,
-> +			image->kernel_buf, image->kernel_buf_len,
-> +			image->initrd_buf, image->initrd_buf_len,
-> +			image->cmdline_buf, image->cmdline_buf_len);
-> +
-> +	if (IS_ERR(ldata)) {
-> +		ret = PTR_ERR(ldata);
-> +		goto out;
-> +	}
-> +
-> +	image->image_loader_data = ldata;
-> +out:
-> +	return ret;
+  event_sched_out()
+    event->pmu->del()
 
-You probably want to drop this "out:" label and simply return the error
-value directly in each error path above for simplicity.
+on 0 and the BP event.
 
-> +static int kimage_file_normal_alloc(struct kimage **rimage, int kernel_fd,
-> +		int initrd_fd, const char __user *cmdline_ptr,
-> +		unsigned long cmdline_len)
-> +{
-> +	int result;
-> +	struct kimage *image;
-> +
-> +	/* Allocate and initialize a controlling structure */
-> +	image = do_kimage_alloc_init();
-> +	if (!image)
-> +		return -ENOMEM;
-> +
-> +	image->file_mode = 1;
-> +	image->file_handler_idx = -1;
-> +
-> +	result = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
-> +			cmdline_ptr, cmdline_len);
-> +	if (result)
-> +		goto out_free_image;
-> +
-> +	result = sanity_check_segment_list(image);
-> +	if (result)
-> +		goto out_free_post_load_bufs;
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
 
-Dunno, it could probably be a larger restructuring effort but if you
-do load a segment and sanity-check it right after loading, instead of
-loading all of them first and then iterating over them, you could save
-yourself some work in the error case when a segment fails the check.
+ n_event = 2, n_added = 2, n_txn = 2
 
-...
+>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
 
-> +int kexec_add_buffer(struct kimage *image, char *buffer,
-> +		unsigned long bufsz, unsigned long memsz,
-> +		unsigned long buf_align, unsigned long buf_min,
-> +		unsigned long buf_max, int top_down, unsigned long *load_addr)
-> +{
-> +
-> +	unsigned long nr_segments = image->nr_segments, new_nr_segments;
-> +	struct kexec_segment *ksegment;
-> +	struct kexec_buf *kbuf;
-> +
-> +	/* Currently adding segment this way is allowed only in file mode */
-> +	if (!image->file_mode)
-> +		return -EINVAL;
-> +
-> +	if (nr_segments >= KEXEC_SEGMENT_MAX)
-> +		return -EINVAL;
-> +
-> +	/*
-> +	 * Make sure we are not trying to add buffer after allocating
-> +	 * control pages. All segments need to be placed first before
-> +	 * any control pages are allocated. As control page allocation
-> +	 * logic goes through list of segments to make sure there are
-> +	 * no destination overlaps.
-> +	 */
-> +	WARN_ONCE(!list_empty(&image->control_pages), "Adding kexec buffer"
-> +			" after allocating control pages\n");
-> +
-> +	kbuf = kzalloc(sizeof(struct kexec_buf), GFP_KERNEL);
-> +	if (!kbuf)
-> +		return -ENOMEM;
-> +
-> +	kbuf->image = image;
-> +	kbuf->buffer = buffer;
-> +	kbuf->bufsz = bufsz;
-> +	/* Align memsz to next page boundary */
-> +	kbuf->memsz = ALIGN(memsz, PAGE_SIZE);
-> +
-> +	/* Align to atleast page size boundary */
-> +	kbuf->buf_align = max(buf_align, PAGE_SIZE);
-> +	kbuf->buf_min = buf_min;
-> +	kbuf->buf_max = buf_max;
-> +	kbuf->top_down = top_down;
-> +
-> +	/* Walk the RAM ranges and allocate a suitable range for the buffer */
-> +	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
-> +
-> +	kbuf->image = NULL;
-> +	kfree(kbuf);
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
 
-This is freed after kzalloc'ing it a bit earlier, why not make it a
-stack variable for simplicity? struct kexec_buf doesn't seem that
-large...
+If this all is correct; the below ought to cure things.
 
--- 
-Regards/Gruss,
-    Boris.
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/kernel/cpu/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 895604f2e916..79f9f848bee4 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1192,6 +1192,9 @@ static void x86_pmu_del(struct perf_event *event, int flags)
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
+ 
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
++
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
+ 
