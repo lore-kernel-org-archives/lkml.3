@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaBUCeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 21:34:20 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54335 "EHLO mga11.intel.com"
+	id S1753062AbaBUCet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 21:34:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:51319 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbaBUCeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 21:34:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,516,1389772800"; 
-   d="scan'208";a="485227147"
-Message-ID: <5306BB2E.7010007@intel.com>
-Date: Fri, 21 Feb 2014 10:34:22 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING at kernel/workqueue.c:829 wq_worker_waking_up+0x53/0x70()
-References: <20140213124059.GA2908@krava.brq.redhat.com> <20140217171900.GB29173@redhat.com> <20140218224907.GG31892@mtj.dyndns.org> <530602FA.1020103@intel.com> <20140220143102.GA12948@krava.brq.redhat.com> <5306150C.4020202@intel.com> <20140220151317.GA32719@redhat.com> <20140220151721.GB32719@redhat.com>
-In-Reply-To: <20140220151721.GB32719@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752660AbaBUCer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 21:34:47 -0500
+Date: Fri, 21 Feb 2014 13:34:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        Aaron Durbin <adurbin@chromium.org>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20140221133441.77e6ef11dfad31bb90a12d8a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 11:17 PM, Oleg Nesterov wrote:
-> On 02/20, Oleg Nesterov wrote:
->>
->> On 02/20, Lan Tianyu wrote:
->>>
->>> @@ -1096,7 +1112,6 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>>   		return -ENODEV;
->>>   	}
->>>
->>> -	cpumask_copy(saved_mask, &current->cpus_allowed);
->>
->> Yes, but the patch forgets to kill alloc_cpumask_var(&saved_mask)
->> and saved_mask itself ;
->
-> And it seems that acpi_processor_set_throttling() doesn't need
-> online_throttling_cpus at all. It could use
-> for_each_cpu_and(cpu_online_mask, p_throttling->shared_cpu_map).
->
+--Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-Yes, oops and will update soon. Thanks.
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/wireless/mwifiex/pcie.c between commit bb8e6a1ee881
+("mwifiex: add NULL check for PCIe Rx skb") from the  tree and commit
+dbccc92b5d54 ("mwifiex: balance dma map/unmap sizes") from the net-next
+tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> Oleg.
->
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/net/wireless/mwifiex/pcie.c
+index 7fe7b53fb17a,d11d4acf0890..000000000000
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@@ -1211,15 -1217,7 +1217,13 @@@ static int mwifiex_pcie_process_recv_da
+  		rd_index =3D card->rxbd_rdptr & reg->rx_mask;
+  		skb_data =3D card->rx_buf_list[rd_index];
+ =20
+ +		/* If skb allocation was failed earlier for Rx packet,
+ +		 * rx_buf_list[rd_index] would have been left with a NULL.
+ +		 */
+ +		if (!skb_data)
+ +			return -ENOMEM;
+ +
+- 		MWIFIEX_SKB_PACB(skb_data, &buf_pa);
+- 		pci_unmap_single(card->dev, buf_pa, MWIFIEX_RX_DATA_BUF_SIZE,
+- 				 PCI_DMA_FROMDEVICE);
++ 		mwifiex_unmap_pci_memory(adapter, skb_data, PCI_DMA_FROMDEVICE);
+  		card->rx_buf_list[rd_index] =3D NULL;
+ =20
+  		/* Get data length from interface header -
 
--- 
-Best Regards
-Tianyu Lan
+--Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTBrtFAAoJEMDTa8Ir7ZwVJ7QP/RVnuT9xAxC1BjeHRcl4rWRz
+jo1+3HxM093AyfZDinbll7CaWejVU4zz9OvMMAoN3vK/BIzDfERTMh27TDMbWoUm
+XlxbsgLO7ZU9x9btdELjrkzh7fpvtQ7cufpXOB2yEpVAOI/fxPN5QChKBFMBo3cv
+3Qz6GBnCwOXWJAEzepDDFiOcyHmTUSKNwMbuqBRiOV/OmD0cs8rrJqCYvC5AKHN8
+s7KidZEUEavT2ZwBsyzvN4t3u9oEykaXcrqV5WajSGkT1Rc66LWDkeURCyOnCKjB
+Zr6gvEB+3xe4e5JZJQBSZxIPaKwX/BJGs0fWyrN311zh9vRgvAoBxnSk30XwyChj
+yffttfLvkBbchcXMx4SOJJl35GuNObJ+ZMEqS7oZ19pIwUhnCzlmg5EdfRVSB5Te
+xxTZvmmn6Ph5sFbbwkkX0X5TitO54hDvgX2jow1y7/St3geNeQt6CpfTNMLikIOi
+QR8e4Ip9pzEhfh6X1lua0V8L0SMQahbUlLg/KED+EQyEQRJNL/bQNTvsNzVZYw/E
+9xggp9uDw6feLrEvjyUME7RBJfUL+bXY1TStzclyVl1UiX+pYQi1L2qlGnlnFqKA
+8UBC9bj+T//JRHGD9WE7FkeMLg5PMp94sEbjtXIvG4M2FixFmWZrzYNvdeTvvcu8
+QX4eh38PZNDrn+zh9HeK
+=3Dxu
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Feb_2014_13_34_41_+1100_L=If3W7cc/kR2ml3--
