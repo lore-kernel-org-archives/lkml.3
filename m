@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203AbaBUNTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:19:47 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:36924 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756095AbaBUNTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:19:40 -0500
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Jenny TC <jenny.tc@intel.com>
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        luca@coelho.fi, johannes@sipsolutions.net,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14] power_supply: don't export power_supply_notifier
-Date: Fri, 21 Feb 2014 14:19:28 +0100
-Message-Id: <1392988768-16693-1-git-send-email-johannes@sipsolutions.net>
-X-Mailer: git-send-email 1.8.5.3
+	id S1756245AbaBUNUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:20:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:24096 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756230AbaBUNUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 08:20:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,519,1389772800"; 
+   d="scan'208";a="479129626"
+Message-ID: <530754BE.5090301@linux.intel.com>
+Date: Fri, 21 Feb 2014 15:29:34 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>, sarah.a.sharp@linux.intel.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jianqian <jianqiang.tang@intel.com>
+Subject: Re: [RFC/PATCH] usb/xhci: avoid kernel panic on xhci_suspend()
+References: <20140108014550.GA7823@kroah.com> <Pine.LNX.4.44L0.1401081046300.1659-100000@iolanthe.rowland.org> <20140108195334.GB27907@psi-dev26.jf.intel.com>
+In-Reply-To: <20140108195334.GB27907@psi-dev26.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+On 01/08/2014 09:53 PM, David Cohen wrote:
+> On Wed, Jan 08, 2014 at 10:48:06AM -0500, Alan Stern wrote:
+>> On Tue, 7 Jan 2014, Greg KH wrote:
+>>
+>>> On Tue, Jan 07, 2014 at 05:44:26PM -0800, David Cohen wrote:
+>>>> From: jianqian <jianqiang.tang@intel.com>
+>>>>
+>>>> There is a possible kernel panic faced on xhci_suspend().
+>>>> Due to kernel modified the hub autosupend_delay to 0s, after usb1 root
+>>>> hub finishes initialization, it will trigger runtime_suspend and then
+>>>> it will trigger xhci runtime suspend. But at that time, if
+>>>> xhci->shared_hcd is still doing initialization, it is possible to face
+>>>> null pointer kernel panic in xhci_suspend() function.
+>>>>
+>>>> This patch checks if xhci->shared_hcd is null to avoid panic.
+>>>
+>>> That sounds like this is a race that should be fixed properly, not just
+>>> papered over, right?
+>>
+>> That was my reaction too.  The best way to solve the problem is to
+>> prevent the USB-2 root hub from suspending until after the USB-3 root
+>> hub has been registered.
+>
+> That makes sense. Thanks for the feedback.
+> I'll check for a new approach.
+>
 
-Since there are registration/unregistration functions and the
-invocation is in the core code, there's no need to export the
-notifier chain head, make it static instead.
+Could you check if this patch works for you?:
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
-This should probably go into 3.14 so it's not exported in the release.
----
- drivers/power/power_supply_core.c | 3 +--
- include/linux/power_supply.h      | 1 -
- 2 files changed, 1 insertion(+), 3 deletions(-)
+http://marc.info/?l=linux-usb&m=139298822514995&w=2
 
-diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 26606641fe44..31a105235c3e 100644
---- a/drivers/power/power_supply_core.c
-+++ b/drivers/power/power_supply_core.c
-@@ -25,8 +25,7 @@
- struct class *power_supply_class;
- EXPORT_SYMBOL_GPL(power_supply_class);
- 
--ATOMIC_NOTIFIER_HEAD(power_supply_notifier);
--EXPORT_SYMBOL_GPL(power_supply_notifier);
-+static ATOMIC_NOTIFIER_HEAD(power_supply_notifier);
- 
- static struct device_type power_supply_dev_type;
- 
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index c9dc4e09854c..80968ee25940 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -240,7 +240,6 @@ struct power_supply_info {
- 	int use_for_apm;
- };
- 
--extern struct atomic_notifier_head power_supply_notifier;
- extern int power_supply_reg_notifier(struct notifier_block *nb);
- extern void power_supply_unreg_notifier(struct notifier_block *nb);
- extern struct power_supply *power_supply_get_by_name(const char *name);
--- 
-1.8.5.3
+I'm not able to reproduce the original issue myself
 
+-Mathias
