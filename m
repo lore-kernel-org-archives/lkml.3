@@ -1,86 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaBUMo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:44:26 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:43524 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086AbaBUMoY convert rfc822-to-8bit (ORCPT
+	id S1755526AbaBUMtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:49:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46689 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589AbaBUMtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:44:24 -0500
-Date: Fri, 21 Feb 2014 13:44:38 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
-Message-Id: <20140221134438.ab2d02c4165fa2a6cbd663be@gmail.com>
-In-Reply-To: <311621392984565@web3h.yandex.ru>
-References: <230991392848160@web13m.yandex.ru>
-	<20140221103715.GP9987@twins.programming.kicks-ass.net>
-	<128831392982418@web15j.yandex.ru>
-	<311621392984565@web3h.yandex.ru>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Feb 2014 07:49:11 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 001/121] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
+Date: Fri, 21 Feb 2014 12:47:05 +0000
+Message-Id: <1392986945-9693-2-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014 16:09:25 +0400
-Kirill Tkhai <tkhai@yandex.ru> wrote:
+3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
 
-> 
-> 
-> 21.02.2014, 15:39, "Kirill Tkhai" <tkhai@yandex.ru>:
-> > 21.02.2014, 14:37, "Peter Zijlstra" <peterz@infradead.org>:
-> >
-> >>  On Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
-> >>>   Since deadline tasks share rt bandwidth, we must care about
-> >>>   bandwidth timer set. Otherwise rt_time may grow up to infinity
-> >>>   in update_curr_dl(), if there are no other available RT tasks
-> >>>   on top level bandwidth.
-> >>>
-> >>>   I'm going to decide the problem the way below. Almost untested
-> >>>   because of I skipped almost all of recent patches which haveto be applied from lkml.
-> >>>
-> >>>   Please say, if I skipped anything in idea. Maybe better put
-> >>>   start_top_rt_bandwidth() into set_curr_task_dl()?
-> >>  How about we only increment rt_time when there's an RT bandwidth timer
-> >>  active?
-> >
-> > This case RT and DL may eat all the time:
-> >
-> > --------------  time ------------------>
-> > |RT's working |DL's working|
-> > ----------------------------
-> > |rt_runtime   |            |
-> > ----------------------------
-> > |        rt_period         |
-> >
-> > Or at least more, than it's allowed.
-> >
-> > It looks like, if we want to limit time of high priority classes
-> > execution, we have to set the timer anyway.
-> 
-> Oh, above is confusing. Sorry.
-> 
-> I mean one RT task and
-> 
-> -----------------  time -------------------------->
-> |DL's working    |RT's working| |DL's working    |
-> --------------------------------------------------
-> |                |rt_runtime  | |                |
-> --------------------------------------------------
-> |                |   rt_period  |                |
-> 
-> In this case FAIR receives less ratio, than (rt_period-rt_runtime)/rt_period.
-> 
+------------------
 
-DL tasks won't be allowed to run in this situation, as their bw exceedes
-rt_runtime/rt_period.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Thanks,
+commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
 
-- Juri
+ftrace_trace_function is a variable that holds what function will be called
+directly by the assembly code (mcount). If just a single function is
+registered and it handles recursion itself, then the assembly will call that
+function directly without any helper function. It also passes in the
+ftrace_op that was registered with the callback. The ftrace_op to send is
+stored in the function_trace_op variable.
+
+The ftrace_trace_function and function_trace_op needs to be coordinated such
+that the called callback wont be called with the wrong ftrace_op, otherwise
+bad things can happen if it expected a different op. Luckily, there's no
+callback that doesn't use the helper functions that requires this. But
+there soon will be and this needs to be fixed.
+
+Use a set_function_trace_op to store the ftrace_op to set the
+function_trace_op to when it is safe to do so (during the update function
+within the breakpoint or stop machine calls). Or if dynamic ftrace is not
+being used (static tracing) then we have to do a bit more synchronization
+when the ftrace_trace_function is set as that takes affect immediately
+(as oppose to dynamic ftrace doing it with the modification of the trampoline).
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[ luis: backported to 3.11: used Steven Rostedt's backport to 3.10 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/trace/ftrace.c | 87 ++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 72 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index c984033..aba7446 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -85,6 +85,8 @@ int function_trace_stop __read_mostly;
+ 
+ /* Current function tracing op */
+ struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
++/* What to set function_trace_op to */
++static struct ftrace_ops *set_function_trace_op;
+ 
+ /* List for set_ftrace_pid's pids. */
+ LIST_HEAD(ftrace_pids);
+@@ -278,6 +280,23 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
+ }
+ 
++static void ftrace_sync(struct work_struct *work)
++{
++	/*
++	 * This function is just a stub to implement a hard force
++	 * of synchronize_sched(). This requires synchronizing
++	 * tasks even in userspace and idle.
++	 *
++	 * Yes, function tracing is rude.
++	 */
++}
++
++static void ftrace_sync_ipi(void *data)
++{
++	/* Probably not needed, but do it anyway */
++	smp_rmb();
++}
++
+ static void update_ftrace_function(void)
+ {
+ 	ftrace_func_t func;
+@@ -296,16 +315,59 @@ static void update_ftrace_function(void)
+ 	     !FTRACE_FORCE_LIST_FUNC)) {
+ 		/* Set the ftrace_ops that the arch callback uses */
+ 		if (ftrace_ops_list == &global_ops)
+-			function_trace_op = ftrace_global_list;
++			set_function_trace_op = ftrace_global_list;
+ 		else
+-			function_trace_op = ftrace_ops_list;
++			set_function_trace_op = ftrace_ops_list;
+ 		func = ftrace_ops_list->func;
+ 	} else {
+ 		/* Just use the default ftrace_ops */
+-		function_trace_op = &ftrace_list_end;
++		set_function_trace_op = &ftrace_list_end;
+ 		func = ftrace_ops_list_func;
+ 	}
+ 
++	/* If there's no change, then do nothing more here */
++	if (ftrace_trace_function == func)
++		return;
++
++	/*
++	 * If we are using the list function, it doesn't care
++	 * about the function_trace_ops.
++	 */
++	if (func == ftrace_ops_list_func) {
++		ftrace_trace_function = func;
++		/*
++		 * Don't even bother setting function_trace_ops,
++		 * it would be racy to do so anyway.
++		 */
++		return;
++	}
++
++#ifndef CONFIG_DYNAMIC_FTRACE
++	/*
++	 * For static tracing, we need to be a bit more careful.
++	 * The function change takes affect immediately. Thus,
++	 * we need to coorditate the setting of the function_trace_ops
++	 * with the setting of the ftrace_trace_function.
++	 *
++	 * Set the function to the list ops, which will call the
++	 * function we want, albeit indirectly, but it handles the
++	 * ftrace_ops and doesn't depend on function_trace_op.
++	 */
++	ftrace_trace_function = ftrace_ops_list_func;
++	/*
++	 * Make sure all CPUs see this. Yes this is slow, but static
++	 * tracing is slow and nasty to have enabled.
++	 */
++	schedule_on_each_cpu(ftrace_sync);
++	/* Now all cpus are using the list ops. */
++	function_trace_op = set_function_trace_op;
++	/* Make sure the function_trace_op is visible on all CPUs */
++	smp_wmb();
++	/* Nasty way to force a rmb on all cpus */
++	smp_call_function(ftrace_sync_ipi, NULL, 1);
++	/* OK, we are all set to update the ftrace_trace_function now! */
++#endif /* !CONFIG_DYNAMIC_FTRACE */
++
+ 	ftrace_trace_function = func;
+ }
+ 
+@@ -410,17 +472,6 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
+ 	return 0;
+ }
+ 
+-static void ftrace_sync(struct work_struct *work)
+-{
+-	/*
+-	 * This function is just a stub to implement a hard force
+-	 * of synchronize_sched(). This requires synchronizing
+-	 * tasks even in userspace and idle.
+-	 *
+-	 * Yes, function tracing is rude.
+-	 */
+-}
+-
+ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ {
+ 	int ret;
+@@ -1952,8 +2003,14 @@ void ftrace_modify_all_code(int command)
+ 	else if (command & FTRACE_DISABLE_CALLS)
+ 		ftrace_replace_code(0);
+ 
+-	if (command & FTRACE_UPDATE_TRACE_FUNC)
++	if (command & FTRACE_UPDATE_TRACE_FUNC) {
++		function_trace_op = set_function_trace_op;
++		smp_wmb();
++		/* If irqs are disabled, we are in stop machine */
++		if (!irqs_disabled())
++			smp_call_function(ftrace_sync_ipi, NULL, 1);
+ 		ftrace_update_ftrace_func(ftrace_trace_function);
++	}
+ 
+ 	if (command & FTRACE_START_FUNC_RET)
+ 		ftrace_enable_ftrace_graph_caller();
+-- 
+1.9.0
+
