@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaBUPdT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:33:19 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36371 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415AbaBUPdP (ORCPT
+	id S932185AbaBUPd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:33:59 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48862 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976AbaBUPd5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:33:15 -0500
-Date: Fri, 21 Feb 2014 15:32:39 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rui Wang <ruiv.wang@gmail.com>
-Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
-Message-ID: <20140221153239.20dbb8c2@alan.etchedpixels.co.uk>
-In-Reply-To: <CALCETrWEexCqH5486Qfyt22i5+MZjpETJEMTyg6FO6xOwXuraQ@mail.gmail.com>
-References: <cover.1387588711.git.luto@amacapital.net>
-	<15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
-	<20140219151626.GA13973@katana>
-	<CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
-	<20140219192646.1a62521d@alan.etchedpixels.co.uk>
-	<CALCETrWEexCqH5486Qfyt22i5+MZjpETJEMTyg6FO6xOwXuraQ@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Feb 2014 10:33:57 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] gpio: msm: switch Kconfig to ARCH_QCOM depends
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1392150132-21877-1-git-send-email-galak@codeaurora.org>
+Date: Fri, 21 Feb 2014 09:33:53 -0600
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E44A8A90-550C-438C-9EA0-61E033BB988E@codeaurora.org>
+References: <1392150132-21877-1-git-send-email-galak@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm suggesting identifying a range of addresses on a bus with a "port"
-> (or whatever it should be called).  Multiple ports could claim
-> non-overlapping ranges on the same bus.
 
-Which is fine until you meant a mux or a device that can be moved about
-by writing to it, or has a wide range of addresses determined by
-strapping.
+On Feb 11, 2014, at 2:22 PM, Kumar Gala <galak@codeaurora.org> wrote:
 
-> In this particular case (Intel LGA2011 systems), there's only one sane
-> way to wire up the busses, since the memory controller *is* the smbus
-> master.  According to the JEDEC spec, each DIMM slot is has three pins
+> We've split Qualcomm MSM support into legacy and multiplatform.  The gpio
+> msm-v2 driver is only relevant on the multiplatform supported SoCs so
+> switch the Kconfig depends to ARCH_QCOM.
+> 
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+> Linus,
+> 
+> If you can ack this I'll send it via linux-qcom/arm-soc tree's
+> 
+> thanks
+> 
+> - k
 
-Ok that helps a lot for the specific case, and you have at least in
-theory got a flag between the OS and BIOS to avoid things like SMM
-throwing parties on the smbus while you are using it.
+ping.
+
+- k
+
+> 
+> drivers/gpio/Kconfig | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 6973387..aa74949 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -192,7 +192,7 @@ config GPIO_MSM_V1
+> 
+> config GPIO_MSM_V2
+> 	tristate "Qualcomm MSM GPIO v2"
+> -	depends on GPIOLIB && OF && ARCH_MSM
+> +	depends on GPIOLIB && OF && ARCH_QCOM
+> 	help
+> 	  Say yes here to support the GPIO interface on ARM v7 based
+> 	  Qualcomm MSM chips.  Most of the pins on the MSM can be
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
