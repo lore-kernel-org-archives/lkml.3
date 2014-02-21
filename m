@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890AbaBUM5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:57:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47259 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599AbaBUMvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932601AbaBUMvg (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 21 Feb 2014 07:51:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47237 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932554AbaBUMvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 07:51:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 105/121] x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
-Date: Fri, 21 Feb 2014 12:48:49 +0000
-Message-Id: <1392986945-9693-106-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 101/121] target: Fix free-after-use regression in PR unregister
+Date: Fri, 21 Feb 2014 12:48:45 +0000
+Message-Id: <1392986945-9693-102-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 4640c7ee9b8953237d05a61ea3ea93981d1bc961 upstream.
+commit fc09149df6e20cfbb0bb86f10899607c321a31eb upstream.
 
-If CONFIG_X86_SMAP is disabled, smap_violation() tests for conditions
-which are incorrect (as the AC flag doesn't matter), causing spurious
-faults.
+This patch addresses a >= v3.11 free-after-use regression
+in core_scsi3_emulate_pro_register() that was introduced
+in the following commit:
 
-The dynamic disabling of SMAP (nosmap on the command line) is fine
-because it disables X86_FEATURE_SMAP, therefore causing the
-static_cpu_has() to return false.
+commit bc118fe4c4a8cfa453491ba77c0a146a6d0e73e0
+Author: Andy Grover <agrover@redhat.com>
+Date:   Thu May 16 10:41:04 2013 -0700
 
-Found by Fengguang Wu's test system.
+    target: Further refactoring of core_scsi3_emulate_pro_register()
 
-[ v3: move all predicates into smap_violation() ]
-[ v2: use IS_ENABLED() instead of #ifdef ]
+To avoid the free-after-use, save an type value before hand, and
+only call core_scsi3_put_pr_reg() with a valid *pr_reg.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Link: http://lkml.kernel.org/r/20140213124550.GA30497@localhost
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/mm/fault.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/target/target_core_pr.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 654be4a..c1e9e4c 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -989,6 +989,12 @@ static int fault_in_kernel_space(unsigned long address)
+diff --git a/drivers/target/target_core_pr.c b/drivers/target/target_core_pr.c
+index adec5a8..3408fdd 100644
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -2009,7 +2009,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
+ 	struct t10_reservation *pr_tmpl = &dev->t10_pr;
+ 	unsigned char isid_buf[PR_REG_ISID_LEN], *isid_ptr = NULL;
+ 	sense_reason_t ret = TCM_NO_SENSE;
+-	int pr_holder = 0;
++	int pr_holder = 0, type;
  
- static inline bool smap_violation(int error_code, struct pt_regs *regs)
- {
-+	if (!IS_ENABLED(CONFIG_X86_SMAP))
-+		return false;
-+
-+	if (!static_cpu_has(X86_FEATURE_SMAP))
-+		return false;
-+
- 	if (error_code & PF_USER)
- 		return false;
+ 	if (!se_sess || !se_lun) {
+ 		pr_err("SPC-3 PR: se_sess || struct se_lun is NULL!\n");
+@@ -2131,6 +2131,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
+ 			ret = TCM_RESERVATION_CONFLICT;
+ 			goto out;
+ 		}
++		type = pr_reg->pr_res_type;
  
-@@ -1091,11 +1097,9 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (unlikely(error_code & PF_RSVD))
- 		pgtable_bad(regs, error_code, address);
+ 		spin_lock(&pr_tmpl->registration_lock);
+ 		/*
+@@ -2161,6 +2162,7 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
+ 		 * Release the calling I_T Nexus registration now..
+ 		 */
+ 		__core_scsi3_free_registration(cmd->se_dev, pr_reg, NULL, 1);
++		pr_reg = NULL;
  
--	if (static_cpu_has(X86_FEATURE_SMAP)) {
--		if (unlikely(smap_violation(error_code, regs))) {
--			bad_area_nosemaphore(regs, error_code, address);
--			return;
--		}
-+	if (unlikely(smap_violation(error_code, regs))) {
-+		bad_area_nosemaphore(regs, error_code, address);
-+		return;
- 	}
+ 		/*
+ 		 * From spc4r17, section 5.7.11.3 Unregistering
+@@ -2174,8 +2176,8 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
+ 		 * RESERVATIONS RELEASED.
+ 		 */
+ 		if (pr_holder &&
+-		    (pr_reg->pr_res_type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
+-		     pr_reg->pr_res_type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
++		    (type == PR_TYPE_WRITE_EXCLUSIVE_REGONLY ||
++		     type == PR_TYPE_EXCLUSIVE_ACCESS_REGONLY)) {
+ 			list_for_each_entry(pr_reg_p,
+ 					&pr_tmpl->registration_list,
+ 					pr_reg_list) {
+@@ -2194,7 +2196,8 @@ core_scsi3_emulate_pro_register(struct se_cmd *cmd, u64 res_key, u64 sa_res_key,
+ 	ret = core_scsi3_update_and_write_aptpl(dev, aptpl);
  
- 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+ out:
+-	core_scsi3_put_pr_reg(pr_reg);
++	if (pr_reg)
++		core_scsi3_put_pr_reg(pr_reg);
+ 	return ret;
+ }
+ 
 -- 
 1.9.0
 
