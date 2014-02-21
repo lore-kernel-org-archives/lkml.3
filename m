@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927AbaBUM7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:59:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47229 "EHLO
+	id S932557AbaBUMv1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:51:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47202 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaBUMva (ORCPT
+	with ESMTP id S932518AbaBUMvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:30 -0500
+	Fri, 21 Feb 2014 07:51:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 099/121] ftrace/x86: Use breakpoints for converting function graph caller
-Date: Fri, 21 Feb 2014 12:48:43 +0000
-Message-Id: <1392986945-9693-100-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/121] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
+Date: Fri, 21 Feb 2014 12:48:39 +0000
+Message-Id: <1392986945-9693-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,191 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 87fbb2ac6073a7039303517546a76074feb14c84 upstream.
+commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
 
-When the conversion was made to remove stop machine and use the breakpoint
-logic instead, the modification of the function graph caller is still
-done directly as though it was being done under stop machine.
+In allmodconfig builds for sparc and any other arch which does
+not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
 
-As it is not converted via stop machine anymore, there is a possibility
-that the code could be layed across cache lines and if another CPU is
-accessing that function graph call when it is being updated, it could
-cause a General Protection Fault.
+  CC [M]  lib/cpu-notifier-error-inject.o
+  CC [M]  lib/pm-notifier-error-inject.o
+ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
+make[2]: *** [__modpost] Error 1
 
-Convert the update of the function graph caller to use the breakpoint
-method as well.
+This happens because commit 3911ff30f5 ("genirq: export
+handle_edge_irq() and irq_to_desc()") added one export for it, but
+there were actually two instances of it, in an if/else clause for
+CONFIG_SPARSE_IRQ.  Add the second one.
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Fixes: 08d636b6d4fb "ftrace/x86: Have arch x86_64 use breakpoints instead of stop machine"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/ftrace.c | 83 +++++++++++++++++++++++++++---------------------
- 1 file changed, 47 insertions(+), 36 deletions(-)
+ kernel/irq/irqdesc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index d4bdd25..e625319 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -77,8 +77,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
- 	return addr >= start && addr < end;
- }
- 
--static int
--do_ftrace_mod_code(unsigned long ip, const void *new_code)
-+static unsigned long text_ip_addr(unsigned long ip)
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..8ab8e93 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
  {
- 	/*
- 	 * On x86_64, kernel text mappings are mapped read-only with
-@@ -91,7 +90,7 @@ do_ftrace_mod_code(unsigned long ip, const void *new_code)
- 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
- 		ip = (unsigned long)__va(__pa_symbol(ip));
- 
--	return probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE);
-+	return ip;
+ 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
  }
++EXPORT_SYMBOL(irq_to_desc);
  
- static const unsigned char *ftrace_nop_replace(void)
-@@ -123,8 +122,10 @@ ftrace_modify_code_direct(unsigned long ip, unsigned const char *old_code,
- 	if (memcmp(replaced, old_code, MCOUNT_INSN_SIZE) != 0)
- 		return -EINVAL;
- 
-+	ip = text_ip_addr(ip);
-+
- 	/* replace the text with the new text */
--	if (do_ftrace_mod_code(ip, new_code))
-+	if (probe_kernel_write((void *)ip, new_code, MCOUNT_INSN_SIZE))
- 		return -EPERM;
- 
- 	sync_core();
-@@ -221,37 +222,51 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
- 	return -EINVAL;
- }
- 
--int ftrace_update_ftrace_func(ftrace_func_t func)
-+static unsigned long ftrace_update_func;
-+
-+static int update_ftrace_func(unsigned long ip, void *new)
+ static void free_desc(unsigned int irq)
  {
--	unsigned long ip = (unsigned long)(&ftrace_call);
--	unsigned char old[MCOUNT_INSN_SIZE], *new;
-+	unsigned char old[MCOUNT_INSN_SIZE];
- 	int ret;
- 
--	memcpy(old, &ftrace_call, MCOUNT_INSN_SIZE);
--	new = ftrace_call_replace(ip, (unsigned long)func);
-+	memcpy(old, (void *)ip, MCOUNT_INSN_SIZE);
-+
-+	ftrace_update_func = ip;
-+	/* Make sure the breakpoints see the ftrace_update_func update */
-+	smp_wmb();
- 
- 	/* See comment above by declaration of modifying_ftrace_code */
- 	atomic_inc(&modifying_ftrace_code);
- 
- 	ret = ftrace_modify_code(ip, old, new);
- 
-+	atomic_dec(&modifying_ftrace_code);
-+
-+	return ret;
-+}
-+
-+int ftrace_update_ftrace_func(ftrace_func_t func)
-+{
-+	unsigned long ip = (unsigned long)(&ftrace_call);
-+	unsigned char *new;
-+	int ret;
-+
-+	new = ftrace_call_replace(ip, (unsigned long)func);
-+	ret = update_ftrace_func(ip, new);
-+
- 	/* Also update the regs callback function */
- 	if (!ret) {
- 		ip = (unsigned long)(&ftrace_regs_call);
--		memcpy(old, &ftrace_regs_call, MCOUNT_INSN_SIZE);
- 		new = ftrace_call_replace(ip, (unsigned long)func);
--		ret = ftrace_modify_code(ip, old, new);
-+		ret = update_ftrace_func(ip, new);
- 	}
- 
--	atomic_dec(&modifying_ftrace_code);
--
- 	return ret;
- }
- 
- static int is_ftrace_caller(unsigned long ip)
- {
--	if (ip == (unsigned long)(&ftrace_call) ||
--		ip == (unsigned long)(&ftrace_regs_call))
-+	if (ip == ftrace_update_func)
- 		return 1;
- 
- 	return 0;
-@@ -677,45 +692,41 @@ int __init ftrace_dyn_arch_init(void *data)
- #ifdef CONFIG_DYNAMIC_FTRACE
- extern void ftrace_graph_call(void);
- 
--static int ftrace_mod_jmp(unsigned long ip,
--			  int old_offset, int new_offset)
-+static unsigned char *ftrace_jmp_replace(unsigned long ip, unsigned long addr)
- {
--	unsigned char code[MCOUNT_INSN_SIZE];
-+	static union ftrace_code_union calc;
- 
--	if (probe_kernel_read(code, (void *)ip, MCOUNT_INSN_SIZE))
--		return -EFAULT;
-+	/* Jmp not a call (ignore the .e8) */
-+	calc.e8		= 0xe9;
-+	calc.offset	= ftrace_calc_offset(ip + MCOUNT_INSN_SIZE, addr);
- 
--	if (code[0] != 0xe9 || old_offset != *(int *)(&code[1]))
--		return -EINVAL;
-+	/*
-+	 * ftrace external locks synchronize the access to the static variable.
-+	 */
-+	return calc.code;
-+}
- 
--	*(int *)(&code[1]) = new_offset;
-+static int ftrace_mod_jmp(unsigned long ip, void *func)
-+{
-+	unsigned char *new;
- 
--	if (do_ftrace_mod_code(ip, &code))
--		return -EPERM;
-+	new = ftrace_jmp_replace(ip, (unsigned long)func);
- 
--	return 0;
-+	return update_ftrace_func(ip, new);
- }
- 
- int ftrace_enable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
- 
--	old_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_graph_caller);
- }
- 
- int ftrace_disable_ftrace_graph_caller(void)
- {
- 	unsigned long ip = (unsigned long)(&ftrace_graph_call);
--	int old_offset, new_offset;
--
--	old_offset = (unsigned long)(&ftrace_graph_caller) - (ip + MCOUNT_INSN_SIZE);
--	new_offset = (unsigned long)(&ftrace_stub) - (ip + MCOUNT_INSN_SIZE);
- 
--	return ftrace_mod_jmp(ip, old_offset, new_offset);
-+	return ftrace_mod_jmp(ip, &ftrace_stub);
- }
- 
- #endif /* !CONFIG_DYNAMIC_FTRACE */
 -- 
 1.9.0
 
