@@ -1,146 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaBUM0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:26:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45451 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215AbaBUM0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932107AbaBUM0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:26:23 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52959 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755421AbaBUM0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 07:26:18 -0500
-Message-ID: <5307459D.9080707@ti.com>
-Date: Fri, 21 Feb 2014 17:55:01 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>
-CC: <george.cherian@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1390299099-14764-1-git-send-email-kishon@ti.com> <20140121144725.GF30451@saruman.home> <20140127150855.GA17928@xps8300> <20140127160458.GF13268@saruman.home> <20140128153230.GA20991@xps8300> <20140128163036.GD28546@saruman.home> <20140129144659.GA22152@xps8300> <52FB42DE.4090203@ti.com> <5304A58C.2030306@ti.com>
-In-Reply-To: <5304A58C.2030306@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-AuditID: cbfec7f4-b7f796d000005a13-b7-530745e8e479
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
+Subject: [PATCH v5 08/11] drivers: dma-contiguous: add initialization from
+ device tree
+Date: Fri, 21 Feb 2014 13:25:24 +0100
+Message-id: <1392985527-6260-9-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
+References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRW0ySYRiA+35+/v+XRfsjqm/OXFFW1jwtL76c62jrq9Vm2kU1t0IltIEa
+	pKU3MQSneIDoQmoeINELhppUnlZLGFM76zS1DA85lwfSSteWgUvy7nmf99nei5fhCIxkMJOZ
+	dUuiyBLLRBSPfLPa8zFi5hSdHL3iP4z8xm4a/VBrOWixoQygWvd7LtJ7LVzU5WsHyFteTKKO
+	pgWA3qm9NGorMdFoeXCSQI6pIS6yFFlJNNBZRaFGt4dGj2edBKof7ieQuUfDRb7KUPR6eIlC
+	dncdjQyVjSTSvnDTyN/mINGcs4hEzaZ5Etk6fQDN/uwlj4Vge40d4L8rRoDn7xsAHqgoJ3DH
+	Qw+Ny7waLnbYSij8Zeg5hZ9Y7+LR1SkOHuxVc3GTb47Aen80ru6sALjiqQ3gJUdo4uYrvPh0
+	iSwzT6KIOnKNl1E/MkHnmCLuFL4yAxXQhOlAEAPZWDhtUXHXeRvsG2umdIDHCNh6APsmtWB9
+	KCWgRjtKByqKjYG67zoqwELWAuBSDRmIOOw4BYv7y4jAYgt7Cf5xWf5HJBsGzQ/MZID57GlY
+	61lZ88zauZ2wyhgf0EEshm+7vtEBLVhLmopvGADfDDbYwFZJblqOMlUqj4lUiuXK3CxpZFq2
+	3AHW/7jcDuq641yAZYBoIz8HUskCrjhPmS93AchwREK+M4pOFvDTxfkFEkX2VUWuTKJ0AYIJ
+	ClaBE2drq89e9Bzde7AlTmNPPNNaKr23S9ggy6+Z/vp7Ts4kUudv56l3qMa0KcE3Ez63OOGE
+	ff8+aWyBQR/eGn5Z37pJPjN+8pGpJHW6Z09EyKeEzO0t0sXrhZILYy/7kgSHin6huIVeIe/c
+	8W778IdIq8draUNJnpFn1mUiZbeBEJHKDHHMAY5CKf4HUQ8J5qUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+Refactor internal dma_contiguous_init_reserved_mem() function, which
+creates CMA area from previously reserved memory region and add support
+for handling 'shared-dma-pool' reserved-memory device tree nodes.
 
-On Wednesday 19 February 2014 06:07 PM, Roger Quadros wrote:
-> Hi,
-> 
-> On 02/12/2014 11:46 AM, Kishon Vijay Abraham I wrote:
->> On Wednesday 29 January 2014 08:17 PM, Heikki Krogerus wrote:
->>> Hi,
->>>
->>> On Tue, Jan 28, 2014 at 10:30:36AM -0600, Felipe Balbi wrote:
->>>> On Tue, Jan 28, 2014 at 05:32:30PM +0200, Heikki Krogerus wrote:
->>>>> On Mon, Jan 27, 2014 at 10:05:20AM -0600, Felipe Balbi wrote:
->>>>> For the controller drivers the PHYs are just a resource like any
->>>>> other. The controller drivers can't have any responsibility of
->>>>> them. They should not care if PHY drivers are available for them or
->>>>> not, or even if the PHY framework is available or not.
->>>>
->>>> huh? If memory isn't available you don't continue probing, right ? If
->>>> your IORESOURCE_MEM is missing, you also don't continue probing, if your
->>>> IRQ line is missing, you bail too. Those are also nothing but resources
->>>> to the driver, what you're asking here is to treat PHY as a _different_
->>>> resource; which might be fine, but we need to make sure we don't
->>>> continue probing when a PHY is missing in a platform that certainly
->>>> needs a PHY.
->>>
->>> Yes, true. In my head I was comparing the PHY only to resources like
->>> gpios, clocks, dma channels, etc. that are often optional to the
->>> drivers.
->>>
->>>>>>>> But I really want to see the argument against using no-op. As far as I
->>>>>>>> could see, everybody needs a PHY driver one way or another, some
->>>>>>>> platforms just haven't sent any PHY driver upstream and have their own
->>>>>>>> hacked up solution to avoid using the PHY layer.
->>>>>>>
->>>>>>> Not true in our case. Platforms using Intel's SoCs and chip sets may
->>>>>>> or may not have controllable USB PHY. Quite often they don't. The
->>>>>>> Baytrails have usually ULPI PHY for USB2, but that does not mean they
->>>>>>> provide any vendor specific functions or any need for a driver in any
->>>>>>> case.
->>>>>>
->>>>>> that's different from what I heard.
->>>>>
->>>>> I don't know where you got that impression, but it's not true. The
->>>>> Baytrail SoCs for example don't have internal USB PHYs, which means
->>>>> the manufacturers using it can select what they want. So we have
->>>>> boards where PHY driver(s) is needed and boards where it isn't.
->>>>
->>>> alright, that explains it ;-) So you have external USB2 and USB3 PHYs ?
->>>> You have an external PIPE3 interface ? That's quite an achievement,
->>>> kudos to your HW designers. Getting timing closure on PIPE3 is a
->>>> difficult task.
->>>
->>> No, only the USB2 PHY is external. I'm giving you wrong information,
->>> I'm sorry about that. Need to concentrate on what I'm writing.
->>>
->>> <snip>
->>>
->>>>> This is really good to get. We have some projects where we are dealing
->>>>> with more embedded environments, like IVI, where the kernel should be
->>>>> stripped of everything useless. Since the PHYs are autonomous, we
->>>>> should be able to disable the PHY libraries/frameworks.
->>>>
->>>> hmmm, in that case it's a lot easier to treat. We can use
->>>> ERR_PTR(-ENXIO) as an indication that the framework is disabled, or
->>>> something like that.
->>>>
->>>> The difficult is really reliably supporting e.g. OMAP5 (which won't work
->>>> without a PHY) and your BayTrail with autonomous PHYs. What can we use
->>>> as an indication ?
->>>
->>> OMAP has it's own glue driver, so shouldn't it depend on the PHY
->>> layer?
->>
->> right, but the PHY is connected to the dwc3 core and not to the glue.
->>>
->>>> I mean, I need to know that a particular platform depends on a PHY
->>>> driver before I decide to return -EPROBE_DEFER or just assume the PHY
->>>> isn't needed ;-)
->>>
->>> I don't think dwc3 (core) should care about that. The PHY layer needs
->>> to tell us that. If the PHY driver that the platform depends is not
->>> available yet, the PHY layer returns -EPROBE_DEFER and dwc3 ends up
->>> returning -EPROBE_DEFER.
->>
->> I don't think the PHY layer can 'reliably' tell if PHY driver is available or
->> not. Consider when the phy_provider_register fails, there is no way to know if
->> PHY driver is available or not. There are a few cases where PHY layer returns
->> -EPROBE_DEFER but none of them can tell for sure that PHY driver is either
->> available and failed or not available at all. It would be best for us to leave
->> that to the platforms if we want to be sure if the platform needs a PHY or not.
->>
-> 
-> Just to summarize this thread on what we need
+Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
 
-Thanks for summarizing.
-> 
-> 1) dwc3 core shouldn't worry about platform specific stuff i.e. PHY needed or not.
-> It should be as generic as possible.
-> 
-> 2) dwc3 core should continue probe even if PHY layer is not enabled, as not all platforms need it.
-> 
-> 3) dwc3 core should continue probe if PHY device is not available. (-ENODEV?)
-> 
-> 4) dwc3 core should error out on any error condition if PHY device is available and caused some error,
-> e.g. init error.
-> 
-> 5) dwc3 core should return EPROBE_DEFER if PHY device is available but device driver is not yet loaded.
-> 
-> 6) platform glue should do the necessary sanity checks for availability of all resources like PHY device, PHY layer, etc, before populating the dwc3 device. e.g. in OMAP5 case we could check if both usb2 and usb3 PHY
-> nodes are available in the DT and PHY layer is enabled, from dwc3-omap.c? In J6 case we could check that at least usb2 phy node is there for the High-Speed only controller, and so on.
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ drivers/base/dma-contiguous.c |  130 ++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 108 insertions(+), 22 deletions(-)
 
-The PHY is connected to the dwc3 core. So I'm not sure if we should be doing
-checks for PHY in the glue layer.
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 165c2c299e57..5dfcc3743d9b 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -182,6 +182,49 @@ static int __init cma_init_reserved_areas(void)
+ core_initcall(cma_init_reserved_areas);
+ 
+ /**
++ * dma_contiguous_init_reserved_mem() - reserve custom contiguous area
++ * @size: Size of the reserved area (in bytes),
++ * @base: Base address of the reserved area optional, use 0 for any
++ * @limit: End address of the reserved memory (optional, 0 for any).
++ * @res_cma: Pointer to store the created cma region.
++ *
++ * This function reserves memory from early allocator. It should be
++ * called by arch specific code once the early allocator (memblock or bootmem)
++ * has been activated and all other subsystems have already allocated/reserved
++ * memory. This function allows to create custom reserved areas for specific
++ * devices.
++ */
++static int __init dma_contiguous_init_reserved_mem(phys_addr_t size,
++					phys_addr_t base, struct cma **res_cma)
++{
++	struct cma *cma = &cma_areas[cma_area_count];
++	phys_addr_t alignment;
++
++	/* Sanity checks */
++	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
++		pr_err("Not enough slots for CMA reserved regions!\n");
++		return -ENOSPC;
++	}
++
++	if (!size || !memblock_is_region_reserved(base, size))
++		return -EINVAL;
++
++	/* Sanitise input arguments */
++	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
++	if (ALIGN(base, alignment) != base || ALIGN(size, alignment) != size)
++		return -EINVAL;
++
++	cma->base_pfn = PFN_DOWN(base);
++	cma->count = size >> PAGE_SHIFT;
++	*res_cma = cma;
++	cma_area_count++;
++
++	/* Architecture specific contiguous memory fixup. */
++	dma_contiguous_early_fixup(base, size);
++	return 0;
++}
++
++/**
+  * dma_contiguous_reserve_area() - reserve custom contiguous area
+  * @size: Size of the reserved area (in bytes),
+  * @base: Base address of the reserved area optional, use 0 for any
+@@ -197,7 +240,6 @@ core_initcall(cma_init_reserved_areas);
+ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+ 				       phys_addr_t limit, struct cma **res_cma)
+ {
+-	struct cma *cma = &cma_areas[cma_area_count];
+ 	phys_addr_t alignment;
+ 	int ret = 0;
+ 
+@@ -205,12 +247,6 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+ 		 (unsigned long)size, (unsigned long)base,
+ 		 (unsigned long)limit);
+ 
+-	/* Sanity checks */
+-	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+-		pr_err("Not enough slots for CMA reserved regions!\n");
+-		return -ENOSPC;
+-	}
+-
+ 	if (!size)
+ 		return -EINVAL;
+ 
+@@ -241,21 +277,12 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+ 		}
+ 	}
+ 
+-	/*
+-	 * Each reserved area must be initialised later, when more kernel
+-	 * subsystems (like slab allocator) are available.
+-	 */
+-	cma->base_pfn = PFN_DOWN(base);
+-	cma->count = size >> PAGE_SHIFT;
+-	*res_cma = cma;
+-	cma_area_count++;
+-
+-	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+-		(unsigned long)base);
+-
+-	/* Architecture specific contiguous memory fixup. */
+-	dma_contiguous_early_fixup(base, size);
+-	return 0;
++	ret = dma_contiguous_init_reserved_mem(size, base, res_cma);
++	if (ret == 0) {
++		pr_info("CMA: reserved %ld MiB at %08lx\n",
++			(unsigned long)size / SZ_1M, (unsigned long)base);
++		return 0;
++	}
+ err:
+ 	pr_err("CMA: failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
+ 	return ret;
+@@ -357,3 +384,62 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+ 
+ 	return true;
+ }
++
++/*
++ * Support for reserved memory regions defined in device tree
++ */
++#ifdef CONFIG_OF_RESERVED_MEM
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/of_reserved_mem.h>
++
++#undef pr_fmt
++#define pr_fmt(fmt) fmt
++
++static void rmem_cma_device_init(struct reserved_mem *rmem,
++			 struct device *dev, struct of_phandle_args *args)
++{
++	struct cma *cma = rmem->priv;
++	dev_set_cma_area(dev, cma);
++}
++
++static const struct reserved_mem_ops rmem_cma_ops = {
++	.device_init	= rmem_cma_device_init,
++};
++
++static int __init rmem_cma_setup(struct reserved_mem *rmem,
++				 unsigned long node,
++				 const char *uname)
++{
++	phys_addr_t align = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
++	phys_addr_t mask = align - 1;
++	struct cma *cma;
++	int err;
++
++	if (!of_get_flat_dt_prop(node, "reusable", NULL))
++		return -EINVAL;
++
++	if ((rmem->base & mask) || (rmem->size & mask)) {
++		pr_err("Reserved memory: incorrect alignment of CMA region\n");
++		return -EINVAL;
++	}
++
++	err = dma_contiguous_init_reserved_mem(rmem->size, rmem->base, &cma);
++	if (err) {
++		pr_err("Reserved memory: unable to setup CMA region\n");
++		return err;
++	}
++
++	if (of_get_flat_dt_prop(node, "linux,cma-default", NULL))
++		dma_contiguous_set_default(cma);
++
++	rmem->ops = &rmem_cma_ops;
++	rmem->priv = cma;
++
++	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
++		&rmem->base, (unsigned long)rmem->size / SZ_1M);
++
++	return 0;
++}
++RESERVEDMEM_OF_DECLARE(cma, "shared-dma-pool", rmem_cma_setup);
++#endif
+-- 
+1.7.9.5
 
-Thanks
-Kishon
