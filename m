@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaBUMHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:07:51 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60188 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687AbaBUMHs (ORCPT
+	id S1755367AbaBUMHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:07:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43129 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935AbaBUMHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:07:48 -0500
+	Fri, 21 Feb 2014 07:07:39 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, LMML <linux-media@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 3/3] media: omap3isp: rename the variable names in description
-Date: Fri, 21 Feb 2014 17:37:23 +0530
-Message-Id: <1392984443-16694-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 1/3] media: omap3isp: fix typos
+Date: Fri, 21 Feb 2014 17:37:21 +0530
+Message-Id: <1392984443-16694-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392984443-16694-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1392984443-16694-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -23,224 +23,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-this patch renames the variable in the description to
-match it appropriately to function definition.
-
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/omap3isp/isp.h        |   12 ++++++------
- drivers/media/platform/omap3isp/ispccdc.c    |    8 ++++----
- drivers/media/platform/omap3isp/ispccp2.c    |    2 +-
+ drivers/media/platform/omap3isp/isp.c        |    2 +-
+ drivers/media/platform/omap3isp/ispccdc.c    |    2 +-
+ drivers/media/platform/omap3isp/ispccp2.c    |    4 ++--
  drivers/media/platform/omap3isp/isphist.c    |    2 +-
- drivers/media/platform/omap3isp/isppreview.c |    9 +++++----
- drivers/media/platform/omap3isp/ispresizer.c |    6 +++---
- drivers/media/platform/omap3isp/ispvideo.c   |    4 ++--
- 7 files changed, 22 insertions(+), 21 deletions(-)
+ drivers/media/platform/omap3isp/isppreview.c |    4 ++--
+ drivers/media/platform/omap3isp/ispqueue.c   |    2 +-
+ drivers/media/platform/omap3isp/ispresizer.h |    4 ++--
+ drivers/media/platform/omap3isp/ispstat.c    |    4 ++--
+ 8 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/media/platform/omap3isp/isp.h b/drivers/media/platform/omap3isp/isp.h
-index 081f5ec..6d5e697 100644
---- a/drivers/media/platform/omap3isp/isp.h
-+++ b/drivers/media/platform/omap3isp/isp.h
-@@ -265,7 +265,7 @@ void omap3isp_unregister_entities(struct platform_device *pdev);
- 
- /*
-  * isp_reg_readl - Read value of an OMAP3 ISP register
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @isp_mmio_range: Range to which the register offset refers to.
-  * @reg_offset: Register offset to read from.
+diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
+index 5807185..65a9b1d 100644
+--- a/drivers/media/platform/omap3isp/isp.c
++++ b/drivers/media/platform/omap3isp/isp.c
+@@ -391,7 +391,7 @@ static void isp_disable_interrupts(struct isp_device *isp)
+  * @isp: OMAP3 ISP device
+  * @idle: Consider idle state.
   *
-@@ -280,7 +280,7 @@ u32 isp_reg_readl(struct isp_device *isp, enum isp_mem_resources isp_mmio_range,
+- * Set the power settings for the ISP and SBL bus and cConfigure the HS/VS
++ * Set the power settings for the ISP and SBL bus and configure the HS/VS
+  * interrupt source.
+  *
+  * We need to configure the HS/VS interrupt source before interrupts get
+diff --git a/drivers/media/platform/omap3isp/ispccdc.c b/drivers/media/platform/omap3isp/ispccdc.c
+index 5db2c88..7160e4a 100644
+--- a/drivers/media/platform/omap3isp/ispccdc.c
++++ b/drivers/media/platform/omap3isp/ispccdc.c
+@@ -293,7 +293,7 @@ static int __ccdc_lsc_enable(struct isp_ccdc_device *ccdc, int enable)
+ 			isp_reg_clr(isp, OMAP3_ISP_IOMEM_CCDC,
+ 				    ISPCCDC_LSC_CONFIG, ISPCCDC_LSC_ENABLE);
+ 			ccdc->lsc.state = LSC_STATE_STOPPED;
+-			dev_warn(to_device(ccdc), "LSC prefecth timeout\n");
++			dev_warn(to_device(ccdc), "LSC prefetch timeout\n");
+ 			return -ETIMEDOUT;
+ 		}
+ 		ccdc->lsc.state = LSC_STATE_RUNNING;
+diff --git a/drivers/media/platform/omap3isp/ispccp2.c b/drivers/media/platform/omap3isp/ispccp2.c
+index e84fe05..c81ca8f 100644
+--- a/drivers/media/platform/omap3isp/ispccp2.c
++++ b/drivers/media/platform/omap3isp/ispccp2.c
+@@ -518,7 +518,7 @@ static void ccp2_mem_configure(struct isp_ccp2_device *ccp2,
+ 		       ISPCCP2_LCM_IRQSTATUS_EOF_IRQ,
+ 		       OMAP3_ISP_IOMEM_CCP2, ISPCCP2_LCM_IRQSTATUS);
+ 
+-	/* Enable LCM interupts */
++	/* Enable LCM interrupts */
+ 	isp_reg_set(isp, OMAP3_ISP_IOMEM_CCP2, ISPCCP2_LCM_IRQENABLE,
+ 		    ISPCCP2_LCM_IRQSTATUS_EOF_IRQ |
+ 		    ISPCCP2_LCM_IRQSTATUS_OCPERROR_IRQ);
+@@ -1096,7 +1096,7 @@ static int ccp2_init_entities(struct isp_ccp2_device *ccp2)
+ 	 * implementation we use a fixed 32 bytes alignment regardless of the
+ 	 * input format and width. If strict 128 bits alignment support is
+ 	 * required ispvideo will need to be made aware of this special dual
+-	 * alignement requirements.
++	 * alignment requirements.
+ 	 */
+ 	ccp2->video_in.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+ 	ccp2->video_in.bpl_alignment = 32;
+diff --git a/drivers/media/platform/omap3isp/isphist.c b/drivers/media/platform/omap3isp/isphist.c
+index e070c24..6db6cfb 100644
+--- a/drivers/media/platform/omap3isp/isphist.c
++++ b/drivers/media/platform/omap3isp/isphist.c
+@@ -351,7 +351,7 @@ static int hist_validate_params(struct ispstat *hist, void *new_conf)
+ 
+ 	buf_size = hist_get_buf_size(user_cfg);
+ 	if (buf_size > user_cfg->buf_size)
+-		/* User's buf_size request wasn't enoght */
++		/* User's buf_size request wasn't enough */
+ 		user_cfg->buf_size = buf_size;
+ 	else if (user_cfg->buf_size > OMAP3ISP_HIST_MAX_BUF_SIZE)
+ 		user_cfg->buf_size = OMAP3ISP_HIST_MAX_BUF_SIZE;
+diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
+index 1c776c1..e8fb008 100644
+--- a/drivers/media/platform/omap3isp/isppreview.c
++++ b/drivers/media/platform/omap3isp/isppreview.c
+@@ -122,7 +122,7 @@ static struct omap3isp_prev_csc flr_prev_csc = {
+ #define PREV_MAX_OUT_WIDTH_REV_15	4096
  
  /*
-  * isp_reg_writel - Write value to an OMAP3 ISP register
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @reg_value: 32 bit value to write to the register.
-  * @isp_mmio_range: Range to which the register offset refers to.
-  * @reg_offset: Register offset to write into.
-@@ -293,8 +293,8 @@ void isp_reg_writel(struct isp_device *isp, u32 reg_value,
+- * Coeficient Tables for the submodules in Preview.
++ * Coefficient Tables for the submodules in Preview.
+  * Array is initialised with the values from.the tables text file.
+  */
+ 
+@@ -1363,7 +1363,7 @@ static void preview_init_params(struct isp_prev_device *prev)
  }
  
  /*
-- * isp_reg_and - Clear individual bits in an OMAP3 ISP register
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * isp_reg_clr - Clear individual bits in an OMAP3 ISP register
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @mmio_range: Range to which the register offset refers to.
-  * @reg: Register offset to work on.
-  * @clr_bits: 32 bit value which would be cleared in the register.
-@@ -310,7 +310,7 @@ void isp_reg_clr(struct isp_device *isp, enum isp_mem_resources mmio_range,
- 
- /*
-  * isp_reg_set - Set individual bits in an OMAP3 ISP register
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @mmio_range: Range to which the register offset refers to.
-  * @reg: Register offset to work on.
-  * @set_bits: 32 bit value which would be set in the register.
-@@ -326,7 +326,7 @@ void isp_reg_set(struct isp_device *isp, enum isp_mem_resources mmio_range,
- 
- /*
-  * isp_reg_clr_set - Clear and set invidial bits in an OMAP3 ISP register
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @mmio_range: Range to which the register offset refers to.
-  * @reg: Register offset to work on.
-  * @clr_bits: 32 bit value which would be cleared in the register.
-diff --git a/drivers/media/platform/omap3isp/ispccdc.c b/drivers/media/platform/omap3isp/ispccdc.c
-index 7160e4a..4d920c8 100644
---- a/drivers/media/platform/omap3isp/ispccdc.c
-+++ b/drivers/media/platform/omap3isp/ispccdc.c
-@@ -674,7 +674,7 @@ static void ccdc_config_imgattr(struct isp_ccdc_device *ccdc, u32 colptn)
- /*
-  * ccdc_config - Set CCDC configuration from userspace
-  * @ccdc: Pointer to ISP CCDC device.
-- * @userspace_add: Structure containing CCDC configuration sent from userspace.
-+ * @ccdc_struct: Structure containing CCDC configuration sent from userspace.
-  *
-  * Returns 0 if successful, -EINVAL if the pointer to the configuration
-  * structure is null, or the copy_from_user function fails to copy user space
-@@ -793,7 +793,7 @@ static void ccdc_apply_controls(struct isp_ccdc_device *ccdc)
- 
- /*
-  * omap3isp_ccdc_restore_context - Restore values of the CCDC module registers
-- * @dev: Pointer to ISP device
-+ * @isp: Pointer to ISP device
-  */
- void omap3isp_ccdc_restore_context(struct isp_device *isp)
- {
-@@ -2525,7 +2525,7 @@ error_video:
- 
- /*
-  * omap3isp_ccdc_init - CCDC module initialization.
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  *
-  * TODO: Get the initialisation values from platform data.
-  *
-@@ -2564,7 +2564,7 @@ int omap3isp_ccdc_init(struct isp_device *isp)
- 
- /*
-  * omap3isp_ccdc_cleanup - CCDC module cleanup.
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  */
- void omap3isp_ccdc_cleanup(struct isp_device *isp)
- {
-diff --git a/drivers/media/platform/omap3isp/ispccp2.c b/drivers/media/platform/omap3isp/ispccp2.c
-index c81ca8f..b30b67d 100644
---- a/drivers/media/platform/omap3isp/ispccp2.c
-+++ b/drivers/media/platform/omap3isp/ispccp2.c
-@@ -211,7 +211,7 @@ static void ccp2_mem_enable(struct isp_ccp2_device *ccp2, u8 enable)
- /*
-  * ccp2_phyif_config - Initialize CCP2 phy interface config
-  * @ccp2: Pointer to ISP CCP2 device
-- * @config: CCP2 platform data
-+ * @pdata: CCP2 platform data
-  *
-  * Configure the CCP2 physical interface module from platform data.
-  *
-diff --git a/drivers/media/platform/omap3isp/isphist.c b/drivers/media/platform/omap3isp/isphist.c
-index 6db6cfb..06a5f81 100644
---- a/drivers/media/platform/omap3isp/isphist.c
-+++ b/drivers/media/platform/omap3isp/isphist.c
-@@ -299,7 +299,7 @@ static u32 hist_get_buf_size(struct omap3isp_hist_config *conf)
- 
- /*
-  * hist_validate_params - Helper function to check user given params.
-- * @user_cfg: Pointer to user configuration structure.
-+ * @new_conf: Pointer to user configuration structure.
-  *
-  * Returns 0 on success configuration.
-  */
-diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
-index e8fb008..ffbb718 100644
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -971,7 +971,8 @@ static void preview_setup_hw(struct isp_prev_device *prev, u32 update,
- 
- /*
-  * preview_config_ycpos - Configure byte layout of YUV image.
-- * @mode: Indicates the required byte layout.
-+ * @prev: pointer to previewer private structure
-+ * @pixelcode: pixel code
-  */
- static void
- preview_config_ycpos(struct isp_prev_device *prev,
-@@ -1364,7 +1365,7 @@ static void preview_init_params(struct isp_prev_device *prev)
- 
- /*
-  * preview_max_out_width - Handle previewer hardware output limitations
-- * @isp_revision : ISP revision
-+ * @prev: pointer to previewer private structure
+- * preview_max_out_width - Handle previewer hardware ouput limitations
++ * preview_max_out_width - Handle previewer hardware output limitations
+  * @isp_revision : ISP revision
   * returns maximum width output for current isp revision
   */
- static unsigned int preview_max_out_width(struct isp_prev_device *prev)
-@@ -1610,7 +1611,7 @@ static const struct v4l2_ctrl_ops preview_ctrl_ops = {
- 
- /*
-  * preview_ioctl - Handle preview module private ioctl's
-- * @prev: pointer to preview context structure
-+ * @sd: pointer to v4l2 subdev structure
-  * @cmd: configuration command
-  * @arg: configuration argument
-  * return -EINVAL or zero on success
-@@ -2341,7 +2342,7 @@ error_video_in:
- 
- /*
-  * omap3isp_preview_init - Previewer initialization.
-- * @dev : Pointer to ISP device
-+ * @isp : Pointer to ISP device
-  * return -ENOMEM or zero on success
-  */
- int omap3isp_preview_init(struct isp_device *isp)
-diff --git a/drivers/media/platform/omap3isp/ispresizer.c b/drivers/media/platform/omap3isp/ispresizer.c
-index 0d36b8b..86369df 100644
---- a/drivers/media/platform/omap3isp/ispresizer.c
-+++ b/drivers/media/platform/omap3isp/ispresizer.c
-@@ -206,7 +206,7 @@ static void resizer_set_bilinear(struct isp_res_device *res,
- /*
-  * resizer_set_ycpos - Luminance and chrominance order
-  * @res: Device context.
-- * @order: order type.
-+ * @pixelcode: pixel code.
-  */
- static void resizer_set_ycpos(struct isp_res_device *res,
- 			      enum v4l2_mbus_pixelcode pixelcode)
-@@ -918,8 +918,8 @@ static void resizer_calc_ratios(struct isp_res_device *res,
- /*
-  * resizer_set_crop_params - Setup hardware with cropping parameters
-  * @res : resizer private structure
-- * @crop_rect : current crop rectangle
-- * @ratio : resizer ratios
-+ * @input : format on sink pad
-+ * @output : format on source pad
-  * return none
-  */
- static void resizer_set_crop_params(struct isp_res_device *res,
-diff --git a/drivers/media/platform/omap3isp/ispvideo.c b/drivers/media/platform/omap3isp/ispvideo.c
-index 856fdf5..a4f8235 100644
---- a/drivers/media/platform/omap3isp/ispvideo.c
-+++ b/drivers/media/platform/omap3isp/ispvideo.c
-@@ -333,7 +333,7 @@ isp_video_check_format(struct isp_video *video, struct isp_video_fh *vfh)
- 
- /*
-  * ispmmu_vmap - Wrapper for Virtual memory mapping of a scatter gather list
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @sglist: Pointer to source Scatter gather list to allocate.
-  * @sglen: Number of elements of the scatter-gatter list.
+diff --git a/drivers/media/platform/omap3isp/ispqueue.c b/drivers/media/platform/omap3isp/ispqueue.c
+index 5f0f8fa..a5e6585 100644
+--- a/drivers/media/platform/omap3isp/ispqueue.c
++++ b/drivers/media/platform/omap3isp/ispqueue.c
+@@ -597,7 +597,7 @@ static int isp_video_buffer_wait(struct isp_video_buffer *buf, int nonblocking)
+  * isp_video_queue_free - Free video buffers memory
   *
-@@ -363,7 +363,7 @@ ispmmu_vmap(struct isp_device *isp, const struct scatterlist *sglist, int sglen)
+  * Buffers can only be freed if the queue isn't streaming and if no buffer is
+- * mapped to userspace. Return -EBUSY if those conditions aren't statisfied.
++ * mapped to userspace. Return -EBUSY if those conditions aren't satisfied.
+  *
+  * This function must be called with the queue lock held.
+  */
+diff --git a/drivers/media/platform/omap3isp/ispresizer.h b/drivers/media/platform/omap3isp/ispresizer.h
+index 70c1c0e..9b01e90 100644
+--- a/drivers/media/platform/omap3isp/ispresizer.h
++++ b/drivers/media/platform/omap3isp/ispresizer.h
+@@ -30,12 +30,12 @@
+ #include <linux/types.h>
  
  /*
-  * ispmmu_vunmap - Unmap a device address from the ISP MMU
-- * @dev: Device pointer specific to the OMAP3 ISP.
-+ * @isp: Device pointer specific to the OMAP3 ISP.
-  * @da: Device address generated from a ispmmu_vmap call.
+- * Constants for filter coefficents count
++ * Constants for filter coefficients count
   */
- static void ispmmu_vunmap(struct isp_device *isp, dma_addr_t da)
+ #define COEFF_CNT		32
+ 
+ /*
+- * struct isprsz_coef - Structure for resizer filter coeffcients.
++ * struct isprsz_coef - Structure for resizer filter coefficients.
+  * @h_filter_coef_4tap: Horizontal filter coefficients for 8-phase/4-tap
+  *			mode (.5x-4x)
+  * @v_filter_coef_4tap: Vertical filter coefficients for 8-phase/4-tap
+diff --git a/drivers/media/platform/omap3isp/ispstat.c b/drivers/media/platform/omap3isp/ispstat.c
+index a75407c..5707f85 100644
+--- a/drivers/media/platform/omap3isp/ispstat.c
++++ b/drivers/media/platform/omap3isp/ispstat.c
+@@ -144,7 +144,7 @@ static int isp_stat_buf_check_magic(struct ispstat *stat,
+ 	for (w = buf->virt_addr + buf_size, end = w + MAGIC_SIZE;
+ 	     w < end; w++) {
+ 		if (unlikely(*w != MAGIC_NUM)) {
+-			dev_dbg(stat->isp->dev, "%s: endding magic check does "
++			dev_dbg(stat->isp->dev, "%s: ending magic check does "
+ 				"not match.\n", stat->subdev.name);
+ 			return -EINVAL;
+ 		}
+@@ -841,7 +841,7 @@ int omap3isp_stat_s_stream(struct v4l2_subdev *subdev, int enable)
+ 	if (enable) {
+ 		/*
+ 		 * Only set enable PCR bit if the module was previously
+-		 * enabled through ioct.
++		 * enabled through ioctl.
+ 		 */
+ 		isp_stat_try_enable(stat);
+ 	} else {
 -- 
 1.7.9.5
 
