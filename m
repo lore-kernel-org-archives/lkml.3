@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaBUDgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 22:36:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59525 "EHLO mx1.redhat.com"
+	id S1752747AbaBUDns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 22:43:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48654 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812AbaBUDgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 22:36:16 -0500
-Date: Thu, 20 Feb 2014 22:35:51 -0500
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-ID: <20140220223551.4a9644ba@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
-References: <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
-	<alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
-	<20140214225810.57e854cb@redhat.com>
-	<alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
-	<20140217085622.39b39cac@redhat.com>
-	<alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
-	<20140218123013.GA20609@amt.cnet>
-	<alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
-	<20140220022254.GA25898@amt.cnet>
-	<alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
-	<20140220213407.GA11048@amt.cnet>
-	<alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751886AbaBUDnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 22:43:47 -0500
+Message-ID: <5306CB60.3070302@zytor.com>
+Date: Thu, 20 Feb 2014 19:43:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Brian Gerst <brgerst@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: "m" constraints, jumps, and alternatives
+References: <53068F5C.9000008@zytor.com>	<CA+55aFw211LMAk=CSgOo26a-1QqpSEjmJZNJ4TSnbPnJUjPwOQ@mail.gmail.com> <CAMzpN2ie6ALLmL_A+eaQ54aKaHZkwtTr+AqGL6ThHM1Ay+VfFg@mail.gmail.com>
+In-Reply-To: <CAMzpN2ie6ALLmL_A+eaQ54aKaHZkwtTr+AqGL6ThHM1Ay+VfFg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014 15:15:46 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+On 02/20/2014 07:30 PM, Brian Gerst wrote:
+> 
+> The percpu code uses %P to force absolute addressing mode, instead of
+> rip-relative.
+> 
 
-> Do I really need to do your work for you and work on 1GB hugepages at 
-> runtime, which many more people would be interested in?  Or are we just 
-> seeking the easiest way out here with something that shuts the customer up 
-> and leaves a kernel command line option that we'll need to maintain to 
-> avoid breaking backwards compatibility in the future?
+   P -- if PIC, print an @PLT suffix.
 
-We're seeking a pragmatic solution.
+Clearly it has more effects than that... as the code does reveal:
 
-I've said many times in this thread that we're also interested on being
-able to allocate 1GB at runtime and would work on it on top of the
-command-line option, which is ready, works and solves a real world problem.
+      /* Avoid (%rip) for call operands.  */
+      if (CONSTANT_ADDRESS_P (x) && code == 'P'
+          && !CONST_INT_P (x))
+
+That should work... in the probably extremely rare case that any of
+these references go to global addresses then they spend an extra byte
+(and a little more work during kASLR relocation or module insertion).
+
+	-hpa
+
