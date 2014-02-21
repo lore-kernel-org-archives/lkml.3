@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327AbaBUQzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:55:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56277 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaBUQxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:53:54 -0500
-Date: Fri, 21 Feb 2014 08:56:33 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Michal Simek <monstr@monstr.eu>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
-Subject: Re: SPDX-License-Identifier
-Message-ID: <20140221165633.GA5465@kroah.com>
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local>
- <20140220182257.GF23217@saruman.home>
- <5306F458.9010706@monstr.eu>
- <20140221160442.GA17506@kroah.com>
- <5307790A.4050806@monstr.eu>
- <20140221161246.GM31902@saruman.home>
- <53077C5F.9000407@monstr.eu>
- <20140221162045.GN31902@saruman.home>
+	id S933105AbaBUQ4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:56:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932385AbaBUQ4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:56:11 -0500
+Date: Fri, 21 Feb 2014 17:58:09 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2] timberdale: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Message-ID: <20140221165809.GI17353@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-3-git-send-email-agordeev@redhat.com>
+ <20140219114424.GD10504@lee--X1>
+ <20140221165606.GH17353@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140221162045.GN31902@saruman.home>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140221165606.GH17353@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 10:20:45AM -0600, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Feb 21, 2014 at 05:18:39PM +0100, Michal Simek wrote:
-> > On 02/21/2014 05:12 PM, Felipe Balbi wrote:
-> > > On Fri, Feb 21, 2014 at 05:04:26PM +0100, Michal Simek wrote:
-> > >> On 02/21/2014 05:04 PM, Greg Kroah-Hartman wrote:
-> > >>> On Fri, Feb 21, 2014 at 07:38:16AM +0100, Michal Simek wrote:
-> > >>>> BTW: u-boot started to use SPDX-License-Identifier
-> > >>>> which will be nice to start to use.
-> > >>>
-> > >>> I agree, feel free to start sending patches to use this type of
-> > >>> identifier for drivers.
-> > >>
-> > >> But we probably need to add that Licenses to one location.
-> > >> Documentation/Licenses?
-> > > 
-> > > Just add to the drivers themselves, just like u-boot is doing. A simple:
-> > > 
-> > > 	$ git grep -e SPDX-License-Identifier
-> > > 
-> > > will tell you filename and license. Or did I misunderstand your question ?
-> > 
-> > But for doing this it is probably necessary to have location where
-> > you will place that licenses and you will explain what it is how
-> > it is done by Wolfgang in this commit.
-> > 
-> > http://git.denx.de/?p=u-boot.git;a=commitdiff;h=eca3aeb352c964bdb28b8e191d6326370245e03f
-> > 
-> > Then yes, adding one line is enough.
-> 
-> spdx.org has all licenses, why don't we just rely on that instead of
-> adding every other license to the kernel source ?
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Yes, all that will be acceptable is a one-line identifier in the file.
-No need to have all the different licenses in the kernel source, that's
-crazy and not needed at all.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/mfd/timberdale.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I've told the SPDX people this in the past, and they keep promising that
-they will do the comment work, but it's been months and I have yet to
-see a single patch...
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index 2bc5cfb..6ce36d6 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -715,7 +715,7 @@ static int timb_probe(struct pci_dev *dev,
+ 	for (i = 0; i < TIMBERDALE_NR_IRQS; i++)
+ 		msix_entries[i].entry = i;
+ 
+-	err = pci_enable_msix(dev, msix_entries, TIMBERDALE_NR_IRQS);
++	err = pci_enable_msix_exact(dev, msix_entries, TIMBERDALE_NR_IRQS);
+ 	if (err) {
+ 		dev_err(&dev->dev,
+ 			"MSI-X init failed: %d, expected entries: %d\n",
+-- 
+1.7.7.6
 
-greg k-h
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
