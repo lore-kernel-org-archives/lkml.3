@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264AbaBUMuZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46970 "EHLO
+	id S933001AbaBUNnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:43:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46987 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144AbaBUMuR (ORCPT
+	with ESMTP id S932250AbaBUMuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:17 -0500
+	Fri, 21 Feb 2014 07:50:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 049/121] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
-Date: Fri, 21 Feb 2014 12:47:53 +0000
-Message-Id: <1392986945-9693-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 054/121] iwlwifi: mvm: don't allow A band if SKU forbids it
+Date: Fri, 21 Feb 2014 12:47:58 +0000
+Message-Id: <1392986945-9693-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+commit c512865446e6dd5b6e91e81187e75b734ad7cfc7 upstream.
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+The driver wasn't reading the NVM properly. While this
+didn't lead to any issue until now, it seems that there
+is an old version of the NVM in the wild.
+In this version, the A band channels appear to be valid
+but the SKU capabilities (another field of the NVM) says
+that A band isn't supported at all.
+With this specific version of the NVM, the driver would
+think that A band is supported while the HW / firmware
+don't. This leads to asserts.
 
-I also did a little cleanup like removing an impossible NULL test.
-
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- virt/kvm/coalesced_mmio.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
-index 88b2fe3..00d8642 100644
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio(struct kvm *kvm,
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
+diff --git a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+index acd2665..de3c827 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+@@ -181,6 +181,11 @@ static int iwl_init_channel_map(struct device *dev, const struct iwl_cfg *cfg,
  
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
+ 	for (ch_idx = 0; ch_idx < IWL_NUM_CHANNELS; ch_idx++) {
+ 		ch_flags = __le16_to_cpup(nvm_ch_flags + ch_idx);
++
++		if (ch_idx >= NUM_2GHZ_CHANNELS &&
++		    !data->sku_cap_band_52GHz_enable)
++			ch_flags &= ~NVM_CHANNEL_VALID;
++
+ 		if (!(ch_flags & NVM_CHANNEL_VALID)) {
+ 			IWL_DEBUG_EEPROM(dev,
+ 					 "Ch. %d Flags %x [%sGHz] - No traffic\n",
 -- 
 1.9.0
 
