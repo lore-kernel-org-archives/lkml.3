@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170AbaBUNZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:25:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47597 "EHLO
+	id S933196AbaBUN0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:26:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994AbaBUNBq (ORCPT
+	with ESMTP id S932540AbaBUNBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:46 -0500
+	Fri, 21 Feb 2014 08:01:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jones <davej@fedoraproject.org>, Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 07/60] [media] mxl111sf: Fix compile when CONFIG_DVB_USB_MXL111SF is unset
-Date: Fri, 21 Feb 2014 13:00:34 +0000
-Message-Id: <1392987687-15367-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 08/60] drm/mgag200: fix typo causing bw limits to be ignored on some chips
+Date: Fri, 21 Feb 2014 13:00:35 +0000
+Message-Id: <1392987687-15367-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,40 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Jones <davej@fedoraproject.org>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 13e1b87c986100169b0695aeb26970943665eda9 upstream.
+commit ec22b4aa993abbd18f5bbbcb20a1c56be3b1d38b upstream.
 
-Fix the following build error:
+mode->mdev otherwise the bw limits never kick in.
 
-drivers/media/usb/dvb-usb-v2/
-mxl111sf-tuner.h:72:9: error: expected ‘;’, ‘,’ or ‘)’ before ‘struct’
-         struct mxl111sf_tuner_config *cfg)
+Reported in RHEL testing.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[ luis: backported to 3.5:
-  - file rename: drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h ->
-    drivers/media/dvb/dvb-usb/mxl111sf-tuner.h ]
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb/dvb-usb/mxl111sf-tuner.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h b/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h
-index ff33396..10b93c4 100644
---- a/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h
-+++ b/drivers/media/dvb/dvb-usb/mxl111sf-tuner.h
-@@ -69,7 +69,7 @@ struct dvb_frontend *mxl111sf_tuner_attach(struct dvb_frontend *fe,
- #else
- static inline
- struct dvb_frontend *mxl111sf_tuner_attach(struct dvb_frontend *fe,
--					   struct mxl111sf_state *mxl_state
-+					   struct mxl111sf_state *mxl_state,
- 					   struct mxl111sf_tuner_config *cfg)
- {
- 	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index f780f2c..74886ee 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -1487,11 +1487,11 @@ static int mga_vga_mode_valid(struct drm_connector *connector,
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (32700 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_EH &&
++	} else if (mdev->type == G200_EH &&
+ 		(mga_vga_calculate_mode_bandwidth(mode, bpp)
+ 			> (37500 * 1024))) {
+ 		return MODE_BANDWIDTH;
+-	} else if (mode->type == G200_ER &&
++	} else if (mdev->type == G200_ER &&
+ 		(mga_vga_calculate_mode_bandwidth(mode,
+ 			bpp) > (55000 * 1024))) {
+ 		return MODE_BANDWIDTH;
 -- 
 1.9.0
 
