@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaBUR4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:56:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2547 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755973AbaBURzx convert rfc822-to-8bit (ORCPT
+	id S1756326AbaBUR5Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 12:57:16 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42643 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125AbaBUR4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:55:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
-   d="scan'208,223";a="485606025"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
-Subject: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
-Thread-Topic: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
-Thread-Index: Ac8vLiYATjj1h4DwSXOSL0K4eXhHUw==
-Date: Fri, 21 Feb 2014 17:55:47 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509BFC@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 21 Feb 2014 12:56:08 -0500
+Message-Id: <20140221174639.769401182@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Fri, 21 Feb 2014 17:56:17 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
+        cw00.choi@samsung.com, Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: [RFC patch 4/5] posix-timers: Expose deferrable mode to user space
+References: <20140221173936.583477951@linutronix.de>
+Content-Disposition: inline; filename=posix-timer-wire-up-deferrables.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 7d1b41c3fdf71e4c73280e117948102f54f74be7 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Sat, 22 Feb 2014 08:10:17 +0800
-Subject: [PATCH v4 2/3] KVM: x86: add MSR_IA32_BNDCFGS to msrs_to_save
+Expose the deferrable timer mode to user space by adding a new
+TIMER_IS_DEFERRABLE flag.
 
-Add MSR_IA32_BNDCFGS to msrs_to_save, and corresponding logic
-to kvm_get/set_msr().
+The deferrable mode is available for the syscalls clock_nanosleep()
+and timer_settime(). For both syscalls TIMER_IS_DEFERRABLE is handed
+in via the 'flags' argument. TIMER_ABSTIME and TIMER_IS_DEFERRABLE can
+be ored together.
 
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+If a timer is started with this flag, the expiry of the timer is
+relaxed. The timer is guaranteed to not expire before the given expiry
+time, but the expiry can be delayed to the point where a non
+deferrable timer expires. Deferred timers are not waking up a cpu from
+a deep idle period.
+
+Applications using the TIMER_IS_DEFERRABLE flag work on older kernels
+as well, but the timers won't have the deferrable functionality.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 ---
- arch/x86/kvm/vmx.c |    6 ++++++
- arch/x86/kvm/x86.c |    2 +-
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ include/uapi/linux/time.h |    4 ++++
+ kernel/posix-timers.c     |   10 +++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 35d285f..2839c2f 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -2484,6 +2484,9 @@ static int vmx_get_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 *pdata)
- 	case MSR_IA32_SYSENTER_ESP:
- 		data = vmcs_readl(GUEST_SYSENTER_ESP);
- 		break;
-+	case MSR_IA32_BNDCFGS:
-+		data = vmcs_readl(GUEST_BNDCFGS);
-+		break;
- 	case MSR_IA32_FEATURE_CONTROL:
- 		if (!nested_vmx_allowed(vcpu))
- 			return 1;
-@@ -2552,6 +2555,9 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 	case MSR_IA32_SYSENTER_ESP:
- 		vmcs_writel(GUEST_SYSENTER_ESP, data);
- 		break;
-+	case MSR_IA32_BNDCFGS:
-+		vmcs_writel(GUEST_BNDCFGS, data);
-+		break;
- 	case MSR_IA32_TSC:
- 		kvm_write_tsc(vcpu, msr_info);
- 		break;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 7c52acb..89e4e27 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -882,7 +882,7 @@ static u32 msrs_to_save[] = {
- 	MSR_CSTAR, MSR_KERNEL_GS_BASE, MSR_SYSCALL_MASK, MSR_LSTAR,
- #endif
- 	MSR_IA32_TSC, MSR_IA32_CR_PAT, MSR_VM_HSAVE_PA,
--	MSR_IA32_FEATURE_CONTROL
-+	MSR_IA32_FEATURE_CONTROL, MSR_IA32_BNDCFGS
- };
+Index: tip/include/uapi/linux/time.h
+===================================================================
+--- tip.orig/include/uapi/linux/time.h
++++ tip/include/uapi/linux/time.h
+@@ -63,7 +63,11 @@ struct itimerval {
  
- static unsigned num_msrs_to_save;
--- 
-1.7.1
+ /*
+  * The various flags for setting POSIX.1b interval timers:
++ *
++ * We keep that in sync with the TFD_TIMER_ flags
+  */
+ #define TIMER_ABSTIME			0x01
++/* Reserved for TFD_ONLY flag		0x02 */
++#define TIMER_IS_DEFERRABLE		0x04
+ 
+ #endif /* _UAPI_LINUX_TIME_H */
+Index: tip/kernel/posix-timers.c
+===================================================================
+--- tip.orig/kernel/posix-timers.c
++++ tip/kernel/posix-timers.c
+@@ -846,6 +846,7 @@ common_timer_set(struct k_itimer *timr,
+ 		return 0;
+ 
+ 	mode = flags & TIMER_ABSTIME ? HRTIMER_MODE_ABS : HRTIMER_MODE_REL;
++	mode |= flags & TIMER_DEFERRABLE ? HRTIMER_MODE_DEFERRABLE : 0;
+ 	hrtimer_init(&timr->it.real.timer, timr->it_clock, mode);
+ 	timr->it.real.timer.function = posix_timer_fn;
+ 
+@@ -1079,9 +1080,12 @@ SYSCALL_DEFINE2(clock_getres, const cloc
+ static int common_nsleep(const clockid_t which_clock, int flags,
+ 			 struct timespec *tsave, struct timespec __user *rmtp)
+ {
+-	return hrtimer_nanosleep(tsave, rmtp, flags & TIMER_ABSTIME ?
+-				 HRTIMER_MODE_ABS : HRTIMER_MODE_REL,
+-				 which_clock);
++	enum hrtimer_mode mode;
++
++	mode = flags & TIMER_ABSTIME ? HRTIMER_MODE_ABS : HRTIMER_MODE_REL;
++	mode |= flags & TIMER_DEFERRABLE ? HRTIMER_MODE_DEFERRABLE : 0;
++
++	return hrtimer_nanosleep(tsave, rmtp, mode, which_clock);
+ }
+ 
+ SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
+
+
