@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097AbaBUNCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:02:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47674 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933073AbaBUNCD (ORCPT
+	id S1756203AbaBUNTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:19:47 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:36924 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095AbaBUNTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:03 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizefan@huawei.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 16/60] sched,rt: fix isolated CPUs leaving root_task_group indefinitely throttled
-Date: Fri, 21 Feb 2014 13:00:43 +0000
-Message-Id: <1392987687-15367-17-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 21 Feb 2014 08:19:40 -0500
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Jenny TC <jenny.tc@intel.com>
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
+        luca@coelho.fi, johannes@sipsolutions.net,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14] power_supply: don't export power_supply_notifier
+Date: Fri, 21 Feb 2014 14:19:28 +0100
+Message-Id: <1392988768-16693-1-git-send-email-johannes@sipsolutions.net>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.31 -stable review patch.  If anyone has any objections, please let me know.
+From: Johannes Berg <johannes.berg@intel.com>
 
-------------------
+Since there are registration/unregistration functions and the
+invocation is in the core code, there's no need to export the
+notifier chain head, make it static instead.
 
-From: Mike Galbraith <efault@gmx.de>
-
-commit e221d028bb08b47e624c5f0a31732c642db9d19a upstream.
-
-Root task group bandwidth replenishment must service all CPUs, regardless of
-where the timer was last started, and regardless of the isolation mechanism,
-lest 'Quoth the Raven, "Nevermore"' become rt scheduling policy.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344326558.6968.25.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 ---
- kernel/sched/rt.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+This should probably go into 3.14 so it's not exported in the release.
+---
+ drivers/power/power_supply_core.c | 3 +--
+ include/linux/power_supply.h      | 1 -
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 8480912..06c3c6f 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -788,6 +788,19 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- 	const struct cpumask *span;
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 26606641fe44..31a105235c3e 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -25,8 +25,7 @@
+ struct class *power_supply_class;
+ EXPORT_SYMBOL_GPL(power_supply_class);
  
- 	span = sched_rt_period_mask();
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * FIXME: isolated CPUs should really leave the root task group,
-+	 * whether they are isolcpus or were isolated via cpusets, lest
-+	 * the timer run on a CPU which does not service all runqueues,
-+	 * potentially leaving other CPUs indefinitely throttled.  If
-+	 * isolation is really required, the user will turn the throttle
-+	 * off to kill the perturbations it causes anyway.  Meanwhile,
-+	 * this maintains functionality for boot and/or troubleshooting.
-+	 */
-+	if (rt_b == &root_task_group.rt_bandwidth)
-+		span = cpu_online_mask;
-+#endif
- 	for_each_cpu(i, span) {
- 		int enqueue = 0;
- 		struct rt_rq *rt_rq = sched_rt_period_rt_rq(rt_b, i);
+-ATOMIC_NOTIFIER_HEAD(power_supply_notifier);
+-EXPORT_SYMBOL_GPL(power_supply_notifier);
++static ATOMIC_NOTIFIER_HEAD(power_supply_notifier);
+ 
+ static struct device_type power_supply_dev_type;
+ 
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index c9dc4e09854c..80968ee25940 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -240,7 +240,6 @@ struct power_supply_info {
+ 	int use_for_apm;
+ };
+ 
+-extern struct atomic_notifier_head power_supply_notifier;
+ extern int power_supply_reg_notifier(struct notifier_block *nb);
+ extern void power_supply_unreg_notifier(struct notifier_block *nb);
+ extern struct power_supply *power_supply_get_by_name(const char *name);
 -- 
-1.9.0
+1.8.5.3
 
