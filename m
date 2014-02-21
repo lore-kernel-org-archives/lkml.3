@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaBUHye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 02:54:34 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:34374
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752402AbaBUHyc (ORCPT
+	id S1753777AbaBUIH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 03:07:56 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:23762 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753686AbaBUIHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 02:54:32 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
-From: Jingchang Lu <b35083@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <dan.carpenter@oracle.com>, <linux-arm-kernel@lists.infradead.org>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jingchang Lu <b35083@freescale.com>
-Subject: [PATCH] dma: fsl-edma: fix static checker warning of NULL dereference
-Date: Fri, 21 Feb 2014 14:50:06 +0800
-Message-ID: <1392965406-10112-1-git-send-email-b35083@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Fri, 21 Feb 2014 03:07:53 -0500
+From: Nenghua Cao <nhcao@marvell.com>
+To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Nenghua Cao <nhcao@marvell.com>
+Subject: [PATCH 2/2] asoc: soc-core: fix coccinelle warnings
+Date: Fri, 21 Feb 2014 16:06:10 +0800
+Message-ID: <1392969970-28037-1-git-send-email-nhcao@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-21_03:2014-02-21,2014-02-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402200242
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The static checker reports following warning:
-	drivers/dma/fsl-edma.c:732 fsl_edma_xlate()
-	error: we previously assumed 'chan' could be null (see line 737)
-The changes of the loop cursor in the iteration may result in
-NULL dereference when dma_get_slave_channel failed but loop
-will continue. So use list_for_each_entry_safe() instead of
-list_for_each_entry() to against this.
+From: Nenghua Cao <nhcao@marvell.com>
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jingchang Lu <b35083@freescale.com>
+sound/soc/soc-core.c:2708:6-13: WARNING: Assignment of
+bool to 0/1
+sound/soc/soc-core.c:2726:3-10: WARNING: Assignment of
+bool to 0/1
+sound/soc/soc-core.c:2264:1-7: Replace memcpy with
+struct assignment
+
+    More information about semantic patching is available at
+http://coccinelle.lip6.fr/
+
+Signed-off-by: Nenghua Cao <nhcao@marvell.com>
 ---
- drivers/dma/fsl-edma.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/soc-core.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
-index 9025300..381e793 100644
---- a/drivers/dma/fsl-edma.c
-+++ b/drivers/dma/fsl-edma.c
-@@ -723,13 +723,13 @@ static struct dma_chan *fsl_edma_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma)
- {
- 	struct fsl_edma_engine *fsl_edma = ofdma->of_dma_data;
--	struct dma_chan *chan;
-+	struct dma_chan *chan, *_chan;
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index fb598cb..c59b3ea 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2413,7 +2413,7 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
+ 	struct snd_kcontrol *kcontrol;
+ 	char *name = NULL;
  
- 	if (dma_spec->args_count != 2)
- 		return NULL;
+-	memcpy(&template, _template, sizeof(template));
++	memcpy(&template, _template, sizeof(struct snd_kcontrol_new));
+ 	template.index = 0;
  
- 	mutex_lock(&fsl_edma->fsl_edma_mutex);
--	list_for_each_entry(chan, &fsl_edma->dma_dev.channels, device_node) {
-+	list_for_each_entry_safe(chan, _chan, &fsl_edma->dma_dev.channels, device_node) {
- 		if (chan->client_count)
- 			continue;
- 		if ((chan->chan_id / DMAMUX_NR) == dma_spec->args[0]) {
+ 	if (!long_name)
+@@ -2818,7 +2818,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
+ 	unsigned int mask = (1 << fls(max)) - 1;
+ 	unsigned int invert = mc->invert;
+ 	int err;
+-	bool type_2r = 0;
++	bool type_2r = false;
+ 	unsigned int val2 = 0;
+ 	unsigned int val, val_mask;
+ 
+@@ -2836,7 +2836,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
+ 			val |= val2 << rshift;
+ 		} else {
+ 			val2 = val2 << shift;
+-			type_2r = 1;
++			type_2r = true;
+ 		}
+ 	}
+ 	err = snd_soc_update_bits_locked(codec, reg, val_mask, val);
 -- 
-1.8.0
-
+1.7.0.4
 
