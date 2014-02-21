@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaBUVYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:24:35 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:63267 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaBUVYe (ORCPT
+	id S1755318AbaBUV1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:27:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58496 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831AbaBUV1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:24:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393016226.3039.44.camel@buesod1.americas.hpqcorp.net>
-References: <1392960523.3039.16.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFw1_Ecbjjv9vijj3o46mkq3NrJn0X-FnbpCGBZG2=NuOA@mail.gmail.com>
-	<1393016226.3039.44.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 21 Feb 2014 13:24:33 -0800
-X-Google-Sender-Auth: pXKukTaVjvPIdSbqlvlnvdhyEKk
-Message-ID: <CA+55aFzw24Mwk_xw3QM_36-TbDOya=XZCqUeSSBVNS1QfjnWEw@mail.gmail.com>
-Subject: Re: [PATCH] mm: per-thread vma caching
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Feb 2014 16:27:09 -0500
+Date: Fri, 21 Feb 2014 13:27:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Jianguo Wu <wujianguo@huawei.com>,
+        Andy Honig <ahonig@google.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] x86, kaslr: randomize module base load address
+Message-Id: <20140221132708.52054104059b785080c76e3b@linux-foundation.org>
+In-Reply-To: <5307C2A2.5010006@zytor.com>
+References: <20140221202110.GA29885@www.outflux.net>
+	<20140221123658.5752f75eea6506d17bfa313b@linux-foundation.org>
+	<CAGXu5jLGBJp7oKXjausV70bXF-RTVDXxdZriS0cJ7X6NO90Ybg@mail.gmail.com>
+	<20140221131531.2db80023c59895a930cf374f@linux-foundation.org>
+	<5307C2A2.5010006@zytor.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 12:57 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->
-> Btw, one concern I had is regarding seqnum overflows... if such
-> scenarios should happen we'd end up potentially returning bogus vmas and
-> getting bus errors and other sorts of issues. So we'd have to flush the
-> caches, but, do we care? I guess on 32bit systems it could be a bit more
-> possible to trigger given enough forking.
+On Fri, 21 Feb 2014 13:18:26 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-I guess we should do something like
+> On 02/21/2014 01:15 PM, Andrew Morton wrote:
+> >>
+> >> I've been slapped down for adding more config options in the past, and
+> >> I think it's unlikely that people using CONFIG_RANDOMIZE_BASE won't
+> >> want the modules base randomized too. I think this is a safe default,
+> >> but if you see it as a requirement, I can change it.
+> > 
+> > I think there were issues with some embedded systems where it's
+> > hard/impossible to provide/alter boot parameters.
+> > 
+> 
+> We now allow kernel parameters to be compiled into the kernel image for
+> that reason.
 
-    if (unlikely(!++seqnum))
-        flush_vma_cache()
+We do?  What's that Kconfig variable called?
 
-just to not have to worry about it.
+We have a few (inconsistently named) things like
 
-And we can either use a "#ifndef CONFIG_64BIT" to disable it for the
-64-bit case (because no, we really don't need to worry about overflow
-in 64 bits ;), or just decide that a 32-bit sequence number actually
-packs better in the structures, and make it be an "u32" even on 64-bit
-architectures?
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_BOOTPARAM_HOTPLUG_CPU0=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=1
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=1
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC=y
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=1
+CONFIG_DEBUG_BOOT_PARAMS=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
+CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE=1
 
-It looks like a 32-bit sequence number might pack nicely next to the
+which presumably become obsolete with a general
+feed-this-string-to-the-kernel feature?
 
-    unsigned brk_randomized:1;
-
-but I didn't actually go and look at the context there to see what
-else is there..
-
-                   Linus
