@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630AbaBUQBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:01:36 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:65011 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179AbaBUQBe (ORCPT
+	id S932689AbaBUQBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:01:52 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49640 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639AbaBUQBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:01:34 -0500
+	Fri, 21 Feb 2014 11:01:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <53074E6B.6030006@citrix.com>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
- <1392433180-16052-2-git-send-email-mcgrof@do-not-panic.com>
- <20140216105754.63738163@nehalam.linuxnetplumber.net> <CAB=NE6WwbOXNLO_Mn42i7y62pEsmDOWd35B621eiJk4iaE3Hfg@mail.gmail.com>
- <1392803559.23084.99.camel@kazak.uk.xensource.com> <5304C13F.3030802@citrix.com>
- <CAB=NE6X6Vuo3iib0W-c5cxv0QBpnZtCC0sFyuULugQoEZAbRtg@mail.gmail.com>
- <20140219090855.610c0e04@nehalam.linuxnetplumber.net> <CAB=NE6UAqoiFAJdckE1d7cgMZnU6_=8X+N=tSc6qH2bgH08M7Q@mail.gmail.com>
- <20140220091958.62a8b444@nehalam.linuxnetplumber.net> <CAB=NE6WnMFkH7JPNt+ROiWEvhvZ03vdGr21STf75DV9fRaK=PA@mail.gmail.com>
- <53074E6B.6030006@citrix.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 21 Feb 2014 08:01:13 -0800
-X-Google-Sender-Auth: g8flil1XipO98jp74Y9RRz7l_gg
-Message-ID: <CAB=NE6XR+FW2X2_nr2JAxgQD+zpm8=Xq7Y4fTf740rLhGCOzEw@mail.gmail.com>
-Subject: Re: [Xen-devel] [RFC v2 1/4] bridge: enable interfaces to opt out
- from becoming the root bridge
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        bridge@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xenproject.org
+In-Reply-To: <CA+5PVA5W=t9+OmZXZuJT-1EsZXmTUBrX4eHjJcmQg676SOjSng@mail.gmail.com>
+References: <20140220235118.191692546@linuxfoundation.org> <20140220235119.236520201@linuxfoundation.org>
+ <CA+5PVA55O2GwUE8oMHShgKgQPA89z5RTbn6yCvOPBMGsf70kBw@mail.gmail.com>
+ <5307683C.50209@suse.de> <CA+5PVA5W=t9+OmZXZuJT-1EsZXmTUBrX4eHjJcmQg676SOjSng@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 21 Feb 2014 17:01:28 +0100
+Message-ID: <CAPXgP12Vs3LtVPOxF-Tnn4H7NjD6unXtPEOjFzRRhJhf0xndRQ@mail.gmail.com>
+Subject: Re: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs attribute
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Hannes Reinecke <hare@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        Werner Fink <werner@suse.de>, Ray Strode <halfline@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 5:02 AM, Zoltan Kiss <zoltan.kiss@citrix.com> wrote:
->> Agreed that's the best strategy and I'll work on sending patches to
->> brctl to enable the root_block preference. This approach however also
+On Fri, Feb 21, 2014 at 3:56 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> On Fri, Feb 21, 2014 at 9:52 AM, Hannes Reinecke <hare@suse.de> wrote:
+>> On 02/21/2014 03:48 PM, Josh Boyer wrote:
+>>> On Thu, Feb 20, 2014 at 6:52 PM, Greg Kroah-Hartman
+>>> <gregkh@linuxfoundation.org> wrote:
+>>>> 3.13-stable review patch.  If anyone has any objections, please let me know.
+>>>>
+>>>> ------------------
+>>>>
+>>>> From: Hannes Reinecke <hare@suse.de>
+>>>>
+>>>> commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
+>>>>
+>>>> The 'active' sysfs attribute should refer to the currently active tty
+>>>> devices the console is running on, not the currently active console.
+>>>>
+>>>> The console structure doesn't refer to any device in sysfs, only the tty
+>>>> the console is running on has.  So we need to print out the tty names in
+>>>> 'active', not the console names.
+>>>>
+>>>> This resolves an issue on s390 platforms in determining the correct
+>>>> console device to use.
+>>>
+>>> Just to be double sure this is seen, Ray points out that it breaks
+>>> current plymouth because the heuristic changed.  Hold off on this one?
+>>>
+>> Without this patch systemd won't present a login console for s390.
+>> I'd prefer fixing plymouth.
 >
-> I don't think brctl should deal with any Xen specific stuff. I assume there
-> is a misunderstanding in this thread: when I (and possibly other Xen folks)
-> talk about "userspace" or "toolstack" here, I mean Xen specific tools which
-> use e.g. brctl to set up bridges. Not brctl itself.
+> Sure.  Except fixing plymouth is easy to do, but not easy to actually
+> get deployed on all of the old userspace.  So if someone runs a 3.14
+> kernel on any distro that doesn't have a fixed plymouth, it's broken.
+> By including this patch, you're basically trading one broken userspace
+> component for another.
+>
+> Is there some other way this could be fixed in-kernel that would allow
+> both to work?
 
-I did mean brctl, but as I looked at the code it doesn't used
-rtnl_open() and not sure if Stephen would want that. Additionally even
-if it did handle root_block the other issue with this strategy is that
-as you noted upon initialization the bridge, without a static MAC
-address, could end up setting the backend as the root port, until you
-let userspace turn the root_block knob.
+Why did the tty0 change to tty1 now? That doesn't look like a "driver
+name" vs. "device name" issue?
 
-  Luis
+Kay
