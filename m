@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559AbaBUQ2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:28:32 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:50618 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932286AbaBUQ2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:28:30 -0500
-Date: Fri, 21 Feb 2014 09:28:24 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
+	id S932835AbaBUQ2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:28:43 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63277 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932286AbaBUQ2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:28:40 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pcie: Add Xilinx PCIe Host Bridge IP driver
-Message-ID: <20140221162824.GA4706@obsidianresearch.com>
-References: <1392564830-5868-1-git-send-email-sthokal@xilinx.com>
- <CAErSpo5FGPhgnp8Gfy-1_Lk7ckCi7U5+z5pLnPU+jScPxD5yUQ@mail.gmail.com>
- <20140219003523.GJ29304@obsidianresearch.com>
- <CA+mB=1KSxkN+mKce5k1n93pmAA_FnWYaqNweWzxd4GD3Mo4PZA@mail.gmail.com>
- <20140220174503.GB19893@obsidianresearch.com>
- <CA+mB=1L+QM2cKq==mwYesp=E7S2N-xTiN7AoBvbzAO2UMn0qVQ@mail.gmail.com>
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: Re: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
+Date: Fri, 21 Feb 2014 17:43:33 +0100
+Message-ID: <4216593.WbzE5aJO7L@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C27D32@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A01C27D32@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+mB=1L+QM2cKq==mwYesp=E7S2N-xTiN7AoBvbzAO2UMn0qVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 08:18:00PM +0530, Srikanth Thokala wrote:
+On Friday, February 21, 2014 01:38:45 AM Liu, Chuansheng wrote:
+> Hello Rafael,
+> 
+> > -----Original Message-----
+> > From: Liu, Chuansheng
+> > Sent: Tuesday, February 18, 2014 10:29 AM
+> > To: rjw@rjwysocki.net; gregkh@linuxfoundation.org; Brown, Len;
+> > pavel@ucw.cz
+> > Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi; Liu,
+> > Chuansheng
+> > Subject: [PATCH v4 0/5] Enabling the asynchronous threads for other phases
+> > 
+> > Hello,
+> > 
+> > This patch series are for enabling the asynchronous threads for the phases
+> > resume_noirq, resume_early, suspend_noirq and suspend_late.
+> > 
+> 
+> After dig more about async threads, I found dpm_prepare/complete phases need
+> them also.
+> 
+> dpm_prepare()
+>   -- > call pci_pm_prepare() one by one
+>       -- > call pm_runtime_resume() one by one
+>         -- > call pci_set_power_state to D3HOT -- > D0
+> 
+> It will cause much time delaying due to d3_delay.
+> And I made one draft patch to implement the asynchronous threads for dpm_prepare(),
+> it is really save much time.
+> 
+> If you like it, I can prepare another series patches for dpm_prepare() and dpm_complete(),
+> thanks.
 
-> 00:00.0 Class 0604: Device 10ee:7081
+I think a better solution here would be to move the pm_runtime_resume()
+out of the .prepare() callback for PCI.  We may be doing that in the
+process of suspend optimization anyway, so I'd wait with making those
+phases async.
 
-So this is great, a root port bridge is exactly correct - I would
-recommend using device 1 for this (device 0 is the host bridge in most
-cases), but I don't think that has any functional impact.
+Thanks!
 
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> ParErr+ Stepping- SERR+ FastB2B- DisINTx-
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0, Cache Line Size: 64 bytes
->         Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
->         I/O behind bridge: 00000000-00000fff
->         Memory behind bridge: 00000000-000fffff
->         Prefetchable memory behind bridge: 00000000-000fffff
-
-What is going on here?  These ranges should match the MMIO aperture and
-critically must enclose the downstream bars:
-
-> 01:00.0 Class 0200: Device 14e4:1677 (rev 11)
->         Region 0: Memory at 60000000 (64-bit, non-prefetchable) [size=64K]
->         Expansion ROM at 60010000 [disabled] [size=64K]
-
-So one of those two is not right..
-
-Jason
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
