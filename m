@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863AbaBUNX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:23:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47616 "EHLO
+	id S932942AbaBUNYD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:24:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47604 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932986AbaBUNBv (ORCPT
+	with ESMTP id S932985AbaBUNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:51 -0500
+	Fri, 21 Feb 2014 08:01:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 13/60] mm/swap: fix race on swap_info reuse between swapoff and swapon
-Date: Fri, 21 Feb 2014 13:00:40 +0000
-Message-Id: <1392987687-15367-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 11/60] pinctrl: do not init debugfs entries for unimplemented functionalities
+Date: Fri, 21 Feb 2014 13:00:38 +0000
+Message-Id: <1392987687-15367-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -30,64 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Florian Vaussard <florian.vaussard@epfl.ch>
 
-commit f893ab41e4dae2fe8991faf5d86d029068d1ef3a upstream.
+commit e7f2a444891cb39f11d5429467d0fd7e011fe7fe upstream.
 
-swapoff clear swap_info's SWP_USED flag prematurely and free its
-resources after that.  A concurrent swapon will reuse this swap_info
-while its previous resources are not cleared completely.
+Commit c420619 "pinctrl: pinconf: remove checks on ops->pin_config_get"
+removed the check on (ops != NULL) when performing pinconf_pins_show() or
+pinconf_groups_show(). As these entries are always enabled, even if
+pinconf is not supported, reading will result in an oops due to NULL
+ops.
 
-These late freed resources are:
- - p->percpu_cluster
- - swap_cgroup_ctrl[type]
- - block_device setting
- - inode->i_flags &= ~S_SWAPFILE
+Instead of checking for ops, remove the corresponding debugfs entries if
+pinconf and/or pinmux are not implemented.
 
-This patch clears the SWP_USED flag after all its resources are freed,
-so that swapon can reuse this swap_info by alloc_swap_info() safely.
+Tested on OMAP3 (pinctrl-single).
 
-[akpm@linux-foundation.org: tidy up code comment]
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/swapfile.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/pinctrl/core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 71373d0..222928f 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1642,7 +1642,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	p->max = 0;
- 	swap_map = p->swap_map;
- 	p->swap_map = NULL;
--	p->flags = 0;
- 	frontswap_invalidate_area(type);
- 	spin_unlock(&swap_lock);
- 	mutex_unlock(&swapon_mutex);
-@@ -1662,6 +1661,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 		mutex_unlock(&inode->i_mutex);
- 	}
- 	filp_close(swap_file, NULL);
-+
-+	/*
-+	 * Clear the SWP_USED flag after all resources are freed so that swapon
-+	 * can reuse this swap_info in alloc_swap_info() safely.  It is ok to
-+	 * not hold p->lock after we cleared its SWP_WRITEOK.
-+	 */
-+	spin_lock(&swap_lock);
-+	p->flags = 0;
-+	spin_unlock(&swap_lock);
-+
- 	err = 0;
- 	atomic_inc(&proc_poll_event);
- 	wake_up_interruptible(&proc_poll_wait);
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5e59c45..c172754 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1327,8 +1327,10 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
+ 			    device_root, pctldev, &pinctrl_groups_ops);
+ 	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
+ 			    device_root, pctldev, &pinctrl_gpioranges_ops);
+-	pinmux_init_device_debugfs(device_root, pctldev);
+-	pinconf_init_device_debugfs(device_root, pctldev);
++	if (pctldev->desc->pmxops)
++		pinmux_init_device_debugfs(device_root, pctldev);
++	if (pctldev->desc->confops)
++		pinconf_init_device_debugfs(device_root, pctldev);
+ }
+ 
+ static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
 -- 
 1.9.0
 
