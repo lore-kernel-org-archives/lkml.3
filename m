@@ -1,175 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaBUBTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:19:21 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:13315 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057AbaBUBTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 20:19:19 -0500
-X-IronPort-AV: E=Sophos;i="4.97,515,1389744000"; 
-   d="scan'208";a="104540922"
-Message-ID: <5306A993.5010504@citrix.com>
-Date: Fri, 21 Feb 2014 01:19:15 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755466AbaBUBXC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:23:02 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:13385
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754337AbaBUBW7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Feb 2014 20:22:59 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI9371Ic89bh936eI1454I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh906i1155h)
+Date: Thu, 20 Feb 2014 17:22:51 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Grant Likely <grant.likely@linaro.org>
+CC: Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kevin Hao <haokexin@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v4 0/4] Bugfix for of_match_node ordering
+References: <1392819290-1044-1-git-send-email-grant.likely@linaro.org>
+ <CAK9yfHwwmZkFMRvxsxjBAfUbVXU3V+iPFDZO=DwQsFvJ3NQyKA@mail.gmail.com>
+ <CACxGe6sg7FpJqAUjkU5DkUpiV_mDbtSV3RETtiQdACUXhRtRrg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map definitions
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>			 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>		 <1392743214.23084.38.camel@kazak.uk.xensource.com>		 <5303C44D.4070500@citrix.com>	 <1392804319.23084.109.camel@kazak.uk.xensource.com>	 <53050BF5.1060009@citrix.com> <1392888808.22494.21.camel@kazak.uk.xensource.com>
-In-Reply-To: <1392888808.22494.21.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.68.14.48]
-X-DLP: MIA1
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6sg7FpJqAUjkU5DkUpiV_mDbtSV3RETtiQdACUXhRtRrg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <91d21c6c-a87a-46bf-8036-c8f769e32399@VA3EHSMHS018.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/02/14 09:33, Ian Campbell wrote:
-> On Wed, 2014-02-19 at 19:54 +0000, Zoltan Kiss wrote:
->> On 19/02/14 10:05, Ian Campbell wrote:
->>> On Tue, 2014-02-18 at 20:36 +0000, Zoltan Kiss wrote:
->>>> On 18/02/14 17:06, Ian Campbell wrote:
->>>>> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
->>>>>> This patch contains the new definitions necessary for grant mapping.
->>>>> Is this just adding a bunch of (currently) unused functions? That's a
->>>>> slightly odd way to structure a series. They don't seem to be "generic
->>>>> helpers" or anything so it would be more normal to introduce these as
->>>>> they get used -- it's a bit hard to review them out of context.
->>>> I've created two patches because they are quite huge even now,
->>>> separately. Together they would be a ~500 line change. That was the best
->>>> I could figure out keeping in mind that bisect should work. But as I
->>>> wrote in the first email, I welcome other suggestions. If you and Wei
->>>> prefer this two patch in one big one, I merge them in the next version.
->>> I suppose it is hard to split a change like this up in a sensible way,
->>> but it is rather hard to review something which is split in two parts
->>> sensibly.
->>>
->>> If the combined patch too large to fit on the lists?
->> Well, it's ca. 30 kb, ~500 lines changed. I guess it's possible. It's up
->> to you and Wei, if you would like them to be merged, I can do that.
-> 30kb doesn't sound too bad to me.
->
-> Patches #1 and #2 are, respectively:
->
->   drivers/net/xen-netback/common.h    |   30 ++++++-
->   drivers/net/xen-netback/interface.c |    1 +
->   drivers/net/xen-netback/netback.c   |  161 +++++++++++++++++++++++++++++++++++
->   3 files changed, 191 insertions(+), 1 deletion(-)
->
->   drivers/net/xen-netback/interface.c |   63 ++++++++-
->   drivers/net/xen-netback/netback.c   |  254 ++++++++++++++---------------------
->   2 files changed, 160 insertions(+), 157 deletions(-)
->
-> I don't think combining those would be terrible, although I'm willing to
-> be proven wrong ;-)
-Ok, if noone comes up with any better argument before I send in the next 
-version, I'll merge the 2 patches.
->
->>>>>> +		vif->dealloc_prod++;
->>>>> What happens if the dealloc ring becomes full, will this wrap and cause
->>>>> havoc?
->>>> Nope, if the dealloc ring is full, the value of the last increment won't
->>>> be used to index the dealloc ring again until some space made available.
->>> I don't follow -- what makes this the case?
->> The dealloc ring has the same size as the pending ring, and you can only
->> add slots to it which are already on the pending ring (the pending_idx
->> comes from ubuf->desc), as you are essentially free up slots here on the
->> pending ring.
->> So if the dealloc ring becomes full, vif->dealloc_prod -
->> vif->dealloc_cons will be 256, which would be bad. But the while loop
->> should exit here, as we shouldn't have any more pending slots. And if we
->> dealloc and create free pending slots in dealloc_action, dealloc_cons
->> will also advance.
-> OK, so this is limited by the size of the pending array, makes sense,
-> assuming that array is itself correctly guarded...
-Well, that pending ring works the same as before, the only difference 
-that now the slots are released from dealloc thread as well, not just 
-from from NAPI instance. That's why we need response_lock. I'll make a 
-comment on that.
->>>>>> +		}
->>>>>> +
->>>>>> +	} while (dp != vif->dealloc_prod);
->>>>>> +
->>>>>> +	vif->dealloc_cons = dc;
->>>>> No barrier here?
->>>> dealloc_cons only used in the dealloc_thread. dealloc_prod is used by
->>>> the callback and the thread as well, that's why we need mb() in
->>>> previous. Btw. this function comes from classic's net_tx_action_dealloc
->>> Is this code close enough to that code architecturally that you can
->>> infer correctness due to that though?
->> Nope, I've just mentioned it because knowing that old code can help to
->> understand this new, as their logic is very similar some places, like here.
->>
->>> So long as you have considered the barrier semantics in the context of
->>> the current code and you think it is correct to not have one here then
->>> I'm ok. But if you have just assumed it is OK because some older code
->>> didn't have it then I'll have to ask you to consider it again...
->> Nope, as I mentioned above, dealloc_cons only accessed in that funcion,
->> from the same thread. Dealloc_prod is written in the callback and read
->> out here, that's why we need the barrier there.
-> OK.
->
-> Although this may no longer be true if you added some BUG_ONs as
-> discussed above?
-Yep, that BUG_ON might see a smaller value of dealloc_cons, but that 
-should be OK. We will release those slots after grant unmapping, they 
-shouldn't be filled up again until then.
->
->>>>>> +				netdev_err(vif->dev,
->>>>>> +					   " host_addr: %llx handle: %x status: %d\n",
->>>>>> +					   gop[i].host_addr,
->>>>>> +					   gop[i].handle,
->>>>>> +					   gop[i].status);
->>>>>> +			}
->>>>>> +			BUG();
->>>>>> +		}
->>>>>> +	}
->>>>>> +
->>>>>> +	for (i = 0; i < gop - vif->tx_unmap_ops; ++i)
->>>>>> +		xenvif_idx_release(vif, pending_idx_release[i],
->>>>>> +				   XEN_NETIF_RSP_OKAY);
->>>>>> +}
->>>>>> +
->>>>>> +
->>>>>>     /* Called after netfront has transmitted */
->>>>>>     int xenvif_tx_action(struct xenvif *vif, int budget)
->>>>>>     {
->>>>>> @@ -1678,6 +1793,25 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
->>>>>>     	vif->mmap_pages[pending_idx] = NULL;
->>>>>>     }
->>>>>>
->>>>>> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
->>>>> This is a single shot version of the batched xenvif_tx_dealloc_action
->>>>> version? Why not just enqueue the idx to be unmapped later?
->>>> This is called only from the NAPI instance. Using the dealloc ring
->>>> require synchronization with the callback which can increase lock
->>>> contention. On the other hand, if the guest sends small packets
->>>> (<PAGE_SIZE), the TLB flushing can cause performance penalty.
->>> Right. When/How often is this called from the NAPI instance?
->> When grant mapping error detected in xenvif_tx_check_gop, and if a
->> packet smaller than PKT_PROT_LEN is sent. The latter would be removed if
->> we will grant copy such packets entirely.
->>
->>> Is the locking contention from this case so severe that it out weighs
->>> the benefits of batching the unmaps? That would surprise me. After all
->>> the locking contention is there for the zerocopy_callback case too
->>>
->>>>    The above
->>>> mentioned upcoming patch which gntcopy the header can prevent that
->>> So this is only called when doing the pull-up to the linear area?
->> Yes, as mentioned above.
-> I'm not sure why you don't just enqueue the dealloc with the other
-> normal ones though.
-Well, I started off from this approach, as it maintains similarity with 
-the grant copy ways of doing this. Historically we release the slots in 
-xenvif_tx_check_gop straight away if there is a mapping error in any of 
-them. I don't know if the guest expects that slots for the same packet 
-comes back at the same time. Then I just reused the same function for 
-<PKT_PROT_LEN packets instead of writing an another one. That will go 
-away soon anyway.
+Hi Grant,
 
-Zoli
+On Thu, 2014-02-20 at 11:29AM +0000, Grant Likely wrote:
+> On Thu, Feb 20, 2014 at 8:39 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> > Hi Grant,
+> >
+> > I observe the following boot failure with today's (next-20140220) linux-next
+> > tree on Exynos based boards with the default exynos_defconfig.
+> 
+> Ugh, nested locking. that is not good. Kevin's patch looks correct and
+> I'll merge it in. I'm a little disturbed though that you're the only
+> one who has reported problems. Looking at what it does I would expect
+> pretty much every SMP platform for freak out about this, but I've
+> heard nothing from the powerpc guys.
+> 
+> I'll merge in the fix of course, but I'd like to know what I'm missing.
+
+FWIW, I see a deadlock on Zynq (ARM) as well. The proposed patch
+resolves it. Feel free to add my
+Tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+
+	Sören
+
+
