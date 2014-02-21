@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaBUOKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:10:06 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:61658 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054AbaBUOKE (ORCPT
+	id S1755610AbaBUOKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:10:44 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:35949 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844AbaBUOKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:10:04 -0500
-Date: Fri, 21 Feb 2014 09:09:58 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Markus Mayer <markus.mayer@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: bcm2835: Move to mach-bcm directory
-Message-ID: <20140221140958.GK5038@beef>
-References: <1392941771-15774-1-git-send-email-markus.mayer@linaro.org>
- <5306DBE4.8090106@wwwdotorg.org>
+	Fri, 21 Feb 2014 09:10:42 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 0/3] media: omap3isp: trivial cleanup
+Date: Fri, 21 Feb 2014 15:11:56 +0100
+Message-ID: <1825367.ljiFnKzG3g@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1392984443-16694-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1392984443-16694-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5306DBE4.8090106@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 09:53:56PM -0700, Stephen Warren wrote:
-> On 02/20/2014 05:16 PM, Markus Mayer wrote:
-> > Move the bcm2835 board file into the mach-bcm directory. This allows us
-> > to get rid of the mach-bcm2835 directory with the associated Kconfig
-> > and Makefile.
-> 
-> This looks fine, although it needs a small patch to bcm2835_defconfig
-> squashed in, which I'll post in a second.
-> 
-> Do you want me to take it through the bcm2835 tree? That's probably
-> easiest to avoid conflicts with any other bcm2835 patches, not that it's
-> too likely there will be any to the board file.
+Hi Prabhakar,
 
-That's ok with me. Be aware that we may have minor Kconfig/Makefile
-conflicts between the bcm2835 tree and the mach-bcm tree since we just
-queued the bcm5301x support.
+Thank you for the patched.
 
--Matt
+On Friday 21 February 2014 17:37:20 Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> This patch series include fixing some typos and
+> removal of unwanted comments.
+
+For the whole series,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+and applied to my tree.
+
+> Lad, Prabhakar (3):
+>   media: omap3isp: fix typos
+>   media: omap3isp: ispccdc: remove unwanted comments
+>   media: omap3isp: rename the variable names in description
+> 
+>  drivers/media/platform/omap3isp/isp.c        |    2 +-
+>  drivers/media/platform/omap3isp/isp.h        |   12 ++++++------
+>  drivers/media/platform/omap3isp/ispccdc.c    |   10 +++++-----
+>  drivers/media/platform/omap3isp/ispccdc.h    |    6 ------
+>  drivers/media/platform/omap3isp/ispccp2.c    |    6 +++---
+>  drivers/media/platform/omap3isp/isphist.c    |    4 ++--
+>  drivers/media/platform/omap3isp/isppreview.c |   13 +++++++------
+>  drivers/media/platform/omap3isp/ispqueue.c   |    2 +-
+>  drivers/media/platform/omap3isp/ispresizer.c |    6 +++---
+>  drivers/media/platform/omap3isp/ispresizer.h |    4 ++--
+>  drivers/media/platform/omap3isp/ispstat.c    |    4 ++--
+>  drivers/media/platform/omap3isp/ispvideo.c   |    4 ++--
+>  12 files changed, 34 insertions(+), 39 deletions(-)
+
+-- 
+Regards,
+
+Laurent Pinchart
+
