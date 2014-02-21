@@ -1,149 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaBUFrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 00:47:20 -0500
-Received: from ozlabs.org ([203.10.76.45]:47388 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737AbaBUFrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 00:47:18 -0500
-Date: Fri, 21 Feb 2014 16:47:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: linux-next: build failure after merge of the char-misc tree
-Message-Id: <20140221164711.9e62ae1f03fe1166943a2a14@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1753129AbaBUFvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 00:51:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51624 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaBUFvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 00:51:50 -0500
+Message-ID: <1392961903.5451.58.camel@marge.simpson.net>
+Subject: Re: [PATCH v2] sched: keep quiescent cpu out of idle balance loop
+From: Mike Galbraith <bitbucket@online.de>
+To: Lei Wen <leiwen@marvell.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        preeti.lkml@gmail.com, daniel.lezcano@linaro.org,
+        viresh.kumar@linaro.org, xjian@marvell.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 21 Feb 2014 06:51:43 +0100
+In-Reply-To: <1392949390-9867-1-git-send-email-leiwen@marvell.com>
+References: <20140220122311.GO27965@twins.programming.kicks-ass.net>
+	 <1392949390-9867-1-git-send-email-leiwen@marvell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Feb_2014_16_47_11_+1100_P_edYjAu//9CpyOG"
+X-Provags-ID: V02:K0:RknM6BOd3CX0tRz53/2BUtUR0dnoRv54b5zfliHDv92
+ aQYj2X63g4shAth66M30T4mYiIw/4Oni/C02Fnu8mJ6J/Iaohi
+ 2YNXBO0esyhLXPG5tfny+UOyb7MTpZdTdZ7KvcGSSTOqpT1VJm
+ WcgjZ3Qs+Q6ts8CkmZDeAdu1l3sxQQ2y3lYyHjdjH+1S5CJNuD
+ /NEBer2bujMDfsG0RO9eleRkUuyXq+Uo7WiysC5OM/Id01fBW6
+ l92wE8xckbjLx8VcH9AQElN/kRCItNzNWJfmBEOJT2FnXc4jhu
+ zePsdfQiq83MFiNynwGqYf6IYX7McL5nTxopJ4oe0nvHz7ZRtp
+ Yd+sNQRBhlKLBq/yqunuVC9AmlxGJKsa+j8KPsqfwm+ngr8aBa
+ h1rzf+lZzcXjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Feb_2014_16_47_11_+1100_P_edYjAu//9CpyOG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-02-21 at 10:23 +0800, Lei Wen wrote: 
+> Cpu which is put into quiescent mode, would remove itself
+> from kernel's sched_domain, and want others not disturb its
+> task running. But current scheduler would not checking whether
+> that cpu is setting in such mode, and still insist the quiescent
+> cpu to response the nohz load balance.
 
-Hi all,
+Let's isolate some CPUs.
 
-After merging the char-misc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Setup:
+/-----"system" CPU0
+\
+  \---"rtcpus" CPUs1-3
 
-In file included from drivers/misc/mei/hw-txe.c:25:0:
-drivers/misc/mei/hw-txe.h:63:1: error: unknown type name 'irqreturn_t'
- irqreturn_t mei_txe_irq_quick_handler(int irq, void *dev_id);
- ^
-drivers/misc/mei/hw-txe.h:64:1: error: unknown type name 'irqreturn_t'
- irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id);
- ^
-drivers/misc/mei/hw-txe.c:879:1: error: unknown type name 'irqreturn_t'
- irqreturn_t mei_txe_irq_quick_handler(int irq, void *dev_id)
- ^
-drivers/misc/mei/hw-txe.c: In function 'mei_txe_irq_quick_handler':
-drivers/misc/mei/hw-txe.c:884:10: error: 'IRQ_WAKE_THREAD' undeclared (firs=
-t use in this function)
-   return IRQ_WAKE_THREAD;
-          ^
-drivers/misc/mei/hw-txe.c:884:10: note: each undeclared identifier is repor=
-ted only once for each function it appears in
-drivers/misc/mei/hw-txe.c:885:9: error: 'IRQ_NONE' undeclared (first use in=
- this function)
-  return IRQ_NONE;
-         ^
-drivers/misc/mei/hw-txe.c: At top level:
-drivers/misc/mei/hw-txe.c:898:1: error: unknown type name 'irqreturn_t'
- irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
- ^
-drivers/misc/mei/hw-txe.c: In function 'mei_txe_irq_thread_handler':
-drivers/misc/mei/hw-txe.c:1007:9: error: 'IRQ_HANDLED' undeclared (first us=
-e in this function)
-  return IRQ_HANDLED;
-         ^
-drivers/misc/mei/hw-txe.c: In function 'mei_txe_irq_quick_handler':
-drivers/misc/mei/hw-txe.c:886:1: warning: control reaches end of non-void f=
-unction [-Wreturn-type]
- }
- ^
-drivers/misc/mei/hw-txe.c: In function 'mei_txe_irq_thread_handler':
-drivers/misc/mei/hw-txe.c:1008:1: warning: control reaches end of non-void =
-function [-Wreturn-type]
- }
- ^
+crash> runqueues
+PER-CPU DATA TYPE:
+  struct rq runqueues;
+PER-CPU ADDRESSES:
+  [0]: ffff88022fc12c00
+  [1]: ffff88022fc92c00
+  [2]: ffff88022fd12c00
+  [3]: ffff88022fd92c00 
+crash> struct rq ffff88022fd92c00 | grep sd
+  sd = 0x0,  <== yup, CPU3 is isolated bit of silicon
+crash> struct rq ffff88022fd92c00 | grep rd
+  rd = 0xffffffff81bffe60 <def_root_domain>,
+crash> struct -x root_domain 0xffffffff81bffe60
+...
+  span = {{
+      bits = {0xe} <== "rtcpus"
+    }},
+crash> struct rq ffff88022fc12c00 | grep rd
+  rd = 0xffff8802242c5800, 
+crash> struct -x root_domain 0xffff8802242c5800
+... 
+  span = {{
+      bits = {0x1} <== "system"
+    }},
 
-Caused by commit 266f6178d1f1 ("mei: txe: add hw-txe.h header file") but
-probably exposed by commit 46cb7b1bd86f ("PCI: Remove unused SR-IOV VF
-Migration support") from the pci tree which removed the include of
-irqreturn.h from pci.h ...
+Turn off load balancing in "system" as well now, CPU0 loses its 'sd',
+and becomes an isolated island identical to "rtcpus" CPUs, and thus..
 
-See Rule 1 from Documentation/SubmitChecklist ...
+  span = {{
+      bits = {0xf} <== oh darn
+    }},
 
-I added the following merge fix patch (this should be applied to the
-char-misc tree):
+.."system" and "rtcpus" merge, all CPUs having NULL sd, as they are now
+all remote silicon islands, but they now also share rd again, as if you
+had never diddled domains in the first place.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 21 Feb 2014 16:38:28 +1100
-Subject: [PATCH] mei: txe: include irqreturn.h for irqreturn_t etc
+-Mike
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/misc/mei/hw-txe.c | 1 +
- drivers/misc/mei/hw-txe.h | 2 ++
- 2 files changed, 3 insertions(+)
-
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index 19579e560dad..49a5ed376969 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -18,6 +18,7 @@
- #include <linux/jiffies.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
-+#include <linux/irqreturn.h>
-=20
- #include <linux/mei.h>
-=20
-diff --git a/drivers/misc/mei/hw-txe.h b/drivers/misc/mei/hw-txe.h
-index 857d88ccef61..fdb665f44d5d 100644
---- a/drivers/misc/mei/hw-txe.h
-+++ b/drivers/misc/mei/hw-txe.h
-@@ -17,6 +17,8 @@
- #ifndef _MEI_HW_TXE_H_
- #define _MEI_HW_TXE_H_
-=20
-+#include <linux/irqreturn.h>
-+
- #include "hw.h"
- #include "hw-txe-regs.h"
-=20
---=20
-1.9.0
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__21_Feb_2014_16_47_11_+1100_P_edYjAu//9CpyOG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTBuhjAAoJEMDTa8Ir7ZwVl6sP/R+AAj4SiGXoMH/uGgK7b/69
-iauSTN8pFfdY1/IaStvxOtCPuSvp8O+9JKxYcQB5HGI9k2kTM64porkPDN4YE787
-rvd0MvkUEnQHLvt0BX1wC6wp/BSogaiGC3LSx4oBgQtz+D0wGKQQe4fEN7xql/W7
-rVF788LOBO61k3JsZSfk3lffi5Ka0kLh6ubf5EcsVlhC8tTSh9Wke/TnEYsRXY8q
-m2sj1kIODrR+ewWfHAT4fOKHEs0ifXweZ3oQ9ucLR5n+s3hRCIch74nGkCrDdAi9
-pTe3+QP7ZrcJTKD1Ok0RPTZvAgIvOknQEoLO/jBiCxk5ALkSW2TJThWyrDyzi7FU
-PQRDMjLVAxkYi1n0z/soUWaty877VTN4ugze5JewZ7XOTXE609pavYWbecn5V0i+
-mYWXEUtQRMp5+zZtd2nNfGn8HZdQcd0BfKl06QrGCbkZjuZF+OGbvv3N0/ugFbhe
-nL3fFb9YuN47DpN8CUn7aJhzxYDniAtN+GyOL0ZS9yxmz/Pf4hMhPwaq09e9PDs1
-oQbKZGj81Hcc+oLWfaTGodfQs2jR/nW+yhyNfn8EpnFgxpToHhilTqs8RYB+yoyR
-23YkZba/RqA/L3fH68bfcPJBPgWKo4TFEiToASGRAzsrIP67jGKLmOu8OZszvY/j
-Xj8mZ+cbrHYshOzptP9q
-=aSm4
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Feb_2014_16_47_11_+1100_P_edYjAu//9CpyOG--
