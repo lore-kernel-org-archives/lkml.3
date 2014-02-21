@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305AbaBUR5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 12:57:14 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42652 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756128AbaBUR4J (ORCPT
+	id S1755603AbaBUSAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 13:00:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:52954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790AbaBUSAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 12:56:09 -0500
-Message-Id: <20140221174639.888426320@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Fri, 21 Feb 2014 17:56:18 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [RFC patch 5/5] timerfd: Expose deferrable mode to user space
-References: <20140221173936.583477951@linutronix.de>
-Content-Disposition: inline; filename=timerfd-wire-up-deferrables.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 21 Feb 2014 13:00:07 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Feb 2014 13:00:06 EST
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, jg1.han@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com
+Subject: Re: [PATCH v2 2/2] phy: Select PHY_EXYNOS_DP_VIDEO by default for ARCH_EXYNOS
+Date: Fri, 21 Feb 2014 18:54:07 +0100
+Message-ID: <1413607.hGO0bhiXpo@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <530783E4.6090206@samsung.com>
+References: <1392997802-29050-1-git-send-email-s.nawrocki@samsung.com> <1888663.ccFYmJ9QJl@wuerfel> <530783E4.6090206@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qG/Kqt1/s5el3wXz2PUMJXh3N4ybNWfx2W3QUnVmqe5
+ i0ie6j/0dysZMQX8GJ0XxyA5az1SKJFztwZ6hwXAsV5A8mmIez
+ TtjtWoe2RmsoDkyDa9R0EszrTgQyVdxbVfcG6hW8i2pSiEZ5i5
+ GD9AxPBDLkeRNptdqBEZ6ma1wag+TvMzJEpaWsilHesQyjcFo9
+ mKvusgV5s32D+daaOvalKw0aDLTqwH19vSu5NtEQrCabTcar5D
+ lC0I7ChYqQJplxc8tsALH4fgwm177QPtOdfiqQ9CQKN0x0GbHd
+ oU3P9Sg58IGUVb6AC3zdOjU+iOEbwPkazSL2KQiTuS8/sBhQvf
+ DFx0bh4b2Lp0NnNtI71g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the deferrable timer mode to user space by adding a new
-TDF_TIMER_DEFERRABLE flag.
+On Friday 21 February 2014 17:50:44 Sylwester Nawrocki wrote:
+> On 21/02/14 17:41, Arnd Bergmann wrote:
+> > On Friday 21 February 2014 17:25:04 Sylwester Nawrocki wrote:
+> >> > 
+> >> > Hmm, good point, I will modify it that way.
+> >> > 
+> >> > For patch 1/2 I guess it should be:
+> >> > 
+> >> > "default ARCH_S5PV210 || ARCH_EXYNOS"
+> >> > 
+> >> > or rather
+> >> > 
+> >> > "default y if ARCH_S5PV210 || ARCH_EXYNOS" ?
+> >
+> > Right. I'd probably use the first syntax, but it doesn't really matter.
+> 
+> Oops, I've already sent patch using the second one, as it seemed
+> more common.
 
-The deferrable mode is available through the syscall timerfd_settime()
-by handing in TDF_TIMER_IS_DEFERRABLE via the 'flags' argument.
-TFD_TIMER_IS_DEFERRABLE and the other TFD_TIMER_ flags can be ored
-together.
+As I said, it doesn't matter.
 
-If a timer is started with this flag, the expiry of the timer is
-relaxed. The timer is guaranteed to not expire before the given expiry
-time, but the expiry can be delayed to the point where a non
-deferrable timer expires. Deferred timers are not waking up a cpu from
-a deep idle period.
-
-Applications using the TFD_TIMER_IS_DEFERRABLE flag work on older kernels
-as well, but the timers won't have the deferrable functionality.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
----
- fs/timerfd.c            |    1 +
- include/linux/timerfd.h |    1 +
- 2 files changed, 2 insertions(+)
-
-Index: tip/fs/timerfd.c
-===================================================================
---- tip.orig/fs/timerfd.c
-+++ tip/fs/timerfd.c
-@@ -166,6 +166,7 @@ static int timerfd_setup(struct timerfd_
- 
- 	htmode = (flags & TFD_TIMER_ABSTIME) ?
- 		HRTIMER_MODE_ABS: HRTIMER_MODE_REL;
-+	htmode |= (flags & TFD_TIMER_DEFERRABLE) ? HRTIMER_MODE_DEFERRABLE : 0;
- 
- 	texp = timespec_to_ktime(ktmr->it_value);
- 	ctx->expired = 0;
-Index: tip/include/linux/timerfd.h
-===================================================================
---- tip.orig/include/linux/timerfd.h
-+++ tip/include/linux/timerfd.h
-@@ -20,6 +20,7 @@
-  */
- #define TFD_TIMER_ABSTIME (1 << 0)
- #define TFD_TIMER_CANCEL_ON_SET (1 << 1)
-+#define TFD_TIMER_DEFERRABLE (2 << 1)
- #define TFD_CLOEXEC O_CLOEXEC
- #define TFD_NONBLOCK O_NONBLOCK
- 
-
-
+	Arnd
