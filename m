@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaBUDEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 22:04:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48383 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaBUDEN (ORCPT
+	id S1752835AbaBUDKt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 22:10:49 -0500
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:52728
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752242AbaBUDKs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 22:04:13 -0500
-Date: Thu, 20 Feb 2014 19:03:43 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-896dc5064083063981954f142e43548765199792@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com, hpa@zytor.com,
-        mingo@kernel.org, rjw@rjwysocki.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, jiang.liu@linux.intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
-        hpa@linux.intel.com
-In-Reply-To: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/acpi] x86, acpi:
-  Fix bug in associating hot-added CPUs with corresponding NUMA node
-Git-Commit-ID: 896dc5064083063981954f142e43548765199792
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 20 Feb 2014 22:10:48 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
+ specified resources
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
+ specified resources
+Thread-Index: AQHPLo6cDXgO0PHR/UiXiUkawW4KVJq+zv0AgAAH24CAACM5gIAADVag
+Date: Fri, 21 Feb 2014 03:10:44 +0000
+Message-ID: <f5fedba08fc24fba9b499593e1735b63@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1392939912-7446-1-git-send-email-kys@microsoft.com>
+ <20140220234702.GA28682@kroah.com>
+ <357c655260924e10b157020ebe47b89f@BY2PR03MB299.namprd03.prod.outlook.com>
+ <20140221022113.GA28043@kroah.com>
+In-Reply-To: <20140221022113.GA28043@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.19.246.69]
+x-forefront-prvs: 01294F875B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(13464003)(24454002)(189002)(199002)(377454003)(76576001)(76796001)(76786001)(19580395003)(19580405001)(83322001)(69226001)(94946001)(86612001)(74502001)(85306002)(83072002)(56816005)(93516002)(85852003)(90146001)(93136001)(65816001)(95416001)(33646001)(4396001)(47446002)(74662001)(94316002)(31966008)(80022001)(81816001)(86362001)(92566001)(79102001)(47736001)(74876001)(46102001)(50986001)(47976001)(76482001)(59766001)(77982001)(54356001)(66066001)(81686001)(54316002)(74706001)(56776001)(95666003)(49866001)(81342001)(53806001)(51856001)(2656002)(63696002)(80976001)(87266001)(74366001)(87936001)(81542001)(74316001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB595;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:24.19.246.69;FPR:D8D7E5A6.8CD3DD06.40DF13E3.CEE239CE.20261;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  896dc5064083063981954f142e43548765199792
-Gitweb:     http://git.kernel.org/tip/896dc5064083063981954f142e43548765199792
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 20 Jan 2014 10:31:54 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 20 Feb 2014 19:01:22 -0800
 
-x86, acpi: Fix bug in associating hot-added CPUs with corresponding NUMA node
 
-Current ACPI cpu hotplug driver fails to associate hot-added CPUs with
-corresponding NUMA node when doing socket online. The code path to
-associate CPU with NUMA node is as below:
-acpi_processor_add()
-    ->acpi_processor_get_info()
-	->acpi_processor_hotadd_init()
-	    ->acpi_map_lsapic()
-		->_acpi_map_lsapic()
-		    ->acpi_map_cpu2node()
-cpu_subsys_online()
-    ->try_online_node()
-	->node_set_online()
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, February 20, 2014 6:21 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI specified
+> resources
+> 
+> On Fri, Feb 21, 2014 at 12:19:22AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Thursday, February 20, 2014 3:47 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> > > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Fix a bug in getting ACPI
+> specified
+> > > resources
+> > >
+> > > On Thu, Feb 20, 2014 at 03:45:12PM -0800, K. Y. Srinivasan wrote:
+> > > > Fix a bug in the resource walking code.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > ---
+> > > >  drivers/hv/vmbus_drv.c |    2 ++
+> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > >
+> > > Fails to apply to my char-misc-next branch (if you want it in
+> > > 3.14-final, that's where it belongs...):
+> > > 	checking file drivers/hv/vmbus_drv.c
+> > > 	Hunk #1 FAILED at 899.
+> > > 	1 out of 1 hunk FAILED
+> >
+> > Greg,
+> >
+> > This patch is based on this commit:
+> >
+> > commit 90f3453585479d5beb75058da46eb573ced0e6ac
+> >
+> >     Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >
+> > I just got your char-misc-next branch and it does not have the needed commit.
+> 
+> Then I guess this isn't 3.14-final material, right?
+> 
+> Please resend it when you have determined which branch it should go
+> into, it's out of my queue now.
 
-When doing socket online, a new NUMA node is introduced in addition to
-hot-added CPU and memory device. And the new NUMA node is marked as
-online when onlining hot-added CPUs through sysfs interface
-/sys/devices/system/cpu/cpuxx/online.
+Thanks Greg, I will resend the patch. Please apply it to char-misc.git tree.
 
-On the other hand, acpi_map_cpu2node() will only build the CPU to node
-map if corresponding NUMA node is already online, so it always fails
-to associate hot-added CPUs with corresponding NUMA node because the
-NUMA node is still in offline state.
+Regards,
 
-For the fix, we could safely remove the "node_online(node)" check in
-function acpi_map_cpu2node() because it's only called for hot-added CPUs
-by acpi_processor_hotadd_init().
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Link: http://lkml.kernel.org/r/1390185115-26850-1-git-send-email-jiang.liu@linux.intel.com
-Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/acpi/boot.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 1dac942..9f46f2b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -613,10 +613,10 @@ static void acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
- 	int nid;
- 
- 	nid = acpi_get_node(handle);
--	if (nid == -1 || !node_online(nid))
--		return;
--	set_apicid_to_node(physid, nid);
--	numa_set_node(cpu, nid);
-+	if (nid != -1) {
-+		set_apicid_to_node(physid, nid);
-+		numa_set_node(cpu, nid);
-+	}
- #endif
- }
- 
+K. Y
