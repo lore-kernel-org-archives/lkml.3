@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971AbaBUPQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:16:41 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42536 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755941AbaBUPQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:16:38 -0500
-Date: Fri, 21 Feb 2014 10:16:36 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Larry Finger <Larry.Finger@lwfinger.net>
-cc: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>
-Subject: Re: Warning from USC core on kernel 3.13
-In-Reply-To: <530671BF.30909@lwfinger.net>
-Message-ID: <Pine.LNX.4.44L0.1402211007140.1273-100000@iolanthe.rowland.org>
+	id S1755879AbaBUPdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:33:11 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34814 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755483AbaBUPdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 10:33:10 -0500
+Date: Fri, 21 Feb 2014 09:31:16 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@pengutronix.de>
+Subject: Re: [PATCH] phy: restrict Samsung S5P/Exynos drivers to the
+ respective architectures
+Message-ID: <20140221153116.GC31902@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5UGlQXeG3ziZS81+"
+Content-Disposition: inline
+In-Reply-To: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Larry Finger wrote:
+--5UGlQXeG3ziZS81+
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Alan,
-> 
-> The Lenovo Yogi 13 tablet comes with a Realtek RTL8723AU wireless device built 
-> in. Realtek sent me a driver that I modified so that it would build on new 
-> kernels, and created a GitHub repo so that it would be available to the 
-> community. One of the users of this driver is reporting intermittent warnings 
-> that say
-> 
-> WARNING: CPU: 1 PID: 0 at drivers/usb/core/urb.c:452 usb_submit_urb+0x205/0x5d0()
-> usb 1-1.4: BOGUS urb xfer, pipe 3 != type 1
-> 
-> The full splat is available at http://pastebin.com/VcFPd4Yt.
-> 
-> As no other user has reported this problem, I think this is some kind of problem 
-> with the wireless device or the adapter on this box. Even so, I would like to 
-> know more about what is happening. In addition, Jes Sorensen at RedHat is 
-> working on making the driver suitable for submission to the staging part of the 
-> tree. Just in case other uses run into the problem, it would be good to know if 
-> a fix is possible.
-> 
-> Can you suggest any addition logging for when this situation occurs? The user is 
-> generating his own kernels, thus we can add any patches we want.
+On Fri, Feb 21, 2014 at 03:05:26PM +0100, Uwe Kleine-K=F6nig wrote:
+> Enabling these drivers on platforms not created by Samsung is useless
+> unless you're doing compile tests. So don't offer the users to enable
+> them without COMPILE_TEST for configs with S5P/Exynos disabled.
+>=20
+> Signed-off-by: Uwe Kleine-K=F6nig <u.kleine-koenig@pengutronix.de>
 
-You probably don't need any additional logging.
+fine by me
 
-The WARNING is telling you that the usb_read_interrupt_complete() 
-routine in the 8723au driver called usb_submit_urb() with an incorrect 
-pipe value.  The URB specified a BULK pipe, but the endpoint in 
-question is actually an INTERRUPT endpoint.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-Alan Stern
+--=20
+balbi
 
+--5UGlQXeG3ziZS81+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTB3FEAAoJEIaOsuA1yqRExkcP/3T2SUxrk1IjXQhV+siEGRvF
+g6dp9rMvxfRxczq6NxfaKTDFJ47Vfd0NpA7UDOYVo7IUYobLn3e6WpUAjxAQmyVC
+5YluBQxaVeafTlsdh/wsulySQ/rS6kduDai0ntCkjezMR3paF8SjoZN6Qxa4Uaqn
+c2zCRa5oYbA7dah4uJ4YaxcWKJm2KqzwyTETu0otOqUfnrQVWRFzcPaji7fceeBt
+QJfLmp6YeBlK9tPlpPEmNdxmVti/lsVESpkxWOUtYYkkjyQ7pho43q+yw+EueXQI
+i2qZRa2Hco+JNX4VmcYsTRybXrRNtjHAXUjVwDyxzL7I40ckBv1fLRmfTtLAJUcq
+v3qZ/N6UpCNvUUo9IZqvTZXq0pnhqVhefxEoAZilkgEfGXZDMsGwpjcgS5rBb0cY
+LxrlBnjklLLnvWZYhcqyixPfx4HvaYhLw9K/RZyZcEGZj6E9/NluPIF+ktYJ6BRR
+fZ7rHG+q/syAXfRxCMBU0dbVwyHOOBz22nPlO6imEfor+a8eJhJs2NumxDwuk5IH
+zU4MAaM0n65Be0RmAoE2jmfFzn5Q/B4UR1/SAWk8B0Nb4w7bJgGxJkwtNW/NDKbd
+Q+B14GAAFUQCEhKLyd0inv35cLBmeW89zBTJ2m+3Jh1Br3ub3CfmFBCirnw3JzMX
+5tPBtZsW03uOTnUJRqcf
+=ovH6
+-----END PGP SIGNATURE-----
+
+--5UGlQXeG3ziZS81+--
