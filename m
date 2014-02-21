@@ -1,178 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192AbaBUQwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:52:54 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:47203 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127AbaBUQww (ORCPT
+	id S933204AbaBUQx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:53:56 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35965 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754838AbaBUQxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:52:52 -0500
-Date: Fri, 21 Feb 2014 17:53:05 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC] sched/deadline: Prevent rt_time growth to infinity
-Message-Id: <20140221175305.1e170b45be08fe05c93a33b4@gmail.com>
-In-Reply-To: <20140221173641.a060b3d6c0993c21e77f29c2@gmail.com>
-References: <230991392848160@web13m.yandex.ru>
-	<20140221103715.GP9987@twins.programming.kicks-ass.net>
-	<20140221173641.a060b3d6c0993c21e77f29c2@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 21 Feb 2014 11:53:52 -0500
+Message-ID: <5307849A.9050209@hurleysoftware.com>
+Date: Fri, 21 Feb 2014 11:53:46 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
+References: <1392929071-16555-1-git-send-email-tj@kernel.org> <1392929071-16555-5-git-send-email-tj@kernel.org> <5306AF8E.3080006@hurleysoftware.com> <20140221015935.GF6897@htj.dyndns.org> <5306B4DF.4000901@hurleysoftware.com> <20140221021341.GG6897@htj.dyndns.org> <5306E06C.5020805@hurleysoftware.com> <20140221100301.GA14653@mtj.dyndns.org> <53074BE4.1020307@hurleysoftware.com> <20140221130614.GH6897@htj.dyndns.org>
+In-Reply-To: <20140221130614.GH6897@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014 17:36:41 +0100
-Juri Lelli <juri.lelli@gmail.com> wrote:
+Hi Tejun,
 
-> On Fri, 21 Feb 2014 11:37:15 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Thu, Feb 20, 2014 at 02:16:00AM +0400, Kirill Tkhai wrote:
-> > > Since deadline tasks share rt bandwidth, we must care about
-> > > bandwidth timer set. Otherwise rt_time may grow up to infinity
-> > > in update_curr_dl(), if there are no other available RT tasks
-> > > on top level bandwidth.
-> > > 
-> > > I'm going to decide the problem the way below. Almost untested
-> > > because of I skipped almost all of recent patches which haveto be applied from lkml.
-> > > 
-> > > Please say, if I skipped anything in idea. Maybe better put
-> > > start_top_rt_bandwidth() into set_curr_task_dl()?
-> > 
-> > How about we only increment rt_time when there's an RT bandwidth timer
-> > active?
-> > 
-> > 
-> > ---
-> > --- a/kernel/sched/rt.c
-> > +++ b/kernel/sched/rt.c
-> > @@ -568,6 +568,12 @@ static inline struct rt_bandwidth *sched
-> >  
-> >  #endif /* CONFIG_RT_GROUP_SCHED */
-> >  
-> > +bool sched_rt_bandwidth_active(struct rt_rq *rt_rq)
-> > +{
-> > +	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
-> > +	return hrtimer_active(&rt_b->rt_period_timer);
-> > +}
-> > +
-> >  #ifdef CONFIG_SMP
-> >  /*
-> >   * We ran out of runtime, see if we can borrow some from our neighbours.
-> > --- a/kernel/sched/deadline.c
-> > +++ b/kernel/sched/deadline.c
-> > @@ -587,6 +587,8 @@ int dl_runtime_exceeded(struct rq *rq, s
-> >  	return 1;
-> >  }
-> >  
-> > +extern bool sched_rt_bandwidth_active(struct rt_rq *rt_rq);
-> > +
-> >  /*
-> >   * Update the current task's runtime statistics (provided it is still
-> >   * a -deadline task and has not been removed from the dl_rq).
-> > @@ -650,11 +652,13 @@ static void update_curr_dl(struct rq *rq
-> >  		struct rt_rq *rt_rq = &rq->rt;
-> >  
-> >  		raw_spin_lock(&rt_rq->rt_runtime_lock);
-> > -		rt_rq->rt_time += delta_exec;
-> >  		/*
-> >  		 * We'll let actual RT tasks worry about the overflow here, we
-> > -		 * have our own CBS to keep us inline -- see above.
-> > +		 * have our own CBS to keep us inline; only account when RT
-> > +		 * bandwidth is relevant.
-> >  		 */
-> > +		if (sched_rt_bandwidth_active(rt_rq))
-> > +			rt_rq->rt_time += delta_exec;
-> >  		raw_spin_unlock(&rt_rq->rt_runtime_lock);
-> >  	}
-> >  }
-> 
-> So, I ran some tests with the above and I'd like to share with you what
-> I've found. You can find here a trace-cmd trace that should be feeded
-> to kernelshark to be able to understand what follows (or feel free to
-> reproduce same scenario :)):
-> http://retis.sssup.it/~jlelli/traces/trace_rt_time.dat
-> 
-> Here you have a DL task (4/10) and a while(1) RT task, both running
-> inside a rt_bw of 0.5. RT tasks is activated 500ms after DL. As I
-> filtered in sched_rt_period_timer(), you can search for time instants
-> when the rt_bw is replenished. It is evident that the first time after
-> rt timer is activated back (search for start_bandwidth_timer), we can
-> eat some bw to FAIR tasks (if any). This is due to the fact that we
-> reset rt_bw budget at this time, start decrementing rt_time for both DL
+On 02/21/2014 08:06 AM, Tejun Heo wrote:
+> Hello,
+>
+> On Fri, Feb 21, 2014 at 07:51:48AM -0500, Peter Hurley wrote:
+>> I think the vast majority of kernel code which uses the workqueue
+>> assumes there is a memory ordering guarantee.
+>
+> Not really.  Workqueues haven't even guaranteed non-reentrancy until
+> recently, forcing everybody to lock explicitly in the work function.
+> I don't think there'd be many, if any, use cases which depend on
+> ordering guarantee on duplicate queueing.
 
-The reset happens when rt_bw replenishment timer fires, after a bit:
+I added some in 3.12 :)
 
- sched_rt_period_timer <-- __run_hrtimer
+>> Another way to look at this problem is that process_one_work()
+>> doesn't become the existing instance _until_ PENDING is cleared.
+>
+> Sure, having that guarantee definitely is nicer and all we need seems
+> to be mb_after_unlock in the execution path.  Please feel free to
+> submit a patch.
 
-Apologies,
+Ok, I can do that. But AFAIK it'll have to be an smp_rmb(); there is
+no mb__after unlock.
 
-- Juri
+[ After thinking about it some, I don't think preventing speculative
+   writes before clearing PENDING if useful or necessary, so that's
+   why I'm suggesting only the rmb. ]
 
-> and RT tasks, throttle RT tasks when rt_time > runtime, but, since DL
-> tasks acually executes inside their own server, they don't care about
-> rt_bw. Good news is that steady state is ok: keeping track of overruns
-> we are able to stop eating bw to other guys.
-> 
-> My thougths:
-> 
->  - Peter's patch is an easy fix to Kirill's problem (RT tasks were
->    throttled too early);
->  - something to add to this solution could be to pre-calculate bw of
->    ready DL tasks and subtract it to rt_bw at replenishment time, but
->    it sounds quite awkward, pessimistic, and I'm not sure it is gonna
->    work;
->  - we are stealing bw to best-effort tasks, and just at the beginning
->    of the transistion, is it really a problem?
->  - I mean, if you want guarantees make your tasks DL! :);
->  - in the long run we are gonna have RT tasks scheduled inside CBS
->    servers, and all this will be properly fixed up.
-> 
-> Comments?
-> 
-> BTW, rt timer activation/deactivation should probably be fixed for
-> !RT_GROUP_SCHED with something like this:
-> 
-> ---
->  kernel/sched/rt.c |   10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 6161de8..274f992 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -86,12 +86,12 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
->  	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
->  }
->  
-> -#ifdef CONFIG_RT_GROUP_SCHED
->  static void destroy_rt_bandwidth(struct rt_bandwidth *rt_b)
->  {
->  	hrtimer_cancel(&rt_b->rt_period_timer);
->  }
->  
-> +#ifdef CONFIG_RT_GROUP_SCHED
->  #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
->  
->  static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
-> @@ -1017,8 +1017,12 @@ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
->  	start_rt_bandwidth(&def_rt_bandwidth);
->  }
->  
-> -static inline
-> -void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
-> +static void
-> +dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
-> +{
-> +	if (!rt_rq->rt_nr_running)
-> +		destroy_rt_bandwidth(&def_rt_bandwidth);
-> +}
->  
->  #endif /* CONFIG_RT_GROUP_SCHED */
->  
+>>> add such guarantee, not sure how much it'd matter but it's not like
+>>> it's gonna cost a lot either.
+>>>
+>>> This doesn't have much to do with the current series tho.  In fact,
+>>> PREPARE_WORK can't ever be made to give such guarantee.
+>>
+>> Yes, I agree that PREPARE_DELAYED_WORK was also broken usage with the
+>> same problem. [And there are other bugs in that firewire device work
+>> code which I'm working on.]
+>>
+>>> The function pointer has to fetched before clearing of PENDING.
+>>
+>> Why?
+>>
+>> As long as the load takes place within the pool->lock, I don't think
+>> it matters (especially now PREPARE_WORK is removed).
+>
+> Hmmm... I was talking about PREPARE_WORK().  Clearing PENDING means
+> that the work item is released from the worker context and may be
+> freed or reused at any time (hmm... this may not be true anymore as
+> non-syncing variants of cancel_work are gone), so clearing PENDING
+> should be the last access to the work item and thus we can't use that
+> as the barrier event for fetching its work function.
+
+Yeah, it seems like the work item lifetime is at least guaranteed
+while either PENDING is set _or_ while the pool->lock is held
+after PENDING is cleared.
+
+Regards,
+Peter Hurley
+
