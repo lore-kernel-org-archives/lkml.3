@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498AbaBUVev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:34:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59435 "EHLO
+	id S1756515AbaBUVe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:34:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59442 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473AbaBUVet (ORCPT
+	with ESMTP id S1754253AbaBUVez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:34:49 -0500
-Date: Fri, 21 Feb 2014 13:34:15 -0800
+	Fri, 21 Feb 2014 16:34:55 -0500
+Date: Fri, 21 Feb 2014 13:34:04 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-dbebf7f826e1b3935f8bcd5d9681bf97708a7ddb@git.kernel.org>
+Message-ID: <tip-4870c6e5774424c994bfd606cd8adb8818e8a85c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tj@kernel.org, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
+        peterz@infradead.org, holt@sgi.com, viro@zeniv.linux.org.uk,
+        ebiederm@xmission.com, keescook@chromium.org,
+        akpm@linux-foundation.org, sfr@canb.auug.org.au, tglx@linutronix.de,
+        oleg@redhat.com, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tj@kernel.org, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
-In-Reply-To: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
+        holt@sgi.com, peterz@infradead.org, viro@zeniv.linux.org.uk,
+        ebiederm@xmission.com, keescook@chromium.org,
+        akpm@linux-foundation.org, oleg@redhat.com, tglx@linutronix.de,
+        sfr@canb.auug.org.au, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <0261f094b836f1acbcdf52e7166487c0c77323c8.1392103744.git.yangds.fnst@cn.fujitsu.com>
+References: <0261f094b836f1acbcdf52e7166487c0c77323c8.1392103744.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] workqueue:
+Subject: [tip:sched/core] sys:
   Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
-Git-Commit-ID: dbebf7f826e1b3935f8bcd5d9681bf97708a7ddb
+Git-Commit-ID: 4870c6e5774424c994bfd606cd8adb8818e8a85c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,35 +38,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dbebf7f826e1b3935f8bcd5d9681bf97708a7ddb
-Gitweb:     http://git.kernel.org/tip/dbebf7f826e1b3935f8bcd5d9681bf97708a7ddb
+Commit-ID:  4870c6e5774424c994bfd606cd8adb8818e8a85c
+Gitweb:     http://git.kernel.org/tip/4870c6e5774424c994bfd606cd8adb8818e8a85c
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 11 Feb 2014 15:34:52 +0800
+AuthorDate: Tue, 11 Feb 2014 15:34:51 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 21 Feb 2014 21:43:21 +0100
 
-workqueue: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
+sys: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE.
 
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: Ingo Molnar <mingo@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/0261f094b836f1acbcdf52e7166487c0c77323c8.1392103744.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sys.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 193e977..3fa5b8f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3225,7 +3225,7 @@ static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
- 		return -ENOMEM;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c0a58be..adaeab6 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -174,10 +174,10 @@ SYSCALL_DEFINE3(setpriority, int, which, int, who, int, niceval)
  
- 	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
--	    attrs->nice >= -20 && attrs->nice <= 19)
-+	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
- 		ret = apply_workqueue_attrs(wq, attrs);
- 	else
- 		ret = -EINVAL;
+ 	/* normalize: avoid signed division (rounding problems) */
+ 	error = -ESRCH;
+-	if (niceval < -20)
+-		niceval = -20;
+-	if (niceval > 19)
+-		niceval = 19;
++	if (niceval < MIN_NICE)
++		niceval = MIN_NICE;
++	if (niceval > MAX_NICE)
++		niceval = MAX_NICE;
+ 
+ 	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
