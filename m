@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557AbaBUMv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:51:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47202 "EHLO
+	id S932948AbaBUM7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:59:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47230 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932518AbaBUMvX (ORCPT
+	with ESMTP id S932518AbaBUMv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:23 -0500
+	Fri, 21 Feb 2014 07:51:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/121] genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=n
-Date: Fri, 21 Feb 2014 12:48:39 +0000
-Message-Id: <1392986945-9693-96-git-send-email-luis.henriques@canonical.com>
+Cc: Jens Axboe <axboe@fb.com>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 100/121] block: add cond_resched() to potentially long running ioctl discard loop
+Date: Fri, 21 Feb 2014 12:48:44 +0000
+Message-Id: <1392986945-9693-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Jens Axboe <axboe@fb.com>
 
-commit 2c45aada341121438affc4cb8d5b4cfaa2813d3d upstream.
+commit c8123f8c9cb517403b51aa41c3c46ff5e10b2c17 upstream.
 
-In allmodconfig builds for sparc and any other arch which does
-not set CONFIG_SPARSE_IRQ, the following will be seen at modpost:
+When mkfs issues a full device discard and the device only
+supports discards of a smallish size, we can loop in
+blkdev_issue_discard() for a long time. If preempt isn't enabled,
+this can turn into a softlock situation and the kernel will
+start complaining.
 
-  CC [M]  lib/cpu-notifier-error-inject.o
-  CC [M]  lib/pm-notifier-error-inject.o
-ERROR: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!
-make[2]: *** [__modpost] Error 1
+Add an explicit cond_resched() at the end of the loop to avoid
+that.
 
-This happens because commit 3911ff30f5 ("genirq: export
-handle_edge_irq() and irq_to_desc()") added one export for it, but
-there were actually two instances of it, in an if/else clause for
-CONFIG_SPARSE_IRQ.  Add the second one.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Link: http://lkml.kernel.org/r/1392057610-11514-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/irq/irqdesc.c | 1 +
- 1 file changed, 1 insertion(+)
+ block/blk-lib.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302..8ab8e93 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL(irq_to_desc);
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d6f50d5..9a32f58 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -121,6 +121,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
  
- static void free_desc(unsigned int irq)
- {
+ 		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
++
++		/*
++		 * We can loop for a long time in here, if someone does
++		 * full device discards (like mkfs). Be nice and allow
++		 * us to schedule out to avoid softlocking if preempt
++		 * is disabled.
++		 */
++		cond_resched();
+ 	}
+ 	blk_finish_plug(&plug);
+ 
 -- 
 1.9.0
 
