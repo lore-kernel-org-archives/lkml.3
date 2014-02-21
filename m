@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaBUKMy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 05:12:54 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49448 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647AbaBUKMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 05:12:52 -0500
-Date: Fri, 21 Feb 2014 05:12:48 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v2] sysfs: fix namespace refcnt leak
-Message-ID: <20140221101248.GB14653@mtj.dyndns.org>
-References: <5306C03B.4060808@huawei.com>
+	id S1754851AbaBUKRC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 05:17:02 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60304 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754411AbaBUKQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 05:16:58 -0500
+X-IronPort-AV: E=Sophos;i="4.97,517,1389715200"; 
+   d="scan'208";a="9575570"
+Message-ID: <5307259D.7050208@cn.fujitsu.com>
+Date: Fri, 21 Feb 2014 18:08:29 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5306C03B.4060808@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 1/2] f2fs: introduce help macro on_build_free_nids()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/21 18:14:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/21 18:14:43,
+	Serialize complete at 2014/02/21 18:14:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 10:55:55AM +0800, Li Zefan wrote:
-> As mount() and kill_sb() is not a one-to-one match, we shoudn't get
-> ns refcnt unconditionally in sysfs_mount(), and instead we should
-> get the refcnt only when kernfs_mount() allocated a new superblock.
-> 
-> v2:
-> - Changed the name of the new argument, suggested by Tejun.
-> - Made the argument optional, suggested by Tejun.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-...
-> @@ -132,6 +132,7 @@ const void *kernfs_super_ns(struct super_block *sb)
->   * @flags: mount flags specified for the mount
->   * @root: kernfs_root of the hierarchy being mounted
->   * @ns: optional namespace tag of the mount
-> + * @new_sb_created: tell the caller if we allocated a new superblock
->   *
->   * This is to be called from each kernfs user's file_system_type->mount()
->   * implementation, which should pass through the specified @fs_type and
-> @@ -141,7 +142,8 @@ const void *kernfs_super_ns(struct super_block *sb)
->   * The return value can be passed to the vfs layer verbatim.
->   */
->  struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
-> -			       struct kernfs_root *root, const void *ns)
-> +			       struct kernfs_root *root, const void *ns,
-> +			       bool *new_sb_created)
+Introduce help macro on_build_free_nids() which just uses build_lock
+to judge whether the building free nid is going, so that we can remove
+the on_build_free_nids field from f2fs_sb_info.
 
-Oops, just one more thing.  Let's please put @new_sb_created before
-@ns; otherwise, kernfs_mount_ns() and kernfs_mount() become really
-confusing as we end up omitting the second-to-last param for the
-latter instead of the last.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/f2fs.h |    2 --
+ fs/f2fs/node.c |    6 +++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-Other than that,
-
- Reviewed-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 91f4c5e..8cc7166 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -48,7 +48,6 @@
+ #define ver_after(a, b)	(typecheck(unsigned long long, a) &&		\
+ 		typecheck(unsigned long long, b) &&			\
+ 		((long long)((a) - (b)) > 0))
+-
+ typedef u32 block_t;	/*
+ 			 * should not change u32, since it is the on-disk block
+ 			 * address format, __le32.
+@@ -417,7 +416,6 @@ struct f2fs_sb_info {
+ 	struct mutex node_write;		/* locking node writes */
+ 	struct mutex writepages;		/* mutex for writepages() */
+ 	bool por_doing;				/* recovery is doing or not */
+-	bool on_build_free_nids;		/* build_free_nids is doing */
+ 	wait_queue_head_t cp_wait;
+ 
+ 	/* for orphan inode management */
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index d452185..8c5981e 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -21,6 +21,8 @@
+ #include "segment.h"
+ #include <trace/events/f2fs.h>
+ 
++#define on_build_free_nids(nmi) mutex_is_locked(&nm_i->build_lock)
++
+ static struct kmem_cache *nat_entry_slab;
+ static struct kmem_cache *free_nid_slab;
+ 
+@@ -1426,7 +1428,7 @@ retry:
+ 	spin_lock(&nm_i->free_nid_list_lock);
+ 
+ 	/* We should not use stale free nids created by build_free_nids */
+-	if (nm_i->fcnt && !sbi->on_build_free_nids) {
++	if (nm_i->fcnt && !on_build_free_nids(nm_i)) {
+ 		f2fs_bug_on(list_empty(&nm_i->free_nid_list));
+ 		list_for_each(this, &nm_i->free_nid_list) {
+ 			i = list_entry(this, struct free_nid, list);
+@@ -1445,9 +1447,7 @@ retry:
+ 
+ 	/* Let's scan nat pages and its caches to get free nids */
+ 	mutex_lock(&nm_i->build_lock);
+-	sbi->on_build_free_nids = true;
+ 	build_free_nids(sbi);
+-	sbi->on_build_free_nids = false;
+ 	mutex_unlock(&nm_i->build_lock);
+ 	goto retry;
+ }
 -- 
-tejun
+1.7.7
+
