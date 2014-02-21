@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933218AbaBUNqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:46:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46954 "EHLO
+	id S932999AbaBUNrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:47:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46944 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094AbaBUMuN (ORCPT
+	with ESMTP id S932185AbaBUMuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:13 -0500
+	Fri, 21 Feb 2014 07:50:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Richard Yao <ryao@gentoo.org>, "David S. Miller" <davem@davemloft.net>,
-        Andy Lutomirski <luto@amacapital.net>,
+Cc: Sasha Levin <sasha.levin@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, John Stultz <john.stultz@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 045/121] 9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
-Date: Fri, 21 Feb 2014 12:47:49 +0000
-Message-Id: <1392986945-9693-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 043/121] timekeeping: Fix missing timekeeping_update in suspend path
+Date: Fri, 21 Feb 2014 12:47:47 +0000
+Message-Id: <1392986945-9693-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,70 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Yao <ryao@gentoo.org>
+From: John Stultz <john.stultz@linaro.org>
 
-commit b6f52ae2f0d32387bde2b89883e3b64d88b9bfe8 upstream.
+commit 330a1617b0a6268d427aa5922c94d082b1d3e96d upstream.
 
-The 9p-virtio transport does zero copy on things larger than 1024 bytes
-in size. It accomplishes this by returning the physical addresses of
-pages to the virtio-pci device. At present, the translation is usually a
-bit shift.
+Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
+call timekeeping_update() after any adjustment to the timekeeping
+structure in order to make sure that any adjustments to the structure
+persist.
 
-That approach produces an invalid page address when we read/write to
-vmalloc buffers, such as those used for Linux kernel modules. Any
-attempt to load a Linux kernel module from 9p-virtio produces the
-following stack.
+In the timekeeping suspend path, we udpate the timekeeper
+structure, so we should be sure to update the shadow-timekeeper
+before releasing the timekeeping locks. Currently this isn't done.
 
-[<ffffffff814878ce>] p9_virtio_zc_request+0x45e/0x510
-[<ffffffff814814ed>] p9_client_zc_rpc.constprop.16+0xfd/0x4f0
-[<ffffffff814839dd>] p9_client_read+0x15d/0x240
-[<ffffffff811c8440>] v9fs_fid_readn+0x50/0xa0
-[<ffffffff811c84a0>] v9fs_file_readn+0x10/0x20
-[<ffffffff811c84e7>] v9fs_file_read+0x37/0x70
-[<ffffffff8114e3fb>] vfs_read+0x9b/0x160
-[<ffffffff81153571>] kernel_read+0x41/0x60
-[<ffffffff810c83ab>] copy_module_from_fd.isra.34+0xfb/0x180
+In most cases, the next time related code to run would be
+timekeeping_resume, which does update the shadow-timekeeper, but
+in an abundence of caution, this patch adds the call to
+timekeeping_update() in the suspend path.
 
-Subsequently, QEMU will die printing:
-
-qemu-system-x86_64: virtio: trying to map MMIO memory
-
-This patch enables 9p-virtio to correctly handle this case. This not
-only enables us to load Linux kernel modules off virtfs, but also
-enables ZFS file-based vdevs on virtfs to be used without killing QEMU.
-
-Special thanks to both Avi Kivity and Alexander Graf for their
-interpretation of QEMU backtraces. Without their guidence, tracking down
-this bug would have taken much longer. Also, special thanks to Linus
-Torvalds for his insightful explanation of why this should use
-is_vmalloc_addr() instead of is_vmalloc_or_module_addr():
-
-https://lkml.org/lkml/2014/2/8/272
-
-Signed-off-by: Richard Yao <ryao@gentoo.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/9p/trans_virtio.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index 990afab..c76a438 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -340,7 +340,10 @@ static int p9_get_mapped_pages(struct virtio_chan *chan,
- 		int count = nr_pages;
- 		while (nr_pages) {
- 			s = rest_of_page(data);
--			pages[index++] = kmap_to_page(data);
-+			if (is_vmalloc_addr(data))
-+				pages[index++] = vmalloc_to_page(data);
-+			else
-+				pages[index++] = kmap_to_page(data);
- 			data += s;
- 			nr_pages--;
- 		}
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index cd0c384..bfca770 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1024,6 +1024,8 @@ static int timekeeping_suspend(void)
+ 		timekeeping_suspend_time =
+ 			timespec_add(timekeeping_suspend_time, delta_delta);
+ 	}
++
++	timekeeping_update(tk, TK_MIRROR);
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 
 -- 
 1.9.0
 
