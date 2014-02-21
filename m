@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaBUOGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:06:13 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:50520 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaBUOGK (ORCPT
+	id S1755462AbaBUOKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:10:06 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:61658 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054AbaBUOKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:06:10 -0500
-Message-ID: <53075D4D.1090600@monstr.eu>
-Date: Fri, 21 Feb 2014 15:06:05 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 21 Feb 2014 09:10:04 -0500
+Date: Fri, 21 Feb 2014 09:09:58 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Markus Mayer <markus.mayer@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: bcm2835: Move to mach-bcm directory
+Message-ID: <20140221140958.GK5038@beef>
+References: <1392941771-15774-1-git-send-email-markus.mayer@linaro.org>
+ <5306DBE4.8090106@wwwdotorg.org>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-References: <774153d4-d33f-4bb4-813b-582762bc3af9@TX2EHSMHS021.ehs.local> <20140220182257.GF23217@saruman.home> <20140221120454.GD8783@e106331-lin.cambridge.arm.com> <5307576F.5050506@monstr.eu> <20140221135713.GB20449@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140221135713.GB20449@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5306DBE4.8090106@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 20, 2014 at 09:53:56PM -0700, Stephen Warren wrote:
+> On 02/20/2014 05:16 PM, Markus Mayer wrote:
+> > Move the bcm2835 board file into the mach-bcm directory. This allows us
+> > to get rid of the mach-bcm2835 directory with the associated Kconfig
+> > and Makefile.
+> 
+> This looks fine, although it needs a small patch to bcm2835_defconfig
+> squashed in, which I'll post in a second.
+> 
+> Do you want me to take it through the bcm2835 tree? That's probably
+> easiest to avoid conflicts with any other bcm2835 patches, not that it's
+> too likely there will be any to the board file.
 
->> If we can point to standard interrupt description then please point me=
- to
->> exact description you would like to see here and we can change it.
->=20
-> Unfortunately I'm not aware of a generic interrupts document. I just
-> don't see the point in each document listing interrupt-parent as a
-> requiredp roeprty when it's not. That said this is a trivial detail and=
+That's ok with me. Be aware that we may have minor Kconfig/Makefile
+conflicts between the bcm2835 tree and the mach-bcm tree since we just
+queued the bcm5301x support.
 
-> not really a blocker.
-
-I agree with you that copying this part again and again is just problemat=
-ic.
-Time to time I see that IRQs doesn't need to be described too.
-
-I am also not sure if kernel can work without interrupt-parent at all.
-I expect that it won't work and because we have interrupt parent in every=
-
-node (which is generated) it is probably required in our setup.
-
-As you said it is just trivial detail for me too.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMHXU0ACgkQykllyylKDCEMmwCdE/CIJmrj0m8iKa00Jbx1tZg0
-baIAn1bkwI6GSQtk98aB70blb4+1wezR
-=sQB7
------END PGP SIGNATURE-----
-
---CbjoqpOOPcFLVwkBmqR8WBH6MPTMkcXlN--
+-Matt
