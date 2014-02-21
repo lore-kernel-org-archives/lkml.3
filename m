@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766AbaBUMwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:52:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47342 "EHLO
+	id S932751AbaBUMwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:52:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47346 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932720AbaBUMv6 (ORCPT
+	with ESMTP id S932124AbaBUMwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:58 -0500
+	Fri, 21 Feb 2014 07:52:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>,
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 121/121] EDAC: Correct workqueue setup path
-Date: Fri, 21 Feb 2014 12:49:05 +0000
-Message-Id: <1392986945-9693-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 119/121] drivers/edac/edac_mc_sysfs.c: poll timeout cannot be zero
+Date: Fri, 21 Feb 2014 12:49:03 +0000
+Message-Id: <1392986945-9693-120-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -27,69 +31,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit cb6ef42e516cb8948f15e4b70dc03af8020050a2 upstream.
+commit 79040cad3f8235937e229f1b9401ba36dd5ad69b upstream.
 
-We're using edac_mc_workq_setup() both on the init path, when
-we load an edac driver and when we change the polling period
-(edac_mc_reset_delay_period) through /sys/.../edac_mc_poll_msec.
+If you do
 
-On that second path we don't need to init the workqueue which has been
-initialized already.
+  echo 0 > /sys/module/edac_core/parameters/edac_mc_poll_msec
 
-Thanks to Tejun for workqueue insights.
+the following stack trace is output because the edac module is not
+designed to poll with a timeout of zero.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1391457913-881-1-git-send-email-prarit@redhat.com
+  WARNING: CPU: 12 PID: 0 at lib/list_debug.c:33 __list_add+0xac/0xc0()
+  list_add corruption. prev->next should be next (ffff8808291dd1b8), but was           (null). (prev=ffff8808286fe3f8).
+  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+  CPU: 12 PID: 0 Comm: swapper/12 Not tainted 3.13.0+ #1
+  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+  Call Trace:
+   <IRQ>
+    __list_add+0xac/0xc0
+    __internal_add_timer+0xab/0x130
+    internal_add_timer+0x17/0x40
+    mod_timer_pinned+0xca/0x170
+    intel_pstate_timer_func+0x28a/0x380
+    call_timer_fn+0x36/0x100
+    run_timer_softirq+0x1ff/0x2f0
+    __do_softirq+0xf5/0x2e0
+    irq_exit+0x10d/0x120
+    smp_apic_timer_interrupt+0x45/0x60
+    apic_timer_interrupt+0x6d/0x80
+   <EOI>
+    cpuidle_idle_call+0xb9/0x1f0
+    arch_cpu_idle+0xe/0x30
+    cpu_startup_entry+0x9e/0x240
+    start_secondary+0x1e4/0x290
+
+  kernel BUG at kernel/timer.c:1084!
+  invalid opcode: 0000 [#1] SMP
+  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+  CPU: 12 PID: 0 Comm: swapper/12 Tainted: G        W    3.13.0+ #1
+  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+  Call Trace:
+   <IRQ>
+    run_timer_softirq+0x245/0x2f0
+    __do_softirq+0xf5/0x2e0
+    irq_exit+0x10d/0x120
+    smp_apic_timer_interrupt+0x45/0x60
+    apic_timer_interrupt+0x6d/0x80
+   <EOI>
+    cpuidle_idle_call+0xb9/0x1f0
+    arch_cpu_idle+0xe/0x30
+    cpu_startup_entry+0x9e/0x240
+    start_secondary+0x1e4/0x290
+  RIP   cascade+0x93/0xa0
+
+  WARNING: CPU: 36 PID: 1154 at kernel/workqueue.c:1461 __queue_delayed_work+0xed/0x1a0()
+  Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+  CPU: 36 PID: 1154 Comm: kworker/u481:3 Tainted: G        W    3.13.0+ #1
+  Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+  Workqueue: edac-poller edac_mc_workq_function [edac_core]
+  Call Trace:
+    dump_stack+0x45/0x56
+    warn_slowpath_common+0x7d/0xa0
+    warn_slowpath_null+0x1a/0x20
+    __queue_delayed_work+0xed/0x1a0
+    queue_delayed_work_on+0x27/0x50
+    edac_mc_workq_function+0x72/0xa0 [edac_core]
+    process_one_work+0x17b/0x460
+    worker_thread+0x11b/0x400
+    kthread+0xd2/0xf0
+    ret_from_fork+0x7c/0xb0
+
+This patch adds a range check in the edac_mc_poll_msec code to check for 0.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/edac/edac_mc.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/edac/edac_mc_sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 705f0a3..a9d98cd 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -559,7 +559,8 @@ static void edac_mc_workq_function(struct work_struct *work_req)
-  *
-  *		called with the mem_ctls_mutex held
-  */
--static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
-+static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec,
-+				bool init)
- {
- 	edac_dbg(0, "\n");
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 9f7e0e60..c855b71 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -61,7 +61,7 @@ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
+ 	ret = kstrtol(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if ((int)l != l)
++	if (!l || ((int)l != l))
+ 		return -EINVAL;
+ 	*((int *)kp->arg) = l;
  
-@@ -567,7 +568,9 @@ static void edac_mc_workq_setup(struct mem_ctl_info *mci, unsigned msec)
- 	if (mci->op_state != OP_RUNNING_POLL)
- 		return;
- 
--	INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+	if (init)
-+		INIT_DELAYED_WORK(&mci->work, edac_mc_workq_function);
-+
- 	mod_delayed_work(edac_workqueue, &mci->work, msecs_to_jiffies(msec));
- }
- 
-@@ -611,7 +614,7 @@ void edac_mc_reset_delay_period(unsigned long value)
- 	list_for_each(item, &mc_devices) {
- 		mci = list_entry(item, struct mem_ctl_info, link);
- 
--		edac_mc_workq_setup(mci, value);
-+		edac_mc_workq_setup(mci, value, false);
- 	}
- 
- 	mutex_unlock(&mem_ctls_mutex);
-@@ -782,7 +785,7 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
- 		/* This instance is NOW RUNNING */
- 		mci->op_state = OP_RUNNING_POLL;
- 
--		edac_mc_workq_setup(mci, edac_mc_get_poll_msec());
-+		edac_mc_workq_setup(mci, edac_mc_get_poll_msec(), true);
- 	} else {
- 		mci->op_state = OP_RUNNING_INTERRUPT;
- 	}
 -- 
 1.9.0
 
