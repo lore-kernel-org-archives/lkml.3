@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704AbaBUQW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:22:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54796 "EHLO mx1.redhat.com"
+	id S932747AbaBUQYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:24:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45361 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932420AbaBUQW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:22:58 -0500
-Date: Fri, 21 Feb 2014 17:24:55 +0100
+	id S932125AbaBUQYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:24:32 -0500
+Date: Fri, 21 Feb 2014 17:26:26 +0100
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Subject: [PATCH v2] portdrv: Use pci_enable_msix_exact() instead of
+Cc: Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2] tsi721: Use pci_enable_msix_exact() instead of
  pci_enable_msix()
-Message-ID: <20140221162455.GC17353@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-6-git-send-email-agordeev@redhat.com>
+Message-ID: <20140221162626.GD17353@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-7-git-send-email-agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392804931-30671-6-git-send-email-agordeev@redhat.com>
+In-Reply-To: <1392804931-30671-7-git-send-email-agordeev@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,34 +33,36 @@ and pci_enable_msix_range() or pci_enable_msix_exact()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/pci/pcie/portdrv_core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/rapidio/devices/tsi721.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-index 986f8ea..0b1efb2 100644
---- a/drivers/pci/pcie/portdrv_core.c
-+++ b/drivers/pci/pcie/portdrv_core.c
-@@ -99,7 +99,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
- 	for (i = 0; i < nr_entries; i++)
- 		msix_entries[i].entry = i;
- 
--	status = pci_enable_msix(dev, msix_entries, nr_entries);
-+	status = pci_enable_msix_exact(dev, msix_entries, nr_entries);
- 	if (status)
- 		goto Exit;
- 
-@@ -171,7 +171,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
- 		pci_disable_msix(dev);
- 
- 		/* Now allocate the MSI-X vectors for real */
--		status = pci_enable_msix(dev, msix_entries, nvec);
-+		status = pci_enable_msix_exact(dev, msix_entries, nvec);
- 		if (status)
- 			goto Exit;
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index ff7cbf2..ce08e8d 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -768,15 +768,10 @@ static int tsi721_enable_msix(struct tsi721_device *priv)
  	}
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+ 
+-	err = pci_enable_msix(priv->pdev, entries, ARRAY_SIZE(entries));
++	err = pci_enable_msix_exact(priv->pdev, entries, ARRAY_SIZE(entries));
+ 	if (err) {
+-		if (err > 0)
+-			dev_info(&priv->pdev->dev,
+-				 "Only %d MSI-X vectors available, "
+-				 "not using MSI-X\n", err);
+-		else
+-			dev_err(&priv->pdev->dev,
+-				"Failed to enable MSI-X (err=%d)\n", err);
++		dev_err(&priv->pdev->dev,
++			"Failed to enable MSI-X (err=%d)\n", err);
+ 		return err;
+ 	}
+ 
 -- 
 1.7.7.6
 
