@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaBUTwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:52:45 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39722 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753459AbaBUTti (ORCPT
+	id S1755355AbaBUTxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:53:00 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:54142 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaBUTw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:49:38 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        b.brezillon@overkiz.com,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 1/9] ARM: at91: prepare at91sam9rl DT transition
-Date: Fri, 21 Feb 2014 20:48:50 +0100
-Message-Id: <1393012138-17255-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1393012138-17255-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 21 Feb 2014 14:52:57 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chris Ball <chris@printf.net>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Amarinder Bindra <a-bindra@ti.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/2] mmc: host: MMC_SH_MMCIF should depend on HAS_DMA
+Date: Fri, 21 Feb 2014 20:52:50 +0100
+Message-Id: <1393012371-22320-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new names, coming from DT, for the clock lookups.
+If NO_DMA=y:
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+    drivers/built-in.o: In function `sh_mmcif_start_dma_tx':
+    sh_mmcif.c:(.text+0x5a3286): undefined reference to `dma_map_sg'
+    drivers/built-in.o: In function `sh_mmcif_start_dma_rx':
+    sh_mmcif.c:(.text+0x5a33fc): undefined reference to `dma_map_sg'
+    drivers/built-in.o: In function `sh_mmcif_end_cmd':
+    sh_mmcif.c:(.text+0x5a3668): undefined reference to `dma_unmap_sg'
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/arm/mach-at91/at91sam9rl.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/mmc/host/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index 3651517abedf..d6ee8bb47213 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -196,6 +196,22 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_ID("pioB", &pioB_clk),
- 	CLKDEV_CON_ID("pioC", &pioC_clk),
- 	CLKDEV_CON_ID("pioD", &pioD_clk),
-+	/* more lookup table for DT entries */
-+	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
-+	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
-+	CLKDEV_CON_DEV_ID("usart", "ffffb400.serial", &usart1_clk),
-+	CLKDEV_CON_DEV_ID("usart", "ffffb800.serial", &usart2_clk),
-+	CLKDEV_CON_DEV_ID("usart", "ffffbc00.serial", &usart3_clk),
-+	CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
-+	CLKDEV_CON_DEV_ID("t1_clk", "fffa0000.timer", &tc1_clk),
-+	CLKDEV_CON_DEV_ID("t2_clk", "fffa0000.timer", &tc2_clk),
-+	CLKDEV_CON_DEV_ID("mci_clk", "fffa4000.mmc", &mmc_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffa8000.i2c", &twi0_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffac000.i2c", &twi1_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioA_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioB_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioC_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioD_clk),
- };
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 1384f67abe21..bfe2133d0b9c 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -611,7 +611,7 @@ config MMC_DW_PCI
  
- static struct clk_lookup usart_clocks_lookups[] = {
+ config MMC_SH_MMCIF
+ 	tristate "SuperH Internal MMCIF support"
+-	depends on MMC_BLOCK
++	depends on MMC_BLOCK && HAS_DMA
+ 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+ 	help
+ 	  This selects the MMC Host Interface controller (MMCIF).
 -- 
-1.8.3.2
+1.7.9.5
 
