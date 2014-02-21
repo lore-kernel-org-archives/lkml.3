@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324AbaBUTJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:09:33 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50356 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116AbaBUTJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 14:09:32 -0500
-Date: Fri, 21 Feb 2014 20:09:17 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: Re: [PATCH] phy: restrict Samsung S5P/Exynos drivers to the
- respective architectures
-Message-ID: <20140221190917.GN6988@pengutronix.de>
-References: <1392991526-20895-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <53077707.9060409@samsung.com>
+	id S1754722AbaBUTLk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:11:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457AbaBUTLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 14:11:38 -0500
+Date: Fri, 21 Feb 2014 16:10:55 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        davidlohr@hp.com, isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Message-ID: <20140221191055.GD19955@amt.cnet>
+References: <20140217085622.39b39cac@redhat.com>
+ <alpine.DEB.2.02.1402171518080.25724@chino.kir.corp.google.com>
+ <20140218123013.GA20609@amt.cnet>
+ <alpine.DEB.2.02.1402181407510.20772@chino.kir.corp.google.com>
+ <20140220022254.GA25898@amt.cnet>
+ <alpine.DEB.2.02.1402191941330.29913@chino.kir.corp.google.com>
+ <20140220213407.GA11048@amt.cnet>
+ <alpine.DEB.2.02.1402201502580.30647@chino.kir.corp.google.com>
+ <20140221022800.GA30230@amt.cnet>
+ <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53077707.9060409@samsung.com>
+In-Reply-To: <alpine.DEB.2.02.1402210158400.17851@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 04:55:51PM +0100, Sylwester Nawrocki wrote:
-> Hi,
+On Fri, Feb 21, 2014 at 02:07:08AM -0800, David Rientjes wrote:
+> On Thu, 20 Feb 2014, Marcelo Tosatti wrote:
 > 
-> On 21/02/14 15:05, Uwe Kleine-König wrote:
-> > Enabling these drivers on platforms not created by Samsung is useless
-> > unless you're doing compile tests. So don't offer the users to enable
-> > them without COMPILE_TEST for configs with S5P/Exynos disabled.
+> > > 1GB is of such granularity that you'd typically either be (a) oom so that 
+> > > your userspace couldn't even start, or (b) have enough memory such that 
+> > > userspace would be able to start and allocate them dynamically through an 
+> > > initscript.
+> > 
+> > There are a number of kernel command line parameters which can be
+> > modified in runtime as well.
+> > 
 > 
-> Thanks for the patch, I've already sent something similar to Kishon, but
-> I've messed up the mailing list address. A bit improved v2 I just posted
-> can be found here:
+> We could also make the kernel command line implement a shell scripting 
+> language of your choice.  There's no technical objection to it, of course 
+> you can do it, but is it in the interest of the kernel in terms of 
+> maintainability?
 > 
-> https://patchwork.kernel.org/patch/3698271/
-> https://patchwork.kernel.org/patch/3698251/
-fine for me. If you need to repost feel free to add my Ack for these.
+> > You are asking what is the use-case.
+> > 
+> 
+> I'm asking what the use case is because it's still not explained.  You say 
+> a customer wants 8 1GB hugepages on node 0 on a 32GB machine.  Perfectly 
+> understandable.  The only thing missing, and is practically begging to be 
+> answered in this thread, is why must it be done on the command line?  That 
+> would be the justification for the patchset.  Andrew asked for Luiz to 
+> elaborate originally and even today the use case is not well described.
 
-Best regards
-Uwe
+It is explained. You deleted it while replying (feel free to ask for
+more information there and it will be provided).
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> If you're asking for a maintenance burden to be accepted forever, it seems 
+> like as part of your due diligence that you would show why it must be done 
+> that way.  
+
+It does not have to be maintained forever. See 
+27be457000211a6903968dfce06d5f73f051a217 for one or git log for many
+commands which have been removed.
+
+If it becomes a maintenance burden, it can be removed.
+
+> Being the easiest or "pragmatic" is not it, there is a much 
+> larger set of people who would be interested in dynamic allocation, myself 
+> and Google included.
+
+OK.
+
+> > A particular distribution is irrelevant. What you want is a non default
+> > distribution of 1GB hugepages.
+> > 
+> > Can you agree with that ? (forget about particular values, please).
+> > 
+> 
+> I agree that your customer wants a non-default distribution of 1GB 
+> hugepages, yes, that's clear.  The questions that have not been answered: 
+> why must it be done this way as opposed to runtime?  If 1GB hugepages 
+> could be dynamically allocated, would your customer be able to use it?  If 
+> not, why not?  If dynamic allocation resolves all the issues, then is this 
+> patchset a needless maintenance burden if we had such support today?
+
+It must be done this way because:
+
+1) its the only interface which is easily backportable.
+
+2) it improves the kernel command line interface from incomplete
+(lacking the ability to specify node<->page correlation), to 
+a complete interface.
+
+And also, the existance of the command line interface does not interfere in
+any way with the dynamic allocation in userspace (just as you can
+allocate 2M pages via kernel command line _and_ allocate during
+runtime).
