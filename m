@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480AbaBUNkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:40:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47041 "EHLO
+	id S933295AbaBUNkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:40:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47045 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaBUMuh (ORCPT
+	with ESMTP id S932330AbaBUMuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 07:50:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 064/121] usb-storage: enable multi-LUN scanning when needed
-Date: Fri, 21 Feb 2014 12:48:08 +0000
-Message-Id: <1392986945-9693-65-git-send-email-luis.henriques@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 065/121] md/raid1: restore ability for check and repair to fix read errors.
+Date: Fri, 21 Feb 2014 12:48:09 +0000
+Message-Id: <1392986945-9693-66-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -30,73 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: NeilBrown <neilb@suse.de>
 
-commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
+commit 1877db75589a895bbdc4c4c3f23558e57b521141 upstream.
 
-People sometimes create their own custom-configured kernels and forget
-to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
-in a USB storage device (such as a card reader) with more than one
-LUN.
+commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+    md/raid1: fix bio handling problems in process_checks()
 
-Fortunately, we can tell fairly easily when a storage device claims to
-have more than one LUN.  When that happens, this patch asks the SCSI
-layer to probe all the LUNs automatically, regardless of the config
-setting.
+Move the bio_reset() to a point before where BIO_UPTODATE is checked,
+so that check now always report that the bio is uptodate, even if it is not.
 
-The patch also updates the Kconfig help text for usb-storage,
-explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
+This causes process_check() to sometimes treat read-errors as
+successful matches so the good data isn't written out.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch preserves the flag until it is needed.
+
+Bug was introduced in 3.11, but backported to 3.10-stable (as it fixed
+an even worse bug).  So suitable for any -stable since 3.10.
+
+Reported-and-tested-by: Michael Tokarev <mjt@tls.msk.ru>
+Fixed: 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/storage/Kconfig    | 4 +++-
- drivers/usb/storage/scsiglue.c | 6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/md/raid1.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/storage/Kconfig b/drivers/usb/storage/Kconfig
-index 8470e1b..1dd0604 100644
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -18,7 +18,9 @@ config USB_STORAGE
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index aacf6bf..6edc2db 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1855,11 +1855,15 @@ static int process_checks(struct r1bio *r1_bio)
+ 	for (i = 0; i < conf->raid_disks * 2; i++) {
+ 		int j;
+ 		int size;
++		int uptodate;
+ 		struct bio *b = r1_bio->bios[i];
+ 		if (b->bi_end_io != end_sync_read)
+ 			continue;
+-		/* fixup the bio for reuse */
++		/* fixup the bio for reuse, but preserve BIO_UPTODATE */
++		uptodate = test_bit(BIO_UPTODATE, &b->bi_flags);
+ 		bio_reset(b);
++		if (!uptodate)
++			clear_bit(BIO_UPTODATE, &b->bi_flags);
+ 		b->bi_vcnt = vcnt;
+ 		b->bi_size = r1_bio->sectors << 9;
+ 		b->bi_sector = r1_bio->sector +
+@@ -1892,11 +1896,14 @@ static int process_checks(struct r1bio *r1_bio)
+ 		int j;
+ 		struct bio *pbio = r1_bio->bios[primary];
+ 		struct bio *sbio = r1_bio->bios[i];
++		int uptodate = test_bit(BIO_UPTODATE, &sbio->bi_flags);
  
- 	  This option depends on 'SCSI' support being enabled, but you
- 	  probably also need 'SCSI device support: SCSI disk support'
--	  (BLK_DEV_SD) for most USB storage devices.
-+	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
-+	  will require 'Probe all LUNs on each SCSI device'
-+	  (SCSI_MULTI_LUN).
+ 		if (sbio->bi_end_io != end_sync_read)
+ 			continue;
++		/* Now we can 'fixup' the BIO_UPTODATE flag */
++		set_bit(BIO_UPTODATE, &sbio->bi_flags);
  
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called usb-storage.
-diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-index 5db1532..bb7bf19 100644
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi_Host *host)
- 
- static int slave_alloc (struct scsi_device *sdev)
- {
-+	struct us_data *us = host_to_us(sdev->host);
-+
- 	/*
- 	 * Set the INQUIRY transfer length to 36.  We don't use any of
- 	 * the extra data and many devices choke if asked for more or
-@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_device *sdev)
- 	 */
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
- 
-+	/* Tell the SCSI layer if we know there is more than one LUN */
-+	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
-+		sdev->sdev_bflags |= BLIST_FORCELUN;
-+
- 	return 0;
- }
- 
+-		if (test_bit(BIO_UPTODATE, &sbio->bi_flags)) {
++		if (uptodate) {
+ 			for (j = vcnt; j-- ; ) {
+ 				struct page *p, *s;
+ 				p = pbio->bi_io_vec[j].bv_page;
+@@ -1911,7 +1918,7 @@ static int process_checks(struct r1bio *r1_bio)
+ 		if (j >= 0)
+ 			atomic64_add(r1_bio->sectors, &mddev->resync_mismatches);
+ 		if (j < 0 || (test_bit(MD_RECOVERY_CHECK, &mddev->recovery)
+-			      && test_bit(BIO_UPTODATE, &sbio->bi_flags))) {
++			      && uptodate)) {
+ 			/* No need to write to this device. */
+ 			sbio->bi_end_io = NULL;
+ 			rdev_dec_pending(conf->mirrors[i].rdev, mddev);
 -- 
 1.9.0
 
