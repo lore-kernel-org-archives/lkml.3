@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaBUTpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 14:45:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35274 "EHLO
+	id S1753158AbaBUTp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 14:45:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35266 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751308AbaBUTp2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751128AbaBUTp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 14:45:28 -0500
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, lee.jones@linaro.org,
         linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH 3/3] mfd: arizona: Use new regmap features for manual register patch
-Date: Fri, 21 Feb 2014 19:37:12 +0000
-Message-Id: <1393011432-28909-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] regmap: Check stride of register patch as we register it
+Date: Fri, 21 Feb 2014 19:37:10 +0000
+Message-Id: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the wm5102 the register patches are applied manually, rather than by
-the regmap core. This application is wrapped in calls to
-regcache_cache_bypass. However, this is dangerous as other threads may
-be accessing the hardware at the same time as the pm_runtime operations
-and if they do so during the period whilst cache_bypass is enabled those
-writes will miss the cache when they shouldn't.
+Currently, we check the registers in the patch are aligned to the
+register stride everytime we sync the cache and the first time the patch
+is written out is unchecked.
 
-Apply the register patch using the new regmap_apply_patch function to
-avoid this problem. Also remove the call to regcache_cache_bypass from
-the hardware patch application as it is unneeded there and creates a
-similar window for writes to miss the cache.
+This patch checks the register patch when we first register it so the
+first writes are no longer unchecked and then doesn't check on
+subsequent syncs as the patch will be unchanged.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c  |    4 ----
- drivers/mfd/wm5102-tables.c |   19 ++-----------------
- 2 files changed, 2 insertions(+), 21 deletions(-)
+ drivers/base/regmap/regcache.c |    4 ----
+ drivers/base/regmap/regmap.c   |    4 ++++
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index a45aab9..1c3ae57 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -251,8 +251,6 @@ static int arizona_apply_hardware_patch(struct arizona* arizona)
- 	unsigned int fll, sysclk;
- 	int ret, err;
- 
--	regcache_cache_bypass(arizona->regmap, true);
--
- 	/* Cache existing FLL and SYSCLK settings */
- 	ret = regmap_read(arizona->regmap, ARIZONA_FLL1_CONTROL_1, &fll);
- 	if (ret != 0) {
-@@ -322,8 +320,6 @@ err_fll:
- 			err);
- 	}
- 
--	regcache_cache_bypass(arizona->regmap, false);
--
- 	if (ret != 0)
- 		return ret;
- 	else
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 1e9a4b2..237020d 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -80,8 +80,7 @@ static const struct reg_default wm5102_revb_patch[] = {
- int wm5102_patch(struct arizona *arizona)
- {
- 	const struct reg_default *wm5102_patch;
--	int ret = 0;
--	int i, patch_size;
-+	int patch_size;
- 
- 	switch (arizona->rev) {
- 	case 0:
-@@ -92,21 +91,7 @@ int wm5102_patch(struct arizona *arizona)
- 		patch_size = ARRAY_SIZE(wm5102_revb_patch);
- 	}
- 
--	regcache_cache_bypass(arizona->regmap, true);
--
--	for (i = 0; i < patch_size; i++) {
--		ret = regmap_write(arizona->regmap, wm5102_patch[i].reg,
--				   wm5102_patch[i].def);
--		if (ret != 0) {
--			dev_err(arizona->dev, "Failed to write %x = %x: %d\n",
--				wm5102_patch[i].reg, wm5102_patch[i].def, ret);
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index dd56177..c6b1ac1 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -312,10 +312,6 @@ int regcache_sync(struct regmap *map)
+ 	/* Apply any patch first */
+ 	map->cache_bypass = 1;
+ 	for (i = 0; i < map->patch_regs; i++) {
+-		if (map->patch[i].reg % map->reg_stride) {
+-			ret = -EINVAL;
 -			goto out;
 -		}
--	}
--
--out:
--	regcache_cache_bypass(arizona->regmap, false);
--	return ret;
-+	return regmap_apply_patch(arizona->regmap, wm5102_patch, patch_size);
- }
+ 		ret = _regmap_write(map, map->patch[i].reg, map->patch[i].def);
+ 		if (ret != 0) {
+ 			dev_err(map->dev, "Failed to write %x = %x: %d\n",
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c766f5f..c2ba89a 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -2212,6 +2212,10 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
  
- static const struct regmap_irq wm5102_aod_irqs[ARIZONA_NUM_IRQ] = {
+ 	/* Write out first; it's useful to apply even if we fail later. */
+ 	for (i = 0; i < num_regs; i++) {
++		if (regs[i].reg % map->reg_stride) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		ret = _regmap_write(map, regs[i].reg, regs[i].def);
+ 		if (ret != 0) {
+ 			dev_err(map->dev, "Failed to write %x = %x: %d\n",
 -- 
 1.7.2.5
 
