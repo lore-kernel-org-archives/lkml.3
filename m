@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaBUOwF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 09:52:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932115AbaBUOwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 09:52:03 -0500
-Date: Fri, 21 Feb 2014 16:55:50 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>
-Subject: Re: [PATCH net V2] virtio-net: alloc big buffers also when guest can
- receive UFO
-Message-ID: <20140221145550.GA4408@redhat.com>
-References: <1392959284-11399-1-git-send-email-jasowang@redhat.com>
+	id S932163AbaBUOwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 09:52:22 -0500
+Received: from nm49.bullet.mail.ne1.yahoo.com ([98.138.120.56]:22488 "HELO
+	nm49.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754396AbaBUOwR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 09:52:17 -0500
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 475411.63864.bm@omp1007.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=rMpibQ/TuCYj1rDTJMNMDtTrpi1wpKqv/Y1LUw7r0Eca1BGo+fWib5jBgtfuMBt/GlkdekkN1iftVIe0Rnr/0dY21zUI9t4GvvXCGSgZteWo5CLKGab/gjGiY8TO0NV+aGB3hZ8T6xHpO812XHxCiuAH5lKxB0IsTu4vffdBjss=;
+X-YMail-OSG: Ldh8ttMVM1nWrvVx67Cvv_85L7m7G_RZLeIT2FNulQQbRI0
+ fMOMQRnHDIYIsqYYHc60BMZjQUX2vufrYGSaC6LCdiUFrlGR5rpOYQx6h.mj
+ fkb3cwxtuyNSryhhESMbPLyx9smnv1jh6mFrcG428Qyt_AM6PKu55oLSYaoa
+ ysJpDq1_dVirye_UFgV3sXJFZhaS1jUoQ.qcf6df1u4ZQgSSxgIBNcy.4.Ie
+ c_HUQRUUYa68ZWxEyooxHr.ryLaiLluRcuMK_SLFyRidsgF1vDsmF6IrRUAp
+ ESJtRUuo1Xr8R6fC0QXEqAd__2MBAbvDs8vabvSBvcQua8TNJngiFdAn_lBW
+ ASQzWfeJS3G8ngI3qD3rexB6TsC1cKqlBXX_L_2yGUs5pfJ0t_hd0EdP0sxE
+ ke9sIiOKIzmR_wKJaHRYRthJGOGqUWkAsUTts3SjJ9jPcV.j1SylFwg7iv98
+ yc5CdFaqxgIhLlE3oHnIQjADMo_OFFVWX31Uho8SjjOz.k2QtFaZsrDwjG87
+ sMY72DMZT0BEsHrDAMt.m8p7cqnaKodUk4jooALDAclsrBIycenkGRIxW_X_
+ qkosOEPQ145l8qbZzmQLE8HBMNDs-
+X-Rocket-MIMEInfo: 002.001,T24gRnJpZGF5LCAyMSBGZWJydWFyeSAyMDE0LCA5OjQ3LCBIYW5zIGRlIEdvZWRlIDxoZGVnb2VkZUByZWRoYXQuY29tPiB3cm90ZToKCj4gVGhpcyBpcyBsaWtlbHkgY2F1c2VkIGJ5IHRoZSBjYW1lcmEgYmVpbmcgcGx1Z2dlZCBpbnRvIGEgdXNiLWJ1cyB3aGljaCBhbHJlYWR5IGlzIHVzZWQKPiBieSBvdGhlciByZXNlcnZlZC1iYW5kd2lkdGggZGV2aWNlcyBzdWNoIGFzIG1pY2UsIGtleWJvYXJkLCB1c2Igc291bmRjYXJkcywgZXRjLgoKPiBJZiBwb3NzaWJsZSBVU0ItMyBwb3J0cyBhcmUgcHJlZmVycmUBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1392924626.38711.YahooMailNeo@web120304.mail.ne1.yahoo.com> <5307208B.8030908@redhat.com>
+Message-ID: <1392994175.4964.YahooMailNeo@web120304.mail.ne1.yahoo.com>
+Date: Fri, 21 Feb 2014 06:49:35 -0800 (PST)
+From: Chris Rankin <rankincj@yahoo.com>
+Reply-To: Chris Rankin <rankincj@yahoo.com>
+Subject: Re: PWC webcam and setpwc tool no longer working with 3.12.11 kernel
+To: Hans de Goede <hdegoede@redhat.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <5307208B.8030908@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392959284-11399-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 01:08:04PM +0800, Jason Wang wrote:
-> We should alloc big buffers also when guest can receive UFO
-> pakcets to let the big packets be fit into guest rx buffer.
+On Friday, 21 February 2014, 9:47, Hans de Goede <hdegoede@redhat.com> wrote:
 
-s/pakcets/packets/
+> This is likely caused by the camera being plugged into a usb-bus which already is used
+> by other reserved-bandwidth devices such as mice, keyboard, usb soundcards, etc.
 
-s/be fit/fit/
+> If possible USB-3 ports are preferred over USB-2 ports or connecting through an USB-2
+> hub. USB-2's USB-1 emulation has some issues, which means we cannot use full USB-1 bandwidth
+> there.
 
-otherwise:
+Hi,
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Yes, it turns out that every device plugged into one of the USB2 ports on the back of this PC ends up on the same USB2 hub. Moving the PWC device to one of the USB3 ports instead allows it to work, although it seems like a shocking waste of a USB3 port - this being an old USB1 webcam!
 
+And v4l2-ctl seem to recognise it as well:
 
-> 
-> Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-> (virtio-net: Allow UFO feature to be set and advertised.)
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Sridhar Samudrala <sri@us.ibm.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from V1:
-> - tweak the commit log
-> ---
->  drivers/net/virtio_net.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index d75f8ed..5632a99 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1711,7 +1711,8 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	/* If we can receive ANY GSO packets, we must allocate large ones. */
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
->  	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
-> -	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-> +	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-> +	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
->  		vi->big_packets = true;
->  
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-> -- 
-> 1.8.3.2
+$ v4l2-ctl --info
+Driver Info (not using libv4l2):
+    Driver name   : pwc
+    Card type     : Logitech QuickCam Zoom
+    Bus info      : usb-0000:05:00.0-2
+    Driver version: 3.12.11
+    Capabilities  : 0x85000001
+        Video Capture
+        Read/Write
+        Streaming
+        Device Capabilities
+    Device Caps   : 0x05000001
+        Video Capture
+        Read/Write
+        Streaming
+
+Cheers,
+Chris
+
