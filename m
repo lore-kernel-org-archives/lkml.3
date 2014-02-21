@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933430AbaBUNeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:34:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47113 "EHLO
+	id S932407AbaBUMuu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47081 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428AbaBUMvB (ORCPT
+	with ESMTP id S932144AbaBUMuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:51:01 -0500
+	Fri, 21 Feb 2014 07:50:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/121] mei: don't unset read cb ptr on reset
-Date: Fri, 21 Feb 2014 12:48:23 +0000
-Message-Id: <1392986945-9693-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 072/121] mac80211: fix fragmentation code, particularly for encryption
+Date: Fri, 21 Feb 2014 12:48:16 +0000
+Message-Id: <1392986945-9693-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -29,69 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 5cb906c7035f03a3a44fecece9d3ff8fcc75d6e0 upstream.
+commit 338f977f4eb441e69bb9a46eaa0ac715c931a67f upstream.
 
-Don't set read callback to NULL during reset as
-this leads to memory leak of both cb and its buffer.
-The memory is correctly freed during mei_release.
+The "new" fragmentation code (since my rewrite almost 5 years ago)
+erroneously sets skb->len rather than using skb_trim() to adjust
+the length of the first fragment after copying out all the others.
+This leaves the skb tail pointer pointing to after where the data
+originally ended, and thus causes the encryption MIC to be written
+at that point, rather than where it belongs: immediately after the
+data.
 
-The memory leak is detectable by kmemleak if
-application has open read call while system is going through
-suspend/resume.
+The impact of this is that if software encryption is done, then
+ a) encryption doesn't work for the first fragment, the connection
+    becomes unusable as the first fragment will never be properly
+    verified at the receiver, the MIC is practically guaranteed to
+    be wrong
+ b) we leak up to 8 bytes of plaintext (!) of the packet out into
+    the air
 
-unreferenced object 0xecead780 (size 64):
-  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
-  hex dump (first 32 bytes):
-    00 01 10 00 00 02 20 00 00 bf 30 f1 00 00 00 00  ...... ...0.....
-    00 00 00 00 00 00 00 00 36 01 00 00 00 70 da e2  ........6....p..
-  backtrace:
-    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
-    [<c131ed56>] kmem_cache_alloc_trace+0xc6/0x190
-    [<c16243c9>] mei_io_cb_init+0x29/0x50
-    [<c1625722>] mei_cl_read_start+0x102/0x360
-    [<c16268f3>] mei_read+0x103/0x4e0
-    [<c1324b09>] vfs_read+0x89/0x160
-    [<c1324d5f>] SyS_read+0x4f/0x80
-    [<c1a7b318>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe2da7000 (size 512):
-  comm "AsyncTask #1", pid 1018, jiffies 4294949621 (age 152.440s)
-  hex dump (first 32 bytes):
-    00 6c da e2 7c 00 00 00 00 00 00 00 c0 eb 0c 59  .l..|..........Y
-    1b 00 00 00 01 00 00 00 02 10 00 00 01 00 00 00  ................
-  backtrace:
-    [<c1a60aec>] kmemleak_alloc+0x3c/0xa0
-    [<c131f127>] __kmalloc+0xe7/0x1d0
-    [<c162447e>] mei_io_cb_alloc_resp_buf+0x2e/0x60
-    [<c162574c>] mei_cl_read_start+0x12c/0x360
-    [<c16268f3>] mei_read+0x103/0x4e0
-    [<c1324b09>] vfs_read+0x89/0x160
-    [<c1324d5f>] SyS_read+0x4f/0x80
-    [<c1a7b318>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
+This is only mitigated by the fact that many devices are capable
+of doing encryption in hardware, in which case this can't happen
+as the tail pointer is irrelevant in that case. Additionally,
+fragmentation is not used very frequently and would normally have
+to be configured manually.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fix this by using skb_trim() properly.
+
+Fixes: 2de8e0d999b8 ("mac80211: rewrite fragmentation")
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/client.c | 1 -
- 1 file changed, 1 deletion(-)
+ net/mac80211/tx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index e019165..d307760 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -885,7 +885,6 @@ void mei_cl_all_disconnect(struct mei_device *dev)
- 	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
- 		cl->state = MEI_FILE_DISCONNECTED;
- 		cl->mei_flow_ctrl_creds = 0;
--		cl->read_cb = NULL;
- 		cl->timer_count = 0;
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index ebd9471..cf8d00a 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -855,7 +855,7 @@ static int ieee80211_fragment(struct ieee80211_tx_data *tx,
  	}
+ 
+ 	/* adjust first fragment's length */
+-	skb->len = hdrlen + per_fragm;
++	skb_trim(skb, hdrlen + per_fragm);
+ 	return 0;
  }
+ 
 -- 
 1.9.0
 
