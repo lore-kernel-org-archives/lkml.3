@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaBUMuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47019 "EHLO
+	id S932425AbaBUMuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:50:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47098 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144AbaBUMub (ORCPT
+	with ESMTP id S932144AbaBUMuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:31 -0500
+	Fri, 21 Feb 2014 07:50:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/121] ath9k: Do not support PowerSave by default
-Date: Fri, 21 Feb 2014 12:48:03 +0000
-Message-Id: <1392986945-9693-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/121] ALSA: hda - Add a headset quirk for Dell XPS 13
+Date: Fri, 21 Feb 2014 12:48:20 +0000
+Message-Id: <1392986945-9693-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 8298383c2cd5a6d0639f1bb1781fba181bd20154 upstream.
+commit f47e5dc464251f661da9495fcbf003a0d22c1360 upstream.
 
-Even though we make sure PowerSave is not enabled by default
-by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
-PS could be enabled by userspace based on various factors
-like battery usage etc. Since PS in ath9k is just broken
-and has been untested for years, remove support for it, but
-allow a user to explicitly enable it using a module parameter.
+This quirk is needed for the headset microphone to work.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Alsa-info at http://www.alsa-project.org/db/?f=8c7dfe857ceff462ca2de133e67023c0f68de9cb
+
+Reported-by: Po-Hsu Lin <po-hsu.lin@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/init.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-index 026a2a0..70916d2 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -57,6 +57,10 @@ static int ath9k_enable_diversity;
- module_param_named(enable_diversity, ath9k_enable_diversity, int, 0444);
- MODULE_PARM_DESC(enable_diversity, "Enable Antenna diversity for AR9565");
- 
-+static int ath9k_ps_enable;
-+module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
-+MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
-+
- bool is_ath9k_unloaded;
- /* We use the hw_value as an index into our private channel structure */
- 
-@@ -798,13 +802,15 @@ void ath9k_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
- 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
- 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
- 		IEEE80211_HW_SIGNAL_DBM |
--		IEEE80211_HW_SUPPORTS_PS |
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
- 		IEEE80211_HW_SUPPORTS_RC_TABLE |
- 		IEEE80211_HW_SUPPORTS_HT_CCK_RATES;
- 
-+	if (ath9k_ps_enable)
-+		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
-+
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
- 		hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
- 
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 0fc8bd2..841478b 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4538,6 +4538,7 @@ static const struct snd_pci_quirk alc662_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x060a, "Dell XPS 13", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_ASUS_MODE4),
+ 	SND_PCI_QUIRK(0x1043, 0x1bf3, "ASUS N76VZ", ALC662_FIXUP_ASUS_MODE4),
 -- 
 1.9.0
 
