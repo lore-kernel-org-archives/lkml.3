@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933457AbaBUNhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:37:24 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:54509 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369AbaBUNhT (ORCPT
+	id S933389AbaBUNhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:37:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47073 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932288AbaBUMuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:37:19 -0500
-Message-ID: <5307568C.3020701@acm.org>
-Date: Fri, 21 Feb 2014 07:37:16 -0600
-From: Corey Minyard <minyard@acm.org>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>, "rja@sgi.com" <rja@sgi.com>
-CC: "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2] Change ACPI IPMI support to "default y"
-References: <1392740909-2079-1-git-send-email-matthew.garrett@nebula.com>	 <20140220201458.GA7099@sgi.com> <1392927381.20109.0.camel@x230>	 <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230>	 <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230>
-In-Reply-To: <1392930047.20109.6.camel@x230>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Feb 2014 07:50:44 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 070/121] nl80211: Reset split_start when netlink skb is exhausted
+Date: Fri, 21 Feb 2014 12:48:14 +0000
+Message-Id: <1392986945-9693-71-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 03:00 PM, Matthew Garrett wrote:
-> On Thu, 2014-02-20 at 14:59 -0600, Russ Anderson wrote:
->> On Thu, Feb 20, 2014 at 08:46:04PM +0000, Matthew Garrett wrote:
->>> On Thu, 2014-02-20 at 14:40 -0600, Russ Anderson wrote:
->>>
->>>> This is also a problem for systems with functional BMCs.  Our
->>>> large cluster systems do all IPMI traffic (monitoring) through
->>>> a system controller back door.  We do not want the kernel
->>>> doing IPMI commands on those systems.
->>> Why not?
->> Because some customers want to use cpu cycles for their
->> application and let the ipmi monitoring go on through
->> the system controller network.
-> Why is it generating any significant amount of CPU load? We're not
-> talking about a high-bandwidth interface here.
->
+3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
 
-I believe that problem is fixed now, at least the one with kipmid using
-lots of CPU.
+------------------
 
-However, the basic problem is that hardware vendors produce hardware
-that sucks and then expect software to fix all the problems.  Most IPMI
-interfaces don't have interrupts, so they have to be polled.  Then they
-add important interfaces on top of it like firmware upgrade and ACPI and
-expect it to perform well.  If vendors would just have an interrupt for
-IPMI, 99% of these problems would go away.
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
 
-If there are still issues with lots of CPU being used, then the problem
-is most likely non-compliant or just broken hardware.  I've seen enough
-of that.
+commit f12cb2893069495726c21a4b0178705dacfecfe0 upstream.
 
-One thing we can do is remove the default interface probing for IPMI. 
-Even though the spec has it, all modern hardware should have it
-specified in ACPI or device tree.  That should fix all the slow boot
-problems, at least.  If a user wants to add a default interface, they
-can use the interface to dynamically add it after boot time.
+When the netlink skb is exhausted split_start is left set. In the
+subsequent retry, with a larger buffer, the dump is continued from the
+failing point instead of from the beginning.
 
--corey
+This was causing my rt28xx based USB dongle to now show up when
+running "iw list" with an old iw version without split dump support.
+
+Fixes: 3713b4e364ef ("nl80211: allow splitting wiphy information in dumps")
+Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+[avoid the entire workaround when state->split is set]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/wireless/nl80211.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index 7956f41..95b8565 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -1613,9 +1613,10 @@ static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callback *cb)
+ 				 * We can then retry with the larger buffer.
+ 				 */
+ 				if ((ret == -ENOBUFS || ret == -EMSGSIZE) &&
+-				    !skb->len &&
++				    !skb->len && !state->split &&
+ 				    cb->min_dump_alloc < 4096) {
+ 					cb->min_dump_alloc = 4096;
++					state->split_start = 0;
+ 					rtnl_unlock();
+ 					return 1;
+ 				}
+-- 
+1.9.0
+
