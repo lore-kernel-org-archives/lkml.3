@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806AbaBUQZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 11:25:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57496 "EHLO mx1.redhat.com"
+	id S932559AbaBUQ2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 11:28:32 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:50618 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370AbaBUQZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 11:25:54 -0500
-Date: Fri, 21 Feb 2014 17:27:50 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2] xhci: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140221162749.GE17353@dhcp-26-207.brq.redhat.com>
-References: <1392804931-30671-8-git-send-email-agordeev@redhat.com>
+	id S932286AbaBUQ2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 11:28:30 -0500
+Date: Fri, 21 Feb 2014 09:28:24 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] pcie: Add Xilinx PCIe Host Bridge IP driver
+Message-ID: <20140221162824.GA4706@obsidianresearch.com>
+References: <1392564830-5868-1-git-send-email-sthokal@xilinx.com>
+ <CAErSpo5FGPhgnp8Gfy-1_Lk7ckCi7U5+z5pLnPU+jScPxD5yUQ@mail.gmail.com>
+ <20140219003523.GJ29304@obsidianresearch.com>
+ <CA+mB=1KSxkN+mKce5k1n93pmAA_FnWYaqNweWzxd4GD3Mo4PZA@mail.gmail.com>
+ <20140220174503.GB19893@obsidianresearch.com>
+ <CA+mB=1L+QM2cKq==mwYesp=E7S2N-xTiN7AoBvbzAO2UMn0qVQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392804931-30671-8-git-send-email-agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+mB=1L+QM2cKq==mwYesp=E7S2N-xTiN7AoBvbzAO2UMn0qVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On Fri, Feb 21, 2014 at 08:18:00PM +0530, Srikanth Thokala wrote:
 
-This update also cleans up a bit xhci_setup_msi() and
-xhci_setup_msix() returning of success.
+> 00:00.0 Class 0604: Device 10ee:7081
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/usb/host/xhci.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+So this is great, a root port bridge is exactly correct - I would
+recommend using device 1 for this (device 0 is the host bridge in most
+cases), but I don't think that has any functional impact.
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 6fe577d..dc7cfb5 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -232,9 +232,10 @@ static int xhci_setup_msi(struct xhci_hcd *xhci)
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
- 				"disable MSI interrupt");
- 		pci_disable_msi(pdev);
-+		return ret;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- /*
-@@ -291,7 +292,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
- 		xhci->msix_entries[i].vector = 0;
- 	}
- 
--	ret = pci_enable_msix(pdev, xhci->msix_entries, xhci->msix_count);
-+	ret = pci_enable_msix_exact(pdev, xhci->msix_entries, xhci->msix_count);
- 	if (ret) {
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
- 				"Failed to enable MSI-X");
-@@ -307,7 +308,7 @@ static int xhci_setup_msix(struct xhci_hcd *xhci)
- 	}
- 
- 	hcd->msix_enabled = 1;
--	return ret;
-+	return 0;
- 
- disable_msix:
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "disable MSI-X interrupt");
--- 
-1.7.7.6
+>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> ParErr+ Stepping- SERR+ FastB2B- DisINTx-
+>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0, Cache Line Size: 64 bytes
+>         Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
+>         I/O behind bridge: 00000000-00000fff
+>         Memory behind bridge: 00000000-000fffff
+>         Prefetchable memory behind bridge: 00000000-000fffff
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+What is going on here?  These ranges should match the MMIO aperture and
+critically must enclose the downstream bars:
+
+> 01:00.0 Class 0200: Device 14e4:1677 (rev 11)
+>         Region 0: Memory at 60000000 (64-bit, non-prefetchable) [size=64K]
+>         Expansion ROM at 60010000 [disabled] [size=64K]
+
+So one of those two is not right..
+
+Jason
