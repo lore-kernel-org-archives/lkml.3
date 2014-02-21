@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaBUUZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 15:25:30 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:57678 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaBUUZ2 (ORCPT
+	id S1754835AbaBUUZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 15:25:47 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37853 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240AbaBUUZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 15:25:28 -0500
+	Fri, 21 Feb 2014 15:25:46 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Amarinder Bindra <a-bindra@ti.com>
+Cc: Chris Ball <chris@printf.net>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mmc: host: MMC_SH_MMCIF should depend on HAS_DMA
+Date: Fri, 21 Feb 2014 21:26:59 +0100
+Message-ID: <1491186.LfrL8k5P1F@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393012371-22320-1-git-send-email-geert@linux-m68k.org>
+References: <1393012371-22320-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-In-Reply-To: <20140123173120.GA25474@www.outflux.net>
-References: <20140123173120.GA25474@www.outflux.net>
-Date: Fri, 21 Feb 2014 12:25:27 -0800
-X-Google-Sender-Auth: Gxj0XV4li9rHH_g_UZP57oZF5ww
-Message-ID: <CAGXu5jK0UK5Aj4henG2uZevrjj576JQp13ZRKGkgNMDV8BeQsw@mail.gmail.com>
-Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dave Anderson <anderson@redhat.com>, Andrew Honig <ahonig@google.com>,
-        Eugene Surovegin <surovegin@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 9:31 AM, Kees Cook <keescook@chromium.org> wrote:
-> From: Eugene Surovegin <surovegin@google.com>
->
-> Include kASLR offset in VMCOREINFO ELF notes to assist in debugging.
->
-> Signed-off-by: Eugene Surovegin <surovegin@google.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> v2:
->  - make sure "From:" got sent correctly
-> ---
->  arch/x86/kernel/machine_kexec_64.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-> index 4eabc160696f..679cef0791cd 100644
-> --- a/arch/x86/kernel/machine_kexec_64.c
-> +++ b/arch/x86/kernel/machine_kexec_64.c
-> @@ -279,5 +279,7 @@ void arch_crash_save_vmcoreinfo(void)
->         VMCOREINFO_SYMBOL(node_data);
->         VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
->  #endif
-> +       vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
-> +                             (unsigned long)&_text - __START_KERNEL);
->  }
->
-> --
-> 1.7.9.5
+Hi Geert,
 
-Ping on this patch. The crash-utils folks would like to be using this feature.
+Thank you for the patches.
 
--Kees
+On Friday 21 February 2014 20:52:50 Geert Uytterhoeven wrote:
+> If NO_DMA=y:
+> 
+>     drivers/built-in.o: In function `sh_mmcif_start_dma_tx':
+>     sh_mmcif.c:(.text+0x5a3286): undefined reference to `dma_map_sg'
+>     drivers/built-in.o: In function `sh_mmcif_start_dma_rx':
+>     sh_mmcif.c:(.text+0x5a33fc): undefined reference to `dma_map_sg'
+>     drivers/built-in.o: In function `sh_mmcif_end_cmd':
+>     sh_mmcif.c:(.text+0x5a3668): undefined reference to `dma_unmap_sg'
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+For both,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+>  drivers/mmc/host/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 1384f67abe21..bfe2133d0b9c 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -611,7 +611,7 @@ config MMC_DW_PCI
+> 
+>  config MMC_SH_MMCIF
+>  	tristate "SuperH Internal MMCIF support"
+> -	depends on MMC_BLOCK
+> +	depends on MMC_BLOCK && HAS_DMA
+>  	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+>  	help
+>  	  This selects the MMC Host Interface controller (MMCIF).
 
 -- 
-Kees Cook
-Chrome OS Security
+Regards,
+
+Laurent Pinchart
+
