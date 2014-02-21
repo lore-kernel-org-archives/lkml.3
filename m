@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026AbaBUSN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 13:13:57 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:34702 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaBUSNz (ORCPT
+	id S1756134AbaBUSOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 13:14:11 -0500
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:51148 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755136AbaBUSOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:13:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1392960523.3039.16.camel@buesod1.americas.hpqcorp.net>
-References: <1392960523.3039.16.camel@buesod1.americas.hpqcorp.net>
-Date: Fri, 21 Feb 2014 10:13:54 -0800
-X-Google-Sender-Auth: e1JRtk7FD5I9b_7Rg9FlBpMgaB0
-Message-ID: <CA+55aFw1_Ecbjjv9vijj3o46mkq3NrJn0X-FnbpCGBZG2=NuOA@mail.gmail.com>
-Subject: Re: [PATCH] mm: per-thread vma caching
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Feb 2014 13:14:07 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnQkAIuWB1NXQysu/2dsb2JhbABaKIJeO1GCN6VUmDQCAoEOF3SCZhwjGIECQIgAAQMFy2WOF00dhCIEiUaObQGSJ4M6L4Et
+Date: Fri, 21 Feb 2014 18:15:31 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: rdunlap <rdunlap@infradead.org>
+Subject: [RFC 1/1] fs: Quota: Refresh Kconfig
+Message-Id: <20140221181531.cc488ebae498cd20124a4c32@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 9:28 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> From: Davidlohr Bueso <davidlohr@hp.com>
->
-> This patch is a continuation of efforts trying to optimize find_vma(),
-> avoiding potentially expensive rbtree walks to locate a vma upon faults.
+Update Kconfig with a complete list of supported filesystems.
 
-Ok, so I like this one much better than the previous version.
+(Other local filesystems concerned by quota and/or journaled quotas ?)
 
-However, I do wonder if the per-mm vmacache is actually worth it.
-Couldn't the per-thread one replace it entirely?
+---
+ fs/quota/Kconfig | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Also, the hash you use for the vmacache index is *particularly* odd.
+diff --git a/fs/quota/Kconfig b/fs/quota/Kconfig
+index 880fd98..7339003 100644
+--- a/fs/quota/Kconfig
++++ b/fs/quota/Kconfig
+@@ -8,9 +8,10 @@ config QUOTA
+ 	help
+ 	  If you say Y here, you will be able to set per user limits for disk
+ 	  usage (also called disk quotas). Currently, it works for the
+-	  ext2, ext3, and reiserfs file system. ext3 also supports journalled
+-	  quotas for which you don't need to run quotacheck(8) after an unclean
+-	  shutdown.
++	  ext2, ext3, ext4, jfs, ocfs2 and reiserfs file systems.
++	  Note that gfs2 and xfs use their own quota system.
++	  Both ext3 and ext4 also support journaled quotas for which you don't
++	  need to run quotacheck(8) after an unclean shutdown.
+ 	  For further details, read the Quota mini-HOWTO, available from
+ 	  <http://www.tldp.org/docs.html#howto>, or the documentation provided
+ 	  with the quota tools. Probably the quota support is only useful for
+-- 
+1.8.1.4
 
-        int idx =  (addr >> 10) & 3;
-
-you're using the top two bits of the address *within* the page.
-There's a lot of places that round addresses down to pages, and in
-general it just looks really odd to use an offset within a page as an
-index, since in some patterns (linear accesses, whatever), the page
-faults will always be to the beginning of the page, so index 0 ends up
-being special.
-
-What am I missing?
-
-               Linus
