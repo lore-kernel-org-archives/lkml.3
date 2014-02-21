@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaBTXwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 18:52:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45702 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504AbaBTXwF (ORCPT
+	id S1757198AbaBUAiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:38:09 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9828 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757172AbaBUAiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:05 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 04/82] mm: fix page leak at nfs_symlink()
-Date: Thu, 20 Feb 2014 15:51:47 -0800
-Message-Id: <20140220235019.617973834@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Feb 2014 19:38:05 -0500
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH v3 1/2] i2c: qup: Add device tree bindings information
+Date: Thu, 20 Feb 2014 16:38:09 -0800
+Message-ID: <1392943090-30556-2-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-------------------
+The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
+provide input and output FIFO's for it. I2C controller can operate
+as master with supported bus speeds of 100Kbps and 400Kbps.
 
-From: Rafael Aquini <aquini@redhat.com>
-
-commit a0b54adda3fe4b4cc6d28f2a9217cd35d1aa888c upstream.
-
-Changes in commit a0b8cab3b9b2 ("mm: remove lru parameter from
-__pagevec_lru_add and remove parts of pagevec API") have introduced a
-call to add_to_page_cache_lru() which causes a leak in nfs_symlink() as
-now the page gets an extra refcount that is not dropped.
-
-Jan Stancek observed and reported the leak effect while running test8
-from Connectathon Testsuite.  After several iterations over the test
-case, which creates several symlinks on a NFS mountpoint, the test
-system was quickly getting into an out-of-memory scenario.
-
-This patch fixes the page leak by dropping that extra refcount
-add_to_page_cache_lru() is grabbing.
-
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+[bjorn: reformulated part of binding description
+        added version to compatible
+        cleaned up example]
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- fs/nfs/dir.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ .../devicetree/bindings/i2c/qcom,i2c-qup.txt       |   44 ++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1852,6 +1852,11 @@ int nfs_symlink(struct inode *dir, struc
- 							GFP_KERNEL)) {
- 		SetPageUptodate(page);
- 		unlock_page(page);
-+		/*
-+		 * add_to_page_cache_lru() grabs an extra page refcount.
-+		 * Drop it here to avoid leaking this page later.
-+		 */
-+		page_cache_release(page);
- 	} else
- 		__free_page(page);
- 
-
+diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+new file mode 100644
+index 0000000..38d505f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+@@ -0,0 +1,44 @@
++Qualcomm Universal Peripheral (QUP) I2C controller
++
++Required properties:
++ - compatible: Should be
++		"qcom,i2c-qup-v1.1.1" for 8660, 8960 and 8064.
++		"qcom,i2c-qup-v2.1.1" for 8974 v1.
++		"qcom,i2c-qup-v2.2.1" for 8974 v2 and later.
++ - reg: Should contain QUP register address and length.
++ - interrupts: Should contain I2C interrupt.
++
++ - clocks: Should contain the core clock and the AHB clock.
++ - clock-names: Should be "core" for the core clock and "iface" for the
++                AHB clock.
++
++ - #address-cells: Should be <1> Address cells for i2c device address
++ - #size-cells: Should be <0> as i2c addresses have no size component
++
++Optional properties:
++ - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
++                    defaults to 100kHz if omitted.
++
++Child nodes should conform to i2c bus binding.
++
++Example:
++
++ i2c@f9924000 {
++ 	compatible = "qcom,i2c-qup-v2.2.1";
++ 	reg = <0xf9924000 0x1000>;
++ 	interrupts = <0 96 0>;
++
++ 	clocks = <&gcc GCC_BLSP1_QUP2_I2C_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
++ 	clock-names = "core", "iface";
++
++ 	clock-frequency = <355000>;
++
++ 	#address-cells = <1>;
++ 	#size-cells = <0>;
++
++ 	dummy@60 {
++ 		compatible = "dummy";
++ 		reg = <0x60>;
++ 	};
++ };
++
+-- 
+1.7.9.5
 
