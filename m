@@ -1,188 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaBUF63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 00:58:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48176 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230AbaBUF61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 00:58:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,517,1389772800"; 
-   d="scan'208";a="485297949"
-Message-ID: <5306EB00.1090108@linux.intel.com>
-Date: Fri, 21 Feb 2014 13:58:24 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753194AbaBUGBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 01:01:54 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:36206 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaBUGBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 01:01:52 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Toshi Kani <toshi.kani@hp.com>
-CC: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Len Brown <lenb@kernel.org>,
-        Robert Moore <robert.moore@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [PATCH] ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
-References: <1392789739-32317-1-git-send-email-jiang.liu@linux.intel.com> <60567343.brKB2SuRkR@vostro.rjw.lan>
-In-Reply-To: <60567343.brKB2SuRkR@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140220182932.GF18016@ZenIV.linux.org.uk>
+References: <a8df285f-de7f-4a3a-9a19-e0ad07ab3a5c@blur> <8e9349a1-d900-4c93-8dad-1e32f26529c2@blur>
+ <20140220182932.GF18016@ZenIV.linux.org.uk>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 21 Feb 2014 07:01:31 +0100
+Message-ID: <CAKgNAkjFquLPDBXCS50pzVz0EiSfgvJjrG6cEVMFwKZopeHHBg@mail.gmail.com>
+Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Zuckerman, Boris" <borisz@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
+        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@citi.umich.edu>,
+        Yongzhi Pan <panyongzhi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-	I failed to get the point to kill ACPI_HOTPLUG_OST altogether:(
-Should I merge it into my series and resend?
-
-Hi Toshi,
-	Any comments here?
-
-On 2014/2/21 8:19, Rafael J. Wysocki wrote:
-> On Wednesday, February 19, 2014 02:02:15 PM Jiang Liu wrote:
->> Rename acpi_evaluate_hotplug_ost() to acpi_evaluate_ost() for later resue.
+On Thu, Feb 20, 2014 at 7:29 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Thu, Feb 20, 2014 at 06:15:15PM +0000, Zuckerman, Boris wrote:
+>> Hi,
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> 
-> Below is a patch replacing acpi_evaluate_hotplug_ost() with acpi_evaluate_ost()
-> and dropping the ACPI_HOTPLUG_OST which I don't believe is necessary at all.
-> 
-> On top of the current linux-next and your series.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
-> 
-> Replace acpi_evaluate_hotplug_ost() with acpi_evaluate_ost()
-> everywhere and drop the ACPI_HOTPLUG_OST symbol so that hotplug
-> _OST is supported unconditionally.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/bus.c                |    4 +---
->  drivers/acpi/scan.c               |   10 +++++-----
->  drivers/acpi/utils.c              |    2 +-
->  drivers/xen/xen-acpi-cpuhotplug.c |    2 +-
->  drivers/xen/xen-acpi-memhotplug.c |    2 +-
->  include/acpi/acpi_bus.h           |    8 --------
->  6 files changed, 9 insertions(+), 19 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/bus.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/bus.c
-> +++ linux-pm/drivers/acpi/bus.c
-> @@ -311,9 +311,7 @@ static void acpi_bus_osc_support(void)
->  	capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_PPC_OST_SUPPORT;
->  #endif
->  
-> -#ifdef ACPI_HOTPLUG_OST
->  	capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_HOTPLUG_OST_SUPPORT;
-> -#endif
->  
->  	if (!ghes_disable)
->  		capbuf[OSC_SUPPORT_DWORD] |= OSC_SB_APEI_SUPPORT;
-> @@ -410,7 +408,7 @@ static void acpi_bus_notify(acpi_handle
->  	return;
->  
->   err:
-> -	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
-> +	acpi_evaluate_ost(handle, type, ost_code, NULL);
->  }
->  
->  /* --------------------------------------------------------------------------
-> Index: linux-pm/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux-pm.orig/include/acpi/acpi_bus.h
-> +++ linux-pm/include/acpi/acpi_bus.h
-> @@ -51,14 +51,6 @@ acpi_evaluate_reference(acpi_handle hand
->  acpi_status
->  acpi_evaluate_ost(acpi_handle handle, u32 source_event, u32 status_code,
->  		  struct acpi_buffer *status_buf);
-> -#ifdef ACPI_HOTPLUG_OST
-> -#define	acpi_evaluate_hotplug_ost	acpi_evaluate_ost
-> -#else
-> -static inline acpi_status
-> -acpi_evaluate_hotplug_ost(acpi_handle handle, u32 source_event,
-> -			u32 status_code, struct acpi_buffer *status_buf)
-> -{ return AE_OK; }
-> -#endif
->  
->  acpi_status
->  acpi_get_physical_device_location(acpi_handle handle, struct acpi_pld_info **pld);
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -463,8 +463,8 @@ static int acpi_generic_hotplug_event(st
->  			dev_info(&adev->dev, "Eject disabled\n");
->  			return -EPERM;
->  		}
-> -		acpi_evaluate_hotplug_ost(adev->handle, ACPI_NOTIFY_EJECT_REQUEST,
-> -					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> +		acpi_evaluate_ost(adev->handle, ACPI_NOTIFY_EJECT_REQUEST,
-> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
->  		return acpi_scan_hot_remove(adev);
->  	}
->  	return -EINVAL;
-> @@ -514,7 +514,7 @@ void acpi_device_hotplug(void *data, u32
->  		ost_code = ACPI_OST_SC_SUCCESS;
->  
->   err_out:
-> -	acpi_evaluate_hotplug_ost(adev->handle, src, ost_code, NULL);
-> +	acpi_evaluate_ost(adev->handle, src, ost_code, NULL);
->  
->   out:
->  	acpi_bus_put_acpi_device(adev);
-> @@ -574,8 +574,8 @@ acpi_eject_store(struct device *d, struc
->  		return count;
->  
->  	put_device(&acpi_device->dev);
-> -	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
-> -				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
-> +	acpi_evaluate_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
-> +			  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
->  	return status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
->  }
->  
-> Index: linux-pm/drivers/acpi/utils.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/utils.c
-> +++ linux-pm/drivers/acpi/utils.c
-> @@ -422,7 +422,7 @@ out:
->  EXPORT_SYMBOL(acpi_get_physical_device_location);
->  
->  /**
-> - * acpi_evaluate_hotplug_ost: Evaluate _OST for hotplug operations
-> + * acpi_evaluate_ost: Evaluate _OST for hotplug operations
->   * @handle: ACPI device handle
->   * @source_event: source event code
->   * @status_code: status code
-> Index: linux-pm/drivers/xen/xen-acpi-cpuhotplug.c
-> ===================================================================
-> --- linux-pm.orig/drivers/xen/xen-acpi-cpuhotplug.c
-> +++ linux-pm/drivers/xen/xen-acpi-cpuhotplug.c
-> @@ -313,7 +313,7 @@ static void acpi_processor_hotplug_notif
->  		goto out;
->  	}
->  
-> -	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
-> +	(void) acpi_evaluate_ost(handle, event, ost_code, NULL);
->  
->  out:
->  	acpi_scan_lock_release();
-> Index: linux-pm/drivers/xen/xen-acpi-memhotplug.c
-> ===================================================================
-> --- linux-pm.orig/drivers/xen/xen-acpi-memhotplug.c
-> +++ linux-pm/drivers/xen/xen-acpi-memhotplug.c
-> @@ -285,7 +285,7 @@ static void acpi_memory_device_notify(ac
->  		return;
->  	}
->  
-> -	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
-> +	(void) acpi_evaluate_ost(handle, event, ost_code, NULL);
->  	return;
->  }
->  
-> 
+>> You probably already considered that - sorry, if so...
+>>
+>> Instead of the mutex Windows use ExecutiveResource with shared and exclusive semantics. Readers serialize by taking the resource shared and writers take it exclusive. I have that implemented for Linux. Please, let me know if there is any interest!
+>
+> See include/linux/rwsem.h...
+>
+> Anyway, the really interesting question here is what does POSIX promise
+> wrt lseek() vs. write().  What warranties are given there?
+
+I suppose you are wondering about cases such as:
+
+Process A                     Process B
+write():                      lseek()
+    perform I/O
+                              update f_pos
+    update f_pos()
+
+In my reading of POSIX, lseeek() and write() should be atomic w.r.t.
+each other, and the above should not be allowed.
+
+Here's the fulll list from POSIX.1-2008/SUSv4 Section XSI 2.9.7:
+
+[[
+2.9.7 Thread Interactions with Regular File Operations
+
+All of the following functions shall be atomic with respect to each
+other in the effects specified in
+POSIX.1-2008 when they operate on regular files or symbolic links:
+
+chmod( )
+chown( )
+close( )
+creat( )
+dup2( )
+fchmod( )
+fchmodat( )
+fchown( )
+fchownat( )
+fcntl( )
+fstat( )
+fstatat( )
+ftruncate( )
+lchown( )
+link( )
+linkat( )
+lseek( )
+lstat( )
+open( )
+openat( )
+pread( )
+read( )
+readlink( )
+readlinkat( )
+readv( )
+pwrite( )
+rename( )
+renameat( )
+stat( )
+symlink( )
+symlinkat( )
+truncate( )
+unlink( )
+unlinkat( )
+utime( )
+utimensat( )
+utimes( )
+write( )
+writev( )
+
+If two threads each call one of these functions, each call shall
+either see all of the specified effects
+of the other call, or none of them.
+]]
+
+I'd bet that there's a bunch of violations to be found, but the
+read/write f_pos case is one of the most egregious.
+
+For example, I got curious about stat() versus rename(). If one
+stat()s a directory() while a subdirectory is being renamed to a new
+name within that directory, does the link count of the parent
+directory ever change--that is, could stat() ever see a changed link
+count in the middle of the rename()? My experiments suggest that it
+can. I suppose it would have to be a very unusual application that
+would be troubled by that, but it does appear to be a violation of
+2.9.7.
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
