@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146AbaBUMuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:50:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46875 "EHLO
+	id S933592AbaBUNuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:50:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46855 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126AbaBUMuB (ORCPT
+	with ESMTP id S932104AbaBUMt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:01 -0500
+	Fri, 21 Feb 2014 07:49:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 037/121] tile: remove compat_sys_lookup_dcookie declaration to fix compile error
-Date: Fri, 21 Feb 2014 12:47:41 +0000
-Message-Id: <1392986945-9693-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/121] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+Date: Fri, 21 Feb 2014 12:47:37 +0000
+Message-Id: <1392986945-9693-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit 5a5e75f4714a592f31e57f248b8f5c866f278b8d upstream.
+commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
 
-With commit d8d14bd09cdd ("fs/compat: fix lookup_dcookie() parameter
-handling") I changed the type of the len parameter of the
-lookup_dcookie() syscall.
+Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
+compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
+options -fprofile-arcs and -O2, this flag causes gcc to generate
+broken constructor code. As a result, a 64 bit x86 kernel compiled
+with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
+file" and runs into sproadic BUGs during boot.
 
-However I missed that there was still a stale declaration in
-arch/tile/..  which now causes a compile error on tile:
+The gcc people indicate that these kinds of problems are endemic when
+using ad hoc calling conventions.  It is therefore best to treat any
+file compiled with ad hoc calling conventions as an isolated
+environment and avoid things like profiling or coverage analysis,
+since those subsystems assume a "normal" calling conventions.
 
-  In file included from fs/dcookies.c:28:0:
-  include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
-  fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
+This patch avoids the bug by excluding lib/hweight.o from coverage
+profiling.
 
-Simply remove the declaration in the tile architecture, which is only a
-leftover from before the different compat lookup_dcookie() versions have
-been merged.  The correct declaration is now in include/linux/compat.h
-
-The build error was reported by Fenguang's build bot.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/tile/include/asm/compat.h | 1 -
- 1 file changed, 1 deletion(-)
+ lib/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index 78f1f2d..ffd4493 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd, char __user *ubuf, size_t count,
- 			u32 dummy, u32 low, u32 high);
- long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
- 			 u32 dummy, u32 low, u32 high);
--long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
- long compat_sys_sync_file_range2(int fd, unsigned int flags,
- 				 u32 offset_lo, u32 offset_hi,
- 				 u32 nbytes_lo, u32 nbytes_hi);
+diff --git a/lib/Makefile b/lib/Makefile
+index 7baccfd..fc2f9ef 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -45,6 +45,7 @@ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ lib-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
+ 
++GCOV_PROFILE_hweight.o := n
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+ 
 -- 
 1.9.0
 
