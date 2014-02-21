@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032AbaBUAe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:34:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45757 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755587AbaBTXwR (ORCPT
+	id S1757050AbaBUAfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:35:14 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55551 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211AbaBUAfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:52:17 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.12 41/82] iio: adis16400: Set timestamp as the last element in chan_spec
-Date: Thu, 20 Feb 2014 15:52:24 -0800
-Message-Id: <20140220235020.704564949@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220235019.483734207@linuxfoundation.org>
-References: <20140220235019.483734207@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Feb 2014 19:35:11 -0500
+From: Stewart Smith <stewart@linux.vnet.ibm.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: [PATCH] scsi/sd.c: fix spun up and not ready messages to mention which disk
+Date: Fri, 21 Feb 2014 11:34:43 +1100
+Message-Id: <1392942883-4624-1-git-send-email-stewart@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022100-5564-0000-0000-00000C1F302F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Previously, many years ago, this was done in series which was fine,
+but things moved to be done in parallel and with many disks in a system
+it can be hard to see which disk spun up and which one didn't as the
+printk messages were all mixed together.
 
-------------------
-
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-
-commit c76782d151dab7ecfdcdf9a01561c2d61d9b490f upstream.
-
-This is necessary since timestamp is calculated as the last element
-in iio_compute_scan_bytes().
-
-Without this fix any userspace code reading the layout of the buffer via
-sysfs will incorrectly interpret the data leading some nasty corruption.
-
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
 ---
- drivers/iio/imu/adis16400.h      |    1 +
- drivers/iio/imu/adis16400_core.c |   10 +++++-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/scsi/sd.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/iio/imu/adis16400.h
-+++ b/drivers/iio/imu/adis16400.h
-@@ -189,6 +189,7 @@ enum {
- 	ADIS16300_SCAN_INCLI_X,
- 	ADIS16300_SCAN_INCLI_Y,
- 	ADIS16400_SCAN_ADC,
-+	ADIS16400_SCAN_TIMESTAMP,
- };
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 470954a..1436c85 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1838,7 +1838,6 @@ sd_spinup_disk(struct scsi_disk *sdkp)
+ 			}
+ 			/* Wait 1 second for next try */
+ 			msleep(1000);
+-			printk(".");
  
- #ifdef CONFIG_IIO_BUFFER
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -632,7 +632,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MAGN_CHAN(Z, ADIS16400_ZMAGN_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16400_TEMP_OUT, 12),
- 	ADIS16400_AUX_ADC_CHAN(ADIS16400_AUX_ADC, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(12)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+ 		/*
+ 		 * Wait for USB flash devices with slow firmware.
+@@ -1868,9 +1867,9 @@ sd_spinup_disk(struct scsi_disk *sdkp)
  
- static const struct iio_chan_spec adis16448_channels[] = {
-@@ -659,7 +659,7 @@ static const struct iio_chan_spec adis16
- 		},
- 	},
- 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
+ 	if (spintime) {
+ 		if (scsi_status_is_good(the_result))
+-			printk("ready\n");
++			sd_printk(KERN_NOTICE, sdkp, "ready\n");
+ 		else
+-			printk("not responding...\n");
++			sd_printk(KERN_NOTICE, sdkp, "not responding...\n");
+ 	}
+ }
  
- static const struct iio_chan_spec adis16350_channels[] = {
-@@ -677,7 +677,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_MOD_TEMP_CHAN(X, ADIS16350_XTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Y, ADIS16350_YTEMP_OUT, 12),
- 	ADIS16400_MOD_TEMP_CHAN(Z, ADIS16350_ZTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(11)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16300_channels[] = {
-@@ -690,7 +690,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_AUX_ADC_CHAN(ADIS16300_AUX_ADC, 12),
- 	ADIS16400_INCLI_CHAN(X, ADIS16300_PITCH_OUT, 13),
- 	ADIS16400_INCLI_CHAN(Y, ADIS16300_ROLL_OUT, 13),
--	IIO_CHAN_SOFT_TIMESTAMP(14)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static const struct iio_chan_spec adis16334_channels[] = {
-@@ -701,7 +701,7 @@ static const struct iio_chan_spec adis16
- 	ADIS16400_ACCEL_CHAN(Y, ADIS16400_YACCL_OUT, 14),
- 	ADIS16400_ACCEL_CHAN(Z, ADIS16400_ZACCL_OUT, 14),
- 	ADIS16400_TEMP_CHAN(ADIS16350_XTEMP_OUT, 12),
--	IIO_CHAN_SOFT_TIMESTAMP(8)
-+	IIO_CHAN_SOFT_TIMESTAMP(ADIS16400_SCAN_TIMESTAMP),
- };
- 
- static struct attribute *adis16400_attributes[] = {
-
+-- 
+1.8.5.3
 
