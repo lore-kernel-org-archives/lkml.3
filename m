@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850AbaBUMzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 07:55:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47310 "EHLO
+	id S932835AbaBUMzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 07:55:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47311 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932661AbaBUMvt (ORCPT
+	with ESMTP id S932662AbaBUMvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 07:51:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 112/121] xen/p2m: check MFN is in range before using the m2p table
-Date: Fri, 21 Feb 2014 12:48:56 +0000
-Message-Id: <1392986945-9693-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 114/121] [CIFS] Fix SMB2 mounts so they don't try to set or get xattrs via cifs
+Date: Fri, 21 Feb 2014 12:48:58 +0000
+Message-Id: <1392986945-9693-115-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -30,159 +27,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Steve French <smfrench@gmail.com>
 
-commit 0160676bba69523e8b0ac83f306cce7d342ed7c8 upstream.
+commit 666753c3ef8fc88b0ddd5be4865d0aa66428ac35 upstream.
 
-On hosts with more than 168 GB of memory, a 32-bit guest may attempt
-to grant map an MFN that is error cannot lookup in its mapping of the
-m2p table.  There is an m2p lookup as part of m2p_add_override() and
-m2p_remove_override().  The lookup falls off the end of the mapped
-portion of the m2p and (because the mapping is at the highest virtual
-address) wraps around and the lookup causes a fault on what appears to
-be a user space address.
+When mounting with smb2 (or smb2.1 or smb3) we need to check to make
+sure that attempts to query or set extended attributes do not
+attempt to send the request with the older cifs protocol instead
+(eventually we also need to add the support in SMB2
+to query/set extended attributes but this patch prevents us from
+using the wrong protocol for extended attribute operations).
 
-do_page_fault() (thinking it's a fault to a userspace address), tries
-to lock mm->mmap_sem.  If the gntdev device is used for the grant map,
-m2p_add_override() is called from from gnttab_mmap() with mm->mmap_sem
-already locked.  do_page_fault() then deadlocks.
-
-The deadlock would most commonly occur when a 64-bit guest is started
-and xenconsoled attempts to grant map its console ring.
-
-Introduce mfn_to_pfn_no_overrides() which checks the MFN is within the
-mapped portion of the m2p table before accessing the table and use
-this in m2p_add_override(), m2p_remove_override(), and mfn_to_pfn()
-(which already had the correct range check).
-
-All faults caused by accessing the non-existant parts of the m2p are
-thus within the kernel address space and exception_fixup() is called
-without trying to lock mm->mmap_sem.
-
-This means that for MFNs that are outside the mapped range of the m2p
-then mfn_to_pfn() will always look in the m2p overrides.  This is
-correct because it must be a foreign MFN (and the PFN in the m2p in
-this case is only relevant for the other domain).
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>
---
-v3: check for auto_translated_physmap in mfn_to_pfn_no_overrides()
-v2: in mfn_to_pfn() look in m2p_overrides if the MFN is out of
-    range as it's probably foreign.
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/xen/page.h | 31 ++++++++++++++++++++-----------
- arch/x86/xen/p2m.c              | 10 ++++------
- 2 files changed, 24 insertions(+), 17 deletions(-)
+ fs/cifs/cifsglob.h |  6 ++++++
+ fs/cifs/xattr.c    | 49 ++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 36 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 6aef9fb..b913915 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -79,30 +79,38 @@ static inline int phys_to_machine_mapping_valid(unsigned long pfn)
- 	return get_phys_to_machine(pfn) != INVALID_P2M_ENTRY;
- }
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index 52ca861..3229979 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -373,6 +373,12 @@ struct smb_version_operations {
+ 	int (*query_mf_symlink)(const unsigned char *path, char *pbuf,
+ 			unsigned int *pbytes_read, struct cifs_sb_info *cifs_sb,
+ 			unsigned int xid);
++	ssize_t (*query_all_EAs)(const unsigned int, struct cifs_tcon *,
++			const unsigned char *, const unsigned char *, char *,
++			size_t, const struct nls_table *, int);
++	int (*set_EA)(const unsigned int, struct cifs_tcon *, const char *,
++			const char *, const void *, const __u16,
++			const struct nls_table *, int);
+ };
  
--static inline unsigned long mfn_to_pfn(unsigned long mfn)
-+static inline unsigned long mfn_to_pfn_no_overrides(unsigned long mfn)
- {
- 	unsigned long pfn;
--	int ret = 0;
-+	int ret;
+ struct smb_version_values {
+diff --git a/fs/cifs/xattr.c b/fs/cifs/xattr.c
+index 09afda4..95c43bb 100644
+--- a/fs/cifs/xattr.c
++++ b/fs/cifs/xattr.c
+@@ -82,9 +82,11 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+ 			goto remove_ea_exit;
  
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return mfn;
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
+-			(__u16)0, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, NULL, (__u16)0,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	}
+ remove_ea_exit:
+ 	kfree(full_path);
+@@ -149,18 +151,22 @@ int cifs_setxattr(struct dentry *direntry, const char *ea_name,
+ 			cifs_dbg(FYI, "attempt to set cifs inode metadata\n");
  
--	if (unlikely(mfn >= machine_to_phys_nr)) {
--		pfn = ~0;
--		goto try_override;
--	}
--	pfn = 0;
-+	if (unlikely(mfn >= machine_to_phys_nr))
-+		return ~0;
-+
- 	/*
- 	 * The array access can fail (e.g., device space beyond end of RAM).
- 	 * In such cases it doesn't matter what we return (we return garbage),
- 	 * but we must handle the fault without crashing!
- 	 */
- 	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
--try_override:
--	/* ret might be < 0 if there are no entries in the m2p for mfn */
- 	if (ret < 0)
--		pfn = ~0;
--	else if (get_phys_to_machine(pfn) != mfn)
-+		return ~0;
-+
-+	return pfn;
-+}
-+
-+static inline unsigned long mfn_to_pfn(unsigned long mfn)
-+{
-+	unsigned long pfn;
-+
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return mfn;
-+
-+	pfn = mfn_to_pfn_no_overrides(mfn);
-+	if (get_phys_to_machine(pfn) != mfn) {
- 		/*
- 		 * If this appears to be a foreign mfn (because the pfn
- 		 * doesn't map back to the mfn), then check the local override
-@@ -111,6 +119,7 @@ try_override:
- 		 * m2p_find_override_pfn returns ~0 if it doesn't find anything.
- 		 */
- 		pfn = m2p_find_override_pfn(mfn, ~0);
-+	}
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+-			(__u16)value_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, ea_value, (__u16)value_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
+ 		   == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto set_ea_exit;
  
- 	/* 
- 	 * pfn is ~0 if there are no entries in the m2p for mfn or if the
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 95fb2aa..1563444 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -878,7 +878,6 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	unsigned long uninitialized_var(address);
- 	unsigned level;
- 	pte_t *ptep = NULL;
--	int ret = 0;
+ 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+-		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+-			(__u16)value_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->set_EA)
++			rc = pTcon->ses->server->ops->set_EA(xid, pTcon,
++				full_path, ea_name, ea_value, (__u16)value_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, CIFS_XATTR_CIFS_ACL,
+ 			strlen(CIFS_XATTR_CIFS_ACL)) == 0) {
+ #ifdef CONFIG_CIFS_ACL
+@@ -272,17 +278,21 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+ 			/* revalidate/getattr then populate from inode */
+ 		} /* BB add else when above is implemented */
+ 		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+-		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+-			buf_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->query_all_EAs)
++			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, ea_name, ea_value, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto get_ea_exit;
  
- 	pfn = page_to_pfn(page);
- 	if (!PageHighMem(page)) {
-@@ -925,8 +924,8 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 	 * frontend pages while they are being shared with the backend,
- 	 * because mfn_to_pfn (that ends up being called by GUPF) will
- 	 * return the backend pfn rather than the frontend pfn. */
--	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
--	if (ret == 0 && get_phys_to_machine(pfn) == mfn)
-+	pfn = mfn_to_pfn_no_overrides(mfn);
-+	if (get_phys_to_machine(pfn) == mfn)
- 		set_phys_to_machine(pfn, FOREIGN_FRAME(mfn));
+ 		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+-		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+-			buf_size, cifs_sb->local_nls,
+-			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
++		if (pTcon->ses->server->ops->query_all_EAs)
++			rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, ea_name, ea_value, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ 	} else if (strncmp(ea_name, POSIX_ACL_XATTR_ACCESS,
+ 			  strlen(POSIX_ACL_XATTR_ACCESS)) == 0) {
+ #ifdef CONFIG_CIFS_POSIX
+@@ -400,11 +410,12 @@ ssize_t cifs_listxattr(struct dentry *direntry, char *data, size_t buf_size)
+ 	/* if proc/fs/cifs/streamstoxattr is set then
+ 		search server for EAs or streams to
+ 		returns as xattrs */
+-	rc = CIFSSMBQAllEAs(xid, pTcon, full_path, NULL, data,
+-				buf_size, cifs_sb->local_nls,
+-				cifs_sb->mnt_cifs_flags &
+-					CIFS_MOUNT_MAP_SPECIAL_CHR);
  
- 	return 0;
-@@ -941,7 +940,6 @@ int m2p_remove_override(struct page *page,
- 	unsigned long uninitialized_var(address);
- 	unsigned level;
- 	pte_t *ptep = NULL;
--	int ret = 0;
- 
- 	pfn = page_to_pfn(page);
- 	mfn = get_phys_to_machine(pfn);
-@@ -1019,8 +1017,8 @@ int m2p_remove_override(struct page *page,
- 	 * the original pfn causes mfn_to_pfn(mfn) to return the frontend
- 	 * pfn again. */
- 	mfn &= ~FOREIGN_FRAME_BIT;
--	ret = __get_user(pfn, &machine_to_phys_mapping[mfn]);
--	if (ret == 0 && get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
-+	pfn = mfn_to_pfn_no_overrides(mfn);
-+	if (get_phys_to_machine(pfn) == FOREIGN_FRAME(mfn) &&
- 			m2p_find_override(mfn) == NULL)
- 		set_phys_to_machine(pfn, mfn);
- 
++	if (pTcon->ses->server->ops->query_all_EAs)
++		rc = pTcon->ses->server->ops->query_all_EAs(xid, pTcon,
++				full_path, NULL, data, buf_size,
++				cifs_sb->local_nls, cifs_sb->mnt_cifs_flags &
++					CIFS_MOUNT_MAP_SPECIAL_CHR);
+ list_ea_exit:
+ 	kfree(full_path);
+ 	free_xid(xid);
 -- 
 1.9.0
 
