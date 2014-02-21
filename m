@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184AbaBUNgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:36:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47089 "EHLO
+	id S933221AbaBUNgj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:36:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47077 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393AbaBUMut (ORCPT
+	with ESMTP id S932373AbaBUMup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 07:50:49 -0500
+	Fri, 21 Feb 2014 07:50:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 073/121] time: Fix overflow when HZ is smaller than 60
-Date: Fri, 21 Feb 2014 12:48:17 +0000
-Message-Id: <1392986945-9693-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 071/121] mac80211: release the channel in error path in start_ap
+Date: Fri, 21 Feb 2014 12:48:15 +0000
+Message-Id: <1392986945-9693-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
 References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 80d767d770fd9c697e434fd080c2db7b5c60c6dd upstream.
+commit 0297ea17bf7879fb5846fafd1be4c0471e72848d upstream.
 
-When compiling for the IA-64 ski emulator, HZ is set to 32 because the
-emulation is slow and we don't want to waste too many cycles processing
-timers. Alpha also has an option to set HZ to 32.
+When the driver cannot start the AP or when the assignement
+of the beacon goes wrong, we need to unassign the vif.
 
-This causes integer underflow in
-kernel/time/jiffies.c:
-kernel/time/jiffies.c:66:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-  .mult  = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-  ^
-
-This patch reduces the JIFFIES_SHIFT value to avoid the overflow.
-
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Link: http://lkml.kernel.org/r/alpine.LRH.2.02.1401241639100.23871@file01.intranet.prod.int.rdu2.redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/jiffies.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/mac80211/cfg.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index 7a925ba..a6a5bf5 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
-  */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
-+#endif
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index 2116285..216550e9 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -989,8 +989,10 @@ static int ieee80211_start_ap(struct wiphy *wiphy, struct net_device *dev,
+ 					IEEE80211_P2P_OPPPS_ENABLE_BIT;
  
- static cycle_t jiffies_read(struct clocksource *cs)
- {
+ 	err = ieee80211_assign_beacon(sdata, &params->beacon);
+-	if (err < 0)
++	if (err < 0) {
++		ieee80211_vif_release_channel(sdata);
+ 		return err;
++	}
+ 	changed |= err;
+ 
+ 	err = drv_start_ap(sdata->local, sdata);
+@@ -999,6 +1001,7 @@ static int ieee80211_start_ap(struct wiphy *wiphy, struct net_device *dev,
+ 		if (old)
+ 			kfree_rcu(old, rcu_head);
+ 		RCU_INIT_POINTER(sdata->u.ap.beacon, NULL);
++		ieee80211_vif_release_channel(sdata);
+ 		return err;
+ 	}
+ 
 -- 
 1.9.0
 
