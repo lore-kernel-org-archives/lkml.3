@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaBUFGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 00:06:34 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:52089 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaBUFGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 00:06:33 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <5306DEB6.2020205@roeck-us.net>
-Date: Thu, 20 Feb 2014 21:05:58 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S1752324AbaBUFIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 00:08:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844AbaBUFIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 00:08:24 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/25] 3.4.82-stable review
-References: <20140220234842.483343851@linuxfoundation.org>
-In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Jason Wang <jasowang@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>
+Subject: [PATCH net V2] virtio-net: alloc big buffers also when guest can receive UFO
+Date: Fri, 21 Feb 2014 13:08:04 +0800
+Message-Id: <1392959284-11399-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 03:51 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.82 release.
-> There are 25 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Feb 22 23:48:32 UTC 2014.
-> Anything received after that time might be too late.
->
+We should alloc big buffers also when guest can receive UFO
+pakcets to let the big packets be fit into guest rx buffer.
 
-Build results:
-	total: 119 pass: 97 skipped: 18 fail: 4
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
 
-qemu tests all passed. Results are as expected.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V1:
+- tweak the commit log
+---
+ drivers/net/virtio_net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index d75f8ed..5632a99 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1711,7 +1711,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+-- 
+1.8.3.2
 
