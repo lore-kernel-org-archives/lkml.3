@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982AbaBUNBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:01:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47557 "EHLO
+	id S933037AbaBUNBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:01:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47614 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540AbaBUNBh (ORCPT
+	with ESMTP id S932858AbaBUNBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:01:37 -0500
+	Fri, 21 Feb 2014 08:01:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Harald Freudenberger <freude@linux.vnet.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 02/60] crypto: s390 - fix concurrency issue in aes-ctr mode
-Date: Fri, 21 Feb 2014 13:00:29 +0000
-Message-Id: <1392987687-15367-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 12/60] x86, hweight: Fix BUG when booting with CONFIG_GCOV_PROFILE_ALL=y
+Date: Fri, 21 Feb 2014 13:00:39 +0000
+Message-Id: <1392987687-15367-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,146 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-commit 0519e9ad89e5cd6e6b08398f57c6a71d9580564c upstream.
+commit 6583327c4dd55acbbf2a6f25e775b28b3abf9a42 upstream.
 
-The aes-ctr mode uses one preallocated page without any concurrency
-protection. When multiple threads run aes-ctr encryption or decryption
-this can lead to data corruption.
+Commit d61931d89b, "x86: Add optimized popcnt variants" introduced
+compile flag -fcall-saved-rdi for lib/hweight.c. When combined with
+options -fprofile-arcs and -O2, this flag causes gcc to generate
+broken constructor code. As a result, a 64 bit x86 kernel compiled
+with CONFIG_GCOV_PROFILE_ALL=y prints message "gcov: could not create
+file" and runs into sproadic BUGs during boot.
 
-The patch introduces locking for the page and a fallback solution with
-slower en/decryption performance in concurrency situations.
+The gcc people indicate that these kinds of problems are endemic when
+using ad hoc calling conventions.  It is therefore best to treat any
+file compiled with ad hoc calling conventions as an isolated
+environment and avoid things like profiling or coverage analysis,
+since those subsystems assume a "normal" calling conventions.
 
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This patch avoids the bug by excluding lib/hweight.o from coverage
+profiling.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/52F3A30C.7050205@linux.vnet.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/crypto/aes_s390.c | 65 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 46 insertions(+), 19 deletions(-)
+ lib/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/s390/crypto/aes_s390.c b/arch/s390/crypto/aes_s390.c
-index f3000a4..51fb1ef 100644
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/spinlock.h>
- #include "crypt_s390.h"
+diff --git a/lib/Makefile b/lib/Makefile
+index 8c31a0c..f1ab4e00 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -41,6 +41,7 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
+ lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
  
- #define AES_KEYLEN_128		1
-@@ -32,6 +33,7 @@
- #define AES_KEYLEN_256		4
- 
- static u8 *ctrblk;
-+static DEFINE_SPINLOCK(ctrblk_lock);
- static char keylen_flag;
- 
- struct s390_aes_ctx {
-@@ -760,43 +762,67 @@ static int ctr_aes_set_key(struct crypto_tfm *tfm, const u8 *in_key,
- 	return aes_set_key(tfm, in_key, key_len);
- }
- 
-+static unsigned int __ctrblk_init(u8 *ctrptr, unsigned int nbytes)
-+{
-+	unsigned int i, n;
-+
-+	/* only use complete blocks, max. PAGE_SIZE */
-+	n = (nbytes > PAGE_SIZE) ? PAGE_SIZE : nbytes & ~(AES_BLOCK_SIZE - 1);
-+	for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
-+		memcpy(ctrptr + i, ctrptr + i - AES_BLOCK_SIZE,
-+		       AES_BLOCK_SIZE);
-+		crypto_inc(ctrptr + i, AES_BLOCK_SIZE);
-+	}
-+	return n;
-+}
-+
- static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 			 struct s390_aes_ctx *sctx, struct blkcipher_walk *walk)
- {
- 	int ret = blkcipher_walk_virt_block(desc, walk, AES_BLOCK_SIZE);
--	unsigned int i, n, nbytes;
--	u8 buf[AES_BLOCK_SIZE];
--	u8 *out, *in;
-+	unsigned int n, nbytes;
-+	u8 buf[AES_BLOCK_SIZE], ctrbuf[AES_BLOCK_SIZE];
-+	u8 *out, *in, *ctrptr = ctrbuf;
- 
- 	if (!walk->nbytes)
- 		return ret;
- 
--	memcpy(ctrblk, walk->iv, AES_BLOCK_SIZE);
-+	if (spin_trylock(&ctrblk_lock))
-+		ctrptr = ctrblk;
-+
-+	memcpy(ctrptr, walk->iv, AES_BLOCK_SIZE);
- 	while ((nbytes = walk->nbytes) >= AES_BLOCK_SIZE) {
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		while (nbytes >= AES_BLOCK_SIZE) {
--			/* only use complete blocks, max. PAGE_SIZE */
--			n = (nbytes > PAGE_SIZE) ? PAGE_SIZE :
--						 nbytes & ~(AES_BLOCK_SIZE - 1);
--			for (i = AES_BLOCK_SIZE; i < n; i += AES_BLOCK_SIZE) {
--				memcpy(ctrblk + i, ctrblk + i - AES_BLOCK_SIZE,
--				       AES_BLOCK_SIZE);
--				crypto_inc(ctrblk + i, AES_BLOCK_SIZE);
--			}
--			ret = crypt_s390_kmctr(func, sctx->key, out, in, n, ctrblk);
--			if (ret < 0 || ret != n)
-+			if (ctrptr == ctrblk)
-+				n = __ctrblk_init(ctrptr, nbytes);
-+			else
-+				n = AES_BLOCK_SIZE;
-+			ret = crypt_s390_kmctr(func, sctx->key, out, in,
-+					       n, ctrptr);
-+			if (ret < 0 || ret != n) {
-+				if (ctrptr == ctrblk)
-+					spin_unlock(&ctrblk_lock);
- 				return -EIO;
-+			}
- 			if (n > AES_BLOCK_SIZE)
--				memcpy(ctrblk, ctrblk + n - AES_BLOCK_SIZE,
-+				memcpy(ctrptr, ctrptr + n - AES_BLOCK_SIZE,
- 				       AES_BLOCK_SIZE);
--			crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+			crypto_inc(ctrptr, AES_BLOCK_SIZE);
- 			out += n;
- 			in += n;
- 			nbytes -= n;
- 		}
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	}
-+	if (ctrptr == ctrblk) {
-+		if (nbytes)
-+			memcpy(ctrbuf, ctrptr, AES_BLOCK_SIZE);
-+		else
-+			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
-+		spin_unlock(&ctrblk_lock);
-+	}
- 	/*
- 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
- 	 */
-@@ -804,14 +830,15 @@ static int ctr_aes_crypt(struct blkcipher_desc *desc, long func,
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 		ret = crypt_s390_kmctr(func, sctx->key, buf, in,
--				       AES_BLOCK_SIZE, ctrblk);
-+				       AES_BLOCK_SIZE, ctrbuf);
- 		if (ret < 0 || ret != AES_BLOCK_SIZE)
- 			return -EIO;
- 		memcpy(out, buf, nbytes);
--		crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+		crypto_inc(ctrbuf, AES_BLOCK_SIZE);
- 		ret = blkcipher_walk_done(desc, walk, 0);
-+		memcpy(walk->iv, ctrbuf, AES_BLOCK_SIZE);
- 	}
--	memcpy(walk->iv, ctrblk, AES_BLOCK_SIZE);
-+
- 	return ret;
- }
++GCOV_PROFILE_hweight.o := n
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
  
 -- 
 1.9.0
