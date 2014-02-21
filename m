@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422AbaBUBLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 20:11:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45270 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381AbaBTXu3 (ORCPT
+	id S932605AbaBUBLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 20:11:50 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:34864 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454AbaBUBLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 18:50:29 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thomas Raschbacher <lordvan@lordvan.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [PATCH 3.4 15/25] usb-storage: enable multi-LUN scanning when needed
-Date: Thu, 20 Feb 2014 15:51:31 -0800
-Message-Id: <20140220234842.909436251@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140220234842.483343851@linuxfoundation.org>
-References: <20140220234842.483343851@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Feb 2014 20:11:48 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: JBottomley@parallels.com
+Cc: jayamohan.kallickal@emulex.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [SCSI] be2iscsi: make beiscsi_process_mcc() as static
+Date: Fri, 21 Feb 2014 10:11:40 +0900
+Message-ID: <4848622.esnnEkYuHI@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+>From 137a2f619f1fa93fc497d891954d83c6cb307d11 Mon Sep 17 00:00:00 2001
+From: Daeseok Youn <daeseok.youn@gmail.com>
+Date: Fri, 21 Feb 2014 08:43:56 +0900
+Subject: [PATCH] [SCSI] be2iscsi: make beiscsi_process_mcc() as static
 
-------------------
+beiscsi_process_mcc() is only referenced in this file.
 
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit 823d12c95c666fa7ab7dad208d735f6bc6afabdc upstream.
-
-People sometimes create their own custom-configured kernels and forget
-to enable CONFIG_SCSI_MULTI_LUN.  This causes problems when they plug
-in a USB storage device (such as a card reader) with more than one
-LUN.
-
-Fortunately, we can tell fairly easily when a storage device claims to
-have more than one LUN.  When that happens, this patch asks the SCSI
-layer to probe all the LUNs automatically, regardless of the config
-setting.
-
-The patch also updates the Kconfig help text for usb-storage,
-explaining that CONFIG_SCSI_MULTI_LUN may be necessary.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Thomas Raschbacher <lordvan@lordvan.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/usb/storage/Kconfig    |    4 +++-
- drivers/usb/storage/scsiglue.c |    6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/scsi/be2iscsi/be_cmds.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -19,7 +19,9 @@ config USB_STORAGE
- 
- 	  This option depends on 'SCSI' support being enabled, but you
- 	  probably also need 'SCSI device support: SCSI disk support'
--	  (BLK_DEV_SD) for most USB storage devices.
-+	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
-+	  will require 'Probe all LUNs on each SCSI device'
-+	  (SCSI_MULTI_LUN).
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called usb-storage.
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi
- 
- static int slave_alloc (struct scsi_device *sdev)
- {
-+	struct us_data *us = host_to_us(sdev->host);
-+
- 	/*
- 	 * Set the INQUIRY transfer length to 36.  We don't use any of
- 	 * the extra data and many devices choke if asked for more or
-@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_devi
- 	 */
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
- 
-+	/* Tell the SCSI layer if we know there is more than one LUN */
-+	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
-+		sdev->sdev_bflags |= BLIST_FORCELUN;
-+
- 	return 0;
+diff --git a/drivers/scsi/be2iscsi/be_cmds.c b/drivers/scsi/be2iscsi/be_cmds.c
+index 1ec9793..d4fff8a 100644
+--- a/drivers/scsi/be2iscsi/be_cmds.c
++++ b/drivers/scsi/be2iscsi/be_cmds.c
+@@ -398,7 +398,7 @@ static void beiscsi_cq_notify(struct beiscsi_hba *phba, u16 qid, bool arm,
  }
  
+ 
+-int beiscsi_process_mcc(struct beiscsi_hba *phba)
++static int beiscsi_process_mcc(struct beiscsi_hba *phba)
+ {
+ 	struct be_mcc_compl *compl;
+ 	int num = 0, status = 0;
+-- 
+1.7.9.5
 
 
