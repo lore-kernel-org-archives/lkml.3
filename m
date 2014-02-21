@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198AbaBUAiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Feb 2014 19:38:09 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9828 "EHLO
+	id S1757216AbaBUAiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Feb 2014 19:38:17 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9872 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757172AbaBUAiF (ORCPT
+	by vger.kernel.org with ESMTP id S1755916AbaBUAiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Feb 2014 19:38:05 -0500
+	Thu, 20 Feb 2014 19:38:12 -0500
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -17,10 +17,11 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-i2c@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v3 1/2] i2c: qup: Add device tree bindings information
-Date: Thu, 20 Feb 2014 16:38:09 -0800
-Message-ID: <1392943090-30556-2-git-send-email-bjorn.andersson@sonymobile.com>
+CC: Andy Gross <agross@codeaurora.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH v3 2/2] i2c: New bus driver for the Qualcomm QUP I2C controller
+Date: Thu, 20 Feb 2014 16:38:10 -0800
+Message-ID: <1392943090-30556-3-git-send-email-bjorn.andersson@sonymobile.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
 References: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
@@ -30,72 +31,834 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+This bus driver supports the QUP i2c hardware controller in the Qualcomm SOCs.
+The Qualcomm Universal Peripheral Engine (QUP) is a general purpose data path
+engine with input/output FIFOs and an embedded i2c mini-core. The driver
+supports FIFO mode (for low bandwidth applications) and block mode (interrupt
+generated for each block-size data transfer).
 
-The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
-provide input and output FIFO's for it. I2C controller can operate
-as master with supported bus speeds of 100Kbps and 400Kbps.
-
+Cc: Andy Gross <agross@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-[bjorn: reformulated part of binding description
-        added version to compatible
-        cleaned up example]
 Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- .../devicetree/bindings/i2c/qcom,i2c-qup.txt       |   44 ++++++++++++++++++++
- 1 file changed, 44 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+ drivers/i2c/busses/Kconfig   |   10 +
+ drivers/i2c/busses/Makefile  |    1 +
+ drivers/i2c/busses/i2c-qup.c |  772 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 783 insertions(+)
+ create mode 100644 drivers/i2c/busses/i2c-qup.c
 
-diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index f5ed031..403e196 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -648,6 +648,16 @@ config I2C_PXA_SLAVE
+ 	  is necessary for systems where the PXA may be a target on the
+ 	  I2C bus.
+ 
++config I2C_QUP
++	tristate "Qualcomm QUP based I2C controller"
++	depends on ARCH_MSM
++	help
++	  If you say yes to this option, support will be included for the
++	  built-in I2C interface on the Qualcomm SoCs.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called i2c-qup.
++
+ config I2C_RIIC
+ 	tristate "Renesas RIIC adapter"
+ 	depends on ARCH_SHMOBILE || COMPILE_TEST
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index a08931f..bf2257b 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -63,6 +63,7 @@ obj-$(CONFIG_I2C_PNX)		+= i2c-pnx.o
+ obj-$(CONFIG_I2C_PUV3)		+= i2c-puv3.o
+ obj-$(CONFIG_I2C_PXA)		+= i2c-pxa.o
+ obj-$(CONFIG_I2C_PXA_PCI)	+= i2c-pxa-pci.o
++obj-$(CONFIG_I2C_QUP)		+= i2c-qup.o
+ obj-$(CONFIG_I2C_RIIC)		+= i2c-riic.o
+ obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
+ obj-$(CONFIG_I2C_S6000)		+= i2c-s6000.o
+diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
 new file mode 100644
-index 0000000..38d505f
+index 0000000..a2dfd57
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
-@@ -0,0 +1,44 @@
-+Qualcomm Universal Peripheral (QUP) I2C controller
++++ b/drivers/i2c/busses/i2c-qup.c
+@@ -0,0 +1,772 @@
++/*
++ * Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2014, Sony Mobile Communications AB.
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
 +
-+Required properties:
-+ - compatible: Should be
-+		"qcom,i2c-qup-v1.1.1" for 8660, 8960 and 8064.
-+		"qcom,i2c-qup-v2.1.1" for 8974 v1.
-+		"qcom,i2c-qup-v2.2.1" for 8974 v2 and later.
-+ - reg: Should contain QUP register address and length.
-+ - interrupts: Should contain I2C interrupt.
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
 +
-+ - clocks: Should contain the core clock and the AHB clock.
-+ - clock-names: Should be "core" for the core clock and "iface" for the
-+                AHB clock.
++/* QUP Registers */
++#define QUP_CONFIG		0x000
++#define QUP_STATE		0x004
++#define QUP_IO_MODE		0x008
++#define QUP_SW_RESET		0x00c
++#define QUP_OPERATIONAL		0x018
++#define QUP_ERROR_FLAGS		0x01c
++#define QUP_ERROR_FLAGS_EN	0x020
++#define QUP_HW_VERSION		0x030
++#define QUP_MX_OUTPUT_CNT	0x100
++#define QUP_OUT_FIFO_BASE	0x110
++#define QUP_MX_WRITE_CNT	0x150
++#define QUP_MX_INPUT_CNT	0x200
++#define QUP_MX_READ_CNT		0x208
++#define QUP_IN_FIFO_BASE	0x218
++#define QUP_I2C_CLK_CTL		0x400
++#define QUP_I2C_STATUS		0x404
 +
-+ - #address-cells: Should be <1> Address cells for i2c device address
-+ - #size-cells: Should be <0> as i2c addresses have no size component
++/* QUP States and reset values */
++#define QUP_RESET_STATE		0
++#define QUP_RUN_STATE		1
++#define QUP_PAUSE_STATE		3
++#define QUP_STATE_MASK		3
 +
-+Optional properties:
-+ - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
-+                    defaults to 100kHz if omitted.
++#define QUP_STATE_VALID		BIT(2)
++#define QUP_I2C_MAST_GEN	BIT(4)
 +
-+Child nodes should conform to i2c bus binding.
++#define QUP_OPERATIONAL_RESET	0x000ff0
++#define QUP_I2C_STATUS_RESET	0xfffffc
 +
-+Example:
++/* QUP OPERATIONAL FLAGS */
++#define QUP_I2C_NACK_FLAG	BIT(3)
++#define QUP_OUT_NOT_EMPTY	BIT(4)
++#define QUP_IN_NOT_EMPTY	BIT(5)
++#define QUP_OUT_FULL		BIT(6)
++#define QUP_OUT_SVC_FLAG	BIT(8)
++#define QUP_IN_SVC_FLAG		BIT(9)
++#define QUP_MX_OUTPUT_DONE	BIT(10)
++#define QUP_MX_INPUT_DONE	BIT(11)
 +
-+ i2c@f9924000 {
-+ 	compatible = "qcom,i2c-qup-v2.2.1";
-+ 	reg = <0xf9924000 0x1000>;
-+ 	interrupts = <0 96 0>;
++/* I2C mini core related values */
++#define QUP_CLOCK_AUTO_GATE	BIT(13)
++#define I2C_MINI_CORE		(2 << 8)
++#define I2C_N_VAL		15
++/* Most significant word offset in FIFO port */
++#define QUP_MSW_SHIFT		(I2C_N_VAL + 1)
 +
-+ 	clocks = <&gcc GCC_BLSP1_QUP2_I2C_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
-+ 	clock-names = "core", "iface";
++/* Packing/Unpacking words in FIFOs, and IO modes */
++#define QUP_OUTPUT_BLK_MODE	(1 << 10)
++#define QUP_INPUT_BLK_MODE	(1 << 12)
++#define QUP_UNPACK_EN		BIT(14)
++#define QUP_PACK_EN		BIT(15)
 +
-+ 	clock-frequency = <355000>;
++#define QUP_REPACK_EN		(QUP_UNPACK_EN | QUP_PACK_EN)
 +
-+ 	#address-cells = <1>;
-+ 	#size-cells = <0>;
++#define QUP_OUTPUT_BLOCK_SIZE(x)(((x) >> 0) & 0x03)
++#define QUP_OUTPUT_FIFO_SIZE(x)	(((x) >> 2) & 0x07)
++#define QUP_INPUT_BLOCK_SIZE(x)	(((x) >> 5) & 0x03)
++#define QUP_INPUT_FIFO_SIZE(x)	(((x) >> 7) & 0x07)
 +
-+ 	dummy@60 {
-+ 		compatible = "dummy";
-+ 		reg = <0x60>;
-+ 	};
-+ };
++/* QUP tags */
++#define QUP_TAG_START		(1 << 8)
++#define QUP_TAG_DATA		(2 << 8)
++#define QUP_TAG_STOP		(3 << 8)
++#define QUP_TAG_REC		(4 << 8)
 +
++/* Status, Error flags */
++#define I2C_STATUS_WR_BUFFER_FULL	BIT(0)
++#define I2C_STATUS_BUS_ACTIVE		BIT(8)
++#define I2C_STATUS_ERROR_MASK		0x38000fc
++#define QUP_STATUS_ERROR_FLAGS		0x7c
++
++#define QUP_READ_LIMIT			256
++
++struct qup_i2c_dev {
++	struct device		*dev;
++	void __iomem		*base;
++	int			irq;
++	struct clk		*clk;
++	struct clk		*pclk;
++	struct i2c_adapter	adap;
++
++	int			clk_ctl;
++	int			out_fifo_sz;
++	int			in_fifo_sz;
++	int			out_blk_sz;
++	int			in_blk_sz;
++
++	unsigned long		one_byte_t;
++
++	struct i2c_msg		*msg;
++	/* Current posion in user message buffer */
++	int			pos;
++	/* I2C protocol errors */
++	u32			bus_err;
++	/* QUP core errors */
++	u32			qup_err;
++
++	struct completion	xfer;
++};
++
++static irqreturn_t qup_i2c_interrupt(int irq, void *dev)
++{
++	struct qup_i2c_dev *qup = dev;
++	u32 bus_err;
++	u32 qup_err;
++	u32 opflags;
++
++	bus_err = readl(qup->base + QUP_I2C_STATUS);
++	qup_err = readl(qup->base + QUP_ERROR_FLAGS);
++	opflags = readl(qup->base + QUP_OPERATIONAL);
++
++	if (!qup->msg) {
++		/* Clear Error interrupt */
++		writel(QUP_RESET_STATE, qup->base + QUP_STATE);
++		return IRQ_HANDLED;
++	}
++
++	bus_err &= I2C_STATUS_ERROR_MASK;
++	qup_err &= QUP_STATUS_ERROR_FLAGS;
++
++	if (qup_err) {
++		/* Clear Error interrupt */
++		writel(qup_err, qup->base + QUP_ERROR_FLAGS);
++		goto done;
++	}
++
++	if (bus_err) {
++		/* Clear Error interrupt */
++		writel(QUP_RESET_STATE, qup->base + QUP_STATE);
++		goto done;
++	}
++
++	if (opflags & QUP_IN_SVC_FLAG)
++		writel(QUP_IN_SVC_FLAG, qup->base + QUP_OPERATIONAL);
++
++	if (opflags & QUP_OUT_SVC_FLAG)
++		writel(QUP_OUT_SVC_FLAG, qup->base + QUP_OPERATIONAL);
++
++done:
++	qup->qup_err = qup_err;
++	qup->bus_err = bus_err;
++	complete(&qup->xfer);
++	return IRQ_HANDLED;
++}
++
++static int qup_i2c_poll_state_mask(struct qup_i2c_dev *qup,
++				   u32 req_state, u32 req_mask)
++{
++	int retries = 1;
++	u32 state;
++
++	/*
++	 * State transition takes 3 AHB clocks cycles + 3 I2C master clock
++	 * cycles. So retry once after a 1uS delay.
++	 */
++	do {
++		state = readl(qup->base + QUP_STATE);
++
++		if (state & QUP_STATE_VALID &&
++		    (state & req_mask) == req_state)
++			return 0;
++
++		udelay(1);
++	} while (retries--);
++
++	return -ETIMEDOUT;
++}
++
++static int qup_i2c_poll_state(struct qup_i2c_dev *qup, u32 req_state)
++{
++	return qup_i2c_poll_state_mask(qup, req_state, QUP_STATE_MASK);
++}
++
++static int qup_i2c_poll_state_valid(struct qup_i2c_dev *qup)
++{
++	return qup_i2c_poll_state_mask(qup, 0, 0);
++}
++
++static int qup_i2c_poll_state_i2c_master(struct qup_i2c_dev *qup)
++{
++	return qup_i2c_poll_state_mask(qup, QUP_I2C_MAST_GEN, QUP_I2C_MAST_GEN);
++}
++
++static int qup_i2c_change_state(struct qup_i2c_dev *qup, u32 state)
++{
++	if (qup_i2c_poll_state_valid(qup) != 0)
++		return -EIO;
++
++	writel(state, qup->base + QUP_STATE);
++
++	if (qup_i2c_poll_state(qup, state) != 0)
++		return -EIO;
++	return 0;
++}
++
++static int qup_i2c_wait_writeready(struct qup_i2c_dev *qup)
++{
++	unsigned long timeout;
++	u32 opflags;
++	u32 status;
++
++	timeout = jiffies + HZ;
++
++	for (;;) {
++		opflags = readl(qup->base + QUP_OPERATIONAL);
++		status = readl(qup->base + QUP_I2C_STATUS);
++
++		if (!(opflags & QUP_OUT_NOT_EMPTY) &&
++		    !(status & I2C_STATUS_BUS_ACTIVE))
++			return 0;
++
++		if (time_after(jiffies, timeout))
++			return -ETIMEDOUT;
++
++		usleep_range(qup->one_byte_t, qup->one_byte_t * 2);
++	}
++}
++
++static void qup_i2c_set_write_mode(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	/* Number of entries to shift out, including the start */
++	int total = msg->len + 1;
++
++	if (total < qup->out_fifo_sz) {
++		/* FIFO mode */
++		writel(QUP_REPACK_EN, qup->base + QUP_IO_MODE);
++		writel(total, qup->base + QUP_MX_WRITE_CNT);
++	} else {
++		/* BLOCK mode (transfer data on chunks) */
++		writel(QUP_OUTPUT_BLK_MODE | QUP_REPACK_EN,
++		       qup->base + QUP_IO_MODE);
++		writel(total, qup->base + QUP_MX_OUTPUT_CNT);
++	}
++}
++
++static void qup_i2c_issue_write(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	u32 addr = msg->addr << 1;
++	u32 qup_tag;
++	u32 opflags;
++	int idx;
++	u32 val;
++
++	if (qup->pos == 0) {
++		val = QUP_TAG_START | addr;
++		idx = 1;
++	} else {
++		val = 0;
++		idx = 0;
++	}
++
++	while (qup->pos < msg->len) {
++		/* Check that there's space in the FIFO for our pair */
++		opflags = readl(qup->base + QUP_OPERATIONAL);
++		if (opflags & QUP_OUT_FULL)
++			break;
++
++		if (qup->pos == msg->len - 1)
++			qup_tag = QUP_TAG_STOP;
++		else
++			qup_tag = QUP_TAG_DATA;
++
++		if (idx & 1)
++			val |= (qup_tag | msg->buf[qup->pos]) << QUP_MSW_SHIFT;
++		else
++			val = qup_tag | msg->buf[qup->pos];
++
++		/* Write out the pair and the last odd value */
++		if (idx & 1 || qup->pos == msg->len - 1)
++			writel(val, qup->base + QUP_OUT_FIFO_BASE);
++
++		qup->pos++;
++		idx++;
++	}
++}
++
++static int qup_i2c_write_one(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	unsigned long left;
++	int ret;
++
++	qup->msg = msg;
++	qup->pos = 0;
++
++	enable_irq(qup->irq);
++
++	qup_i2c_set_write_mode(qup, msg);
++
++	ret = qup_i2c_change_state(qup, QUP_RUN_STATE);
++	if (ret)
++		goto err;
++
++	writel(qup->clk_ctl, qup->base + QUP_I2C_CLK_CTL);
++
++	do {
++		ret = qup_i2c_change_state(qup, QUP_PAUSE_STATE);
++		if (ret)
++			goto err;
++
++		qup_i2c_issue_write(qup, msg);
++
++		ret = qup_i2c_change_state(qup, QUP_RUN_STATE);
++		if (ret)
++			goto err;
++
++		left = wait_for_completion_timeout(&qup->xfer, HZ);
++		if (!left) {
++			writel(1, qup->base + QUP_SW_RESET);
++			ret = -ETIMEDOUT;
++			goto err;
++		}
++
++		if (qup->bus_err || qup->qup_err) {
++			if (qup->bus_err & QUP_I2C_NACK_FLAG)
++				dev_err(qup->dev, "NACK from %x\n", msg->addr);
++			ret = -EIO;
++			goto err;
++		}
++	} while (qup->pos < msg->len);
++
++	/* Wait for the outstanding data in the fifo to drain */
++	ret = qup_i2c_wait_writeready(qup);
++
++err:
++	disable_irq(qup->irq);
++	qup->msg = NULL;
++
++	return ret;
++}
++
++static void qup_i2c_set_read_mode(struct qup_i2c_dev *qup, int len)
++{
++	if (len < qup->in_fifo_sz) {
++		/* FIFO mode */
++		writel(QUP_REPACK_EN, qup->base + QUP_IO_MODE);
++		writel(len, qup->base + QUP_MX_READ_CNT);
++	} else {
++		/* BLOCK mode (transfer data on chunks) */
++		writel(QUP_INPUT_BLK_MODE | QUP_REPACK_EN,
++		       qup->base + QUP_IO_MODE);
++		writel(len, qup->base + QUP_MX_INPUT_CNT);
++	}
++}
++
++static void qup_i2c_issue_read(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	u32 addr, len, val;
++
++	addr = (msg->addr << 1) | 1;
++
++	/* 0 is used to specify a length 256 (QUP_READ_LIMIT) */
++	len = (msg->len == QUP_READ_LIMIT) ? 0 : msg->len;
++
++	val = ((QUP_TAG_REC | len) << QUP_MSW_SHIFT) | QUP_TAG_START | addr;
++	writel(val, qup->base + QUP_OUT_FIFO_BASE);
++}
++
++
++static void qup_i2c_read_fifo(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	u32 opflags;
++	u32 val = 0;
++	int idx;
++
++	for (idx = 0; qup->pos < msg->len; idx++) {
++		if ((idx & 1) == 0) {
++			/* Check that FIFO have data */
++			opflags = readl(qup->base + QUP_OPERATIONAL);
++			if (!(opflags & QUP_IN_NOT_EMPTY))
++				break;
++
++			/* Reading 2 words at time */
++			val = readl(qup->base + QUP_IN_FIFO_BASE);
++
++			msg->buf[qup->pos++] = val & 0xFF;
++		} else {
++			msg->buf[qup->pos++] = val >> QUP_MSW_SHIFT;
++		}
++	}
++}
++
++static int qup_i2c_read_one(struct qup_i2c_dev *qup, struct i2c_msg *msg)
++{
++	unsigned long left;
++	int ret;
++
++	/*
++	 * The QUP block will issue a NACK and STOP on the bus when reaching
++	 * the end of the read, the length of the read is specified as one byte
++	 * which limits the possible read to 256 (QUP_READ_LIMIT) bytes.
++	 */
++	if (msg->len > QUP_READ_LIMIT) {
++		dev_err(qup->dev, "HW not capable of reads over %d bytes\n",
++			QUP_READ_LIMIT);
++		return -EINVAL;
++	}
++
++	qup->msg = msg;
++	qup->pos  = 0;
++
++	enable_irq(qup->irq);
++
++	qup_i2c_set_read_mode(qup, msg->len);
++
++	ret = qup_i2c_change_state(qup, QUP_RUN_STATE);
++	if (ret)
++		goto err;
++
++	writel(qup->clk_ctl, qup->base + QUP_I2C_CLK_CTL);
++
++	ret = qup_i2c_change_state(qup, QUP_PAUSE_STATE);
++	if (ret)
++		goto err;
++
++	qup_i2c_issue_read(qup, msg);
++
++	ret = qup_i2c_change_state(qup, QUP_RUN_STATE);
++	if (ret)
++		goto err;
++
++	do {
++		left = wait_for_completion_timeout(&qup->xfer, HZ);
++		if (!left) {
++			writel(1, qup->base + QUP_SW_RESET);
++			ret = -ETIMEDOUT;
++			goto err;
++		}
++
++		if (qup->bus_err || qup->qup_err) {
++			if (qup->bus_err & QUP_I2C_NACK_FLAG)
++				dev_err(qup->dev, "NACK from %x\n", msg->addr);
++			ret = -EIO;
++			goto err;
++		}
++
++		qup_i2c_read_fifo(qup, msg);
++	} while (qup->pos < msg->len);
++
++err:
++	disable_irq(qup->irq);
++	qup->msg = NULL;
++
++	return ret;
++}
++
++static int qup_i2c_xfer(struct i2c_adapter *adap,
++			struct i2c_msg msgs[],
++			int num)
++{
++	struct qup_i2c_dev *qup = i2c_get_adapdata(adap);
++	int ret, idx;
++
++	ret = pm_runtime_get_sync(qup->dev);
++	if (IS_ERR_VALUE(ret))
++		goto out;
++
++	writel(1, qup->base + QUP_SW_RESET);
++	ret = qup_i2c_poll_state(qup, QUP_RESET_STATE);
++	if (ret)
++		goto out;
++
++	/* Configure QUP as I2C mini core */
++	writel(I2C_MINI_CORE | I2C_N_VAL, qup->base + QUP_CONFIG);
++
++	for (idx = 0; idx < num; idx++) {
++		if (msgs[idx].len == 0) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		if (qup_i2c_poll_state_i2c_master(qup)) {
++			ret = -EIO;
++			goto out;
++		}
++
++		if (msgs[idx].flags & I2C_M_RD)
++			ret = qup_i2c_read_one(qup, &msgs[idx]);
++		else
++			ret = qup_i2c_write_one(qup, &msgs[idx]);
++
++		if (ret)
++			break;
++
++		ret = qup_i2c_change_state(qup, QUP_RESET_STATE);
++		if (ret)
++			break;
++	}
++
++	if (ret == 0)
++		ret = num;
++out:
++
++	pm_runtime_mark_last_busy(qup->dev);
++	pm_runtime_put_autosuspend(qup->dev);
++
++	return ret;
++}
++
++static u32 qup_i2c_func(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
++}
++
++static const struct i2c_algorithm qup_i2c_algo = {
++	.master_xfer	= qup_i2c_xfer,
++	.functionality	= qup_i2c_func,
++};
++
++static void qup_i2c_enable_clocks(struct qup_i2c_dev *qup)
++{
++	clk_prepare_enable(qup->clk);
++	clk_prepare_enable(qup->pclk);
++}
++
++static void qup_i2c_disable_clocks(struct qup_i2c_dev *qup)
++{
++	u32 config;
++
++	qup_i2c_change_state(qup, QUP_RESET_STATE);
++	clk_disable_unprepare(qup->clk);
++	config = readl(qup->base + QUP_CONFIG);
++	config |= QUP_CLOCK_AUTO_GATE;
++	writel(config, qup->base + QUP_CONFIG);
++	clk_disable_unprepare(qup->pclk);
++}
++
++static int qup_i2c_probe(struct platform_device *pdev)
++{
++	static const int blk_sizes[] = {4, 16, 32};
++	struct device_node *node = pdev->dev.of_node;
++	struct qup_i2c_dev *qup;
++	unsigned long one_bit_t;
++	struct resource *res;
++	u32 val, io_mode, hw_ver, size;
++	int ret, fs_div, hs_div;
++	int src_clk_freq;
++	int clk_freq;
++
++	qup = devm_kzalloc(&pdev->dev, sizeof(*qup), GFP_KERNEL);
++	if (!qup)
++		return -ENOMEM;
++
++	qup->dev = &pdev->dev;
++	init_completion(&qup->xfer);
++	platform_set_drvdata(pdev, qup);
++
++	clk_freq = 100000;
++	if (!of_property_read_u32(node, "clock-frequency", &val))
++		clk_freq = val;
++
++	/* We support frequencies up to FAST Mode (400KHz) */
++	if (clk_freq <= 0 || clk_freq > 400000) {
++		dev_err(qup->dev, "clock frequency not supported %d\n",
++			clk_freq);
++		return -EIO;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	qup->base = devm_ioremap_resource(qup->dev, res);
++	if (IS_ERR(qup->base))
++		return PTR_ERR(qup->base);
++
++	qup->irq = platform_get_irq(pdev, 0);
++	if (qup->irq < 0) {
++		dev_err(qup->dev, "No IRQ defined\n");
++		return qup->irq;
++	}
++
++	qup->clk = devm_clk_get(qup->dev, "core");
++	if (IS_ERR(qup->clk)) {
++		dev_err(qup->dev, "Could not get core clock\n");
++		return PTR_ERR(qup->clk);
++	}
++
++	qup->pclk = devm_clk_get(qup->dev, "iface");
++	if (IS_ERR(qup->pclk)) {
++		dev_err(qup->dev, "Could not get iface clock\n");
++		return PTR_ERR(qup->pclk);
++	}
++
++	qup_i2c_enable_clocks(qup);
++
++	/*
++	 * Bootloaders might leave a pending interrupt on certain QUP's,
++	 * so we reset the core before registering for interrupts.
++	 */
++	writel(1, qup->base + QUP_SW_RESET);
++	ret = qup_i2c_poll_state_valid(qup);
++	if (ret)
++		goto fail;
++
++	ret = devm_request_irq(qup->dev, qup->irq, qup_i2c_interrupt,
++			       IRQF_TRIGGER_HIGH, "i2c_qup", qup);
++	if (ret) {
++		dev_err(qup->dev, "Request %d IRQ failed\n", qup->irq);
++		goto fail;
++	}
++	disable_irq(qup->irq);
++
++	hw_ver = readl(qup->base + QUP_HW_VERSION);
++	dev_dbg(qup->dev, "Revision %x\n", hw_ver);
++
++	io_mode = readl(qup->base + QUP_IO_MODE);
++
++	/*
++	 * The block/fifo size w.r.t. 'actual data' is 1/2 due to 'tag'
++	 * associated with each byte written/received
++	 */
++	size = QUP_OUTPUT_BLOCK_SIZE(io_mode);
++	if (size > ARRAY_SIZE(blk_sizes))
++		return -EIO;
++	qup->out_blk_sz = blk_sizes[size] / 2;
++
++	size = QUP_INPUT_BLOCK_SIZE(io_mode);
++	if (size > ARRAY_SIZE(blk_sizes))
++		return -EIO;
++	qup->in_blk_sz = blk_sizes[size] / 2;
++
++	size = QUP_OUTPUT_FIFO_SIZE(io_mode);
++	qup->out_fifo_sz = qup->out_blk_sz * (2 << size);
++
++	size = QUP_INPUT_FIFO_SIZE(io_mode);
++	qup->in_fifo_sz = qup->in_blk_sz * (2 << size);
++
++	src_clk_freq = clk_get_rate(qup->clk);
++	fs_div = ((src_clk_freq / clk_freq) / 2) - 3;
++	hs_div = 3;
++	qup->clk_ctl = (hs_div << 8) | (fs_div & 0xff);
++
++	/*
++	 * Time it takes for a byte to be clocked out on the bus.
++	 * Each byte takes 9 clock cycles (8 bits + 1 ack).
++	 */
++	one_bit_t = (USEC_PER_SEC / clk_freq) + 1;
++	qup->one_byte_t = one_bit_t * 9;
++
++	dev_dbg(qup->dev, "IN:block:%d, fifo:%d, OUT:block:%d, fifo:%d\n",
++		qup->in_blk_sz, qup->in_fifo_sz,
++		qup->out_blk_sz, qup->out_fifo_sz);
++
++	i2c_set_adapdata(&qup->adap, qup);
++	qup->adap.algo = &qup_i2c_algo;
++	qup->adap.nr = pdev->id;
++	qup->adap.dev.parent = qup->dev;
++	qup->adap.dev.of_node = pdev->dev.of_node;
++	strlcpy(qup->adap.name, "QUP I2C adapter", sizeof(qup->adap.name));
++
++	ret = i2c_add_numbered_adapter(&qup->adap);
++	if (ret)
++		goto fail;
++
++	pm_runtime_set_autosuspend_delay(qup->dev, MSEC_PER_SEC);
++	pm_runtime_use_autosuspend(qup->dev);
++	pm_runtime_enable(qup->dev);
++	return 0;
++
++fail:
++	qup_i2c_disable_clocks(qup);
++	return ret;
++}
++
++static int qup_i2c_remove(struct platform_device *pdev)
++{
++	struct qup_i2c_dev *qup = platform_get_drvdata(pdev);
++
++	disable_irq(qup->irq);
++	qup_i2c_disable_clocks(qup);
++	i2c_del_adapter(&qup->adap);
++	pm_runtime_disable(qup->dev);
++	pm_runtime_set_suspended(qup->dev);
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int qup_i2c_pm_suspend_runtime(struct device *device)
++{
++	struct qup_i2c_dev *qup = dev_get_drvdata(device);
++
++	dev_dbg(device, "pm_runtime: suspending...\n");
++	qup_i2c_disable_clocks(qup);
++	return 0;
++}
++
++static int qup_i2c_pm_resume_runtime(struct device *device)
++{
++	struct qup_i2c_dev *qup = dev_get_drvdata(device);
++
++	dev_dbg(device, "pm_runtime: resuming...\n");
++	qup_i2c_enable_clocks(qup);
++	return 0;
++}
++#endif
++
++#ifdef CONFIG_PM_SLEEP
++static int qup_i2c_suspend(struct device *device)
++{
++	dev_dbg(device, "system suspend");
++	qup_i2c_pm_suspend_runtime(device);
++	return 0;
++}
++
++static int qup_i2c_resume(struct device *device)
++{
++	dev_dbg(device, "system resume");
++	qup_i2c_pm_resume_runtime(device);
++	pm_runtime_mark_last_busy(device);
++	pm_request_autosuspend(device);
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops qup_i2c_qup_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(
++		qup_i2c_suspend,
++		qup_i2c_resume)
++	SET_RUNTIME_PM_OPS(
++		qup_i2c_pm_suspend_runtime,
++		qup_i2c_pm_resume_runtime,
++		NULL)
++};
++
++static const struct of_device_id qup_i2c_dt_match[] = {
++	{ .compatible = "qcom,i2c-qup-v1.1.1" },
++	{ .compatible = "qcom,i2c-qup-v2.1.1" },
++	{ .compatible = "qcom,i2c-qup-v2.2.1" },
++	{}
++};
++MODULE_DEVICE_TABLE(of, qup_i2c_dt_match);
++
++static struct platform_driver qup_i2c_driver = {
++	.probe  = qup_i2c_probe,
++	.remove = qup_i2c_remove,
++	.driver = {
++		.name = "i2c_qup",
++		.owner = THIS_MODULE,
++		.pm = &qup_i2c_qup_pm_ops,
++		.of_match_table = qup_i2c_dt_match,
++	},
++};
++
++module_platform_driver(qup_i2c_driver);
++
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:i2c_qup");
 -- 
 1.7.9.5
 
