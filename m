@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaBUV4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 16:56:07 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37099 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899AbaBUV4F convert rfc822-to-8bit (ORCPT
+	id S1755069AbaBUV7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 16:59:51 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:54346 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103AbaBUV7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 16:56:05 -0500
+	Fri, 21 Feb 2014 16:59:49 -0500
+Message-ID: <5307CC50.4070502@webreactor.eu>
+Date: Fri, 21 Feb 2014 22:59:44 +0100
+From: Marcin Lulek <admin@webreactor.eu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <5307C553.9040504@linaro.org>
-References: <1393015414-12499-1-git-send-email-john.stultz@linaro.org>
-	<1393015414-12499-3-git-send-email-john.stultz@linaro.org>
-	<CAMP5Xgf1cMUEk5Z3KQvnUNTzvo12URYX_w4m+SyH8WEF=1kKhg@mail.gmail.com>
-	<5307C553.9040504@linaro.org>
-Date: Fri, 21 Feb 2014 13:56:04 -0800
-Message-ID: <CAMP5XgciqfYJEML8Rhb0w2pk6gboOciK2rczEc4ZdDC_-pgkNQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] staging: binder: Support concurrent 32 bit and 64 bit processes.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3.14-rc3] input: Add device id for Thrustmaster GPX Gamepad
+ for joystick/xpad.c driver
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 1:29 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 02/21/2014 12:59 PM, Arve Hjønnevåg wrote:
->> On Fri, Feb 21, 2014 at 12:43 PM, John Stultz <john.stultz@linaro.org> wrote:
->>> From: Arve Hjønnevåg <arve@android.com>
->>>
->>> For 64bit systems we want to use the same binder interface for 32bit and
->>> 64bit processes. Thus the size and the layout of the structures passed
->>> between the kernel and the userspace has to be the same for both 32 and
->>> 64bit processes.
->>>
->>> This change replaces all the uses of void* and size_t with
->>> binder_uintptr_t and binder_size_t. These are then typedefed to specific
->>> sizes depending on the use of the interface, as follows:
->>>        * __u32 - on legacy 32bit only userspace
->>>        * __u64 - on mixed 32/64bit userspace where all processes use the same
->>> interface.
->>>
->>> This change also increments the BINDER_CURRENT_PROTOCOL_VERSION to 8 and
->>> hooks the compat_ioctl entry for the mixed 32/64bit Android userspace.
->>>
->> It only increments the version to 8 if the old 32 bit interface is not selected.
->>
->>> This patch also provides a CONFIG_ANDROID_BINDER_IPC_32BIT option for
->>> compatability, which if set which enables the old protocol on 32 bit
->>> systems.
->
-> Ok. I thought that point was covered by the detail on
-> CONFIG_ANDROID_BINDER_IPC_32BIT, but maybe its not explicit enough.
->
-> Would you be ok with:
->
-> This change also increments the BINDER_CURRENT_PROTOCOL_VERSION to 8 and
-> hooks the compat_ioctl entry for the mixed 32/64bit Android userspace.
->
-> This patch also provides a CONFIG_ANDROID_BINDER_IPC_32BIT option for
-> compatability, which if set which enables the old protocol, setting
-> BINDER_CURRENT_PROTOCOL_VERSION to 7, on 32 bit systems.
->
-> ?
->
+Hello,
 
-Yes, but replacing "This change" with "Selecting the 64 bit interface"
-would also work.
+It seems xpad driver misses quite a few newer device id's for gamepads 
+which leads to wrong recognition.
 
+
+ From 18d5a1b290e4b39596e200449aaac6b93c035d63 Mon Sep 17 00:00:00 2001
+From: Marcin Lulek <info@webreactor.eu>
+Date: Fri, 21 Feb 2014 22:11:46 +0100
+Subject: [PATCH 1/1] Add device id for Thrustmaster GPX Gamepad for
+  joystick/xpad.c driver
+
+Signed-off-by: Marcin Lulek <info@webreactor.eu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Thomaz de Oliveira dos Reis <thor27@gmail.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+
+---
+  drivers/input/joystick/xpad.c | 1 +
+  1 file changed, 1 insertion(+)
+
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 603fe0d..b94668f 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -124,6 +124,7 @@ static const struct xpad_device {
+      { 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", 
+MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+      { 0x045e, 0x0719, "Xbox 360 Wireless Receiver", 
+MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+      { 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
++    { 0x24c6, 0x5b02, "Thrustmaster, Inc. GPX Controller", 0, 
+XTYPE_XBOX360 },
+      { 0x046d, 0xc21d, "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
+      { 0x046d, 0xc21f, "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
+      { 0x046d, 0xc242, "Logitech Chillstream Controller", 0, 
+XTYPE_XBOX360 },
 -- 
-Arve Hjønnevåg
+1.8.3.2
+
