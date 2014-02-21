@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307AbaBUNPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:15:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47735 "EHLO
+	id S933145AbaBUNCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:02:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47687 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163AbaBUNCS (ORCPT
+	with ESMTP id S933076AbaBUNCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:18 -0500
+	Fri, 21 Feb 2014 08:02:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: George Spelvin <linux@horizon.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 33/60] ath9k_htc: Do not support PowerSave by default
-Date: Fri, 21 Feb 2014 13:01:00 +0000
-Message-Id: <1392987687-15367-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 23/60] ahci: add an observed PCI ID for Marvell 88se9172 SATA controller
+Date: Fri, 21 Feb 2014 13:00:50 +0000
+Message-Id: <1392987687-15367-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: George Spelvin <linux@horizon.com>
 
-commit 6bca610d97b6139a1d7598b8009da9d339daa50f upstream.
+commit fcce9a35f8faaa1f52236c554ef1b15d99a7537e upstream.
 
-It is a copy/paste of patch provided by Sujith for ath9k.
+A third possible PCI ID, as personally observed, and found in the
+pci.ids list.
 
-"Even though we make sure PowerSave is not enabled by default
-by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
-PS could be enabled by userspace based on various factors
-like battery usage etc. Since PS in ath9k is just broken
-and has been untested for years, remove support for it, but
-allow a user to explicitly enable it using a module parameter."
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: George Spelvin <linux@horizon.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-index 29641e7..b53c7f0 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -30,6 +30,10 @@ int htc_modparam_nohwcrypt;
- module_param_named(nohwcrypt, htc_modparam_nohwcrypt, int, 0444);
- MODULE_PARM_DESC(nohwcrypt, "Disable hardware encryption");
- 
-+static int ath9k_ps_enable;
-+module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
-+MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
-+
- #define CHAN2G(_freq, _idx)  { \
- 	.center_freq = (_freq), \
- 	.hw_value = (_idx), \
-@@ -699,11 +703,13 @@ static void ath9k_set_hw_capab(struct ath9k_htc_priv *priv,
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_HAS_RATE_CONTROL |
- 		IEEE80211_HW_RX_INCLUDES_FCS |
--		IEEE80211_HW_SUPPORTS_PS |
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS |
- 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING;
- 
-+	if (ath9k_ps_enable)
-+		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
-+
- 	hw->wiphy->interface_modes =
- 		BIT(NL80211_IFTYPE_STATION) |
- 		BIT(NL80211_IFTYPE_ADHOC) |
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 0afabef..5630e99 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -435,6 +435,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
 -- 
 1.9.0
 
