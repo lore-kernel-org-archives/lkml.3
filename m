@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430AbaBUP6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 10:58:21 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42056 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932145AbaBUP6U (ORCPT
+	id S932465AbaBUP7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 10:59:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55219 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932145AbaBUP7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 10:58:20 -0500
-Message-ID: <53077799.6030700@hurleysoftware.com>
-Date: Fri, 21 Feb 2014 10:58:17 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Feb 2014 10:59:12 -0500
+Date: Fri, 21 Feb 2014 08:01:51 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hannes Reinecke <hare@suse.de>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>,
+        Ray Strode <halfline@gmail.com>
+Subject: Re: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs
+ attribute
+Message-ID: <20140221160151.GA31979@kroah.com>
+References: <20140220235118.191692546@linuxfoundation.org>
+ <20140220235119.236520201@linuxfoundation.org>
+ <CA+5PVA55O2GwUE8oMHShgKgQPA89z5RTbn6yCvOPBMGsf70kBw@mail.gmail.com>
+ <5307683C.50209@suse.de>
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Grant Edwards <grant.b.edwards@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: locking changes in tty broke low latency feature
-References: <20140218093829.GC1741@redhat.com>	<5303DABD.9000302@hurleysoftware.com>	<20140219130308.GC1851@redhat.com>	<le2nmd$p1$1@ger.gmane.org>	<5304EC33.5040502@hurleysoftware.com>	<20140219191717.486ac4d0@alan.etchedpixels.co.uk>	<53051276.2070601@hurleysoftware.com>	<20140219214242.406e705b@alan.etchedpixels.co.uk>	<5305664C.7080701@hurleysoftware.com> <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
-In-Reply-To: <20140221153946.2bda2ef0@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5307683C.50209@suse.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Fri, Feb 21, 2014 at 03:52:44PM +0100, Hannes Reinecke wrote:
+> On 02/21/2014 03:48 PM, Josh Boyer wrote:
+> > On Thu, Feb 20, 2014 at 6:52 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> >> 3.13-stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >> ------------------
+> >>
+> >> From: Hannes Reinecke <hare@suse.de>
+> >>
+> >> commit d8a5dc3033af2fd6d16030d2ee4fbd073460fe54 upstream.
+> >>
+> >> The 'active' sysfs attribute should refer to the currently active tty
+> >> devices the console is running on, not the currently active console.
+> >>
+> >> The console structure doesn't refer to any device in sysfs, only the tty
+> >> the console is running on has.  So we need to print out the tty names in
+> >> 'active', not the console names.
+> >>
+> >> This resolves an issue on s390 platforms in determining the correct
+> >> console device to use.
+> > 
+> > Just to be double sure this is seen, Ray points out that it breaks
+> > current plymouth because the heuristic changed.  Hold off on this one?
+> > 
+> Without this patch systemd won't present a login console for s390.
+> I'd prefer fixing plymouth.
 
-On 02/21/2014 10:39 AM, One Thousand Gnomes wrote:
->> Ok, so this is still only about "best effort", and really bad
->> worst case behavior (that the tty core has no control over) is ok.
->>
->> Going to great lengths to trim one wakeup when nouveau disables interrupts
->> for 2ms seemed like a waste of time.
->
-> If it used to work and it doesn't now it's a regression. It's also a
-> nasty one if you've removed the facility for it.
+We can't break working userspace programs, sorry.  I'll go revert this
+patch from the stable kernel's, and from Linus's tree as well, as we
+can't break things when 3.14 comes out either.
 
-I think the consensus is to leave the low_latency facility in, but
-remove it's connection to the tty buffers.
+I'll be glad to take a patch that does not break existing systems...
 
-If the known-to-be-already-in-non-interrupt-context drivers want,
-I can add a different function for executing flush_to_ldisc()
-directly. But I don't want to do that without a use-case and test
-subject.
+thanks,
 
->> This change makes flush_to_ldisc() itself safely callable from
->> interrupt context, and:
->> 1. doesn't lose data (ie., buffers if the ldisc is filling up)
->> 2. automatically picks the optimum handling whether the input worker
->>      is running or not
->> 3. doesn't require more locks to exclude flushing or the input worker
->
-> Yep
->
->> Putting aside for a moment the issue of termios safety inside
->> the throttle and unthrottle driver methods, the exclusion locks here could
->> be spinlocks if the drivers can be audited/fixed to not sleep here.
->
-> That was basically insoluble when the lock first went in. We tried with a
-> spinlock but a lot of USB widgets need to go and chatter with the device
-> when you do flow control. Flow control is fundamentally ordered but
-> asynchronous however so if the right fix was to make the USB dongles
-> queue the work then no harm is done (and the queued flow control
-> assertion would worst case be no different to a non queued one from a
-> queued flush_to_ldisc)
-
-Oh. That's not something I want to take on.
-
->> Then that just leaves the termios lock, which is a non-trivial problem, and
->> I'm not convinced RCU will magically fix it.
->
-> If you pass a snapshot of the termios state down then I think it does,
-> but it's still not remotely trivial.
-
-That was my thought too -- that only dependency injection would work.
-Which would require adding that to most, if not all, driver methods, which
-seems way too painful.
-
-> First question though comes before all of this - and that is do we need
-> low_latency at all any more or is the current scheduling logic now good
-> enough to do the job anyway.
-
-Right.
-
-Based on my recent test, I think low_latency doesn't need to be a knob for
-the tty core. Drivers can continue to use it to mess with their rx fifo
-settings and such like.
-
-I plan on sending Greg a patch to do just that, probably this weekend.
-
-Regards,
-Peter Hurley
-
+greg k-h
