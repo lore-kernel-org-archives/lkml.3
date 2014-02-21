@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187AbaBUNOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:14:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47743 "EHLO
+	id S932958AbaBUNOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:14:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47745 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173AbaBUNCU (ORCPT
+	with ESMTP id S933176AbaBUNCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Feb 2014 08:02:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 34/60] ath9k: Do not support PowerSave by default
-Date: Fri, 21 Feb 2014 13:01:01 +0000
-Message-Id: <1392987687-15367-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/60] spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->lsb is true
+Date: Fri, 21 Feb 2014 13:01:02 +0000
+Message-Id: <1392987687-15367-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 8298383c2cd5a6d0639f1bb1781fba181bd20154 upstream.
+commit f7db1588d6028c97c098bb6445eaabc56a25fed8 upstream.
 
-Even though we make sure PowerSave is not enabled by default
-by disabling the flag, WIPHY_FLAG_PS_ON_BY_DEFAULT on init,
-PS could be enabled by userspace based on various factors
-like battery usage etc. Since PS in ath9k is just broken
-and has been untested for years, remove support for it, but
-allow a user to explicitly enable it using a module parameter.
+Otherwise, spi_setup() fails with unsupported mode bits message.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/init.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/spi/spi-nuc900.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-index 9aa005e..a933eb2 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -46,6 +46,10 @@ static int ath9k_btcoex_enable;
- module_param_named(btcoex_enable, ath9k_btcoex_enable, int, 0444);
- MODULE_PARM_DESC(btcoex_enable, "Enable wifi-BT coexistence");
+diff --git a/drivers/spi/spi-nuc900.c b/drivers/spi/spi-nuc900.c
+index dae8be2..f244d19 100644
+--- a/drivers/spi/spi-nuc900.c
++++ b/drivers/spi/spi-nuc900.c
+@@ -374,6 +374,8 @@ static int __devinit nuc900_spi_probe(struct platform_device *pdev)
+ 	init_completion(&hw->done);
  
-+static int ath9k_ps_enable;
-+module_param_named(ps_enable, ath9k_ps_enable, int, 0444);
-+MODULE_PARM_DESC(ps_enable, "Enable WLAN PowerSave");
-+
- bool is_ath9k_unloaded;
- /* We use the hw_value as an index into our private channel structure */
- 
-@@ -673,11 +677,13 @@ void ath9k_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
- 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
- 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
- 		IEEE80211_HW_SIGNAL_DBM |
--		IEEE80211_HW_SUPPORTS_PS |
- 		IEEE80211_HW_PS_NULLFUNC_STACK |
- 		IEEE80211_HW_SPECTRUM_MGMT |
- 		IEEE80211_HW_REPORTS_TX_ACK_STATUS;
- 
-+	if (ath9k_ps_enable)
-+		hw->flags |= IEEE80211_HW_SUPPORTS_PS;
-+
- 	if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT)
- 		 hw->flags |= IEEE80211_HW_AMPDU_AGGREGATION;
- 
+ 	master->mode_bits          = SPI_MODE_0;
++	if (hw->pdata->lsb)
++		master->mode_bits |= SPI_LSB_FIRST;
+ 	master->num_chipselect     = hw->pdata->num_cs;
+ 	master->bus_num            = hw->pdata->bus_num;
+ 	hw->bitbang.master         = hw->master;
 -- 
 1.9.0
 
