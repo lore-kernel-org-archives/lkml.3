@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160AbaBUNCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:02:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47685 "EHLO
+	id S933209AbaBUNCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:02:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47727 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933075AbaBUNCF (ORCPT
+	with ESMTP id S933154AbaBUNCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:05 -0500
+	Fri, 21 Feb 2014 08:02:17 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 24/60] ftrace: Synchronize setting function_trace_op with ftrace_trace_function
-Date: Fri, 21 Feb 2014 13:00:51 +0000
-Message-Id: <1392987687-15367-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 32/60] s390/dump: Fix dump memory detection
+Date: Fri, 21 Feb 2014 13:00:59 +0000
+Message-Id: <1392987687-15367-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 405e1d834807e51b2ebd3dea81cb51e53fb61504 upstream.
+commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
 
-[ Partial commit backported to 3.4. The ftrace_sync() code by this is
-  required for other fixes that 3.4 needs. ]
+Dumps created by kdump or zfcpdump can contain invalid memory holes when
+dumping z/VM systems that have memory pressure.
 
-ftrace_trace_function is a variable that holds what function will be called
-directly by the assembly code (mcount). If just a single function is
-registered and it handles recursion itself, then the assembly will call that
-function directly without any helper function. It also passes in the
-ftrace_op that was registered with the callback. The ftrace_op to send is
-stored in the function_trace_op variable.
+For example:
 
-The ftrace_trace_function and function_trace_op needs to be coordinated such
-that the called callback wont be called with the wrong ftrace_op, otherwise
-bad things can happen if it expected a different op. Luckily, there's no
-callback that doesn't use the helper functions that requires this. But
-there soon will be and this needs to be fixed.
+   # zgetdump -i /proc/vmcore.
+   Memory map:
+   0000000000000000 - 0000000000bfffff (12 MB)
+   0000000000e00000 - 00000000014fffff (7 MB)
+   000000000bd00000 - 00000000f3bfffff (3711 MB)
 
-Use a set_function_trace_op to store the ftrace_op to set the
-function_trace_op to when it is safe to do so (during the update function
-within the breakpoint or stop machine calls). Or if dynamic ftrace is not
-being used (static tracing) then we have to do a bit more synchronization
-when the ftrace_trace_function is set as that takes affect immediately
-(as oppose to dynamic ftrace doing it with the modification of the trampoline).
+The memory detection function find_memory_chunks() issues tprot to
+find valid memory chunks. In case of CMM it can happen that pages are
+marked as unstable via set_page_unstable() in arch_free_page().
+If z/VM has released that pages, tprot returns -EFAULT and indicates
+a memory hole.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+So fix this and switch off CMM in case of kdump or zfcpdump.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ arch/s390/mm/page-states.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 524243e..6aa8159 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -222,6 +222,23 @@ static void update_global_ops(void)
- 	global_ops.func = func;
- }
+diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
+index a90d45e..27c50f4 100644
+--- a/arch/s390/mm/page-states.c
++++ b/arch/s390/mm/page-states.c
+@@ -12,6 +12,8 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <asm/setup.h>
++#include <asm/ipl.h>
  
-+static void ftrace_sync(struct work_struct *work)
-+{
+ #define ESSA_SET_STABLE		1
+ #define ESSA_SET_UNUSED		2
+@@ -41,6 +43,14 @@ void __init cmma_init(void)
+ 
+ 	if (!cmma_flag)
+ 		return;
 +	/*
-+	 * This function is just a stub to implement a hard force
-+	 * of synchronize_sched(). This requires synchronizing
-+	 * tasks even in userspace and idle.
-+	 *
-+	 * Yes, function tracing is rude.
++	 * Disable CMM for dump, otherwise  the tprot based memory
++	 * detection can fail because of unstable pages.
 +	 */
-+}
-+
-+static void ftrace_sync_ipi(void *data)
-+{
-+	/* Probably not needed, but do it anyway */
-+	smp_rmb();
-+}
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
++	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
++		cmma_flag = 0;
++		return;
++	}
+ 	asm volatile(
+ 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
+ 		"0:     la      %0,0\n"
 -- 
 1.9.0
 
