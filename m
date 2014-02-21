@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270AbaBUKda (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 05:33:30 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45218 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177AbaBUKd3 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 21 Feb 2014 05:33:29 -0500
-Message-Id: <53073986020000780011E2E1@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 21 Feb 2014 10:33:26 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <davem@davemloft.net>, <dborkman@redhat.com>, <ffusco@redhat.com>,
-        <tgraf@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] x86/hash: swap parameters of crc32_u32()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754462AbaBUKdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 05:33:46 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37575 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382AbaBUKdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 05:33:44 -0500
+Date: Fri, 21 Feb 2014 11:33:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Subject: RE: [PATCH 1/2] genirq: Fix the possible synchronize_irq()
+ wait-forever
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C27CF7@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.02.1402211006130.4468@ionos.tec.linutronix.de>
+References: <y> <1392020037-5484-1-git-send-email-chuansheng.liu@intel.com> <alpine.DEB.2.02.1402100951290.21991@ionos.tec.linutronix.de> <27240C0AC20F114CBF8149A2696CBE4A01C269E8@SHSMSX101.ccr.corp.intel.com> <alpine.DEB.2.02.1402201218310.4468@ionos.tec.linutronix.de>
+ <27240C0AC20F114CBF8149A2696CBE4A01C27CF7@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... to match its two callers (i.e. the alternative would have been to
-swap the arguments at the call sites).
+On Fri, 21 Feb 2014, Liu, Chuansheng wrote:
+> But feels there is another case which the synchronize_irq waited there forever,
+> it is no waking up action from irq_thread().
+> 
+> CPU0                                  CPU1
+> disable_irq()                         irq_thread()
+>   synchronize_irq()
+>     wait_event()
+>      adding the __wait into the queue  wake_threads_waitq
+>        test threads_active==0                      
+> 					 atomic_dec_and_test(threads_active) 1 -- > 0
+>                                          waitqueue_active(&desc->wait_for_threads)
+>                                   <== Here without smp_mb(), CPU1 maybe detect
+>                                       the queue is still empty??
+>      schedule()
+> 
+> It will cause although the threads_active is 0, but irq_thread() didn't do the waking up action.
+> Is it reasonable? Then maybe we can add one smp_mb() before waitqueue_active.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Francesco Fusco <ffusco@redhat.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Thomas Graf <tgraf@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
----
- arch/x86/lib/hash.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think you have a point there, but not on x86 wherre the atomic_dec
+and the spinlock on the queueing side are full barriers. For non-x86
+there is definitely a potential issue.
 
---- 3.14-rc3-x86-hash-crc32.orig/arch/x86/lib/hash.c
-+++ 3.14-rc3-x86-hash-crc32/arch/x86/lib/hash.c
-@@ -37,7 +37,7 @@
- #include <asm/cpufeature.h>
- #include <asm/hash.h>
- 
--static inline u32 crc32_u32(u32 crc, u32 val)
-+static inline u32 crc32_u32(u32 val, u32 crc)
- {
- #ifdef CONFIG_AS_CRC32
- 	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
+Thanks,
+
+	tglx
 
 
 
