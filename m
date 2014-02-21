@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620AbaBUNLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:11:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47793 "EHLO
+	id S932564AbaBUNK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:10:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47803 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933238AbaBUNCc (ORCPT
+	with ESMTP id S932633AbaBUNCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:32 -0500
+	Fri, 21 Feb 2014 08:02:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Bolle <pebolle@tiscali.nl>,
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 44/60] raw: test against runtime value of max_raw_minors
-Date: Fri, 21 Feb 2014 13:01:11 +0000
-Message-Id: <1392987687-15367-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 46/60] staging: comedi: adv_pci1710: fix analog output readback value
+Date: Fri, 21 Feb 2014 13:01:13 +0000
+Message-Id: <1392987687-15367-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
 References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit 5bbb2ae3d6f896f8d2082d1eceb6131c2420b7cf upstream.
+commit 1e85c1ea1ff2a60659e790ef8ec76c7339445841 upstream.
 
-bind_get() checks the device number it is called with. It uses
-MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
-time while the actual number of raw devices can be set at runtime. This
-means the test can either be too strict or too lenient. And if the test
-ends up being too lenient bind_get() might try to access memory beyond
-what was allocated for "raw_devices".
+The last value written to a analog output channel is cached in the
+private data of this driver for readback.
 
-So check against the runtime value (max_raw_minors) in this function.
+Currently, the wrong value is cached in the (*insn_write) functions.
+The current code stores the data[n] value for readback afer the loop
+has written all the values. At this time 'n' points past the end of
+the data array.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jan Kara <jack@suse.cz>
+Fix the functions by using a local variable to hold the data being
+written to the analog output channel. This variable is then used
+after the loop is complete to store the readback value. The current
+value is retrieved before the loop in case no values are actually
+written..
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/raw.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/adv_pci1710.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index 54a3a6d..5959669 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
- 	struct raw_device_data *rawdev;
- 	struct block_device *bdev;
+diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
+index de8c98c..555790c 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1710.c
++++ b/drivers/staging/comedi/drivers/adv_pci1710.c
+@@ -387,6 +387,7 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
++	unsigned int val;
+ 	int n, chan, range, ofs;
  
--	if (number <= 0 || number >= MAX_RAW_MINORS)
-+	if (number <= 0 || number >= max_raw_minors)
- 		return -EINVAL;
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -402,11 +403,14 @@ static int pci171x_insn_write_ao(struct comedi_device *dev,
+ 		outw(devpriv->da_ranges, dev->iobase + PCI171x_DAREF);
+ 		ofs = PCI171x_DA1;
+ 	}
++	val = devpriv->ao_data[chan];
  
- 	rawdev = &raw_devices[number];
+-	for (n = 0; n < insn->n; n++)
+-		outw(data[n], dev->iobase + ofs);
++	for (n = 0; n < insn->n; n++) {
++		val = data[n];
++		outw(val, dev->iobase + ofs);
++	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ 
+@@ -555,6 +559,7 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
++	unsigned int val;
+ 	int n, rangereg, chan;
+ 
+ 	chan = CR_CHAN(insn->chanspec);
+@@ -564,13 +569,15 @@ static int pci1720_insn_write_ao(struct comedi_device *dev,
+ 		outb(rangereg, dev->iobase + PCI1720_RANGE);
+ 		devpriv->da_ranges = rangereg;
+ 	}
++	val = devpriv->ao_data[chan];
+ 
+ 	for (n = 0; n < insn->n; n++) {
+-		outw(data[n], dev->iobase + PCI1720_DA0 + (chan << 1));
++		val = data[n];
++		outw(val, dev->iobase + PCI1720_DA0 + (chan << 1));
+ 		outb(0, dev->iobase + PCI1720_SYNCOUT);	/*  update outputs */
+ 	}
+ 
+-	devpriv->ao_data[chan] = data[n];
++	devpriv->ao_data[chan] = val;
+ 
+ 	return n;
+ }
 -- 
 1.9.0
 
