@@ -1,213 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227AbaBUNUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 08:20:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47695 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933086AbaBUNCI (ORCPT
+	id S1756269AbaBUNUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 08:20:55 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45719 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756023AbaBUNUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 08:02:08 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 26/60] ftrace: Have function graph only trace based on global_ops filters
-Date: Fri, 21 Feb 2014 13:00:53 +0000
-Message-Id: <1392987687-15367-27-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-References: <1392987687-15367-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Fri, 21 Feb 2014 08:20:51 -0500
+Date: Fri, 21 Feb 2014 13:20:24 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Larry Bassel <lbassel@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Nicolas Pitre <nico@linaro.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Jiang Liu <liuj97@gmail.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
+Message-ID: <20140221132024.GD21483@n2100.arm.linux.org.uk>
+References: <1392339850-18686-1-git-send-email-keescook@chromium.org> <1392339850-18686-3-git-send-email-keescook@chromium.org> <20140214162257.GB2331@e103592.cambridge.arm.com> <CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com> <20140217123415.GA2182@e103592.cambridge.arm.com> <CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com> <20140221123645.GA2578@e103592.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221123645.GA2578@e103592.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.31 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Feb 21, 2014 at 12:37:04PM +0000, Dave Martin wrote:
+> It would be good if someone who's more familiar with the parms and
+> vmlinux.lds stuff could take a look at it, though I don't see any
+> obvious problem yet.
 
-------------------
+The biggest issue with it is that we end up with:
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+- the .text section rounded up to 1MB
+- the .rodata section rounded up to 1MB
 
-commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
+That means we can end up wasting up to 1MB of memory for each (in the
+worst case where we encroach into the next 1MB aligned region by a few
+bytes) and this memory can't be re-used.
 
-Doing some different tests, I discovered that function graph tracing, when
-filtered via the set_ftrace_filter and set_ftrace_notrace files, does
-not always keep with them if another function ftrace_ops is registered
-to trace functions.
+The alternative is to adjust the maps such that we end up mapping the
+.text / .rodata overlap 1MB using 4K pages, taking the additional TLB
+hit by doing so.
 
-The reason is that function graph just happens to trace all functions
-that the function tracer enables. When there was only one user of
-function tracing, the function graph tracer did not need to worry about
-being called by functions that it did not want to trace. But now that there
-are other users, this becomes a problem.
+The .text is aligned to 1MB, so the majority of the first 0x8000 to
+0x100000 is unused.  The end of the .text section is aligned to 1MB,
+and the start of the .data section is also aligned to 1MB.
 
-For example, one just needs to do the following:
+So, the minimum kernel size is: 0x100000 + MB_ALIGN(sizeof(.text)) +
+MB_ALIGN(sizeof(.rodata)) + MB_ALIGN(sizeof(init sections)) + sizeof(.data)
+- 0x8000
 
- # cd /sys/kernel/debug/tracing
- # echo schedule > set_ftrace_filter
- # echo function_graph > current_tracer
- # cat trace
-[..]
- 0)               |  schedule() {
- ------------------------------------------
- 0)    <idle>-0    =>   rcu_pre-7
- ------------------------------------------
+So, looking at this kernel I've recently built:
 
- 0) ! 2980.314 us |  }
- 0)               |  schedule() {
- ------------------------------------------
- 0)   rcu_pre-7    =>    <idle>-0
- ------------------------------------------
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .head.text    00000204  c0008000  c0008000  00008000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
 
- 0) + 20.701 us   |  }
+--- .text this gets set to 0xc0100000, we lose 0xc0008240 to 0xc0100000
 
- # echo 1 > /proc/sys/kernel/stack_tracer_enabled
- # cat trace
-[..]
- 1) + 20.825 us   |      }
- 1) + 21.651 us   |    }
- 1) + 30.924 us   |  } /* SyS_ioctl */
- 1)               |  do_page_fault() {
- 1)               |    __do_page_fault() {
- 1)   0.274 us    |      down_read_trylock();
- 1)   0.098 us    |      find_vma();
- 1)               |      handle_mm_fault() {
- 1)               |        _raw_spin_lock() {
- 1)   0.102 us    |          preempt_count_add();
- 1)   0.097 us    |          do_raw_spin_lock();
- 1)   2.173 us    |        }
- 1)               |        do_wp_page() {
- 1)   0.079 us    |          vm_normal_page();
- 1)   0.086 us    |          reuse_swap_page();
- 1)   0.076 us    |          page_move_anon_rmap();
- 1)               |          unlock_page() {
- 1)   0.082 us    |            page_waitqueue();
- 1)   0.086 us    |            __wake_up_bit();
- 1)   1.801 us    |          }
- 1)   0.075 us    |          ptep_set_access_flags();
- 1)               |          _raw_spin_unlock() {
- 1)   0.098 us    |            do_raw_spin_unlock();
- 1)   0.105 us    |            preempt_count_sub();
- 1)   1.884 us    |          }
- 1)   9.149 us    |        }
- 1) + 13.083 us   |      }
- 1)   0.146 us    |      up_read();
+  1 .text         006c4530  c0008240  c0008240  00008240  2**6
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .text.head    0000004c  c06cc770  c06cc770  006cc770  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
 
-When the stack tracer was enabled, it enabled all functions to be traced, which
-now the function graph tracer also traces. This is a side effect that should
-not occur.
+--- sizeof(.text) + sizeof(.text.head) becomes 0x700000
+--- .rodata starts at 0xc0800000 instead of 0xc06cd000
 
-To fix this a test is added when the function tracing is changed, as well as when
-the graph tracer is enabled, to see if anything other than the ftrace global_ops
-function tracer is enabled. If so, then the graph tracer calls a test trampoline
-that will look at the function that is being traced and compare it with the
-filters defined by the global_ops.
+  3 .rodata       0022f568  c06cd000  c06cd000  006cd000  2**6
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 __bug_table   0000873c  c08fc568  c08fc568  008fc568  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  5 .pci_fixup    00000030  c0904ca4  c0904ca4  00904ca4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  6 __ksymtab     00008158  c0904cd4  c0904cd4  00904cd4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  7 __ksymtab_gpl 00006858  c090ce2c  c090ce2c  0090ce2c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  8 __kcrctab     000040ac  c0913684  c0913684  00913684  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  9 __kcrctab_gpl 0000342c  c0917730  c0917730  00917730  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 10 __ksymtab_strings 00022a08  c091ab5c  c091ab5c  0091ab5c  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 11 __param       00000c70  c093d564  c093d564  0093d564  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 12 __modver      00000e2c  c093e1d4  c093e1d4  0093e1d4  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 13 __ex_table    00000f18  c093f000  c093f000  0093f000  2**3
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 14 .notes        00000024  c093ff18  c093ff18  0093ff18  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 15 .vectors      00000020  00000000  c0940000  00940000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 16 .stubs        00000240  00001000  c0940020  00941000  2**5
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 17 .init.text    00051760  c0940260  c0940260  00948260  2**5
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 18 .exit.text    00002130  c09919c0  c09919c0  009999c0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+ 19 .init.arch.info 00000108  c0993af0  c0993af0  0099baf0  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 20 .init.tagtable 00000048  c0993bf8  c0993bf8  0099bbf8  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 21 .init.smpalt  000032f8  c0993c40  c0993c40  0099bc40  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 22 .init.pv_table 00000314  c0996f38  c0996f38  0099ef38  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+ 23 .init.data    0000c19c  c0997250  c0997250  0099f250  2**3
+                  CONTENTS, ALLOC, LOAD, DATA
+ 24 .data..percpu 000035c0  c09a4000  c09a4000  009ac000  2**6
+                  CONTENTS, ALLOC, LOAD, DATA
 
-As an optimization, if there's no other function tracers registered, or if
-the only registered function tracers also use the global ops, the function
-graph infrastructure will call the registered function graph callback directly
-and not go through the test trampoline.
+--- sizeof previous sections is 0x2db000, which becomes 0x300000
+--- start of .data becomes 0xc0b00000 instead of 0xc09a8000
 
-Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: backported to 3.5: used Steven's backport to 3.4 ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/trace/ftrace.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 44 insertions(+), 1 deletion(-)
+ 25 .data         00062728  c09a8000  c09a8000  009b0000  2**6
+                  CONTENTS, ALLOC, LOAD, DATA
+ 26 .bss          00754870  c0a0a740  c0a0a740  00a12728  2**6
+                  ALLOC
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5119235..05dc549 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -239,6 +239,12 @@ static void ftrace_sync_ipi(void *data)
- 	smp_rmb();
- }
- 
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static void update_function_graph_func(void);
-+#else
-+static inline void update_function_graph_func(void) { }
-+#endif
-+
- static void update_ftrace_function(void)
- {
- 	ftrace_func_t func;
-@@ -257,6 +263,8 @@ static void update_ftrace_function(void)
- 	else
- 		func = ftrace_ops_list_func;
- 
-+	update_function_graph_func();
-+
- #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
- #else
-@@ -4482,6 +4490,7 @@ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
- trace_func_graph_ret_t ftrace_graph_return =
- 			(trace_func_graph_ret_t)ftrace_stub;
- trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
-+static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
- 
- /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
- static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
-@@ -4622,6 +4631,30 @@ static struct ftrace_ops fgraph_ops __read_mostly = {
- 	.flags		= FTRACE_OPS_FL_GLOBAL,
- };
- 
-+static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
-+{
-+	if (!ftrace_ops_test(&global_ops, trace->func))
-+		return 0;
-+	return __ftrace_graph_entry(trace);
-+}
-+
-+/*
-+ * The function graph tracer should only trace the functions defined
-+ * by set_ftrace_filter and set_ftrace_notrace. If another function
-+ * tracer ops is registered, the graph tracer requires testing the
-+ * function against the global ops, and not just trace any function
-+ * that any ftrace_ops registered.
-+ */
-+static void update_function_graph_func(void)
-+{
-+	if (ftrace_ops_list == &ftrace_list_end ||
-+	    (ftrace_ops_list == &global_ops &&
-+	     global_ops.next == &ftrace_list_end))
-+		ftrace_graph_entry = __ftrace_graph_entry;
-+	else
-+		ftrace_graph_entry = ftrace_graph_entry_test;
-+}
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4646,7 +4679,16 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	}
- 
- 	ftrace_graph_return = retfunc;
--	ftrace_graph_entry = entryfunc;
-+
-+	/*
-+	 * Update the indirect function to the entryfunc, and the
-+	 * function that gets called to the entry_test first. Then
-+	 * call the update fgraph entry function to determine if
-+	 * the entryfunc should be called directly or not.
-+	 */
-+	__ftrace_graph_entry = entryfunc;
-+	ftrace_graph_entry = ftrace_graph_entry_test;
-+	update_function_graph_func();
- 
- 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
-@@ -4665,6 +4707,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
-+	__ftrace_graph_entry = ftrace_graph_entry_stub;
- 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+--- which means the kernel image finishes at 0xC12B6FB0 whereas it used
+    to finish at 0xC115EFB0.
+
+ 27 .comment      00000011  00000000  00000000  00a12728  2**0
+                  CONTENTS, READONLY
+ 28 .ARM.attributes 00000010  00000000  00000000  00a12739  2**0
+                  CONTENTS, READONLY
+
+That's almost 1.5MB larger on an image size of 18MB.  Percentage wise,
+that sounds small, but the thing to realise is that growth is independent
+of the image size, so a smaller image sees a larger %age wise growth in
+its size.
+
+People have already complained bitterly when I've said that stealing
+memory and taking out out of memblock should always be 1MB aligned, so
+/no one/ has the right to say "it's only 1.5MB, it doesn't matter"
+because quite frankly they should've been saying that and supporting me
+with the memblock issue.  So, I really don't want to hear that argument!
+
+However, if you look at where these boundaries are placed, they're not
+quite in the right place.  For example, the .init.data section is writable,
+and so should be grouped with the .data section.  So should .data..percpu.
+
+Now, a few other things stand out from the above:
+
+(a) .text.head - imx, sunxi and tegra need to fix that.  There is no
+    specific meaning to it.
+
+(b) .init.text is executable, and can't be in a NX region when it's
+    set as non-executable.
+
+(c) we can't free the .init sections (sections 15 through up to and
+    including 23) anymore with this feature enabled because it's setup
+    as read-only memory.
+
 -- 
-1.9.0
-
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
