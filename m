@@ -1,122 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaBUSBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 13:01:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:45408 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754909AbaBUSBL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:01:11 -0500
-Date: Fri, 21 Feb 2014 13:01:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr =?UTF-8?B?TWzDoWRlaw==?= <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 0/4] x86: Fix ftrace recovery when code modification
- failed
-Message-ID: <20140221130102.31253ad2@gandalf.local.home>
-In-Reply-To: <20140221163351.GA1833@pathway.suse.cz>
-References: <1392650573-3390-1-git-send-email-pmladek@suse.cz>
-	<20140220232308.3709bd83@gandalf.local.home>
-	<20140221163351.GA1833@pathway.suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1756152AbaBUSCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 13:02:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41225 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754328AbaBUSCP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 13:02:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,520,1389772800"; 
+   d="scan'208";a="487312461"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: RE: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Topic: [PATCH v3 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Index: AQHPLIqDEXGTQoHbzECIeeZtPHIgl5rABBRA
+Date: Fri, 21 Feb 2014 18:01:05 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233501509C77@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923350149FC1E@SHSMSX101.ccr.corp.intel.com>
+ <52DFB382.5080002@redhat.com> <53032581.7050406@redhat.com>
+In-Reply-To: <53032581.7050406@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014 17:33:52 +0100
-Petr Mládek <pmladek@suse.cz> wrote:
- 
-> Yes, it works but I would still do few more changes:
+Paolo Bonzini wrote:
+> Il 22/01/2014 13:03, Paolo Bonzini ha scritto:
+>> Il 22/01/2014 06:29, Liu, Jinsong ha scritto:
+>>> These patches are version 3 to enalbe Intel MPX for KVM.
+>>> 
+>>> Version 1:
+>>>   * Add some Intel MPX definiation
+>>>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features
+>>> enable/disable 
+>>>   * vmx and msr handle for MPX support at KVM
+>>>   * enalbe MPX feature for guest
+>>> 
+>>> Version 2:
+>>>   * remove generic MPX definiation, Qiaowei's patch has add the
+>>> definiation at kernel side 
+>>>   * add MSR_IA32_BNDCFGS to msrs_to_save
+>>> 
+>>> Version 3:
+>>>   * rebase on latest kernel, which include Qiaowei's MPX common
+>>> definiation pulled from HPA's tree
+>> 
+>> I am afraid there is still some work to do on these patches, so they
+>> need to be delayed to 3.15. 
+>> 
+>> Patch 1:
+>>     this seems mostly separate from the rest of the MPX work.  I
+>>     commented on the missing "ULL" suffix, but I would also like to
+>>     understand why you put this patch in this series.
+>> 
+>> Patch 2:
+>>     As remarked in the reply to this patch:
+>>     - the vmx_disable_intercept_for_msr has to be unconditional
+>>     - you need a new kvm_x86_ops member mpx_supported, to disable
+>>     MPX whenever the two VMX controls are not available.
+>> 
+>> Patch 3:
+>>     this patch needs to be rebased.  Apart from that it is fine,
+>>     but please move the VMX bits together with patch 2, and the
+>>     other bits together with patch 4.
+>> 
+>> Patch 4:
+>>     this patch needs to be rebased and to use the new mpx_supported 
+>> member 
+>> 
+>> If you also want to look at nested VMX support for MPX, that would be
+>> nice.  It should not be hard.  Otherwise we can take care of that
+>> later. 
+>> 
+>> Thanks for your work,
+>> 
+>> Paolo
 > 
->      + run_sync() also in ftrace_modify_code() in the recovery
->        part; I would solve this by moving the "out" label.
-
-Sounds good.
-
+> Are you going to send v4?
 > 
->      + print some warning in update_ftrace_func() when
->        ftrace_modify_code() fails; otherwise, the error
->        is silently ignored
+> Paolo
 
-The error is passed down to the callers. Any warning should happen
-there. We can move that up to the generic code. Otherwise, this is a
-x86 only fix, and we leave all the other archs broken.
+Yes, I have just sent out v4 patches per your comments.
 
-ftrace_modify_all_code() looks to be where the warnings should be. And
-yes, any warning should also call ftrace_bug(). That can be done via a
-FTRACE_WARN_ON().
-
-> 
->      + BUG when the breakpoint cannot be removed; the system
->        silently crash anyway because the breakpoint will not
->        be handled
-> 
-> I wonder if we should call FTRACE_WARN_ON_ONCE that calls
-> "ftrace_kill" when update_ftrace_func() fails.
-
-Don't need the _ONCE() version. Something like this (I'll let you make
-the patch ;-)
-
-	int ret = 0;
-
-	if (update)
-		ret = ftrace_update_ftrace_func(ftrace_ops_list_func);
-	if (ret)
-		goto out;
-
-	if (command & FTRACE_UPDATE_CALLS)
-		ret = ftrace_replace_code(1);
-	else if (command & FTRACE_DISABLE_CALLS)
-		ret = ftrace_replace_code(0);
-
-	if (ret)
-		goto out;
-
-	if (update && ftrace_trace_function != ftrace_ops_list_func) {
-		function_trace_op = set_function_trace_op;
-		smp_wmb();
-		/* If irqs are disabled, we are in stop machine */
-		if (!irqs_disabled())
-			smp_call_function(ftrace_sync_ipi, NULL, 1);
-		ret = ftrace_update_ftrace_func(ftrace_trace_function);
-	}
-
-	if (ret)
-		goto out;
-
-	if (command & FTRACE_START_FUNC_RET)
-		ret = ftrace_enable_ftrace_graph_caller();
-	else if (command & FTRACE_STOP_FUNC_RET)
-		ret = ftrace_disable_ftrace_graph_caller();
-
-out:
-	FTRACE_WARN_ON(ret);
-
-Or if you want to keep where it failed, just replace the if (ret) goto
-out, with:
-
-	if (FTRACE_WARN_ON(ret))
-		return;
-
-That may actually be better.
-
-I've already added my patch. I'll push it up to my ftrace/urgent branch
-at
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-
-And you can write a patch based on that.
-
-Thanks!
-
--- Steve
-
+Thanks,
+Jinsong
