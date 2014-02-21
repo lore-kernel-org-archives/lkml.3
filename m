@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaBUKa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 05:30:57 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45129 "EHLO
+	id S1754004AbaBUKcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 05:32:09 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45169 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaBUKa4 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751325AbaBUKcI convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Fri, 21 Feb 2014 05:30:56 -0500
-Message-Id: <530738E9020000780011E2CA@nat28.tlf.novell.com>
+	Fri, 21 Feb 2014 05:32:08 -0500
+Message-Id: <53073934020000780011E2CF@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 21 Feb 2014 10:30:49 +0000
+Date: Fri, 21 Feb 2014 10:32:04 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <davem@davemloft.net>, <dborkman@redhat.com>, <ffusco@redhat.com>,
         <tgraf@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hash: miscellaneous fixes
+Subject: [PATCH 0/3] x86/hash: miscellaneous fixes
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
