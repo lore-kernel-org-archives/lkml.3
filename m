@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaBUIH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 03:07:56 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:23762 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753686AbaBUIHx (ORCPT
+	id S1753597AbaBUIHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 03:07:34 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:7570 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753017AbaBUIHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 03:07:53 -0500
+	Fri, 21 Feb 2014 03:07:33 -0500
 From: Nenghua Cao <nhcao@marvell.com>
 To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, <linux-kernel@vger.kernel.org>
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
 CC: Nenghua Cao <nhcao@marvell.com>
-Subject: [PATCH 2/2] asoc: soc-core: fix coccinelle warnings
-Date: Fri, 21 Feb 2014 16:06:10 +0800
-Message-ID: <1392969970-28037-1-git-send-email-nhcao@marvell.com>
+Subject: [PATCH 1/2] driver: regmap: fix coccinelle warnings
+Date: Fri, 21 Feb 2014 16:05:45 +0800
+Message-ID: <1392969945-28004-1-git-send-email-nhcao@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,52 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nenghua Cao <nhcao@marvell.com>
 
-sound/soc/soc-core.c:2708:6-13: WARNING: Assignment of
-bool to 0/1
-sound/soc/soc-core.c:2726:3-10: WARNING: Assignment of
-bool to 0/1
-sound/soc/soc-core.c:2264:1-7: Replace memcpy with
-struct assignment
+   /drivers/base/regmap/regmap.c:717:6-33: WARNING:
+Comparison to bool.
 
-    More information about semantic patching is available at
+   More information about semantic patching is available at
 http://coccinelle.lip6.fr/
 
 Signed-off-by: Nenghua Cao <nhcao@marvell.com>
 ---
- sound/soc/soc-core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/regmap/regmap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index fb598cb..c59b3ea 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -2413,7 +2413,7 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
- 	struct snd_kcontrol *kcontrol;
- 	char *name = NULL;
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 4b2ed0c..78fc54c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -718,7 +718,7 @@ skip_format_initialization:
+ 		new->window_start = range_cfg->window_start;
+ 		new->window_len = range_cfg->window_len;
  
--	memcpy(&template, _template, sizeof(template));
-+	memcpy(&template, _template, sizeof(struct snd_kcontrol_new));
- 	template.index = 0;
- 
- 	if (!long_name)
-@@ -2818,7 +2818,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
- 	unsigned int mask = (1 << fls(max)) - 1;
- 	unsigned int invert = mc->invert;
- 	int err;
--	bool type_2r = 0;
-+	bool type_2r = false;
- 	unsigned int val2 = 0;
- 	unsigned int val, val_mask;
- 
-@@ -2836,7 +2836,7 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
- 			val |= val2 << rshift;
- 		} else {
- 			val2 = val2 << shift;
--			type_2r = 1;
-+			type_2r = true;
- 		}
- 	}
- 	err = snd_soc_update_bits_locked(codec, reg, val_mask, val);
+-		if (_regmap_range_add(map, new) == false) {
++		if (!_regmap_range_add(map, new)) {
+ 			dev_err(map->dev, "Failed to add range %d\n", i);
+ 			kfree(new);
+ 			goto err_range;
 -- 
 1.7.0.4
 
