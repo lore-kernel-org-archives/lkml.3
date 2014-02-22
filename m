@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaBVXjl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 18:39:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49516 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649AbaBVXhA (ORCPT
+	id S1752360AbaBVXtr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:49:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49226 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaBVXtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 18:37:00 -0500
-Date: Sat, 22 Feb 2014 12:11:59 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140222031159.GT25940@sirena.org.uk>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
- <1392907389-21798-5-git-send-email-geert@linux-m68k.org>
+	Sat, 22 Feb 2014 18:49:46 -0500
+Date: Sun, 23 Feb 2014 00:49:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] irq fixes for 3.14
+Message-ID: <alpine.DEB.2.02.1402230046470.21251@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZXzThk3vFZecBD04"
-Content-Disposition: inline
-In-Reply-To: <1392907389-21798-5-git-send-email-geert@linux-m68k.org>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.4.12
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 04/10] spi: sh-msiof: Add more register documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---ZXzThk3vFZecBD04
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+please pull the latest irq-urgent-for-linus git tree from:
 
-On Thu, Feb 20, 2014 at 03:43:03PM +0100, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
-Applied, thanks.
+We present you herewith:
 
---ZXzThk3vFZecBD04
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ * Another four fixlets to tame the ARM orion irq chip
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJTCBV8AAoJELSic+t+oim9A0kP/RA3eyKR+YGWBEEBIkE5SO64
-Yyb2VQGJCOI2lIHLSzRpsVDbjordf8/Ii8ENgAthQJgJHX34uExBshSK+HJAuFbX
-H/6eZurS7kTnG+fU0HHnNs5bHVbQq7zAXb1LL76I5KajQ5kRh1wLWFNARhB/f2OX
-HCxNSSUeMXwzD9cSbr/aCz4Fb2pbvdRMxT/uvSxQjj4P1AC4qLd11bHcwBiTrl5T
-7N/o62lpcV5Em09f621NmptpYt3xkIkM7lG7LHvTrQtMekPQqv7ayIvmRgx4+13r
-fm+PKPK20gXpRBPNma3CNAHVb1+yk+wieI8jRVODJlgLOalP7lUQLkNLFD11Nbuy
-FLmAIvsz6/4sU3NDPsyChThQdWiTw3+p96Z0z/AKGaviQiDHq1AOYdBFA6/8fxh4
-P8E1dksoIi8psN07nbFC5GZTfSCDSofd82aHSPrRkMwaHeWAMPEv+QG1paxQcmy3
-1BWh7ZXtscqWYxFqFDe2IF6j13MwjYhktdA4wHjjU3MDjwOn9Q+GOhAnTDalHId5
-GWoKhfBMvlykn0fimL4u+dSSCtwcNm9WqhYhMvkI9patXz3fHhMShr8FSb6Dn1n1
-O+0V5G7IeaQkmxcF8SQuXB3GPBe0RKEHk7Bc9X8sG4wTy+Y6H+f6ukiLTxgYAwbe
-5+ulvSq9PAc4EP55CW9R
-=xj//
------END PGP SIGNATURE-----
+	tglx
 
---ZXzThk3vFZecBD04--
+------------------>
+Andrew Lunn (1):
+      irqchip: orion: Fix getting generic chip pointer.
+
+Sebastian Hesselbarth (3):
+      irqchip: orion: clear bridge cause register on init
+      irqchip: orion: use handle_edge_irq on bridge irqs
+      irqchip: orion: clear stale interrupts in irq_startup
+
+
+ drivers/irqchip/irq-orion.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
+index e51d400..8e41be6 100644
+--- a/drivers/irqchip/irq-orion.c
++++ b/drivers/irqchip/irq-orion.c
+@@ -111,7 +111,8 @@ IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_irq_init);
+ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct irq_domain *d = irq_get_handler_data(irq);
+-	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
++
++	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, 0);
+ 	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
+ 		   gc->mask_cache;
+ 
+@@ -123,6 +124,19 @@ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 	}
+ }
+ 
++/*
++ * Bridge IRQ_CAUSE is asserted regardless of IRQ_MASK register.
++ * To avoid interrupt events on stale irqs, we clear them before unmask.
++ */
++static unsigned int orion_bridge_irq_startup(struct irq_data *d)
++{
++	struct irq_chip_type *ct = irq_data_get_chip_type(d);
++
++	ct->chip.irq_ack(d);
++	ct->chip.irq_unmask(d);
++	return 0;
++}
++
+ static int __init orion_bridge_irq_init(struct device_node *np,
+ 					struct device_node *parent)
+ {
+@@ -143,7 +157,7 @@ static int __init orion_bridge_irq_init(struct device_node *np,
+ 	}
+ 
+ 	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
+-			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
++			     handle_edge_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
+ 	if (ret) {
+ 		pr_err("%s: unable to alloc irq domain gc\n", np->name);
+ 		return ret;
+@@ -176,12 +190,14 @@ static int __init orion_bridge_irq_init(struct device_node *np,
+ 
+ 	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
+ 	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
++	gc->chip_types[0].chip.irq_startup = orion_bridge_irq_startup;
+ 	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
+ 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
+ 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
+ 
+-	/* mask all interrupts */
++	/* mask and clear all interrupts */
+ 	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
++	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_CAUSE);
+ 
+ 	irq_set_handler_data(irq, domain);
+ 	irq_set_chained_handler(irq, orion_bridge_irq_handler);
