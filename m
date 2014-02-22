@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072AbaBVEjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 23:39:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60730 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaBVEjJ (ORCPT
+	id S1753177AbaBVEsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 23:48:42 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:44250 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaBVEsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 23:39:09 -0500
-Date: Fri, 21 Feb 2014 20:40:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, David Rientjes <rientjes@google.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>, mtosatti@redhat.com,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
-Message-Id: <20140221204047.498041fb.akpm@linux-foundation.org>
-In-Reply-To: <20140222040350.GI22728@two.firstfloor.org>
-References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
-	<1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
-	<alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
-	<20140214225810.57e854cb@redhat.com>
-	<alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
-	<1392702456.2468.4.camel@buesod1.americas.hpqcorp.net>
-	<20140221155423.6c6689e27fa10ed394f01843@linux-foundation.org>
-	<20140222040350.GI22728@two.firstfloor.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Feb 2014 23:48:40 -0500
+Date: Fri, 21 Feb 2014 23:50:38 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Feb 2014 05:03:50 +0100 Andi Kleen <andi@firstfloor.org> wrote:
 
-> > But I think it would be better if it made hugepages= and hugepagesz=
-> > obsolete, so we can emit a printk if people use those, telling them
-> > to migrate because the old options are going away.
-> 
-> Not sure why everyone wants to break existing systems. These options
-> have existed for many years, you cannot not just remove them.
+So I changed the perf_fuzzer so when it randomly stomps all over the
+perf_event_mmap_page, it uses a constant value of 0xdeadbeef rather
+than a random value.
 
-Because we care about the quality of kernel interfaces and
-implementation.  Five years?  We'll still be around then.
+The result is below.  The segfaults make a bit more sense now, it
+almost looks like what is happening is we are corrupting an address
+value somehow (head? tail?) and the kernel then uses the corrupt address 
+and writes to memory outside of the mmap ring buffer.
 
-> Also the old options are totally fine and work adequately for the
-> vast majority of users who do not need to control node assignment
-> fine grained.
+I still haven't figured out how to trigger this exactly, but you can
+see when over-written with 0xdeadbeef the memory address written to is
+consistently some small multiple of 0x120.
 
-It will be old, unneeded cruft.  Don't accumulate cruft.  If we
-possibly can remove the old stuff, we should.  It's what we do.  Maybe
-in five years we'll find we can't remove them.  We'll see.  At least we
-tried.
+I imagine it would be a bad thing if it turned out to be possible to 
+select what memory address got written to.  Although since I've
+only reproduced this on x32 maybe it won't be possible to over-write
+the kernel; but I have seen this bug cause a reboot when the
+wrong thing got over-written.
 
-Hopefully by then none of these interfaces will be in use anyway.
+[28002.850192] perf_fuzzer[7083]: segfault at 2be0 ip 000000000041efab sp 00000000ff826748 error 6 in perf_fuzzer[400000+d1000]
+[28639.769869] perf_fuzzer[7100]: segfault at 1320 ip 000000000041efab sp 00000000ffa65038 error 6 in perf_fuzzer[400000+d1000]
+[29396.986242] perf_fuzzer[7120]: segfault at 10e0 ip 000000000041efab sp 00000000ffd48e68 error 6 in perf_fuzzer[400000+d1000]
+[29738.892931] perf_fuzzer[7128]: segfault at 18c0 ip 000000000041efab sp 00000000ffcdcd88 error 6 in perf_fuzzer[400000+d1000]
+[29815.550210] perf_fuzzer[7132]: segfault at 120 ip 000000000041efab sp 00000000ffe673b8 error 6 in perf_fuzzer[400000+d1000]
+[30173.455348] perf_fuzzer[7141]: segfault at 120 ip 000000000041efab sp 00000000ffda1948 error 6 in perf_fuzzer[400000+d1000]
+[30570.625642] perf_fuzzer[7156]: segfault at 1680 ip 000000000041efab sp 00000000ffaad028 error 6 in perf_fuzzer[400000+d1000]
+[31047.887784] perf_fuzzer[7169]: segfault at 60c0 ip 000000000041efab sp 00000000ffaa86e8 error 6 in perf_fuzzer[400000+d1000]
+[31300.168714] perf_fuzzer[7175]: segfault at 3a80 ip 000000000041efab sp 00000000ffd83228 error 6 in perf_fuzzer[400000+d1000]
+[31984.727278] perf_fuzzer[7193]: segfault at 7e0 ip 000000000041efab sp 00000000ff9db1f8 error 6 in perf_fuzzer[400000+d1000]
+
+Vince
