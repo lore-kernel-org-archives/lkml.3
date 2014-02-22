@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaBVCbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 21:31:50 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:57893 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142AbaBVCbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 21:31:49 -0500
-Date: Sat, 22 Feb 2014 04:31:44 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Jay Cornwall <jay@jcornwall.me>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: put_page on transparent huge page leaks?
-Message-ID: <20140222023144.GB18046@node.dhcp.inet.fi>
-References: <ff08f2ccbcd50d2d353392a81defe619@jcornwall.me>
+	id S1754826AbaBVCcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 21:32:53 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:52024 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaBVCcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Feb 2014 21:32:51 -0500
+Message-ID: <53080C55.3070001@prisktech.co.nz>
+Date: Sat, 22 Feb 2014 15:32:53 +1300
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ff08f2ccbcd50d2d353392a81defe619@jcornwall.me>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+To: Mark Rutland <mark.rutland@arm.com>,
+        Alistair Popple <alistair@popple.id.au>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 4/7] ECHI Platform: Merge ppc-of EHCI driver into the
+ ehci-platform driver
+References: <20140221114803.GB8783@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140221114803.GB8783@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 11:23:39AM -0600, Jay Cornwall wrote:
-> Hi,
-> 
-> I'm tracking a possible memory leak in iommu/amd. The driver uses this logic
-> to fault a page in response to a PRI from a device:
-> 
-> npages = get_user_pages(fault->state->task, fault->state->mm,
->                         fault->address, 1, write, 0, &page, NULL);
-> 
-> if (npages == 1)
->         put_page(page);
-> else
->         ...
-> 
-> This works correctly when get_user_pages returns a 4KB page. When
-> transparent huge pages are enabled any 2MB page returned by this call
-> appears to leak on process exit. The non-cached memory usage stays elevated
-> by the set of faulted 2MB pages. This behavior is not observed when the
-> exception handler demand faults 2MB pages.
-> 
-> I notice there is a difference in reference count between the 4KB/2MB paths.
-> 
-> get_user_pages (4KB): page_count()=3, page_mapcount()=1
-> put_page       (4KB): page_count()=2, page_mapcount()=1
-> 
-> get_user_pages (2MB): page_count()=3, page_mapcount()=1
-> put_page       (2MB): page_count()=3, page_mapcount()=0
-> 
-> I'm concerned that the driver appears to be holding a reference count after
-> put_page(). Am I interpreting this observation correctly?
 
-Could you show output of dump_page() on 2M pages for both points?
+On 22/02/14 00:48, Mark Rutland wrote:
+> [Adding Tony Prisk to Cc]
+>
+> On Fri, Feb 21, 2014 at 06:31:30AM +0000, Alistair Popple wrote:
+>> Currently the ppc-of driver uses the compatibility string
+>> "usb-ehci". This means platforms that use device-tree and implement an
+>> EHCI compatible interface have to either use the ppc-of driver or add
+>> a compatible line to the ehci-platform driver. It would be more
+>> appropriate for the platform driver to be compatible with "usb-ehci"
+>> as non-powerpc platforms are also beginning to utilise device-tree.
+>>
+>> This patch merges the device tree property parsing from ehci-ppc-of
+>> into the platform driver and adds a "usb-ehci" compatibility
+>> string. The existing ehci-ppc-of driver is removed and the 440EPX
+>> specific quirks are added to the ehci-platform driver.
+>>
+>> Signed-off-by: Alistair Popple <alistair@popple.id.au>
+>> ---
+>>   drivers/usb/host/Kconfig         |    7 +-
+>>   drivers/usb/host/ehci-hcd.c      |    5 -
+>>   drivers/usb/host/ehci-platform.c |   87 +++++++++++++-
+>>   drivers/usb/host/ehci-ppc-of.c   |  238 --------------------------------------
+>>   4 files changed, 89 insertions(+), 248 deletions(-)
+>>   delete mode 100644 drivers/usb/host/ehci-ppc-of.c
+> Please use of_property_read_bool for these.
+>
+> This driver already handles "via,vt8500-ehci" and "wm,prizm-ehci" which
+> aren't documented to handle these properties, but now gain support for
+> them. It might be worth unifying the binding documents if there's
+> nothing special about those two host controllers.
+>
+> We seem to have two binding documents for "via,vt8500-ehci", so some
+> cleanup is definitely in order.
+>
+> Tony, you seem to have written both documents judging by 95e9fd10f06c
+> and 8ad551d150e3. Do you have any issue with merging both of these into
+> a common usb-ehci document?
+......
+> Cheers,
+> Mark.
 
-My guess is that your page is PageTail(). Refcounting for tail pages is
-different: on get_page() we increase *->_mapcount* of tail and increase
-->_count of relevant head page. ->_count of tail pages should always be
-zero, but it's 3 in your case which is odd.
+I'm not sure how we ended up with two bindings for the driver anyway. I 
+think this was an error on my part somewhere.
 
-BTW, I don't see where you take mmap_sem in drivers/iommu/amd_iommu_v2.c,
-which is required for gup. Do I miss something?
+None of the in-tree dts files use "wm,prizm-ehci".
 
--- 
- Kirill A. Shutemov
+I have no issue with merging all the documentation into a single 
+usb-ehci binding.
+
+Regards
+Tony Prisk
