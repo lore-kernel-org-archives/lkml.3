@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaBVPA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 10:00:28 -0500
-Received: from mout.gmx.net ([212.227.17.22]:52795 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836AbaBVPAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 10:00:25 -0500
-Date: Sat, 22 Feb 2014 16:00:16 +0100
-From: Christian Engelmayer <cengelma@gmx.at>
-To: Mark Brown <broonie@kernel.org>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: wm8993: Remove unused pointer in wm8993_remove()
-Message-ID: <20140222160016.372a3683@spike>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/PgqqabPoqGeDFBsi337eJmh"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:M3uzO/tUbJeP7HB6cmntDTrWRkDah2RI0HwYkfBbo+LjIef+GkK
- EBolwrVnfIFpkGJOb2namGK2XMHSDvJeUAPy/Pi4zJAIUSGsmzOuxAr6q5sE109pKkG1VNY
- AurEd0o4+cRkzC/nve3GwdL0vDmb3g9iMQOXOjcnGOdUk4uIGFAyb/DZzwd+xXGn2aofGdw
- l4G2DmwpRIDEYLSQF9zUw==
+	id S1751825AbaBVPGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 10:06:06 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:32998 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751214AbaBVPGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 10:06:05 -0500
+Message-ID: <5308BCD1.3070204@hurleysoftware.com>
+Date: Sat, 22 Feb 2014 10:05:53 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: Guarantee work function memory ordering
+References: <1393071111-5128-1-git-send-email-peter@hurleysoftware.com> <20140222144010.GE12830@htj.dyndns.org>
+In-Reply-To: <20140222144010.GE12830@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PgqqabPoqGeDFBsi337eJmh
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 02/22/2014 09:40 AM, Tejun Heo wrote:
+> On Sat, Feb 22, 2014 at 07:11:51AM -0500, Peter Hurley wrote:
+>> Users of the workqueue api may assume the workqueue provides a
+>> memory ordering guarantee for re-queued work items; ie., that
+>> if a work item is not queue-able then the previously queued
+>> work instance is not running and so any memory operations
+>> which occur before queuing the work will be visible to the work
+>> function.
+>>
+>> For example, code of the form:
+>>      add new data to work on
+>>      queue work
+>> assumes that this latest data is acted upon, either by the
+>> newly queued instance (if it could be queued) or by the not-yet-
+>> running instance (if a new instance could not be queued).
+>>
+>> Provide this implicit memory ordering guarantee; prevent
+>> speculative loads in the work function from occurring before
+>> the current work instance is marked not pending (and thus has
+>> started). This, in turn, guarantees that stores occurring before
+>> schedule_work/queue_work are visible to either the not-yet-running
+>> work instance (if new work could not be queued) or that new work
+>> is queued (and thus ensuring the new data is acted upon).
+>>
+>> Note that preventing early stores is unnecessary because no
+>> conclusion can be reached about the state of the work function
+>> from outside the work function by ordering early stores after
+>> clearing PENDING (other than testing PENDING).
+>>
+>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>> ---
+>>   kernel/workqueue.c | 10 ++++++++++
+>>   1 file changed, 10 insertions(+)
+>>
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index 82ef9f3..a4b241d 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -2201,6 +2201,16 @@ __acquires(&pool->lock)
+>>
+>>   	spin_unlock_irq(&pool->lock);
+>>
+>> +	/*
+>> +	 * Paired with the implied mb of test_and_set_bit(PENDING).
+>> +	 * Guarantees speculative loads which occur in the work item
+>> +	 * function do not complete before PENDING is cleared in
+>> +	 * set_work_pool_and_clear_pending() above. In turn, this
+>> +	 * ensures that stores are either visible to the not-yet-
+>> +	 * running work instance or a new instance is queueable.
+>> +	 */
+>> +	smp_rmb();
+>
+> Wouldn't it make more sense to have the above right after
+> clear_pending?
 
-Commit 88b5bdfd (ASoC: wm8993: drop regulator_bulk_free of devm_ allocated
-data) eliminated the last user of driver data pointer 'wm8993' in function
-wm8993_remove() - Thus remove it. Detected by Coverity: CID 1186208.
+I didn't want to affect any optimization that the cpu might
+accomplish regarding the unlock. In fact, I considered using it
+right before calling through worker->current_func.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
----
-Applies against branch for-next in tree
-git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
----
- sound/soc/codecs/wm8993.c | 2 --
- 1 file changed, 2 deletions(-)
+Given your concerns about the performance impact, maybe we should
+ask Fengguang to run this change through his automated test suites
+to find out what the perf delta is?
 
-diff --git a/sound/soc/codecs/wm8993.c b/sound/soc/codecs/wm8993.c
-index 2ee23a3..f7978b3 100644
---- a/sound/soc/codecs/wm8993.c
-+++ b/sound/soc/codecs/wm8993.c
-@@ -1559,8 +1559,6 @@ static int wm8993_probe(struct snd_soc_codec *codec)
-=20
- static int wm8993_remove(struct snd_soc_codec *codec)
- {
--	struct wm8993_priv *wm8993 =3D snd_soc_codec_get_drvdata(codec);
--
- 	wm8993_set_bias_level(codec, SND_SOC_BIAS_OFF);
- 	return 0;
- }
---=20
-1.8.3.2
-
---Sig_/PgqqabPoqGeDFBsi337eJmh
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCLuAAAoJEKssnEpaPQKEgJoQAJiyVGX3Wa2n7PKRFsQBOTn6
-wDcW/IqrglJX2Z4JEjmMXg+hkp/McS0yad6wel7zs0AdhrmwCii3GAwWCXh+kZes
-f+GZSOdhReYHcc9p8xrYBT2d/aOQJpM0swyh45f6VtQ4rKsfLm2dQy58tezE/oeP
-ZF4MJxtDTpr8u5MBHQx1dfm4fNYWM/kFBrRwglJXS2cubIP0pYoeWpWrtiWODYaC
-CpRgmUuSwkTZ8H3ahm5JckjiaCNNbByihsTmXPn1bnGX7XZFPRK86zsekqThoR9M
-J5nuv1q+DR6B0VsvVm1dPUHlTeqbJ/2I0iHxdOkM3ygB60CyVJOnFOLYuaUd5bOS
-6wNcXIVZnUhc+zXYLVpT8W7n6l7SDR4DyTZVOmk+OvLPLKfnXLCFRm1fg9AVW92W
-DuTgTqb37MxqcbOikpUDm8b5drCLEZvO7utszBG4OSgIT5YFc72kBj4WLnWSlbCl
-MVF7iuCRvCTXmNsEk9gO/M2d5PutBsBdndGqnlrRk9cqNJLvxbh6srac35Wwaz9R
-QkS2zBuphiIrCllFiCfDVpJi9V9GKN1/sjfk+fePtb+c46GOfwrngYRjPv6h/AWF
-o2Jic3p4Q/p+B4hObs3aq3UA9inrtZKEZMYlrYp37JG0l+mmaCYmQria0wynBeHp
-4nmQcuYpvHQfTTaQHSa/
-=vnzG
------END PGP SIGNATURE-----
-
---Sig_/PgqqabPoqGeDFBsi337eJmh--
+Regards,
+Peter Hurley
