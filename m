@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaBVXie (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 18:38:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49549 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080AbaBVXia (ORCPT
+	id S1753193AbaBVXjC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:39:02 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49204 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaBVXjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 18:38:30 -0500
-Date: Sat, 22 Feb 2014 12:10:37 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        devicetree@vger.kernel.org
-Message-ID: <20140222031037.GQ25940@sirena.org.uk>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
- <1392907389-21798-2-git-send-email-geert@linux-m68k.org>
+	Sat, 22 Feb 2014 18:39:00 -0500
+Date: Sun, 23 Feb 2014 00:38:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5 02/33] genirq: Add irq_alloc_reserved_desc()
+In-Reply-To: <CAE9FiQVf7u62S4puc2iMqiFO2YU-Kf35XVB9mC+SEP6Z73x7Zw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402222338420.21251@ionos.tec.linutronix.de>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org> <1388707565-16535-3-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1401222241100.24986@ionos.tec.linutronix.de> <CAE9FiQUo9NGbjiZbMsf2yBFbn=iLJ-jc3QtZ8K6qwVuhmqzq=Q@mail.gmail.com>
+ <alpine.DEB.2.02.1402221104440.21251@ionos.tec.linutronix.de> <CAE9FiQVf2L-FjkXR3WC=0iHNY73D2G4jyMeko4f4DPuxAXTK+Q@mail.gmail.com> <CAE9FiQVf7u62S4puc2iMqiFO2YU-Kf35XVB9mC+SEP6Z73x7Zw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="63aIh6YiuHX+oBFP"
-Content-Disposition: inline
-In-Reply-To: <1392907389-21798-2-git-send-email-geert@linux-m68k.org>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.4.12
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/10] spi: sh-msiof: Fix SPI bus population from DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 22 Feb 2014, Yinghai Lu wrote:
+> On Sat, Feb 22, 2014 at 9:28 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Sat, Feb 22, 2014 at 2:08 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>
+> >> As I said before irq_reserve_irq() is a misnomer and a
+> >> misconception. Of course this needs to be fixed as well.
+> >>
+> >> And you cannot just blindly change it because !SPARSE can use the
+> >> allocation. We are not creating stupid corner cases just to support
+> >> your sloppyness. Its not rocket science to do it the right way.
+> >>
+> >> That said, it might be worthwhile to get rid of the !SPARSE case
+> >> completely. That would probably make quite some stuff simpler.
+> >
+> > So we need to make all arches support SPARSE_IRQ at first?
+> >
+> > Now we have arm, arm64, c6x, metag, powerpc, sh, x86 support SPARSE_IRQ.
+> >
+> > The following  are not with SPARSE_IRQ yet:
+> > alpha, arc, avr32, blackfin, cris, frv, hexagon, m32r, m68k, microblaze,
+> > mips, mn10300, openrisc, parisc, s390, score, sparc, tile, um,
+> > unicore32, xtensa.
+> 
+> or add calling irq_alloc_desc_at() before irq_set_chip... for !SPARSE_IRQ.
+> 
+> Please check attached partial patch if you like it.
 
---63aIh6YiuHX+oBFP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OMG, you really mean that:
 
-On Thu, Feb 20, 2014 at 03:43:00PM +0100, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->=20
-> DT doesn't instantiate SPI children if spi_master.dev.of_node is not set =
-up
-> properly.
++++ b/arch/alpha/kernel/irq_i8259.c
+@@ -92,6 +92,7 @@ init_i8259a_irqs(void)
+ 	outb(0xff, 0xA1);	/* mask all of 8259A-2 */
+ 
+ 	for (i = 0; i < 16; i++) {
++		irq_alloc_desc_at(i, 0);
+ 		irq_set_chip_and_handler(i, &i8259a_irq_type, handle_level_irq);
+ 	}
 
-Applied, thanks.
+You can't be serious about that. There are tons of ways to call into
+the core and access an irq descriptor aside of irq_set_chip* before it
+is potentially allocated.
 
---63aIh6YiuHX+oBFP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Are you going to analyze all of them and add an irq_alloc_desc_at()
+before that call?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+HELL, NO!
 
-iQIcBAEBAgAGBQJTCBUqAAoJELSic+t+oim9q5wP/RpPlJQZGw/BwnnuhaNtBYrw
-bDaf7lyQJ80OV8XY/EtjqKpHSLejkZhMnoxhhgBOFX5or59qEYP4WBXRwM4xt4FX
-XouzMuGNJZrMevciWWaZyk36qHr/2DGFyCrYkhEUl9mHcDdyYzJIKptP4+SfCoDl
-2YzHiHHFL+SxoBnNCEF3kFov9yszXrqc3kRAVaqD+vw9qODWPpdm51iLL04FN3+d
-1GRJxwsKV81+CGriwhS6HyPbwwfJMmabQ7lqyEFmmVJId3q+4EYI5vxOdaE62/vE
-beuictknV3HQsDgZcQCvYLlxABlJvVhjYeIksrXD9aFMiXNqJDPMxvZJE0/gsq+k
-D+I9+kyDB+bkqP1fwWPwCyhFntZz7oORgFQusqKJGIwDFF+aV8xNS5nmcyDRNfYT
-UKWXGZGkSWcY92EZHNaYAwa9mUxsaozEN2dhvtpnyo86LQAjvPx4SWOiqleeTkEt
-xEQUgmqUGBYVGm4V0rpasG+LcHmeTNG3P9BbYgqX1rfVWVra1/rk1d0zg6/5MChU
-WMZQOF94UKrevbFcAXpQZ6A6dfTElJwq6d8VVXUbfqX//ezJTolmlbygwV2qeZCq
-uqDf7THBbGq4i151EdiYPtTADI+uWfknTNHkqM741YU8D33Q2mlCN2tYQVcGyxCb
-VUTW87g5CRRwyxqZ3XQF
-=bqtL
------END PGP SIGNATURE-----
+I'm really tired of that.
 
---63aIh6YiuHX+oBFP--
+Stay away from kernel/irq/* and wait for people who are competent
+enough and willing to spend the extra thoughts to come up with
+solutions which are not completely ass backwards.
+
+Thanks,
+
+	tglx
