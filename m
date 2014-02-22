@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaBVNka (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 08:40:30 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:48361 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750749AbaBVNk2 (ORCPT
+	id S1751527AbaBVNl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 08:41:26 -0500
+Received: from emh02.mail.saunalahti.fi ([62.142.5.108]:46330 "EHLO
+	emh02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaBVNlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 08:40:28 -0500
-Message-ID: <5308A8C8.8030000@hurleysoftware.com>
-Date: Sat, 22 Feb 2014 08:40:24 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sat, 22 Feb 2014 08:41:25 -0500
+Date: Sat, 22 Feb 2014 15:41:21 +0200
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: "Cui, Dexuan" <dexuan.cui@intel.com>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Tian, Kevin" <kevin.tian@intel.com>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "Haron, Sandra" <sandra.haron@intel.com>,
+        Lars Kurth <lars.kurth@xenproject.org>
+Subject: Re: [Xen-devel] [Announcement] Updates to XenGT - a Mediated
+ Graphics Passthrough Solution from Intel
+Message-ID: <20140222134121.GP3200@reaktio.net>
+References: <A25F549E4D43CD42B4C02DF47A19132311058FC7@SHSMSX103.ccr.corp.intel.com>
+ <20140220183613.GJ3200@reaktio.net>
+ <A25F549E4D43CD42B4C02DF47A1913231105A665@SHSMSX103.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>, Hannes Reinecke <hare@suse.de>
-CC: Ray Strode <halfline@gmail.com>, Kay Sievers <kay@vrfy.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Jiri Slaby <jslaby@suse.cz>, Werner Fink <werner@suse.de>
-Subject: Re: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs
- attribute
-References: <20140220235118.191692546@linuxfoundation.org>	<20140220235119.236520201@linuxfoundation.org>	<CA+5PVA55O2GwUE8oMHShgKgQPA89z5RTbn6yCvOPBMGsf70kBw@mail.gmail.com>	<5307683C.50209@suse.de>	<CA+5PVA5W=t9+OmZXZuJT-1EsZXmTUBrX4eHjJcmQg676SOjSng@mail.gmail.com>	<CAPXgP12Vs3LtVPOxF-Tnn4H7NjD6unXtPEOjFzRRhJhf0xndRQ@mail.gmail.com>	<CAA_UwzK38FpDgv0RKfQG_QZd-OttZBQC60UffbyUGWq8E05PpQ@mail.gmail.com> <CANq1E4T25a3JkYB_JggtueygqpGVn0vBmaMZXvohWb_jinxuag@mail.gmail.com>
-In-Reply-To: <CANq1E4T25a3JkYB_JggtueygqpGVn0vBmaMZXvohWb_jinxuag@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <A25F549E4D43CD42B4C02DF47A1913231105A665@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 08:25 AM, David Herrmann wrote:
-> Hi
->
-> On Fri, Feb 21, 2014 at 11:53 PM, Ray Strode <halfline@gmail.com> wrote:
->> Hi,
->>
->> On Fri, Feb 21, 2014 at 11:01 AM, Kay Sievers <kay@vrfy.org> wrote:
->>> Why did the tty0 change to tty1 now? That doesn't look like a "driver
->>> name" vs. "device name" issue?
->>
->> I don't know if it's intentional, but the patch does:
->> +               int index = cs[i]->index;
->> ...
->> +               driver = cs[i]->device(cs[i], &index);
->>
->> which will presumably change the index from 0 to 1 because of this code:
->>
->> static struct tty_driver *vt_console_device(struct console *c, int *index)
->> {
->>         *index = c->index ? c->index-1 : fg_console;
->>         return console_driver;
->> }
->>
->> At least that's what it looks like is causing the problem from
->> browsing through the source a bit.
->
-> Yepp, that's it. So if you configure the console to always be
-> redirected to the foreground terminal, you simply bind it to tty0 and
-> this file used to return tty0 then.
-> With this patch, we actually return the foreground terminal instead,
-> so tty0 is resolved to the real VT. This sounds like the correct
-> behavior (even though it currently breaks poll() on this file). But if
-> it breaks stuff, we should revert it and add a second file just like
-> Peter suggested.
+On Fri, Feb 21, 2014 at 02:22:11AM +0000, Cui, Dexuan wrote:
+> Pasi Kärkkäinen wrote on 2014-02-21:
+> > On Thu, Feb 20, 2014 at 07:59:04AM +0000, Cui, Dexuan wrote:
+> >> Hi all,
+> >> We're pleased to announce an update to XenGT since its first disclosure in
+> >> last Sep.
+> > 
+> > Are you going to work on upstreaming this stuff? Xen 4.4 will be
+> > released soon(ish), so the Xen 4.5 development window starts in the near
+> > future and hopefully this stuff can be upstreamed then..
+> Hi Pasi,
+> We do plan to upstream but not give a timeframe so far.
+> 
 
-Or add sysfs entries for each console that exposes the device, so
-that the underlying device is trivially discoverable, which is the
-original problem.
+Ok. Would you like to post an article on the Xen blog about XenGT ?
+I think that would be a good thing to do to get more visibility for this feature.
 
-Regards,
-Peter Hurley
+
+> > Also: Haswell ("4th generation Intel core CPU") is listed as a requirement in
+> > the Setup Guide PDF..
+> > will there be support for SNB/IVB GPUs aswell?
+> There is no plan for SNB/IVB.
+> 
+
+Is that because of some hardware limitation on earlier GPU generations,
+or just a matter of amount of work needed to support XenGT on earlier GPUs?
+
+Thanks,
+
+-- Pasi
 
