@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaBVVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 16:00:59 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:38117 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaBVVA6 (ORCPT
+	id S1752506AbaBVVFg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 16:05:36 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:40752 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaBVVFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 16:00:58 -0500
+	Sat, 22 Feb 2014 16:05:35 -0500
 X-Originating-IP: 50.43.14.201
-Date: Sat, 22 Feb 2014 13:00:39 -0800
+Date: Sat, 22 Feb 2014 13:05:19 -0800
 From: Josh Triplett <josh@joshtriplett.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
+To: Andrew Morton <akpm@linux-foundation.org>, Borislav Petkov <bp@suse.de>,
         Feng Tang <feng.tang@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
         Jan Beulich <JBeulich@suse.com>,
@@ -19,49 +18,62 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Qiaowei Ren <qiaowei.ren@intel.com>, Rob Landley <rob@landley.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
         Stephane Eranian <eranian@google.com>,
         Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
- processor feature names
-Message-ID: <20140222210038.GA19867@thin>
-References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
- <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
- <20140222204936.GA2534@pd.tnic>
+Subject: [PATCH v3 1/2] x86: Drop support for /proc files when !CONFIG_PROC_FS
+Message-ID: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393103020.git.josh@joshtriplett.org>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393098813.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140222204936.GA2534@pd.tnic>
+In-Reply-To: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393098813.git.josh@joshtriplett.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 09:49:36PM +0100, Borislav Petkov wrote:
-> On Sat, Feb 22, 2014 at 11:57:10AM -0800, Josh Triplett wrote:
-> > diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
-> > index 6ec6bb6..29207f6 100644
-> > --- a/arch/x86/boot/cpu.c
-> > +++ b/arch/x86/boot/cpu.c
-> > @@ -16,7 +16,9 @@
-> >   */
-> >  
-> >  #include "boot.h"
-> > +#ifdef CONFIG_X86_FEATURE_NAMES
-> >  #include "cpustr.h"
-> > +#endif
-> 
-> You probably could get rid of this ifdef too by moving it into cpustr.h
-> after teaching arch/x86/boot/mkcpustr.c to issue it...
+arch/x86/kernel/cpu/proc.c only exists to support files in /proc; omit that
+file when compiling without CONFIG_PROC_FS.
 
-That would require building and running mkcpustr, which doesn't happen
-when !CONFIG_X86_FEATURE_NAMES.  (And it'd require adding ifdefs to
-mkcpustr instead, which seems counterproductive.)
+Saves 645 additional bytes on 32-bit x86 when !CONFIG_PROC_FS:
 
-However, in exploring this, I ran into some build issues with v2 on a
-clean build; I'll send out v3 shortly with fixes to those.
+add/remove: 0/5 grow/shrink: 0/0 up/down: 0/-645 (-645)
+function                                     old     new   delta
+c_stop                                         1       -      -1
+c_next                                        11       -     -11
+cpuinfo_op                                    16       -     -16
+c_start                                       24       -     -24
+show_cpuinfo                                 593       -    -593
 
-- Josh Triplett
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+v2,v3: no changes from v1 for this patch
+
+ arch/x86/kernel/cpu/Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 7fd54f0..64038d8 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -13,10 +13,12 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_common.o		:= $(nostackp)
+ 
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+-obj-y			+= proc.o capflags.o powerflags.o common.o
++obj-y			+= capflags.o powerflags.o common.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
++obj-$(CONFIG_PROC_FS)	+= proc.o
++
+ obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+ 
+-- 
+1.9.0
+
