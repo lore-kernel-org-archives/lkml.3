@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaBVSFC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:05:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41418 "EHLO
+	id S1753980AbaBVSFM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:05:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41436 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804AbaBVSE5 (ORCPT
+	with ESMTP id S1752804AbaBVSFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:04:57 -0500
-Date: Sat, 22 Feb 2014 10:04:20 -0800
-From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-144818422bfa272531250473b888394c21e6fe19@git.kernel.org>
+	Sat, 22 Feb 2014 13:05:06 -0500
+Date: Sat, 22 Feb 2014 10:04:31 -0800
+From: tip-bot for Morten Rasmussen <tipbot@zytor.com>
+Message-ID: <tip-de91b9cb97fe68cb6ef0cfe9bee09d015c152af8@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tj@kernel.org, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
+        morten.rasmussen@arm.com, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tj@kernel.org, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
-In-Reply-To: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com>
+        morten.rasmussen@arm.com, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1392732864-10927-1-git-send-email-morten.rasmussen@arm.com>
+References: <1392732864-10927-1-git-send-email-morten.rasmussen@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] workqueue:
-  Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE
-Git-Commit-ID: 144818422bfa272531250473b888394c21e6fe19
+Subject: [tip:sched/core] sched: Fix select_task_rq_fair()
+  description comments
+Git-Commit-ID: de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,35 +32,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  144818422bfa272531250473b888394c21e6fe19
-Gitweb:     http://git.kernel.org/tip/144818422bfa272531250473b888394c21e6fe19
-Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 11 Feb 2014 15:34:52 +0800
+Commit-ID:  de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
+Gitweb:     http://git.kernel.org/tip/de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
+Author:     Morten Rasmussen <morten.rasmussen@arm.com>
+AuthorDate: Tue, 18 Feb 2014 14:14:24 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 22 Feb 2014 18:16:41 +0100
+CommitDate: Sat, 22 Feb 2014 18:17:04 +0100
 
-workqueue: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE
+sched: Fix select_task_rq_fair() description comments
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+Brings select_task_rq_fair() description comments up-to-date.
+
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/6d85138180c00ce86975addab6e34b24b84f00a5.1392103744.git.yangds.fnst@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/1392732864-10927-1-git-send-email-morten.rasmussen@arm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 193e977..3fa5b8f 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3225,7 +3225,7 @@ static ssize_t wq_nice_store(struct device *dev, struct device_attribute *attr,
- 		return -ENOMEM;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e884e45..7982faf 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4397,13 +4397,14 @@ done:
+ }
  
- 	if (sscanf(buf, "%d", &attrs->nice) == 1 &&
--	    attrs->nice >= -20 && attrs->nice <= 19)
-+	    attrs->nice >= MIN_NICE && attrs->nice <= MAX_NICE)
- 		ret = apply_workqueue_attrs(wq, attrs);
- 	else
- 		ret = -EINVAL;
+ /*
+- * sched_balance_self: balance the current task (running on cpu) in domains
+- * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+- * SD_BALANCE_EXEC.
++ * select_task_rq_fair: Select target runqueue for the waking task in domains
++ * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
++ * SD_BALANCE_FORK, or SD_BALANCE_EXEC.
+  *
+- * Balance, ie. select the least loaded group.
++ * Balances load by selecting the idlest cpu in the idlest group, or under
++ * certain conditions an idle sibling cpu if the domain has SD_WAKE_AFFINE set.
+  *
+- * Returns the target CPU number, or the same CPU if no balancing is needed.
++ * Returns the target cpu number.
+  *
+  * preempt must be disabled.
+  */
