@@ -1,120 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaBVXK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 18:10:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37057 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaBVXK0 (ORCPT
+	id S1752421AbaBVXST (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:18:19 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:49256 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaBVXSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 18:10:26 -0500
-Date: Sat, 22 Feb 2014 15:13:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PULL] USB fix for 3.14-rc4
-Message-ID: <20140222231310.GA29110@kroah.com>
+	Sat, 22 Feb 2014 18:18:18 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <53093038.6000604@roeck-us.net>
+Date: Sat, 22 Feb 2014 15:18:16 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>,
+        Wim Van Sebroeck <wim@iguana.be>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu, linux-watchdog@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
+References: <cover.1392212059.git.michal.simek@xilinx.com> <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com> <20140212171509.GB20012@roeck-us.net> <20140222184604.GB21504@spo001.leaseweb.com> <53094A15.1080708@udio.cujae.edu.cu>
+In-Reply-To: <53094A15.1080708@udio.cujae.edu.cu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
+> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
+>> Hi All,
+>>
+>>> Hi Michal,
+>>>
+>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
+>>>> Use of_property_read_u32 functions to clean probe function.
+>>>>
+>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
+>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
+>>>> ---
+>>>>
+>>>> Changes in v3:
+>>>> - Remove one if checking and use variable directly
+>>>>
+>>> Looks good.
+>>>
+>>> Another comment/remark.
+>>>
+>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+>>>> -                    "clock-frequency", NULL);
+>>>> -
+>>>> -    if (pfreq == NULL) {
+>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency",&pfreq);
+>>>> +    if (rc) {
+>>>>           dev_warn(&pdev->dev,
+>>>>                "The watchdog clock frequency cannot be obtained\n");
+>>>>           no_timeout = true;
+>>>>       }
+>>>>
+>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>> -                    "xlnx,wdt-interval", NULL);
+>>>> -    if (tmptr == NULL) {
+>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
+>>>> +                &xdev->wdt_interval);
+>>>> +    if (rc) {
+>>>>           dev_warn(&pdev->dev,
+>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
+>>>>           no_timeout = true;
+>>>> -    } else {
+>>>> -        xdev->wdt_interval = *tmptr;
+>>>>       }
+>>>>
+>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>> -                    "xlnx,wdt-enable-once", NULL);
+>>>> -    if (tmptr == NULL) {
+>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
+>>>> +                &enable_once);
+>>>> +    if (rc)
+>>>>           dev_warn(&pdev->dev,
+>>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
+>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
+>>>> -    }
+>>> All the above properties are optional. Is a warning really
+>>> warranted in this case ? I usually associate a warning with
+>>> something that is wrong, which is not the case here.
+>>>
+>>> I would encourage you to drop those warnings, but that should be
+>>> a separate patch.
+>> I agree with Guenter: these are not really warnings. Seperate patch is thus welcome.
+> Hi
+>
+> I support Michal intention, I think it is a warning because device tree blob must have the "xlnx,wdt-enable-once" property specified in order to allow the system to be sure of the real value of this property. In addition to, this warning can be helpful to detect a wrong device tree specification.
+>
 
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+The dt documentation states that the properties are optional.
 
-are available in the git repository at:
+Optional properties:
+- clock-frequency       : Frequency of clock in Hz
+- xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
+                           1 - Watchdog can be enabled just once
+- xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock cycles,
+                           <val> is integer from 8 to 31.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.14-rc4
+This clearly conflicts with your statement. An optional property
+is just that, optional. If it warrants a warning, it must
+not be optional. If you claim that not providing the properties
+would be "wrong", why are they defined as optional ?
+What is your definition of "wrong" and "must have" ?
+How do you expect anyone to know that omitting those
+"optional" properties is by some definition "wrong" ?
 
-for you to fetch changes up to 5bf5dbeda2454296f1984adfbfc8e6f5965ac389:
+Guenter
 
-  usb: chipidea: need to mask when writting endptflush and endptprime (2014-02-21 12:34:45 -0800)
 
-----------------------------------------------------------------
-USB fixes for 3.14-rc4
-
-Here are a number of USB fixes for reported issues for 3.14-rc4
-
-The majority of these are for USB gadget, phy, and musb driver issues.
-And there's a few new device ids thrown in for good measure.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Ajay Kumar Gupta (1):
-      usb: musb: host: Fix SuperSpeed hub enumeration
-
-Alan Stern (1):
-      USB: EHCI: add delay during suspend to prevent erroneous wakeups
-
-Aleksander Morgado (1):
-      USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
-
-Andrzej Pietrasiewicz (1):
-      usb: gadget: fix NULL pointer dereference
-
-Daniel Mack (4):
-      usb: musb: do not sleep in atomic context
-      usb: musb: do not sleep in atomic context
-      usb: musb: correct use of schedule_delayed_work()
-      usb: musb: correct use of schedule_delayed_work()
-
-Felipe Balbi (1):
-      usb: musb: fix obex in g_nokia.ko causing kernel panic
-
-Florian Fainelli (1):
-      usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
-
-Greg Kroah-Hartman (1):
-      Merge tag 'fixes-for-v3.14-rc4' of git://git.kernel.org/.../balbi/usb into usb-linus
-
-Hans de Goede (3):
-      phy-core: phy_get: Leave error logging to the caller
-      phy-core: Don't propagate -ENOSUPP from phy_pm_runtime_get_sync to caller
-      phy-core: Don't allow building phy-core as a module
-
-Josh Cartwright (1):
-      usb: phy: msm: fix compilation errors when !CONFIG_PM_SLEEP
-
-Kishon Vijay Abraham I (1):
-      phy: let phy_provider_register be the last step in registering PHY
-
-Matthieu CASTET (1):
-      usb: chipidea: need to mask when writting endptflush and endptprime
-
-Peter Chen (1):
-      usb: gadget: printer: using gadget_is_otg to check otg support at runtime
-
-Richard Weinberger (1):
-      phy,phy-bcm-kona-usb2.c: Add dependency on HAS_IOMEM
-
-Roger Quadros (1):
-      usb: musb: core: Fix remote-wakeup resume
-
-Sachin Kamat (1):
-      usb: gadget: s3c2410_udc: Fix build error
-
- drivers/phy/Kconfig                 |  3 +-
- drivers/phy/phy-core.c              | 14 ++++-----
- drivers/phy/phy-exynos-dp-video.c   |  8 ++---
- drivers/phy/phy-exynos-mipi-video.c | 10 +++----
- drivers/phy/phy-mvebu-sata.c        | 10 +++----
- drivers/phy/phy-omap-usb2.c         | 10 +++----
- drivers/phy/phy-twl4030-usb.c       | 10 +++----
- drivers/usb/chipidea/udc.c          |  4 +--
- drivers/usb/gadget/bcm63xx_udc.c    | 58 ++++++++++++++++++++-----------------
- drivers/usb/gadget/f_fs.c           |  7 ++++-
- drivers/usb/gadget/printer.c        |  2 +-
- drivers/usb/gadget/s3c2410_udc.c    |  2 +-
- drivers/usb/host/ehci-hub.c         | 26 ++++++++++++++---
- drivers/usb/musb/musb_core.c        | 15 ++++++++--
- drivers/usb/musb/musb_host.c        |  3 ++
- drivers/usb/musb/musb_virthub.c     | 26 ++++++++++++-----
- drivers/usb/musb/omap2430.c         |  2 --
- drivers/usb/phy/phy-msm-usb.c       | 57 +++++++++++++++++-------------------
- drivers/usb/serial/option.c         |  3 +-
- 19 files changed, 159 insertions(+), 111 deletions(-)
