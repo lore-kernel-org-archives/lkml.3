@@ -1,292 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaBVTKP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 14:10:15 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33204 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaBVTJs (ORCPT
+	id S1752061AbaBVTQo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 14:16:44 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:57829 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaBVTQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 14:09:48 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sat, 22 Feb 2014 11:09:30 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andi Kleen <ak@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Jacob Shin <jacob.shin@amd.com>, Jan Beulich <JBeulich@suse.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Qiaowei Ren <qiaowei.ren@intel.com>, Rob Landley <rob@landley.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Stephane Eranian <eranian@google.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: [PATCH 2/2] x86: Support compiling out human-friendly processor
- feature names
-Message-ID: <33fa63a2b441f81f2ddb3ee2edff4deda60e50ac.1393096111.git.josh@joshtriplett.org>
-References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
+	Sat, 22 Feb 2014 14:16:42 -0500
+Date: Sat, 22 Feb 2014 20:16:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140222191635.GA16118@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The table mapping CPUID bits to human-readable strings takes up a
-non-trivial amount of space, and only exists to support /proc/cpuinfo
-and a couple of kernel messages.  Since programs depend on the format of
-/proc/cpuinfo, force inclusion of the table when building with /proc
-support; otherwise, support omitting that table to save space, in which
-case the kernel messages will print features numerically instead.
+Linus,
 
-In addition to saving 1408 bytes out of vmlinux, this also saves 1373
-bytes out of the uncompressed setup code, which contributes directly to
-the size of bzImage.
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/x86/Kconfig                  | 12 +++++++
- arch/x86/boot/Makefile            |  5 ++-
- arch/x86/boot/cpu.c               | 68 +++++++++++++++++++++++----------------
- arch/x86/include/asm/cpufeature.h | 13 ++++++++
- arch/x86/kernel/cpu/Makefile      |  5 ++-
- arch/x86/kernel/cpu/common.c      |  4 +--
- 6 files changed, 76 insertions(+), 31 deletions(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0af5250..4dfdbdc 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -127,6 +127,7 @@ config X86
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
- 	select HAVE_CC_STACKPROTECTOR
-+	select X86_FEATURE_NAMES if PROC_FS
+   # HEAD: a9d3f94ec7708427b9f05a65246d3fd6e287fa51 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
+
+Misc fixlets from all around the place.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Arnaldo Carvalho de Melo (1):
+      perf trace: Fix ioctl 'request' beautifier build problems on !(i386 || x86_64) arches
+
+Ben Hutchings (1):
+      perf trace: Add fallback definition of EFD_SEMAPHORE
+
+Jiri Olsa (1):
+      perf tools: Handle PERF_RECORD_HEADER_EVENT_TYPE properly
+
+Markus Metzger (1):
+      perf, nmi: Fix unknown NMI warning
+
+Masami Hiramatsu (1):
+      perf probe: Do not add offset twice to uprobe address
+
+Peter Zijlstra (3):
+      perf/x86/intel/p6: Add userspace RDPMC quirk for PPro
+      perf/x86: Fix Userspace RDPMC switch
+      perf/x86: Correctly use FEATURE_PDCM
+
+Stephane Eranian (1):
+      perf/x86/uncore: Fix IVT/SNB-EP uncore CBOX NID filter table
+
+Vince Weaver (1):
+      perf list: Fix checking for supported events on older kernels
+
+
+ arch/x86/kernel/cpu/perf_event.c              |  8 +++--
+ arch/x86/kernel/cpu/perf_event.h              |  1 +
+ arch/x86/kernel/cpu/perf_event_intel.c        | 11 ++----
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 10 +++++-
+ arch/x86/kernel/cpu/perf_event_p6.c           | 48 ++++++++++++++++++---------
+ tools/perf/builtin-trace.c                    | 22 ++++++++++++
+ tools/perf/util/parse-events.c                | 17 ++++++++--
+ tools/perf/util/probe-event.c                 |  2 +-
+ tools/perf/util/session.c                     |  6 ++++
+ 9 files changed, 96 insertions(+), 29 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index b886451..895604f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(void)
  
- config INSTRUCTION_DECODER
- 	def_bool y
-@@ -304,6 +305,17 @@ config SMP
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
  
- 	  If you don't know what to do here, say N.
- 
-+config X86_FEATURE_NAMES
-+	bool "Processor feature human-readable names"
-+	default y
-+	---help---
-+	  This option compiles in a table of x86 feature bits and corresponding
-+	  names.  This is required to support /proc/cpuinfo and a few kernel
-+	  messages.  You can disable this to save space, at the expense of
-+	  making those few kernel messages show numeric feature bits instead.
++	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
 +
-+	  If in doubt, say Y.
+ 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+ 		quirk->func();
+ 
+@@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(void)
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+ 				   0, x86_pmu.num_counters, 0, 0);
+ 
+-	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+ 
+ 	if (x86_pmu.event_attrs)
+@@ -1820,9 +1821,12 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ 	if (ret)
+ 		return ret;
+ 
++	if (x86_pmu.attr_rdpmc_broken)
++		return -ENOTSUPP;
 +
- config X86_X2APIC
- 	bool "Support x2apic"
- 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index 878df7e..ca6f7ed 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -35,7 +35,7 @@ setup-y		+= video-vesa.o
- setup-y		+= video-bios.o
- 
- targets		+= $(setup-y)
--hostprogs-y	:= mkcpustr tools/build
-+hostprogs-y	:= tools/build
- 
- HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
- 		    -include include/generated/autoconf.h \
-@@ -43,11 +43,14 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
- 
- $(obj)/cpu.o: $(obj)/cpustr.h
- 
-+ifdef CONFIG_X86_FEATURE_NAMES
-+hostprogs-y += mkcpustr
- quiet_cmd_cpustr = CPUSTR  $@
-       cmd_cpustr = $(obj)/mkcpustr > $@
- targets		+= cpustr.h
- $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
- 	$(call if_changed,cpustr)
-+endif
- 
- # ---------------------------------------------------------------------------
- 
-diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
-index 6ec6bb6..29207f6 100644
---- a/arch/x86/boot/cpu.c
-+++ b/arch/x86/boot/cpu.c
-@@ -16,7 +16,9 @@
-  */
- 
- #include "boot.h"
-+#ifdef CONFIG_X86_FEATURE_NAMES
- #include "cpustr.h"
-+#endif
- 
- static char *cpu_name(int level)
- {
-@@ -32,11 +34,48 @@ static char *cpu_name(int level)
+ 	if (!!val != !!x86_pmu.attr_rdpmc) {
+ 		x86_pmu.attr_rdpmc = !!val;
+-		smp_call_function(change_rdpmc, (void *)val, 1);
++		on_each_cpu(change_rdpmc, (void *)val, 1);
  	}
+ 
+ 	return count;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index c1a8618..4972c24 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -409,6 +409,7 @@ struct x86_pmu {
+ 	/*
+ 	 * sysfs attrs
+ 	 */
++	int		attr_rdpmc_broken;
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
+ 	struct attribute **event_attrs;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0fa4f24..aa333d9 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1361,10 +1361,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+-	if (!status) {
+-		intel_pmu_enable_all(0);
+-		return handled;
+-	}
++	if (!status)
++		goto done;
+ 
+ 	loops = 0;
+ again:
+@@ -2310,10 +2308,7 @@ __init int intel_pmu_init(void)
+ 	if (version > 1)
+ 		x86_pmu.num_counters_fixed = max((int)edx.split.num_counters_fixed, 3);
+ 
+-	/*
+-	 * v2 and above have a perf capabilities MSR
+-	 */
+-	if (version > 1) {
++	if (boot_cpu_has(X86_FEATURE_PDCM)) {
+ 		u64 capabilities;
+ 
+ 		rdmsrl(MSR_IA32_PERF_CAPABILITIES, capabilities);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 29c2487..c88f7f4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -501,8 +501,11 @@ static struct extra_reg snbep_uncore_cbox_extra_regs[] = {
+ 	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
+ 				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0334, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4334, 0xffff, 0x6),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0534, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4534, 0xffff, 0x6),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0934, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4934, 0xffff, 0x6),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0x6),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x8),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x8),
+@@ -1178,10 +1181,15 @@ static struct extra_reg ivt_uncore_cbox_extra_regs[] = {
+ 	SNBEP_CBO_EVENT_EXTRA_REG(SNBEP_CBO_PMON_CTL_TID_EN,
+ 				  SNBEP_CBO_PMON_CTL_TID_EN, 0x1),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x1031, 0x10ff, 0x2),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x1134, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x5134, 0xffff, 0xc),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0334, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4334, 0xffff, 0xc),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0534, 0xffff, 0x4),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4534, 0xffff, 0xc),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0934, 0xffff, 0x4),
+-	SNBEP_CBO_EVENT_EXTRA_REG(0x4134, 0xffff, 0xc),
++	SNBEP_CBO_EVENT_EXTRA_REG(0x4934, 0xffff, 0xc),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0135, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x0335, 0xffff, 0x10),
+ 	SNBEP_CBO_EVENT_EXTRA_REG(0x2135, 0xffff, 0x10),
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index b1e2fe1..7c1a0c0 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -231,31 +231,49 @@ static __initconst const struct x86_pmu p6_pmu = {
+ 
+ };
+ 
++static __init void p6_pmu_rdpmc_quirk(void)
++{
++	if (boot_cpu_data.x86_mask < 9) {
++		/*
++		 * PPro erratum 26; fixed in stepping 9 and above.
++		 */
++		pr_warn("Userspace RDPMC support disabled due to a CPU erratum\n");
++		x86_pmu.attr_rdpmc_broken = 1;
++		x86_pmu.attr_rdpmc = 0;
++	}
++}
++
+ __init int p6_pmu_init(void)
+ {
++	x86_pmu = p6_pmu;
++
+ 	switch (boot_cpu_data.x86_model) {
+-	case 1:
+-	case 3:  /* Pentium Pro */
+-	case 5:
+-	case 6:  /* Pentium II */
+-	case 7:
+-	case 8:
+-	case 11: /* Pentium III */
+-	case 9:
+-	case 13:
+-		/* Pentium M */
++	case  1: /* Pentium Pro */
++		x86_add_quirk(p6_pmu_rdpmc_quirk);
++		break;
++
++	case  3: /* Pentium II - Klamath */
++	case  5: /* Pentium II - Deschutes */
++	case  6: /* Pentium II - Mendocino */
+ 		break;
++
++	case  7: /* Pentium III - Katmai */
++	case  8: /* Pentium III - Coppermine */
++	case 10: /* Pentium III Xeon */
++	case 11: /* Pentium III - Tualatin */
++		break;
++
++	case  9: /* Pentium M - Banias */
++	case 13: /* Pentium M - Dothan */
++		break;
++
+ 	default:
+-		pr_cont("unsupported p6 CPU model %d ",
+-			boot_cpu_data.x86_model);
++		pr_cont("unsupported p6 CPU model %d ", boot_cpu_data.x86_model);
+ 		return -ENODEV;
+ 	}
+ 
+-	x86_pmu = p6_pmu;
+-
+ 	memcpy(hw_cache_event_ids, p6_hw_cache_event_ids,
+ 		sizeof(hw_cache_event_ids));
+ 
+-
+ 	return 0;
+ }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 896f270..6aa6fb6 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -37,6 +37,10 @@
+ # define MADV_UNMERGEABLE	13
+ #endif
+ 
++#ifndef EFD_SEMAPHORE
++# define EFD_SEMAPHORE		1
++#endif
++
+ struct tp_field {
+ 	int offset;
+ 	union {
+@@ -279,6 +283,11 @@ static size_t syscall_arg__scnprintf_strarray(char *bf, size_t size,
+ 
+ #define SCA_STRARRAY syscall_arg__scnprintf_strarray
+ 
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches as soon as the ioctl beautifier
++ * 	  gets rewritten to support all arches.
++ */
+ static size_t syscall_arg__scnprintf_strhexarray(char *bf, size_t size,
+ 						 struct syscall_arg *arg)
+ {
+@@ -286,6 +295,7 @@ static size_t syscall_arg__scnprintf_strhexarray(char *bf, size_t size,
  }
  
-+static void show_cap_strs(u32 *err_flags)
-+{
-+	int i, j;
-+#ifdef CONFIG_X86_FEATURE_NAMES
-+	const unsigned char *msg_strs = (const unsigned char *)x86_cap_strs;
-+	for (i = 0; i < NCAPINTS; i++) {
-+		u32 e = err_flags[i];
-+		for (j = 0; j < 32; j++) {
-+			if (msg_strs[0] < i ||
-+			    (msg_strs[0] == i && msg_strs[1] < j)) {
-+				/* Skip to the next string */
-+				msg_strs += 2;
-+				while (*msg_strs++)
-+					;
-+			}
-+			if (e & 1) {
-+				if (msg_strs[0] == i &&
-+				    msg_strs[1] == j &&
-+				    msg_strs[2])
-+					printf("%s ", msg_strs+2);
-+				else
-+					printf("%d:%d ", i, j);
-+			}
-+			e >>= 1;
-+		}
-+	}
+ #define SCA_STRHEXARRAY syscall_arg__scnprintf_strhexarray
++#endif /* defined(__i386__) || defined(__x86_64__) */
+ 
+ static size_t syscall_arg__scnprintf_fd(char *bf, size_t size,
+ 					struct syscall_arg *arg);
+@@ -839,6 +849,10 @@ static size_t syscall_arg__scnprintf_signum(char *bf, size_t size, struct syscal
+ 
+ #define SCA_SIGNUM syscall_arg__scnprintf_signum
+ 
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches.
++ */
+ #define TCGETS		0x5401
+ 
+ static const char *tioctls[] = {
+@@ -860,6 +874,7 @@ static const char *tioctls[] = {
+ };
+ 
+ static DEFINE_STRARRAY_OFFSET(tioctls, 0x5401);
++#endif /* defined(__i386__) || defined(__x86_64__) */
+ 
+ #define STRARRAY(arg, name, array) \
+ 	  .arg_scnprintf = { [arg] = SCA_STRARRAY, }, \
+@@ -941,9 +956,16 @@ static struct syscall_fmt {
+ 	{ .name	    = "getrlimit",  .errmsg = true, STRARRAY(0, resource, rlimit_resources), },
+ 	{ .name	    = "ioctl",	    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_FD, /* fd */ 
++#if defined(__i386__) || defined(__x86_64__)
++/*
++ * FIXME: Make this available to all arches.
++ */
+ 			     [1] = SCA_STRHEXARRAY, /* cmd */
+ 			     [2] = SCA_HEX, /* arg */ },
+ 	  .arg_parm	 = { [1] = &strarray__tioctls, /* cmd */ }, },
 +#else
-+	for (i = 0; i < NCAPINTS; i++) {
-+		u32 e = err_flags[i];
-+		for (j = 0; j < 32; j++) {
-+			if (e & 1)
-+				printf("%d:%d ", i, j);
-+			e >>= 1;
-+		}
-+	}
++			     [2] = SCA_HEX, /* arg */ }, },
 +#endif
-+}
-+
- int validate_cpu(void)
+ 	{ .name	    = "kill",	    .errmsg = true,
+ 	  .arg_scnprintf = { [1] = SCA_SIGNUM, /* sig */ }, },
+ 	{ .name	    = "linkat",	    .errmsg = true,
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d248fca..1e15df1 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1091,12 +1091,12 @@ int is_valid_tracepoint(const char *event_string)
+ static bool is_event_supported(u8 type, unsigned config)
  {
- 	u32 *err_flags;
- 	int cpu_level, req_level;
--	const unsigned char *msg_strs;
+ 	bool ret = true;
++	int open_return;
+ 	struct perf_evsel *evsel;
+ 	struct perf_event_attr attr = {
+ 		.type = type,
+ 		.config = config,
+ 		.disabled = 1,
+-		.exclude_kernel = 1,
+ 	};
+ 	struct {
+ 		struct thread_map map;
+@@ -1108,7 +1108,20 @@ static bool is_event_supported(u8 type, unsigned config)
  
- 	check_cpu(&cpu_level, &req_level, &err_flags);
- 
-@@ -49,34 +88,9 @@ int validate_cpu(void)
+ 	evsel = perf_evsel__new(&attr);
+ 	if (evsel) {
+-		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
++		open_return = perf_evsel__open(evsel, NULL, &tmap.map);
++		ret = open_return >= 0;
++
++		if (open_return == -EACCES) {
++			/*
++			 * This happens if the paranoid value
++			 * /proc/sys/kernel/perf_event_paranoid is set to 2
++			 * Re-run with exclude_kernel set; we don't do that
++			 * by default as some ARM machines do not support it.
++			 *
++			 */
++			evsel->attr.exclude_kernel = 1;
++			ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
++		}
+ 		perf_evsel__delete(evsel);
  	}
  
- 	if (err_flags) {
--		int i, j;
- 		puts("This kernel requires the following features "
- 		     "not present on the CPU:\n");
--
--		msg_strs = (const unsigned char *)x86_cap_strs;
--
--		for (i = 0; i < NCAPINTS; i++) {
--			u32 e = err_flags[i];
--
--			for (j = 0; j < 32; j++) {
--				if (msg_strs[0] < i ||
--				    (msg_strs[0] == i && msg_strs[1] < j)) {
--					/* Skip to the next string */
--					msg_strs += 2;
--					while (*msg_strs++)
--						;
--				}
--				if (e & 1) {
--					if (msg_strs[0] == i &&
--					    msg_strs[1] == j &&
--					    msg_strs[2])
--						printf("%s ", msg_strs+2);
--					else
--						printf("%d:%d ", i, j);
--				}
--				e >>= 1;
--			}
--		}
-+		show_cap_strs(err_flags);
- 		putchar('\n');
- 		return -1;
- 	} else {
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index e099f95..af6d7d5 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -237,8 +237,21 @@
- #include <asm/asm.h>
- #include <linux/bitops.h>
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index a8a9b6c..d8b048c 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -336,8 +336,8 @@ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+ 		return ret;
  
-+#ifdef CONFIG_X86_FEATURE_NAMES
- extern const char * const x86_cap_flags[NCAPINTS*32];
- extern const char * const x86_power_flags[32];
-+#define X86_CAP_FMT "%s"
-+static inline const char *x86_cap_flag(u32 flag)
-+{
-+	return x86_cap_flags[flag];
-+}
-+#else
-+#define X86_CAP_FMT "%x"
-+static inline u32 x86_cap_flag(u32 flag)
-+{
-+	return flag;
-+}
-+#endif
- 
- #define test_cpu_cap(c, bit)						\
- 	 test_bit(bit, (unsigned long *)((c)->x86_capability))
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 64038d8..77dcab2 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -13,11 +13,12 @@ nostackp := $(call cc-option, -fno-stack-protector)
- CFLAGS_common.o		:= $(nostackp)
- 
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
--obj-y			+= capflags.o powerflags.o common.o
-+obj-y			+= common.o
- obj-y			+= rdrand.o
- obj-y			+= match.o
- 
- obj-$(CONFIG_PROC_FS)	+= proc.o
-+obj-$(CONFIG_X86_FEATURE_NAMES) += capflags.o powerflags.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
-@@ -50,6 +51,7 @@ obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
- 
- obj-$(CONFIG_HYPERVISOR_GUEST)		+= vmware.o hypervisor.o mshyperv.o
- 
-+ifdef CONFIG_X86_FEATURE_NAMES
- quiet_cmd_mkcapflags = MKCAP   $@
-       cmd_mkcapflags = $(CONFIG_SHELL) $(srctree)/$(src)/mkcapflags.sh $< $@
- 
-@@ -58,3 +60,4 @@ cpufeature = $(src)/../../include/asm/cpufeature.h
- targets += capflags.c
- $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
- 	$(call if_changed,mkcapflags)
-+endif
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8e28bf2..3991a81 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -336,8 +336,8 @@ static void filter_cpuid_features(struct cpuinfo_x86 *c, bool warn)
- 			continue;
- 
- 		printk(KERN_WARNING
--		       "CPU: CPU feature %s disabled, no CPUID level 0x%x\n",
--				x86_cap_flags[df->feature], df->level);
-+		       "CPU: CPU feature " X86_CAP_FMT " disabled, no CPUID level 0x%x\n",
-+				x86_cap_flag(df->feature), df->level);
- 	}
- }
- 
--- 
-1.9.0
-
+ 	for (i = 0; i < ntevs && ret >= 0; i++) {
++		/* point.address is the addres of point.symbol + point.offset */
+ 		offset = tevs[i].point.address - stext;
+-		offset += tevs[i].point.offset;
+ 		tevs[i].point.offset = 0;
+ 		zfree(&tevs[i].point.symbol);
+ 		ret = e_snprintf(buf, 32, "0x%lx", offset);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 0b39a48..5da6ce7 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1008,6 +1008,12 @@ static int perf_session__process_user_event(struct perf_session *session, union
+ 		if (err == 0)
+ 			perf_session__set_id_hdr_size(session);
+ 		return err;
++	case PERF_RECORD_HEADER_EVENT_TYPE:
++		/*
++		 * Depreceated, but we need to handle it for sake
++		 * of old data files create in pipe mode.
++		 */
++		return 0;
+ 	case PERF_RECORD_HEADER_TRACING_DATA:
+ 		/* setup for reading amidst mmap */
+ 		lseek(fd, file_offset, SEEK_SET);
