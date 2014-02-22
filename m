@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbaBVAsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 19:48:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55478 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753494AbaBVAsv (ORCPT
+	id S1754107AbaBVAu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 19:50:28 -0500
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:43262
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751447AbaBVAu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 19:48:51 -0500
-Message-ID: <1393030127.15717.72.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH net-next 28/35] qlcnic: Use pci_enable_msix_range()
- instead of pci_enable_msix()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>, linux-driver@qlogic.com,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Date: Sat, 22 Feb 2014 00:48:47 +0000
-In-Reply-To: <1393029870.15717.71.camel@deadeye.wl.decadent.org.uk>
-References: <cover.1392717502.git.agordeev@redhat.com>
-	 <cb8eb41f672c62d1149c375bdaf97ca3328703f9.1392717503.git.agordeev@redhat.com>
-	 <1393029870.15717.71.camel@deadeye.wl.decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-ZDW2wPQKcKj24tyYwZ5l"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9cab:bfa3:762:9b62
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 21 Feb 2014 19:50:27 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: m.chehab@samsung.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [RFC] [PATCH 0/6] media: em28xx - power management support em28xx
+Date: Fri, 21 Feb 2014 17:50:12 -0700
+Message-Id: <cover.1393027856.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add power management support to em28xx usb driver. This driver works in
+conjunction with extensions for each of the functions on the USB device
+for video/audio/dvb/remote functionality that is present on media USB
+devices it supports. During suspend and resume each of these extensions
+will have to do their part in suspending the components they control.
 
---=-ZDW2wPQKcKj24tyYwZ5l
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Adding suspend and resume hooks to the existing struct em28xx_ops will
+enable the extensions the ability to implement suspend and resume hooks
+to be called from em28xx driver. The overall approach is as follows:
 
-On Sat, 2014-02-22 at 00:44 +0000, Ben Hutchings wrote:
-> On Tue, 2014-02-18 at 11:11 +0100, Alexander Gordeev wrote:
-> > As result of deprecation of MSI-X/MSI enablement functions
-> > pci_enable_msix() and pci_enable_msi_block() all drivers
-> > using these two interfaces need to be updated to use the
-> > new pci_enable_msi_range() and pci_enable_msix_range()
-> > interfaces.
-[...]
-> > --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > @@ -701,13 +701,17 @@ enable_msix:
-> >  		for (vector =3D 0; vector < num_msix; vector++)
-> >  			adapter->msix_entries[vector].entry =3D vector;
-> > =20
-> > -		err =3D pci_enable_msix(pdev, adapter->msix_entries, num_msix);
-> > -		if (err =3D=3D 0) {
-> > +		err =3D pci_enable_msix_range(pdev,
-> > +					    adapter->msix_entries, 1, num_msix);
-> > +
-> > +		if (err =3D=3D num_msix) {
-> >  			adapter->flags |=3D QLCNIC_MSIX_ENABLED;
-> >  			adapter->ahw->num_msix =3D num_msix;
-> >  			dev_info(&pdev->dev, "using msi-x interrupts\n");
-> >  			return 0;
-> >  		} else if (err > 0) {
-> > +			pci_disable_msix(pdev);
-> > +
-> >  			dev_info(&pdev->dev,
-> >  				 "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
-> >  				 num_msix, err);
->=20
-> Well this log message is nonsense - we have no idea how many vectors are
-> available any more.
->=20
-> You should remove this and the retry loop that is no longer needed.
+-- add suspend and resume hooks to em28xx_ops
+-- add suspend and resume routines to em28xx-core to invoke suspend
+   and resume hooks for all registered extensions.
+-- change em28xx dvb, audio, input, and video extensions to implement
+   em28xx_ops: suspend and resume hooks. These hooks do what is necessary
+   to suspend and resume the devices they control.
 
-Sorry, I'm confused and this does work.  But I wonder whether it is
-really an improvement over using the old API.
+Shuah Khan (6):
+  media: em28xx - add suspend/resume to em28xx_ops
+  media: em28xx-audio - implement em28xx_ops: suspend/resume hooks
+  media: em28xx-dvb - implement em28xx_ops: suspend/resume hooks
+  media: em28xx-input - implement em28xx_ops: suspend/resume hooks
+  media: em28xx-video - implement em28xx_ops: suspend/resume hooks
+  media: em28xx - implement em28xx_usb_driver suspend, resume,
+    reset_resume hooks
 
-Ben.
+ drivers/media/usb/em28xx/em28xx-audio.c | 30 +++++++++++++++++
+ drivers/media/usb/em28xx/em28xx-cards.c | 26 +++++++++++++++
+ drivers/media/usb/em28xx/em28xx-core.c  | 28 ++++++++++++++++
+ drivers/media/usb/em28xx/em28xx-dvb.c   | 57 +++++++++++++++++++++++++++++++++
+ drivers/media/usb/em28xx/em28xx-input.c | 35 ++++++++++++++++++++
+ drivers/media/usb/em28xx/em28xx-video.c | 28 ++++++++++++++++
+ drivers/media/usb/em28xx/em28xx.h       |  4 +++
+ 7 files changed, 208 insertions(+)
 
---=20
-Ben Hutchings
-I haven't lost my mind; it's backed up on tape somewhere.
+-- 
+1.8.3.2
 
---=-ZDW2wPQKcKj24tyYwZ5l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUwfz7+e/yOyVhhEJAQqschAAyOsO5JVlsbbyZ89+oPazQWdPskBs8EQW
-ClvlJPUHKwql/ng5kraTcX7IBXlHIiA3z4yG/4U9dkWNwQdbcbWZGpSvUJntecx5
-qf2brCMRzmG+mFGsl8nuv82eDQYsAEGisCi8zYo9bIGnBxxfqXYGz7bQ+OzXQEXj
-giFEwFbporQjRCtWvdfkaaalZ4aC6O4xWTacF1N6YBgfY2lHFzp1Gfxlpw61ZMgA
-s+MZ27zgV34cc57jvR3oEkDx0JO9LpC9rqrPGszm0H5BaVlBM6fRSQSbcu8g1/KY
-nmk3yBPECD/nn0r48WNg9YXl0vgpEVIUi98kpYwCI3UBvYTK+NYppz5lkNrIWyMW
-zHC5v8bmdduy2iauuH/kXJnyFDjcK4jJ0p6TbugYRpiffl7p7UHwBki97D36GsD5
-myygu7IEysHA9KDpb6tFdqlvhfIP98I3Pni5Z0wogV1uKbvePvSti27yEzi3c5KM
-L92C9yvWO8US5swybuv2tWqPntR3hhiXqm7YS/uhsKUgMDVBWovN3XEZYocwkp71
-3iIoid8rLKyuk0/XSNBNPESr+XQ88mxb9xVVfcecuHZe2dochPxUFDCTqhwHvdZj
-tLZyYXxtwXCRrWjvFBGI99VI3YZK3XV3Z5KujuAfkocz9zHCoJ1WB6ByFqHkGO+f
-CydlmtbEyK8=
-=sdKX
------END PGP SIGNATURE-----
-
---=-ZDW2wPQKcKj24tyYwZ5l--
