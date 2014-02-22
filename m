@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaBVPda (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 10:33:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62977 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaBVPd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 10:33:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,523,1389772800"; 
-   d="scan'208";a="486178937"
-Message-ID: <5308C343.5040102@linux.intel.com>
-Date: Sat, 22 Feb 2014 23:33:23 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751527AbaBVPiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 10:38:09 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:56481 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaBVPiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 10:38:07 -0500
+Date: Sat, 22 Feb 2014 10:37:55 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 5/9] usb: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140222153755.GG12830@htj.dyndns.org>
+References: <20140222145959.GF12830@htj.dyndns.org>
+ <Pine.LNX.4.44L0.1402221002440.24585-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Donald Dutile <ddutile@redhat.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH v5 10/33] iommu, irq: Allocate irq_desc for dmar_msi with
- local node
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>	<1388707565-16535-11-git-send-email-yinghai@kernel.org>	<53070393.5020005@linux.intel.com>	<CAE9FiQV8B271XCJQV=80S6pZDOVxG9LG0gaj9G98dCRetjkMUg@mail.gmail.com>	<53081614.4020503@linux.intel.com> <CAE9FiQXnMgG=mOmcSK9ZwKR6tFAkJX2dVnGTj9Mmg3daDhPmEA@mail.gmail.com>
-In-Reply-To: <CAE9FiQXnMgG=mOmcSK9ZwKR6tFAkJX2dVnGTj9Mmg3daDhPmEA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1402221002440.24585-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
-	I have a plan to test this patch set once I have reviewed
-all patches in coming weeks. Do you have a plan to update to latest
-kernel or is it ok to test this version?
-Thanks!
-Gerry
+On Sat, Feb 22, 2014 at 10:14:48AM -0500, Alan Stern wrote:
+> Is the cancel_delayed_work_sync(&hub->init_work) call in hub_quiesce()
+> going to get confused by all this?
 
-On 2014/2/22 15:44, Yinghai Lu wrote:
-> On Fri, Feb 21, 2014 at 7:14 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> 
->>         Seems there is no such protection on IA64 side. I feel create_irq_nr()
->> returns 0 for error is a little risky, 0 may be
->> a valid IRQ number on other platforms(no sure about this).
->> Thanks!
-> 
-> in [PATCH] ia64, irq: Add dummy create_irq_nr()
-> 
-> +unsigned int create_irq_nr(unsigned int from, int node)
-> +{
-> +       int irq = create_irq();
-> +
-> +       if (irq < 0)
-> +               irq = 0;
-> +
-> +       return irq;
-> +}
-> +
-> 
-> so that from is ignored.
-> 
-> create_irq_nr() is only with x86 and ia64.
-> 
-> Thanks
-> 
-> Yinghai
-> 
+Yeah, you can't cancel a work item which hasn't been initialzed.
+Maybe move init of the first work function there?  I don't think it
+really matters tho.
+
+> It's worth mentioning that the only reason for the hub_init_func3 stuff
+> is, as the comment says, to avoid a long sleep (100 ms) inside a work
+> routine.  With all the changes to the work queue infrastructure, maybe
+> this doesn't matter so much any more.  If we got rid of it then there
+> wouldn't be any multiplexing, and this whole issue would become moot.
+
+I don't really think that'd be necessary.  Just sleeping synchronously
+should be fine.  How many threads are we talking about?
+
+Thanks.
+
+-- 
+tejun
