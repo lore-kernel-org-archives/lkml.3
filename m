@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBVE5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 23:57:32 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:51722 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484AbaBVE5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 23:57:31 -0500
-Message-ID: <1393045046.2473.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Feb 2014 20:57:26 -0800
-In-Reply-To: <1393044955.2473.5.camel@buesod1.americas.hpqcorp.net>
-References: <1392960523.3039.16.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFw1_Ecbjjv9vijj3o46mkq3NrJn0X-FnbpCGBZG2=NuOA@mail.gmail.com>
-	 <1393016226.3039.44.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzw24Mwk_xw3QM_36-TbDOya=XZCqUeSSBVNS1QfjnWEw@mail.gmail.com>
-	 <1393044955.2473.5.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751314AbaBVFFC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 00:05:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34733 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaBVFFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 00:05:00 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 21 Feb 2014 21:03:38 -0800
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>
+Message-ID: <9c6de222-14f4-4275-ad71-aa4c38d1c86a@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-21 at 20:55 -0800, Davidlohr Bueso wrote:
-> On Fri, 2014-02-21 at 13:24 -0800, Linus Torvalds wrote:
-> > On Fri, Feb 21, 2014 at 12:57 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > >
-> > > Btw, one concern I had is regarding seqnum overflows... if such
-> > > scenarios should happen we'd end up potentially returning bogus vmas and
-> > > getting bus errors and other sorts of issues. So we'd have to flush the
-> > > caches, but, do we care? I guess on 32bit systems it could be a bit more
-> > > possible to trigger given enough forking.
-> > 
-> > I guess we should do something like
-> > 
-> >     if (unlikely(!++seqnum))
-> >         flush_vma_cache()
-> > 
-> > just to not have to worry about it.
-> > 
-> > And we can either use a "#ifndef CONFIG_64BIT" to disable it for the
-> > 64-bit case (because no, we really don't need to worry about overflow
-> > in 64 bits ;), or just decide that a 32-bit sequence number actually
-> > packs better in the structures, and make it be an "u32" even on 64-bit
-> > architectures?
-> > 
-> > It looks like a 32-bit sequence number might pack nicely next to the
-> > 
-> >     unsigned brk_randomized:1;
-> 
-> And probably specially so for structures like task and mm. I hadn't
-> considered the benefits of packing vs overflowing. So we can afford
-> flushing all tasks's vmacache every 4 billion forks.
+Those are segfaults in user space, though?
 
-ah, not quite that much, I was just thinking of dup_mmap, of course we
-also increment upon invalidations.
+On February 21, 2014 8:50:38 PM PST, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>
+>So I changed the perf_fuzzer so when it randomly stomps all over the
+>perf_event_mmap_page, it uses a constant value of 0xdeadbeef rather
+>than a random value.
+>
+>The result is below.  The segfaults make a bit more sense now, it
+>almost looks like what is happening is we are corrupting an address
+>value somehow (head? tail?) and the kernel then uses the corrupt
+>address 
+>and writes to memory outside of the mmap ring buffer.
+>
+>I still haven't figured out how to trigger this exactly, but you can
+>see when over-written with 0xdeadbeef the memory address written to is
+>consistently some small multiple of 0x120.
+>
+>I imagine it would be a bad thing if it turned out to be possible to 
+>select what memory address got written to.  Although since I've
+>only reproduced this on x32 maybe it won't be possible to over-write
+>the kernel; but I have seen this bug cause a reboot when the
+>wrong thing got over-written.
+>
+>[28002.850192] perf_fuzzer[7083]: segfault at 2be0 ip 000000000041efab
+>sp 00000000ff826748 error 6 in perf_fuzzer[400000+d1000]
+>[28639.769869] perf_fuzzer[7100]: segfault at 1320 ip 000000000041efab
+>sp 00000000ffa65038 error 6 in perf_fuzzer[400000+d1000]
+>[29396.986242] perf_fuzzer[7120]: segfault at 10e0 ip 000000000041efab
+>sp 00000000ffd48e68 error 6 in perf_fuzzer[400000+d1000]
+>[29738.892931] perf_fuzzer[7128]: segfault at 18c0 ip 000000000041efab
+>sp 00000000ffcdcd88 error 6 in perf_fuzzer[400000+d1000]
+>[29815.550210] perf_fuzzer[7132]: segfault at 120 ip 000000000041efab
+>sp 00000000ffe673b8 error 6 in perf_fuzzer[400000+d1000]
+>[30173.455348] perf_fuzzer[7141]: segfault at 120 ip 000000000041efab
+>sp 00000000ffda1948 error 6 in perf_fuzzer[400000+d1000]
+>[30570.625642] perf_fuzzer[7156]: segfault at 1680 ip 000000000041efab
+>sp 00000000ffaad028 error 6 in perf_fuzzer[400000+d1000]
+>[31047.887784] perf_fuzzer[7169]: segfault at 60c0 ip 000000000041efab
+>sp 00000000ffaa86e8 error 6 in perf_fuzzer[400000+d1000]
+>[31300.168714] perf_fuzzer[7175]: segfault at 3a80 ip 000000000041efab
+>sp 00000000ffd83228 error 6 in perf_fuzzer[400000+d1000]
+>[31984.727278] perf_fuzzer[7193]: segfault at 7e0 ip 000000000041efab
+>sp 00000000ff9db1f8 error 6 in perf_fuzzer[400000+d1000]
+>
+>Vince
 
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
