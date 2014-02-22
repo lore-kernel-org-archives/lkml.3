@@ -1,660 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaBVTJw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 14:09:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603AbaBVTJr (ORCPT
+	id S1752682AbaBVTKP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 14:10:15 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33204 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605AbaBVTJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 14:09:47 -0500
-Date: Sat, 22 Feb 2014 11:12:31 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.82
-Message-ID: <20140222191231.GB12420@kroah.com>
-References: <20140222191221.GA12420@kroah.com>
+	Sat, 22 Feb 2014 14:09:48 -0500
+X-Originating-IP: 50.43.14.201
+Date: Sat, 22 Feb 2014 11:09:30 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andi Kleen <ak@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>, Jan Beulich <JBeulich@suse.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Qiaowei Ren <qiaowei.ren@intel.com>, Rob Landley <rob@landley.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: [PATCH 2/2] x86: Support compiling out human-friendly processor
+ feature names
+Message-ID: <33fa63a2b441f81f2ddb3ee2edff4deda60e50ac.1393096111.git.josh@joshtriplett.org>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140222191221.GA12420@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The table mapping CPUID bits to human-readable strings takes up a
+non-trivial amount of space, and only exists to support /proc/cpuinfo
+and a couple of kernel messages.  Since programs depend on the format of
+/proc/cpuinfo, force inclusion of the table when building with /proc
+support; otherwise, support omitting that table to save space, in which
+case the kernel messages will print features numerically instead.
 
-diff --git a/Makefile b/Makefile
-index 5e1e1d6e0736..ee80efa38844 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 81
-+SUBLEVEL = 82
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
+In addition to saving 1408 bytes out of vmlinux, this also saves 1373
+bytes out of the uncompressed setup code, which contributes directly to
+the size of bzImage.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/x86/Kconfig                  | 12 +++++++
+ arch/x86/boot/Makefile            |  5 ++-
+ arch/x86/boot/cpu.c               | 68 +++++++++++++++++++++++----------------
+ arch/x86/include/asm/cpufeature.h | 13 ++++++++
+ arch/x86/kernel/cpu/Makefile      |  5 ++-
+ arch/x86/kernel/cpu/common.c      |  4 +--
+ 6 files changed, 76 insertions(+), 31 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..4dfdbdc 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select X86_FEATURE_NAMES if PROC_FS
  
-diff --git a/arch/s390/kernel/head64.S b/arch/s390/kernel/head64.S
-index 99348c0eaa41..78be2459c9a1 100644
---- a/arch/s390/kernel/head64.S
-+++ b/arch/s390/kernel/head64.S
-@@ -61,7 +61,7 @@ ENTRY(startup_continue)
- 	.quad	0			# cr12: tracing off
- 	.quad	0			# cr13: home space segment table
- 	.quad	0xc0000000		# cr14: machine check handling off
--	.quad	0			# cr15: linkage stack operations
-+	.quad	.Llinkage_stack		# cr15: linkage stack operations
- .Lpcmsk:.quad	0x0000000180000000
- .L4malign:.quad 0xffffffffffc00000
- .Lscan2g:.quad	0x80000000 + 0x20000 - 8	# 2GB + 128K - 8
-@@ -69,12 +69,15 @@ ENTRY(startup_continue)
- .Lparmaddr:
- 	.quad	PARMAREA
- 	.align	64
--.Lduct: .long	0,0,0,0,.Lduald,0,0,0
-+.Lduct: .long	0,.Laste,.Laste,0,.Lduald,0,0,0
- 	.long	0,0,0,0,0,0,0,0
-+.Laste:	.quad	0,0xffffffffffffffff,0,0,0,0,0,0
- 	.align	128
- .Lduald:.rept	8
- 	.long	0x80000000,0,0,0	# invalid access-list entries
- 	.endr
-+.Llinkage_stack:
-+	.long	0,0,0x89000000,0,0,0,0x8a000000,0
+ config INSTRUCTION_DECODER
+ 	def_bool y
+@@ -304,6 +305,17 @@ config SMP
  
- ENTRY(_ehead)
+ 	  If you don't know what to do here, say N.
  
-diff --git a/arch/s390/mm/page-states.c b/arch/s390/mm/page-states.c
-index a90d45e9dfb0..27c50f4d90cb 100644
---- a/arch/s390/mm/page-states.c
-+++ b/arch/s390/mm/page-states.c
-@@ -12,6 +12,8 @@
- #include <linux/mm.h>
- #include <linux/gfp.h>
- #include <linux/init.h>
-+#include <asm/setup.h>
-+#include <asm/ipl.h>
- 
- #define ESSA_SET_STABLE		1
- #define ESSA_SET_UNUSED		2
-@@ -41,6 +43,14 @@ void __init cmma_init(void)
- 
- 	if (!cmma_flag)
- 		return;
-+	/*
-+	 * Disable CMM for dump, otherwise  the tprot based memory
-+	 * detection can fail because of unstable pages.
-+	 */
-+	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
-+		cmma_flag = 0;
-+		return;
-+	}
- 	asm volatile(
- 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
- 		"0:     la      %0,0\n"
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b496a78..36751e211bb8 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -101,6 +101,14 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
++config X86_FEATURE_NAMES
++	bool "Processor feature human-readable names"
++	default y
++	---help---
++	  This option compiles in a table of x86 feature bits and corresponding
++	  names.  This is required to support /proc/cpuinfo and a few kernel
++	  messages.  You can disable this to save space, at the expense of
++	  making those few kernel messages show numeric feature bits instead.
 +
-+		/*
-+		 * We can loop for a long time in here, if someone does
-+		 * full device discards (like mkfs). Be nice and allow
-+		 * us to schedule out to avoid softlocking if preempt
-+		 * is disabled.
-+		 */
-+		cond_resched();
- 	}
- 
- 	/* Wait for bios in-flight */
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 4e86393a09cf..a81cdd7b9d83 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1303,13 +1303,16 @@ static void blkback_changed(struct xenbus_device *dev,
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
- 
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
- 
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
- 		blkfront_closing(info);
- 		break;
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index 54a3a6d09819..59596692df3e 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
- 	struct raw_device_data *rawdev;
- 	struct block_device *bdev;
- 
--	if (number <= 0 || number >= MAX_RAW_MINORS)
-+	if (number <= 0 || number >= max_raw_minors)
- 		return -EINVAL;
- 
- 	rawdev = &raw_devices[number];
-diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
-index 060b96064469..d25205309d45 100644
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -2279,6 +2279,11 @@ static int qib_7322_bringup_serdes(struct qib_pportdata *ppd)
- 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
- 	qib_write_kreg(dd, kr_scratch, 0ULL);
- 
-+	/* ensure previous Tx parameters are not still forced */
-+	qib_write_kreg_port(ppd, krp_tx_deemph_override,
-+		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
-+		reset_tx_deemphasis_override));
++	  If in doubt, say Y.
 +
- 	if (qib_compat_ddr_negotiate) {
- 		ppd->cpspec->ibdeltainprog = 1;
- 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 3aed841ce84b..17b918d3d6b3 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -4678,23 +4678,43 @@ raid5_size(struct mddev *mddev, sector_t sectors, int raid_disks)
- 	return sectors * (raid_disks - conf->max_degraded);
- }
+ config X86_X2APIC
+ 	bool "Support x2apic"
+ 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index 878df7e..ca6f7ed 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -35,7 +35,7 @@ setup-y		+= video-vesa.o
+ setup-y		+= video-bios.o
  
-+static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
-+{
-+	safe_put_page(percpu->spare_page);
-+	kfree(percpu->scribble);
-+	percpu->spare_page = NULL;
-+	percpu->scribble = NULL;
-+}
-+
-+static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
-+{
-+	if (conf->level == 6 && !percpu->spare_page)
-+		percpu->spare_page = alloc_page(GFP_KERNEL);
-+	if (!percpu->scribble)
-+		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
-+
-+	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
-+		free_scratch_buffer(conf, percpu);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
- static void raid5_free_percpu(struct r5conf *conf)
- {
--	struct raid5_percpu *percpu;
- 	unsigned long cpu;
+ targets		+= $(setup-y)
+-hostprogs-y	:= mkcpustr tools/build
++hostprogs-y	:= tools/build
  
- 	if (!conf->percpu)
- 		return;
+ HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
+ 		    -include include/generated/autoconf.h \
+@@ -43,11 +43,14 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
  
--	get_online_cpus();
--	for_each_possible_cpu(cpu) {
--		percpu = per_cpu_ptr(conf->percpu, cpu);
--		safe_put_page(percpu->spare_page);
--		kfree(percpu->scribble);
--	}
- #ifdef CONFIG_HOTPLUG_CPU
- 	unregister_cpu_notifier(&conf->cpu_notify);
- #endif
-+
-+	get_online_cpus();
-+	for_each_possible_cpu(cpu)
-+		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
- 	put_online_cpus();
+ $(obj)/cpu.o: $(obj)/cpustr.h
  
- 	free_percpu(conf->percpu);
-@@ -4720,15 +4740,7 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		if (conf->level == 6 && !percpu->spare_page)
--			percpu->spare_page = alloc_page(GFP_KERNEL);
--		if (!percpu->scribble)
--			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--
--		if (!percpu->scribble ||
--		    (conf->level == 6 && !percpu->spare_page)) {
--			safe_put_page(percpu->spare_page);
--			kfree(percpu->scribble);
-+		if (alloc_scratch_buffer(conf, percpu)) {
- 			pr_err("%s: failed memory allocation for cpu%ld\n",
- 			       __func__, cpu);
- 			return notifier_from_errno(-ENOMEM);
-@@ -4736,10 +4748,7 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
--		safe_put_page(percpu->spare_page);
--		kfree(percpu->scribble);
--		percpu->spare_page = NULL;
--		percpu->scribble = NULL;
-+		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
- 		break;
- 	default:
- 		break;
-@@ -4751,40 +4760,29 @@ static int raid456_cpu_notify(struct notifier_block *nfb, unsigned long action,
- static int raid5_alloc_percpu(struct r5conf *conf)
- {
- 	unsigned long cpu;
--	struct page *spare_page;
--	struct raid5_percpu __percpu *allcpus;
--	void *scribble;
--	int err;
-+	int err = 0;
++ifdef CONFIG_X86_FEATURE_NAMES
++hostprogs-y += mkcpustr
+ quiet_cmd_cpustr = CPUSTR  $@
+       cmd_cpustr = $(obj)/mkcpustr > $@
+ targets		+= cpustr.h
+ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 	$(call if_changed,cpustr)
++endif
  
--	allcpus = alloc_percpu(struct raid5_percpu);
--	if (!allcpus)
-+	conf->percpu = alloc_percpu(struct raid5_percpu);
-+	if (!conf->percpu)
- 		return -ENOMEM;
--	conf->percpu = allcpus;
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+	conf->cpu_notify.notifier_call = raid456_cpu_notify;
-+	conf->cpu_notify.priority = 0;
-+	err = register_cpu_notifier(&conf->cpu_notify);
-+	if (err)
-+		return err;
-+#endif
+ # ---------------------------------------------------------------------------
  
- 	get_online_cpus();
--	err = 0;
- 	for_each_present_cpu(cpu) {
--		if (conf->level == 6) {
--			spare_page = alloc_page(GFP_KERNEL);
--			if (!spare_page) {
--				err = -ENOMEM;
--				break;
--			}
--			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
--		}
--		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
--		if (!scribble) {
--			err = -ENOMEM;
-+		err = alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
-+		if (err) {
-+			pr_err("%s: failed memory allocation for cpu%ld\n",
-+			       __func__, cpu);
- 			break;
- 		}
--		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
- 	}
--#ifdef CONFIG_HOTPLUG_CPU
--	conf->cpu_notify.notifier_call = raid456_cpu_notify;
--	conf->cpu_notify.priority = 0;
--	if (err == 0)
--		err = register_cpu_notifier(&conf->cpu_notify);
--#endif
- 	put_online_cpus();
- 
- 	return err;
-diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
-index c284143cfcd7..ec8b948eea4d 100644
---- a/drivers/power/max17040_battery.c
-+++ b/drivers/power/max17040_battery.c
-@@ -148,7 +148,7 @@ static void max17040_get_online(struct i2c_client *client)
- {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
- 
--	if (chip->pdata->battery_online)
-+	if (chip->pdata && chip->pdata->battery_online)
- 		chip->online = chip->pdata->battery_online();
- 	else
- 		chip->online = 1;
-@@ -158,7 +158,8 @@ static void max17040_get_status(struct i2c_client *client)
- {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
- 
--	if (!chip->pdata->charger_online || !chip->pdata->charger_enable) {
-+	if (!chip->pdata || !chip->pdata->charger_online
-+			|| !chip->pdata->charger_enable) {
- 		chip->status = POWER_SUPPLY_STATUS_UNKNOWN;
- 		return;
- 	}
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index b7a034a3259e..3d8f662e4fe9 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -572,9 +572,7 @@ static void spi_pump_messages(struct kthread_work *work)
- 	ret = master->transfer_one_message(master, master->cur_msg);
- 	if (ret) {
- 		dev_err(&master->dev,
--			"failed to transfer one message from queue: %d\n", ret);
--		master->cur_msg->status = ret;
--		spi_finalize_current_message(master);
-+			"failed to transfer one message from queue\n");
- 		return;
- 	}
- }
-diff --git a/drivers/staging/iio/adc/ad799x_core.c b/drivers/staging/iio/adc/ad799x_core.c
-index a8458669350f..0cad46751e00 100644
---- a/drivers/staging/iio/adc/ad799x_core.c
-+++ b/drivers/staging/iio/adc/ad799x_core.c
-@@ -873,7 +873,8 @@ static int __devinit ad799x_probe(struct i2c_client *client,
- 	return 0;
- 
- error_free_irq:
--	free_irq(client->irq, indio_dev);
-+	if (client->irq > 0)
-+		free_irq(client->irq, indio_dev);
- error_cleanup_ring:
- 	ad799x_ring_cleanup(indio_dev);
- error_disable_reg:
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 4a418e44d562..acc0eab58468 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1091,6 +1091,7 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
- {
- 	unsigned int addr = 0;
- 	unsigned int modem = 0;
-+	unsigned int brk = 0;
- 	struct gsm_dlci *dlci;
- 	int len = clen;
- 	u8 *dp = data;
-@@ -1117,6 +1118,16 @@ static void gsm_control_modem(struct gsm_mux *gsm, u8 *data, int clen)
- 		if (len == 0)
- 			return;
- 	}
-+	len--;
-+	if (len > 0) {
-+		while (gsm_read_ea(&brk, *dp++) == 0) {
-+			len--;
-+			if (len == 0)
-+				return;
-+		}
-+		modem <<= 7;
-+		modem |= (brk & 0x7f);
-+	}
- 	tty = tty_port_tty_get(&dlci->port);
- 	gsm_process_modem(tty, dlci, modem, clen);
- 	if (tty) {
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 904e8341b2c9..84bd4593455e 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -165,6 +165,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_2_PID) },
-@@ -204,6 +205,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index a7019d1e3058..1e2d369df86e 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -50,6 +50,7 @@
- #define TI_XDS100V2_PID		0xa6d0
- 
- #define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
-+#define FTDI_EV3CON_PID		0xABB9 /* Mindstorms EV3 Console Adapter */
- 
- /* US Interface Navigator (http://www.usinterface.com/) */
- #define FTDI_USINT_CAT_PID	0xb810	/* Navigator CAT and 2nd PTT lines */
-@@ -363,6 +364,12 @@
- /* Sprog II (Andrew Crosland's SprogII DCC interface) */
- #define FTDI_SPROG_II		0xF0C8
- 
-+/*
-+ * Two of the Tagsys RFID Readers
-+ */
-+#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
-+#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
-+
- /* an infrared receiver for user access control with IR tags */
- #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
- 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 9d7e865a518f..abfb45b3940a 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1376,7 +1376,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1267, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1268, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1269, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1270, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1271, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1272, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1273, 0xff, 0xff, 0xff) },
-diff --git a/drivers/usb/storage/Kconfig b/drivers/usb/storage/Kconfig
-index 685edc872654..144386bab90b 100644
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -19,7 +19,9 @@ config USB_STORAGE
- 
- 	  This option depends on 'SCSI' support being enabled, but you
- 	  probably also need 'SCSI device support: SCSI disk support'
--	  (BLK_DEV_SD) for most USB storage devices.
-+	  (BLK_DEV_SD) for most USB storage devices.  Some devices also
-+	  will require 'Probe all LUNs on each SCSI device'
-+	  (SCSI_MULTI_LUN).
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called usb-storage.
-diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-index 11418da9bc09..3a7fd6f6af4f 100644
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -78,6 +78,8 @@ static const char* host_info(struct Scsi_Host *host)
- 
- static int slave_alloc (struct scsi_device *sdev)
- {
-+	struct us_data *us = host_to_us(sdev->host);
-+
- 	/*
- 	 * Set the INQUIRY transfer length to 36.  We don't use any of
- 	 * the extra data and many devices choke if asked for more or
-@@ -102,6 +104,10 @@ static int slave_alloc (struct scsi_device *sdev)
- 	 */
- 	blk_queue_update_dma_alignment(sdev->request_queue, (512 - 1));
- 
-+	/* Tell the SCSI layer if we know there is more than one LUN */
-+	if (us->protocol == USB_PR_BULK && us->max_lun > 0)
-+		sdev->sdev_bflags |= BLIST_FORCELUN;
-+
- 	return 0;
- }
- 
-diff --git a/drivers/usb/storage/unusual_cypress.h b/drivers/usb/storage/unusual_cypress.h
-index 65a6a75066a8..82e8ed0324e3 100644
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x9999,
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
- 
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0160, 0x0160,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 08d69e5fc143..bbe9adb0eb66 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1441,6 +1441,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0100,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_CAPACITY ),
- 
-+/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
-+UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
-+		"Research In Motion",
-+		"BlackBerry Bold 9000",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
-+
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
-diff --git a/fs/file.c b/fs/file.c
-index ba3f6053025c..d512ca5ea28f 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -47,7 +47,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
- 	}
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index aff1c616aedf..43ccfd6150d9 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -769,6 +769,7 @@ nlmsvc_grant_blocked(struct nlm_block *block)
- 	struct nlm_file		*file = block->b_file;
- 	struct nlm_lock		*lock = &block->b_call->a_args.lock;
- 	int			error;
-+	loff_t			fl_start, fl_end;
- 
- 	dprintk("lockd: grant blocked lock %p\n", block);
- 
-@@ -786,9 +787,16 @@ nlmsvc_grant_blocked(struct nlm_block *block)
- 	}
- 
- 	/* Try the lock operation again */
-+	/* vfs_lock_file() can mangle fl_start and fl_end, but we need
-+	 * them unchanged for the GRANT_MSG
-+	 */
- 	lock->fl.fl_flags |= FL_SLEEP;
-+	fl_start = lock->fl.fl_start;
-+	fl_end = lock->fl.fl_end;
- 	error = vfs_lock_file(file->f_file, F_SETLK, &lock->fl, NULL);
- 	lock->fl.fl_flags &= ~FL_SLEEP;
-+	lock->fl.fl_start = fl_start;
-+	lock->fl.fl_end = fl_end;
- 
- 	switch (error) {
- 	case 0:
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302d6cfd..8ab8e9390297 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -274,6 +274,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL(irq_to_desc);
- 
- static void free_desc(unsigned int irq)
- {
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index a470154e0408..955560e25e05 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -51,7 +51,13 @@
-  * HZ shrinks, so values greater than 8 overflow 32bits when
-  * HZ=100.
+diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
+index 6ec6bb6..29207f6 100644
+--- a/arch/x86/boot/cpu.c
++++ b/arch/x86/boot/cpu.c
+@@ -16,7 +16,9 @@
   */
-+#if HZ < 34
-+#define JIFFIES_SHIFT	6
-+#elif HZ < 67
-+#define JIFFIES_SHIFT	7
-+#else
- #define JIFFIES_SHIFT	8
+ 
+ #include "boot.h"
++#ifdef CONFIG_X86_FEATURE_NAMES
+ #include "cpustr.h"
 +#endif
  
- static cycle_t jiffies_read(struct clocksource *cs)
+ static char *cpu_name(int level)
  {
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 28667834181e..bd0f1c499e0a 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2008,6 +2008,13 @@ __rb_reserve_next(struct ring_buffer_per_cpu *cpu_buffer,
- 	write &= RB_WRITE_MASK;
- 	tail = write - length;
+@@ -32,11 +34,48 @@ static char *cpu_name(int level)
+ 	}
+ }
  
-+	/*
-+	 * If this is the first commit on the page, then it has the same
-+	 * timestamp as the page itself.
-+	 */
-+	if (!tail)
-+		delta = 0;
++static void show_cap_strs(u32 *err_flags)
++{
++	int i, j;
++#ifdef CONFIG_X86_FEATURE_NAMES
++	const unsigned char *msg_strs = (const unsigned char *)x86_cap_strs;
++	for (i = 0; i < NCAPINTS; i++) {
++		u32 e = err_flags[i];
++		for (j = 0; j < 32; j++) {
++			if (msg_strs[0] < i ||
++			    (msg_strs[0] == i && msg_strs[1] < j)) {
++				/* Skip to the next string */
++				msg_strs += 2;
++				while (*msg_strs++)
++					;
++			}
++			if (e & 1) {
++				if (msg_strs[0] == i &&
++				    msg_strs[1] == j &&
++				    msg_strs[2])
++					printf("%s ", msg_strs+2);
++				else
++					printf("%d:%d ", i, j);
++			}
++			e >>= 1;
++		}
++	}
++#else
++	for (i = 0; i < NCAPINTS; i++) {
++		u32 e = err_flags[i];
++		for (j = 0; j < 32; j++) {
++			if (e & 1)
++				printf("%d:%d ", i, j);
++			e >>= 1;
++		}
++	}
++#endif
++}
 +
- 	/* See if we shot pass the end of this buffer page */
- 	if (unlikely(write > BUF_PAGE_SIZE))
- 		return rb_move_tail(cpu_buffer, length, tail,
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index eace7664c805..e4b7188a0572 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -907,7 +907,7 @@ static int ieee80211_fragment(struct ieee80211_tx_data *tx,
+ int validate_cpu(void)
+ {
+ 	u32 *err_flags;
+ 	int cpu_level, req_level;
+-	const unsigned char *msg_strs;
+ 
+ 	check_cpu(&cpu_level, &req_level, &err_flags);
+ 
+@@ -49,34 +88,9 @@ int validate_cpu(void)
  	}
  
- 	/* adjust first fragment's length */
--	skb->len = hdrlen + per_fragm;
-+	skb_trim(skb, hdrlen + per_fragm);
- 	return 0;
- }
+ 	if (err_flags) {
+-		int i, j;
+ 		puts("This kernel requires the following features "
+ 		     "not present on the CPU:\n");
+-
+-		msg_strs = (const unsigned char *)x86_cap_strs;
+-
+-		for (i = 0; i < NCAPINTS; i++) {
+-			u32 e = err_flags[i];
+-
+-			for (j = 0; j < 32; j++) {
+-				if (msg_strs[0] < i ||
+-				    (msg_strs[0] == i && msg_strs[1] < j)) {
+-					/* Skip to the next string */
+-					msg_strs += 2;
+-					while (*msg_strs++)
+-						;
+-				}
+-				if (e & 1) {
+-					if (msg_strs[0] == i &&
+-					    msg_strs[1] == j &&
+-					    msg_strs[2])
+-						printf("%s ", msg_strs+2);
+-					else
+-						printf("%d:%d ", i, j);
+-				}
+-				e >>= 1;
+-			}
+-		}
++		show_cap_strs(err_flags);
+ 		putchar('\n');
+ 		return -1;
+ 	} else {
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e099f95..af6d7d5 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -237,8 +237,21 @@
+ #include <asm/asm.h>
+ #include <linux/bitops.h>
  
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 44ddaa542db6..ea243fef9f02 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -186,8 +186,8 @@ static void do_usb_entry(struct usb_device_id *id,
- 				range_lo < 0x9 ? "[%X-9" : "[%X",
- 				range_lo);
- 			sprintf(alias + strlen(alias),
--				range_hi > 0xA ? "a-%X]" : "%X]",
--				range_lo);
-+				range_hi > 0xA ? "A-%X]" : "%X]",
-+				range_hi);
- 		}
++#ifdef CONFIG_X86_FEATURE_NAMES
+ extern const char * const x86_cap_flags[NCAPINTS*32];
+ extern const char * const x86_power_flags[32];
++#define X86_CAP_FMT "%s"
++static inline const char *x86_cap_flag(u32 flag)
++{
++	return x86_cap_flags[flag];
++}
++#else
++#define X86_CAP_FMT "%x"
++static inline u32 x86_cap_flag(u32 flag)
++{
++	return flag;
++}
++#endif
+ 
+ #define test_cpu_cap(c, bit)						\
+ 	 test_bit(bit, (unsigned long *)((c)->x86_capability))
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 64038d8..77dcab2 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -13,11 +13,12 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_common.o		:= $(nostackp)
+ 
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+-obj-y			+= capflags.o powerflags.o common.o
++obj-y			+= common.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
+ obj-$(CONFIG_PROC_FS)	+= proc.o
++obj-$(CONFIG_X86_FEATURE_NAMES) += capflags.o powerflags.o
+ 
+ obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+@@ -50,6 +51,7 @@ obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
+ 
+ obj-$(CONFIG_HYPERVISOR_GUEST)		+= vmware.o hypervisor.o mshyperv.o
+ 
++ifdef CONFIG_X86_FEATURE_NAMES
+ quiet_cmd_mkcapflags = MKCAP   $@
+       cmd_mkcapflags = $(CONFIG_SHELL) $(srctree)/$(src)/mkcapflags.sh $< $@
+ 
+@@ -58,3 +60,4 @@ cpufeature = $(src)/../../include/asm/cpufeature.h
+ targets += capflags.c
+ $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
+ 	$(call if_changed,mkcapflags)
++endif
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 8e28bf2..3991a81 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -336,8 +336,8 @@ static void filter_cpuid_features(struct cpuinfo_x86 *c, bool warn)
+ 			continue;
+ 
+ 		printk(KERN_WARNING
+-		       "CPU: CPU feature %s disabled, no CPUID level 0x%x\n",
+-				x86_cap_flags[df->feature], df->level);
++		       "CPU: CPU feature " X86_CAP_FMT " disabled, no CPUID level 0x%x\n",
++				x86_cap_flag(df->feature), df->level);
  	}
- 	if (bcdDevice_initial_digits < (sizeof(id->bcdDevice_lo) * 2 - 1))
-diff --git a/virt/kvm/coalesced_mmio.c b/virt/kvm/coalesced_mmio.c
-index 88b2fe3ddf42..00d86427af0f 100644
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -154,17 +154,13 @@ int kvm_vm_ioctl_register_coalesced_mmio(struct kvm *kvm,
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
- 
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
  }
  
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
+-- 
+1.9.0
+
