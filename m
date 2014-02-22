@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaBVPGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 10:06:06 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:32998 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751214AbaBVPGF (ORCPT
+	id S1751799AbaBVPOv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 10:14:51 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:50765 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751392AbaBVPOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 10:06:05 -0500
-Message-ID: <5308BCD1.3070204@hurleysoftware.com>
-Date: Sat, 22 Feb 2014 10:05:53 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
+	Sat, 22 Feb 2014 10:14:49 -0500
+Date: Sat, 22 Feb 2014 10:14:48 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
 To: Tejun Heo <tj@kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: Guarantee work function memory ordering
-References: <1393071111-5128-1-git-send-email-peter@hurleysoftware.com> <20140222144010.GE12830@htj.dyndns.org>
-In-Reply-To: <20140222144010.GE12830@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+cc: laijs@cn.fujitsu.com, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] usb: don't use PREPARE_DELAYED_WORK
+In-Reply-To: <20140222145959.GF12830@htj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1402221002440.24585-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 09:40 AM, Tejun Heo wrote:
-> On Sat, Feb 22, 2014 at 07:11:51AM -0500, Peter Hurley wrote:
->> Users of the workqueue api may assume the workqueue provides a
->> memory ordering guarantee for re-queued work items; ie., that
->> if a work item is not queue-able then the previously queued
->> work instance is not running and so any memory operations
->> which occur before queuing the work will be visible to the work
->> function.
->>
->> For example, code of the form:
->>      add new data to work on
->>      queue work
->> assumes that this latest data is acted upon, either by the
->> newly queued instance (if it could be queued) or by the not-yet-
->> running instance (if a new instance could not be queued).
->>
->> Provide this implicit memory ordering guarantee; prevent
->> speculative loads in the work function from occurring before
->> the current work instance is marked not pending (and thus has
->> started). This, in turn, guarantees that stores occurring before
->> schedule_work/queue_work are visible to either the not-yet-running
->> work instance (if new work could not be queued) or that new work
->> is queued (and thus ensuring the new data is acted upon).
->>
->> Note that preventing early stores is unnecessary because no
->> conclusion can be reached about the state of the work function
->> from outside the work function by ordering early stores after
->> clearing PENDING (other than testing PENDING).
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   kernel/workqueue.c | 10 ++++++++++
->>   1 file changed, 10 insertions(+)
->>
->> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->> index 82ef9f3..a4b241d 100644
->> --- a/kernel/workqueue.c
->> +++ b/kernel/workqueue.c
->> @@ -2201,6 +2201,16 @@ __acquires(&pool->lock)
->>
->>   	spin_unlock_irq(&pool->lock);
->>
->> +	/*
->> +	 * Paired with the implied mb of test_and_set_bit(PENDING).
->> +	 * Guarantees speculative loads which occur in the work item
->> +	 * function do not complete before PENDING is cleared in
->> +	 * set_work_pool_and_clear_pending() above. In turn, this
->> +	 * ensures that stores are either visible to the not-yet-
->> +	 * running work instance or a new instance is queueable.
->> +	 */
->> +	smp_rmb();
->
-> Wouldn't it make more sense to have the above right after
-> clear_pending?
+On Sat, 22 Feb 2014, Tejun Heo wrote:
 
-I didn't want to affect any optimization that the cpu might
-accomplish regarding the unlock. In fact, I considered using it
-right before calling through worker->current_func.
+> Hello,
+> 
+> If this is actually safe, let's do it from the get-go.
+> 
+> Thanks!
+> ------- 8< -------
+> PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+> and a nasty surprise in terms of reentrancy guarantee as workqueue
+> considers work items to be different if they don't have the same work
+> function.
+> 
+> usb_hub->init_work is multiplexed with multiple work functions;
+> however, the work item is never queued while in-flight, so we can
+> simply use INIT_DELAYED_WORK() before each queueing.
+> 
+> It would probably be best to route this with other related updates
+> through the workqueue tree.
+> 
+> Lightly tested.
+> 
+> v2: Greg and Alan confirm that the work item is never queued while
+>     in-flight.  Simply use INIT_DELAYED_WORK().
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: linux-usb@vger.kernel.org
+> ---
+>  drivers/usb/core/hub.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub
+>  		 */
+>  		if (type == HUB_INIT) {
+>  			delay = hub_power_on(hub, false);
+> -			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
+> +			INIT_DELAYED_WORK(&hub->init_work, hub_init_func2);
+>  			schedule_delayed_work(&hub->init_work,
+>  					msecs_to_jiffies(delay));
+>  
+> @@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub
+>  
+>  		/* Don't do a long sleep inside a workqueue routine */
+>  		if (type == HUB_INIT2) {
+> -			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
+> +			INIT_DELAYED_WORK(&hub->init_work, hub_init_func3);
+>  			schedule_delayed_work(&hub->init_work,
+>  					msecs_to_jiffies(delay));
+>  			return;		/* Continues at init3: below */
+> 
 
-Given your concerns about the performance impact, maybe we should
-ask Fengguang to run this change through his automated test suites
-to find out what the perf delta is?
+This should work okay.  But while you're making these changes, you 
+should remove the INIT_DELAYED_WORK(&hub->init_work, NULL) call in 
+hub_probe().  It is now unnecessary.
 
-Regards,
-Peter Hurley
+Is the cancel_delayed_work_sync(&hub->init_work) call in hub_quiesce()
+going to get confused by all this?
+
+It's worth mentioning that the only reason for the hub_init_func3 stuff
+is, as the comment says, to avoid a long sleep (100 ms) inside a work
+routine.  With all the changes to the work queue infrastructure, maybe
+this doesn't matter so much any more.  If we got rid of it then there
+wouldn't be any multiplexing, and this whole issue would become moot.
+
+Alan Stern
+
