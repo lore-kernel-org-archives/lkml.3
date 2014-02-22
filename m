@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaBVMMK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 07:12:10 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:35477 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaBVMMJ (ORCPT
+	id S1751929AbaBVMNV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 07:13:21 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:37820 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaBVMNT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 07:12:09 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] workqueue: Guarantee work function memory ordering
-Date: Sat, 22 Feb 2014 07:11:51 -0500
-Message-Id: <1393071111-5128-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sat, 22 Feb 2014 07:13:19 -0500
+Date: Sat, 22 Feb 2014 12:13:15 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140222121315.GB9012@e102568-lin.cambridge.arm.com>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
+ <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+ <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+ <20140219193315.3732.21819@capellas-linux>
+ <20140220162754.GC15994@e102568-lin.cambridge.arm.com>
+ <20140222101655.GE21483@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20140222101655.GE21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Feb 2014 12:13:21.0173 (UTC) FILETIME=[7A2BEC50:01CF2FC7]
+X-MC-Unique: 114022212131701901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of the workqueue api may assume the workqueue provides a
-memory ordering guarantee for re-queued work items; ie., that
-if a work item is not queue-able then the previously queued
-work instance is not running and so any memory operations
-which occur before queuing the work will be visible to the work
-function.
+On Sat, Feb 22, 2014 at 10:16:55AM +0000, Russell King - ARM Linux wrote:
+> On Thu, Feb 20, 2014 at 04:27:55PM +0000, Lorenzo Pieralisi wrote:
+> > I still do not understand why switching to idmap, which is a clone of
+> > init_mm + 1:1 kernel mappings is required here. Why idmap ?
+> > 
+> > And while at it, can't the idmap be overwritten _while_ copying back the
+> > resume kernel ? Is it safe to use idmap page tables while copying ?
+> > 
+> > I had a look at x86 and there idmap page tables used to resume are created
+> > on the fly using safe pages, on ARM idmap is created at boot.
+> 
+> That's fine.
+> 
+> Remember, you're required to boot exactly the same kernel image when
+> resuming as the kernel which created the suspend image.  Unless you
+> have random allocations going on, you should get the same layout for
+> the idmap stuff at each boot.
 
-For example, code of the form:
-    add new data to work on
-    queue work
-assumes that this latest data is acted upon, either by the
-newly queued instance (if it could be queued) or by the not-yet-
-running instance (if a new instance could not be queued).
+Thanks Russell, now that's clear. We do need a copy of page tables
+that are not tampered with while copying, and idmap works well for
+that.
 
-Provide this implicit memory ordering guarantee; prevent
-speculative loads in the work function from occurring before
-the current work instance is marked not pending (and thus has
-started). This, in turn, guarantees that stores occurring before
-schedule_work/queue_work are visible to either the not-yet-running
-work instance (if new work could not be queued) or that new work
-is queued (and thus ensuring the new data is acted upon).
-
-Note that preventing early stores is unnecessary because no
-conclusion can be reached about the state of the work function
-from outside the work function by ordering early stores after
-clearing PENDING (other than testing PENDING).
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- kernel/workqueue.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3..a4b241d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2201,6 +2201,16 @@ __acquires(&pool->lock)
- 
- 	spin_unlock_irq(&pool->lock);
- 
-+	/*
-+	 * Paired with the implied mb of test_and_set_bit(PENDING).
-+	 * Guarantees speculative loads which occur in the work item
-+	 * function do not complete before PENDING is cleared in
-+	 * set_work_pool_and_clear_pending() above. In turn, this
-+	 * ensures that stores are either visible to the not-yet-
-+	 * running work instance or a new instance is queueable.
-+	 */
-+	smp_rmb();
-+
- 	lock_map_acquire_read(&pwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
--- 
-1.8.1.2
+Lorenzo
 
