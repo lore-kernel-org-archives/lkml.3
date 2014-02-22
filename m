@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaBVOzk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 09:55:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbaBVOzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 09:55:23 -0500
-Message-ID: <5308BA54.2040807@redhat.com>
-Date: Sat, 22 Feb 2014 15:55:16 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751708AbaBVPAF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 10:00:05 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:64424 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaBVPAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 10:00:03 -0500
+Date: Sat, 22 Feb 2014 09:59:59 -0500
+From: Tejun Heo <tj@kernel.org>
+To: laijs@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH v2 5/9] usb: don't use PREPARE_DELAYED_WORK
+Message-ID: <20140222145959.GF12830@htj.dyndns.org>
+References: <1392929071-16555-1-git-send-email-tj@kernel.org>
+ <1392929071-16555-6-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-CC: "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] KVM: x86: Fix xsave cpuid exposing bug
-References: <DE8DF0795D48FD4CA783C40EC829233501509B5F@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233501509B5F@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392929071-16555-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/02/2014 18:39, Liu, Jinsong ha scritto:
-> From 00c920c96127d20d4c3bb790082700ae375c39a0 Mon Sep 17 00:00:00 2001
-> From: Liu Jinsong <jinsong.liu@intel.com>
-> Date: Fri, 21 Feb 2014 23:47:18 +0800
-> Subject: [PATCH] KVM: x86: Fix xsave cpuid exposing bug
->
-> EBX of cpuid(0xD, 0) is dynamic per XCR0 features enable/disable.
-> Bit 63 of XCR0 is reserved for future expansion.
->
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/include/asm/xsave.h |    2 ++
->  arch/x86/kvm/cpuid.c         |    6 +++---
->  arch/x86/kvm/x86.c           |    7 +++++--
->  3 files changed, 10 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-> index 5547389..dcd047b 100644
-> --- a/arch/x86/include/asm/xsave.h
-> +++ b/arch/x86/include/asm/xsave.h
-> @@ -13,6 +13,8 @@
->  #define XSTATE_BNDCSR	0x10
->
->  #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
-> +/* Bit 63 of XCR0 is reserved for future expansion */
-> +#define XSTATE_EXTEND_MASK	(~(XSTATE_FPSSE | (1ULL << 63)))
->
->  #define FXSAVE_SIZE	512
->
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index a951ae4..b241325 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -28,7 +28,7 @@ static u32 xstate_required_size(u64 xstate_bv)
->  	int feature_bit = 0;
->  	u32 ret = XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET;
->
-> -	xstate_bv &= ~XSTATE_FPSSE;
-> +	xstate_bv &= XSTATE_EXTEND_MASK;
->  	while (xstate_bv) {
->  		if (xstate_bv & 0x1) {
->  		        u32 eax, ebx, ecx, edx;
-> @@ -74,8 +74,8 @@ void kvm_update_cpuid(struct kvm_vcpu *vcpu)
->  		vcpu->arch.guest_supported_xcr0 =
->  			(best->eax | ((u64)best->edx << 32)) &
->  			host_xcr0 & KVM_SUPPORTED_XCR0;
-> -		vcpu->arch.guest_xstate_size =
-> -			xstate_required_size(vcpu->arch.guest_supported_xcr0);
-> +		vcpu->arch.guest_xstate_size = best->ebx =
-> +			xstate_required_size(vcpu->arch.xcr0);
->  	}
->
->  	kvm_pmu_cpuid_update(vcpu);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 39c28f0..7c52acb 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -595,13 +595,13 @@ static void kvm_put_guest_xcr0(struct kvm_vcpu *vcpu)
->
->  int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
->  {
-> -	u64 xcr0;
-> +	u64 xcr0 = xcr;
-> +	u64 old_xcr0 = vcpu->arch.xcr0;
->  	u64 valid_bits;
->
->  	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
->  	if (index != XCR_XFEATURE_ENABLED_MASK)
->  		return 1;
-> -	xcr0 = xcr;
->  	if (!(xcr0 & XSTATE_FP))
->  		return 1;
->  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-> @@ -618,6 +618,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
->
->  	kvm_put_guest_xcr0(vcpu);
->  	vcpu->arch.xcr0 = xcr0;
-> +
-> +	if ((xcr0 ^ old_xcr0) & XSTATE_EXTEND_MASK)
-> +		kvm_update_cpuid(vcpu);
->  	return 0;
->  }
->
->
+Hello,
 
-Applied to kvm/queue, thanks.
+If this is actually safe, let's do it from the get-go.
 
-Paolo
+Thanks!
+------- 8< -------
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
+usb_hub->init_work is multiplexed with multiple work functions;
+however, the work item is never queued while in-flight, so we can
+simply use INIT_DELAYED_WORK() before each queueing.
+
+It would probably be best to route this with other related updates
+through the workqueue tree.
+
+Lightly tested.
+
+v2: Greg and Alan confirm that the work item is never queued while
+    in-flight.  Simply use INIT_DELAYED_WORK().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/core/hub.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub
+ 		 */
+ 		if (type == HUB_INIT) {
+ 			delay = hub_power_on(hub, false);
+-			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
++			INIT_DELAYED_WORK(&hub->init_work, hub_init_func2);
+ 			schedule_delayed_work(&hub->init_work,
+ 					msecs_to_jiffies(delay));
+ 
+@@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub
+ 
+ 		/* Don't do a long sleep inside a workqueue routine */
+ 		if (type == HUB_INIT2) {
+-			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
++			INIT_DELAYED_WORK(&hub->init_work, hub_init_func3);
+ 			schedule_delayed_work(&hub->init_work,
+ 					msecs_to_jiffies(delay));
+ 			return;		/* Continues at init3: below */
