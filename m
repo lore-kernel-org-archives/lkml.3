@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaBVPAF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 10:00:05 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:64424 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaBVPAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 10:00:03 -0500
-Date: Sat, 22 Feb 2014 09:59:59 -0500
-From: Tejun Heo <tj@kernel.org>
-To: laijs@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH v2 5/9] usb: don't use PREPARE_DELAYED_WORK
-Message-ID: <20140222145959.GF12830@htj.dyndns.org>
-References: <1392929071-16555-1-git-send-email-tj@kernel.org>
- <1392929071-16555-6-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392929071-16555-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751976AbaBVPA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 10:00:28 -0500
+Received: from mout.gmx.net ([212.227.17.22]:52795 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836AbaBVPAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 10:00:25 -0500
+Date: Sat, 22 Feb 2014 16:00:16 +0100
+From: Christian Engelmayer <cengelma@gmx.at>
+To: Mark Brown <broonie@kernel.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: wm8993: Remove unused pointer in wm8993_remove()
+Message-ID: <20140222160016.372a3683@spike>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/PgqqabPoqGeDFBsi337eJmh"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:M3uzO/tUbJeP7HB6cmntDTrWRkDah2RI0HwYkfBbo+LjIef+GkK
+ EBolwrVnfIFpkGJOb2namGK2XMHSDvJeUAPy/Pi4zJAIUSGsmzOuxAr6q5sE109pKkG1VNY
+ AurEd0o4+cRkzC/nve3GwdL0vDmb3g9iMQOXOjcnGOdUk4uIGFAyb/DZzwd+xXGn2aofGdw
+ l4G2DmwpRIDEYLSQF9zUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Sig_/PgqqabPoqGeDFBsi337eJmh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-If this is actually safe, let's do it from the get-go.
+Commit 88b5bdfd (ASoC: wm8993: drop regulator_bulk_free of devm_ allocated
+data) eliminated the last user of driver data pointer 'wm8993' in function
+wm8993_remove() - Thus remove it. Detected by Coverity: CID 1186208.
 
-Thanks!
-------- 8< -------
-PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
-and a nasty surprise in terms of reentrancy guarantee as workqueue
-considers work items to be different if they don't have the same work
-function.
-
-usb_hub->init_work is multiplexed with multiple work functions;
-however, the work item is never queued while in-flight, so we can
-simply use INIT_DELAYED_WORK() before each queueing.
-
-It would probably be best to route this with other related updates
-through the workqueue tree.
-
-Lightly tested.
-
-v2: Greg and Alan confirm that the work item is never queued while
-    in-flight.  Simply use INIT_DELAYED_WORK().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- drivers/usb/core/hub.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Applies against branch for-next in tree
+git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+---
+ sound/soc/codecs/wm8993.c | 2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1040,7 +1040,7 @@ static void hub_activate(struct usb_hub
- 		 */
- 		if (type == HUB_INIT) {
- 			delay = hub_power_on(hub, false);
--			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func2);
-+			INIT_DELAYED_WORK(&hub->init_work, hub_init_func2);
- 			schedule_delayed_work(&hub->init_work,
- 					msecs_to_jiffies(delay));
- 
-@@ -1194,7 +1194,7 @@ static void hub_activate(struct usb_hub
- 
- 		/* Don't do a long sleep inside a workqueue routine */
- 		if (type == HUB_INIT2) {
--			PREPARE_DELAYED_WORK(&hub->init_work, hub_init_func3);
-+			INIT_DELAYED_WORK(&hub->init_work, hub_init_func3);
- 			schedule_delayed_work(&hub->init_work,
- 					msecs_to_jiffies(delay));
- 			return;		/* Continues at init3: below */
+diff --git a/sound/soc/codecs/wm8993.c b/sound/soc/codecs/wm8993.c
+index 2ee23a3..f7978b3 100644
+--- a/sound/soc/codecs/wm8993.c
++++ b/sound/soc/codecs/wm8993.c
+@@ -1559,8 +1559,6 @@ static int wm8993_probe(struct snd_soc_codec *codec)
+=20
+ static int wm8993_remove(struct snd_soc_codec *codec)
+ {
+-	struct wm8993_priv *wm8993 =3D snd_soc_codec_get_drvdata(codec);
+-
+ 	wm8993_set_bias_level(codec, SND_SOC_BIAS_OFF);
+ 	return 0;
+ }
+--=20
+1.8.3.2
+
+--Sig_/PgqqabPoqGeDFBsi337eJmh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCLuAAAoJEKssnEpaPQKEgJoQAJiyVGX3Wa2n7PKRFsQBOTn6
+wDcW/IqrglJX2Z4JEjmMXg+hkp/McS0yad6wel7zs0AdhrmwCii3GAwWCXh+kZes
+f+GZSOdhReYHcc9p8xrYBT2d/aOQJpM0swyh45f6VtQ4rKsfLm2dQy58tezE/oeP
+ZF4MJxtDTpr8u5MBHQx1dfm4fNYWM/kFBrRwglJXS2cubIP0pYoeWpWrtiWODYaC
+CpRgmUuSwkTZ8H3ahm5JckjiaCNNbByihsTmXPn1bnGX7XZFPRK86zsekqThoR9M
+J5nuv1q+DR6B0VsvVm1dPUHlTeqbJ/2I0iHxdOkM3ygB60CyVJOnFOLYuaUd5bOS
+6wNcXIVZnUhc+zXYLVpT8W7n6l7SDR4DyTZVOmk+OvLPLKfnXLCFRm1fg9AVW92W
+DuTgTqb37MxqcbOikpUDm8b5drCLEZvO7utszBG4OSgIT5YFc72kBj4WLnWSlbCl
+MVF7iuCRvCTXmNsEk9gO/M2d5PutBsBdndGqnlrRk9cqNJLvxbh6srac35Wwaz9R
+QkS2zBuphiIrCllFiCfDVpJi9V9GKN1/sjfk+fePtb+c46GOfwrngYRjPv6h/AWF
+o2Jic3p4Q/p+B4hObs3aq3UA9inrtZKEZMYlrYp37JG0l+mmaCYmQria0wynBeHp
+4nmQcuYpvHQfTTaQHSa/
+=vnzG
+-----END PGP SIGNATURE-----
+
+--Sig_/PgqqabPoqGeDFBsi337eJmh--
