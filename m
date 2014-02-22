@@ -1,89 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750960AbaBVLUA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 06:20:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaBVLT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 06:19:57 -0500
-Message-ID: <530887AB.1030805@redhat.com>
-Date: Sat, 22 Feb 2014 12:19:07 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751340AbaBVMJW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 07:09:22 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:57806 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144AbaBVMJT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 07:09:19 -0500
+Date: Sat, 22 Feb 2014 12:09:10 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140222120910.GA9012@e102568-lin.cambridge.arm.com>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
+ <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+ <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+ <20140222103840.GH21483@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: =?ISO-8859-1?Q?David_Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>,
-        devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 4/8] ARM: sunxi: Add driver for SD/MMC hosts found
- on Allwinner sunxi SoCs
-References: <20140217095907.15040.81893.stgit@pagira.o2s.ch> <20140217100234.15040.84232.stgit@pagira.o2s.ch> <20140218153731.GK3142@lukather> <5303C751.5090809@redhat.com> <20140219094615.GT3142@lukather> <5304A042.7090903@redhat.com> <20140222083128.GH3931@lukather>
-In-Reply-To: <20140222083128.GH3931@lukather>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140222103840.GH21483@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Feb 2014 12:09:18.0633 (UTC) FILETIME=[E99B4190:01CF2FC6]
+X-MC-Unique: 114022212091700201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Feb 22, 2014 at 10:38:40AM +0000, Russell King - ARM Linux wrote:
+> On Wed, Feb 19, 2014 at 04:12:54PM +0000, Lorenzo Pieralisi wrote:
+> > On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
+> > > +/*
+> > > + * Snapshot kernel memory and reset the system.
+> > > + * After resume, the hibernation snapshot is written out.
+> > > + */
+> > > +static int notrace __swsusp_arch_save_image(unsigned long unused)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	ret = swsusp_save();
+> > > +	if (ret == 0)
+> > > +		soft_restart(virt_to_phys(cpu_resume));
+> > 
+> > By the time the suspend finisher (ie this function) is run, the
+> > processor state has been saved and I think that's all you have to do,
+> > function can just return after calling swsusp_save(), unless I am missing
+> > something.
+> > 
+> > I do not understand why a soft_restart is required here. On a side note,
+> > finisher is called with irqs disabled so, since you added a function for
+> > soft restart noirq, it should be used, if needed, but I have to understand
+> > why in the first place.
+> 
+> It's required because you can't just return from the finisher.  A normal
+> return from the finisher will always be interpreted as an abort rather
+> than success (because the state has to be unwound.)
+> 
+> This is the only way to get a zero return from cpu_suspend().
 
-On 02/22/2014 09:31 AM, Maxime Ripard wrote:
+Yes, that's the only reason why this code is jumping to cpu_resume, since
+all it is needed is to snapshot the CPU context and by the time the
+finisher is called that's done. Wanted to say that soft reboot is not
+useful (cache flushing and resume with MMU off), but what you are saying
+is correct. We might be saving swsusp_save return value in a global
+variable and just return from the finisher, but that's horrible and
+given the amount of time it takes to snapshot the image to disk the
+cost of this soft reboot will be dwarfed by that.
 
-<snip>
+I wanted to ask and clarify why the code was written like this though, given
+its complexity.
 
->>>>> This should be before the registration. Otherwise, you're racy.
->>>>
->>>> Nope, we only need this to get the data on sunxi_mmc_remove,
->>>> everywhere else the data is found through the mmc-host struct.
->>>
->>> Still, if anyone makes a following patch using the platform_device
->>> for some reason, we will have a race condition, without any way to
->>> notice it.
->>>
->>> Plus, you're doing all the other bits of initialization of your
->>> structures much earlier, why not be consistent and having all of
->>> them at the same place?
->>
->> Most platform drivers I've worked on do platform_set_drvdata as late
->> as possible, so that the drvdata does not get set and never cleared
->> in error paths.
->
-> You don't actually have to clear it,
+> > > +/*
+> > > + * The framework loads the hibernation image into a linked list anchored
+> > > + * at restore_pblist, for swsusp_arch_resume() to copy back to the proper
+> > > + * destinations.
+> > > + *
+> > > + * To make this work if resume is triggered from initramfs, the
+> > > + * pagetables need to be switched to allow writes to kernel mem.
+> > 
+> > Can you elaborate a bit more on this please ?
+> > 
+> > > + */
+> > > +static void notrace __swsusp_arch_restore_image(void *unused)
+> > > +{
+> > > +	struct pbe *pbe;
+> > > +
+> > > +	cpu_switch_mm(idmap_pgd, &init_mm);
+> > 
+> > Same here, thanks.
+> > 
+> > > +	for (pbe = restore_pblist; pbe; pbe = pbe->next)
+> > > +		copy_page(pbe->orig_address, pbe->address);
+> > > +
+> > > +	soft_restart_noirq(virt_to_phys(cpu_resume));
+> > 
+> > This soft_restart is justified so that you resume from the context saved
+> > when creating the image.
+> 
+> You need the idmap_pgd in place to call cpu_resume at it's physical
+> address.  Other page tables just won't do here.  It's well established
+> that this page table must be in place for the resume paths to work.
 
-Erm, yes and no, you used to have to manually clear it, so as to not
-leave a dangling pointer in there, which may confuse things later.
+Well, we do not need idmap page tables for copying the restore_pblist,
+but we do need a set of tables that won't be corrupted by the copy and
+idmap does the trick (I was confused because 1:1 mappings are not needed
+for the copy itself).
 
-But since a few kernel releases, the driver core will explicitly
-clear it on probe failure, since many many drivers got this wrong.
-I know this because I wrote the driver core patch doing the clearing :)
+The switch to idmap is done for us in soft_reboot anyway before jumping to
+cpu_resume and that's required, as you said.
 
-So in drivers which used to get it right, you will see the
-platform_set_drvdata call quite late and it being so late
-in the sunxi-mmc.c driver is old habits dying hard.
+Lorenzo
 
-But you're right that this is no longer needed, still I see little
-reason to move it up, but if you really want it to be moved up,
-I'm fine with that.
-
-> and some frameworks actually require you to call dev_set_drvdata before registration, so that
-> statement looks quite odd to me.
-
-And the proper thing to do when using those frameworks was to
-manually clear drvdata again on probe failure. Anyways this is
-all handled in the driver core now, so this whole discussion
-is moot anyways. I was merely trying to explain where my
-preference for doing the dev_set_drvdata call as late as
-possible comes from.
-
-Regards,
-
-Hans
