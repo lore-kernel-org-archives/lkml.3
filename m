@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaBVSD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:03:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41333 "EHLO
+	id S1753464AbaBVSBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:01:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41195 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaBVSD1 (ORCPT
+	with ESMTP id S1752299AbaBVSBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:03:27 -0500
-Date: Sat, 22 Feb 2014 10:02:50 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-c365c292d05908c6ea6f32708f331e21033fe71d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, raistlin@linux.it, bigeasy@linutronix.de,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, bigeasy@linutronix.de,
-        raistlin@linux.it
-In-Reply-To: <1391803122-4425-7-git-send-email-bigeasy@linutronix.de>
-References: <1391803122-4425-7-git-send-email-bigeasy@linutronix.de>
+	Sat, 22 Feb 2014 13:01:14 -0500
+Date: Sat, 22 Feb 2014 09:58:51 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-c9b951c4d12f0b2e9a07dd459c554bc05628d092@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1389098853-14466-13-git-send-email-jolsa@redhat.com>
+References: <1389098853-14466-13-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Consider pi boosting in setscheduler()
-Git-Commit-ID: c365c292d05908c6ea6f32708f331e21033fe71d
+Subject: [tip:perf/core] perf callchain:
+  Separate perf_reg_value function in perf_regs object
+Git-Commit-ID: c9b951c4d12f0b2e9a07dd459c554bc05628d092
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,180 +38,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c365c292d05908c6ea6f32708f331e21033fe71d
-Gitweb:     http://git.kernel.org/tip/c365c292d05908c6ea6f32708f331e21033fe71d
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 7 Feb 2014 20:58:42 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 22 Feb 2014 18:10:04 +0100
+Commit-ID:  c9b951c4d12f0b2e9a07dd459c554bc05628d092
+Gitweb:     http://git.kernel.org/tip/c9b951c4d12f0b2e9a07dd459c554bc05628d092
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 7 Jan 2014 13:47:29 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 18 Feb 2014 09:34:49 -0300
 
-sched: Consider pi boosting in setscheduler()
+perf callchain: Separate perf_reg_value function in perf_regs object
 
-If a PI boosted task policy/priority is modified by a setscheduler()
-call we unconditionally dequeue and requeue the task if it is on the
-runqueue even if the new priority is lower than the current effective
-boosted priority. This can result in undesired reordering of the
-priority bucket list.
+Making perf_reg_value function global (formely reg_value), because it's
+going to be used globaly across all code providing the dwarf post unwind
+feature.
 
-If the new priority is less or equal than the current effective we
-just store the new parameters in the task struct and leave the
-scheduler class and the runqueue untouched. This is handled when the
-task deboosts itself. Only if the new priority is higher than the
-effective boosted priority we apply the change immediately.
+Changing its prototype to be generic:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ Rebase ontop of v3.14-rc1. ]
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1391803122-4425-7-git-send-email-bigeasy@linutronix.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+  -int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
+  +int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
+
+Changing the valp type from libunwind specific 'unw_word_t' to u64.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1389098853-14466-13-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/sched/rt.h |  7 +++++++
- kernel/locking/rtmutex.c | 12 ++++++++++++
- kernel/sched/core.c      | 41 ++++++++++++++++++++++++++++++-----------
- 3 files changed, 49 insertions(+), 11 deletions(-)
+ tools/perf/Makefile.perf           |  1 +
+ tools/perf/util/perf_regs.c        | 19 +++++++++++++++++++
+ tools/perf/util/perf_regs.h        | 13 +++++++++++++
+ tools/perf/util/unwind-libunwind.c | 38 ++++++++++++--------------------------
+ 4 files changed, 45 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
-index f7453d4..6341f5b 100644
---- a/include/linux/sched/rt.h
-+++ b/include/linux/sched/rt.h
-@@ -18,6 +18,7 @@ static inline int rt_task(struct task_struct *p)
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-+extern int rt_mutex_check_prio(struct task_struct *task, int newprio);
- extern struct task_struct *rt_mutex_get_top_task(struct task_struct *task);
- extern void rt_mutex_adjust_pi(struct task_struct *p);
- static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
-@@ -29,6 +30,12 @@ static inline int rt_mutex_getprio(struct task_struct *p)
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 9ef6b33..f99a392 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -538,6 +538,7 @@ ifeq ($(NO_PERF_REGS),0)
+   ifeq ($(ARCH),x86)
+     LIB_H += arch/x86/include/perf_regs.h
+   endif
++  LIB_OBJS += $(OUTPUT)util/perf_regs.o
+ endif
+ 
+ ifndef NO_LIBNUMA
+diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
+new file mode 100644
+index 0000000..a3539ef
+--- /dev/null
++++ b/tools/perf/util/perf_regs.c
+@@ -0,0 +1,19 @@
++#include <errno.h>
++#include "perf_regs.h"
++
++int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
++{
++	int i, idx = 0;
++	u64 mask = regs->mask;
++
++	if (!(mask & (1 << id)))
++		return -EINVAL;
++
++	for (i = 0; i < id; i++) {
++		if (mask & (1 << i))
++			idx++;
++	}
++
++	*valp = regs->regs[idx];
++	return 0;
++}
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index a3d42cd..d6e8b6a 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -1,8 +1,14 @@
+ #ifndef __PERF_REGS_H
+ #define __PERF_REGS_H
+ 
++#include "types.h"
++#include "event.h"
++
+ #ifdef HAVE_PERF_REGS_SUPPORT
+ #include <perf_regs.h>
++
++int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
++
+ #else
+ #define PERF_REGS_MASK	0
+ 
+@@ -10,5 +16,12 @@ static inline const char *perf_reg_name(int id __maybe_unused)
  {
- 	return p->normal_prio;
+ 	return NULL;
  }
 +
-+static inline int rt_mutex_check_prio(struct task_struct *task, int newprio)
++static inline int perf_reg_value(u64 *valp __maybe_unused,
++				 struct regs_dump *regs __maybe_unused,
++				 int id __maybe_unused)
 +{
 +	return 0;
 +}
-+
- static inline struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
- {
- 	return NULL;
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 2e960a2..aa4dff0 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -213,6 +213,18 @@ struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
+ #endif /* HAVE_PERF_REGS_SUPPORT */
+ #endif /* __PERF_REGS_H */
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 79dbfbb..bd5768d 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -390,30 +390,13 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
+ 	return !(size == sizeof(*data));
  }
  
- /*
-+ * Called by sched_setscheduler() to check whether the priority change
-+ * is overruled by a possible priority boosting.
-+ */
-+int rt_mutex_check_prio(struct task_struct *task, int newprio)
-+{
-+	if (!task_has_pi_waiters(task))
-+		return 0;
-+
-+	return task_top_pi_waiter(task)->task->prio <= newprio;
-+}
-+
-+/*
-  * Adjust the priority of a task, after its pi_waiters got modified.
-  *
-  * This can be both boosting and unboosting. task->pi_lock must be held.
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9c2fcbf..003263b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2902,7 +2902,8 @@ EXPORT_SYMBOL(sleep_on_timeout);
-  * This function changes the 'effective' priority of a task. It does
-  * not touch ->normal_prio like __setscheduler().
-  *
-- * Used by the rt_mutex code to implement priority inheritance logic.
-+ * Used by the rt_mutex code to implement priority inheritance
-+ * logic. Call site only calls if the priority of the task changed.
-  */
- void rt_mutex_setprio(struct task_struct *p, int prio)
- {
-@@ -3171,9 +3172,8 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
- 	dl_se->dl_new = 1;
- }
- 
--/* Actually do priority change: must hold pi & rq lock. */
--static void __setscheduler(struct rq *rq, struct task_struct *p,
--			   const struct sched_attr *attr)
-+static void __setscheduler_params(struct task_struct *p,
-+		const struct sched_attr *attr)
- {
- 	int policy = attr->sched_policy;
- 
-@@ -3193,9 +3193,14 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
- 	 * getparam()/getattr() don't report silly values for !rt tasks.
- 	 */
- 	p->rt_priority = attr->sched_priority;
-+	set_load_weight(p);
-+}
- 
--	p->normal_prio = normal_prio(p);
--	p->prio = rt_mutex_getprio(p);
-+/* Actually do priority change: must hold pi & rq lock. */
-+static void __setscheduler(struct rq *rq, struct task_struct *p,
-+			   const struct sched_attr *attr)
-+{
-+	__setscheduler_params(p, attr);
- 
- 	if (dl_prio(p->prio))
- 		p->sched_class = &dl_sched_class;
-@@ -3203,8 +3208,6 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
- 		p->sched_class = &rt_sched_class;
- 	else
- 		p->sched_class = &fair_sched_class;
+-static int reg_value(unw_word_t *valp, struct regs_dump *regs, int id)
+-{
+-	int i, idx = 0;
+-	u64 mask = regs->mask;
 -
--	set_load_weight(p);
- }
- 
- static void
-@@ -3257,6 +3260,7 @@ static int __sched_setscheduler(struct task_struct *p,
- 				const struct sched_attr *attr,
- 				bool user)
+-	if (!(mask & (1 << id)))
+-		return -EINVAL;
+-
+-	for (i = 0; i < id; i++) {
+-		if (mask & (1 << i))
+-			idx++;
+-	}
+-
+-	*valp = regs->regs[idx];
+-	return 0;
+-}
+-
+ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 		      unw_word_t addr, unw_word_t *valp,
+ 		      int __write, void *arg)
  {
-+	int newprio = MAX_RT_PRIO - 1 - attr->sched_priority;
- 	int retval, oldprio, oldpolicy = -1, on_rq, running;
- 	int policy = attr->sched_policy;
- 	unsigned long flags;
-@@ -3427,6 +3431,24 @@ change:
- 		return -EBUSY;
+ 	struct unwind_info *ui = arg;
+ 	struct stack_dump *stack = &ui->sample->user_stack;
+-	unw_word_t start, end;
++	u64 start, end;
+ 	int offset;
+ 	int ret;
+ 
+@@ -423,7 +406,7 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 		return 0;
  	}
  
-+	p->sched_reset_on_fork = reset_on_fork;
-+	oldprio = p->prio;
-+
-+	/*
-+	 * Special case for priority boosted tasks.
-+	 *
-+	 * If the new priority is lower or equal (user space view)
-+	 * than the current (boosted) priority, we just store the new
-+	 * normal parameters and do not touch the scheduler class and
-+	 * the runqueue. This will be done when the task deboost
-+	 * itself.
-+	 */
-+	if (rt_mutex_check_prio(p, newprio)) {
-+		__setscheduler_params(p, attr);
-+		task_rq_unlock(rq, p, &flags);
-+		return 0;
-+	}
-+
- 	on_rq = p->on_rq;
- 	running = task_current(rq, p);
- 	if (on_rq)
-@@ -3434,9 +3456,6 @@ change:
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
+-	ret = reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
++	ret = perf_reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
+ 	if (ret)
+ 		return ret;
  
--	p->sched_reset_on_fork = reset_on_fork;
--
--	oldprio = p->prio;
- 	prev_class = p->sched_class;
- 	__setscheduler(rq, p, attr);
+@@ -436,8 +419,9 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 	if (addr < start || addr + sizeof(unw_word_t) >= end) {
+ 		ret = access_dso_mem(ui, addr, valp);
+ 		if (ret) {
+-			pr_debug("unwind: access_mem %p not inside range %p-%p\n",
+-				(void *)addr, (void *)start, (void *)end);
++			pr_debug("unwind: access_mem %p not inside range"
++				 " 0x%" PRIx64 "-0x%" PRIx64 "\n",
++				 (void *) addr, start, end);
+ 			*valp = 0;
+ 			return ret;
+ 		}
+@@ -446,8 +430,8 @@ static int access_mem(unw_addr_space_t __maybe_unused as,
+ 
+ 	offset = addr - start;
+ 	*valp  = *(unw_word_t *)&stack->data[offset];
+-	pr_debug("unwind: access_mem addr %p, val %lx, offset %d\n",
+-		 (void *)addr, (unsigned long)*valp, offset);
++	pr_debug("unwind: access_mem addr %p val %lx, offset %d\n",
++		 (void *) addr, (unsigned long)*valp, offset);
+ 	return 0;
+ }
+ 
+@@ -457,6 +441,7 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
+ {
+ 	struct unwind_info *ui = arg;
+ 	int id, ret;
++	u64 val;
+ 
+ 	/* Don't support write, I suspect we don't need it. */
+ 	if (__write) {
+@@ -473,12 +458,13 @@ static int access_reg(unw_addr_space_t __maybe_unused as,
+ 	if (id < 0)
+ 		return -EINVAL;
+ 
+-	ret = reg_value(valp, &ui->sample->user_regs, id);
++	ret = perf_reg_value(&val, &ui->sample->user_regs, id);
+ 	if (ret) {
+ 		pr_err("unwind: can't read reg %d\n", regnum);
+ 		return ret;
+ 	}
+ 
++	*valp = (unw_word_t) val;
+ 	pr_debug("unwind: reg %d, val %lx\n", regnum, (unsigned long)*valp);
+ 	return 0;
+ }
+@@ -572,7 +558,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 			struct machine *machine, struct thread *thread,
+ 			struct perf_sample *data, int max_stack)
+ {
+-	unw_word_t ip;
++	u64 ip;
+ 	struct unwind_info ui = {
+ 		.sample       = data,
+ 		.thread       = thread,
+@@ -583,7 +569,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ 	if (!data->user_regs.regs)
+ 		return -EINVAL;
+ 
+-	ret = reg_value(&ip, &data->user_regs, PERF_REG_IP);
++	ret = perf_reg_value(&ip, &data->user_regs, PERF_REG_IP);
+ 	if (ret)
+ 		return ret;
  
