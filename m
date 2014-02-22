@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaBVRSp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 12:18:45 -0500
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:60170 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaBVRSj (ORCPT
+	id S1751874AbaBVR2g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 12:28:36 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:52072 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaBVR2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 12:18:39 -0500
-X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Feb 2014 12:18:38 EST
-From: =?koi8-r?B?69XMxdvP1yDhzMXL08XK?= <rndfax@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: sk_buff: why field 'head' contains skb_shared_info?
+	Sat, 22 Feb 2014 12:28:34 -0500
 MIME-Version: 1.0
-Message-Id: <317951393088907@web3h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 22 Feb 2014 21:08:27 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+In-Reply-To: <alpine.DEB.2.02.1402221104440.21251@ionos.tec.linutronix.de>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+	<1388707565-16535-3-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1401222241100.24986@ionos.tec.linutronix.de>
+	<CAE9FiQUo9NGbjiZbMsf2yBFbn=iLJ-jc3QtZ8K6qwVuhmqzq=Q@mail.gmail.com>
+	<alpine.DEB.2.02.1402221104440.21251@ionos.tec.linutronix.de>
+Date: Sat, 22 Feb 2014 09:28:33 -0800
+X-Google-Sender-Auth: YZGYiFA0wBjQHXrRVr2K9TBW6-0
+Message-ID: <CAE9FiQVf2L-FjkXR3WC=0iHNY73D2G4jyMeko4f4DPuxAXTK+Q@mail.gmail.com>
+Subject: Re: [PATCH v5 02/33] genirq: Add irq_alloc_reserved_desc()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subj.
+On Sat, Feb 22, 2014 at 2:08 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> As I said before irq_reserve_irq() is a misnomer and a
+> misconception. Of course this needs to be fixed as well.
+>
+> And you cannot just blindly change it because !SPARSE can use the
+> allocation. We are not creating stupid corner cases just to support
+> your sloppyness. Its not rocket science to do it the right way.
+>
+> That said, it might be worthwhile to get rid of the !SPARSE case
+> completely. That would probably make quite some stuff simpler.
 
-Look at this core function:
-net/core/skbuff.c: __alloc_skb
-...
-        size = SKB_DATA_ALIGN(size);
-        size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
-        data = kmalloc_reserve(size, gfp_mask, node, &pfmemalloc);
-...
-        shinfo = skb_shinfo(skb);
-        memset(shinfo, 0, offsetof(struct skb_shared_info, dataref));
-...
+So we need to make all arches support SPARSE_IRQ at first?
 
-It looks like it was made purposely, but for what?
+Now we have arm, arm64, c6x, metag, powerpc, sh, x86 support SPARSE_IRQ.
 
-Why this question has risen.
-I found for my needs a very nice (for the first look) function <build_skb> from skbuff.c:
->  * build_skb - build a network buffer
->  * @data: data buffer provided by caller
-> ...
->  * Notes :
->  *  Before IO, driver allocates only data buffer where NIC put incoming frame
+The following  are not with SPARSE_IRQ yet:
+alpha, arc, avr32, blackfin, cris, frv, hexagon, m32r, m68k, microblaze,
+mips, mn10300, openrisc, parisc, s390, score, sparc, tile, um,
+unicore32, xtensa.
 
-Everything looks delicious, until this place:
->  *  Driver should add room at head (NET_SKB_PAD) and
->  *  MUST add room at tail (SKB_DATA_ALIGN(skb_shared_info))
+Thanks
 
-And what if NIC is not a regular net_device and it doesn't need sk_buff at all.
-But for virtual ethernet device "Ethernet-over-NIC" sk_buff is crucial.
-So driver for NIC can't just kmalloc(NICs_RCV_BUF_SIZE, ...) for incoming buffers,
-it has to kmalloc(NICs_RCV_BUF_SIZE + <skb_shared_info>, ...) to cover
-attached (if any) to NIC virtual ethernet device needs.
-Or virtual ethernet device has to do netdev_alloc_skb + memcpy,
-which is obviously not so good.
+Yinghai
+
+
+Thanks
+
+Yinghai
