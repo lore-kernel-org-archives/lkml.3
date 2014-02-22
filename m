@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaBVKde (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 05:33:34 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:36133 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaBVKda convert rfc822-to-8bit (ORCPT
+	id S1752754AbaBVKiv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 05:38:51 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46794 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750814AbaBVKit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 05:33:30 -0500
-Subject: Re: [PATCH v5 2/5] ACPI / processor_core: Rework _PDC related stuff to make it more arch-independent
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Content-Type: text/plain; charset=windows-1252
-From: Catalin Marinas <catalin.marinas@arm.com>
-In-Reply-To: <1408521.4TEdKhuRp5@vostro.rjw.lan>
-Date: Sat, 22 Feb 2014 10:33:25 +0000
-Cc: Hanjun Guo <hanjun.guo@linaro.org>, Lan Tianyu <tianyu.lan@intel.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+	Sat, 22 Feb 2014 05:38:49 -0500
+Date: Sat, 22 Feb 2014 10:38:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F980FA86-6705-4A71-956C-EA2DBD787199@arm.com>
-References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org> <3459962.GkY99aHQbc@vostro.rjw.lan> <20140221182424.GA5751@arm.com> <1408521.4TEdKhuRp5@vostro.rjw.lan>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-X-Mailer: Apple Mail (2.1827)
+	<linux-arm-kernel@lists.infradead.org>,
+        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <Will.Deacon@arm.com>, Cyril Chemparathy <cyril@ti.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140222103840.GH21483@n2100.arm.linux.org.uk>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org> <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org> <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 Feb 2014, at 23:35, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Friday, February 21, 2014 06:24:24 PM Catalin Marinas wrote:
->> On Wed, Feb 19, 2014 at 01:50:22AM +0100, Rafael J. Wysocki wrote:
->>> On Wednesday, February 19, 2014 12:23:55 AM Hanjun Guo wrote:
->>>> _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
->>>> rework the code to make it more arch-independent, no functional change
->>>> in this patch.
->>>> 
->>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
->>> 
->>> I've queued up patches [1,3-5/5] from this series for 3.15 (modulo changelog
->>> modifications), but this one should be CCed to the x86 and ia64 maintainers.
->> 
->> Thanks for taking these patches. I would however hold onto patch 3/5 as
->> this is still under discussion. Basically for patches specific to ARM
->> ACPI I would really like to see more acks before being merged as that's
->> a new thing for us.
+On Wed, Feb 19, 2014 at 04:12:54PM +0000, Lorenzo Pieralisi wrote:
+> On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
+> > +/*
+> > + * Snapshot kernel memory and reset the system.
+> > + * After resume, the hibernation snapshot is written out.
+> > + */
+> > +static int notrace __swsusp_arch_save_image(unsigned long unused)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = swsusp_save();
+> > +	if (ret == 0)
+> > +		soft_restart(virt_to_phys(cpu_resume));
 > 
-> OK, I'll drop [3/5] for now, then.
+> By the time the suspend finisher (ie this function) is run, the
+> processor state has been saved and I think that's all you have to do,
+> function can just return after calling swsusp_save(), unless I am missing
+> something.
+> 
+> I do not understand why a soft_restart is required here. On a side note,
+> finisher is called with irqs disabled so, since you added a function for
+> soft restart noirq, it should be used, if needed, but I have to understand
+> why in the first place.
 
-Thanks (it’s only temporary ;)).
+It's required because you can't just return from the finisher.  A normal
+return from the finisher will always be interpreted as an abort rather
+than success (because the state has to be unwound.)
 
-> I'm wondering, though, whose ACKs I should be waiting for before applying those
-> patches?
+This is the only way to get a zero return from cpu_suspend().
 
-Good question ;). In this particular case, there is an ongoing
-discussion between Hanjun and Sudeep. While there isn’t anything
-major, I would like to see some agreement and potentially an Ack from
-the other party involved in the discussion (Sudeep).
+> > +/*
+> > + * The framework loads the hibernation image into a linked list anchored
+> > + * at restore_pblist, for swsusp_arch_resume() to copy back to the proper
+> > + * destinations.
+> > + *
+> > + * To make this work if resume is triggered from initramfs, the
+> > + * pagetables need to be switched to allow writes to kernel mem.
+> 
+> Can you elaborate a bit more on this please ?
+> 
+> > + */
+> > +static void notrace __swsusp_arch_restore_image(void *unused)
+> > +{
+> > +	struct pbe *pbe;
+> > +
+> > +	cpu_switch_mm(idmap_pgd, &init_mm);
+> 
+> Same here, thanks.
+> 
+> > +	for (pbe = restore_pblist; pbe; pbe = pbe->next)
+> > +		copy_page(pbe->orig_address, pbe->address);
+> > +
+> > +	soft_restart_noirq(virt_to_phys(cpu_resume));
+> 
+> This soft_restart is justified so that you resume from the context saved
+> when creating the image.
 
-There are other patches that are not specific to ARM, so it’s
-really your decision. As for the general ARM(64) ACPI case, I don’t
-think we have anyone in charge with deciding what’s correct or not
-(BTW, who are the people active both in the _ARM_ Linux kernel community
-and the ACPI standardisation forum?).
+You need the idmap_pgd in place to call cpu_resume at it's physical
+address.  Other page tables just won't do here.  It's well established
+that this page table must be in place for the resume paths to work.
 
-In the mean-time, I would like to see at least an ack from the arm-soc
-team (Arnd and Olof) or them collecting those ARM-specific patches and
-sending pull request to you. My biggest worry is how the ACPI standard
-is interpreted by vendors and how (non-standard) features get into the 
-Linux kernel.
+So yes, the comments above the function are wrong.  idmap_pgd must be
+in place for cpu_resume() to work.
 
-Anyway, I’ll meet the Linaro guys in a week time and we’ll agree on
-a way forward.
-
-Thanks,
-
-Catalin
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
