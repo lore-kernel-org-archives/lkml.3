@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaBVJiD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 04:38:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaBVJiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 04:38:00 -0500
-Date: Sat, 22 Feb 2014 10:38:43 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Mike Miller <mike.miller@hp.com>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Joshua Morris <josh.h.morris@us.ibm.com>,
-        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, iss_storagedev@hp.com,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 0/9] block: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140222093843.GB27897@dhcp-26-207.brq.redhat.com>
-References: <cover.1392799751.git.agordeev@redhat.com>
- <20140221234613.GE29129@kernel.dk>
+	id S1752540AbaBVKAz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 05:00:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45909 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424AbaBVKAx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 05:00:53 -0500
+Date: Sat, 22 Feb 2014 11:01:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH] [RFC] time: Improve negative offset handling in
+ timekeeping_inject_offset
+In-Reply-To: <CALAqxLUJYT9G2ekEk_BoNNL4T6Pjiq56KR_i87GLnSuyddWS0Q@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402221058010.21251@ionos.tec.linutronix.de>
+References: <1393019430-13200-1-git-send-email-john.stultz@linaro.org> <alpine.DEB.2.02.1402212255590.21251@ionos.tec.linutronix.de> <CALAqxLUJYT9G2ekEk_BoNNL4T6Pjiq56KR_i87GLnSuyddWS0Q@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140221234613.GE29129@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 03:46:13PM -0800, Jens Axboe wrote:
-> On Wed, Feb 19 2014, Alexander Gordeev wrote:
-> > As result of deprecation of MSI-X/MSI enablement functions
-> > pci_enable_msix() and pci_enable_msi_block() all drivers
-> > using these two interfaces need to be updated to use the
-> > new pci_enable_msi_range() and pci_enable_msix_range()
-> > interfaces.
-> 
-> Thanks. Applied 3-4, and 6-9 (didn't get the others).
+On Fri, 21 Feb 2014, John Stultz wrote:
+> But yes, we can just leave it as is, and it is a bit academic. But
 
-Oh, I just realized I posted outdated series, sorry for that :(
-Out of applied patch 4 is not needed and patch 9 needs a rework.
+To be honest, I was mostly arguing due to the academic nature. :)
 
-Should I repost the whole series?
+The important point is that we restrict it to -1e9 < tv_nsec <
+1e9. The signed/unsigned combos are not that interesting as long as
+our internal helpers cope nicely with that.
 
-> -- 
-> Jens Axboe
+Thanks,
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+	tglx
