@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaBVUtv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 15:49:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883AbaBVUtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 15:49:50 -0500
-Date: Sat, 22 Feb 2014 21:49:36 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Jacob Shin <jacob.shin@amd.com>, Jan Beulich <JBeulich@suse.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Stephane Eranian <eranian@google.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
- processor feature names
-Message-ID: <20140222204936.GA2534@pd.tnic>
-References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
- <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
+	id S1752563AbaBVUwW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 15:52:22 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:61042 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115AbaBVUwU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 15:52:20 -0500
+Date: Sat, 22 Feb 2014 15:52:17 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Greg KH <greg@kroah.com>, a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
+Message-ID: <20140222205217.GC16272@mtj.dyndns.org>
+References: <5308E3AE.3040405@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
+In-Reply-To: <5308E3AE.3040405@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 11:57:10AM -0800, Josh Triplett wrote:
+Hello,
 
-...
+On Sat, Feb 22, 2014 at 12:51:42PM -0500, Sasha Levin wrote:
+> While fuzzing with trinity inside a KVM tools guest running the
+> latest -next kernel I've stumbled on the following (now with pretty
+> line numbers!) spew:
 
-> diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
-> index 6ec6bb6..29207f6 100644
-> --- a/arch/x86/boot/cpu.c
-> +++ b/arch/x86/boot/cpu.c
-> @@ -16,7 +16,9 @@
->   */
->  
->  #include "boot.h"
-> +#ifdef CONFIG_X86_FEATURE_NAMES
->  #include "cpustr.h"
-> +#endif
+Heh, that's pretty awesome.
 
-You probably could get rid of this ifdef too by moving it into cpustr.h
-after teaching arch/x86/boot/mkcpustr.c to issue it...
+> [  218.132898] ======================================================
+> [  218.133902] [ INFO: possible circular locking dependency detected ]
+> [  218.134820] 3.14.0-rc3-next-20140221-sasha-00008-g0e660cf-dirty #116 Tainted: G        W
+> [  218.135911] -------------------------------------------------------
+> [  218.136842] trinity-c47/11528 is trying to acquire lock:
+> [  218.137613]  (&rtc->ops_lock){+.+.+.}, at: [<drivers/rtc/interface.c:42>] rtc_read_time+0x2b/0x60
+> [  218.138909]
+> [  218.138909] but task is already holding lock:
+> [  218.139802]  (s_active#20){++++.+}, at: [<fs/kernfs/file.c:99>] kernfs_seq_start+0x34/0xa0
+> [  218.140087]
+> [  218.140087] which lock already depends on the new lock.
+
+The problem is rtc_device_unregister().  It grabs rtc->ops_lock and
+then tries to remove the sysfs files.  Some of those sysfs file
+implementations acquire rtc->ops_lock, so it of course can lead to
+deadlocks.  One can't try to delete a sysfs file which acquires a lock
+while holding the same lock.
+
+Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+tejun
