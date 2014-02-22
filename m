@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaBVSAZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:00:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41064 "EHLO
+	id S1753340AbaBVSAk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:00:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41132 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaBVSAA (ORCPT
+	with ESMTP id S1752360AbaBVSAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:00:00 -0500
-Date: Sat, 22 Feb 2014 09:59:28 -0800
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-5072f2733afe26c354aa9d277cb1544e4b0b3846@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@gmail.com,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de, bp@suse.de,
-        rric@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, namhyung@gmail.com,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de, bp@suse.de,
-        rric@kernel.org
-In-Reply-To: <1391611914-26054-4-git-send-email-bp@alien8.de>
-References: <1391611914-26054-4-git-send-email-bp@alien8.de>
+	Sat, 22 Feb 2014 13:00:35 -0500
+Date: Sat, 22 Feb 2014 10:00:13 -0800
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-5a62257a3ddd1a09cf278eae0697fcbe20897447@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        dave.long@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, dsahern@gmail.com,
+        oleg@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, dave.long@linaro.org,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20140206053209.29635.81043.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+References: <20140206053209.29635.81043.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Drop prefetch.h
-Git-Commit-ID: 5072f2733afe26c354aa9d277cb1544e4b0b3846
+Subject: [tip:perf/core] perf probe: Replace line_list with intlist
+Git-Commit-ID: 5a62257a3ddd1a09cf278eae0697fcbe20897447
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,67 +37,343 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5072f2733afe26c354aa9d277cb1544e4b0b3846
-Gitweb:     http://git.kernel.org/tip/5072f2733afe26c354aa9d277cb1544e4b0b3846
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Wed, 5 Feb 2014 15:51:54 +0100
+Commit-ID:  5a62257a3ddd1a09cf278eae0697fcbe20897447
+Gitweb:     http://git.kernel.org/tip/5a62257a3ddd1a09cf278eae0697fcbe20897447
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Thu, 6 Feb 2014 05:32:09 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 18 Feb 2014 09:34:49 -0300
+CommitDate: Tue, 18 Feb 2014 09:34:50 -0300
 
-perf tools: Drop prefetch.h
+perf probe: Replace line_list with intlist
 
-This was needed at the time before e66eed651fd1 ("list: remove
-prefetching from regular list iterators") where the list iterators did
-prefetch elements. This turned out to be counter-productive and hurt
-performance and they were removed. Which makes the prefetch.h header
-unused so drop it.
+Replace line_list (struct line_node) with intlist for reducing similar
+codes.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <rric@kernel.org>
-Link: http://lkml.kernel.org/r/1391611914-26054-4-git-send-email-bp@alien8.de
+Cc: "David A. Long" <dave.long@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20140206053209.29635.81043.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf                 | 1 -
- tools/perf/util/include/linux/list.h     | 1 -
- tools/perf/util/include/linux/prefetch.h | 6 ------
- 3 files changed, 8 deletions(-)
+ tools/perf/builtin-probe.c     | 12 ++++---
+ tools/perf/util/probe-event.c  | 22 ++++++------
+ tools/perf/util/probe-event.h  | 12 ++-----
+ tools/perf/util/probe-finder.c | 81 +++++++-----------------------------------
+ tools/perf/util/probe-finder.h |  3 +-
+ 5 files changed, 35 insertions(+), 95 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 496871a..77b153f 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -219,7 +219,6 @@ LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
- LIB_H += util/include/linux/export.h
- LIB_H += util/include/linux/poison.h
--LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
- LIB_H += util/include/linux/rbtree_augmented.h
- LIB_H += util/include/linux/string.h
-diff --git a/tools/perf/util/include/linux/list.h b/tools/perf/util/include/linux/list.h
-index 1d928a0..bfe0a2a 100644
---- a/tools/perf/util/include/linux/list.h
-+++ b/tools/perf/util/include/linux/list.h
-@@ -1,5 +1,4 @@
- #include <linux/kernel.h>
--#include <linux/prefetch.h>
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 7894888..cdcd4eb 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -268,9 +268,9 @@ static int opt_set_filter(const struct option *opt __maybe_unused,
+ 	return 0;
+ }
  
- #include "../../../../include/linux/list.h"
+-static void init_params(void)
++static int init_params(void)
+ {
+-	line_range__init(&params.line_range);
++	return line_range__init(&params.line_range);
+ }
  
-diff --git a/tools/perf/util/include/linux/prefetch.h b/tools/perf/util/include/linux/prefetch.h
-deleted file mode 100644
-index 7841e48..0000000
---- a/tools/perf/util/include/linux/prefetch.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef PERF_LINUX_PREFETCH_H
--#define PERF_LINUX_PREFETCH_H
+ static void cleanup_params(void)
+@@ -515,9 +515,11 @@ int cmd_probe(int argc, const char **argv, const char *prefix)
+ {
+ 	int ret;
+ 
+-	init_params();
+-	ret = __cmd_probe(argc, argv, prefix);
+-	cleanup_params();
++	ret = init_params();
++	if (!ret) {
++		ret = __cmd_probe(argc, argv, prefix);
++		cleanup_params();
++	}
+ 
+ 	return ret;
+ }
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index a4649e7..f70fd08 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -561,7 +561,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
+ static int __show_line_range(struct line_range *lr, const char *module)
+ {
+ 	int l = 1;
+-	struct line_node *ln;
++	struct int_node *ln;
+ 	struct debuginfo *dinfo;
+ 	FILE *fp;
+ 	int ret;
+@@ -614,8 +614,8 @@ static int __show_line_range(struct line_range *lr, const char *module)
+ 			goto end;
+ 	}
+ 
+-	list_for_each_entry(ln, &lr->line_list, list) {
+-		for (; ln->line > l; l++) {
++	intlist__for_each(ln, lr->line_list) {
++		for (; ln->i > l; l++) {
+ 			ret = show_one_line(fp, l - lr->offset);
+ 			if (ret < 0)
+ 				goto end;
+@@ -775,24 +775,22 @@ int show_available_vars(struct perf_probe_event *pevs __maybe_unused,
+ 
+ void line_range__clear(struct line_range *lr)
+ {
+-	struct line_node *ln;
 -
--static inline void prefetch(void *a __attribute__((unused))) { }
+ 	free(lr->function);
+ 	free(lr->file);
+ 	free(lr->path);
+ 	free(lr->comp_dir);
+-	while (!list_empty(&lr->line_list)) {
+-		ln = list_first_entry(&lr->line_list, struct line_node, list);
+-		list_del(&ln->list);
+-		free(ln);
+-	}
++	intlist__delete(lr->line_list);
+ 	memset(lr, 0, sizeof(*lr));
+ }
+ 
+-void line_range__init(struct line_range *lr)
++int line_range__init(struct line_range *lr)
+ {
+ 	memset(lr, 0, sizeof(*lr));
+-	INIT_LIST_HEAD(&lr->line_list);
++	lr->line_list = intlist__new(NULL);
++	if (!lr->line_list)
++		return -ENOMEM;
++	else
++		return 0;
+ }
+ 
+ static int parse_line_num(char **ptr, int *val, const char *what)
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index fcaf727..776c934 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -2,6 +2,7 @@
+ #define _PROBE_EVENT_H
+ 
+ #include <stdbool.h>
++#include "intlist.h"
+ #include "strlist.h"
+ #include "strfilter.h"
+ 
+@@ -76,13 +77,6 @@ struct perf_probe_event {
+ 	struct perf_probe_arg	*args;	/* Arguments */
+ };
+ 
 -
--#endif
+-/* Line number container */
+-struct line_node {
+-	struct list_head	list;
+-	int			line;
+-};
+-
+ /* Line range */
+ struct line_range {
+ 	char			*file;		/* File name */
+@@ -92,7 +86,7 @@ struct line_range {
+ 	int			offset;		/* Start line offset */
+ 	char			*path;		/* Real path name */
+ 	char			*comp_dir;	/* Compile directory */
+-	struct list_head	line_list;	/* Visible lines */
++	struct intlist		*line_list;	/* Visible lines */
+ };
+ 
+ /* List of variables */
+@@ -124,7 +118,7 @@ extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
+ extern void line_range__clear(struct line_range *lr);
+ 
+ /* Initialize line range */
+-extern void line_range__init(struct line_range *lr);
++extern int line_range__init(struct line_range *lr);
+ 
+ /* Internal use: Return kernel/module path */
+ extern const char *kernel_get_module_path(const char *module);
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 061edb1..e5e589f 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -35,6 +35,7 @@
+ #include <linux/bitops.h>
+ #include "event.h"
+ #include "debug.h"
++#include "intlist.h"
+ #include "util.h"
+ #include "symbol.h"
+ #include "probe-finder.h"
+@@ -42,65 +43,6 @@
+ /* Kprobe tracer basic type is up to u64 */
+ #define MAX_BASIC_TYPE_BITS	64
+ 
+-/* Line number list operations */
+-
+-/* Add a line to line number list */
+-static int line_list__add_line(struct list_head *head, int line)
+-{
+-	struct line_node *ln;
+-	struct list_head *p;
+-
+-	/* Reverse search, because new line will be the last one */
+-	list_for_each_entry_reverse(ln, head, list) {
+-		if (ln->line < line) {
+-			p = &ln->list;
+-			goto found;
+-		} else if (ln->line == line)	/* Already exist */
+-			return 1;
+-	}
+-	/* List is empty, or the smallest entry */
+-	p = head;
+-found:
+-	pr_debug("line list: add a line %u\n", line);
+-	ln = zalloc(sizeof(struct line_node));
+-	if (ln == NULL)
+-		return -ENOMEM;
+-	ln->line = line;
+-	INIT_LIST_HEAD(&ln->list);
+-	list_add(&ln->list, p);
+-	return 0;
+-}
+-
+-/* Check if the line in line number list */
+-static int line_list__has_line(struct list_head *head, int line)
+-{
+-	struct line_node *ln;
+-
+-	/* Reverse search, because new line will be the last one */
+-	list_for_each_entry(ln, head, list)
+-		if (ln->line == line)
+-			return 1;
+-
+-	return 0;
+-}
+-
+-/* Init line number list */
+-static void line_list__init(struct list_head *head)
+-{
+-	INIT_LIST_HEAD(head);
+-}
+-
+-/* Free line number list */
+-static void line_list__free(struct list_head *head)
+-{
+-	struct line_node *ln;
+-	while (!list_empty(head)) {
+-		ln = list_first_entry(head, struct line_node, list);
+-		list_del(&ln->list);
+-		free(ln);
+-	}
+-}
+-
+ /* Dwarf FL wrappers */
+ static char *debuginfo_path;	/* Currently dummy */
+ 
+@@ -880,7 +822,7 @@ static int find_probe_point_by_line(struct probe_finder *pf)
+ }
+ 
+ /* Find lines which match lazy pattern */
+-static int find_lazy_match_lines(struct list_head *head,
++static int find_lazy_match_lines(struct intlist *list,
+ 				 const char *fname, const char *pat)
+ {
+ 	FILE *fp;
+@@ -901,7 +843,7 @@ static int find_lazy_match_lines(struct list_head *head,
+ 			line[len - 1] = '\0';
+ 
+ 		if (strlazymatch(line, pat)) {
+-			line_list__add_line(head, linenum);
++			intlist__add(list, linenum);
+ 			count++;
+ 		}
+ 		linenum++;
+@@ -924,7 +866,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
+ 	Dwarf_Die *sc_die, die_mem;
+ 	int ret;
+ 
+-	if (!line_list__has_line(&pf->lcache, lineno) ||
++	if (!intlist__has_entry(pf->lcache, lineno) ||
+ 	    strtailcmp(fname, pf->fname) != 0)
+ 		return 0;
+ 
+@@ -952,9 +894,9 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ {
+ 	int ret = 0;
+ 
+-	if (list_empty(&pf->lcache)) {
++	if (intlist__empty(pf->lcache)) {
+ 		/* Matching lazy line pattern */
+-		ret = find_lazy_match_lines(&pf->lcache, pf->fname,
++		ret = find_lazy_match_lines(pf->lcache, pf->fname,
+ 					    pf->pev->point.lazy_line);
+ 		if (ret <= 0)
+ 			return ret;
+@@ -1096,7 +1038,9 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
+ #endif
+ 
+ 	off = 0;
+-	line_list__init(&pf->lcache);
++	pf->lcache = intlist__new(NULL);
++	if (!pf->lcache)
++		return -ENOMEM;
+ 
+ 	/* Fastpath: lookup by function name from .debug_pubnames section */
+ 	if (pp->function) {
+@@ -1149,7 +1093,8 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
+ 	}
+ 
+ found:
+-	line_list__free(&pf->lcache);
++	intlist__delete(pf->lcache);
++	pf->lcache = NULL;
+ 
+ 	return ret;
+ }
+@@ -1537,7 +1482,7 @@ static int line_range_add_line(const char *src, unsigned int lineno,
+ 		if (lr->path == NULL)
+ 			return -ENOMEM;
+ 	}
+-	return line_list__add_line(&lr->line_list, lineno);
++	return intlist__add(lr->line_list, lineno);
+ }
+ 
+ static int line_range_walk_cb(const char *fname, int lineno,
+@@ -1565,7 +1510,7 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 
+ 	/* Update status */
+ 	if (ret >= 0)
+-		if (!list_empty(&lf->lr->line_list))
++		if (!intlist__empty(lf->lr->line_list))
+ 			ret = lf->found = 1;
+ 		else
+ 			ret = 0;	/* Lines are not found */
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index ffc33cd..592c4da 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -3,6 +3,7 @@
+ 
+ #include <stdbool.h>
+ #include "util.h"
++#include "intlist.h"
+ #include "probe-event.h"
+ 
+ #define MAX_PROBE_BUFFER	1024
+@@ -66,7 +67,7 @@ struct probe_finder {
+ 	const char		*fname;		/* Real file name */
+ 	Dwarf_Die		cu_die;		/* Current CU */
+ 	Dwarf_Die		sp_die;
+-	struct list_head	lcache;		/* Line cache for lazy match */
++	struct intlist		*lcache;	/* Line cache for lazy match */
+ 
+ 	/* For variable searching */
+ #if _ELFUTILS_PREREQ(0, 142)
