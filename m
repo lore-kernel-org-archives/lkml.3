@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaBVSFM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:05:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41436 "EHLO
+	id S1753777AbaBVSD3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:03:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41333 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804AbaBVSFG (ORCPT
+	with ESMTP id S1753751AbaBVSD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:05:06 -0500
-Date: Sat, 22 Feb 2014 10:04:31 -0800
-From: tip-bot for Morten Rasmussen <tipbot@zytor.com>
-Message-ID: <tip-de91b9cb97fe68cb6ef0cfe9bee09d015c152af8@git.kernel.org>
+	Sat, 22 Feb 2014 13:03:27 -0500
+Date: Sat, 22 Feb 2014 10:02:50 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-c365c292d05908c6ea6f32708f331e21033fe71d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        morten.rasmussen@arm.com, peterz@infradead.org, tglx@linutronix.de
+        peterz@infradead.org, raistlin@linux.it, bigeasy@linutronix.de,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1392732864-10927-1-git-send-email-morten.rasmussen@arm.com>
-References: <1392732864-10927-1-git-send-email-morten.rasmussen@arm.com>
+        peterz@infradead.org, tglx@linutronix.de, bigeasy@linutronix.de,
+        raistlin@linux.it
+In-Reply-To: <1391803122-4425-7-git-send-email-bigeasy@linutronix.de>
+References: <1391803122-4425-7-git-send-email-bigeasy@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix select_task_rq_fair()
-  description comments
-Git-Commit-ID: de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
+Subject: [tip:sched/core] sched: Consider pi boosting in setscheduler()
+Git-Commit-ID: c365c292d05908c6ea6f32708f331e21033fe71d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,47 +33,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
-Gitweb:     http://git.kernel.org/tip/de91b9cb97fe68cb6ef0cfe9bee09d015c152af8
-Author:     Morten Rasmussen <morten.rasmussen@arm.com>
-AuthorDate: Tue, 18 Feb 2014 14:14:24 +0000
+Commit-ID:  c365c292d05908c6ea6f32708f331e21033fe71d
+Gitweb:     http://git.kernel.org/tip/c365c292d05908c6ea6f32708f331e21033fe71d
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Fri, 7 Feb 2014 20:58:42 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 22 Feb 2014 18:17:04 +0100
+CommitDate: Sat, 22 Feb 2014 18:10:04 +0100
 
-sched: Fix select_task_rq_fair() description comments
+sched: Consider pi boosting in setscheduler()
 
-Brings select_task_rq_fair() description comments up-to-date.
+If a PI boosted task policy/priority is modified by a setscheduler()
+call we unconditionally dequeue and requeue the task if it is on the
+runqueue even if the new priority is lower than the current effective
+boosted priority. This can result in undesired reordering of the
+priority bucket list.
 
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1392732864-10927-1-git-send-email-morten.rasmussen@arm.com
+If the new priority is less or equal than the current effective we
+just store the new parameters in the task struct and leave the
+scheduler class and the runqueue untouched. This is handled when the
+task deboosts itself. Only if the new priority is higher than the
+effective boosted priority we apply the change immediately.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ Rebase ontop of v3.14-rc1. ]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Dario Faggioli <raistlin@linux.it>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1391803122-4425-7-git-send-email-bigeasy@linutronix.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ include/linux/sched/rt.h |  7 +++++++
+ kernel/locking/rtmutex.c | 12 ++++++++++++
+ kernel/sched/core.c      | 41 ++++++++++++++++++++++++++++++-----------
+ 3 files changed, 49 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e884e45..7982faf 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4397,13 +4397,14 @@ done:
+diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
+index f7453d4..6341f5b 100644
+--- a/include/linux/sched/rt.h
++++ b/include/linux/sched/rt.h
+@@ -18,6 +18,7 @@ static inline int rt_task(struct task_struct *p)
+ #ifdef CONFIG_RT_MUTEXES
+ extern int rt_mutex_getprio(struct task_struct *p);
+ extern void rt_mutex_setprio(struct task_struct *p, int prio);
++extern int rt_mutex_check_prio(struct task_struct *task, int newprio);
+ extern struct task_struct *rt_mutex_get_top_task(struct task_struct *task);
+ extern void rt_mutex_adjust_pi(struct task_struct *p);
+ static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
+@@ -29,6 +30,12 @@ static inline int rt_mutex_getprio(struct task_struct *p)
+ {
+ 	return p->normal_prio;
+ }
++
++static inline int rt_mutex_check_prio(struct task_struct *task, int newprio)
++{
++	return 0;
++}
++
+ static inline struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
+ {
+ 	return NULL;
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index 2e960a2..aa4dff0 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -213,6 +213,18 @@ struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
  }
  
  /*
-- * sched_balance_self: balance the current task (running on cpu) in domains
-- * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-- * SD_BALANCE_EXEC.
-+ * select_task_rq_fair: Select target runqueue for the waking task in domains
-+ * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
-+ * SD_BALANCE_FORK, or SD_BALANCE_EXEC.
++ * Called by sched_setscheduler() to check whether the priority change
++ * is overruled by a possible priority boosting.
++ */
++int rt_mutex_check_prio(struct task_struct *task, int newprio)
++{
++	if (!task_has_pi_waiters(task))
++		return 0;
++
++	return task_top_pi_waiter(task)->task->prio <= newprio;
++}
++
++/*
+  * Adjust the priority of a task, after its pi_waiters got modified.
   *
-- * Balance, ie. select the least loaded group.
-+ * Balances load by selecting the idlest cpu in the idlest group, or under
-+ * certain conditions an idle sibling cpu if the domain has SD_WAKE_AFFINE set.
+  * This can be both boosting and unboosting. task->pi_lock must be held.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9c2fcbf..003263b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2902,7 +2902,8 @@ EXPORT_SYMBOL(sleep_on_timeout);
+  * This function changes the 'effective' priority of a task. It does
+  * not touch ->normal_prio like __setscheduler().
   *
-- * Returns the target CPU number, or the same CPU if no balancing is needed.
-+ * Returns the target cpu number.
-  *
-  * preempt must be disabled.
+- * Used by the rt_mutex code to implement priority inheritance logic.
++ * Used by the rt_mutex code to implement priority inheritance
++ * logic. Call site only calls if the priority of the task changed.
   */
+ void rt_mutex_setprio(struct task_struct *p, int prio)
+ {
+@@ -3171,9 +3172,8 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
+ 	dl_se->dl_new = 1;
+ }
+ 
+-/* Actually do priority change: must hold pi & rq lock. */
+-static void __setscheduler(struct rq *rq, struct task_struct *p,
+-			   const struct sched_attr *attr)
++static void __setscheduler_params(struct task_struct *p,
++		const struct sched_attr *attr)
+ {
+ 	int policy = attr->sched_policy;
+ 
+@@ -3193,9 +3193,14 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
+ 	 * getparam()/getattr() don't report silly values for !rt tasks.
+ 	 */
+ 	p->rt_priority = attr->sched_priority;
++	set_load_weight(p);
++}
+ 
+-	p->normal_prio = normal_prio(p);
+-	p->prio = rt_mutex_getprio(p);
++/* Actually do priority change: must hold pi & rq lock. */
++static void __setscheduler(struct rq *rq, struct task_struct *p,
++			   const struct sched_attr *attr)
++{
++	__setscheduler_params(p, attr);
+ 
+ 	if (dl_prio(p->prio))
+ 		p->sched_class = &dl_sched_class;
+@@ -3203,8 +3208,6 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
+ 		p->sched_class = &rt_sched_class;
+ 	else
+ 		p->sched_class = &fair_sched_class;
+-
+-	set_load_weight(p);
+ }
+ 
+ static void
+@@ -3257,6 +3260,7 @@ static int __sched_setscheduler(struct task_struct *p,
+ 				const struct sched_attr *attr,
+ 				bool user)
+ {
++	int newprio = MAX_RT_PRIO - 1 - attr->sched_priority;
+ 	int retval, oldprio, oldpolicy = -1, on_rq, running;
+ 	int policy = attr->sched_policy;
+ 	unsigned long flags;
+@@ -3427,6 +3431,24 @@ change:
+ 		return -EBUSY;
+ 	}
+ 
++	p->sched_reset_on_fork = reset_on_fork;
++	oldprio = p->prio;
++
++	/*
++	 * Special case for priority boosted tasks.
++	 *
++	 * If the new priority is lower or equal (user space view)
++	 * than the current (boosted) priority, we just store the new
++	 * normal parameters and do not touch the scheduler class and
++	 * the runqueue. This will be done when the task deboost
++	 * itself.
++	 */
++	if (rt_mutex_check_prio(p, newprio)) {
++		__setscheduler_params(p, attr);
++		task_rq_unlock(rq, p, &flags);
++		return 0;
++	}
++
+ 	on_rq = p->on_rq;
+ 	running = task_current(rq, p);
+ 	if (on_rq)
+@@ -3434,9 +3456,6 @@ change:
+ 	if (running)
+ 		p->sched_class->put_prev_task(rq, p);
+ 
+-	p->sched_reset_on_fork = reset_on_fork;
+-
+-	oldprio = p->prio;
+ 	prev_class = p->sched_class;
+ 	__setscheduler(rq, p, attr);
+ 
