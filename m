@@ -1,326 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaBVTUO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 14:20:14 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:42688 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaBVTUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 14:20:12 -0500
-Date: Sat, 22 Feb 2014 20:20:06 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20140222192006.GA20769@gmail.com>
+	id S1752665AbaBVTUf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 14:20:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42176 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929AbaBVTUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 14:20:34 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <33fa63a2b441f81f2ddb3ee2edff4deda60e50ac.1393096111.git.josh@joshtriplett.org>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org> <33fa63a2b441f81f2ddb3ee2edff4deda60e50ac.1393096111.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 2/2] x86: Support compiling out human-friendly processor feature names
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 22 Feb 2014 11:19:18 -0800
+To: Josh Triplett <josh@joshtriplett.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Qiaowei Ren <qiaowei.ren@intel.com>, Rob Landley <rob@landley.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Message-ID: <6879c5c0-0e05-4672-9b3a-7ef34b444139@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Also, for the numeric message at least please show it in word:bit format.
 
-Please pull the latest sched-urgent-for-linus git tree from:
+On February 22, 2014 11:09:30 AM PST, Josh Triplett <josh@joshtriplett.org> wrote:
+>The table mapping CPUID bits to human-readable strings takes up a
+>non-trivial amount of space, and only exists to support /proc/cpuinfo
+>and a couple of kernel messages.  Since programs depend on the format
+>of
+>/proc/cpuinfo, force inclusion of the table when building with /proc
+>support; otherwise, support omitting that table to save space, in which
+>case the kernel messages will print features numerically instead.
+>
+>In addition to saving 1408 bytes out of vmlinux, this also saves 1373
+>bytes out of the uncompressed setup code, which contributes directly to
+>the size of bzImage.
+>
+>Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+>---
+> arch/x86/Kconfig                  | 12 +++++++
+> arch/x86/boot/Makefile            |  5 ++-
+>arch/x86/boot/cpu.c               | 68
+>+++++++++++++++++++++++----------------
+> arch/x86/include/asm/cpufeature.h | 13 ++++++++
+> arch/x86/kernel/cpu/Makefile      |  5 ++-
+> arch/x86/kernel/cpu/common.c      |  4 +--
+> 6 files changed, 76 insertions(+), 31 deletions(-)
+>
+>diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>index 0af5250..4dfdbdc 100644
+>--- a/arch/x86/Kconfig
+>+++ b/arch/x86/Kconfig
+>@@ -127,6 +127,7 @@ config X86
+> 	select HAVE_DEBUG_STACKOVERFLOW
+> 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+> 	select HAVE_CC_STACKPROTECTOR
+>+	select X86_FEATURE_NAMES if PROC_FS
+> 
+> config INSTRUCTION_DECODER
+> 	def_bool y
+>@@ -304,6 +305,17 @@ config SMP
+> 
+> 	  If you don't know what to do here, say N.
+> 
+>+config X86_FEATURE_NAMES
+>+	bool "Processor feature human-readable names"
+>+	default y
+>+	---help---
+>+	  This option compiles in a table of x86 feature bits and
+>corresponding
+>+	  names.  This is required to support /proc/cpuinfo and a few kernel
+>+	  messages.  You can disable this to save space, at the expense of
+>+	  making those few kernel messages show numeric feature bits instead.
+>+
+>+	  If in doubt, say Y.
+>+
+> config X86_X2APIC
+> 	bool "Support x2apic"
+> 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+>diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+>index 878df7e..ca6f7ed 100644
+>--- a/arch/x86/boot/Makefile
+>+++ b/arch/x86/boot/Makefile
+>@@ -35,7 +35,7 @@ setup-y		+= video-vesa.o
+> setup-y		+= video-bios.o
+> 
+> targets		+= $(setup-y)
+>-hostprogs-y	:= mkcpustr tools/build
+>+hostprogs-y	:= tools/build
+> 
+> HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
+> 		    -include include/generated/autoconf.h \
+>@@ -43,11 +43,14 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
+> 
+> $(obj)/cpu.o: $(obj)/cpustr.h
+> 
+>+ifdef CONFIG_X86_FEATURE_NAMES
+>+hostprogs-y += mkcpustr
+> quiet_cmd_cpustr = CPUSTR  $@
+>       cmd_cpustr = $(obj)/mkcpustr > $@
+> targets		+= cpustr.h
+> $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+> 	$(call if_changed,cpustr)
+>+endif
+> 
+>#
+>---------------------------------------------------------------------------
+> 
+>diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
+>index 6ec6bb6..29207f6 100644
+>--- a/arch/x86/boot/cpu.c
+>+++ b/arch/x86/boot/cpu.c
+>@@ -16,7 +16,9 @@
+>  */
+> 
+> #include "boot.h"
+>+#ifdef CONFIG_X86_FEATURE_NAMES
+> #include "cpustr.h"
+>+#endif
+> 
+> static char *cpu_name(int level)
+> {
+>@@ -32,11 +34,48 @@ static char *cpu_name(int level)
+> 	}
+> }
+> 
+>+static void show_cap_strs(u32 *err_flags)
+>+{
+>+	int i, j;
+>+#ifdef CONFIG_X86_FEATURE_NAMES
+>+	const unsigned char *msg_strs = (const unsigned char *)x86_cap_strs;
+>+	for (i = 0; i < NCAPINTS; i++) {
+>+		u32 e = err_flags[i];
+>+		for (j = 0; j < 32; j++) {
+>+			if (msg_strs[0] < i ||
+>+			    (msg_strs[0] == i && msg_strs[1] < j)) {
+>+				/* Skip to the next string */
+>+				msg_strs += 2;
+>+				while (*msg_strs++)
+>+					;
+>+			}
+>+			if (e & 1) {
+>+				if (msg_strs[0] == i &&
+>+				    msg_strs[1] == j &&
+>+				    msg_strs[2])
+>+					printf("%s ", msg_strs+2);
+>+				else
+>+					printf("%d:%d ", i, j);
+>+			}
+>+			e >>= 1;
+>+		}
+>+	}
+>+#else
+>+	for (i = 0; i < NCAPINTS; i++) {
+>+		u32 e = err_flags[i];
+>+		for (j = 0; j < 32; j++) {
+>+			if (e & 1)
+>+				printf("%d:%d ", i, j);
+>+			e >>= 1;
+>+		}
+>+	}
+>+#endif
+>+}
+>+
+> int validate_cpu(void)
+> {
+> 	u32 *err_flags;
+> 	int cpu_level, req_level;
+>-	const unsigned char *msg_strs;
+> 
+> 	check_cpu(&cpu_level, &req_level, &err_flags);
+> 
+>@@ -49,34 +88,9 @@ int validate_cpu(void)
+> 	}
+> 
+> 	if (err_flags) {
+>-		int i, j;
+> 		puts("This kernel requires the following features "
+> 		     "not present on the CPU:\n");
+>-
+>-		msg_strs = (const unsigned char *)x86_cap_strs;
+>-
+>-		for (i = 0; i < NCAPINTS; i++) {
+>-			u32 e = err_flags[i];
+>-
+>-			for (j = 0; j < 32; j++) {
+>-				if (msg_strs[0] < i ||
+>-				    (msg_strs[0] == i && msg_strs[1] < j)) {
+>-					/* Skip to the next string */
+>-					msg_strs += 2;
+>-					while (*msg_strs++)
+>-						;
+>-				}
+>-				if (e & 1) {
+>-					if (msg_strs[0] == i &&
+>-					    msg_strs[1] == j &&
+>-					    msg_strs[2])
+>-						printf("%s ", msg_strs+2);
+>-					else
+>-						printf("%d:%d ", i, j);
+>-				}
+>-				e >>= 1;
+>-			}
+>-		}
+>+		show_cap_strs(err_flags);
+> 		putchar('\n');
+> 		return -1;
+> 	} else {
+>diff --git a/arch/x86/include/asm/cpufeature.h
+>b/arch/x86/include/asm/cpufeature.h
+>index e099f95..af6d7d5 100644
+>--- a/arch/x86/include/asm/cpufeature.h
+>+++ b/arch/x86/include/asm/cpufeature.h
+>@@ -237,8 +237,21 @@
+> #include <asm/asm.h>
+> #include <linux/bitops.h>
+> 
+>+#ifdef CONFIG_X86_FEATURE_NAMES
+> extern const char * const x86_cap_flags[NCAPINTS*32];
+> extern const char * const x86_power_flags[32];
+>+#define X86_CAP_FMT "%s"
+>+static inline const char *x86_cap_flag(u32 flag)
+>+{
+>+	return x86_cap_flags[flag];
+>+}
+>+#else
+>+#define X86_CAP_FMT "%x"
+>+static inline u32 x86_cap_flag(u32 flag)
+>+{
+>+	return flag;
+>+}
+>+#endif
+> 
+> #define test_cpu_cap(c, bit)						\
+> 	 test_bit(bit, (unsigned long *)((c)->x86_capability))
+>diff --git a/arch/x86/kernel/cpu/Makefile
+>b/arch/x86/kernel/cpu/Makefile
+>index 64038d8..77dcab2 100644
+>--- a/arch/x86/kernel/cpu/Makefile
+>+++ b/arch/x86/kernel/cpu/Makefile
+>@@ -13,11 +13,12 @@ nostackp := $(call cc-option, -fno-stack-protector)
+> CFLAGS_common.o		:= $(nostackp)
+> 
+> obj-y			:= intel_cacheinfo.o scattered.o topology.o
+>-obj-y			+= capflags.o powerflags.o common.o
+>+obj-y			+= common.o
+> obj-y			+= rdrand.o
+> obj-y			+= match.o
+> 
+> obj-$(CONFIG_PROC_FS)	+= proc.o
+>+obj-$(CONFIG_X86_FEATURE_NAMES) += capflags.o powerflags.o
+> 
+> obj-$(CONFIG_X86_32)	+= bugs.o
+> obj-$(CONFIG_X86_64)	+= bugs_64.o
+>@@ -50,6 +51,7 @@ obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o
+>perf_event_amd_ibs.o
+> 
+> obj-$(CONFIG_HYPERVISOR_GUEST)		+= vmware.o hypervisor.o mshyperv.o
+> 
+>+ifdef CONFIG_X86_FEATURE_NAMES
+> quiet_cmd_mkcapflags = MKCAP   $@
+> cmd_mkcapflags = $(CONFIG_SHELL) $(srctree)/$(src)/mkcapflags.sh $< $@
+> 
+>@@ -58,3 +60,4 @@ cpufeature = $(src)/../../include/asm/cpufeature.h
+> targets += capflags.c
+> $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
+> 	$(call if_changed,mkcapflags)
+>+endif
+>diff --git a/arch/x86/kernel/cpu/common.c
+>b/arch/x86/kernel/cpu/common.c
+>index 8e28bf2..3991a81 100644
+>--- a/arch/x86/kernel/cpu/common.c
+>+++ b/arch/x86/kernel/cpu/common.c
+>@@ -336,8 +336,8 @@ static void filter_cpuid_features(struct
+>cpuinfo_x86 *c, bool warn)
+> 			continue;
+> 
+> 		printk(KERN_WARNING
+>-		       "CPU: CPU feature %s disabled, no CPUID level 0x%x\n",
+>-				x86_cap_flags[df->feature], df->level);
+>+		       "CPU: CPU feature " X86_CAP_FMT " disabled, no CPUID level
+>0x%x\n",
+>+				x86_cap_flag(df->feature), df->level);
+> 	}
+> }
+> 
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
-
-   # HEAD: 995b9ea440862def83e8fcb1b498e68f93d4af59 sched/deadline: Remove useless dl_nr_total
-
-Misc fixlets: a fair number of them resulting from the new 
-SCHED_DEADLINE code.
-
-Sorry about the weekend pull request ... :-/
-
- Thanks,
-
-	Ingo
-
------------------->
-Boris Ostrovsky (1):
-      sched/deadline: Test for CPU's presence explicitly
-
-Juri Lelli (3):
-      sched/deadline: Fix bad accounting of nr_running
-      sched/core: Fix sched_rt_global_validate
-      sched/core: Make dl_b->lock IRQ safe
-
-Kirill Tkhai (1):
-      sched/deadline: Remove useless dl_nr_total
-
-Peter Zijlstra (1):
-      sched: Add 'flags' argument to sched_{set,get}attr() syscalls
-
-Rik van Riel (1):
-      sched,numa: add cond_resched to task_numa_work
-
-Steven Rostedt (1):
-      sched/deadline: Fix overflow to handle period==0 and deadline!=0
-
-Vegard Nossum (1):
-      sched: Fix information leak in sys_sched_getattr()
-
-
- include/linux/syscalls.h   |  6 ++++--
- kernel/sched/core.c        | 28 ++++++++++++++++------------
- kernel/sched/cpudeadline.c |  6 +++---
- kernel/sched/deadline.c    | 10 +++-------
- kernel/sched/fair.c        |  2 ++
- kernel/sched/sched.h       |  1 -
- 6 files changed, 28 insertions(+), 25 deletions(-)
-
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 40ed9e9..a747a77 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -281,13 +281,15 @@ asmlinkage long sys_sched_setscheduler(pid_t pid, int policy,
- asmlinkage long sys_sched_setparam(pid_t pid,
- 					struct sched_param __user *param);
- asmlinkage long sys_sched_setattr(pid_t pid,
--					struct sched_attr __user *attr);
-+					struct sched_attr __user *attr,
-+					unsigned int flags);
- asmlinkage long sys_sched_getscheduler(pid_t pid);
- asmlinkage long sys_sched_getparam(pid_t pid,
- 					struct sched_param __user *param);
- asmlinkage long sys_sched_getattr(pid_t pid,
- 					struct sched_attr __user *attr,
--					unsigned int size);
-+					unsigned int size,
-+					unsigned int flags);
- asmlinkage long sys_sched_setaffinity(pid_t pid, unsigned int len,
- 					unsigned long __user *user_mask_ptr);
- asmlinkage long sys_sched_getaffinity(pid_t pid, unsigned int len,
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..6edbef2 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1952,7 +1952,7 @@ static int dl_overflow(struct task_struct *p, int policy,
- {
- 
- 	struct dl_bw *dl_b = dl_bw_of(task_cpu(p));
--	u64 period = attr->sched_period;
-+	u64 period = attr->sched_period ?: attr->sched_deadline;
- 	u64 runtime = attr->sched_runtime;
- 	u64 new_bw = dl_policy(policy) ? to_ratio(period, runtime) : 0;
- 	int cpus, err = -1;
-@@ -3661,13 +3661,14 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
-  * @pid: the pid in question.
-  * @uattr: structure containing the extended parameters.
-  */
--SYSCALL_DEFINE2(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr)
-+SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
-+			       unsigned int, flags)
- {
- 	struct sched_attr attr;
- 	struct task_struct *p;
- 	int retval;
- 
--	if (!uattr || pid < 0)
-+	if (!uattr || pid < 0 || flags)
- 		return -EINVAL;
- 
- 	if (sched_copy_attr(uattr, &attr))
-@@ -3786,7 +3787,7 @@ static int sched_read_attr(struct sched_attr __user *uattr,
- 		attr->size = usize;
- 	}
- 
--	ret = copy_to_user(uattr, attr, usize);
-+	ret = copy_to_user(uattr, attr, attr->size);
- 	if (ret)
- 		return -EFAULT;
- 
-@@ -3804,8 +3805,8 @@ err_size:
-  * @uattr: structure containing the extended parameters.
-  * @size: sizeof(attr) for fwd/bwd comp.
-  */
--SYSCALL_DEFINE3(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
--		unsigned int, size)
-+SYSCALL_DEFINE4(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
-+		unsigned int, size, unsigned int, flags)
- {
- 	struct sched_attr attr = {
- 		.size = sizeof(struct sched_attr),
-@@ -3814,7 +3815,7 @@ SYSCALL_DEFINE3(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
- 	int retval;
- 
- 	if (!uattr || pid < 0 || size > PAGE_SIZE ||
--	    size < SCHED_ATTR_SIZE_VER0)
-+	    size < SCHED_ATTR_SIZE_VER0 || flags)
- 		return -EINVAL;
- 
- 	rcu_read_lock();
-@@ -7422,6 +7423,7 @@ static int sched_dl_global_constraints(void)
- 	u64 period = global_rt_period();
- 	u64 new_bw = to_ratio(period, runtime);
- 	int cpu, ret = 0;
-+	unsigned long flags;
- 
- 	/*
- 	 * Here we want to check the bandwidth not being set to some
-@@ -7435,10 +7437,10 @@ static int sched_dl_global_constraints(void)
- 	for_each_possible_cpu(cpu) {
- 		struct dl_bw *dl_b = dl_bw_of(cpu);
- 
--		raw_spin_lock(&dl_b->lock);
-+		raw_spin_lock_irqsave(&dl_b->lock, flags);
- 		if (new_bw < dl_b->total_bw)
- 			ret = -EBUSY;
--		raw_spin_unlock(&dl_b->lock);
-+		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
- 
- 		if (ret)
- 			break;
-@@ -7451,6 +7453,7 @@ static void sched_dl_do_global(void)
- {
- 	u64 new_bw = -1;
- 	int cpu;
-+	unsigned long flags;
- 
- 	def_dl_bandwidth.dl_period = global_rt_period();
- 	def_dl_bandwidth.dl_runtime = global_rt_runtime();
-@@ -7464,9 +7467,9 @@ static void sched_dl_do_global(void)
- 	for_each_possible_cpu(cpu) {
- 		struct dl_bw *dl_b = dl_bw_of(cpu);
- 
--		raw_spin_lock(&dl_b->lock);
-+		raw_spin_lock_irqsave(&dl_b->lock, flags);
- 		dl_b->bw = new_bw;
--		raw_spin_unlock(&dl_b->lock);
-+		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
- 	}
- }
- 
-@@ -7475,7 +7478,8 @@ static int sched_rt_global_validate(void)
- 	if (sysctl_sched_rt_period <= 0)
- 		return -EINVAL;
- 
--	if (sysctl_sched_rt_runtime > sysctl_sched_rt_period)
-+	if ((sysctl_sched_rt_runtime != RUNTIME_INF) &&
-+		(sysctl_sched_rt_runtime > sysctl_sched_rt_period))
- 		return -EINVAL;
- 
- 	return 0;
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index 045fc74..5b8838b 100644
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -70,7 +70,7 @@ static void cpudl_heapify(struct cpudl *cp, int idx)
- 
- static void cpudl_change_key(struct cpudl *cp, int idx, u64 new_dl)
- {
--	WARN_ON(idx > num_present_cpus() || idx == IDX_INVALID);
-+	WARN_ON(!cpu_present(idx) || idx == IDX_INVALID);
- 
- 	if (dl_time_before(new_dl, cp->elements[idx].dl)) {
- 		cp->elements[idx].dl = new_dl;
-@@ -117,7 +117,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
- 	}
- 
- out:
--	WARN_ON(best_cpu > num_present_cpus() && best_cpu != -1);
-+	WARN_ON(!cpu_present(best_cpu) && best_cpu != -1);
- 
- 	return best_cpu;
- }
-@@ -137,7 +137,7 @@ void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
- 	int old_idx, new_cpu;
- 	unsigned long flags;
- 
--	WARN_ON(cpu > num_present_cpus());
-+	WARN_ON(!cpu_present(cpu));
- 
- 	raw_spin_lock_irqsave(&cp->lock, flags);
- 	old_idx = cp->cpu_to_idx[cpu];
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 0dd5e09..15cbc17 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -121,7 +121,7 @@ static inline void dl_clear_overload(struct rq *rq)
- 
- static void update_dl_migration(struct dl_rq *dl_rq)
- {
--	if (dl_rq->dl_nr_migratory && dl_rq->dl_nr_total > 1) {
-+	if (dl_rq->dl_nr_migratory && dl_rq->dl_nr_running > 1) {
- 		if (!dl_rq->overloaded) {
- 			dl_set_overload(rq_of_dl_rq(dl_rq));
- 			dl_rq->overloaded = 1;
-@@ -137,7 +137,6 @@ static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
- 	struct task_struct *p = dl_task_of(dl_se);
- 	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
- 
--	dl_rq->dl_nr_total++;
- 	if (p->nr_cpus_allowed > 1)
- 		dl_rq->dl_nr_migratory++;
- 
-@@ -149,7 +148,6 @@ static void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
- 	struct task_struct *p = dl_task_of(dl_se);
- 	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
- 
--	dl_rq->dl_nr_total--;
- 	if (p->nr_cpus_allowed > 1)
- 		dl_rq->dl_nr_migratory--;
- 
-@@ -717,6 +715,7 @@ void inc_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
- 
- 	WARN_ON(!dl_prio(prio));
- 	dl_rq->dl_nr_running++;
-+	inc_nr_running(rq_of_dl_rq(dl_rq));
- 
- 	inc_dl_deadline(dl_rq, deadline);
- 	inc_dl_migration(dl_se, dl_rq);
-@@ -730,6 +729,7 @@ void dec_dl_tasks(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
- 	WARN_ON(!dl_prio(prio));
- 	WARN_ON(!dl_rq->dl_nr_running);
- 	dl_rq->dl_nr_running--;
-+	dec_nr_running(rq_of_dl_rq(dl_rq));
- 
- 	dec_dl_deadline(dl_rq, dl_se->deadline);
- 	dec_dl_migration(dl_se, dl_rq);
-@@ -836,8 +836,6 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- 
- 	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
- 		enqueue_pushable_dl_task(rq, p);
--
--	inc_nr_running(rq);
- }
- 
- static void __dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
-@@ -850,8 +848,6 @@ static void dequeue_task_dl(struct rq *rq, struct task_struct *p, int flags)
- {
- 	update_curr_dl(rq);
- 	__dequeue_task_dl(rq, p, flags);
--
--	dec_nr_running(rq);
- }
- 
- /*
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 966cc2b..7815709 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1757,6 +1757,8 @@ void task_numa_work(struct callback_head *work)
- 			start = end;
- 			if (pages <= 0)
- 				goto out;
-+
-+			cond_resched();
- 		} while (end != vma->vm_end);
- 	}
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c2119fd..f964add 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -462,7 +462,6 @@ struct dl_rq {
- 	} earliest_dl;
- 
- 	unsigned long dl_nr_migratory;
--	unsigned long dl_nr_total;
- 	int overloaded;
- 
- 	/*
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
