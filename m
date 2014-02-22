@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBVWj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 17:39:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37755 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213AbaBVWj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 17:39:58 -0500
-Date: Sat, 22 Feb 2014 23:39:47 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 2/3] SubmittingPatches: Add recommendation for
- mailing list references
-Message-ID: <20140222223947.GB2534@pd.tnic>
-References: <6f68169828300d32c4266a6d68c5fcf272dfea33.1393099913.git.josh@joshtriplett.org>
- <02737d618daecb42e33308ce5dabd53ed3cf14f3.1393099913.git.josh@joshtriplett.org>
- <53091D26.4020900@infradead.org>
- <20140222223038.GA4643@thin>
+	id S1752192AbaBVXDI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:03:08 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:37996 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750703AbaBVXDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 18:03:05 -0500
+Date: Sat, 22 Feb 2014 18:03:04 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>, Peter Hurley <peter@hurleysoftware.com>
+cc: laijs@cn.fujitsu.com,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] usb: don't use PREPARE_DELAYED_WORK
+In-Reply-To: <20140222153755.GG12830@htj.dyndns.org>
+Message-ID: <Pine.LNX.4.44L0.1402221752540.372-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140222223038.GA4643@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 02:30:38PM -0800, Josh Triplett wrote:
-> > >  If the patch fixes a logged bug entry, refer to that bug entry by
-> > > -number and URL.
-> > > +number and URL.  If the patch follows from a mailing list discussion,
-> > > +give a URL to the mailing list archive; use the https://lkml.kernel.org/
-> > > +redirector with a Message-Id, to ensure that the links cannot become
-> > > +stale.
-> > 
-> > Some of us don't know what that looks like.
-> > Could we have an example?
+On Sat, 22 Feb 2014, Tejun Heo wrote:
+
+> On Sat, Feb 22, 2014 at 10:14:48AM -0500, Alan Stern wrote:
+> > Is the cancel_delayed_work_sync(&hub->init_work) call in hub_quiesce()
+> > going to get confused by all this?
 > 
-> https://lkml.kernel.org/ provides examples; I didn't want to duplicate
-> that documentation.
+> Yeah, you can't cancel a work item which hasn't been initialzed.
+> Maybe move init of the first work function there?  I don't think it
+> really matters tho.
+> 
+> > It's worth mentioning that the only reason for the hub_init_func3 stuff
+> > is, as the comment says, to avoid a long sleep (100 ms) inside a work
+> > routine.  With all the changes to the work queue infrastructure, maybe
+> > this doesn't matter so much any more.  If we got rid of it then there
+> > wouldn't be any multiplexing, and this whole issue would become moot.
+> 
+> I don't really think that'd be necessary.  Just sleeping synchronously
+> should be fine.  How many threads are we talking about?
 
-Yeah, maybe you should say:
+One thread per hub (no more than 10 on a typical system).  The code in
+question is part of the hub driver's probe sequence.
 
-"If the patch follows from a mailing list discussion, give a URL to the
-mailing list archive; use the https://lkml.kernel.org/ (usage examples
-at that very URL) ... "
 
-so that it is crystal clear.
+On Sat, 22 Feb 2014, Peter Hurley wrote:
 
--- 
-Regards/Gruss,
-    Boris.
+> If a running hub init does not need to be single-threaded wrt
+> a different running hub init,
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+I'm not quite sure what that means, but the hub init threads are indeed
+independent of each other.
+
+>  then a single init work could be queued to
+> the system_unbound_wq which doesn't care about running times.
+
+This sort of thing sounds like the best approach.  Tejun, do you want
+to rewrite the patch, getting rid of the hub_init_func3 and HUB_INIT3
+business entirely?  Or would you like me to do it?
+
+Alan Stern
+
