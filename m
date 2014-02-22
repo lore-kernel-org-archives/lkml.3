@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaBVVls (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 16:41:48 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44136 "EHLO
+	id S1752876AbaBVVmF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 16:42:05 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44131 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752544AbaBVVkG (ORCPT
+	with ESMTP id S1752477AbaBVVkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 22 Feb 2014 16:40:06 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
         kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
         shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 7/7] ARM: dts: sun7i: Enable the SPI controllers of the A20-olinuxino-micro
-Date: Sat, 22 Feb 2014 22:35:59 +0100
-Message-Id: <1393104959-12831-8-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 6/7] ARM: dt: sun7i: Add SPI muxing options
+Date: Sat, 22 Feb 2014 22:35:58 +0100
+Message-Id: <1393104959-12831-7-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393104959-12831-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1393104959-12831-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,43 +24,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A20-Olinuxino-micro has two SPI bus exposed on its UEXT connectors, enable
-them.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ arch/arm/boot/dts/sun7i-a20.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
-index b02a796..9d98316 100644
---- a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
-@@ -18,7 +18,24 @@
- 	model = "Olimex A20-Olinuxino Micro";
- 	compatible = "olimex,a20-olinuxino-micro", "allwinner,sun7i-a20";
+diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+index 0f0ee58..6161fd8 100644
+--- a/arch/arm/boot/dts/sun7i-a20.dtsi
++++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+@@ -571,6 +571,20 @@
+ 				allwinner,drive = <3>;
+ 				allwinner,pull = <0>;
+ 			};
++
++			spi1_pins_a: spi1@0 {
++				allwinner,pins = "PI16", "PI17", "PI18", "PI19";
++				allwinner,function = "spi1";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
++
++			spi2_pins_a: spi2@0 {
++				allwinner,pins = "PC19", "PC20", "PC21", "PC22";
++				allwinner,function = "spi2";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
+ 		};
  
-+	aliases {
-+		spi0 = &spi1;
-+		spi1 = &spi2;
-+	};
-+
- 	soc@01c00000 {
-+		spi1: spi@01c06000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&spi1_pins_a>;
-+			status = "okay";
-+		};
-+
-+		spi2: spi@01c17000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&spi2_pins_a>;
-+			status = "okay";
-+		};
-+
- 		pinctrl@01c20800 {
- 			led_pins_olinuxino: led_pins@0 {
- 				allwinner,pins = "PH2";
+ 		timer@01c20c00 {
 -- 
 1.9.0
 
