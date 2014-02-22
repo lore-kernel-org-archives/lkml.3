@@ -1,104 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaBVUmd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 15:42:33 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:52589 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402AbaBVUm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 15:42:28 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <53090BAF.3080806@roeck-us.net>
-Date: Sat, 22 Feb 2014 12:42:23 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752462AbaBVUtv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 15:49:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883AbaBVUtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 15:49:50 -0500
+Date: Sat, 22 Feb 2014 21:49:36 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>, Jan Beulich <JBeulich@suse.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
+ processor feature names
+Message-ID: <20140222204936.GA2534@pd.tnic>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
+ <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>, Michal Simek <michal.simek@xilinx.com>
-CC: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 10/11] watchdog: xilinx: Enable this driver for Zynq
-References: <cover.1392212059.git.michal.simek@xilinx.com> <a978b8d0511748e4558f5169896da44c742a49f3.1392212059.git.michal.simek@xilinx.com> <20140222184419.GA21504@spo001.leaseweb.com>
-In-Reply-To: <20140222184419.GA21504@spo001.leaseweb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 10:44 AM, Wim Van Sebroeck wrote:
-> Hi Michal,
->
->> Enable this driver for Zynq.
->> Move it to architecture independent Kconfig part.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>
->> Changes in v3: None
->> Changes in v2: None
->>
->> Build tested by zero day testing system.
->> ---
->>   drivers/watchdog/Kconfig | 22 +++++++++-------------
->>   1 file changed, 9 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->> index 9db5d3c..6120403 100644
->> --- a/drivers/watchdog/Kconfig
->> +++ b/drivers/watchdog/Kconfig
->> @@ -111,6 +111,15 @@ config WM8350_WATCHDOG
->>   	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
->>   	  the watchdog triggers the system will be reset.
->>
->> +config XILINX_WATCHDOG
->> +	tristate "Xilinx Watchdog timer"
->> +	select WATCHDOG_CORE
->> +	help
->> +	  Watchdog driver for the xps_timebase_wdt ip core.
->> +
->> +	  To compile this driver as a module, choose M here: the
->> +	  module will be called of_xilinx_wdt.
->> +
->>   # ALPHA Architecture
->>
->>   # ARM Architecture
->> @@ -1022,19 +1031,6 @@ config M54xx_WATCHDOG
->>
->>   # MicroBlaze Architecture
->>
->> -config XILINX_WATCHDOG
->> -	tristate "Xilinx Watchdog timer"
->> -	depends on MICROBLAZE
->> -	select WATCHDOG_CORE
->> -	---help---
->> -	  Watchdog driver for the xps_timebase_wdt ip core.
->> -
->> -	  IMPORTANT: The xps_timebase_wdt parent must have the property
->> -	  "clock-frequency" at device tree.
->> -
->> -	  To compile this driver as a module, choose M here: the
->> -	  module will be called of_xilinx_wdt.
->> -
->>   # MIPS Architecture
->>
->>   config ATH79_WDT
->> --
->> 1.8.2.3
->>
->
-> Are we sure that we don't need an additional dependancy (like depends on HAS_IOMEM) to not have issues with other architectures?
->
+On Sat, Feb 22, 2014 at 11:57:10AM -0800, Josh Triplett wrote:
 
-Hi Wim,
+...
 
-Doesn't look like it. I have the series in my build test and did not
-see any failures because of it. See http://server.roeck-us.net:8010/builders,
-branch watchdog-next.
+> diff --git a/arch/x86/boot/cpu.c b/arch/x86/boot/cpu.c
+> index 6ec6bb6..29207f6 100644
+> --- a/arch/x86/boot/cpu.c
+> +++ b/arch/x86/boot/cpu.c
+> @@ -16,7 +16,9 @@
+>   */
+>  
+>  #include "boot.h"
+> +#ifdef CONFIG_X86_FEATURE_NAMES
+>  #include "cpustr.h"
+> +#endif
 
-Which reminds me that I wanted to reparent the branch to 3.14-rc3.
-I just did that; you should be able to see build results in a couple
-of hours.
+You probably could get rid of this ifdef too by moving it into cpustr.h
+after teaching arch/x86/boot/mkcpustr.c to issue it...
 
-Guenter
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
