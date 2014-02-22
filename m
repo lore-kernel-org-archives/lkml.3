@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaBVMti (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 07:49:38 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54003 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaBVMtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 07:49:36 -0500
-Message-ID: <53089D09.1020203@kernel.org>
-Date: Sat, 22 Feb 2014 12:50:17 +0000
-From: Jonathan Cameron <jic23@kernel.org>
+	id S1751686AbaBVNNx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 08:13:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33799 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950AbaBVNNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 08:13:52 -0500
+Message-ID: <5308BF5A.3040706@suse.de>
+Date: Sat, 22 Feb 2014 16:16:42 +0100
+From: Hannes Reinecke <hare@suse.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Matt Ranostay <mranostay@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org
-CC: matt.porter@linaro.org, pantelis.antoniou@gmail.com
-Subject: Re: [PATCH v7 0/2] AS3935 lightning sensor support
-References: <1392179475-2611-1-git-send-email-mranostay@gmail.com>
-In-Reply-To: <1392179475-2611-1-git-send-email-mranostay@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Ray Strode <halfline@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        David Herrmann <dh.herrmann@gmail.com>, Werner Fink <werner@suse.de>
+Subject: Re: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs
+ attribute
+References: <20140220235118.191692546@linuxfoundation.org> <20140220235119.236520201@linuxfoundation.org> <CA+5PVA55O2GwUE8oMHShgKgQPA89z5RTbn6yCvOPBMGsf70kBw@mail.gmail.com> <20140221202127.GA28780@kroah.com> <CAA_UwzLWGUpQghswiAjo2Ppw0tr3voNPPhekGoHiLTX9MDV3fw@mail.gmail.com>
+In-Reply-To: <CAA_UwzLWGUpQghswiAjo2Ppw0tr3voNPPhekGoHiLTX9MDV3fw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a quick note to say I'm hold off on this in the hope for some
-feedback on my suggested interface for position devices that I sent
-in response to the previous version.  I think lumping these under
-proximity devices is the wrong approach as that doesn't generalize well.
+On 02/21/2014 11:18 PM, Ray Strode wrote:
+> Hi,
+>
+> On Fri, Feb 21, 2014 at 3:21 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> Ray, Josh, can I get some more information about this?  Is this broken
+>> in Linus's tree?  Or did I get the backport wrong here?
+> I don't think it's a problem with the backport specifically. To be
+> honest, i'm not even 100% sure it is that patch. It was just the only
+> patch that touched that code recently so it seemed likely.  I didn't
+> do builds to check for sure.
+>
+>> What is the value of the file before and after this patch?
+> "tty0" in the past and "tty1" now
+>
+>> And what is plymouth doing with this file value, it was incorrect
+>> before, what was it using the value for?
+> See the other (3.11) thread for my initial message, but basically
+> plymouth had code something like this pseudocode:
+>
+> /* disable splash if there are serial consoles */
+> if (!contents_of_file_equals("/sys/class/tty/console/active", "tty0")) {
+>          disable_splash_and_force_verbose_messages();
+> }
+>
+> since the file started saying tty1 that code started disabling the
+> splash for everyone in rawhide.
+>
+<sigh>
 
+And of course, checking for "!tty0" is the proper check for serial console.
+Which, of course, means we have to stay with a broken kernel interface 
+for ever and ever.
 
-On 12/02/14 04:31, Matt Ranostay wrote:
-> This series adds support for the AMS AS3935 lightning sensor that allows
-> reporting back estimated storm distance and strike events.
->
-> Chagges from v6
->
-> * Revised binding documents to not use the term "interrupts mapping"
-> * Renamed tune-cap property to a more clear tuning-capacitor-pf
->
-> Changes from v5
->
-> * SPI write cache-aligned issues fixed
-> * Fixed mutex_unlock's being missed
-> * Reports distance in meters instead of kilometers (1km steps)
-> * tune_cap is now in picofarads and not a register value
->
-> Matt Ranostay (2):
->    iio:as3935: Add DT binding docs for AS3935 driver
->    iio: Add AS3935 lightning sensor support
->
->   .../ABI/testing/sysfs-bus-iio-proximity-as3935     |  18 +
->   .../devicetree/bindings/iio/proximity/as3935.txt   |  28 ++
->   .../devicetree/bindings/vendor-prefixes.txt        |   1 +
->   drivers/iio/Kconfig                                |   1 +
->   drivers/iio/Makefile                               |   1 +
->   drivers/iio/proximity/Kconfig                      |  19 +
->   drivers/iio/proximity/Makefile                     |   6 +
->   drivers/iio/proximity/as3935.c                     | 446 +++++++++++++++++++++
->   8 files changed, 520 insertions(+)
->   create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
->   create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
->   create mode 100644 drivers/iio/proximity/Kconfig
->   create mode 100644 drivers/iio/proximity/Makefile
->   create mode 100644 drivers/iio/proximity/as3935.c
->
+Innovation, here we come.
 
+</sigh>
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
