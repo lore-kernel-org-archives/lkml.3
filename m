@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaBVSEf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:04:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41395 "EHLO
+	id S1753925AbaBVSEw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:04:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41398 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaBVSEb (ORCPT
+	with ESMTP id S1753003AbaBVSEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:04:31 -0500
-Date: Sat, 22 Feb 2014 10:03:57 -0800
+	Sat, 22 Feb 2014 13:04:33 -0500
+Date: Sat, 22 Feb 2014 10:03:46 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-75e45d512f257beedae0d8a67d053cde5537bd4c@git.kernel.org>
+Message-ID: <tip-d277d868dab6537a85f4757e39648b1d6afc60d5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        josh@joshtriplett.org, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com>
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        josh@joshtriplett.org, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
+References: <5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE
-Git-Commit-ID: 75e45d512f257beedae0d8a67d053cde5537bd4c
+Subject: [tip:sched/core] rcu: Use MAX_NICE to replace hardcoding of 19
+Git-Commit-ID: d277d868dab6537a85f4757e39648b1d6afc60d5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,72 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  75e45d512f257beedae0d8a67d053cde5537bd4c
-Gitweb:     http://git.kernel.org/tip/75e45d512f257beedae0d8a67d053cde5537bd4c
+Commit-ID:  d277d868dab6537a85f4757e39648b1d6afc60d5
+Gitweb:     http://git.kernel.org/tip/d277d868dab6537a85f4757e39648b1d6afc60d5
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 11 Feb 2014 15:34:50 +0800
+AuthorDate: Tue, 11 Feb 2014 15:34:49 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 22 Feb 2014 18:15:54 +0100
+CommitDate: Sat, 22 Feb 2014 18:15:24 +0100
 
-sched: Replace hardcoding of -20 and 19 with MIN_NICE and MAX_NICE
+rcu: Use MAX_NICE to replace hardcoding of 19
 
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/bd80780f19b4f9b4a765acc353c8dbc130274dd6.1392103744.git.yangds.fnst@cn.fujitsu.com
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/5b3bf232f41b33ab703a1595e94671b303e2d1fc.1392103744.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/auto_group.c |  2 +-
- kernel/sched/core.c       | 12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ kernel/rcu/torture.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-index 4a07353..e73efba 100644
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -203,7 +203,7 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
- 	struct autogroup *ag;
- 	int err;
+diff --git a/kernel/rcu/torture.c b/kernel/rcu/torture.c
+index 732f8ae..219761d 100644
+--- a/kernel/rcu/torture.c
++++ b/kernel/rcu/torture.c
+@@ -805,7 +805,7 @@ rcu_torture_writer(void *arg)
+ 	static DEFINE_RCU_RANDOM(rand);
  
--	if (nice < -20 || nice > 19)
-+	if (nice < MIN_NICE || nice > MAX_NICE)
- 		return -EINVAL;
+ 	VERBOSE_PRINTK_STRING("rcu_torture_writer task started");
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
  
- 	err = security_task_setnice(current, nice);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cc4965e..a8a73b8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2993,7 +2993,7 @@ void set_user_nice(struct task_struct *p, long nice)
- 	unsigned long flags;
- 	struct rq *rq;
+ 	do {
+ 		schedule_timeout_uninterruptible(1);
+@@ -871,7 +871,7 @@ rcu_torture_fakewriter(void *arg)
+ 	DEFINE_RCU_RANDOM(rand);
  
--	if (task_nice(p) == nice || nice < -20 || nice > 19)
-+	if (task_nice(p) == nice || nice < MIN_NICE || nice > MAX_NICE)
- 		return;
- 	/*
- 	 * We have to be careful, if called from sys_setpriority(),
-@@ -3072,10 +3072,10 @@ SYSCALL_DEFINE1(nice, int, increment)
- 		increment = 40;
+ 	VERBOSE_PRINTK_STRING("rcu_torture_fakewriter task started");
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
  
- 	nice = task_nice(current) + increment;
--	if (nice < -20)
--		nice = -20;
--	if (nice > 19)
--		nice = 19;
-+	if (nice < MIN_NICE)
-+		nice = MIN_NICE;
-+	if (nice > MAX_NICE)
-+		nice = MAX_NICE;
+ 	do {
+ 		schedule_timeout_uninterruptible(1 + rcu_random(&rand)%10);
+@@ -987,7 +987,7 @@ rcu_torture_reader(void *arg)
+ 	unsigned long long ts;
  
- 	if (increment < 0 && !can_nice(current, nice))
- 		return -EPERM;
-@@ -3623,7 +3623,7 @@ static int sched_copy_attr(struct sched_attr __user *uattr,
- 	 * XXX: do we want to be lenient like existing syscalls; or do we want
- 	 * to be strict and return an error on out-of-bounds values?
- 	 */
--	attr->sched_nice = clamp(attr->sched_nice, -20, 19);
-+	attr->sched_nice = clamp(attr->sched_nice, MIN_NICE, MAX_NICE);
+ 	VERBOSE_PRINTK_STRING("rcu_torture_reader task started");
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
+ 	if (irqreader && cur_ops->irq_capable)
+ 		setup_timer_on_stack(&t, rcu_torture_timer, 0);
  
- out:
- 	return ret;
+@@ -1584,7 +1584,7 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 
+ 	init_rcu_head_on_stack(&rcu);
+ 	VERBOSE_PRINTK_STRING("rcu_torture_barrier_cbs task started");
+-	set_user_nice(current, 19);
++	set_user_nice(current, MAX_NICE);
+ 	do {
+ 		wait_event(barrier_cbs_wq[myid],
+ 			   (newphase =
