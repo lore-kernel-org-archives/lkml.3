@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbaBVSwW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:52:22 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54932 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750814AbaBVSwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:52:20 -0500
-Message-ID: <1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Date: Sat, 22 Feb 2014 10:52:18 -0800
-In-Reply-To: <5308F0E2.3030804@hurleysoftware.com>
-References: <1392929071-16555-5-git-send-email-tj@kernel.org>
-		 <5306AF8E.3080006@hurleysoftware.com>
-		 <20140221015935.GF6897@htj.dyndns.org>
-		 <5306B4DF.4000901@hurleysoftware.com>
-		 <20140221021341.GG6897@htj.dyndns.org>
-		 <5306E06C.5020805@hurleysoftware.com>
-		 <20140221100301.GA14653@mtj.dyndns.org>
-		 <53074BE4.1020307@hurleysoftware.com>
-		 <20140221130614.GH6897@htj.dyndns.org>
-		 <5307849A.9050209@hurleysoftware.com>
-		 <20140221165730.GA10929@htj.dyndns.org>
-		 <5307DAC9.2020103@hurleysoftware.com>
-	 <1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
-	 <5308F0E2.3030804@hurleysoftware.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
+	id S1752511AbaBVSyV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:54:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663AbaBVSyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 13:54:19 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+References: <CA+55aFyqLrj4d2TA+2aazRqXnbVsUvs0yaBL2D5rXF1G=Kiu_g@mail.gmail.com>
+	 <CA+55aFwsq5E8kMoEeHJJ1f2=+QAUCu_HndfPxHNz8fUBprS-jQ@mail.gmail.com>
+	 <1392740258.18779.7732.camel@triegel.csb>
+	 <CA+55aFw7QYEMFs0BCxqRJW3Cz=tLbaku-tmN6hLXPKP9jbom7Q@mail.gmail.com>
+	 <1392752867.18779.8120.camel@triegel.csb>
+	 <CA+55aFxQPxQ8WOaZL8yAqBA=Y4k2gDn4r4oepMyi0uL6XLzv3w@mail.gmail.com>
+	 <20140220040102.GM4250@linux.vnet.ibm.com>
+	 <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+	 <20140220083032.GN4250@linux.vnet.ibm.com>
+	 <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	 <20140220181116.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+	 <1392922421.28840.36.camel@triegel.csb>
+	 <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 22 Feb 2014 19:53:43 +0100
+Message-ID: <1393095223.28840.4914.camel@triegel.csb>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-22 at 13:48 -0500, Peter Hurley wrote:
-> On 02/22/2014 01:43 PM, James Bottomley wrote:
+On Thu, 2014-02-20 at 11:09 -0800, Linus Torvalds wrote:
+> On Thu, Feb 20, 2014 at 10:53 AM, Torvald Riegel <triegel@redhat.com> wrote:
+> > On Thu, 2014-02-20 at 10:32 -0800, Linus Torvalds wrote:
+> >> On Thu, Feb 20, 2014 at 10:11 AM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> >
+> >> > You really need that "consume" to be "acquire".
+> >>
+> >> So I think we now all agree that that is what the standard is saying.
 > >
-> > On Fri, 2014-02-21 at 18:01 -0500, Peter Hurley wrote:
-> >> On 02/21/2014 11:57 AM, Tejun Heo wrote:
-> >>> Yo,
-> >>>
-> >>> On Fri, Feb 21, 2014 at 11:53:46AM -0500, Peter Hurley wrote:
-> >>>> Ok, I can do that. But AFAIK it'll have to be an smp_rmb(); there is
-> >>>> no mb__after unlock.
-> >>>
-> >>> We do have smp_mb__after_unlock_lock().
-> >>>
-> >>>> [ After thinking about it some, I don't think preventing speculative
-> >>>>     writes before clearing PENDING if useful or necessary, so that's
-> >>>>     why I'm suggesting only the rmb. ]
-> >>>
-> >>> But smp_mb__after_unlock_lock() would be cheaper on most popular
-> >>> archs, I think.
-> >>
-> >> smp_mb__after_unlock_lock() is only for ordering memory operations
-> >> between two spin-locked sections on either the same lock or by
-> >> the same task/cpu. Like:
-> >>
-> >>      i = 1
-> >>      spin_unlock(lock1)
-> >>      spin_lock(lock2)
-> >>      smp_mb__after_unlock_lock()
-> >>      j = 1
-> >>
-> >> This guarantees that the store to j happens after the store to i.
-> >> Without it, a cpu can
-> >>
-> >>      spin_lock(lock2)
-> >>      j = 1
-> >>      i = 1
-> >>      spin_unlock(lock1)
+> > Huh?
 > >
-> > No the CPU cannot.  If the CPU were allowed to reorder locking
-> > sequences, we'd get speculation induced ABBA deadlocks.  The rules are
-> > quite simple: loads and stores cannot speculate out of critical
-> > sections.
+> > The standard says that there are two separate things (among many more):
+> > mo_acquire and mo_consume.  They both influence happens-before in
+> > different (and independent!) ways.
+> >
+> > What Paul is saying is that *you* should have used *acquire* in that
+> > example.
 > 
-> If you look carefully, you'll notice that the stores have not been
-> moved from their respective critical sections; simply that the two
-> critical sections overlap because they use different locks.
+> I understand.
+> 
+> And I disagree. I think the standard is wrong, and what I *should* be
+> doing is point out the fact very loudly, and just tell people to NEVER
+> EVER use "consume" as long as it's not reliable and has insane
+> semantics.
 
-You didn't look carefully enough at what I wrote.  You may not reorder
-critical sections so they overlap regardless of whether the locks are
-independent or not.  This is because we'd get ABBA deadlocks due to
-speculation (A represents lock1 and B lock 2 in your example).
+Stating that (1) "the standard is wrong" and (2) that you think that
+mo_consume semantics are not good is two different things.  Making bold
+statements without a proper context isn't helpful in making this
+discussion constructive.  It's simply not efficient if I (or anybody
+else reading this) has to wonder whether you actually mean what you said
+(even if, when reading it literally, is arguably not consistent with the
+arguments brought up in the discussion) or whether those statements just
+have to be interpreted in some other way.
 
-James
+> So what I "should do" is to not accept any C11 atomics use in the
+> kernel.
 
+You're obviously free to do that.
+
+> Because with the "acquire", it generates worse code than what
+> we already have,
+
+I would argue that this is still under debate.  At least I haven't seen
+a definition of what you want that is complete and based on the standard
+(e.g., an example of what a compiler might do in a specific case isn't a
+definition).  From what I've seen, it's not inconceivable that what you
+want is just an optimized acquire.
+
+I'll bring this question up again elsewhere in the thread (where it
+hopefully fits better).
 
