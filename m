@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaBVSBL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:01:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41185 "EHLO
+	id S1753492AbaBVSBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:01:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41201 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaBVSBJ (ORCPT
+	with ESMTP id S1753466AbaBVSBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:01:09 -0500
-Date: Sat, 22 Feb 2014 10:00:47 -0800
+	Sat, 22 Feb 2014 13:01:18 -0500
+Date: Sat, 22 Feb 2014 10:00:58 -0800
 From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-dfef99cd0b2c8abafb571e5992ce954135be5f40@git.kernel.org>
+Message-ID: <tip-f90acac75713cc6f18a4b2f1b9162bc1cd893c20@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
         dave.long@linaro.org, hpa@zytor.com, mingo@kernel.org,
         namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
@@ -20,12 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, dave.long@linaro.org,
         namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
         rostedt@goodmis.org, srikar@linux.vnet.ibm.com, dsahern@gmail.com,
         tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-References: <20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140206053218.29635.74821.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+References: <20140206053218.29635.74821.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Use ref_reloc_sym based address instead of the symbol name
-Git-Commit-ID: dfef99cd0b2c8abafb571e5992ce954135be5f40
+Subject: [tip:perf/core] perf probe: Find given address from offline dwarf
+Git-Commit-ID: f90acac75713cc6f18a4b2f1b9162bc1cd893c20
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,100 +37,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dfef99cd0b2c8abafb571e5992ce954135be5f40
-Gitweb:     http://git.kernel.org/tip/dfef99cd0b2c8abafb571e5992ce954135be5f40
+Commit-ID:  f90acac75713cc6f18a4b2f1b9162bc1cd893c20
+Gitweb:     http://git.kernel.org/tip/f90acac75713cc6f18a4b2f1b9162bc1cd893c20
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 6 Feb 2014 05:32:16 +0000
+AuthorDate: Thu, 6 Feb 2014 05:32:18 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Tue, 18 Feb 2014 09:34:51 -0300
 
-perf probe: Use ref_reloc_sym based address instead of the symbol name
+perf probe: Find given address from offline dwarf
 
-Since several local symbols can have same name (e.g. t_show), we need to
-use the relative address from the symbol referred by kmap->ref_reloc_sym
-instead of the target symbol name itself.
+Find the given address from offline dwarfs instead of online kernel
+dwarfs.
 
-Because the kernel address space layout randomize (kASLR) changes the
-absolute address of kernel symbols, we can't rely on the absolute
-address.
+On the KASLR enabled kernel, the kernel text section is loaded with
+random offset, and the debuginfo__new_online_kernel can't handle it. So
+let's move to the offline dwarf loader instead of using the online dwarf
+loader.
 
-Note that this works only with debuginfo.
+As a result, since we don't need debuginfo__new_online_kernel any more,
+this also removes the functions related to that.
 
-E.g. without this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
+Without this change;
 
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-  ----
-OK, we have 4 different t_show()s. All functions have
-different arguments as below;
-  ----
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show t_show m=%di:u64 v=%si:u64
-  p:probe/t_show_1 t_show m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 t_show m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 t_show m=%di:u64 v=%si:u64 file=%si:u64
-  ----
-However, all of them have been put on the *same* address.
-  ----
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ffffffff810d9720  k  t_show+0x0    [DISABLED]
-  ----
+  # ./perf probe -l
+    probe:t_show         (on _stext+901288 with m v)
+    probe:t_show_1       (on _stext+939624 with m v t)
+    probe:t_show_2       (on _stext+980296 with m v fmt)
+    probe:t_show_3       (on _stext+1014392 with m v file)
 
 With this change;
-  ----
-  # ./perf probe -a "t_show \$vars"
-  Added new events:
-    probe:t_show         (on t_show with $vars)
-    probe:t_show_1       (on t_show with $vars)
-    probe:t_show_2       (on t_show with $vars)
-    probe:t_show_3       (on t_show with $vars)
 
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe:t_show_3 -aR sleep 1
-
-  # cat /sys/kernel/debug/tracing/kprobe_events
-  p:probe/t_show _stext+889880 m=%di:u64 v=%si:u64
-  p:probe/t_show_1 _stext+928568 m=%di:u64 v=%si:u64 t=%si:u64
-  p:probe/t_show_2 _stext+969512 m=%di:u64 v=%si:u64 fmt=%si:u64
-  p:probe/t_show_3 _stext+1001416 m=%di:u64 v=%si:u64 file=%si:u64
-
-  # cat /sys/kernel/debug/kprobes/list
-  ffffffffb50d95e0  k  t_show+0x0    [DISABLED]
-  ffffffffb50e2d00  k  t_show+0x0    [DISABLED]
-  ffffffffb50f4990  k  t_show+0x0    [DISABLED]
-  ffffffffb50eccf0  k  t_show+0x0    [DISABLED]
-  ----
-This time, each event is put in different address
-correctly.
-
-Note that currently this doesn't support address-based
-probe on modules (thus the probes on modules are symbol
-based), since it requires relative address probe syntax
-for kprobe-tracer, and it isn't implemented yet.
-
-One more note, this allows us to put events on correct
-address, but --list option should be updated to show
-correct corresponding source code.
+  # ./perf probe -l
+    probe:t_show         (on t_show@linux-3/kernel/trace/ftrace.c with m v)
+    probe:t_show_1       (on t_show@linux-3/kernel/trace/trace.c with m v t)
+    probe:t_show_2       (on t_show@kernel/trace/trace_printk.c with m v fmt)
+    probe:t_show_3       (on t_show@kernel/trace/trace_events.c with m v file)
 
 Changes from v2:
-  - Refer kmap->ref_reloc_sym instead of "_stext".
-  - Refer map->reloc to catch up the kASLR perf fix.
-
-Changes from v1:
-  - Use _stext relative address instead of actual
-    absolute address recorded in debuginfo.
+ - Instead of retrying, directly opens offline dwarf.
+ - Remove debuginfo__new_online_kernel and related functions.
+ - Refer map->reloc to get the correct address of a symbol.
+ - Add a special case for handling ref_reloc_sym based address.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -142,18 +88,20 @@ Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140206053216.29635.22584.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
+Link: http://lkml.kernel.org/r/20140206053218.29635.74821.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 58 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 9 deletions(-)
+ tools/perf/util/probe-event.c  | 40 +++++++++++++-------
+ tools/perf/util/probe-finder.c | 86 ------------------------------------------
+ tools/perf/util/probe-finder.h |  1 -
+ 3 files changed, 26 insertions(+), 101 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index de9fe90..1ce2cb9 100644
+index 1ce2cb9..8e34c8d 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -383,6 +383,51 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- 	return ret;
+@@ -248,6 +248,18 @@ static struct debuginfo *open_debuginfo(const char *module)
+ 	return debuginfo__new(path);
  }
  
 +static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
@@ -161,72 +109,178 @@ index de9fe90..1ce2cb9 100644
 +	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
 +	struct kmap *kmap;
 +
++	if (map__load(host_machine->vmlinux_maps[MAP__FUNCTION], NULL) < 0)
++		return NULL;
++
 +	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
 +	return kmap->ref_reloc_sym;
 +}
 +
-+/* Post processing the probe events */
-+static int post_process_probe_trace_events(struct probe_trace_event *tevs,
-+					   int ntevs, const char *module,
-+					   bool uprobe)
-+{
-+	struct ref_reloc_sym *reloc_sym;
-+	char *tmp;
-+	int i;
-+
-+	if (uprobe)
-+		return add_exec_to_probe_trace_events(tevs, ntevs, module);
-+
-+	/* Note that currently ref_reloc_sym based probe is not for drivers */
-+	if (module)
-+		return add_module_to_probe_trace_events(tevs, ntevs, module);
-+
-+	reloc_sym = __kernel_get_ref_reloc_sym();
-+	if (!reloc_sym) {
-+		pr_warning("Relocated base symbol is not found!\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ntevs; i++) {
-+		if (tevs[i].point.address) {
-+			tmp = strdup(reloc_sym->name);
-+			if (!tmp)
-+				return -ENOMEM;
-+			free(tevs[i].point.symbol);
-+			tevs[i].point.symbol = tmp;
-+			tevs[i].point.offset = tevs[i].point.address -
-+					       reloc_sym->unrelocated_addr;
-+		}
-+	}
-+	return 0;
-+}
-+
- static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
+ /*
+  * Convert trace point to probe point with debuginfo
+  * Currently only handles kprobes.
+@@ -256,18 +268,27 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 					struct perf_probe_point *pp)
  {
- 	int i;
-@@ -411,21 +456,16 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 		return 0;
- 	}
+ 	struct symbol *sym;
++	struct ref_reloc_sym *reloc_sym;
+ 	struct map *map;
+-	u64 addr;
++	u64 addr = 0;
+ 	int ret = -ENOENT;
+ 	struct debuginfo *dinfo;
  
-+	pr_debug("Try to find probe point from debuginfo.\n");
- 	/* Searching trace events corresponding to a probe event */
- 	ntevs = debuginfo__find_trace_events(dinfo, pev, tevs, max_tevs);
+-	sym = __find_kernel_function_by_name(tp->symbol, &map);
+-	if (sym) {
+-		addr = map->unmap_ip(map, sym->start + tp->offset);
++	/* ref_reloc_sym is just a label. Need a special fix*/
++	reloc_sym = __kernel_get_ref_reloc_sym();
++	if (reloc_sym && strcmp(tp->symbol, reloc_sym->name) == 0)
++		addr = reloc_sym->unrelocated_addr + tp->offset;
++	else {
++		sym = __find_kernel_function_by_name(tp->symbol, &map);
++		if (sym)
++			addr = map->unmap_ip(map, sym->start + tp->offset) -
++				map->reloc;
++	}
++	if (addr) {
+ 		pr_debug("try to find %s+%ld@%" PRIx64 "\n", tp->symbol,
+ 			 tp->offset, addr);
  
- 	debuginfo__delete(dinfo);
+-		dinfo = debuginfo__new_online_kernel(addr);
++		dinfo = open_debuginfo(tp->module);
+ 		if (dinfo) {
+ 			ret = debuginfo__find_probe_point(dinfo,
+ 						 (unsigned long)addr, pp);
+@@ -383,15 +404,6 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ 	return ret;
+ }
  
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
--		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (target) {
--			if (pev->uprobes)
--				ret = add_exec_to_probe_trace_events(*tevs,
--						 ntevs, target);
--			else
--				ret = add_module_to_probe_trace_events(*tevs,
--						 ntevs, target);
+-static struct ref_reloc_sym *__kernel_get_ref_reloc_sym(void)
+-{
+-	/* kmap->ref_reloc_sym should be set if host_machine is initialized */
+-	struct kmap *kmap;
+-
+-	kmap = map__kmap(host_machine->vmlinux_maps[MAP__FUNCTION]);
+-	return kmap->ref_reloc_sym;
+-}
+-
+ /* Post processing the probe events */
+ static int post_process_probe_trace_events(struct probe_trace_event *tevs,
+ 					   int ntevs, const char *module,
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index e5e589f..4f6e277 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -89,79 +89,6 @@ error:
+ 	return -ENOENT;
+ }
+ 
+-#if _ELFUTILS_PREREQ(0, 148)
+-/* This method is buggy if elfutils is older than 0.148 */
+-static int __linux_kernel_find_elf(Dwfl_Module *mod,
+-				   void **userdata,
+-				   const char *module_name,
+-				   Dwarf_Addr base,
+-				   char **file_name, Elf **elfp)
+-{
+-	int fd;
+-	const char *path = kernel_get_module_path(module_name);
+-
+-	pr_debug2("Use file %s for %s\n", path, module_name);
+-	if (path) {
+-		fd = open(path, O_RDONLY);
+-		if (fd >= 0) {
+-			*file_name = strdup(path);
+-			return fd;
 -		}
-+		pr_debug("Found %d probe_trace_events.\n", ntevs);
-+		ret = post_process_probe_trace_events(*tevs, ntevs,
-+							target, pev->uprobes);
- 		if (ret < 0) {
- 			clear_probe_trace_events(*tevs, ntevs);
- 			zfree(tevs);
+-	}
+-	/* If failed, try to call standard method */
+-	return dwfl_linux_kernel_find_elf(mod, userdata, module_name, base,
+-					  file_name, elfp);
+-}
+-
+-static const Dwfl_Callbacks kernel_callbacks = {
+-	.find_debuginfo = dwfl_standard_find_debuginfo,
+-	.debuginfo_path = &debuginfo_path,
+-
+-	.find_elf = __linux_kernel_find_elf,
+-	.section_address = dwfl_linux_kernel_module_section_address,
+-};
+-
+-/* Get a Dwarf from live kernel image */
+-static int debuginfo__init_online_kernel_dwarf(struct debuginfo *dbg,
+-					       Dwarf_Addr addr)
+-{
+-	dbg->dwfl = dwfl_begin(&kernel_callbacks);
+-	if (!dbg->dwfl)
+-		return -EINVAL;
+-
+-	/* Load the kernel dwarves: Don't care the result here */
+-	dwfl_linux_kernel_report_kernel(dbg->dwfl);
+-	dwfl_linux_kernel_report_modules(dbg->dwfl);
+-
+-	dbg->dbg = dwfl_addrdwarf(dbg->dwfl, addr, &dbg->bias);
+-	/* Here, check whether we could get a real dwarf */
+-	if (!dbg->dbg) {
+-		pr_debug("Failed to find kernel dwarf at %lx\n",
+-			 (unsigned long)addr);
+-		dwfl_end(dbg->dwfl);
+-		memset(dbg, 0, sizeof(*dbg));
+-		return -ENOENT;
+-	}
+-
+-	return 0;
+-}
+-#else
+-/* With older elfutils, this just support kernel module... */
+-static int debuginfo__init_online_kernel_dwarf(struct debuginfo *dbg,
+-					       Dwarf_Addr addr __maybe_unused)
+-{
+-	const char *path = kernel_get_module_path("kernel");
+-
+-	if (!path) {
+-		pr_err("Failed to find vmlinux path\n");
+-		return -ENOENT;
+-	}
+-
+-	pr_debug2("Use file %s for debuginfo\n", path);
+-	return debuginfo__init_offline_dwarf(dbg, path);
+-}
+-#endif
+-
+ struct debuginfo *debuginfo__new(const char *path)
+ {
+ 	struct debuginfo *dbg = zalloc(sizeof(*dbg));
+@@ -174,19 +101,6 @@ struct debuginfo *debuginfo__new(const char *path)
+ 	return dbg;
+ }
+ 
+-struct debuginfo *debuginfo__new_online_kernel(unsigned long addr)
+-{
+-	struct debuginfo *dbg = zalloc(sizeof(*dbg));
+-
+-	if (!dbg)
+-		return NULL;
+-
+-	if (debuginfo__init_online_kernel_dwarf(dbg, (Dwarf_Addr)addr) < 0)
+-		zfree(&dbg);
+-
+-	return dbg;
+-}
+-
+ void debuginfo__delete(struct debuginfo *dbg)
+ {
+ 	if (dbg) {
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index 592c4da..3fc5973 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -31,7 +31,6 @@ struct debuginfo {
+ };
+ 
+ extern struct debuginfo *debuginfo__new(const char *path);
+-extern struct debuginfo *debuginfo__new_online_kernel(unsigned long addr);
+ extern void debuginfo__delete(struct debuginfo *dbg);
+ 
+ /* Find probe_trace_events specified by perf_probe_event from debuginfo */
