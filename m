@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaBVRav (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 12:30:51 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:45948 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaBVRat (ORCPT
+	id S1752199AbaBVRdR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 12:33:17 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:47299 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaBVRdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 12:30:49 -0500
+	Sat, 22 Feb 2014 12:33:16 -0500
+Date: Sat, 22 Feb 2014 18:33:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org >> LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL v2] liblockdep fixes for v3.14
+Message-ID: <20140222173311.GA401@gmail.com>
+References: <52FBFEE8.3010708@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <5308C343.5040102@linux.intel.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-	<1388707565-16535-11-git-send-email-yinghai@kernel.org>
-	<53070393.5020005@linux.intel.com>
-	<CAE9FiQV8B271XCJQV=80S6pZDOVxG9LG0gaj9G98dCRetjkMUg@mail.gmail.com>
-	<53081614.4020503@linux.intel.com>
-	<CAE9FiQXnMgG=mOmcSK9ZwKR6tFAkJX2dVnGTj9Mmg3daDhPmEA@mail.gmail.com>
-	<5308C343.5040102@linux.intel.com>
-Date: Sat, 22 Feb 2014 09:30:48 -0800
-X-Google-Sender-Auth: O_8Us_EAYz3xZVWEvuc91s_ukps
-Message-ID: <CAE9FiQWp1AU2BeX_yyTmPm662T08kJfzSGbq_Nzy3jM6VAm9yQ@mail.gmail.com>
-Subject: Re: [PATCH v5 10/33] iommu, irq: Allocate irq_desc for dmar_msi with
- local node
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Donald Dutile <ddutile@redhat.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52FBFEE8.3010708@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 7:33 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> Hi Yinghai,
->         I have a plan to test this patch set once I have reviewed
-> all patches in coming weeks. Do you have a plan to update to latest
-> kernel or is it ok to test this version?
 
-That will be great. I will refresh the branch on top of
-linus/tip/pci/acpi next week.
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-Thanks
+> The following changes since commit 65370bdf881e20907e7a53abab9b8c0bc5f60a6b:
+> 
+>   Merge branch 'linus' into core/locking (2014-02-02 09:43:20 +0100)
 
-Yinghai
+That's not a suitable base commit for upstream fixes (because it 
+brings in tip:core/locking changes destined for v3.15!) - please use 
+tip:core/urgent or one of Linus's -rc's.
+
+Also, I found some more commit log problems.
+
+1)
+
+This:
+
+    Acked-by: Sasha Levin <sasha.levin@oracle.com>
+    Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+
+Is redundant - skip the Acked-by.
+
+2)
+
+This:
+
+    [sasha: Modified subject]
+    Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+
+should in general be:
+
+    [ Modified subject. ]
+    Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+
+Because it's obvious from the placement of the bracketed line that the 
+comment is from you, no need to prefix it with 'sasha:'.
+
+But ... more importantly, small commit log edits are typical (and 
+expected) from maintainers - I do it for 99% of the patches that I 
+apply, so please only add such comments if it goes outside the usual 
+pattern:
+
+   - if you've written a completely new changelog (nice from you)
+
+   - or if you've resolved conflicts when applying the patch or 
+     actually changed the code logic compared to what was submitted 
+     (which should always be declared).
+
+Thanks,
+
+	Ingo
