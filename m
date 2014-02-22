@@ -1,28 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322AbaBVSAe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:00:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41125 "EHLO
+	id S1753294AbaBVSA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:00:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41119 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaBVSAb (ORCPT
+	with ESMTP id S1752462AbaBVSA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:00:31 -0500
-Date: Sat, 22 Feb 2014 09:59:40 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-sybihqycxrmssa4df9516jib@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
+	Sat, 22 Feb 2014 13:00:26 -0500
+Date: Sat, 22 Feb 2014 10:00:02 -0800
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-f49540b17c1c6fa5a0734cc1d8b57614fd2036be@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        dave.long@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, dsahern@gmail.com,
+        oleg@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, dave.long@linaro.org,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20140206053206.29635.7453.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+References: <20140206053206.29635.7453.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: No need to export dso__first_symbol
-Git-Commit-ID: c96626b1da589075b1b3e815239ceace11350662
+Subject: [tip:perf/core] perf probe:
+  Remove incorrect symbol check for --list
+Git-Commit-ID: f49540b17c1c6fa5a0734cc1d8b57614fd2036be
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,55 +38,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c96626b1da589075b1b3e815239ceace11350662
-Gitweb:     http://git.kernel.org/tip/c96626b1da589075b1b3e815239ceace11350662
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 14 Feb 2014 17:09:10 -0300
+Commit-ID:  f49540b17c1c6fa5a0734cc1d8b57614fd2036be
+Gitweb:     http://git.kernel.org/tip/f49540b17c1c6fa5a0734cc1d8b57614fd2036be
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Thu, 6 Feb 2014 05:32:06 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 18 Feb 2014 09:34:49 -0300
+CommitDate: Tue, 18 Feb 2014 09:34:50 -0300
 
-perf symbols: No need to export dso__first_symbol
+perf probe: Remove incorrect symbol check for --list
 
-There are no users outside the file that defines it.
+Remove unneeded symbol check for --list option.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+This code actually checks whether the given symbol exists in the kernel.
+But this is incorrect for online kernel/module and offline module too:
+
+ - For online kernel/module, the kprobes itself already
+  ensured the symbol exist in the kernel.
+ - For offline module, this code can't access the offlined
+  modules. Ignore it.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: "David A. Long" <dave.long@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-sybihqycxrmssa4df9516jib@git.kernel.org
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20140206053206.29635.7453.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 2 +-
- tools/perf/util/symbol.h | 1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+ tools/perf/util/probe-event.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index a9d758a..46e2ede 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -410,7 +410,7 @@ struct symbol *dso__find_symbol(struct dso *dso,
- 	return symbols__find(&dso->symbols[type], addr);
- }
- 
--struct symbol *dso__first_symbol(struct dso *dso, enum map_type type)
-+static struct symbol *dso__first_symbol(struct dso *dso, enum map_type type)
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 9aa7783..a4649e7 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -739,14 +739,6 @@ out:
+ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 					struct perf_probe_point *pp)
  {
- 	return symbols__first(&dso->symbols[type]);
+-	struct symbol *sym;
+-
+-	sym = __find_kernel_function_by_name(tp->symbol, NULL);
+-	if (!sym) {
+-		pr_err("Failed to find symbol %s in kernel.\n", tp->symbol);
+-		return -ENOENT;
+-	}
+-
+ 	return convert_to_perf_probe_point(tp, pp);
  }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index fffe288..538d484 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -223,7 +223,6 @@ struct symbol *dso__find_symbol(struct dso *dso, enum map_type type,
- 				u64 addr);
- struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
- 					const char *name);
--struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
  
- int filename__read_build_id(const char *filename, void *bf, size_t size);
- int sysfs__read_build_id(const char *filename, void *bf, size_t size);
