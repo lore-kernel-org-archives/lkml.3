@@ -1,181 +1,450 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaBVWFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 17:05:05 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:33717 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaBVWFC (ORCPT
+	id S1752589AbaBVWJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 17:09:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36796 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaBVWJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 17:05:02 -0500
+	Sat, 22 Feb 2014 17:09:35 -0500
+Date: Sat, 22 Feb 2014 14:12:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.13.5
+Message-ID: <20140222221218.GA664@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVf2L-FjkXR3WC=0iHNY73D2G4jyMeko4f4DPuxAXTK+Q@mail.gmail.com>
-References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
-	<1388707565-16535-3-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1401222241100.24986@ionos.tec.linutronix.de>
-	<CAE9FiQUo9NGbjiZbMsf2yBFbn=iLJ-jc3QtZ8K6qwVuhmqzq=Q@mail.gmail.com>
-	<alpine.DEB.2.02.1402221104440.21251@ionos.tec.linutronix.de>
-	<CAE9FiQVf2L-FjkXR3WC=0iHNY73D2G4jyMeko4f4DPuxAXTK+Q@mail.gmail.com>
-Date: Sat, 22 Feb 2014 14:05:01 -0800
-X-Google-Sender-Auth: vLrBz5eg9hH50Jn5PQDaQA6m73k
-Message-ID: <CAE9FiQVf7u62S4puc2iMqiFO2YU-Kf35XVB9mC+SEP6Z73x7Zw@mail.gmail.com>
-Subject: Re: [PATCH v5 02/33] genirq: Add irq_alloc_reserved_desc()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Content-Type: multipart/mixed; boundary=001a11330c9e12892c04f305ee09
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11330c9e12892c04f305ee09
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Sat, Feb 22, 2014 at 9:28 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sat, Feb 22, 2014 at 2:08 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->>
->> As I said before irq_reserve_irq() is a misnomer and a
->> misconception. Of course this needs to be fixed as well.
->>
->> And you cannot just blindly change it because !SPARSE can use the
->> allocation. We are not creating stupid corner cases just to support
->> your sloppyness. Its not rocket science to do it the right way.
->>
->> That said, it might be worthwhile to get rid of the !SPARSE case
->> completely. That would probably make quite some stuff simpler.
->
-> So we need to make all arches support SPARSE_IRQ at first?
->
-> Now we have arm, arm64, c6x, metag, powerpc, sh, x86 support SPARSE_IRQ.
->
-> The following  are not with SPARSE_IRQ yet:
-> alpha, arc, avr32, blackfin, cris, frv, hexagon, m32r, m68k, microblaze,
-> mips, mn10300, openrisc, parisc, s390, score, sparc, tile, um,
-> unicore32, xtensa.
+--tThc/1wpZn/ma/RB
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-or add calling irq_alloc_desc_at() before irq_set_chip... for !SPARSE_IRQ.
+I'm announcing the release of the 3.13.5 kernel.
 
-Please check attached partial patch if you like it.
+All users of the 3.13 kernel series must upgrade.
 
-If you are happy with that, I will split it into pieces and add other
-irq_alloc_desc_at()
-calling.
+The updated 3.13.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.13.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
 
-Thanks
+thanks,
 
-Yinghai
+greg k-h
 
---001a11330c9e12892c04f305ee09
-Content-Type: text/x-patch; charset=US-ASCII; name="kill_irq_reserve_irqs.patch"
-Content-Disposition: attachment; filename="kill_irq_reserve_irqs.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hrzfqj720
+------------
 
-ZGlmZiAtLWdpdCBhL2FyY2gvYWxwaGEva2VybmVsL2lycV9hbHBoYS5jIGIvYXJjaC9hbHBoYS9r
-ZXJuZWwvaXJxX2FscGhhLmMKaW5kZXggMWM4NjI1Yy4uNmM4NzI4YSAxMDA2NDQKLS0tIGEvYXJj
-aC9hbHBoYS9rZXJuZWwvaXJxX2FscGhhLmMKKysrIGIvYXJjaC9hbHBoYS9rZXJuZWwvaXJxX2Fs
-cGhhLmMKQEAgLTIyMSw2ICsyMjEsNyBAQCBzdHJ1Y3QgaXJxYWN0aW9uIHRpbWVyX2lycWFjdGlv
-biA9IHsKIHZvaWQgX19pbml0CiBpbml0X3J0Y19pcnEodm9pZCkKIHsKKwlpcnFfYWxsb2NfZGVz
-Y19hdChSVENfSVJRLCAwKTsKIAlpcnFfc2V0X2NoaXBfYW5kX2hhbmRsZXJfbmFtZShSVENfSVJR
-LCAmZHVtbXlfaXJxX2NoaXAsCiAJCQkJICAgICAgaGFuZGxlX3BlcmNwdV9pcnEsICJSVEMiKTsK
-IAlzZXR1cF9pcnEoUlRDX0lSUSwgJnRpbWVyX2lycWFjdGlvbik7CmRpZmYgLS1naXQgYS9hcmNo
-L2FscGhhL2tlcm5lbC9pcnFfaTgyNTkuYyBiL2FyY2gvYWxwaGEva2VybmVsL2lycV9pODI1OS5j
-CmluZGV4IGUxODYxYzcuLmM1MjIzNTkgMTAwNjQ0Ci0tLSBhL2FyY2gvYWxwaGEva2VybmVsL2ly
-cV9pODI1OS5jCisrKyBiL2FyY2gvYWxwaGEva2VybmVsL2lycV9pODI1OS5jCkBAIC05Miw2ICs5
-Miw3IEBAIGluaXRfaTgyNTlhX2lycXModm9pZCkKIAlvdXRiKDB4ZmYsIDB4QTEpOwkvKiBtYXNr
-IGFsbCBvZiA4MjU5QS0yICovCiAKIAlmb3IgKGkgPSAwOyBpIDwgMTY7IGkrKykgeworCQlpcnFf
-YWxsb2NfZGVzY19hdChpLCAwKTsKIAkJaXJxX3NldF9jaGlwX2FuZF9oYW5kbGVyKGksICZpODI1
-OWFfaXJxX3R5cGUsIGhhbmRsZV9sZXZlbF9pcnEpOwogCX0KIApkaWZmIC0tZ2l0IGEvYXJjaC9h
-bHBoYS9rZXJuZWwvaXJxX3B5eGlzLmMgYi9hcmNoL2FscGhhL2tlcm5lbC9pcnFfcHl4aXMuYwpp
-bmRleCAxM2M5N2E1Li5iNmRhNmQxIDEwMDY0NAotLS0gYS9hcmNoL2FscGhhL2tlcm5lbC9pcnFf
-cHl4aXMuYworKysgYi9hcmNoL2FscGhhL2tlcm5lbC9pcnFfcHl4aXMuYwpAQCAtMTAyLDYgKzEw
-Miw3IEBAIGluaXRfcHl4aXNfaXJxcyh1bnNpZ25lZCBsb25nIGlnbm9yZV9tYXNrKQogCWZvciAo
-aSA9IDE2OyBpIDwgNDg7ICsraSkgewogCQlpZiAoKGlnbm9yZV9tYXNrID4+IGkpICYgMSkKIAkJ
-CWNvbnRpbnVlOworCQlpcnFfYWxsb2NfZGVzY19hdChpLCAwKTsKIAkJaXJxX3NldF9jaGlwX2Fu
-ZF9oYW5kbGVyKGksICZweXhpc19pcnFfdHlwZSwgaGFuZGxlX2xldmVsX2lycSk7CiAJCWlycV9z
-ZXRfc3RhdHVzX2ZsYWdzKGksIElSUV9MRVZFTCk7CiAJfQpkaWZmIC0tZ2l0IGEvYXJjaC9zMzkw
-L2tlcm5lbC9pcnEuYyBiL2FyY2gvczM5MC9rZXJuZWwvaXJxLmMKaW5kZXggYmIyN2EyNi4uMmQx
-NTY3YiAxMDA2NDQKLS0tIGEvYXJjaC9zMzkwL2tlcm5lbC9pcnEuYworKysgYi9hcmNoL3MzOTAv
-a2VybmVsL2lycS5jCkBAIC04OCw5ICs4OCwxMyBAQCBzdGF0aWMgY29uc3Qgc3RydWN0IGlycV9j
-bGFzcyBpcnFjbGFzc19zdWJfZGVzY1tOUl9BUkNIX0lSUVNdID0gewogCVtDUFVfUlNUXSAgICA9
-IHsubmFtZSA9ICJSU1QiLCAuZGVzYyA9ICJbQ1BVXSBDUFUgUmVzdGFydCJ9LAogfTsKIAoraW50
-IGFyY2hfcHJvYmVfZWFybHlfYWxsb2NhdGVfbnJfaXJxcyh2b2lkKQoreworCXJldHVybiBUSElO
-X0lOVEVSUlVQVDsKK30KKwogdm9pZCBfX2luaXQgaW5pdF9JUlEodm9pZCkKIHsKLQlpcnFfcmVz
-ZXJ2ZV9pcnFzKDAsIFRISU5fSU5URVJSVVBUKTsKIAlpbml0X2Npb19pbnRlcnJ1cHRzKCk7CiAJ
-aW5pdF9haXJxX2ludGVycnVwdHMoKTsKIAlpbml0X2V4dF9pbnRlcnJ1cHRzKCk7CmRpZmYgLS1n
-aXQgYS9hcmNoL3g4Ni9rZXJuZWwvYXBpYy9pb19hcGljLmMgYi9hcmNoL3g4Ni9rZXJuZWwvYXBp
-Yy9pb19hcGljLmMKaW5kZXggNmFkNDY1OC4uMzk4ZjljNCAxMDA2NDQKLS0tIGEvYXJjaC94ODYv
-a2VybmVsL2FwaWMvaW9fYXBpYy5jCisrKyBiL2FyY2gveDg2L2tlcm5lbC9hcGljL2lvX2FwaWMu
-YwpAQCAtMjA2LDkgKzIwNiw2IEBAIGludCBfX2luaXQgYXJjaF9lYXJseV9pcnFfaW5pdCh2b2lk
-KQogCWNvdW50ID0gQVJSQVlfU0laRShpcnFfY2ZneCk7CiAJbm9kZSA9IGNwdV90b19ub2RlKDAp
-OwogCi0JLyogTWFrZSBzdXJlIHRoZSBsZWdhY3kgaW50ZXJydXB0cyBhcmUgbWFya2VkIGluIHRo
-ZSBiaXRtYXAgKi8KLQlpcnFfcmVzZXJ2ZV9pcnFzKDAsIGxlZ2FjeV9waWMtPm5yX2xlZ2FjeV9p
-cnFzKTsKLQogCWZvciAoaSA9IDA7IGkgPCBjb3VudDsgaSsrKSB7CiAJCWlycV9zZXRfY2hpcF9k
-YXRhKGksICZjZmdbaV0pOwogCQl6YWxsb2NfY3B1bWFza192YXJfbm9kZSgmY2ZnW2ldLmRvbWFp
-biwgR0ZQX0tFUk5FTCwgbm9kZSk7CmRpZmYgLS1naXQgYS9kcml2ZXJzL3NoL2ludGMvY29yZS5j
-IGIvZHJpdmVycy9zaC9pbnRjL2NvcmUuYwppbmRleCA4ZjMyYTEzLi4wNTExOGY5MiAxMDA2NDQK
-LS0tIGEvZHJpdmVycy9zaC9pbnRjL2NvcmUuYworKysgYi9kcml2ZXJzL3NoL2ludGMvY29yZS5j
-CkBAIC04MSwxMSArODEsOCBAQCBzdGF0aWMgdm9pZCBfX2luaXQgaW50Y19yZWdpc3Rlcl9pcnEo
-c3RydWN0IGludGNfZGVzYyAqZGVzYywKIAl1bnNpZ25lZCBsb25nIGZsYWdzOwogCiAJLyoKLQkg
-KiBSZWdpc3RlciB0aGUgSVJRIHBvc2l0aW9uIHdpdGggdGhlIGdsb2JhbCBJUlEgbWFwLCB0aGVu
-IGluc2VydAotCSAqIGl0IGluIHRvIHRoZSByYWRpeCB0cmVlLgorCSAqIGluc2VydCBpdCBpbiB0
-byB0aGUgcmFkaXggdHJlZS4KIAkgKi8KLQlpcnFfcmVzZXJ2ZV9pcnEoaXJxKTsKLQogCXJhd19z
-cGluX2xvY2tfaXJxc2F2ZSgmaW50Y19iaWdfbG9jaywgZmxhZ3MpOwogCXJhZGl4X3RyZWVfaW5z
-ZXJ0KCZkLT50cmVlLCBlbnVtX2lkLCBpbnRjX2lycV94bGF0ZV9nZXQoaXJxKSk7CiAJcmF3X3Nw
-aW5fdW5sb2NrX2lycXJlc3RvcmUoJmludGNfYmlnX2xvY2ssIGZsYWdzKTsKZGlmZiAtLWdpdCBh
-L2luY2x1ZGUvbGludXgvaXJxLmggYi9pbmNsdWRlL2xpbnV4L2lycS5oCmluZGV4IDdkYzEwMDMu
-LjU4NGYwZDcgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvaXJxLmgKKysrIGIvaW5jbHVkZS9s
-aW51eC9pcnEuaApAQCAtNjEzLDE4ICs2MTMsMTMgQEAgaW50IF9faXJxX2FsbG9jX2Rlc2NzKGlu
-dCBpcnEsIHVuc2lnbmVkIGludCBmcm9tLCB1bnNpZ25lZCBpbnQgY250LCBpbnQgbm9kZSwKIAlp
-cnFfYWxsb2NfZGVzY3MoLTEsIGZyb20sIGNudCwgbm9kZSkKIAogdm9pZCBpcnFfZnJlZV9kZXNj
-cyh1bnNpZ25lZCBpbnQgaXJxLCB1bnNpZ25lZCBpbnQgY250KTsKLWludCBpcnFfcmVzZXJ2ZV9p
-cnFzKHVuc2lnbmVkIGludCBmcm9tLCB1bnNpZ25lZCBpbnQgY250KTsKK2ludCBhcmNoX3Byb2Jl
-X2Vhcmx5X2FsbG9jYXRlX25yX2lycXModm9pZCk7CiAKIHN0YXRpYyBpbmxpbmUgdm9pZCBpcnFf
-ZnJlZV9kZXNjKHVuc2lnbmVkIGludCBpcnEpCiB7CiAJaXJxX2ZyZWVfZGVzY3MoaXJxLCAxKTsK
-IH0KIAotc3RhdGljIGlubGluZSBpbnQgaXJxX3Jlc2VydmVfaXJxKHVuc2lnbmVkIGludCBpcnEp
-Ci17Ci0JcmV0dXJuIGlycV9yZXNlcnZlX2lycXMoaXJxLCAxKTsKLX0KLQogI2lmbmRlZiBpcnFf
-cmVnX3dyaXRlbAogIyBkZWZpbmUgaXJxX3JlZ193cml0ZWwodmFsLCBhZGRyKQl3cml0ZWwodmFs
-LCBhZGRyKQogI2VuZGlmCmRpZmYgLS1naXQgYS9rZXJuZWwvaXJxL2NoaXAuYyBiL2tlcm5lbC9p
-cnEvY2hpcC5jCmluZGV4IGRjMDRjMTYuLjRkODZjZjUgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9pcnEv
-Y2hpcC5jCisrKyBiL2tlcm5lbC9pcnEvY2hpcC5jCkBAIC0zOCwxMiArMzgsNyBAQCBpbnQgaXJx
-X3NldF9jaGlwKHVuc2lnbmVkIGludCBpcnEsIHN0cnVjdCBpcnFfY2hpcCAqY2hpcCkKIAogCWRl
-c2MtPmlycV9kYXRhLmNoaXAgPSBjaGlwOwogCWlycV9wdXRfZGVzY191bmxvY2soZGVzYywgZmxh
-Z3MpOwotCS8qCi0JICogRm9yICFDT05GSUdfU1BBUlNFX0lSUSBtYWtlIHRoZSBpcnEgc2hvdyB1
-cCBpbgotCSAqIGFsbG9jYXRlZF9pcnFzLiBGb3IgdGhlIENPTkZJR19TUEFSU0VfSVJRIGNhc2Us
-IGl0IGlzCi0JICogYWxyZWFkeSBtYXJrZWQsIGFuZCB0aGlzIGNhbGwgaXMgaGFybWxlc3MuCi0J
-ICovCi0JaXJxX3Jlc2VydmVfaXJxKGlycSk7CisKIAlyZXR1cm4gMDsKIH0KIEVYUE9SVF9TWU1C
-T0woaXJxX3NldF9jaGlwKTsKZGlmZiAtLWdpdCBhL2tlcm5lbC9pcnEvaXJxZGVzYy5jIGIva2Vy
-bmVsL2lycS9pcnFkZXNjLmMKaW5kZXggOGFiOGU5My4uNGIyYWI5NiAxMDA2NDQKLS0tIGEva2Vy
-bmVsL2lycS9pcnFkZXNjLmMKKysrIGIva2VybmVsL2lycS9pcnFkZXNjLmMKQEAgLTI0OCwxMCAr
-MjQ4LDE2IEBAIHN0cnVjdCBpcnFfZGVzYyBpcnFfZGVzY1tOUl9JUlFTXSBfX2NhY2hlbGluZV9h
-bGlnbmVkX2luX3NtcCA9IHsKIAl9CiB9OwogCitpbnQgX193ZWFrIGFyY2hfcHJvYmVfZWFybHlf
-YWxsb2NhdGVfbnJfaXJxcyh2b2lkKQoreworICAgICAgICByZXR1cm4gMDsKK30KKwogaW50IF9f
-aW5pdCBlYXJseV9pcnFfaW5pdCh2b2lkKQogewogCWludCBjb3VudCwgaSwgbm9kZSA9IGZpcnN0
-X29ubGluZV9ub2RlOwogCXN0cnVjdCBpcnFfZGVzYyAqZGVzYzsKKwlpbnQgbnIgPSBhcmNoX3By
-b2JlX2Vhcmx5X2FsbG9jYXRlX25yX2lycXMoKTsKIAogCWluaXRfaXJxX2RlZmF1bHRfYWZmaW5p
-dHkoKTsKIApAQCAtMjY3LDYgKzI3MywxMCBAQCBpbnQgX19pbml0IGVhcmx5X2lycV9pbml0KHZv
-aWQpCiAJCWxvY2tkZXBfc2V0X2NsYXNzKCZkZXNjW2ldLmxvY2ssICZpcnFfZGVzY19sb2NrX2Ns
-YXNzKTsKIAkJZGVzY19zZXRfZGVmYXVsdHMoaSwgJmRlc2NbaV0sIG5vZGUsIE5VTEwpOwogCX0K
-KworCWZvciAoaSA9IDA7IGkgPCBucjsgaSsrKQorCQlzZXRfYml0KGksIGFsbG9jYXRlZF9pcnFz
-KTsKKwogCXJldHVybiBhcmNoX2Vhcmx5X2lycV9pbml0KCk7CiB9CiAKQEAgLTM5MCwzMSArNDAw
-LDYgQEAgZXJyOgogRVhQT1JUX1NZTUJPTF9HUEwoX19pcnFfYWxsb2NfZGVzY3MpOwogCiAvKioK
-LSAqIGlycV9yZXNlcnZlX2lycXMgLSBtYXJrIGlycXMgYWxsb2NhdGVkCi0gKiBAZnJvbToJbWFy
-ayBmcm9tIGlycSBudW1iZXIKLSAqIEBjbnQ6CW51bWJlciBvZiBpcnFzIHRvIG1hcmsKLSAqCi0g
-KiBSZXR1cm5zIDAgb24gc3VjY2VzcyBvciBhbiBhcHByb3ByaWF0ZSBlcnJvciBjb2RlCi0gKi8K
-LWludCBpcnFfcmVzZXJ2ZV9pcnFzKHVuc2lnbmVkIGludCBmcm9tLCB1bnNpZ25lZCBpbnQgY250
-KQotewotCXVuc2lnbmVkIGludCBzdGFydDsKLQlpbnQgcmV0ID0gMDsKLQotCWlmICghY250IHx8
-IChmcm9tICsgY250KSA+IG5yX2lycXMpCi0JCXJldHVybiAtRUlOVkFMOwotCi0JbXV0ZXhfbG9j
-aygmc3BhcnNlX2lycV9sb2NrKTsKLQlzdGFydCA9IGJpdG1hcF9maW5kX25leHRfemVyb19hcmVh
-KGFsbG9jYXRlZF9pcnFzLCBucl9pcnFzLCBmcm9tLCBjbnQsIDApOwotCWlmIChzdGFydCA9PSBm
-cm9tKQotCQliaXRtYXBfc2V0KGFsbG9jYXRlZF9pcnFzLCBzdGFydCwgY250KTsKLQllbHNlCi0J
-CXJldCA9IC1FRVhJU1Q7Ci0JbXV0ZXhfdW5sb2NrKCZzcGFyc2VfaXJxX2xvY2spOwotCXJldHVy
-biByZXQ7Ci19Ci0KLS8qKgogICogaXJxX2dldF9uZXh0X2lycSAtIGdldCBuZXh0IGFsbG9jYXRl
-ZCBpcnEgbnVtYmVyCiAgKiBAb2Zmc2V0Ogl3aGVyZSB0byBzdGFydCB0aGUgc2VhcmNoCiAgKgo=
---001a11330c9e12892c04f305ee09--
+ Makefile                                          |    2=20
+ arch/arm/mach-pxa/am300epd.c                      |    1=20
+ arch/arm/mach-pxa/include/mach/balloon3.h         |    2=20
+ arch/arm/mach-pxa/include/mach/corgi.h            |    1=20
+ arch/arm/mach-pxa/include/mach/csb726.h           |    2=20
+ arch/arm/mach-pxa/include/mach/gumstix.h          |    1=20
+ arch/arm/mach-pxa/include/mach/idp.h              |    1=20
+ arch/arm/mach-pxa/include/mach/palmld.h           |    2=20
+ arch/arm/mach-pxa/include/mach/palmt5.h           |    2=20
+ arch/arm/mach-pxa/include/mach/palmtc.h           |    2=20
+ arch/arm/mach-pxa/include/mach/palmtx.h           |    2=20
+ arch/arm/mach-pxa/include/mach/pcm027.h           |    2=20
+ arch/arm/mach-pxa/include/mach/pcm990_baseboard.h |    1=20
+ arch/arm/mach-pxa/include/mach/poodle.h           |    2=20
+ arch/arm/mach-pxa/include/mach/spitz.h            |    2=20
+ arch/arm/mach-pxa/include/mach/tosa.h             |    2=20
+ arch/arm/mach-pxa/include/mach/trizeps4.h         |    2=20
+ arch/powerpc/kernel/machine_kexec.c               |   14 ++-
+ arch/powerpc/kernel/machine_kexec_64.c            |    6 -
+ arch/s390/kernel/head64.S                         |    7 +
+ arch/s390/mm/page-states.c                        |   10 ++
+ arch/x86/include/asm/pgtable.h                    |   14 ++-
+ arch/x86/kernel/cpu/common.c                      |    7 +
+ arch/x86/kernel/ftrace.c                          |   83 +++++++++++------=
+---
+ arch/x86/mm/fault.c                               |   14 ++-
+ arch/x86/xen/mmu.c                                |    4=20
+ block/blk-lib.c                                   |    8 +
+ block/blk.h                                       |    2=20
+ drivers/block/xen-blkfront.c                      |    5 -
+ drivers/char/raw.c                                |    2=20
+ drivers/edac/edac_mc.c                            |   13 +--
+ drivers/edac/edac_mc_sysfs.c                      |   10 +-
+ drivers/edac/edac_module.h                        |    2=20
+ drivers/gpu/drm/i915/i915_gpu_error.c             |    5 -
+ drivers/gpu/drm/i915/i915_irq.c                   |    3=20
+ drivers/gpu/drm/i915/intel_dp.c                   |   10 +-
+ drivers/gpu/drm/radeon/cik_sdma.c                 |   43 +++++++---
+ drivers/gpu/drm/radeon/r600.c                     |    4=20
+ drivers/gpu/drm/radeon/si.c                       |    4=20
+ drivers/hv/connection.c                           |   13 ---
+ drivers/hwmon/ntc_thermistor.c                    |    6 -
+ drivers/i2c/busses/i2c-mv64xxx.c                  |   33 +++-----
+ drivers/iio/adc/max1363.c                         |    2=20
+ drivers/iio/imu/adis16400.h                       |    1=20
+ drivers/iio/imu/adis16400_core.c                  |   10 +-
+ drivers/iio/magnetometer/ak8975.c                 |   16 ++-
+ drivers/infiniband/hw/qib/qib_iba7322.c           |    5 +
+ drivers/md/raid1.c                                |   13 ++-
+ drivers/md/raid5.c                                |   90 ++++++++++-------=
+-----
+ drivers/misc/mei/client.c                         |   11 ++
+ drivers/misc/mic/host/mic_virtio.c                |    3=20
+ drivers/net/wireless/ath/ar5523/ar5523.c          |    2=20
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c     |    8 +
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c     |   25 +++---
+ drivers/net/wireless/ath/ath9k/init.c             |    8 +
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c      |    5 +
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c       |    2=20
+ drivers/net/wireless/iwlwifi/mvm/scan.c           |    3=20
+ drivers/net/wireless/iwlwifi/mvm/utils.c          |    2=20
+ drivers/net/wireless/iwlwifi/pcie/drv.c           |    7 +
+ drivers/of/address.c                              |    5 -
+ drivers/pci/hotplug/acpiphp_glue.c                |   15 +++
+ drivers/power/max17040_battery.c                  |    5 -
+ drivers/spi/spi-nuc900.c                          |    2=20
+ drivers/spi/spi.c                                 |    4=20
+ drivers/staging/comedi/drivers/adv_pci1710.c      |   17 ++--
+ drivers/staging/iio/adc/ad799x_core.c             |    5 -
+ drivers/staging/iio/impedance-analyzer/ad5933.c   |    2=20
+ drivers/staging/lustre/lustre/llite/dir.c         |    2=20
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c       |    2=20
+ drivers/target/target_core_pr.c                   |   11 +-
+ drivers/tty/n_gsm.c                               |   11 ++
+ drivers/tty/n_tty.c                               |   12 +-
+ drivers/tty/serial/omap-serial.c                  |    6 -
+ drivers/tty/serial/sirfsoc_uart.c                 |    4=20
+ drivers/tty/vt/vt.c                               |    2=20
+ drivers/usb/core/hcd.c                            |    1=20
+ drivers/usb/core/hub.c                            |    7 -
+ drivers/usb/core/usb.h                            |    1=20
+ drivers/usb/host/xhci-ring.c                      |   54 -------------
+ drivers/usb/host/xhci.c                           |   18 +++-
+ drivers/usb/host/xhci.h                           |    2=20
+ drivers/usb/serial/ftdi_sio.c                     |    3=20
+ drivers/usb/serial/ftdi_sio_ids.h                 |    7 +
+ drivers/usb/serial/option.c                       |    3=20
+ drivers/usb/serial/qcserial.c                     |    3=20
+ drivers/usb/serial/usb-serial-simple.c            |    3=20
+ drivers/usb/storage/Kconfig                       |    4=20
+ drivers/usb/storage/scsiglue.c                    |    6 +
+ drivers/usb/storage/unusual_cypress.h             |    2=20
+ drivers/usb/storage/unusual_devs.h                |    7 +
+ drivers/vme/bridges/vme_ca91cx42.c                |    4=20
+ drivers/vme/bridges/vme_tsi148.c                  |    4=20
+ fs/bio-integrity.c                                |   10 ++
+ fs/cifs/cifsacl.c                                 |   28 +++++-
+ fs/cifs/cifsglob.h                                |   10 ++
+ fs/cifs/inode.c                                   |   13 ++-
+ fs/cifs/smb1ops.c                                 |    8 +
+ fs/cifs/xattr.c                                   |   64 ++++++++++-----
+ fs/file.c                                         |    2=20
+ fs/lockd/svclock.c                                |    8 +
+ fs/nfs/dir.c                                      |    5 +
+ include/linux/compiler-gcc4.h                     |    6 -
+ include/linux/hyperv.h                            |    2=20
+ include/linux/usb.h                               |    2=20
+ include/uapi/linux/mic_ioctl.h                    |    2=20
+ kernel/irq/irqdesc.c                              |    1=20
+ kernel/time/jiffies.c                             |    6 +
+ kernel/time/tick-broadcast.c                      |    1=20
+ kernel/trace/ring_buffer.c                        |    7 +
+ mm/memory-failure.c                               |    6 -
+ net/mac80211/cfg.c                                |   41 +++++-----
+ net/mac80211/ibss.c                               |    5 -
+ net/mac80211/tx.c                                 |    2=20
+ net/wireless/nl80211.c                            |    3=20
+ scripts/mod/file2alias.c                          |    4=20
+ sound/pci/hda/patch_realtek.c                     |    2=20
+ virt/kvm/coalesced_mmio.c                         |    8 -
+ 118 files changed, 658 insertions(+), 386 deletions(-)
+
+Alan Stern (3):
+      usb-storage: add unusual-devs entry for BlackBerry 9000
+      usb-storage: restrict bcdDevice range for Super Top in Cypress ATACB
+      usb-storage: enable multi-LUN scanning when needed
+
+Alex Deucher (3):
+      drm/radeon: fix UVD IRQ support on 7xx
+      drm/radeon: consolidate sdma hdp flushing code for CIK
+      drm/radeon/cik: use POLL_REG_MEM special op for sDMA HDP flush
+
+Alexander Usyskin (2):
+      mei: clear write cb from waiting list on reset
+      mei: don't unset read cb ptr on reset
+
+Anton Blanchard (1):
+      powerpc: Fix endian issues in kexec and crash dump code
+
+Axel Lin (1):
+      spi: nuc900: Set SPI_LSB_FIRST for master->mode_bits if hw->pdata->ls=
+b is true
+
+Beomho Seo (1):
+      iio: ak8975: Fix calculation formula for convert micro tesla to gauss=
+ unit
+
+Bj=C3=B8rn Mork (2):
+      usb: qcserial: add Netgear Aircard 340U
+      usb: ftdi_sio: add Mindstorms EV3 console adapter
+
+Borislav Petkov (2):
+      EDAC: Poll timeout cannot be zero, p2
+      EDAC: Correct workqueue setup path
+
+Christian K=C3=B6nig (1):
+      drm/radeon: fix UVD IRQ support on SI
+
+C=C3=A9dric Dufour (1):
+      staging: lustre: fix quotactl permission denied (LU-4530)
+
+Dan Carpenter (1):
+      KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+
+Daniel Vetter (1):
+      drm/i915: Fix intel_pipe_to_cpu_transcoder for UMS
+
+David Henningsson (1):
+      ALSA: hda - Add a headset quirk for Dell XPS 13
+
+David Vrabel (1):
+      xen-blkfront: handle backend CLOSED without CLOSING
+
+Doug Anderson (1):
+      hwmon: (ntc_thermistor) Avoid math overflow
+
+Eliad Peller (1):
+      mac80211: move roc cookie assignment earlier
+
+Emmanuel Grumbach (4):
+      mac80211: release the channel in error path in start_ap
+      iwlwifi: mvm: don't allow A band if SKU forbids it
+      iwlwifi: mvm: print the version of the firmware when it asserts
+      iwlwifi: mvm: BT Coex - disable BT when TXing probe request in scan
+
+Eric W. Biederman (1):
+      fs/file.c:fdtable: avoid triggering OOMs from alloc_fdmem
+
+Geert Uytterhoeven (1):
+      spi: Fix crash with double message finalisation on error handling
+
+Greg Kroah-Hartman (1):
+      Linux 3.13.5
+
+Guenter Roeck (1):
+      iio: max1363: Use devm_regulator_get_optional for optional regulator
+
+H Hartley Sweeten (1):
+      staging: comedi: adv_pci1710: fix analog output readback value
+
+H. Peter Anvin (2):
+      x86, smap: Don't enable SMAP if CONFIG_X86_SMAP is disabled
+      x86, smap: smap_violation() is bogus if CONFIG_X86_SMAP is off
+
+Hartmut Knaack (2):
+      staging:iio:ad799x fix error_free_irq which was freeing an irq that m=
+ay not have been requested
+      staging:iio:ad799x fix typo in ad799x_events[]
+
+Imre Deak (1):
+      drm/i915: vlv: fix DP PHY lockup due to invalid PP sequencer setup
+
+Jan Moskyto Matejka (1):
+      Modpost: fixed USB alias generation for ranges including 0x9 and 0xA
+
+Jens Axboe (1):
+      block: add cond_resched() to potentially long running ioctl discard l=
+oop
+
+Johannes Berg (2):
+      mac80211: fix fragmentation code, particularly for encryption
+      iwlwifi: mvm: disable scheduled scan
+
+Julia Lawall (1):
+      staging:iio:impedance:ad5933: correct error check
+
+K. Y. Srinivasan (2):
+      Drivers: hv: vmbus: Specify the target CPU that should receive notifi=
+cation
+      Drivers: hv: vmbus: Don't timeout during the initial connection with =
+host
+
+Kleber Sacilotto de Souza (1):
+      of: fix PCI bus match for PCIe slots
+
+Krist=C3=B3f Ralovich (1):
+      USB: simple: add Dynastream ANT USB-m Stick device support
+
+Krzysztof Kozlowski (1):
+      power: max17040: Fix NULL pointer dereference when there is no platfo=
+rm_data
+
+Larry Finger (1):
+      staging: r8188eu: Fix typo in USB_DEVICE list
+
+Lars Poeschel (1):
+      tty: n_gsm: Fix for modems with brk in modem status control
+
+Linus Walleij (2):
+      ARM: pxa: fix various compilation problems
+      ARM: pxa: fix compilation problem on AM300EPD board
+
+Marcus Folkesson (1):
+      iio: adis16400: Set timestamp as the last element in chan_spec
+
+Markus Pargmann (1):
+      serial: omap-serial: Move info message to probe function
+
+Martin K. Petersen (1):
+      block: Fix nr_vecs for inline integrity vectors
+
+Martin Schwidefsky (1):
+      s390: fix kernel crash due to linkage stack instructions
+
+Martyn Welch (1):
+      VME: Correct read/write alignment algorithm
+
+Mel Gorman (1):
+      xen: properly account for _PAGE_NUMA during xen pte translations
+
+Michael Holzheu (1):
+      s390/dump: Fix dump memory detection
+
+Mika Kuoppala (1):
+      drm/i915: Pair va_copy with va_end in i915_error_vprintf
+
+Mika Westerberg (1):
+      ACPI / hotplug / PCI: Relax the checking of _STA return values
+
+Mike Marciniszyn (1):
+      IB/qib: Add missing serdes init sequence
+
+Mikulas Patocka (1):
+      time: Fix overflow when HZ is smaller than 60
+
+Naoya Horiguchi (1):
+      mm/memory-failure.c: move refcount only in !MF_COUNT_INCREASED
+
+NeilBrown (2):
+      lockd: send correct lock when granting a delayed lock.
+      md/raid1: restore ability for check and repair to fix read errors.
+
+Nicholas Bellinger (1):
+      target: Fix free-after-use regression in PR unregister
+
+Oleg Nesterov (1):
+      md/raid5: Fix CPU hotplug callback registration
+
+Oleksij Rempel (2):
+      ath9k_htc: Do not support PowerSave by default
+      ar5523: fix usb id for Gigaset.
+
+Oren Givon (1):
+      iwlwifi: add more 7265 HW IDs
+
+Paul Bolle (1):
+      raw: test against runtime value of max_raw_minors
+
+Paul Gortmaker (1):
+      genirq: Add missing irq_to_desc export for CONFIG_SPARSE_IRQ=3Dn
+
+Peter Hurley (1):
+      n_tty: Fix stale echo output
+
+Petr P=C3=ADsa=C5=99 (1):
+      vt: Fix secure clear screen
+
+Pontus Fuchs (1):
+      nl80211: Reset split_start when netlink skb is exhausted
+
+Prarit Bhargava (1):
+      drivers/edac/edac_mc_sysfs.c: poll timeout cannot be zero
+
+Qipan Li (1):
+      serial: sirf: fix kernel panic caused by unpaired spinlock
+
+Rafael Aquini (1):
+      mm: fix page leak at nfs_symlink()
+
+Raymond Wanyoike (1):
+      usb: option: blacklist ZTE MF667 net interface
+
+Sarah Sharp (5):
+      xhci 1.0: Limit arbitrarily-aligned scatter gather.
+      Revert "xhci: Set scatter-gather limit to avoid failed block writes."
+      Revert "xhci: Avoid infinite loop when sg urb requires too many trbs"
+      Revert "usb: xhci: Link TRB must not occur within a USB payload burst"
+      Revert "usbcore: set lpm_capable field for LPM capable root hubs"
+
+Stanislaw Gruszka (1):
+      ath9k_htc: make ->sta_rc_update atomic for most calls
+
+Steve French (3):
+      CIFS: Fix SMB2 mounts so they don't try to set or get xattrs via cifs
+      Add protocol specific operation for CIFS xattrs
+      retrieving CIFS ACLs when mounted with SMB2 fails dropping session
+
+Steven Noonan (1):
+      compiler/gcc4: Make quirk for asm_volatile_goto() unconditional
+
+Steven Rostedt (Red Hat) (2):
+      ftrace/x86: Use breakpoints for converting function graph caller
+      ring-buffer: Fix first commit on sub-buffer having non-zero delta
+
+Sudeep Dutt (1):
+      misc: mic: fix possible signed underflow (undefined behavior) in user=
+space API
+
+Sujith Manoharan (2):
+      mac80211: Fix IBSS disconnect
+      ath9k: Do not support PowerSave by default
+
+Takashi Iwai (1):
+      ALSA: hda - Fix mic capture on Sony VAIO Pro 11
+
+Tejun Heo (1):
+      block: __elv_next_request() shouldn't call into the elevator if bypas=
+sing
+
+Thomas Gleixner (1):
+      tick: Clear broadcast pending bit when switching to oneshot
+
+Ulrich Hahn (1):
+      USB: ftdi_sio: add Tagsys RFID Reader IDs
+
+Wolfram Sang (1):
+      i2c: mv64xxx: refactor message start to ensure proper initialization
+
+
+--tThc/1wpZn/ma/RB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCSDCAAoJEDjbvchgkmk+lVcP/2t4zOIAyqYRF9JYZTCA/bY6
+ES37nBp5tT6SkIr9HGENRNJ/azv5RtqT04XlaBwOvale+ppO+qNSg/UAM9CqfpQ4
+6B8ja+0DW3mpHsHowSTbm7tA33Qml6Hr/O3GbuRmoOVvtNpGd07UZfMvrZK4GLNc
+W/xtalFwlY7sRXi0v3kbv3BTSbmt8xt99KlMVyeidFxIv9uvu/gaY0ySu5VCs3ld
+ijelMuw//cork1QqG4uo6MMi3Gb+ku8z3O6FWqAPQb+dFZx5aqyf/rt2aC/Y9wNB
+tiCrNIsbTdulzg4RwYFgawhaa+yDAkVMMv8DgT8iUchEkldi3sONW596+WdHxN4q
+6dtrbwTgCQucUZhgr3cO5MG0eH6vnG7W+eeTcjP5kIYg1m6HmgOpyiihGtGS7XQ+
+L6dSoWww9CjL9DZq+dCg6CGM963Qc8A3USY2QUmg/D/shLjILhCNlNSjfzx5fF5O
+O7IQLtVfXy95OaCUuJfcuGHe6bwk1JriHOs+3mOMM9dyw9boMGyKgumn+qz9TJ1y
+EaxyJ46xRtXgJPiHnNoREUs1m0WZB9JQk3oT+6RFcq2FCnRpE8rDovW2mQfLW573
+z6WRYF/AbIxnCfc3Q6T0zrVCuvsZtAwr+vdSQnJArAOSEZoqQd1aIiKKNme3jok5
+Ahpp8AJbVLad22JjQNzY
+=+JF2
+-----END PGP SIGNATURE-----
+
+--tThc/1wpZn/ma/RB--
