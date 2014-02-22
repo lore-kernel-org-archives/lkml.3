@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaBVAos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 19:44:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55466 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752884AbaBVAoq (ORCPT
+	id S1754411AbaBVAqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 19:46:07 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:42411 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaBVAqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 19:44:46 -0500
-Message-ID: <1393029870.15717.71.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH net-next 28/35] qlcnic: Use pci_enable_msix_range()
- instead of pci_enable_msix()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>, linux-driver@qlogic.com,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Date: Sat, 22 Feb 2014 00:44:30 +0000
-In-Reply-To: <cb8eb41f672c62d1149c375bdaf97ca3328703f9.1392717503.git.agordeev@redhat.com>
-References: <cover.1392717502.git.agordeev@redhat.com>
-	 <cb8eb41f672c62d1149c375bdaf97ca3328703f9.1392717503.git.agordeev@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-rPFm1fJUwh5zE557wHjZ"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9cab:bfa3:762:9b62
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 21 Feb 2014 19:46:05 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:fd64:fd93:29f6:64f2:9832]
+In-Reply-To: <20140221110950.GB8731@mudshark.cambridge.arm.com>
+References: <20140221115857.3ea3d7277d03c5b6b4d26488@canb.auug.org.au>
+	<CAOesGMimJxYLor11EQ-Cn9BnZGg60VrOFC8ZqBdC+wNunptm8w@mail.gmail.com>
+	<20140221110950.GB8731@mudshark.cambridge.arm.com>
+Date: Fri, 21 Feb 2014 16:46:04 -0800
+Message-ID: <CAOesGMi6p5LPQ0P2p9MtJEXJP4+5eU-7shze3EB2Gy3BuPv_wg@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm-perf tree
+From: Olof Johansson <olof@lixom.net>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 21, 2014 at 3:09 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Fri, Feb 21, 2014 at 01:02:47AM +0000, Olof Johansson wrote:
+>> On Thu, Feb 20, 2014 at 4:58 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > Today's linux-next merge of the arm-soc tree got a conflict in
+>> > arch/arm/boot/dts/qcom-msm8960-cdp.dts between commit a1d711938959 ("ARM:
+>> > dts: msm: Add krait-pmu to platforms with Krait CPUs") from the arm-perf
+>> > tree and commit cc60a1a4d47a ("ARM: dts: msm: split out msm8660 and
+>> > msm8960 soc into dts include") from the arm-soc tree.
+>> >
+>> > I fixed it up (probably not the best way ... see below) and can carry the
+>> > fix as necessary (no action is required).
+>>
+>> Will, I think we'll be better off taking dts changes through arm-soc,
+>> unless there's a good reason to take them through other trees (such as
+>> the perf tree in this case). Is there, or should we move them over?
+>
+> Sure, I can drop that from my tree (it came as part of the series adding
+> Krait PMU support).
+>
+> I've included the original patch below so you can put it into arm-soc.
 
---=-rPFm1fJUwh5zE557wHjZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks, I've applied it now (with the fixups to move to the dtsi).
 
-On Tue, 2014-02-18 at 11:11 +0100, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
->=20
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Himanshu Madhani <himanshu.madhani@qlogic.com>
-> Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
-> Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
-> Cc: linux-driver@qlogic.com
-> Cc: netdev@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/n=
-et/ethernet/qlogic/qlcnic/qlcnic_main.c
-> index 0c077cf..e07fd94 100644
-> --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> @@ -701,13 +701,17 @@ enable_msix:
->  		for (vector =3D 0; vector < num_msix; vector++)
->  			adapter->msix_entries[vector].entry =3D vector;
-> =20
-> -		err =3D pci_enable_msix(pdev, adapter->msix_entries, num_msix);
-> -		if (err =3D=3D 0) {
-> +		err =3D pci_enable_msix_range(pdev,
-> +					    adapter->msix_entries, 1, num_msix);
-> +
-> +		if (err =3D=3D num_msix) {
->  			adapter->flags |=3D QLCNIC_MSIX_ENABLED;
->  			adapter->ahw->num_msix =3D num_msix;
->  			dev_info(&pdev->dev, "using msi-x interrupts\n");
->  			return 0;
->  		} else if (err > 0) {
-> +			pci_disable_msix(pdev);
-> +
->  			dev_info(&pdev->dev,
->  				 "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
->  				 num_msix, err);
 
-Well this log message is nonsense - we have no idea how many vectors are
-available any more.
-
-You should remove this and the retry loop that is no longer needed.
-
-Ben.
-
---=20
-Ben Hutchings
-I haven't lost my mind; it's backed up on tape somewhere.
-
---=-rPFm1fJUwh5zE557wHjZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUwfy7ue/yOyVhhEJAQrPWw/+JBTwM+nrdybdFxO50G34coeMeo8TMDU7
-+sKBPYnpuRPKZ5Krs1FgZgRUv2W7yee/WNn5LfMD0VfXdda6kOxOCLLUbLS8q6dB
-x1r70zGvmY6oiEpHJH5vZxLdlSpS/n7V/aN3kuFcOAsDftlAVdr4iO4/mnENvKwg
-AFW8BcyLQ5r6mxnzNNf7FHcLT1ceZPUTfKEy0Yoc6NfoofTEkvx45kDERFdhd1RB
-VfiUmLEq61Q6PVbgFbFaZwBFh8rRN50UXUJONmsyaZI7REv0evgpVHZe5SdE4S9c
-Lr1q6oY7PZ7KCZHyI59HC8BgrzhSx9Br3lPLpeX0762fCqBrhfK7vboZhF0aHvwG
-dFiPAaqp9MzVHCKt4EHXtUSAQzECXt8xI8NcsstzLn6fML74aRYsPiCWsY5bbQeN
-l2JtITKSYAqDHvMMzSxRG4P9ThEhO/dzlvDoV+4F6UFBf3L4An81l3EsNWsCUXhm
-OdSnbY6xVYCul9k3gDcb6A8j7rOIxpjnzeDcZonFsu6cJuDkXri7zLQnUD/7xZb4
-RpAQk1MbtGHER1akP5xh1BcFMdrFmmE2MV5qiiRbqiFAxiyb3dLKNwh/LKIUCwA6
-wcrklIqGnMsbt2jOtBBd8nx3/9ssrCzGhcXUfH4fH+kh4ViH/5oD5JCAzGWURVb6
-j/ZR0euJLa4=
-=P3P1
------END PGP SIGNATURE-----
-
---=-rPFm1fJUwh5zE557wHjZ--
+-Olof
