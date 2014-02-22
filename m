@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaBVJ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 04:28:16 -0500
-Received: from relay.parallels.com ([195.214.232.42]:44832 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaBVJ2O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 04:28:14 -0500
-Message-ID: <53086DA6.4090806@parallels.com>
-Date: Sat, 22 Feb 2014 13:28:06 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	id S1752541AbaBVJiD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 04:38:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752243AbaBVJiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 04:38:00 -0500
+Date: Sat, 22 Feb 2014 10:38:43 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Mike Miller <mike.miller@hp.com>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Joshua Morris <josh.h.morris@us.ibm.com>,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, iss_storagedev@hp.com,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 0/9] block: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140222093843.GB27897@dhcp-26-207.brq.redhat.com>
+References: <cover.1392799751.git.agordeev@redhat.com>
+ <20140221234613.GE29129@kernel.dk>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
-        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH -mm v3 2/7] memcg, slab: cleanup memcg cache creation
-References: <cover.1392879001.git.vdavydov@parallels.com>	<210fa2501be4cbb7f7caf6ca893301f124c92a67.1392879001.git.vdavydov@parallels.com> <20140221161114.3025c658da0429b7ae9d4985@linux-foundation.org>
-In-Reply-To: <20140221161114.3025c658da0429b7ae9d4985@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221234613.GE29129@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 04:11 AM, Andrew Morton wrote:
-> On Thu, 20 Feb 2014 11:22:04 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
->
->> This patch cleanups the memcg cache creation path as follows:
->>  - Move memcg cache name creation to a separate function to be called
->>    from kmem_cache_create_memcg(). This allows us to get rid of the
->>    mutex protecting the temporary buffer used for the name formatting,
->>    because the whole cache creation path is protected by the slab_mutex.
->>  - Get rid of memcg_create_kmem_cache(). This function serves as a proxy
->>    to kmem_cache_create_memcg(). After separating the cache name
->>    creation path, it would be reduced to a function call, so let's
->>    inline it.
-> This patch makes a huge mess when it hits linux-next's e61734c5
-> ("cgroup: remove cgroup->name").  In the vicinity of
-> memcg_create_kmem_cache().  That isn't the first mess e61734c5 made :(
->
-> I think I got it all fixed up - please check the end result in
-> http://ozlabs.org/~akpm/stuff/.
+On Fri, Feb 21, 2014 at 03:46:13PM -0800, Jens Axboe wrote:
+> On Wed, Feb 19 2014, Alexander Gordeev wrote:
+> > As result of deprecation of MSI-X/MSI enablement functions
+> > pci_enable_msix() and pci_enable_msi_block() all drivers
+> > using these two interfaces need to be updated to use the
+> > new pci_enable_msi_range() and pci_enable_msix_range()
+> > interfaces.
+> 
+> Thanks. Applied 3-4, and 6-9 (didn't get the others).
 
-It looks good to me, thank you!
+Oh, I just realized I posted outdated series, sorry for that :(
+Out of applied patch 4 is not needed and patch 9 needs a rework.
+
+Should I repost the whole series?
+
+> -- 
+> Jens Axboe
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
