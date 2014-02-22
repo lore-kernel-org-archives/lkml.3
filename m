@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaBVCr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 21:47:29 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48752 "EHLO
+	id S1754538AbaBVCtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 21:49:22 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48757 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089AbaBVCr2 (ORCPT
+	with ESMTP id S1752603AbaBVCtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 21:47:28 -0500
-Date: Sat, 22 Feb 2014 11:47:09 +0900
+	Fri, 21 Feb 2014 21:49:21 -0500
+Date: Sat, 22 Feb 2014 11:49:03 +0900
 From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140222024709.GK25940@sirena.org.uk>
-References: <1392913608-23479-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20140220233058.GC12197@sirena.org.uk>
- <20140221093855.GC5438@opensource.wolfsonmicro.com>
+To: Nenghua Cao <nhcao@marvell.com>
+Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140222024903.GL25940@sirena.org.uk>
+References: <1392969945-28004-1-git-send-email-nhcao@marvell.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lildS9pRFgpM/xzO"
+	protocol="application/pgp-signature"; boundary="xjamM5M9kpPM/bcu"
 Content-Disposition: inline
-In-Reply-To: <20140221093855.GC5438@opensource.wolfsonmicro.com>
+In-Reply-To: <1392969945-28004-1-git-send-email-nhcao@marvell.com>
 X-Cookie: You're at the end of the road again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 106.188.103.222
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: wm5102: Remove cache_bypass from manual register
- patching
+Subject: Re: [PATCH 1/2] driver: regmap: fix coccinelle warnings
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,63 +32,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lildS9pRFgpM/xzO
+--xjamM5M9kpPM/bcu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Feb 21, 2014 at 09:38:55AM +0000, Charles Keepax wrote:
+On Fri, Feb 21, 2014 at 04:05:45PM +0800, Nenghua Cao wrote:
+> From: Nenghua Cao <nhcao@marvell.com>
+>=20
+>    /drivers/base/regmap/regmap.c:717:6-33: WARNING:
+> Comparison to bool.
 
-> I guess there are two parts here applying the hardware patch and
-> the manual application of the register patch. Applying the
-> hardware patch restores registers once it is finished anyway, and
-> the actual patch is applied by the write sequencer so will go
-> straight to the hardware. So that really doesn't need the
-> cache_bypass.
+Applied, thanks.  Please use subject lines consistent with the
+subsystem.
 
-Yeah, it's only the manually applied bit that cares.
-
-> > Being able to use the regular patch infrastructure would of course be
-> > nicer but you're going to need to add a callback to allow you to run the
-> > hardware patch in that case.
-
-> I had considered adding bypassed versions of regmap_write and
-> read. That way you could ensure that the bypass was only active
-> whilst the regmap lock was held and avoid the problem that way.
-> What do you think to that idea?
-
-I think that's a reasonable idea, though I see you actually did
-something slightly different (which is sensible and in fact there
-already).
-
-Thinking about this stuff there's also some ideas I discussed with
-Dimitris for the DSP memories where if it were possible to mark only a
-section of the register map as cache only the DSP download could be sped
-up a little by making the DSP memories cache only during download and
-then syncing at the end to do the actual writes.  That way coefficient
-writes that change defaults in the firmware would get coalesced and
-possibly some writes to adjacent blocks could be combined too.  Probably
-not a massive win but it'd be nice.
-
---lildS9pRFgpM/xzO
+--xjamM5M9kpPM/bcu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTCA+qAAoJELSic+t+oim9fKgQAI2gfPeovqUgH2ShYuh4eCpj
-p0H4j9aNY+VSQK2WtCmRSLoo/K7wYlRteG3+pl0pyYVWvNLIaDtyXgwYQf4eZP1p
-U4R7gSTe7Zjpu89qvYjbUGUYdHfjiVZp23qEnf5heIxj/XokjX9/4TJSC3egyhZ5
-et7hMB4vSv3gMtgu3O8vqWGcZ06T7CBMTRP+PhvyYuoF6ze7JPxWnlsqVRm9uQNF
-3ks55ZRdONqVeD2bZqRN2NRDlZ6jcmTunTye5T5AC2mrtGO8+yikjkiPRZZkgLON
-k8RqW/dCd/rw+cOoNE/6/dFVD9GXHQMfivYp5t8kMGpi3D1NKxf3SSE07+YkpYhV
-/su5J1EtNx0mmj+s3/SlB+BeLxi9tDsPAyWxViUDqqMwP3aJHaJoB9WN8yH1tkf+
-adXZVZTAeCFfi1kpC3hmOneQeq3X5nUhgTBkTk7OvZa8BJrNSZ+PfTWNrBTCh73K
-SHIk86az4hrhY9L60U5lod6irzxa/mkyjKGGVYE6fuuWIkdIdUy24Myya5mJeGP+
-zav2fOv8in8WSxeIB/PRJxPfJrZpmadOcDWnWaVhJ7HnqKh/ZRy2cvaPuKhNe9DS
-d5UGIvGeGG+1F7jBGC1ic25++ttthq4HU4zPl2UwTQuToTguOJCCh54XoQOmeWDY
-mCCDz0bbBCoaCckqOzp6
-=Sw4w
+iQIcBAEBAgAGBQJTCBAcAAoJELSic+t+oim9uE0P/jdwZga0DHX2tU3TntovE29D
+C+MT1t4OmRKja3UCVrcGFFei2w/OKmpfcM472FkuffHbKDV23TzEmWHFcdDcHr9r
+j1/yN0ayAeI6wNw0Dvba/RGPlkReASAdbjU6UCFCoosLH5p2uUtm54lRhD52D1kL
+tiSsTwMaVh7J0NxRgrkxHQetu9HAHOqpG27iL5OAwiufRst5XYfOZiJ/6wY05Lgd
+S8R+Cyeqr39+yKmqtIymLmrLsORIhHZ7WUCYNWYMm4su9b0vNa1LECuxSDiktWLv
+FsgxVpTlc0OAN4u9imd119sI+MzLZfTUfu+FodTY4Du2O18rOs87PiS9l+2lzoRz
+vdVoZjnibwZW1JyVeO2i7KLiXp3UUaa7GoBwHJigcIA9yWdI0ZMwi6NBjhVHml5m
+B6p7MMa6ow+TDAazG40H/H8d2lLcbyAxDHEtVVy7oz6aMRvwvB2xgIXd4eUkrsKw
+4uf+TbHqBx7N9gio1cezXvvRLG5PDZiaSXBqsnOcziM9Vi2urbrUUtNprIkNschA
+BoyS0epR7sdGDRPUk2Zr5EaCBp2+eKdLlw50xF7rTwa7qqwsJR2/lYuhUeYpM8CZ
+HagY+bRZasy0GQ4TiqgMQTVh3CbEvn5JswjOySndg8cHVgFhycpTCb3wuLBwAulG
+PDw8gMW9CcJEX3Sv6LRS
+=1k7j
 -----END PGP SIGNATURE-----
 
---lildS9pRFgpM/xzO--
+--xjamM5M9kpPM/bcu--
