@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaBVDhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 22:37:41 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:41846 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710AbaBVDhk (ORCPT
+	id S1753317AbaBVEDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 23:03:53 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:40872 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763AbaBVEDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 22:37:40 -0500
-Date: Fri, 21 Feb 2014 19:37:34 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] hwmon fixes for 3.14-rc4
-Message-ID: <20140222033734.GA10921@roeck-us.net>
+	Fri, 21 Feb 2014 23:03:52 -0500
+Date: Sat, 22 Feb 2014 05:03:50 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, David Rientjes <rientjes@google.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>, mtosatti@redhat.com,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] hugetlb: add hugepages_node= command-line option
+Message-ID: <20140222040350.GI22728@two.firstfloor.org>
+References: <1392339728-13487-1-git-send-email-lcapitulino@redhat.com>
+ <1392339728-13487-5-git-send-email-lcapitulino@redhat.com>
+ <alpine.DEB.2.02.1402141511200.13935@chino.kir.corp.google.com>
+ <20140214225810.57e854cb@redhat.com>
+ <alpine.DEB.2.02.1402150159540.28883@chino.kir.corp.google.com>
+ <1392702456.2468.4.camel@buesod1.americas.hpqcorp.net>
+ <20140221155423.6c6689e27fa10ed394f01843@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140221155423.6c6689e27fa10ed394f01843@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> But I think it would be better if it made hugepages= and hugepagesz=
+> obsolete, so we can emit a printk if people use those, telling them
+> to migrate because the old options are going away.
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not sure why everyone wants to break existing systems. These options
+have existed for many years, you cannot not just remove them.
 
-Hi Linus,
+Also the old options are totally fine and work adequately for the
+vast majority of users who do not need to control node assignment
+fine grained.
 
-Please pull hwmon fixes for Linux 3.14-rc4 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
-
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 500a91571f0a5d0d3242d83802ea2fd1faccc66e:
-
-  hwmon: (max1668) Fix writing the minimum temperature (2014-02-18 15:53:49 -0800)
-
-----------------------------------------------------------------
-Fix writing the minimum temperature in max1668 driver.
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      hwmon: (max1668) Fix writing the minimum temperature
-
- drivers/hwmon/max1668.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCBt+AAoJEMsfJm/On5mBIgoQAIqtxCYFM6hrIHqg+/NEQCZp
-UHn7fIx9c/ta/+sjyD14DatZOrhHpO7XfGp9ByGq0doIsLv60WtOgPuVOa+TS4+S
-1T+Su7VVvMDOTJLTOA2tmT4CwR7jehJjtF8z+Lpp+XV2jTjrHZwqifJYqTU9JnmC
-RRYi03MNk6ArA99TCRoIbbQnrjWuj01tr7KXeJuRQtTbtOxnM9BLRujoCVjC7JmR
-P/WYm8pG+xzXObDr30A5g9VP2fUPDv4aXXTSMUVYMd+/Z6ZPedCNZW6YgCAgmTc8
-hV7MG4rcFLVZuOYsP1UIrEYXyOPlmuN3k15DO3E2Xil+Re+J7VM6SX3zXaVNEZ8s
-BuApaelZP3oggvpU5Nap8gH4cGrUh+RUs2xqYxq7VyFgXB47O4wk2YB6+9dG5yVT
-hfnyRLEIJSfa2not1JaMqKqjqB6AgHad0GHCwZVkTUZUGMmB136MGhv4aJBXAn3u
-PySDW+1KkWKIteEBPWsk49incM6E0ees3FK6pZwJGNengr1/w29ZSf42QvStHiqM
-m08Vr1QfHijLWojOPQMUSX/6BBjlV4CAq4jZUuNYZlpZ4Dv1wxVVKOb3UrjkU1UJ
-bAtu39ov5JlbX210Kow17YKZBYnWc4wMY7Lzrk0NCTHMG80+XRFSD+AjeJm5oeW/
-pHB0YgVbiXi9JvcrMY4B
-=/uiY
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
+-Andi
