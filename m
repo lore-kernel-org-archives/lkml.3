@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaBVSEP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 13:04:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41370 "EHLO
+	id S1753884AbaBVSEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 13:04:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41379 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaBVSEM (ORCPT
+	with ESMTP id S1752321AbaBVSEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 13:04:12 -0500
-Date: Sat, 22 Feb 2014 10:03:24 -0800
+	Sat, 22 Feb 2014 13:04:22 -0500
+Date: Sat, 22 Feb 2014 10:03:35 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-7e298d60f717257dc8365c975f45ff9c37165362@git.kernel.org>
+Message-ID: <tip-3ee237dddcd885d4e525791299d62de33b2ca117@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <4e28ec36fb49e8906027cbbdd900ab26a149905e.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <4e28ec36fb49e8906027cbbdd900ab26a149905e.1392103744.git.yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <3994e89327b2b15f992277cdf9f409c516f87d1b.1392103744.git.yangds.fnst@cn.fujitsu.com>
+References: <3994e89327b2b15f992277cdf9f409c516f87d1b.1392103744.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/prio:
-  Use DEFAULT_PRIO to define NICE_TO_PRIO() and PRIO_TO_NICE()
-Git-Commit-ID: 7e298d60f717257dc8365c975f45ff9c37165362
+Subject: [tip:sched/core] sched/prio: Add 3 macros of MAX_NICE,
+  MIN_NICE and NICE_WIDTH in prio.h
+Git-Commit-ID: 3ee237dddcd885d4e525791299d62de33b2ca117
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,40 +32,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e298d60f717257dc8365c975f45ff9c37165362
-Gitweb:     http://git.kernel.org/tip/7e298d60f717257dc8365c975f45ff9c37165362
+Commit-ID:  3ee237dddcd885d4e525791299d62de33b2ca117
+Gitweb:     http://git.kernel.org/tip/3ee237dddcd885d4e525791299d62de33b2ca117
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Tue, 11 Feb 2014 15:34:45 +0800
+AuthorDate: Tue, 11 Feb 2014 15:34:46 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 22 Feb 2014 18:11:29 +0100
+CommitDate: Sat, 22 Feb 2014 18:14:13 +0100
 
-sched/prio: Use DEFAULT_PRIO to define NICE_TO_PRIO() and PRIO_TO_NICE()
+sched/prio: Add 3 macros of MAX_NICE, MIN_NICE and NICE_WIDTH in prio.h
 
-There is already a macro named DEFAULT_PRIO in prio.h, we can use it
-to define NICE_TO_PRIO and PRIO_TO_NICE rather than use hard coding
-of (MAX_RT_PRIO + 20).
+Currently there is lots of hard coding to 19 and -20, to represent
+maximum and minimum of nice values.
+
+This patch add three macros in prio.h for maximum, minimum and width
+of nice value, and uses it to remove hardcoded values in prio.h.
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/4e28ec36fb49e8906027cbbdd900ab26a149905e.1392103744.git.yangds.fnst@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/3994e89327b2b15f992277cdf9f409c516f87d1b.1392103744.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ Collapsed two small patches. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched/prio.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/sched/prio.h | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index 410ccb7..1ceaaa1 100644
+index 1ceaaa1..ac32258 100644
 --- a/include/linux/sched/prio.h
 +++ b/include/linux/sched/prio.h
-@@ -25,8 +25,8 @@
-  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
-  * and back.
-  */
--#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)
--#define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
-+#define NICE_TO_PRIO(nice)	((nice) + DEFAULT_PRIO)
-+#define PRIO_TO_NICE(prio)	((prio) - DEFAULT_PRIO)
+@@ -1,6 +1,10 @@
+ #ifndef _SCHED_PRIO_H
+ #define _SCHED_PRIO_H
+ 
++#define MAX_NICE	19
++#define MIN_NICE	-20
++#define NICE_WIDTH	(MAX_NICE - MIN_NICE + 1)
++
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+@@ -17,8 +21,8 @@
+ #define MAX_USER_RT_PRIO	100
+ #define MAX_RT_PRIO		MAX_USER_RT_PRIO
+ 
+-#define MAX_PRIO		(MAX_RT_PRIO + 40)
+-#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
++#define MAX_PRIO		(MAX_RT_PRIO + NICE_WIDTH)
++#define DEFAULT_PRIO		(MAX_RT_PRIO + NICE_WIDTH / 2)
  
  /*
-  * 'User priority' is the nice value converted to something we
+  * Convert user-nice values [ -20 ... 0 ... 19 ]
