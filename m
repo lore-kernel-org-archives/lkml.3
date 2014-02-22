@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaBVR4B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 12:56:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40715 "EHLO
+	id S1752631AbaBVR42 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 12:56:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40761 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434AbaBVRzo (ORCPT
+	with ESMTP id S1752593AbaBVR40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 12:55:44 -0500
-Date: Sat, 22 Feb 2014 09:55:20 -0800
-From: tip-bot for Ben Hutchings <tipbot@zytor.com>
-Message-ID: <tip-79d26a6a19ace19faabf8d8d27d3430be2e26d34@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, stable@vger.kernel.org, ben@decadent.org.uk,
+	Sat, 22 Feb 2014 12:56:26 -0500
+Date: Sat, 22 Feb 2014 09:55:44 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-tmct07y7mka54allj82trlnx@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        stable@vger.kernel.org, ben@decadent.org.uk, tglx@linutronix.de
-In-Reply-To: <1391648435.3003.100.camel@deadeye.wl.decadent.org.uk>
-References: <1391648435.3003.100.camel@deadeye.wl.decadent.org.uk>
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace:
-  Add fallback definition of EFD_SEMAPHORE
-Git-Commit-ID: 79d26a6a19ace19faabf8d8d27d3430be2e26d34
+Subject: [tip:perf/core] perf report: Use al->cpumode where applicable
+Git-Commit-ID: 17f22a3fbc9d81c1d8f9f853dd23d0e5e8f4c994
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,43 +35,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  79d26a6a19ace19faabf8d8d27d3430be2e26d34
-Gitweb:     http://git.kernel.org/tip/79d26a6a19ace19faabf8d8d27d3430be2e26d34
-Author:     Ben Hutchings <ben@decadent.org.uk>
-AuthorDate: Thu, 6 Feb 2014 01:00:35 +0000
+Commit-ID:  17f22a3fbc9d81c1d8f9f853dd23d0e5e8f4c994
+Gitweb:     http://git.kernel.org/tip/17f22a3fbc9d81c1d8f9f853dd23d0e5e8f4c994
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 22 Jan 2014 12:55:32 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 10 Feb 2014 11:34:31 -0300
+CommitDate: Tue, 18 Feb 2014 09:34:46 -0300
 
-perf trace: Add fallback definition of EFD_SEMAPHORE
+perf report: Use al->cpumode where applicable
 
-glibc 2.17 is missing this on sparc, despite the fact that it's not
-architecture-specific.
+We don't need to recalculate cpumode from the perf_event->header field,
+as this is already available in the struct addr_location->cpumode field.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 49af9e93adfa ('perf trace: Beautify eventfd2 'flags' arg')
-Cc: <stable@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Remove the function signature of functions that receive both perf_event
+and addr_location parameters but use perf_event just to extract the
+cpumode.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1391648435.3003.100.camel@deadeye.wl.decadent.org.uk
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-tmct07y7mka54allj82trlnx@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ tools/perf/builtin-report.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 896f270..619d11c 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -37,6 +37,10 @@
- # define MADV_UNMERGEABLE	13
- #endif
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3c53ec2..8f9d6ed 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -76,12 +76,10 @@ static int report__config(const char *var, const char *value, void *cb)
+ }
  
-+#ifndef EFD_SEMAPHORE
-+# define EFD_SEMAPHORE		1
-+#endif
-+
- struct tp_field {
- 	int offset;
- 	union {
+ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_location *al,
+-				      struct perf_sample *sample, struct perf_evsel *evsel,
+-				      union perf_event *event)
++				      struct perf_sample *sample, struct perf_evsel *evsel)
+ {
+ 	struct report *rep = container_of(tool, struct report, tool);
+ 	struct symbol *parent = NULL;
+-	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct hist_entry *he;
+ 	struct mem_info *mi, *mx;
+ 	uint64_t cost;
+@@ -90,7 +88,7 @@ static int report__add_mem_hist_entry(struct perf_tool *tool, struct addr_locati
+ 	if (err)
+ 		return err;
+ 
+-	mi = machine__resolve_mem(al->machine, al->thread, sample, cpumode);
++	mi = machine__resolve_mem(al->machine, al->thread, sample, al->cpumode);
+ 	if (!mi)
+ 		return -ENOMEM;
+ 
+@@ -240,7 +238,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 		if (ret < 0)
+ 			pr_debug("problem adding lbr entry, skipping event\n");
+ 	} else if (rep->mem_mode == 1) {
+-		ret = report__add_mem_hist_entry(tool, &al, sample, evsel, event);
++		ret = report__add_mem_hist_entry(tool, &al, sample, evsel);
+ 		if (ret < 0)
+ 			pr_debug("problem adding mem entry, skipping event\n");
+ 	} else {
