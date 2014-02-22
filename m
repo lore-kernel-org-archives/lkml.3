@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaBVXST (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 18:18:19 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:49256 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaBVXSS (ORCPT
+	id S1752727AbaBVXSt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:18:49 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:10284 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaBVXSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 18:18:18 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <53093038.6000604@roeck-us.net>
-Date: Sat, 22 Feb 2014 15:18:16 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Sat, 22 Feb 2014 18:18:46 -0500
+X-IronPort-AV: E=Sophos;i="4.97,526,1389744000"; 
+   d="scan'208";a="103288006"
+Message-ID: <53093051.9040907@citrix.com>
+Date: Sat, 22 Feb 2014 23:18:41 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>,
-        Wim Van Sebroeck <wim@iguana.be>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, linux-watchdog@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
-References: <cover.1392212059.git.michal.simek@xilinx.com> <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com> <20140212171509.GB20012@roeck-us.net> <20140222184604.GB21504@spo001.leaseweb.com> <53094A15.1080708@udio.cujae.edu.cu>
-In-Reply-To: <53094A15.1080708@udio.cujae.edu.cu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 4/9] xen-netback: Change RX path for mapped
+ SKB fragments
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>	 <1390253069-25507-5-git-send-email-zoltan.kiss@citrix.com> <1392745532.23084.65.camel@kazak.uk.xensource.com>
+In-Reply-To: <1392745532.23084.65.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.68.14.49]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
-> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
->> Hi All,
->>
->>> Hi Michal,
->>>
->>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
->>>> Use of_property_read_u32 functions to clean probe function.
->>>>
->>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
->>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
->>>> ---
->>>>
->>>> Changes in v3:
->>>> - Remove one if checking and use variable directly
->>>>
->>> Looks good.
->>>
->>> Another comment/remark.
->>>
->>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
->>>> -                    "clock-frequency", NULL);
->>>> -
->>>> -    if (pfreq == NULL) {
->>>> +    rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency",&pfreq);
->>>> +    if (rc) {
->>>>           dev_warn(&pdev->dev,
->>>>                "The watchdog clock frequency cannot be obtained\n");
->>>>           no_timeout = true;
->>>>       }
->>>>
->>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>> -                    "xlnx,wdt-interval", NULL);
->>>> -    if (tmptr == NULL) {
->>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
->>>> +                &xdev->wdt_interval);
->>>> +    if (rc) {
->>>>           dev_warn(&pdev->dev,
->>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
->>>>           no_timeout = true;
->>>> -    } else {
->>>> -        xdev->wdt_interval = *tmptr;
->>>>       }
->>>>
->>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>> -                    "xlnx,wdt-enable-once", NULL);
->>>> -    if (tmptr == NULL) {
->>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
->>>> +                &enable_once);
->>>> +    if (rc)
->>>>           dev_warn(&pdev->dev,
->>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
->>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
->>>> -    }
->>> All the above properties are optional. Is a warning really
->>> warranted in this case ? I usually associate a warning with
->>> something that is wrong, which is not the case here.
->>>
->>> I would encourage you to drop those warnings, but that should be
->>> a separate patch.
->> I agree with Guenter: these are not really warnings. Seperate patch is thus welcome.
-> Hi
+On 18/02/14 17:45, Ian Campbell wrote:
+> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
 >
-> I support Michal intention, I think it is a warning because device tree blob must have the "xlnx,wdt-enable-once" property specified in order to allow the system to be sure of the real value of this property. In addition to, this warning can be helpful to detect a wrong device tree specification.
+> Re the Subject: change how? Perhaps "handle foreign mapped pages on the
+> guest RX path" would be clearer.
+Ok, I'll do that.
+
 >
+>> RX path need to know if the SKB fragments are stored on pages from another
+>> domain.
+> Does this not need to be done either before the mapping change or at the
+> same time? -- otherwise you have a window of a couple of commits where
+> things are broken, breaking bisectability.
+I can move this to the beginning, to keep bisectability. I've put it 
+here originally because none of these makes sense without the previous 
+patches.
 
-The dt documentation states that the properties are optional.
-
-Optional properties:
-- clock-frequency       : Frequency of clock in Hz
-- xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
-                           1 - Watchdog can be enabled just once
-- xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock cycles,
-                           <val> is integer from 8 to 31.
-
-This clearly conflicts with your statement. An optional property
-is just that, optional. If it warrants a warning, it must
-not be optional. If you claim that not providing the properties
-would be "wrong", why are they defined as optional ?
-What is your definition of "wrong" and "must have" ?
-How do you expect anyone to know that omitting those
-"optional" properties is by some definition "wrong" ?
-
-Guenter
-
-
+Zoli
