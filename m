@@ -1,37 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaBVTyJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 14:54:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661AbaBVTyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 14:54:05 -0500
-Date: Sat, 22 Feb 2014 20:56:04 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jon Mason <jon.mason@intel.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] ntb: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140222195603.GB14528@dhcp-26-207.brq.redhat.com>
-References: <cover.1392996332.git.agordeev@redhat.com>
- <20140221160937.GA913@dhcp-26-207.brq.redhat.com>
+	id S1752610AbaBVTzv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 14:55:51 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49622 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaBVTzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 14:55:50 -0500
+X-Originating-IP: 50.43.14.201
+Date: Sat, 22 Feb 2014 11:55:32 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
+        Borislav Petkov <bp@suse.de>, Feng Tang <feng.tang@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>, Jan Beulich <JBeulich@suse.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: [PATCH v2 1/2] x86: Drop support for /proc files when !CONFIG_PROC_FS
+Message-ID: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393098813.git.josh@joshtriplett.org>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140221160937.GA913@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 05:09:37PM +0100, Alexander Gordeev wrote:
-> Ouch, I was too fast. Patch #3 introduces warning "unused variable ‘msix’"
-> I can re-post if you want, but the rest is still is up to review ;)
+arch/x86/kernel/cpu/proc.c only exists to support files in /proc; omit that
+file when compiling without CONFIG_PROC_FS.
 
-Resent.
+Saves 645 additional bytes on 32-bit x86 when !CONFIG_PROC_FS:
 
+add/remove: 0/5 grow/shrink: 0/0 up/down: 0/-645 (-645)
+function                                     old     new   delta
+c_stop                                         1       -      -1
+c_next                                        11       -     -11
+cpuinfo_op                                    16       -     -16
+c_start                                       24       -     -24
+show_cpuinfo                                 593       -    -593
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+v2: no changes to patch 1.
+
+ arch/x86/kernel/cpu/Makefile | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 7fd54f0..64038d8 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -13,10 +13,12 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_common.o		:= $(nostackp)
+ 
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+-obj-y			+= proc.o capflags.o powerflags.o common.o
++obj-y			+= capflags.o powerflags.o common.o
+ obj-y			+= rdrand.o
+ obj-y			+= match.o
+ 
++obj-$(CONFIG_PROC_FS)	+= proc.o
++
+ obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+ 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.9.0
+
