@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaBVXtr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 18:49:47 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49226 "EHLO
+	id S1752491AbaBVX7q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 18:59:46 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49251 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaBVXtq (ORCPT
+	with ESMTP id S1751585AbaBVX7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 18:49:46 -0500
-Date: Sun, 23 Feb 2014 00:49:52 +0100 (CET)
+	Sat, 22 Feb 2014 18:59:44 -0500
+Date: Sun, 23 Feb 2014 00:59:50 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] irq fixes for 3.14
-Message-ID: <alpine.DEB.2.02.1402230046470.21251@ionos.tec.linutronix.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] x86 fixes for 3.14
+Message-ID: <alpine.DEB.2.02.1402230050020.21251@ionos.tec.linutronix.de>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,87 +27,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-please pull the latest irq-urgent-for-linus git tree from:
+please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-We present you herewith:
+This pull request provides:
 
- * Another four fixlets to tame the ARM orion irq chip
+     * A bugfix which prevents a divide by 0 panic when the in 3.14
+       newly introduced try_msr_calibrate_tsc() fails.
+
+     * The enablement of the Baytrail platform to utilize the new
+       fangled msr based calibration
 
 Thanks,
 
 	tglx
 
 ------------------>
-Andrew Lunn (1):
-      irqchip: orion: Fix getting generic chip pointer.
+Mika Westerberg (1):
+      x86: tsc: Add missing Baytrail frequency to the table
 
-Sebastian Hesselbarth (3):
-      irqchip: orion: clear bridge cause register on init
-      irqchip: orion: use handle_edge_irq on bridge irqs
-      irqchip: orion: clear stale interrupts in irq_startup
+Thomas Gleixner (1):
+      x86, tsc: Fallback to normal calibration if fast MSR calibration fails
 
 
- drivers/irqchip/irq-orion.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/tsc.h |    2 +-
+ arch/x86/kernel/tsc.c      |    7 ++-----
+ arch/x86/kernel/tsc_msr.c  |   30 +++++++++++++++---------------
+ 3 files changed, 18 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/irqchip/irq-orion.c b/drivers/irqchip/irq-orion.c
-index e51d400..8e41be6 100644
---- a/drivers/irqchip/irq-orion.c
-+++ b/drivers/irqchip/irq-orion.c
-@@ -111,7 +111,8 @@ IRQCHIP_DECLARE(orion_intc, "marvell,orion-intc", orion_irq_init);
- static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 57ae63c..94605c0 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -66,6 +66,6 @@ extern void tsc_save_sched_clock_state(void);
+ extern void tsc_restore_sched_clock_state(void);
+ 
+ /* MSR based TSC calibration for Intel Atom SoC platforms */
+-int try_msr_calibrate_tsc(unsigned long *fast_calibrate);
++unsigned long try_msr_calibrate_tsc(void);
+ 
+ #endif /* _ASM_X86_TSC_H */
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index acb3b60..cfbe99f 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -653,13 +653,10 @@ unsigned long native_calibrate_tsc(void)
+ 
+ 	/* Calibrate TSC using MSR for Intel Atom SoCs */
+ 	local_irq_save(flags);
+-	i = try_msr_calibrate_tsc(&fast_calibrate);
++	fast_calibrate = try_msr_calibrate_tsc();
+ 	local_irq_restore(flags);
+-	if (i >= 0) {
+-		if (i == 0)
+-			pr_warn("Fast TSC calibration using MSR failed\n");
++	if (fast_calibrate)
+ 		return fast_calibrate;
+-	}
+ 
+ 	local_irq_save(flags);
+ 	fast_calibrate = quick_pit_calibrate();
+diff --git a/arch/x86/kernel/tsc_msr.c b/arch/x86/kernel/tsc_msr.c
+index 8b5434f..92ae6ac 100644
+--- a/arch/x86/kernel/tsc_msr.c
++++ b/arch/x86/kernel/tsc_msr.c
+@@ -53,7 +53,7 @@ static struct freq_desc freq_desc_tables[] = {
+ 	/* TNG */
+ 	{ 6, 0x4a, 1, { 0, FREQ_100, FREQ_133, 0, 0, 0, 0, 0 } },
+ 	/* VLV2 */
+-	{ 6, 0x37, 1, { 0, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
++	{ 6, 0x37, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_166, 0, 0, 0, 0 } },
+ 	/* ANN */
+ 	{ 6, 0x5a, 1, { FREQ_83, FREQ_100, FREQ_133, FREQ_100, 0, 0, 0, 0 } },
+ };
+@@ -77,21 +77,18 @@ static int match_cpu(u8 family, u8 model)
+ 
+ /*
+  * Do MSR calibration only for known/supported CPUs.
+- * Return values:
+- * -1: CPU is unknown/unsupported for MSR based calibration
+- *  0: CPU is known/supported, but calibration failed
+- *  1: CPU is known/supported, and calibration succeeded
++ *
++ * Returns the calibration value or 0 if MSR calibration failed.
+  */
+-int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
++unsigned long try_msr_calibrate_tsc(void)
  {
- 	struct irq_domain *d = irq_get_handler_data(irq);
--	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, irq);
-+
-+	struct irq_chip_generic *gc = irq_get_domain_generic_chip(d, 0);
- 	u32 stat = readl_relaxed(gc->reg_base + ORION_BRIDGE_IRQ_CAUSE) &
- 		   gc->mask_cache;
+-	int cpu_index;
+ 	u32 lo, hi, ratio, freq_id, freq;
++	unsigned long res;
++	int cpu_index;
  
-@@ -123,6 +124,19 @@ static void orion_bridge_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	}
- }
+ 	cpu_index = match_cpu(boot_cpu_data.x86, boot_cpu_data.x86_model);
+ 	if (cpu_index < 0)
+-		return -1;
+-
+-	*fast_calibrate = 0;
++		return 0;
  
-+/*
-+ * Bridge IRQ_CAUSE is asserted regardless of IRQ_MASK register.
-+ * To avoid interrupt events on stale irqs, we clear them before unmask.
-+ */
-+static unsigned int orion_bridge_irq_startup(struct irq_data *d)
-+{
-+	struct irq_chip_type *ct = irq_data_get_chip_type(d);
-+
-+	ct->chip.irq_ack(d);
-+	ct->chip.irq_unmask(d);
+ 	if (freq_desc_tables[cpu_index].msr_plat) {
+ 		rdmsr(MSR_PLATFORM_INFO, lo, hi);
+@@ -103,7 +100,7 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
+ 	pr_info("Maximum core-clock to bus-clock ratio: 0x%x\n", ratio);
+ 
+ 	if (!ratio)
+-		return 0;
++		goto fail;
+ 
+ 	/* Get FSB FREQ ID */
+ 	rdmsr(MSR_FSB_FREQ, lo, hi);
+@@ -112,16 +109,19 @@ int try_msr_calibrate_tsc(unsigned long *fast_calibrate)
+ 	pr_info("Resolved frequency ID: %u, frequency: %u KHz\n",
+ 				freq_id, freq);
+ 	if (!freq)
+-		return 0;
++		goto fail;
+ 
+ 	/* TSC frequency = maximum resolved freq * maximum resolved bus ratio */
+-	*fast_calibrate = freq * ratio;
+-	pr_info("TSC runs at %lu KHz\n", *fast_calibrate);
++	res = freq * ratio;
++	pr_info("TSC runs at %lu KHz\n", res);
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	lapic_timer_frequency = (freq * 1000) / HZ;
+ 	pr_info("lapic_timer_frequency = %d\n", lapic_timer_frequency);
+ #endif
++	return res;
+ 
+-	return 1;
++fail:
++	pr_warn("Fast TSC calibration using MSR failed\n");
 +	return 0;
-+}
-+
- static int __init orion_bridge_irq_init(struct device_node *np,
- 					struct device_node *parent)
- {
-@@ -143,7 +157,7 @@ static int __init orion_bridge_irq_init(struct device_node *np,
- 	}
- 
- 	ret = irq_alloc_domain_generic_chips(domain, nrirqs, 1, np->name,
--			     handle_level_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+			     handle_edge_irq, clr, 0, IRQ_GC_INIT_MASK_CACHE);
- 	if (ret) {
- 		pr_err("%s: unable to alloc irq domain gc\n", np->name);
- 		return ret;
-@@ -176,12 +190,14 @@ static int __init orion_bridge_irq_init(struct device_node *np,
- 
- 	gc->chip_types[0].regs.ack = ORION_BRIDGE_IRQ_CAUSE;
- 	gc->chip_types[0].regs.mask = ORION_BRIDGE_IRQ_MASK;
-+	gc->chip_types[0].chip.irq_startup = orion_bridge_irq_startup;
- 	gc->chip_types[0].chip.irq_ack = irq_gc_ack_clr_bit;
- 	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
- 	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
- 
--	/* mask all interrupts */
-+	/* mask and clear all interrupts */
- 	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_MASK);
-+	writel(0, gc->reg_base + ORION_BRIDGE_IRQ_CAUSE);
- 
- 	irq_set_handler_data(irq, domain);
- 	irq_set_chained_handler(irq, orion_bridge_irq_handler);
+ }
