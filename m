@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaBVCcx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Feb 2014 21:32:53 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:52024 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaBVCcv (ORCPT
+	id S1753767AbaBVCnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Feb 2014 21:43:45 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48735 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaBVCnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Feb 2014 21:32:51 -0500
-Message-ID: <53080C55.3070001@prisktech.co.nz>
-Date: Sat, 22 Feb 2014 15:32:53 +1300
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Feb 2014 21:43:43 -0500
+Date: Sat, 22 Feb 2014 11:10:48 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Message-ID: <20140222021048.GH25940@sirena.org.uk>
+References: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1393011432-28909-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        Alistair Popple <alistair@popple.id.au>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 4/7] ECHI Platform: Merge ppc-of EHCI driver into the
- ehci-platform driver
-References: <20140221114803.GB8783@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140221114803.GB8783@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wayzTnRSUXKNfBqd"
+Content-Disposition: inline
+In-Reply-To: <1393011432-28909-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.103.222
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] regmap: Add API call apply but not register a patch
+ file
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 22/02/14 00:48, Mark Rutland wrote:
-> [Adding Tony Prisk to Cc]
->
-> On Fri, Feb 21, 2014 at 06:31:30AM +0000, Alistair Popple wrote:
->> Currently the ppc-of driver uses the compatibility string
->> "usb-ehci". This means platforms that use device-tree and implement an
->> EHCI compatible interface have to either use the ppc-of driver or add
->> a compatible line to the ehci-platform driver. It would be more
->> appropriate for the platform driver to be compatible with "usb-ehci"
->> as non-powerpc platforms are also beginning to utilise device-tree.
->>
->> This patch merges the device tree property parsing from ehci-ppc-of
->> into the platform driver and adds a "usb-ehci" compatibility
->> string. The existing ehci-ppc-of driver is removed and the 440EPX
->> specific quirks are added to the ehci-platform driver.
->>
->> Signed-off-by: Alistair Popple <alistair@popple.id.au>
->> ---
->>   drivers/usb/host/Kconfig         |    7 +-
->>   drivers/usb/host/ehci-hcd.c      |    5 -
->>   drivers/usb/host/ehci-platform.c |   87 +++++++++++++-
->>   drivers/usb/host/ehci-ppc-of.c   |  238 --------------------------------------
->>   4 files changed, 89 insertions(+), 248 deletions(-)
->>   delete mode 100644 drivers/usb/host/ehci-ppc-of.c
-> Please use of_property_read_bool for these.
->
-> This driver already handles "via,vt8500-ehci" and "wm,prizm-ehci" which
-> aren't documented to handle these properties, but now gain support for
-> them. It might be worth unifying the binding documents if there's
-> nothing special about those two host controllers.
->
-> We seem to have two binding documents for "via,vt8500-ehci", so some
-> cleanup is definitely in order.
->
-> Tony, you seem to have written both documents judging by 95e9fd10f06c
-> and 8ad551d150e3. Do you have any issue with merging both of these into
-> a common usb-ehci document?
-......
-> Cheers,
-> Mark.
+--wayzTnRSUXKNfBqd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm not sure how we ended up with two bindings for the driver anyway. I 
-think this was an error on my part somewhere.
+On Fri, Feb 21, 2014 at 07:37:11PM +0000, Charles Keepax wrote:
+> This patch provides a new regmap API call that allows a patch to be
+> applied but not registered with the regmap core. Common code between
+> this and the existing regmap_register_patch function is factored out to
+> reduce duplication.
 
-None of the in-tree dts files use "wm,prizm-ehci".
+This is just regmap_multi_reg_write() I think?  That already exists, the
+theory was that we're going to get an optimised version of that for some
+hardware which can stream things and cut out some overheads though that
+doesn't seem to have materialised yet.
 
-I have no issue with merging all the documentation into a single 
-usb-ehci binding.
+--wayzTnRSUXKNfBqd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards
-Tony Prisk
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCAclAAoJELSic+t+oim9RWkP/2YaDfVHTReci2ubM76qwyfx
+qYhYffiXnPuRdBw1f8KwRQ6aYX7ztWkcGl+d4aGTipnyvMdy0BHzVe0Epojb50UT
+nFYEmwE9bs/QrFu/epc/wPXKTVuGPlQWg1fvwkMmMRsV4emWuF/+npBmQSYvfLHb
+DYKorMuuEhreREX/VhhnOEGFxcRnTCiyUdo69/y4/Cmqp3RX8lLEvjKMG/Klg1V7
+MNGjEy3S8eZp9YgtUUEuSzjIhEvixfN1c5V6muycL0PcIwpYktJBmQrHMbOdnyAK
+Vflt6wFvOhxJhJusBczypHrK6QEJYwINh+zBQCHWQKDMMDse3pGnkeYalxoZGv3X
+8JggCbpc50i0Qi73vLojLd1TLwxOyl5ixVp9j9WAQSBE+Xu5sYHyQOoydspUuakM
+/nPIJ1+efyRZMJqJ0xfv3s4FUWRLG+K8sOPRpmQUmF+iyr4kpcjD5GUsViSf+UPz
+lyZNIt+U6nunA6bmnTjgATEm6eiSyXalaWXLaSyuN9tUqLJdjpnURIa4T6m+VqD+
+JaAbZTFHmoGWUB4iczw59rq7+DGbIQ+sNjcrr/aAzVRNaCMGKyxaVqEVTqIr4NVh
+furR6DgeaEOm946OnC+JOLOiNuHFw0ncUTSNw2Z/copcUod2yx+Eg8cZHsCyoZGV
+JfwbpHR+kaLKI4noOikP
+=D/WO
+-----END PGP SIGNATURE-----
+
+--wayzTnRSUXKNfBqd--
