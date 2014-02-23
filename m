@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaBWUW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 15:22:56 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:49753 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaBWUWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 15:22:24 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Todza Louina <lidza.louina@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH 3/3] staging: dgap: fix error handling in dgap_init_module()
-Date: Mon, 24 Feb 2014 00:21:53 +0400
-Message-Id: <1393186913-4687-3-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393186913-4687-1-git-send-email-khoroshilov@ispras.ru>
-References: <1393186913-4687-1-git-send-email-khoroshilov@ispras.ru>
+	id S1751629AbaBWU1X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 15:27:23 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:60408 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaBWU1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 15:27:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+Date: Sun, 23 Feb 2014 12:27:20 -0800
+X-Google-Sender-Auth: Vi6mwaqeGBs5lczgUYppqtkEADs
+Message-ID: <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
+Subject: Re: [RFC] improve_stack: make stack dump output useful again
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to call pci_unregister_driver() if pci_register_driver() failed.
+On Sat, Feb 22, 2014 at 4:19 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Right now when people try to report issues in the kernel they send stack
+> dumps to eachother, which looks something like this:
+>
+> [    6.906437]  [<ffffffff811f0e90>] ? backtrace_test_irq_callback+0x20/0x20
+> [    6.907121]  [<ffffffff84388ce8>] dump_stack+0x52/0x7f
+> [    6.907640]  [<ffffffff811f0ec8>] backtrace_regression_test+0x38/0x110
+> [    6.908281]  [<ffffffff813596a0>] ? proc_create_data+0xa0/0xd0
+> [    6.908870]  [<ffffffff870a8040>] ? proc_modules_init+0x22/0x22
+> [    6.909480]  [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
+> [...]
+>
+> However, most of the text you get is pure garbage.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/staging/dgap/dgap_driver.c | 12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+I'd like to fix that, but I'd like to fix it in the kernel, and just
+stop printing the hex addresses entirely.
 
-diff --git a/drivers/staging/dgap/dgap_driver.c b/drivers/staging/dgap/dgap_driver.c
-index 136c879b560c..cc6933db6feb 100644
---- a/drivers/staging/dgap/dgap_driver.c
-+++ b/drivers/staging/dgap/dgap_driver.c
-@@ -254,18 +254,10 @@ int dgap_init_module(void)
- 	/*
- 	 * If something went wrong in the scan, bail out of driver.
- 	 */
--	if (rc < 0) {
--		/* Only unregister the pci driver if it was actually registered. */
--		if (dgap_NumBoards)
--			pci_unregister_driver(&dgap_driver);
--		else
--			printk("WARNING: dgap driver load failed.  No DGAP boards found.\n");
--
-+	if (rc < 0)
- 		dgap_cleanup_module();
--	}
--	else {
-+	else
- 		dgap_create_driver_sysfiles(&dgap_driver);
--	}
-   
- 	DPR_INIT(("Finished init_module. Returning %d\n", rc));
- 	return (rc);
--- 
-1.8.3.2
+However, your kind of script actually makes that worse, in that it
+uses the redundant hex addresses for 'addr2line', and that tool is
+known to not work with symbolic addresses, only with actual numerical
+ones.
 
+So I would *really* want to do this kernel change (possibly
+conditional on RANDOMIZE_BASE_ADDRESS or whatever the config variable
+is called):
+
+    diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+    index d9c12d3022a7..58039e728f00 100644
+    --- a/arch/x86/kernel/dumpstack.c
+    +++ b/arch/x86/kernel/dumpstack.c
+    @@ -27,13 +27,12 @@ static int die_counter;
+
+     static void printk_stack_address(unsigned long address, int reliable)
+     {
+    -       pr_cont(" [<%p>] %s%pB\n",
+    -               (void *)address, reliable ? "" : "? ", (void *)address);
+    +       pr_cont(" %s[<%pB>]\n", reliable ? "" : "? ", (void *)address);
+     }
+
+     void printk_address(unsigned long address)
+     {
+    -       pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
+    +       pr_cont(" [<%pS>]\n", (void *)address);
+     }
+
+     #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+
+which would make the kernel stack traces much prettier.
+
+But that would require that there be a "resolve symbolic address" (if
+CONFIG_KALLSYMS isn't enabled, it would still be hexadecimal) for the
+address inside the [<>] thing..
+
+I don't know of any sane tool that does that directly, but it
+shouldn't be *that* hard. You can *almost* do it with
+
+  echo "p backtrace_regression_test+0x38" | gdb vmlinux
+
+but you see the problem if you try that ;)
+
+               Linus
