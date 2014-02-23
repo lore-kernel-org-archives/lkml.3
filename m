@@ -1,120 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaBWXqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 18:46:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38168 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbaBWXqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 18:46:08 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-c6-530a883af0a9
-Date: Sun, 23 Feb 2014 23:46:02 +0000 (GMT)
-From: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH v3 2/2] phy: Select PHY_EXYNOS_DP_VIDEO by default for
- ARCH_EXYNOS
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "kishon@ti.com" <kishon@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Reply-to: jg1.han@samsung.com
-MIME-version: 1.0
-X-MTR: 20140223234534613@jg1.han
-Msgkey: 20140223234534613@jg1.han
-X-EPLocale: en_US.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140223234534613@jg1.han
-X-ParentMTR: 
-X-ArchiveUser: EV
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <29724573.104451393199161967.JavaMail.weblogic@epml01>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJsWRmVeSWpSXmKPExsVy+t8zA12rDq5ggxVbjS0u75rD5sDo8XmT
-	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
-	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
-	uUoKZYk5pUAjlPQTpjJmdCzqZCvYwldx9tNjtgbGBr4uRk4OIQEliUkn9zKC2BICJhLnt9xk
-	grDFJC7cW8/WxcgFVLOMUWL+mn3MMEXb76+BSsxnlFh38xw7SIJFQFVi2co9YJPYBNQlJvxu
-	ZgGxhQXCJH4/3AJmiwiESExY/QasmVmgmUli0aI7LBBnyErcmzwbbAOvgKDEyZlPgOIcQNsU
-	JF4sSoUIK0osWHmIBeIICYk79/ezQti8EjPan0LF5SSmfV0Ddai0xPlZGxhhvln8/TFUnF/i
-	2O0dTBDjeSWe3A+GGbN78xc2CFtAYuqZg4wQJaoSJ79ClfBJrFn4FmqToMTpa93MMK33t8wF
-	hxsz0JVTuh+yQ9haEl9+7GND9RSI7SSxYc9cpgmMyrOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXF
-	SelFxsiRvYkRkgb7dzDePWB9iHE/IzBKJjJLiSbnAxNpXkm8obGZkYWpiamxkbmlGYXCJqYW
-	FiZGVBFWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOjrsqlVSyiJyVmnGzqame8
-	9P5fQCX3c32d7y5JPZVvSp//WXzvTuWS3y/OT58mpO5Q5n8lXtNA5Pipoq7uYzNPN7RViK/T
-	L8w1z/m3+mSua9Zzo8z3/r15R6TKEvcf2Xo5MPnojfT33nFWdc8Cdl1/8fuI5gRuc/tHhrln
-	m/cxCNQ0sk4UDFZXYinOSDTUYi4qTgQAHveutfYDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2dF2rDq5ggzf31Swu75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6xZayVoYGBkSlQVUJG
-	RseiTraCLXwVZz89ZmtgbODrYuTkEBJQkph0ci8jiC0hYCKx/f4aNghbTOLCvfVANhdQzXxG
-	iXU3z7GDJFgEVCWWrdwD1sAmoC4x4XczC4gtLBAm8fvhFjBbRCBEYsLqN2DNzALNTBKLFt1h
-	gdgmK3Fv8mxmEJtXQFDi5MwnQHEOoG0KEi8WpUKEFSUWrDzEAnGEhMSd+/tZIWxeiRntT6Hi
-	chLTvq5hhrClJc7P2sAIc/Ti74+h4vwSx27vYIIYzyvx5H4wzJjdm79A/SggMfXMQUaIElWJ
-	k1+hSvgk1ix8C7VJUOL0tW5mmNb7W+YygdjMQFdO6X7IDmFrSXz5sY8N1VMgtpPEhj1zmSYw
-	ys1CkpqFpH0WknZkNQsYWVYxiqYWJBcUJ6VXmOgVJ+YWl+al6yXn525iBCeoZ0t2MDZcsD7E
-	KMDBqMTDK1HNFSzEmlhWXJl7iFGCg1lJhLemDCjEm5JYWZValB9fVJqTWnyIMRkYfxOZpUST
-	84HJM68k3tDY2MTMxNTcwMLA0pw0YSVx3gW3koKEBNITS1KzU1MLUotgtjBxcEo1MMprdrPv
-	Wmir/Uj2+la1DZt2Hl/hu6bDMVSAy6p5+73WSlPFVVWLFrourlq+9s+ieOebOXs42SYI+H7M
-	6TLsSF3EtaL4QRpfDOulHcydM3snx7fMYk72LWR8mOAjs6Tx43pzpp2/Wj2d008cidF7KZDQ
-	G1p83ab1q+3MLTPt7/z6tk/3/L3jp5VYijMSDbWYi4oTAdnAxlKUAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1752318AbaBWXu0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 18:50:26 -0500
+Received: from ring0.de ([5.45.105.125]:59827 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899AbaBWXuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 18:50:21 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        =?UTF-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE=20=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv1 0/6] OMAP SSI driver
+Date: Mon, 24 Feb 2014 00:49:55 +0100
+Message-Id: <1393199401-27197-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1NNkHvk010408
 
-On Saturday, February 22, 2014 1:44 AM, Sylwester Nawrocki wrote:
-> 
-> Instead of requiring user to figure out when PHY_EXYNOS_DP_VIDEO needs
-> to be selected select it by default for Exynos SoCs. Also enable it
-> when COMPILE_TEST is selected. If required the display port PHY driver
-> can be then disabled or compiled in as module.
-> 
-> Cc: Jingoo Han <jg1.han@samsung.com>
+Hi,
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+This is the fifth round of the OMAP SSI driver patches. I think the OMAP SSI
+driver is ready for mainline and should be included in 3.15. I haven't heard
+anything from DT binding maintainers since some months though and would like
+to get some feedback about the binding from them.
 
-Best regards,
-Jingoo Han
+Changes since RFCv4 [0]:
+ * Removed patches for nokia-cmt and ssi-protocol, those are still WIP
+ * tested with CONFIG_DEBUG_ATOMIC_SLEEP
+ * tested with Russel's "OMAP dma engine rework" patchset
+ * acquire clocks from DT
+ * minor cleanups
+  - removed unused include of omap specific dma header
+ * updated patch subjects
 
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Changes since v2:
->  - s/default y/default ARCH_EXYNOS
-> 
-> Changes since first version:
->  - use ARCH_EXYNOS instead of "ARCH_EXYNOS4 || ARCH_EXYNOS5"
->  - add dependency on COMPILE_TEST
-> ---
->  drivers/phy/Kconfig |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index d71be95..fe1b1f4 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -57,6 +57,8 @@ config TWL4030_USB
->  config PHY_EXYNOS_DP_VIDEO
->  	tristate "EXYNOS SoC series Display Port PHY driver"
->  	depends on OF
-> +	depends on ARCH_EXYNOS || COMPILE_TEST
-> +	default ARCH_EXYNOS
->  	select GENERIC_PHY
->  	help
->  	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
-> --
-> 1.7.9.5ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+TODO:
+* Central Message Queue
+  I did not yet implement a central message queue in the HSI framework.
+  I will do this after Nokia N900 modem is working in the mainline kernel.
+* Remove the hwmod DT hack
+  This depends on some future work merging hwmod data into DT.
+
+P.S.: It would be nice if I get some Reviewed-By/Acked-By.
+
+[0] http://marc.info/?l=linux-kernel&m=138715030530931&w=2
+
+-- Sebastian
+
+Sebastian Reichel (6):
+  HSI: add Device Tree support for HSI clients
+  HSI: method to unregister clients from an hsi port
+  HSI: hsi-char: add Device Tree support
+  HSI: hsi-char: fix driver for multiport scenarios
+  HSI: Introduce OMAP SSI driver
+  Documentation: DT: omap-ssi binding documentation
+
+ Documentation/devicetree/bindings/hsi/omap_ssi.txt |   82 ++
+ .../devicetree/bindings/hsi/trivial-devices.txt    |   36 +
+ drivers/hsi/Kconfig                                |    1 +
+ drivers/hsi/Makefile                               |    1 +
+ drivers/hsi/clients/hsi_char.c                     |   13 +-
+ drivers/hsi/controllers/Kconfig                    |   19 +
+ drivers/hsi/controllers/Makefile                   |    6 +
+ drivers/hsi/controllers/omap_ssi.c                 |  618 +++++++++
+ drivers/hsi/controllers/omap_ssi.h                 |  166 +++
+ drivers/hsi/controllers/omap_ssi_port.c            | 1401 ++++++++++++++++++++
+ drivers/hsi/controllers/omap_ssi_regs.h            |  171 +++
+ drivers/hsi/hsi.c                                  |   80 +-
+ include/dt-bindings/hsi/hsi.h                      |   17 +
+ include/linux/hsi/hsi.h                            |    3 +
+ 14 files changed, 2612 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hsi/omap_ssi.txt
+ create mode 100644 Documentation/devicetree/bindings/hsi/trivial-devices.txt
+ create mode 100644 drivers/hsi/controllers/Kconfig
+ create mode 100644 drivers/hsi/controllers/Makefile
+ create mode 100644 drivers/hsi/controllers/omap_ssi.c
+ create mode 100644 drivers/hsi/controllers/omap_ssi.h
+ create mode 100644 drivers/hsi/controllers/omap_ssi_port.c
+ create mode 100644 drivers/hsi/controllers/omap_ssi_regs.h
+ create mode 100644 include/dt-bindings/hsi/hsi.h
+
+-- 
+1.8.5.3
+
