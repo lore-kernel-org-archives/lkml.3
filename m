@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaBWVdL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:33:11 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51373 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaBWVdJ (ORCPT
+	id S1751936AbaBWViZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:38:25 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40363 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751592AbaBWViX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:33:09 -0500
-X-Originating-IP: 50.43.14.201
-Date: Sun, 23 Feb 2014 13:32:52 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Stephane Eranian <eranian@google.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
- processor feature names
-Message-ID: <20140223213252.GA14411@thin>
-References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
- <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
- <20140222204936.GA2534@pd.tnic>
- <20140222210038.GA19867@thin>
- <1b6550ce-40bd-4fc4-a3e4-37997da17973@email.android.com>
- <20140222213640.GA3409@thin>
- <530A3668.2090902@zytor.com>
+	Sun, 23 Feb 2014 16:38:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjkJAHZpClN5LJYe/2dsb2JhbABZDoJ4g0O4XoVTgQcXdIIlAQEFOhwzCAMYCSUPBSUDIQESiATGNhcWjlWDJIEUBJgzilKHVoJuUyg
+Date: Mon, 24 Feb 2014 08:36:06 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
+        viro@zeniv.linux.org.uk, bpm@sgi.com, adilger.kernel@dilger.ca,
+        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
+ fallocate
+Message-ID: <20140223213606.GE4317@dastard>
+References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com>
+ <20140222140625.GD26637@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <530A3668.2090902@zytor.com>
+In-Reply-To: <20140222140625.GD26637@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 09:56:56AM -0800, H. Peter Anvin wrote:
-> On 02/22/2014 01:36 PM, Josh Triplett wrote:
-> > 
-> > No, even after removing the ifdefs around the build rules as you
-> > suggested (and v3's fixes for the resulting build issues, notably
-> > changing some -y's to -$(CONFIG_X86_FEATURE_NAMES)), the makefiles still
-> > manage to not build mkcpustr or cpustr.h, because nothing depends on it.
+On Sat, Feb 22, 2014 at 09:06:25AM -0500, Theodore Ts'o wrote:
+> On Wed, Feb 19, 2014 at 01:37:43AM +0900, Namjae Jeon wrote:
+> > +	/*
+> > +	 * There is no need to overlap collapse range with EOF, in which case
+> > +	 * it is effectively a truncate operation
+> > +	 */
+> > +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) &&
+> > +	    (offset + len >= i_size_read(inode)))
+> > +		return -EINVAL;
+> > +
 > 
-> How could it miss the rule:
-> 
-> $(obj)/cpu.o: $(obj)/cpustr.h
+> I wonder if we should just translate a collapse range that is
+> equivalent to a truncate operation to, in fact, be a truncate
+> operation?
 
-Because, in order to un-break the build, v3 wraps an ifdef around that
-dependency, to prevent building cpustr.h.  Otherwise, the rule for
-cpustr.h tries and fails to build mkcpustr.
+Trying to collapse a range that extends beyond EOF, IMO, is likely
+to only happen if the DVR/NLE application is buggy. Hence I think
+that telling the application it is doing something that is likely to
+be wrong is better than silently truncating the file....
 
-> > I could change the build rules to generate an empty cpustr.h and avoid
-> > this ifdef, but that'd require an additional ifdef block in the Makefile.
-> 
-> Typically the way it is done is to generate the #ifdef *inside*
-> cpustr.h.  However, cpustr.h is kind of special anyway so it probably
-> doesn't matter.
+Cheers,
 
-Given that only one file includes cpustr.h, and that seems unlikely to
-ever change, moving the ifdef inside the header doesn't seem that
-worthwhile.  If it were included more than once, it would definitely
-make sense to generate a stub header.
-
-- Josh Triplett
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
