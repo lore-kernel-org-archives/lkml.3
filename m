@@ -1,108 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaBWB1u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 20:27:50 -0500
-Received: from chicago.guarana.org ([192.210.136.102]:41963 "EHLO
-	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228AbaBWB1t (ORCPT
+	id S1752754AbaBWB2v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 20:28:51 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:45472 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642AbaBWB2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 20:27:49 -0500
-X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Feb 2014 20:27:49 EST
-Date: Sun, 23 Feb 2014 12:18:06 +1100
-From: Kevin Easton <kevin@guarana.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "Zuckerman, Boris" <borisz@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, "Theodore T'so" <tytso@mit.edu>,
-        Christoph Hellwig <hch@lst.de>, Chris Mason <clm@fb.com>,
-        DaveC@chicago.guarana.org
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-Message-ID: <20140223011806.GA13677@chicago.guarana.org>
-References: <a8df285f-de7f-4a3a-9a19-e0ad07ab3a5c@blur>
- <8e9349a1-d900-4c93-8dad-1e32f26529c2@blur>
- <20140220182932.GF18016@ZenIV.linux.org.uk>
- <CAKgNAkjFquLPDBXCS50pzVz0EiSfgvJjrG6cEVMFwKZopeHHBg@mail.gmail.com>
+	Sat, 22 Feb 2014 20:28:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkjFquLPDBXCS50pzVz0EiSfgvJjrG6cEVMFwKZopeHHBg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201402222022.20370.gheskett@wdtv.com>
+References: <201402222022.20370.gheskett@wdtv.com>
+Date: Sat, 22 Feb 2014 20:28:49 -0500
+X-Google-Sender-Auth: Wryt--dWM1-N_93S5R5ynH1GxI8
+Message-ID: <CAKb7UvjertO2FEPL+5_wKhrFVfYA5_dBe70EoyY9fZ881CY-GQ@mail.gmail.com>
+Subject: Re: It BOOTS! 3.13.5 that is.
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Gene Heskett <gheskett@wdtv.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 07:01:31AM +0100, Michael Kerrisk (man-pages) wrote:
-> Here's the fulll list from POSIX.1-2008/SUSv4 Section XSI 2.9.7:
-> 
-> [[
-> 2.9.7 Thread Interactions with Regular File Operations
-> 
-> All of the following functions shall be atomic with respect to each
-> other in the effects specified in
-> POSIX.1-2008 when they operate on regular files or symbolic links:
-> 
-> chmod( )
-> chown( )
-> close( )
-> creat( )
-> dup2( )
-> fchmod( )
-> fchmodat( )
-> fchown( )
-> fchownat( )
-> fcntl( )
-> fstat( )
-> fstatat( )
-> ftruncate( )
-> lchown( )
-> link( )
-> linkat( )
-> lseek( )
-> lstat( )
-> open( )
-> openat( )
-> pread( )
-> read( )
-> readlink( )
-> readlinkat( )
-> readv( )
-> pwrite( )
-> rename( )
-> renameat( )
-> stat( )
-> symlink( )
-> symlinkat( )
-> truncate( )
-> unlink( )
-> unlinkat( )
-> utime( )
-> utimensat( )
-> utimes( )
-> write( )
-> writev( )
-> 
-> If two threads each call one of these functions, each call shall
-> either see all of the specified effects
-> of the other call, or none of them.
-> ]]
-> 
-> I'd bet that there's a bunch of violations to be found, but the
-> read/write f_pos case is one of the most egregious.
-> 
-> For example, I got curious about stat() versus rename(). If one
-> stat()s a directory() while a subdirectory is being renamed to a new
-> name within that directory, does the link count of the parent
-> directory ever change--that is, could stat() ever see a changed link
-> count in the middle of the rename()? My experiments suggest that it
-> can. I suppose it would have to be a very unusual application that
-> would be troubled by that, but it does appear to be a violation of
-> 2.9.7.
+On Sat, Feb 22, 2014 at 8:22 PM, Gene Heskett <gheskett@wdtv.com> wrote:
+> But my tv card isn't being found by kaffeine.  It is this card:
+>
+> 01:08.0 Multimedia video controller: Conexant Systems, Inc. CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
+>         Subsystem: pcHDTV Device 3000
+>         Flags: bus master, medium devsel, latency 32, IRQ 10
+>         Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
+>         Capabilities: [44] Vital Product Data <?>
+>         Capabilities: [4c] Power Management version 2
+>
+> 01:08.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3 PCI Video and Audio Decoder [MPEG Port] (rev 05)
+>         Subsystem: pcHDTV Device 3000
+>         Flags: bus master, medium devsel, latency 32, IRQ 10
+>         Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
+>         Capabilities: [4c] Power Management version 2
+>
+> From an lspci
+>
+> In a make xconfig, I cannot find this specific card in the list of DVB
+> front ends.  What modules do I need to make sure are being built?
 
-A directory isn't a regular file or symlink, though, so the warranty
-would seem to be void in that case.
+You're looking for VIDEO_CX88 ("Conexant 2388x (bt878 successor)
+support") and its various sub-options (esp CX88_DVB). iirc the
+pchdtv3000 had a OR51132 tuner, but right now the config is set to
+auto-select a whole bunch of tuners if you have
+MEDIA_SUBDRV_AUTOSELECT turned on. Otherwise make sure to select that
+tuner device. (Hm, I appear to have both OR51132 and CX22702 enabled,
+and I have that same card.)
 
-If you {f}stat() a regular file that is being concurrently renamed() then
-the link count shouldn't vary, though.
-
-    - Kevin
+  -ilia
