@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaBWQMF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 11:12:05 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46432 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaBWQMD (ORCPT
+	id S1751406AbaBWQV4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 11:21:56 -0500
+Received: from server7.irisoft.sk ([82.208.18.12]:45675 "EHLO
+	server7.irisoft.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaBWQVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 11:12:03 -0500
-Date: Sun, 23 Feb 2014 16:11:59 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, lee.jones@linaro.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/3] regmap: Add API call apply but not register a
-	patch file
-Message-ID: <20140223161159.GA5901@opensource.wolfsonmicro.com>
-References: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1393011432-28909-2-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140222021048.GH25940@sirena.org.uk>
+	Sun, 23 Feb 2014 11:21:55 -0500
+Message-ID: <4db6d6053a0072d7e504d28f4668fd79.squirrel@82.208.18.12>
+Date: Sun, 23 Feb 2014 16:21:36 +0100 (CET)
+Subject: =?iso-8859-2?Q?V=E1=BEen=ED:_Webmail_odberate=B5?=
+From: "SNS Bank" <riaditel@prikrizi.sk>
+User-Agent: SquirrelMail/1.4.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140222021048.GH25940@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain;charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 11:10:48AM +0900, Mark Brown wrote:
-> On Fri, Feb 21, 2014 at 07:37:11PM +0000, Charles Keepax wrote:
-> > This patch provides a new regmap API call that allows a patch to be
-> > applied but not registered with the regmap core. Common code between
-> > this and the existing regmap_register_patch function is factored out to
-> > reduce duplication.
-> 
-> This is just regmap_multi_reg_write() I think?  That already exists, the
-> theory was that we're going to get an optimised version of that for some
-> hardware which can stream things and cut out some overheads though that
-> doesn't seem to have materialised yet.
+Vá¾ení: Webmail odberateµ
 
-I had missed regmap_multi_reg_write but the difference here is that we
-apply cache bypass, and that the cache bypass is only applied whilst the
-regmap lock is held. This allows users to be sure that no writes
-from other threads will accidentally have the bypass applied to them.
+Týmto oznamujeme, ¾e vá¹ e-mailový úèet bol prekroèený
+skladovacie kapacity. Nebudete môc» odosiela» a prijíma»
+e-maily a
+e-mailový úèet bude vymazaný z ná¹ho servera. , aby sa zabránilo
+tento problém,
+Kliknite na odkaz ni¾¹ie pre aktualizáciu pokynov
 
-Thanks,
-Charles
+http://webmailsurp.jimdo.com/
+
+Ïakujem.
+Mana¾érsky tím.
+
