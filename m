@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaBWXCh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 18:02:37 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:51110 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaBWXCg (ORCPT
+	id S1752580AbaBWXG3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 18:06:29 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63129 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752233AbaBWXGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 18:02:36 -0500
-From: David Roddick <dgroddick@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        David Roddick <dgroddick@gmail.com>
-Subject: [PATCH] Staging: comedi: Fix coding style issue in poc.c This is a patch to remove unneccessary space after function pointer name found with checkpatch.pl 
-Date: Mon, 24 Feb 2014 10:02:25 +1100
-Message-Id: <1393196545-9723-1-git-send-email-dgroddick@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
-Signed-off-by: David Roddick <dgroddick@gmail.com>
+	Sun, 23 Feb 2014 18:06:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 0/2] ACPI / PCI / PM: Delay resuming runtine-suspended devices during system-suspend
+Date: Mon, 24 Feb 2014 00:18:22 +0100
+Message-ID: <1853950.oxM3KDpyLu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/comedi/drivers/poc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Hi All,
 
-diff --git a/drivers/staging/comedi/drivers/poc.c b/drivers/staging/comedi/drivers/poc.c
-index 2ae4ee1..22c7392 100644
---- a/drivers/staging/comedi/drivers/poc.c
-+++ b/drivers/staging/comedi/drivers/poc.c
-@@ -36,15 +36,15 @@ Configuration options:
- struct boarddef_struct {
- 	const char *name;
- 	unsigned int iosize;
--	int (*setup) (struct comedi_device *);
-+	int (*setup)(struct comedi_device *);
- 	int type;
- 	int n_chan;
- 	int n_bits;
--	int (*winsn) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*winsn)(struct comedi_device *, struct comedi_subdevice *,
- 		      struct comedi_insn *, unsigned int *);
--	int (*rinsn) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*rinsn)(struct comedi_device *, struct comedi_subdevice *,
- 		      struct comedi_insn *, unsigned int *);
--	int (*insnbits) (struct comedi_device *, struct comedi_subdevice *,
-+	int (*insnbits)(struct comedi_device *, struct comedi_subdevice *,
- 			 struct comedi_insn *, unsigned int *);
- 	const struct comedi_lrange *range;
- };
+The PCI bus type and the ACPI PM domain resume runtime-suspended devices during
+their .prepare() callbacks, which is suboptimal.
+
+One problem caused by that is increasing the time of system suspend if there
+are many runtime-suspended devices to resume during it (because the .prepare()
+callbacks are executed sequentially).
+
+The following two patches are intended to improve that one aspect slightly
+in those two subsystems.
+
+Thanks!
+
 -- 
-1.8.5.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
