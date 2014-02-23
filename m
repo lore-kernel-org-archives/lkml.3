@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaBWVn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:43:29 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:21480 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752456AbaBWVn1 (ORCPT
+	id S1752783AbaBWVnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:43:50 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52311 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaBWVkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:43:27 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjoJAIZqClN5LJYe/2dsb2JhbABZDoJ4g0O4XoVTgQcXdIIlAQEFOhwzCAMVAwklDwUlAyEBEogExjUXFo5VgySBFASYM4pSh1aCblMo
-Date: Mon, 24 Feb 2014 08:43:22 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
-        viro@zeniv.linux.org.uk, bpm@sgi.com, adilger.kernel@dilger.ca,
-        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v6] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for
- fallocate
-Message-ID: <20140223214322.GF4317@dastard>
-References: <1392908861-3563-1-git-send-email-linkinjeon@gmail.com>
- <20140222170930.GE26637@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140222170930.GE26637@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 23 Feb 2014 16:40:11 -0500
+Message-Id: <20140223212738.681855582@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Sun, 23 Feb 2014 21:40:20 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        x86 <x86@kernel.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [patch 22/26] x86: Add proper vector accounting for HyperV
+References: <20140223212703.511977310@linutronix.de>
+Content-Disposition: inline; filename=x86-add-a-proper-vector-accounting.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 12:09:30PM -0500, Theodore Ts'o wrote:
-> On Fri, Feb 21, 2014 at 12:07:41AM +0900, Namjae Jeon wrote:
-> > From: Namjae Jeon <namjae.jeon@samsung.com>
-> > 
-> > This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
-> > 
-> > The semantics of this flag are following:
-> > 1) It collapses the range lying between offset and length by removing any data
-> >    blocks which are present in this range and than updates all the logical
-> >    offsets of extents beyond "offset + len" to nullify the hole created by
-> >    removing blocks. In short, it does not leave a hole.
-> > 2) It should be used exclusively. No other fallocate flag in combination.
-> > 3) Offset and length supplied to fallocate should be fs block size aligned
-> >    in case of xfs and ext4.
-> > 4) Collaspe range does not work beyond i_size.
-> > 
-> > Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> > Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> > Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
-> 
-> In terms of how to get this upstream, it looks like if we do something
-> like this, we can let this patch go via the ext4 tree and we don't
-> need to worry about whether the vfs level changes have gone in our
-> not.
-> 
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index ad13359..d7a78ed 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -46,6 +46,10 @@
->  
->  #include <trace/events/ext4.h>
->  
-> +#ifndef FALLOC_FL_COLLAPSE_RANGE
-> +#define FALLOC_FL_COLLAPSE_RANGE	0x08
-> +#endif
-> +
->  /*
->   * used by extent splitting.
->   */
+HyperV abuses a device interrupt to account for the
+HYPERVISOR_CALLBACK_VECTOR.
 
-You're more than welcome to do that, Ted. Just wait until we get the
-VFS part into the XFS tree first ;)
+Provide proper accounting as we have for the other vectors as well.
 
-Cheers,
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86 <x86@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+---
+ arch/x86/include/asm/hardirq.h |    3 +++
+ arch/x86/kernel/irq.c          |    6 ++++++
+ 2 files changed, 9 insertions(+)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Index: tip/arch/x86/include/asm/hardirq.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/hardirq.h
++++ tip/arch/x86/include/asm/hardirq.h
+@@ -33,6 +33,9 @@ typedef struct {
+ #ifdef CONFIG_X86_MCE_THRESHOLD
+ 	unsigned int irq_threshold_count;
+ #endif
++#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
++	unsigned int irq_hv_callback_count;
++#endif
+ } ____cacheline_aligned irq_cpustat_t;
+ 
+ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+Index: tip/arch/x86/kernel/irq.c
+===================================================================
+--- tip.orig/arch/x86/kernel/irq.c
++++ tip/arch/x86/kernel/irq.c
+@@ -125,6 +125,12 @@ int arch_show_interrupts(struct seq_file
+ 		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
+ 	seq_printf(p, "  Machine check polls\n");
+ #endif
++#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
++	seq_printf(p, "%*s: ", prec, "THR");
++	for_each_online_cpu(j)
++		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
++	seq_printf(p, "  Hypervisor callback interrupts\n");
++#endif
+ 	seq_printf(p, "%*s: %10u\n", prec, "ERR", atomic_read(&irq_err_count));
+ #if defined(CONFIG_X86_IO_APIC)
+ 	seq_printf(p, "%*s: %10u\n", prec, "MIS", atomic_read(&irq_mis_count));
+
+
