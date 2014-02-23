@@ -1,78 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaBWQDc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 11:03:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53024 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaBWQDN (ORCPT
+	id S1751437AbaBWQD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 11:03:57 -0500
+Received: from mta.cujae.edu.cu ([200.55.139.24]:60379 "EHLO
+	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751158AbaBWQD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 11:03:13 -0500
-Message-ID: <530A1BBB.9060108@gmail.com>
-Date: Sun, 23 Feb 2014 17:03:07 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Jason Cooper <jason@lakedaemon.net>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 00/16] pinctrl: mvebu: restructure resource allocation
-References: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com> <1393165274-32492-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140223154053.GN7862@titan.lakedaemon.net>
-In-Reply-To: <20140223154053.GN7862@titan.lakedaemon.net>
+	Sun, 23 Feb 2014 11:03:56 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Processed: udio.cujae.edu.cu, Sun, 23 Feb 2014 11:02:49 -0500
+ (not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
+X-MDRemoteIP: 10.71.0.28
+X-Return-Path: acabrera@udio.cujae.edu.cu
+X-Envelope-From: acabrera@udio.cujae.edu.cu
+Message-ID: <530A453E.4070608@udio.cujae.edu.cu>
+Date: Sun, 23 Feb 2014 11:00:14 -0800
+From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
+ rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Wim Van Sebroeck <wim@iguana.be>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
+References: <cover.1392212059.git.michal.simek@xilinx.com>
+ <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com>
+ <20140212171509.GB20012@roeck-us.net>
+ <20140222184604.GB21504@spo001.leaseweb.com>
+ <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net>
+ <53097091.50204@udio.cujae.edu.cu> <530950A1.40302@roeck-us.net>
+ <530991AA.9040201@udio.cujae.edu.cu> <53096E8D.50202@roeck-us.net>
+ <530A20ED.3070505@udio.cujae.edu.cu> <530A0909.50101@roeck-us.net>
+In-Reply-To: <530A0909.50101@roeck-us.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2014 04:40 PM, Jason Cooper wrote:
-> Linus, Sebastian,
+On 23/2/2014 6:43 AM, Guenter Roeck wrote:
+> On 02/23/2014 08:25 AM, Alejandro Cabrera wrote:
+>> On 22/2/2014 7:44 PM, Guenter Roeck wrote:
+>>> On 02/22/2014 10:14 PM, Alejandro Cabrera wrote:
+>>>> On 22/2/2014 5:36 PM, Guenter Roeck wrote:
+>>>>> On 02/22/2014 07:52 PM, Alejandro Cabrera wrote:
+>>>>>> On 22/2/2014 3:18 PM, Guenter Roeck wrote:
+>>>>>>> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
+>>>>>>>> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
+>>>>>>>>> Hi All,
+>>>>>>>>>
+>>>>>>>>>> Hi Michal,
+>>>>>>>>>>
+>>>>>>>>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
+>>>>>>>>>>> Use of_property_read_u32 functions to clean probe function.
+>>>>>>>>>>>
+>>>>>>>>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
+>>>>>>>>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
+>>>>>>>>>>> ---
+>>>>>>>>>>>
+>>>>>>>>>>> Changes in v3:
+>>>>>>>>>>> - Remove one if checking and use variable directly
+>>>>>>>>>>>
+>>>>>>>>>> Looks good.
+>>>>>>>>>>
+>>>>>>>>>> Another comment/remark.
+>>>>>>>>>>
+>>>>>>>>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>>>>>> -                    "clock-frequency", NULL);
+>>>>>>>>>>> -
+>>>>>>>>>>> -    if (pfreq == NULL) {
+>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>>>>>> "clock-frequency",&pfreq);
+>>>>>>>>>>> +    if (rc) {
+>>>>>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>>>>>                "The watchdog clock frequency cannot be 
+>>>>>>>>>>> obtained\n");
+>>>>>>>>>>>           no_timeout = true;
+>>>>>>>>>>>       }
+>>>>>>>>>>>
+>>>>>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>>>>>> -                    "xlnx,wdt-interval", NULL);
+>>>>>>>>>>> -    if (tmptr == NULL) {
+>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>>>>>> "xlnx,wdt-interval",
+>>>>>>>>>>> + &xdev->wdt_interval);
+>>>>>>>>>>> +    if (rc) {
+>>>>>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
+>>>>>>>>>>>           no_timeout = true;
+>>>>>>>>>>> -    } else {
+>>>>>>>>>>> -        xdev->wdt_interval = *tmptr;
+>>>>>>>>>>>       }
+>>>>>>>>>>>
+>>>>>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>>>>>> -                    "xlnx,wdt-enable-once", NULL);
+>>>>>>>>>>> -    if (tmptr == NULL) {
+>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>>>>>> "xlnx,wdt-enable-once",
+>>>>>>>>>>> + &enable_once);
+>>>>>>>>>>> +    if (rc)
+>>>>>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>>>>>                "Parameter \"xlnx,wdt-enable-once\" not 
+>>>>>>>>>>> found\n");
+>>>>>>>>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
+>>>>>>>>>>> -    }
+>>>>>>>>>> All the above properties are optional. Is a warning really
+>>>>>>>>>> warranted in this case ? I usually associate a warning with
+>>>>>>>>>> something that is wrong, which is not the case here.
+>>>>>>>>>>
+>>>>>>>>>> I would encourage you to drop those warnings, but that should be
+>>>>>>>>>> a separate patch.
+>>>>>>>>> I agree with Guenter: these are not really warnings. Seperate 
+>>>>>>>>> patch is thus welcome.
+>>>>>>>> Hi
+>>>>>>>>
+>>>>>>>> I support Michal intention, I think it is a warning because 
+>>>>>>>> device tree blob must have the "xlnx,wdt-enable-once" property 
+>>>>>>>> specified in order to allow the system to be sure of the real 
+>>>>>>>> value of this property. In addition to, this warning can be 
+>>>>>>>> helpful to detect a wrong device tree specification.
+>>>>>>>>
+>>>>>>>
+>>>>>>> The dt documentation states that the properties are optional.
+>>>>>>>
+>>>>>>> Optional properties:
+>>>>>>> - clock-frequency       : Frequency of clock in Hz
+>>>>>>> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
+>>>>>>>                           1 - Watchdog can be enabled just once
+>>>>>>> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> 
+>>>>>>> clock cycles,
+>>>>>>> <val> is integer from 8 to 31.
+>>>>>>>
+>>>>>>> This clearly conflicts with your statement. An optional property
+>>>>>>> is just that, optional. If it warrants a warning, it must
+>>>>>>> not be optional. If you claim that not providing the properties
+>>>>>>> would be "wrong", why are they defined as optional ?
+>>>>>> Hi Guenter
+>>>>>>
+>>>>>> I didn't know that these properties was classified as optional...
+>>>>>> I think that they should not be, because all xilinx watchog 
+>>>>>> devices (at least for microblaze processor)
+>>>>>> have these properties defined in theirs MPD files and theirs 
+>>>>>> values can be obtained during the
+>>>>>> hardware specification to device tree conversion.
+>>>>>>> What is your definition of "wrong" and "must have" ?
+>>>>>> what I mean for "must have" is: if these properties can be obtained
+>>>>>> for all xilinx watchdog devices they must be present in the 
+>>>>>> device tree because they allows
+>>>>>> the system (linux/user) to know exactly how a watchdog device is 
+>>>>>> configured.
+>>>>>> Because these properties always can be obtained from hardware 
+>>>>>> design there is no
+>>>>>> reason to leave them out from the device tree. This is why I 
+>>>>>> consider that a device tree without
+>>>>>> these properties should be considered as "wrong" device tree.
+>>>>>>> How do you expect anyone to know that omitting those
+>>>>>>> "optional" properties is by some definition "wrong" ?
+>>>>>> I'm agree with you.
+>>>>>> Maybe these properties shouldn't be optional.
+>>>>>> For example suppose that "xlnx,wdt-enable-once" is missing in the 
+>>>>>> device tree,
+>>>>>> when a watchdog daemon ask for this property what is the obtained 
+>>>>>> value ?
+>>>>>> Independently of this value, why do not warn the user about this 
+>>>>>> missing property
+>>>>>> when it can always be in the device tree ?
+>>>>>>
+>>>>>
+>>>>> Really, this line of argument doesn't make any sense to me.
+>>>>> "xlnx,wdt-enable-once", for example, is a boolean and means
+>>>>> that the watchdog, when enabled, can not be stopped. It defaults
+>>>>> to false, and thus is inherently optional. Making it mandatory
+>>>>> doesn't really add any value.
+>>>>>
+>>>>
+>>>> If the device has been configured with wdt-enable-once=true
+>>>> and the device tree doesn't have this property then a watchdog daemon
+>>>> would see it as "false" because it is the default making the system 
+>>>> to misbehave...
+>>>> A warning during driver loading could help user to identify the 
+>>>> problem.
+>>>>
+>>>
+>>> All this would give you is a false sense of safety. The property could
+>>> just as well be there and be wrong (eg be configured as = <0> when it
+>>> should be 1, or with a wrong frequency.
+>> These issues "cannot" be detected but the missing properties yes.
+>>> Following your logic, every driver
+>>> would need to warn about everything, just to be sure.
+>> Every driver should warn about anything that it considers weird and 
+>> let the user to decide if it matters or not.
+>> I think that an example of weird could be the lack of an expected 
+>> property.
+>>
 >
-> On Sun, Feb 23, 2014 at 03:20:58PM +0100, Sebastian Hesselbarth wrote:
-> ...
->> Also, in the meantime, pinctrl driver stubs for new Armada 375/38x have
->> been posted [4]. Compared to v3, this patch set now also takes care of
->> the new pinctrl stubs for Armada 375/38x. Those patches have been provided
->> by Thomas Petazzoni and make this patches depend on them. We have no stable
->> branch for the Armada 375/38x pinctrl patches but I guess Jason will provide
->> one soon.
+> I don't think it makes sense to continue this discussion.
+> We have fundamental differences in opinion which we won't
+> resolve by repeating our arguments over and over.
 >
-> Linus,
+> Wim, I'll let you decide how to handle this. My recommendation
+> is to request the author to decide if the properties are optional
+> or not before accepting this patch set. Either the properties
+> are optional, and there should be no warnings, or they are
+> mandatory and the driver should bail out if they are missing.
 >
-> I certainly don't want to assume we can take this, and you've been quiet
-> on the previous versions of this series.  We have a lot of moving pieces
-> for getting the Armada 375/380/385 support added to the kernel.  It's a
-> huge help to us if we can create a topic branch for you with the pinctrl
-> changes in it.
->
-> This allows us to get more testing in before the merge window and
-> resolve conflicts before they land in arm-soc or mainline.  The
-> resulting branch can then be sent through your tree or arm-soc,
-> whichever you prefer.
+I'm totally agreed with you :)
 
-I'd also prefer Jason creates a topic branch. It is all in
-drivers/pinctrl/mvebu/ and as long as it stays there, we can have an
-eye on it.
 
-However, Linus did already mention he is happy with both, PR or his
-Acked-by, on v2 of this patch set. I guess, it is Jason's call now if
-he prefers PR or mvebu tree.
 
-> Would you be okay with that?  We're already doing this for Mike (clk)
-> and tglx (irqchip) and it works quite well.
->
-> ...
->> The patches are based on 3.14-rc3. They are also available on an *unstable*
->> branch at
->
-> Sebastian, Is there something you needed in v3.14-rc3 that isn't in
-> v3.14-rc1?  If so, what exactly do these need?
 
-Nope, sorry. Just wanted to make sure everybody realizes that the
-unstable branch may lack clk-fixes/irqchip-fixes that have not been
-into rc3 yet. It may influence testing experience but pinctrl does not
-depend on it at all.
+50 Aniversario de la Cujae. Inaugurada por Fidel el 2 de diciembre de 1964  http://cujae.edu.cu
 
-Sebastian
+
