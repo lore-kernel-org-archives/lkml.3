@@ -1,151 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBWBgg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 20:36:36 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:57324 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaBWBgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 20:36:35 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <530950A1.40302@roeck-us.net>
-Date: Sat, 22 Feb 2014 17:36:33 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752780AbaBWBhn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 20:37:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63801 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752240AbaBWBhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 20:37:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,527,1389772800"; 
+   d="scan'208";a="480143058"
+Date: Sun, 23 Feb 2014 09:37:39 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>
+Subject: Re: [sctp] ef2820a735: -50% netperf Throughput_Mbps
+Message-ID: <20140223013739.GA13631@localhost>
+References: <20140219132034.GC8704@localhost>
+ <5304E49A.3000801@nsn.com>
 MIME-Version: 1.0
-To: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
-CC: Wim Van Sebroeck <wim@iguana.be>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
-References: <cover.1392212059.git.michal.simek@xilinx.com> <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com> <20140212171509.GB20012@roeck-us.net> <20140222184604.GB21504@spo001.leaseweb.com> <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net> <53097091.50204@udio.cujae.edu.cu>
-In-Reply-To: <53097091.50204@udio.cujae.edu.cu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5304E49A.3000801@nsn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 07:52 PM, Alejandro Cabrera wrote:
-> On 22/2/2014 3:18 PM, Guenter Roeck wrote:
->> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
->>> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
->>>> Hi All,
->>>>
->>>>> Hi Michal,
->>>>>
->>>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
->>>>>> Use of_property_read_u32 functions to clean probe function.
->>>>>>
->>>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
->>>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
->>>>>> ---
->>>>>>
->>>>>> Changes in v3:
->>>>>> - Remove one if checking and use variable directly
->>>>>>
->>>>> Looks good.
->>>>>
->>>>> Another comment/remark.
->>>>>
->>>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
->>>>>> -                    "clock-frequency", NULL);
->>>>>> -
->>>>>> -    if (pfreq == NULL) {
->>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency",&pfreq);
->>>>>> +    if (rc) {
->>>>>>           dev_warn(&pdev->dev,
->>>>>>                "The watchdog clock frequency cannot be obtained\n");
->>>>>>           no_timeout = true;
->>>>>>       }
->>>>>>
->>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>>>> -                    "xlnx,wdt-interval", NULL);
->>>>>> -    if (tmptr == NULL) {
->>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
->>>>>> + &xdev->wdt_interval);
->>>>>> +    if (rc) {
->>>>>>           dev_warn(&pdev->dev,
->>>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
->>>>>>           no_timeout = true;
->>>>>> -    } else {
->>>>>> -        xdev->wdt_interval = *tmptr;
->>>>>>       }
->>>>>>
->>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>>>> -                    "xlnx,wdt-enable-once", NULL);
->>>>>> -    if (tmptr == NULL) {
->>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
->>>>>> + &enable_once);
->>>>>> +    if (rc)
->>>>>>           dev_warn(&pdev->dev,
->>>>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
->>>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
->>>>>> -    }
->>>>> All the above properties are optional. Is a warning really
->>>>> warranted in this case ? I usually associate a warning with
->>>>> something that is wrong, which is not the case here.
->>>>>
->>>>> I would encourage you to drop those warnings, but that should be
->>>>> a separate patch.
->>>> I agree with Guenter: these are not really warnings. Seperate patch is thus welcome.
->>> Hi
->>>
->>> I support Michal intention, I think it is a warning because device tree blob must have the "xlnx,wdt-enable-once" property specified in order to allow the system to be sure of the real value of this property. In addition to, this warning can be helpful to detect a wrong device tree specification.
->>>
->>
->> The dt documentation states that the properties are optional.
->>
->> Optional properties:
->> - clock-frequency       : Frequency of clock in Hz
->> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
->>                           1 - Watchdog can be enabled just once
->> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock cycles,
->> <val> is integer from 8 to 31.
->>
->> This clearly conflicts with your statement. An optional property
->> is just that, optional. If it warrants a warning, it must
->> not be optional. If you claim that not providing the properties
->> would be "wrong", why are they defined as optional ?
-> Hi Guenter
->
-> I didn't know that these properties was classified as optional...
-> I think that they should not be, because all xilinx watchog devices (at least for microblaze processor)
-> have these properties defined in theirs MPD files and theirs values can be obtained during the
-> hardware specification to device tree conversion.
->> What is your definition of "wrong" and "must have" ?
-> what I mean for "must have" is: if these properties can be obtained
-> for all xilinx watchdog devices they must be present in the device tree because they allows
-> the system (linux/user) to know exactly how a watchdog device is configured.
-> Because these properties always can be obtained from hardware design there is no
-> reason to leave them out from the device tree. This is why I consider that a device tree without
-> these properties should be considered as "wrong" device tree.
->> How do you expect anyone to know that omitting those
->> "optional" properties is by some definition "wrong" ?
-> I'm agree with you.
-> Maybe these properties shouldn't be optional.
-> For example suppose that "xlnx,wdt-enable-once" is missing in the device tree,
-> when a watchdog daemon ask for this property what is the obtained value ?
-> Independently of this value, why do not warn the user about this missing property
-> when it can always be in the device tree ?
->
+Hi Matija,
 
-Really, this line of argument doesn't make any sense to me.
-"xlnx,wdt-enable-once", for example, is a boolean and means
-that the watchdog, when enabled, can not be stopped. It defaults
-to false, and thus is inherently optional. Making it mandatory
-doesn't really add any value.
+On Wed, Feb 19, 2014 at 06:06:34PM +0100, Matija Glavinic Pecotic wrote:
+> Hello Fengguang,
+> 
+> On 02/19/2014 02:20 PM, ext Fengguang Wu wrote:
+> > Hi Matija,
+> > 
+> > We noticed the below changes on commit ef2820a735f74ea60335f8ba3801b844f0cb184d
+> > (" net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer")
+> > in netperf SCTP_STREAM tests:
+> 
+> thanks for the info. Though, I've ran netperf in my environment, with and without patch, and I havent observed any difference.
+> 
+> Could you please give me information on your environment, how do you invoke netperf, and other details you think I might be interested in to observe problem by myself
 
-Similar, the driver choses defaults for the other values.
-If that is incorrect, it should not do it.
+I see the same regression on both T410 and NHM EX server. On each test
+machine, I'm running (2*nr_logical_cpu) the below command in parallel:
 
-Really, something is very fishy here. Either the properties are
-optional or they are not. If they are optional, the driver should
-accept the fact silently. If they are mandatory, the driver should
-act accordingly and bail out if the attributes are not there.
+        netperf -t SCTP_STREAM -c -C -l 120
 
-You can not have it both ways. I am close to recommending
-that Wim should not accept this driver until that is sorted out.
+Thanks,
+Fengguang
 
-Guenter
-
+> Thanks!
+> 
+> > cd0f0b95fd2cd2b  ef2820a735f74ea60335f8ba3  
+> > ---------------  -------------------------  
+> >          8 ~ 0%     -50.0%          4 ~ 0%  TOTAL netperf.Throughput_Mbps
+> >      54287 ~44%    +338.1%     237842 ~48%  TOTAL cpuidle.C1E-NHM.time
+> >   12008353 ~12%     -56.0%    5281848 ~ 0%  TOTAL proc-vmstat.pgalloc_normal
+> >     114861 ~ 0%     -50.3%      57085 ~ 3%  TOTAL softirqs.NET_RX
+> >   12964639 ~11%     -55.1%    5818663 ~ 0%  TOTAL proc-vmstat.pgfree
+> >     866489 ~ 0%     -43.3%     491417 ~ 0%  TOTAL proc-vmstat.pgalloc_dma32
+> >     119373 ~17%     -39.1%      72661 ~ 1%  TOTAL softirqs.SCHED
+> >       1985 ~13%     -24.3%       1502 ~19%  TOTAL slabinfo.kmalloc-128.active_objs
+> >       2139 ~20%     -28.4%       1532 ~ 4%  TOTAL proc-vmstat.nr_alloc_batch
+> >     124360 ~33%     -31.0%      85748 ~ 2%  TOTAL softirqs.RCU
+> >       1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.active_objs
+> >       1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.num_objs
+> >       2066 ~ 6%     -12.9%       1800 ~ 7%  TOTAL slabinfo.kmalloc-128.num_objs
+> >       1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.active_objs
+> >       1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.num_objs
+> >        923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.active_objs
+> >        923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.num_objs
+> >        989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.active_objs
+> >        989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.num_objs
+> >     398761 ~44%     -32.6%     268792 ~ 3%  TOTAL numa-vmstat.node2.numa_hit
+> >     389672 ~49%     -32.9%     261443 ~ 3%  TOTAL numa-vmstat.node0.numa_hit
+> >        447 ~ 1%     -13.8%        385 ~ 0%  TOTAL vmstat.system.cs
+> > 
+> > Note: the "~ XX%" numbers are stddev percent.
+> > 
+> >                               netperf.Throughput_Mbps
+> > 
+> >      4 *+-*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*
+> >        |                                                                    |
+> >        |                                                                    |
+> >    3.5 ++                                                                   |
+> >        |                                                                    |
+> >        |                                                                    |
+> >        |                                                                    |
+> >      3 ++                                                                   |
+> >        |                                                                    |
+> >        |                                                                    |
+> >    2.5 ++                                                                   |
+> >        |                                                                    |
+> >        |                                                                    |
+> >        |                                                                    |
+> >      2 O+-O--O--O--O-O--O--O--O--O--O--O--O-O--O--O--O--O--O--O-------------+
+> > 
+> > 
+> >                                  vmstat.system.cs
+> > 
+> >    460 ++------------------------*--*----------------*----------------------+
+> >        |       .*..    .*..     :    +              +              *..     .*
+> >    450 ++    *.     .*.    *..  :     +    .*..*.. +    *..*..*.. +     .*. |
+> >    440 *+   :      *           :       *..*       *              *    *.    |
+> >        |:   :                 *                                             |
+> >    430 ++: :                                                                |
+> >    420 ++: :                                                                |
+> >        |  *                                                                 |
+> >    410 ++                                                                   |
+> >    400 ++                                                                   |
+> >        |                                                                    |
+> >    390 ++            O        O             O     O        O                |
+> >    380 O+ O  O  O       O  O     O  O  O  O    O     O  O     O             |
+> >        |           O                                                        |
+> >    370 ++-------------------------------------------------------------------+
+> > 
