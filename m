@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaBWVpP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:45:15 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52273 "EHLO
+	id S1752253AbaBWVkH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:40:07 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52197 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273AbaBWVkJ (ORCPT
+	with ESMTP id S1752084AbaBWVkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:40:09 -0500
-Message-Id: <20140223212736.887575774@linutronix.de>
+	Sun, 23 Feb 2014 16:40:02 -0500
+Message-Id: <20140223212736.562906212@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:11 -0000
+Date: Sun, 23 Feb 2014 21:40:09 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        metag <linux-metag@vger.kernel.org>
-Subject: [patch 06/26] metag: Use irq_set_affinity instead of homebrewn code
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        ppc <linuxppc-dev@lists.ozlabs.org>
+Subject: [patch 03/26] powerpc: eeh: Kill another abuse of irq_desc
 References: <20140223212703.511977310@linutronix.de>
 Content-Disposition: inline;
- filename=metag-irq-use-the-proper-core-functions.patch
+ filename=powerpc-eeh-kill-more-abuse-of-irq-desc.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,64 +27,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no point in having an incomplete copy of irq_set_affinity()
-for the hotplug irq migration code.
+commit 91150af3a (powerpc/eeh: Fix unbalanced enable for IRQ) is
+another brilliant example of trainwreck engineering.
 
-Use the core function instead and while at it switch to
-for_each_active_irq()
+The patch "fixes" the issue of an unbalanced call to irq_enable()
+which causes a prominent warning by checking the disabled state of the
+interrupt line and call conditionally into the core code.
+
+This is wrong in two aspects:
+
+1) The warning is there to tell users, that they need to fix their
+   asymetric enable/disable patterns by finding the root cause and
+   solving it there.
+
+   It's definitely not meant to work around it by conditionally
+   calling into the core code depending on the random state of the irq
+   line.
+
+   Asymetric irq_disable/enable calls are a clear sign of wrong usage
+   of the interfaces which have to be cured at the root and not by
+   somehow hacking around it.
+
+2) The abuse of core internal data structure instead of using the
+   proper interfaces for retrieving the information for the 'hack
+   around'
+
+   irq_desc is core internal and it's clear enough stated.
+
+Replace at least the irq_desc abuse with the proper functions and add
+a big fat comment why this is absurd and completely wrong.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: James Hogan <james.hogan@imgtec.com>
-Cc: metag <linux-metag@vger.kernel.org>
+Cc: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: ppc <linuxppc-dev@lists.ozlabs.org>
 ---
- arch/metag/kernel/irq.c |   20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ arch/powerpc/kernel/eeh_driver.c |   26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
 
-Index: tip/arch/metag/kernel/irq.c
+Index: tip/arch/powerpc/kernel/eeh_driver.c
 ===================================================================
---- tip.orig/arch/metag/kernel/irq.c
-+++ tip/arch/metag/kernel/irq.c
-@@ -261,18 +261,6 @@ int __init arch_probe_nr_irqs(void)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--static void route_irq(struct irq_data *data, unsigned int irq, unsigned int cpu)
--{
--	struct irq_desc *desc = irq_to_desc(irq);
--	struct irq_chip *chip = irq_data_get_irq_chip(data);
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&desc->lock, flags);
--	if (chip->irq_set_affinity)
--		chip->irq_set_affinity(data, cpumask_of(cpu), false);
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
--}
--
- /*
-  * The CPU has been marked offline.  Migrate IRQs off this CPU.  If
-  * the affinity settings do not allow other CPUs, force them onto any
-@@ -281,10 +269,9 @@ static void route_irq(struct irq_data *d
- void migrate_irqs(void)
+--- tip.orig/arch/powerpc/kernel/eeh_driver.c
++++ tip/arch/powerpc/kernel/eeh_driver.c
+@@ -143,15 +143,31 @@ static void eeh_disable_irq(struct pci_d
+ static void eeh_enable_irq(struct pci_dev *dev)
  {
- 	unsigned int i, cpu = smp_processor_id();
+ 	struct eeh_dev *edev = pci_dev_to_eeh_dev(dev);
 -	struct irq_desc *desc;
  
--	for_each_irq_desc(i, desc) {
--		struct irq_data *data = irq_desc_get_irq_data(desc);
-+	for_each_active_irq(i) {
-+		struct irq_data *data = irq_get_irq_data(i);
- 		unsigned int newcpu;
- 
- 		if (irqd_is_per_cpu(data))
-@@ -303,8 +290,7 @@ void migrate_irqs(void)
- 			newcpu = cpumask_any_and(data->affinity,
- 						 cpu_online_mask);
- 		}
+ 	if ((edev->mode) & EEH_DEV_IRQ_DISABLED) {
+ 		edev->mode &= ~EEH_DEV_IRQ_DISABLED;
 -
--		route_irq(data, i, newcpu);
-+		irq_set_affinity(i, cpumask_of(newcpu));
- 	}
+-		desc = irq_to_desc(dev->irq);
+-		if (desc && desc->depth > 0)
++		/*
++		 * FIXME !!!!!
++		 *
++		 * This is just ass backwards. This maze has
++		 * unbalanced irq_enable/disable calls. So instead of
++		 * finding the root cause it works around the warning
++		 * in the irq_enable code by conditionally calling
++		 * into it.
++		 *
++		 * That's just wrong.The warning in the core code is
++		 * there to tell people to fix their assymetries in
++		 * their own code, not by abusing the core information
++		 * to avoid it.
++		 *
++		 * I so wish that the assymetry would be the other way
++		 * round and a few more irq_disable calls render that
++		 * shit unusable forever.
++		 *
++		 *	tglx
++		 */
++		if (irqd_irq_disabled(irq_get_irq_data(dev->irq))
+ 			enable_irq(dev->irq);
+-	}
  }
- #endif /* CONFIG_HOTPLUG_CPU */
+ 
+ /**
 
 
