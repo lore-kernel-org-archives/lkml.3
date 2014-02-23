@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBWB2v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 20:28:51 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:45472 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642AbaBWB2u (ORCPT
+	id S1752823AbaBWB3A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 20:29:00 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33411 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642AbaBWB25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 20:28:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <201402222022.20370.gheskett@wdtv.com>
-References: <201402222022.20370.gheskett@wdtv.com>
-Date: Sat, 22 Feb 2014 20:28:49 -0500
-X-Google-Sender-Auth: Wryt--dWM1-N_93S5R5ynH1GxI8
-Message-ID: <CAKb7UvjertO2FEPL+5_wKhrFVfYA5_dBe70EoyY9fZ881CY-GQ@mail.gmail.com>
-Subject: Re: It BOOTS! 3.13.5 that is.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 22 Feb 2014 20:28:57 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 23 Feb 2014 02:23:03 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        Chris Boot <bootc@bootc.net>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: memory-barriers.txt again (was Re: [PATCH 4/9] firewire: don't use
+ PREPARE_DELAYED_WORK)
+Message-ID: <20140223022303.3240093c@stein>
+In-Reply-To: <5308F48C.8080609@hurleysoftware.com>
+References: <1392929071-16555-5-git-send-email-tj@kernel.org>
+	<5306AF8E.3080006@hurleysoftware.com>
+	<20140221015935.GF6897@htj.dyndns.org>
+	<5306B4DF.4000901@hurleysoftware.com>
+	<20140221021341.GG6897@htj.dyndns.org>
+	<5306E06C.5020805@hurleysoftware.com>
+	<20140221100301.GA14653@mtj.dyndns.org>
+	<53074BE4.1020307@hurleysoftware.com>
+	<20140221130614.GH6897@htj.dyndns.org>
+	<5307849A.9050209@hurleysoftware.com>
+	<20140221165730.GA10929@htj.dyndns.org>
+	<5307DAC9.2020103@hurleysoftware.com>
+	<1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
+	<5308F0E2.3030804@hurleysoftware.com>
+	<1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
+	<5308F48C.8080609@hurleysoftware.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 8:22 PM, Gene Heskett <gheskett@wdtv.com> wrote:
-> But my tv card isn't being found by kaffeine.  It is this card:
->
-> 01:08.0 Multimedia video controller: Conexant Systems, Inc. CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
->         Subsystem: pcHDTV Device 3000
->         Flags: bus master, medium devsel, latency 32, IRQ 10
->         Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
->         Capabilities: [44] Vital Product Data <?>
->         Capabilities: [4c] Power Management version 2
->
-> 01:08.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3 PCI Video and Audio Decoder [MPEG Port] (rev 05)
->         Subsystem: pcHDTV Device 3000
->         Flags: bus master, medium devsel, latency 32, IRQ 10
->         Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
->         Capabilities: [4c] Power Management version 2
->
-> From an lspci
->
-> In a make xconfig, I cannot find this specific card in the list of DVB
-> front ends.  What modules do I need to make sure are being built?
+Hi Paul,
 
-You're looking for VIDEO_CX88 ("Conexant 2388x (bt878 successor)
-support") and its various sub-options (esp CX88_DVB). iirc the
-pchdtv3000 had a OR51132 tuner, but right now the config is set to
-auto-select a whole bunch of tuners if you have
-MEDIA_SUBDRV_AUTOSELECT turned on. Otherwise make sure to select that
-tuner device. (Hm, I appear to have both OR51132 and CX22702 enabled,
-and I have that same card.)
+in patch "Documentation/memory-barriers.txt: Downgrade UNLOCK+BLOCK" (sic),
+you wrote:
++     Memory operations issued before the LOCK may be completed after the
++     LOCK operation has completed.  An smp_mb__before_spinlock(), combined
++     with a following LOCK, orders prior loads against subsequent stores
++     and stores and prior stores against subsequent stores.  Note that
 
-  -ilia
+Is there a "and stores" too many?  Or was one "stores" mistyped and meant
+to be something else?  Or what else is meant?
+
+@@ -1677,13 +1681,57 @@ LOCK, and an access following the UNLOCK to happen before the UNLOCK, and the
+ two accesses can themselves then cross:
+ 
+ 	*A = a;
+-	LOCK
+-	UNLOCK
++	LOCK M
++	UNLOCK M
+ 	*B = b;
+ 
+ may occur as:
+ 
+-	LOCK, STORE *B, STORE *A, UNLOCK
++	LOCK M, STORE *B, STORE *A, UNLOCK M
++
++This same reordering can of course occur if the LOCK and UNLOCK are
++to the same lock variable, but only from the perspective of another
++CPU not holding that lock.
+
+The example says "LOCK M" and "UNLOCK M" (since the patch).  I read
+this as LOCK and UNLOCK to the same variable, M.  Why does the
+following sentence then say that "this same reordering can... occur
+if the LOCK and UNLOCK are to the same lock variable"?  This sentence
+would make sense if the example had been about LOCK M, UNLOCK N.
+
++In short, an UNLOCK followed by a LOCK may -not- be assumed to be a full
++memory barrier because it is possible for a preceding UNLOCK to pass a
++later LOCK from the viewpoint of the CPU, but not from the viewpoint
++of the compiler.  Note that deadlocks cannot be introduced by this
++interchange because if such a deadlock threatened, the UNLOCK would
++simply complete.
+
+So rather than deadlock, "the UNLOCK would simply complete".  But
+/why/ does it complete?  It is left unclear (to me at least), why
+it would do so.  IOW, what mechanism will make it always proceed
+to the UNLOCK?  Without knowing that, it is left entirely unclear
+(to me) why the deadlock wouldn't happen.
+-- 
+Stefan Richter
+-=====-====- --=- =-===
+http://arcgraph.de/sr/
