@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBWVnu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:43:50 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52311 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaBWVkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752317AbaBWVkL (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 23 Feb 2014 16:40:11 -0500
-Message-Id: <20140223212738.681855582@linutronix.de>
+Received: from www.linutronix.de ([62.245.132.108]:52206 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaBWVkC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 16:40:02 -0500
+Message-Id: <20140223212736.664624945@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:20 -0000
+Date: Sun, 23 Feb 2014 21:40:10 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        x86 <x86@kernel.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [patch 22/26] x86: Add proper vector accounting for HyperV
+        Chris Zankel <chris@zankel.net>,
+        xtensa <linux-xtensa@linux-xtensa.org>
+Subject: [patch 04/26] xtensa: Use irq_set_affinity instead of homebrewn code
 References: <20140223212703.511977310@linutronix.de>
-Content-Disposition: inline; filename=x86-add-a-proper-vector-accounting.patch
+Content-Disposition: inline;
+ filename=xtensa-irq-use-the-proper-core-functions.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -25,50 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HyperV abuses a device interrupt to account for the
-HYPERVISOR_CALLBACK_VECTOR.
+There is no point in having an incomplete copy of irq_set_affinity()
+for the hotplug irq migration code.
 
-Provide proper accounting as we have for the other vectors as well.
+Use the core function instead and while at it switch to
+for_each_active_irq()
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86 <x86@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: Chris Zankel <chris@zankel.net>
+Cc: xtensa <linux-xtensa@linux-xtensa.org>
 ---
- arch/x86/include/asm/hardirq.h |    3 +++
- arch/x86/kernel/irq.c          |    6 ++++++
- 2 files changed, 9 insertions(+)
+ arch/xtensa/kernel/irq.c |   20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-Index: tip/arch/x86/include/asm/hardirq.h
+Index: tip/arch/xtensa/kernel/irq.c
 ===================================================================
---- tip.orig/arch/x86/include/asm/hardirq.h
-+++ tip/arch/x86/include/asm/hardirq.h
-@@ -33,6 +33,9 @@ typedef struct {
- #ifdef CONFIG_X86_MCE_THRESHOLD
- 	unsigned int irq_threshold_count;
- #endif
-+#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
-+	unsigned int irq_hv_callback_count;
-+#endif
- } ____cacheline_aligned irq_cpustat_t;
+--- tip.orig/arch/xtensa/kernel/irq.c
++++ tip/arch/xtensa/kernel/irq.c
+@@ -155,18 +155,6 @@ void __init init_IRQ(void)
+ }
  
- DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
-Index: tip/arch/x86/kernel/irq.c
-===================================================================
---- tip.orig/arch/x86/kernel/irq.c
-+++ tip/arch/x86/kernel/irq.c
-@@ -125,6 +125,12 @@ int arch_show_interrupts(struct seq_file
- 		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
- 	seq_printf(p, "  Machine check polls\n");
- #endif
-+#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
-+	seq_printf(p, "%*s: ", prec, "THR");
-+	for_each_online_cpu(j)
-+		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
-+	seq_printf(p, "  Hypervisor callback interrupts\n");
-+#endif
- 	seq_printf(p, "%*s: %10u\n", prec, "ERR", atomic_read(&irq_err_count));
- #if defined(CONFIG_X86_IO_APIC)
- 	seq_printf(p, "%*s: %10u\n", prec, "MIS", atomic_read(&irq_mis_count));
+ #ifdef CONFIG_HOTPLUG_CPU
+-static void route_irq(struct irq_data *data, unsigned int irq, unsigned int cpu)
+-{
+-	struct irq_desc *desc = irq_to_desc(irq);
+-	struct irq_chip *chip = irq_data_get_irq_chip(data);
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-	if (chip->irq_set_affinity)
+-		chip->irq_set_affinity(data, cpumask_of(cpu), false);
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
+-}
+-
+ /*
+  * The CPU has been marked offline.  Migrate IRQs off this CPU.  If
+  * the affinity settings do not allow other CPUs, force them onto any
+@@ -175,10 +163,9 @@ static void route_irq(struct irq_data *d
+ void migrate_irqs(void)
+ {
+ 	unsigned int i, cpu = smp_processor_id();
+-	struct irq_desc *desc;
+ 
+-	for_each_irq_desc(i, desc) {
+-		struct irq_data *data = irq_desc_get_irq_data(desc);
++	for_each_active_irq(i) {
++		struct irq_data *data = irq_get_irq_data(i);
+ 		unsigned int newcpu;
+ 
+ 		if (irqd_is_per_cpu(data))
+@@ -197,8 +184,7 @@ void migrate_irqs(void)
+ 			newcpu = cpumask_any_and(data->affinity,
+ 						 cpu_online_mask);
+ 		}
+-
+-		route_irq(data, i, newcpu);
++		irq_set_affinity(i, cpumask_of(newcpu));
+ 	}
+ }
+ #endif /* CONFIG_HOTPLUG_CPU */
 
 
