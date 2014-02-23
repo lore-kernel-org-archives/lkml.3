@@ -1,232 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751368AbaBWGSH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 01:18:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:42691 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109AbaBWGRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 01:17:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,527,1389772800"; 
-   d="scan'208";a="342951936"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v5 2/3] x86, mpx: hook #BR exception handler to allocate bound tables
-Date: Sun, 23 Feb 2014 21:27:50 +0800
-Message-Id: <1393162071-23995-3-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1393162071-23995-1-git-send-email-qiaowei.ren@intel.com>
-References: <1393162071-23995-1-git-send-email-qiaowei.ren@intel.com>
+	id S1751182AbaBWG3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 01:29:05 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43504 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaBWG3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 01:29:03 -0500
+Date: Sat, 22 Feb 2014 22:28:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Marcin Lulek <admin@webreactor.eu>
+Cc: Marcin Lulek <info@webreactor.eu>,
+        Thomaz de Oliveira dos Reis <thor27@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Add device id for Thrustmaster GPX Gamepad for
+ joystick/xpad.c driver
+Message-ID: <20140223062859.GA10151@core.coreip.homeip.net>
+References: <1393023081-31679-1-git-send-email-info@webreactor.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393023081-31679-1-git-send-email-info@webreactor.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An access to an invalid bound directory entry will cause a #BR
-exception. This patch hook #BR exception handler to allocate
-one bound table and bind it with that buond directory entry.
+On Fri, Feb 21, 2014 at 11:51:21PM +0100, Marcin Lulek wrote:
+> Signed-off-by: Marcin Lulek <info@webreactor.eu>
+> ---
+>  drivers/input/joystick/xpad.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+> index 603fe0d..b94668f 100644
+> --- a/drivers/input/joystick/xpad.c
+> +++ b/drivers/input/joystick/xpad.c
+> @@ -124,6 +124,7 @@ static const struct xpad_device {
+>  	{ 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+>  	{ 0x045e, 0x0719, "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
+>  	{ 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
+> +	{ 0x24c6, 0x5b02, "Thrustmaster, Inc. GPX Controller", 0, XTYPE_XBOX360 },
+>  	{ 0x046d, 0xc21d, "Logitech Gamepad F310", 0, XTYPE_XBOX360 },
+>  	{ 0x046d, 0xc21f, "Logitech Gamepad F710", 0, XTYPE_XBOX360 },
+>  	{ 0x046d, 0xc242, "Logitech Chillstream Controller", 0, XTYPE_XBOX360 },
+> -- 
+> 1.8.3.2
+> 
 
-This will avoid the need of forwarding the #BR exception
-to the user space when bound directory has invalid entry.
+Applied, thank you.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/include/asm/mpx.h |   35 +++++++++++++++++++++++++++
- arch/x86/kernel/Makefile   |    1 +
- arch/x86/kernel/mpx.c      |   46 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c    |   56 +++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 137 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/mpx.h
- create mode 100644 arch/x86/kernel/mpx.c
-
-diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-new file mode 100644
-index 0000000..d9a61a8
---- /dev/null
-+++ b/arch/x86/include/asm/mpx.h
-@@ -0,0 +1,35 @@
-+#ifndef _ASM_X86_MPX_H
-+#define _ASM_X86_MPX_H
-+
-+#include <linux/types.h>
-+#include <asm/ptrace.h>
-+
-+#ifdef CONFIG_X86_64
-+
-+#define MPX_L1_BITS	28
-+#define MPX_L1_SHIFT	3
-+#define MPX_L2_BITS	17
-+#define MPX_L2_SHIFT	5
-+#define MPX_IGN_BITS	3
-+#define MPX_L2_NODE_ADDR_MASK	0xfffffffffffffff8UL
-+
-+#define MPX_BNDSTA_ADDR_MASK	0xfffffffffffffffcUL
-+#define MPX_BNDCFG_ADDR_MASK	0xfffffffffffff000UL
-+
-+#else
-+
-+#define MPX_L1_BITS	20
-+#define MPX_L1_SHIFT	2
-+#define MPX_L2_BITS	10
-+#define MPX_L2_SHIFT	4
-+#define MPX_IGN_BITS	2
-+#define MPX_L2_NODE_ADDR_MASK	0xfffffffcUL
-+
-+#define MPX_BNDSTA_ADDR_MASK	0xfffffffcUL
-+#define MPX_BNDCFG_ADDR_MASK	0xfffff000UL
-+
-+#endif
-+
-+bool do_mpx_bt_fault(struct xsave_struct *xsave_buf);
-+
-+#endif /* _ASM_X86_MPX_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index cb648c8..becb970 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -41,6 +41,7 @@ obj-$(CONFIG_PREEMPT)	+= preempt.o
- 
- obj-y				+= process.o
- obj-y				+= i387.o xsave.o
-+obj-y				+= mpx.o
- obj-y				+= ptrace.o
- obj-$(CONFIG_X86_32)		+= tls.o
- obj-$(CONFIG_IA32_EMULATION)	+= tls.o
-diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
-new file mode 100644
-index 0000000..f1a16c0
---- /dev/null
-+++ b/arch/x86/kernel/mpx.c
-@@ -0,0 +1,46 @@
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+#include <asm/processor.h>
-+#include <asm/mpx.h>
-+#include <asm/mman.h>
-+#include <asm/i387.h>
-+#include <asm/fpu-internal.h>
-+#include <asm/alternative.h>
-+
-+static bool allocate_bt(unsigned long bd_entry)
-+{
-+	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
-+	unsigned long bt_addr, old_val = 0;
-+
-+	bt_addr = sys_mmap_pgoff(0, bt_size, PROT_READ | PROT_WRITE,
-+			MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
-+	if (bt_addr == -1) {
-+		pr_err("L2 Node Allocation Failed at L1 addr %lx\n",
-+				bd_entry);
-+		return false;
-+	}
-+	bt_addr = (bt_addr & MPX_L2_NODE_ADDR_MASK) | 0x01;
-+
-+	user_atomic_cmpxchg_inatomic(&old_val,
-+			(long __user *)bd_entry, 0, bt_addr);
-+	if (old_val)
-+		vm_munmap(bt_addr & MPX_L2_NODE_ADDR_MASK, bt_size);
-+
-+	return true;
-+}
-+
-+bool do_mpx_bt_fault(struct xsave_struct *xsave_buf)
-+{
-+	unsigned long status;
-+	unsigned long bd_entry, bd_base;
-+	unsigned long bd_size = 1UL << (MPX_L1_BITS+MPX_L1_SHIFT);
-+
-+	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
-+	status = xsave_buf->bndcsr.status_reg;
-+
-+	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
-+	if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
-+		return allocate_bt(bd_entry);
-+
-+	return false;
-+}
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 57409f6..b894f09 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -59,6 +59,7 @@
- #include <asm/fixmap.h>
- #include <asm/mach_traps.h>
- #include <asm/alternative.h>
-+#include <asm/mpx.h>
- 
- #ifdef CONFIG_X86_64
- #include <asm/x86_init.h>
-@@ -213,7 +214,6 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
- 
- DO_ERROR_INFO(X86_TRAP_DE,     SIGFPE,  "divide error",			divide_error,		     FPE_INTDIV, regs->ip )
- DO_ERROR     (X86_TRAP_OF,     SIGSEGV, "overflow",			overflow					  )
--DO_ERROR     (X86_TRAP_BR,     SIGSEGV, "bounds",			bounds						  )
- DO_ERROR_INFO(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op,		     ILL_ILLOPN, regs->ip )
- DO_ERROR     (X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",	coprocessor_segment_overrun			  )
- DO_ERROR     (X86_TRAP_TS,     SIGSEGV, "invalid TSS",			invalid_TSS					  )
-@@ -263,6 +263,60 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- }
- #endif
- 
-+dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
-+{
-+	enum ctx_state prev_state;
-+	unsigned long status;
-+	struct xsave_struct *xsave_buf;
-+	struct task_struct *tsk = current;
-+
-+	prev_state = exception_enter();
-+	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
-+			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
-+		goto exit;
-+	conditional_sti(regs);
-+
-+	if (!user_mode(regs))
-+		die("bounds", regs, error_code);
-+
-+	if (!boot_cpu_has(X86_FEATURE_MPX)) {
-+		/* The exception is not from Intel MPX */
-+		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
-+		goto exit;
-+	}
-+
-+	fpu_xsave(&tsk->thread.fpu);
-+	xsave_buf = &(tsk->thread.fpu.state->xsave);
-+	status = xsave_buf->bndcsr.status_reg;
-+
-+	/*
-+	 * The error code field of the BNDSTATUS register communicates status
-+	 * information of a bound range exception #BR or operation involving
-+	 * bound directory.
-+	 */
-+	switch (status & 0x3) {
-+	case 2:
-+		/*
-+		 * Bound directory has invalid entry.
-+		 * No signal will be sent to the user space.
-+		 */
-+		if (!do_mpx_bt_fault(xsave_buf))
-+			force_sig(SIGBUS, tsk);
-+		break;
-+
-+	case 1: /* Bound violation. */
-+	case 0: /* No exception caused by Intel MPX operations. */
-+		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
-+		break;
-+
-+	default:
-+		die("bounds", regs, error_code);
-+	}
-+
-+exit:
-+	exception_exit(prev_state);
-+}
-+
- dotraplinkage void __kprobes
- do_general_protection(struct pt_regs *regs, long error_code)
- {
 -- 
-1.7.1
-
+Dmitry
