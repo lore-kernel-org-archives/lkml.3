@@ -1,71 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaBWCcK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 21:32:10 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49682 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaBWCcI (ORCPT
+	id S1752364AbaBWDRw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 22:17:52 -0500
+Received: from mta.cujae.edu.cu ([200.55.139.24]:53483 "EHLO
+	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751973AbaBWDRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 21:32:08 -0500
-Date: Sun, 23 Feb 2014 11:15:30 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140223021530.GD25940@sirena.org.uk>
-References: <1393104959-12831-1-git-send-email-maxime.ripard@free-electrons.com>
- <1393104959-12831-2-git-send-email-maxime.ripard@free-electrons.com>
+	Sat, 22 Feb 2014 22:17:50 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.9
+X-Spam-Processed: udio.cujae.edu.cu, Sat, 22 Feb 2014 22:16:38 -0500
+ (not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
+X-MDRemoteIP: 10.71.0.249
+X-Return-Path: acabrera@udio.cujae.edu.cu
+X-Envelope-From: acabrera@udio.cujae.edu.cu
+Message-ID: <530991AA.9040201@udio.cujae.edu.cu>
+Date: Sat, 22 Feb 2014 22:14:02 -0800
+From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
+ rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Eldrgvv4EWsIM1sO"
-Content-Disposition: inline
-In-Reply-To: <1393104959-12831-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 106.188.159.64
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/7] spi: sunxi: Add Allwinner A10 SPI controller driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Wim Van Sebroeck <wim@iguana.be>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
+References: <cover.1392212059.git.michal.simek@xilinx.com>
+ <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com>
+ <20140212171509.GB20012@roeck-us.net>
+ <20140222184604.GB21504@spo001.leaseweb.com>
+ <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net>
+ <53097091.50204@udio.cujae.edu.cu> <530950A1.40302@roeck-us.net>
+In-Reply-To: <530950A1.40302@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22/2/2014 5:36 PM, Guenter Roeck wrote:
+> On 02/22/2014 07:52 PM, Alejandro Cabrera wrote:
+>> On 22/2/2014 3:18 PM, Guenter Roeck wrote:
+>>> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
+>>>> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
+>>>>> Hi All,
+>>>>>
+>>>>>> Hi Michal,
+>>>>>>
+>>>>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
+>>>>>>> Use of_property_read_u32 functions to clean probe function.
+>>>>>>>
+>>>>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
+>>>>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
+>>>>>>> ---
+>>>>>>>
+>>>>>>> Changes in v3:
+>>>>>>> - Remove one if checking and use variable directly
+>>>>>>>
+>>>>>> Looks good.
+>>>>>>
+>>>>>> Another comment/remark.
+>>>>>>
+>>>>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>> -                    "clock-frequency", NULL);
+>>>>>>> -
+>>>>>>> -    if (pfreq == NULL) {
+>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>> "clock-frequency",&pfreq);
+>>>>>>> +    if (rc) {
+>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>                "The watchdog clock frequency cannot be 
+>>>>>>> obtained\n");
+>>>>>>>           no_timeout = true;
+>>>>>>>       }
+>>>>>>>
+>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>> -                    "xlnx,wdt-interval", NULL);
+>>>>>>> -    if (tmptr == NULL) {
+>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>> "xlnx,wdt-interval",
+>>>>>>> + &xdev->wdt_interval);
+>>>>>>> +    if (rc) {
+>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
+>>>>>>>           no_timeout = true;
+>>>>>>> -    } else {
+>>>>>>> -        xdev->wdt_interval = *tmptr;
+>>>>>>>       }
+>>>>>>>
+>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+>>>>>>> -                    "xlnx,wdt-enable-once", NULL);
+>>>>>>> -    if (tmptr == NULL) {
+>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
+>>>>>>> "xlnx,wdt-enable-once",
+>>>>>>> + &enable_once);
+>>>>>>> +    if (rc)
+>>>>>>>           dev_warn(&pdev->dev,
+>>>>>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
+>>>>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
+>>>>>>> -    }
+>>>>>> All the above properties are optional. Is a warning really
+>>>>>> warranted in this case ? I usually associate a warning with
+>>>>>> something that is wrong, which is not the case here.
+>>>>>>
+>>>>>> I would encourage you to drop those warnings, but that should be
+>>>>>> a separate patch.
+>>>>> I agree with Guenter: these are not really warnings. Seperate 
+>>>>> patch is thus welcome.
+>>>> Hi
+>>>>
+>>>> I support Michal intention, I think it is a warning because device 
+>>>> tree blob must have the "xlnx,wdt-enable-once" property specified 
+>>>> in order to allow the system to be sure of the real value of this 
+>>>> property. In addition to, this warning can be helpful to detect a 
+>>>> wrong device tree specification.
+>>>>
+>>>
+>>> The dt documentation states that the properties are optional.
+>>>
+>>> Optional properties:
+>>> - clock-frequency       : Frequency of clock in Hz
+>>> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
+>>>                           1 - Watchdog can be enabled just once
+>>> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock 
+>>> cycles,
+>>> <val> is integer from 8 to 31.
+>>>
+>>> This clearly conflicts with your statement. An optional property
+>>> is just that, optional. If it warrants a warning, it must
+>>> not be optional. If you claim that not providing the properties
+>>> would be "wrong", why are they defined as optional ?
+>> Hi Guenter
+>>
+>> I didn't know that these properties was classified as optional...
+>> I think that they should not be, because all xilinx watchog devices 
+>> (at least for microblaze processor)
+>> have these properties defined in theirs MPD files and theirs values 
+>> can be obtained during the
+>> hardware specification to device tree conversion.
+>>> What is your definition of "wrong" and "must have" ?
+>> what I mean for "must have" is: if these properties can be obtained
+>> for all xilinx watchdog devices they must be present in the device 
+>> tree because they allows
+>> the system (linux/user) to know exactly how a watchdog device is 
+>> configured.
+>> Because these properties always can be obtained from hardware design 
+>> there is no
+>> reason to leave them out from the device tree. This is why I consider 
+>> that a device tree without
+>> these properties should be considered as "wrong" device tree.
+>>> How do you expect anyone to know that omitting those
+>>> "optional" properties is by some definition "wrong" ?
+>> I'm agree with you.
+>> Maybe these properties shouldn't be optional.
+>> For example suppose that "xlnx,wdt-enable-once" is missing in the 
+>> device tree,
+>> when a watchdog daemon ask for this property what is the obtained 
+>> value ?
+>> Independently of this value, why do not warn the user about this 
+>> missing property
+>> when it can always be in the device tree ?
+>>
+>
+> Really, this line of argument doesn't make any sense to me.
+> "xlnx,wdt-enable-once", for example, is a boolean and means
+> that the watchdog, when enabled, can not be stopped. It defaults
+> to false, and thus is inherently optional. Making it mandatory
+> doesn't really add any value.
+>
 
---Eldrgvv4EWsIM1sO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If the device has been configured with wdt-enable-once=true
+and the device tree doesn't have this property then a watchdog daemon
+would see it as "false" because it is the default making the system to 
+misbehave...
+A warning during driver loading could help user to identify the problem.
 
-On Sat, Feb 22, 2014 at 10:35:53PM +0100, Maxime Ripard wrote:
-> The older Allwinner SoCs (A10, A13, A10s and A20) all have the same SPI
-> controller.
+Making these properties as mandatory and warn where any of them
+are not in device tree may be helpful.
 
-Applied, thanks.  Please differentiate between these two devices in the
-subject line when sending patches for example by using "sun6i" and
-"sun4i".
+Alejandro
 
---Eldrgvv4EWsIM1sO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTCVm+AAoJELSic+t+oim94BgQAJttAmEoi3Ix8FKOHo64QWiu
-mwv3JTsqjzsm0I+brOwv3hndxJqekCyOaLvLG+Bn17UBd6Ao2y/GToWoecqcTrjv
-Wu6+T7EQSPkWkGqpXj5D1v5EQPtkWSyZIKkxSzfWg2AELoFSzEzUzQYXMnCla3lT
-wIf9IzAZHkSri5+O/EumHRue+J85qCO2tdFCdxUP8lekysQwuXIIjtWYLNhxNerY
-vQqkMzCx8IU8kVEWT0LlLTS4OrdTjQDZKuxKAf6rk/tFOkpb6DuCPKHkbwcaEvFu
-Pj4c2OlHG2wR8IKlnMSIJijNKfdgDFD9MqZx21dvN8EsovEZq/ZaX7eRobwcPG9P
-eSCyFf5FJ2UoxLBx3rfwcFSyrENpGr6iN7phq5euyAdAmr98rbW36D9mMPTWIkP+
-ZB5aL+t1sOtoPVl+7kEhb8jorjWNBbdIVLSdpnITjt51QKMmst+nhNCPd+LfsY95
-XvewwWpxXe3t8XkHsBDAjIp7KAgIhVNPaI4gGxSX+K10/Urr62Nzv1lkUPSasrYy
-FHchBs2svB6wJfREsM/Jwti/5GPidns4ulynUCcleJzEGXSy/37/hTEDFUvPzxlu
-W/WxfawWSaCxj9KaGwrAhL7iEVa8FAThgz7xRW/28zk/Nwo72CtcGC1zMjCZ4xNK
-ynofq0Q6sfGS9+bntH3X
-=3jUr
------END PGP SIGNATURE-----
+50 Aniversario de la Cujae. Inaugurada por Fidel el 2 de diciembre de 1964  http://cujae.edu.cu
 
---Eldrgvv4EWsIM1sO--
+
