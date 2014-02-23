@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaBWExO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 23:53:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22764 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390AbaBWExN convert rfc822-to-8bit (ORCPT
+	id S1750979AbaBWFQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 00:16:20 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:62294 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaBWFQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 23:53:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,527,1389772800"; 
-   d="scan'208";a="480195943"
-From: "Cui, Dexuan" <dexuan.cui@intel.com>
-To: Pasi K?rkk?inen <pasik@iki.fi>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Tian, Kevin" <kevin.tian@intel.com>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>, "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "Haron, Sandra" <sandra.haron@intel.com>,
-        Lars Kurth <lars.kurth@xenproject.org>
-Subject: RE: [Xen-devel] [Announcement] Updates to XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-Thread-Topic: [Xen-devel] [Announcement] Updates to XenGT - a Mediated
- Graphics Passthrough Solution from Intel
-Thread-Index: Ac8uCM+UTJUf7TAWTkKmKWKJu37vjgAHsPmAACDtz+AAOVsWgAAv5MIQ
-Date: Sun, 23 Feb 2014 04:53:08 +0000
-Message-ID: <A25F549E4D43CD42B4C02DF47A1913231105F908@SHSMSX103.ccr.corp.intel.com>
-References: <A25F549E4D43CD42B4C02DF47A19132311058FC7@SHSMSX103.ccr.corp.intel.com>
- <20140220183613.GJ3200@reaktio.net>
- <A25F549E4D43CD42B4C02DF47A1913231105A665@SHSMSX103.ccr.corp.intel.com>
- <20140222134121.GP3200@reaktio.net>
-In-Reply-To: <20140222134121.GP3200@reaktio.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Sun, 23 Feb 2014 00:16:19 -0500
+Date: Sun, 23 Feb 2014 00:18:17 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <53084317.4090304@zytor.com>
+Message-ID: <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu>
+ <53084317.4090304@zytor.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pasi Kärkkäinen wrote on 2014-02-22:
-> On Fri, Feb 21, 2014 at 02:22:11AM +0000, Cui, Dexuan wrote:
->> Pasi Kärkkäinen wrote on 2014-02-21:
->>> On Thu, Feb 20, 2014 at 07:59:04AM +0000, Cui, Dexuan wrote:
->>>> Hi all, We're pleased to announce an update to XenGT since its first
->>>> disclosure in last Sep.
->>> 
->>> Are you going to work on upstreaming this stuff? Xen 4.4 will be
->>> released soon(ish), so the Xen 4.5 development window starts in the near
->>> future and hopefully this stuff can be upstreamed then..
->> Hi Pasi,
->> We do plan to upstream but not give a timeframe so far.
->> 
-> 
-> Ok. Would you like to post an article on the Xen blog about XenGT ?
-> I think that would be a good thing to do to get more visibility for this feature.
-As I mentioned in the previous mail, we already have a blog article, which
-can be easily found by googling xengt: :-)
-https://01.org/xen/blogs/srclarkx/2013/graphics-virtualization-xengt
+On Fri, 21 Feb 2014, H. Peter Anvin wrote:
 
->>> Also: Haswell ("4th generation Intel core CPU") is listed as a
->>> requirement in the Setup Guide PDF.. will there be support for SNB/IVB
->>> GPUs aswell?
->> There is no plan for SNB/IVB.
->> 
+> Error 6 reflects a write in userspace to a not-present page.
 > 
-> Is that because of some hardware limitation on earlier GPU generations,
-> or just a matter of amount of work needed to support XenGT on earlier
-> GPUs?
-> -- Pasi
-No HW limitation on earlier GPUs -- actually you can even see some unused
-codes about earlier generations in the linux-vgt.patch.
-At present we'd like to focus on HSW (and newer generation in future).
+> Since your previous trace indicates that the value of the register in question
+> is a different one, I'm guessing that what we have here is PEBS getting
+> activated.  0x120 is 2*0x90, and 0x90 is the size of a 64-bit PEBS record.
 
--- Dexuan
+I'm having problems generating a replayable syscall trace that exhibits 
+the problem.
+
+It turns out that the segfault address listed (the multiple of 0x120) 
+happens to be the value in the RBP register at the time of the segfault.
+
+That's odd, as the instruction is
+	movdqa %xmm0,(%rdi)
+and rdi is the valid mmap address of the perf ring buffer
+	rdi            0xf7768000	4151738368
+
+so I'm not sure why RBP is involved at all.
+
+In all of the cases I've investigated the precise_ip value has been set 
+for the problem event... but none of the events have been hardware events
+(software and breakpoint so far).  So probably not PEBS related?
+
+Vince
 
