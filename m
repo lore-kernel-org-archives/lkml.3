@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629AbaBWU1X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 15:27:23 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:60408 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaBWU1W (ORCPT
+	id S1751834AbaBWUfo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 15:35:44 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33784 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751483AbaBWUfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 15:27:22 -0500
+	Sun, 23 Feb 2014 15:35:43 -0500
+Message-ID: <530A5B93.7010304@hurleysoftware.com>
+Date: Sun, 23 Feb 2014 15:35:31 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
-References: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
-Date: Sun, 23 Feb 2014 12:27:20 -0800
-X-Google-Sender-Auth: Vi6mwaqeGBs5lczgUYppqtkEADs
-Message-ID: <CA+55aFxPL9dWAK-y0tDFj5r6ikKytqnxL3A+9KH55GpmCQFf9Q@mail.gmail.com>
-Subject: Re: [RFC] improve_stack: make stack dump output useful again
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com, Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        Chris Boot <bootc@bootc.net>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: memory-barriers.txt again (was Re: [PATCH 4/9] firewire: don't
+ use PREPARE_DELAYED_WORK)
+References: <53074BE4.1020307@hurleysoftware.com> <20140221130614.GH6897@htj.dyndns.org> <5307849A.9050209@hurleysoftware.com> <20140221165730.GA10929@htj.dyndns.org> <5307DAC9.2020103@hurleysoftware.com> <1393094608.11497.1.camel@dabdike.int.hansenpartnership.com> <5308F0E2.3030804@hurleysoftware.com> <1393095138.11497.5.camel@dabdike.int.hansenpartnership.com> <5308F48C.8080609@hurleysoftware.com> <20140223022303.3240093c@stein> <20140223163743.GU4250@linux.vnet.ibm.com>
+In-Reply-To: <20140223163743.GU4250@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 4:19 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Right now when people try to report issues in the kernel they send stack
-> dumps to eachother, which looks something like this:
+Hi Paul,
+
+On 02/23/2014 11:37 AM, Paul E. McKenney wrote:
+> commit aba6b0e82c9de53eb032844f1932599f148ff68d
+> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Date:   Sun Feb 23 08:34:24 2014 -0800
 >
-> [    6.906437]  [<ffffffff811f0e90>] ? backtrace_test_irq_callback+0x20/0x20
-> [    6.907121]  [<ffffffff84388ce8>] dump_stack+0x52/0x7f
-> [    6.907640]  [<ffffffff811f0ec8>] backtrace_regression_test+0x38/0x110
-> [    6.908281]  [<ffffffff813596a0>] ? proc_create_data+0xa0/0xd0
-> [    6.908870]  [<ffffffff870a8040>] ? proc_modules_init+0x22/0x22
-> [    6.909480]  [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
-> [...]
+>      Documentation/memory-barriers.txt: Clarify release/acquire ordering
 >
-> However, most of the text you get is pure garbage.
+>      This commit fixes a couple of typos and clarifies what happens when
+>      the CPU chooses to execute a later lock acquisition before a prior
+>      lock release, in particular, why deadlock is avoided.
+>
+>      Reported-by: Peter Hurley <peter@hurleysoftware.com>
+>      Reported-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+>      Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+>      Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index 9dde54c55b24..c8932e06edf1 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -1674,12 +1674,12 @@ for each construct.  These operations all imply certain barriers:
+>        Memory operations issued after the ACQUIRE will be completed after the
+>        ACQUIRE operation has completed.
+>
+> -     Memory operations issued before the ACQUIRE may be completed after the
+> -     ACQUIRE operation has completed.  An smp_mb__before_spinlock(), combined
+> -     with a following ACQUIRE, orders prior loads against subsequent stores and
+> -     stores and prior stores against subsequent stores.  Note that this is
+> -     weaker than smp_mb()!  The smp_mb__before_spinlock() primitive is free on
+> -     many architectures.
+> +     Memory operations issued before the ACQUIRE may be completed after
+> +     the ACQUIRE operation has completed.  An smp_mb__before_spinlock(),
+> +     combined with a following ACQUIRE, orders prior loads against
+> +     subsequent loads and stores and also orders prior stores against
+> +     subsequent stores.  Note that this is weaker than smp_mb()!  The
+> +     smp_mb__before_spinlock() primitive is free on many architectures.
+>
+>    (2) RELEASE operation implication:
+>
+> @@ -1717,23 +1717,47 @@ the two accesses can themselves then cross:
+>
+>   	*A = a;
+>   	ACQUIRE M
+> -	RELEASE M
+> +	RELEASE N
+>   	*B = b;
+>
+>   may occur as:
+>
+> -	ACQUIRE M, STORE *B, STORE *A, RELEASE M
 
-I'd like to fix that, but I'd like to fix it in the kernel, and just
-stop printing the hex addresses entirely.
+This example should remain as is; it refers to the porosity of a critical
+section to loads and stores occurring outside that critical section, and
+importantly that LOCK + UNLOCK is not a full barrier. It documents that
+memory operations from either side of the critical section may cross
+(in the absence of other specific memory barriers). IOW, it is the example
+to implication #1 above.
 
-However, your kind of script actually makes that worse, in that it
-uses the redundant hex addresses for 'addr2line', and that tool is
-known to not work with symbolic addresses, only with actual numerical
-ones.
+Regards,
+Peter Hurley
 
-So I would *really* want to do this kernel change (possibly
-conditional on RANDOMIZE_BASE_ADDRESS or whatever the config variable
-is called):
-
-    diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-    index d9c12d3022a7..58039e728f00 100644
-    --- a/arch/x86/kernel/dumpstack.c
-    +++ b/arch/x86/kernel/dumpstack.c
-    @@ -27,13 +27,12 @@ static int die_counter;
-
-     static void printk_stack_address(unsigned long address, int reliable)
-     {
-    -       pr_cont(" [<%p>] %s%pB\n",
-    -               (void *)address, reliable ? "" : "? ", (void *)address);
-    +       pr_cont(" %s[<%pB>]\n", reliable ? "" : "? ", (void *)address);
-     }
-
-     void printk_address(unsigned long address)
-     {
-    -       pr_cont(" [<%p>] %pS\n", (void *)address, (void *)address);
-    +       pr_cont(" [<%pS>]\n", (void *)address);
-     }
-
-     #ifdef CONFIG_FUNCTION_GRAPH_TRACER
-
-which would make the kernel stack traces much prettier.
-
-But that would require that there be a "resolve symbolic address" (if
-CONFIG_KALLSYMS isn't enabled, it would still be hexadecimal) for the
-address inside the [<>] thing..
-
-I don't know of any sane tool that does that directly, but it
-shouldn't be *that* hard. You can *almost* do it with
-
-  echo "p backtrace_regression_test+0x38" | gdb vmlinux
-
-but you see the problem if you try that ;)
-
-               Linus
