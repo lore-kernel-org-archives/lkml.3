@@ -1,72 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaBWSBG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 13:01:06 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58229 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaBWSBD (ORCPT
+	id S1751413AbaBWSqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 13:46:50 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47077 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaBWSqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 13:01:03 -0500
-From: <vladimir.barinov@cogentembedded.com>
-To: <linux-sh@vger.kernel.org>
-Cc: <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        <magnus.damm@gmail.com>, <horms@verge.net.au>, <gnurou@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
-        <valentine.barshak@cogentembedded.com>
-Subject: [PATCH V4 0/4] ARM: shmobile: koelsch: Add USB support
-Date: Sun, 23 Feb 2014 22:00:55 +0400
-Message-Id: <1393178459-14637-1-git-send-email-vladimir.barinov@cogentembedded.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 23 Feb 2014 13:46:49 -0500
+Message-ID: <530A420B.5050207@gmail.com>
+Date: Sun, 23 Feb 2014 19:46:35 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v2] clk: respect the clock dependencies in of_clk_init
+References: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+Hi Gregory,
 
-These patch series add the USBHS and PCI USB support to Koelsch board
+On 10.02.2014 18:42, Gregory CLEMENT wrote:
+> Until now the clock providers were initialized in the order found in
+> the device tree. This led to have the dependencies between the clocks
+> not respected: children clocks could be initialized before their
+> parent clocks.
+>
+> Instead of forcing each platform to manage its own initialization order,
+> this patch adds this work inside the framework itself.
+>
+> Using the data of the device tree the of_clk_init function now delayed
+> the initialization of a clock provider if its parent provider was not
+> ready yet.
 
-The patches depend on the following commits:
+In general this is really great. It's a first step towards sorting out 
+dependencies between clock providers correctly. I have some comments 
+inline, though.
 
-USBHS and PCI USB host:
-* http://git.linuxtv.org/pinchartl/fbdev.git/commit/9770d221130e18c2d0ffe13cd07365d473 \
-                114549
-* http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=c8ba8115a2 \
-                1226fba3211085f570b128fa271e31
-* http://git.kernel.org/cgit/linux/kernel/git/balbi/usb.git/commit/?id=c3e5d2985ef720c \
-bbdc63546a5c545ac4450d96e PCI USB host:
-* http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=103 \
-                e127d1f8f985e8a662da6537ebc5e08902ee3
-* http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=1ae \
-                5799ef63176cc75ec10e545cb65f620a82747
-* http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/host-rcar& \
-id=fb178d8b2fab3f2a9f203c13ffe80cfd6e01bdf1
+>
+> The strict dependency check (all parents of a given clk must be
+> initialized) was added by Boris BREZILLON
 
-GPIO R-Car:
-* https://lkml.org/lkml/2014/2/23/60
+Shouldn't this be reflected by a tag of this patch? If you squash a 
+patch signed off by someone then I believe their sign-off tag should be 
+added to the base patch. Correct me if I'm wrong, though.
 
-Changes in V4:
-* folded USBHS and internal PCI USB related patches together
-* added handling of ID pin from MAX3355E chip
-* removed ifdefs
-* added USB and PCI to koelsch_defconfig
+>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>
+> Since the v1, I have merged the  strict dependency check from Boris.
+> And of course tested on my Armada 370 and Armada XP based board
+>
+>   drivers/clk/clk.c | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>   1 file changed, 106 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 5517944495d8..684976993297 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2526,24 +2526,127 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
+>   }
+>   EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+>
+> +struct clock_provider {
 
-Changes in V3:
-* fixed the USB1 device name in the pinmux table;
-* fixed a typo in the "Add internal PCI support" log message.
+The name is a bit too generic and slightly misleading. IMHO struct 
+deferred_clk_provider (and deferred_clk_providers for the list) would be 
+better.
 
-Changes in V2:
-* capitalized ARM in the subject;
-* rebased on top the latest devel tag;
-* added pipe_type array to the usbhs platform info since it differs from the default.
+> +	of_clk_init_cb_t clk_init_cb;
+> +	struct device_node *np;
+> +	struct list_head node;
+> +};
+> +
+> +static LIST_HEAD(clk_provider_list);
+> +
+> +/*
+> + * This function looks for a parent clock. If there is one, then it
+> + * checks that the provider for this parent clock was initialized, in
+> + * this case the parent clock will be ready.
+> + */
+> +static int parent_ready(struct device_node *np)
+> +{
+> +	struct of_phandle_args clkspec;
+> +	struct of_clk_provider *provider;
+> +	int num_parents;
+> +	bool found;
+> +	int i;
+> +
+> +	/*
+> +	 * If there is no clock parent, no need to wait for them, then
+> +	 * we can consider their absence as being ready
+> +	 */
+> +	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
+> +	if (num_parents <= 0)
+> +		return 1;
 
-Valentine Barshak, Vladimir Barinov (4):
-  ARM: shmobile: r8a7791: Add USBHS clock support
-  ARM: shmobile: r8a7791: Add PCI USB host clock support
-  ARM: shmobile: koelsch: Add USBHS and internal PCI USB support
-  ARM: shmobile: koelsch: Add USB and PCI to defconfig
+of_clk_get_parent_count() can be used here...
 
----
- arch/arm/configs/koelsch_defconfig     |   16 ++
- arch/arm/mach-shmobile/board-koelsch.c |  183 +++++++++++++++++++++++++++++++++
- arch/arm/mach-shmobile/clock-r8a7791.c |    7 +
- 3 files changed, 205 insertions(+), 1 deletion(-)
+> +
+> +	for (i = 0; i < num_parents; i++) {
+> +		if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
+> +					       &clkspec))
+> +			return 1;
+> +
+> +		/* Check if we have such a provider in our array */
+> +		found = false;
+> +		list_for_each_entry(provider, &of_clk_providers, link) {
+> +			if (provider->node == clkspec.np) {
+> +				found = true;
+> +				break;
+> +			}
+> +		}
+> +
+> +		if (!found)
+> +			return 0;
+> +	}
+
+...or even better, __of_clk_get_from_provider() could modified to return 
+-EPROBE_DEFER if requested provider is not registered and you could 
+simply call of_clk_get(np, i) and handle its return value appropriately:
+
+- on !IS_ERR(clk) call clk_put() and continue with iterations,
+- on IS_ERR(clk) && PTR_ERR(clk) == -EPROBE_DEFER return 0 immediately,
+- in any other case end the loop (end of clock specifiers).
+
+This would make CCF even closer to proper handling of provider ordering, 
+with a nice side effect of handling deferred probe for platform devices.
+
+> +
+> +	return 1;
+> +}
+> +
+>   /**
+>    * of_clk_init() - Scan and init clock providers from the DT
+>    * @matches: array of compatible values and init functions for providers.
+>    *
+> - * This function scans the device tree for matching clock providers and
+> - * calls their initialization functions
+> + * This function scans the device tree for matching clock providers
+> + * and calls their initialization functions. It also do it by trying
+> + * to follow the dependencies.
+>    */
+>   void __init of_clk_init(const struct of_device_id *matches)
+>   {
+>   	const struct of_device_id *match;
+>   	struct device_node *np;
+> +	struct clock_provider *clk_provider, *next;
+> +	bool is_init_done;
+>
+>   	if (!matches)
+>   		matches = &__clk_of_table;
+>
+>   	for_each_matching_node_and_match(np, matches, &match) {
+>   		of_clk_init_cb_t clk_init_cb = match->data;
+> -		clk_init_cb(np);
+> +
+> +
+> +		if (parent_ready(np)) {
+> +			/*
+> +			 * The parent clock is ready or there is no
+> +			 * clock parent at all, in this case the
+> +			 * provider can be initialize immediately.
+> +			 */
+> +			clk_init_cb(np);
+> +		} else {
+> +			/*
+> +			 * The parent clock is not ready, this
+> +			 * provider is moved to a list to be
+> +			 * initialized later
+> +			 */
+> +			struct clock_provider *parent = kzalloc(sizeof(struct clock_provider),
+> +							GFP_KERNEL);
+> +
+> +			parent->clk_init_cb = match->data;
+> +			parent->np = np;
+> +			list_add(&parent->node, &clk_provider_list);
+> +		}
+> +	}
+
+I wonder if this couldn't be replaced with simply adding all the 
+providers to the list first and then proceeding with the loop below to 
+handle the registrations.
+
+> +
+> +	while (!list_empty(&clk_provider_list)) {
+> +		is_init_done = false;
+> +		list_for_each_entry_safe(clk_provider, next,
+> +					&clk_provider_list, node) {
+> +			if (parent_ready(clk_provider->np)) {
+> +				clk_provider->clk_init_cb(clk_provider->np);
+> +				list_del(&clk_provider->node);
+> +				kfree(clk_provider);
+> +				is_init_done = true;
+> +			}
+> +		}
+> +
+> +		if (!is_init_done) {
+> +			/*
+> +			 * We didn't managed to initialize any of the
+> +			 * remaining providers during the last loop,
+> +			 * so now we initialize all the remaining ones
+> +			 * unconditionally in case the clock parent
+> +			 * was not mandatory
+> +			 */
+> +			list_for_each_entry_safe(clk_provider, next,
+> +						&clk_provider_list, node) {
+> +				clk_provider->clk_init_cb(clk_provider->np);
+> +				list_del(&clk_provider->node);
+> +				kfree(clk_provider);
+
+Hmm, this is basically the code above repeated without the if. What 
+about something like the code snippet below?
+
+bool force = false;
+while (!list_empty(&clk_provider_list)) {
+	is_init_done = false;
+	list_for_each_entry_safe(clk_provider, next,
+				&clk_provider_list, node) {
+		if (force || parent_ready(clk_provider->np)) {
+			clk_provider->clk_init_cb(clk_provider->np);
+			list_del(&clk_provider->node);
+			kfree(clk_provider);
+			is_init_done = true;
+		}
+	}
+
+	if (!is_init_done)
+		force = true;
+}
+
+Best regards,
+Tomasz
