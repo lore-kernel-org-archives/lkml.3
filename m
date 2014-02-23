@@ -1,30 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaBWU6w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 15:58:52 -0500
-Received: from vt138.b2bdomain.com ([203.113.173.38]:34104 "EHLO
-	server.brvt.vn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaBWU6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 15:58:51 -0500
-X-Greylist: delayed 24367 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Feb 2014 15:58:50 EST
-From: =?Windows-1250?B?RGFuc2tlIEJhbms=?= <480428278-vwmwjw@nwcs.com>
-To: linux-kernel@vger.kernel.org
-Subject: =?Windows-1250?B?TnkgbWVsZGluZy4=?=
-Date: 23 Feb 2014 04:31:57 +0000
-Message-ID: <20140223043157.ADCA99FD3FA9AF76@nwcs.com>
+	id S1751799AbaBWVJm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:09:42 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:33403 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaBWVJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 16:09:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="x-ias-norwegian"
-Content-Transfer-Encoding: 8bit
+From: "Gideon D'souza" <gidisrael@gmail.com>
+Date: Mon, 24 Feb 2014 02:39:19 +0530
+Message-ID: <CAPNrq4wV=r6mM0i1=NZ+H-Y0ahF2Cr3xQNPRcLfuNyObp4aZqA@mail.gmail.com>
+Subject: Newbie: trying to hack an RTL8101E driver
+To: netdev@vger.kernel.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2/23/2014 4:31:57
+So I've submitted some patches for some tiny ongoing refactoring.
 
-kjære linux-kernel@vger.kernel.org,
+In the hopes of moving to more _real_ work I've been snooping at the
+ethernet drivers. I was especially curious about driver code that is
+running  for my own hardware.
 
-Vi la merke til kontoen din er åpen et annet sted med nettverk IP-adresse (200.1.27.75)
-Klikk her / åpen http://jrunited.net/Nettbank/danskebank.no/nb-no/Privat/kort/index.html å logge på kontoen fra postkassen og blokkere IP, fra innlogging inn igjen fra adressen.
+I found out with lshw that I'm running a Atheros QCA9565 / AR9565
+Wireless Network Adapter and a  RTL8101E/RTL8102E NIC.
 
-Danske Bank A/S
+For the atheros drivers after much google-fun I came by this
+wireless.kernel.org/en/users/Drivers/ath9k and (correct me if I'm
+wrong) there isn't a datasheet for this (and generally atheros)
+drivers? They've been rev-engg'd ?
+
+I went on the the realtek driver, I found this article on writing a
+realtek driver (http://linuxgazette.net/156/jangir.html) I also looked
+at Linux Device Drivers, both are pretty old. I also started reading
+Documentation/pci/*
+
+**However** I want to learn to write a driver for some hardware I own,
+so I can actually see it in action.
+
+The 8139 datasheet seems a lot bigger than the 8101E sheet
+(http://realtek.info/pdf/rtl8101e_datasheet_1.2.pdf) and still doesn't
+make a lot of sense to me.
+
+Questions:
+> As a newbie when it comes to writing software for hardware, is trying to write a driver for my hardware as a exercise doable/possible/good
+> Any thing more general purpose I should read about networking and drivers?
+> Any good resources other updated resources out there on how to use a datasheet to write a driver?
+
+Thanks so Much
+Gideon
