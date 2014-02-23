@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaBWVrA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:47:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52236 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196AbaBWVkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752187AbaBWVkF (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 23 Feb 2014 16:40:05 -0500
-Message-Id: <20140223212737.517340416@linutronix.de>
+Received: from www.linutronix.de ([62.245.132.108]:52192 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763AbaBWVkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 16:40:01 -0500
+Message-Id: <20140223212736.451970660@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:14 -0000
+Date: Sun, 23 Feb 2014 21:40:08 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>, mips <inux-mips@linux-mips.org>
-Subject: [patch 12/26] mips: Use the core irq stats function
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ashish Kalra <ashish.kalra@freescale.com>,
+        Timur Tabi <timur@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        ppc <linuxppc-dev@lists.ozlabs.org>
+Subject: [patch 02/26] powerpc:evh_pic: Kill irq_desc abuse
 References: <20140223212703.511977310@linutronix.de>
-Content-Disposition: inline; filename=mips-use-core-irq-stats-function.patch
+Content-Disposition: inline; filename=power-evh-pic-kill-irq-desc-abuse.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -24,85 +28,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the core do the irq_desc resolution.
+I'm really grumpy about this one. The line:
 
-No functional change.
+#include "../../../kernel/irq/settings.h"
+
+should have been an alarm sign for all people who added their SOB to
+this trainwreck.
+
+When I cleaned up the mess people made with interrupt descriptors a
+few years ago, I warned that I'm going to hunt down new offenders and
+treat them with stinking trouts. In this case I'll use frozen shark
+for a better educational value.
+
+The whole idiocy which was done there could have been avoided with two
+lines of perfectly fine code. And do not complain about the lack of
+correct examples in tree.
+
+The solution is simple:
+
+  Remove the brainfart and use the proper functions, which should
+  have been used in the first place
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: mips <inux-mips@linux-mips.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Ashish Kalra <ashish.kalra@freescale.com>
+Cc: Timur Tabi <timur@freescale.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: ppc <linuxppc-dev@lists.ozlabs.org>
 ---
- arch/mips/kernel/smtc.c        |    2 +-
- arch/mips/sgi-ip22/ip22-int.c  |    2 +-
- arch/mips/sgi-ip22/ip22-time.c |    2 +-
- arch/mips/sibyte/bcm1480/smp.c |    2 +-
- arch/mips/sibyte/sb1250/smp.c  |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ arch/powerpc/sysdev/ehv_pic.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-Index: tip/arch/mips/kernel/smtc.c
+Index: tip/arch/powerpc/sysdev/ehv_pic.c
 ===================================================================
---- tip.orig/arch/mips/kernel/smtc.c
-+++ tip/arch/mips/kernel/smtc.c
-@@ -1007,7 +1007,7 @@ static void __irq_entry smtc_clock_tick_
- 	int irq = MIPS_CPU_IRQ_BASE + 1;
+--- tip.orig/arch/powerpc/sysdev/ehv_pic.c
++++ tip/arch/powerpc/sysdev/ehv_pic.c
+@@ -28,8 +28,6 @@
+ #include <asm/ehv_pic.h>
+ #include <asm/fsl_hcalls.h>
  
- 	irq_enter();
--	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+	kstat_incr_irq_this_cpu(irq);
- 	cd = &per_cpu(mips_clockevent_device, cpu);
- 	cd->event_handler(cd);
- 	irq_exit();
-Index: tip/arch/mips/sgi-ip22/ip22-int.c
-===================================================================
---- tip.orig/arch/mips/sgi-ip22/ip22-int.c
-+++ tip/arch/mips/sgi-ip22/ip22-int.c
-@@ -148,7 +148,7 @@ static void __irq_entry indy_buserror_ir
- 	int irq = SGI_BUSERR_IRQ;
+-#include "../../../kernel/irq/settings.h"
+-
+ static struct ehv_pic *global_ehv_pic;
+ static DEFINE_SPINLOCK(ehv_pic_lock);
  
- 	irq_enter();
--	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+	kstat_incr_irq_this_cpu(irq);
- 	ip22_be_interrupt(irq);
- 	irq_exit();
+@@ -113,17 +111,13 @@ static unsigned int ehv_pic_type_to_vecp
+ int ehv_pic_set_irq_type(struct irq_data *d, unsigned int flow_type)
+ {
+ 	unsigned int src = virq_to_hw(d->irq);
+-	struct irq_desc *desc = irq_to_desc(d->irq);
+ 	unsigned int vecpri, vold, vnew, prio, cpu_dest;
+ 	unsigned long flags;
+ 
+ 	if (flow_type == IRQ_TYPE_NONE)
+ 		flow_type = IRQ_TYPE_LEVEL_LOW;
+ 
+-	irq_settings_clr_level(desc);
+-	irq_settings_set_trigger_mask(desc, flow_type);
+-	if (flow_type & (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW))
+-		irq_settings_set_level(desc);
++	irqd_set_trigger_type(d, flow_type);
+ 
+ 	vecpri = ehv_pic_type_to_vecpri(flow_type);
+ 
+@@ -144,7 +138,7 @@ int ehv_pic_set_irq_type(struct irq_data
+ 	ev_int_set_config(src, vecpri, prio, cpu_dest);
+ 
+ 	spin_unlock_irqrestore(&ehv_pic_lock, flags);
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
  }
-Index: tip/arch/mips/sgi-ip22/ip22-time.c
-===================================================================
---- tip.orig/arch/mips/sgi-ip22/ip22-time.c
-+++ tip/arch/mips/sgi-ip22/ip22-time.c
-@@ -123,7 +123,7 @@ void __irq_entry indy_8254timer_irq(void
- 	char c;
  
- 	irq_enter();
--	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+	kstat_incr_irq_this_cpu(irq);
- 	printk(KERN_ALERT "Oops, got 8254 interrupt.\n");
- 	ArcRead(0, &c, 1, &cnt);
- 	ArcEnterInteractiveMode();
-Index: tip/arch/mips/sibyte/bcm1480/smp.c
-===================================================================
---- tip.orig/arch/mips/sibyte/bcm1480/smp.c
-+++ tip/arch/mips/sibyte/bcm1480/smp.c
-@@ -182,7 +182,7 @@ void bcm1480_mailbox_interrupt(void)
- 	int irq = K_BCM1480_INT_MBOX_0_0;
- 	unsigned int action;
- 
--	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+	kstat_incr_irq_this_cpu(irq);
- 	/* Load the mailbox register to figure out what we're supposed to do */
- 	action = (__raw_readq(mailbox_0_regs[cpu]) >> 48) & 0xffff;
- 
-Index: tip/arch/mips/sibyte/sb1250/smp.c
-===================================================================
---- tip.orig/arch/mips/sibyte/sb1250/smp.c
-+++ tip/arch/mips/sibyte/sb1250/smp.c
-@@ -170,7 +170,7 @@ void sb1250_mailbox_interrupt(void)
- 	int irq = K_INT_MBOX_0;
- 	unsigned int action;
- 
--	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
-+	kstat_incr_irq_this_cpu(irq);
- 	/* Load the mailbox register to figure out what we're supposed to do */
- 	action = (____raw_readq(mailbox_regs[cpu]) >> 48) & 0xffff;
- 
+ static struct irq_chip ehv_pic_irq_chip = {
 
 
