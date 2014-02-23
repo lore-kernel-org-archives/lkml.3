@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaBWEHA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 23:07:00 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:48303 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaBWEG7 (ORCPT
+	id S1752442AbaBWEZJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 23:25:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49922 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbaBWEZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 23:06:59 -0500
+	Sat, 22 Feb 2014 23:25:07 -0500
+Date: Sun, 23 Feb 2014 13:24:54 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140223042454.GI25940@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <201402222300.35472.gheskett@wdtv.com>
-References: <201402222022.20370.gheskett@wdtv.com>
-	<201402222242.45552.gheskett@wdtv.com>
-	<CAKb7Uvhj3S88VOeprPsOQpzrCzOn3nB5CeDtDUhCxabLuPuPCA@mail.gmail.com>
-	<201402222300.35472.gheskett@wdtv.com>
-Date: Sat, 22 Feb 2014 23:06:59 -0500
-X-Google-Sender-Auth: iBGwmCG88LFx_WuxQ1covW0zZ_A
-Message-ID: <CAKb7Uvj1mKeS=gR6xBQnz4J1Ft3kKSftrdCRF7md+CabGy--4g@mail.gmail.com>
-Subject: Re: It BOOTS! 3.13.5 that is.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lE3gG894P96VuAc/"
+Content-Disposition: inline
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 106.188.159.64
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regulator fixes for v3.14
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 11:00 PM, Gene Heskett <gheskett@wdtv.com> wrote:
-> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>On Sat, Feb 22, 2014 at 10:42 PM, Gene Heskett <gheskett@wdtv.com> wrote:
->>> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>>>On Sat, Feb 22, 2014 at 8:22 PM, Gene Heskett <gheskett@wdtv.com> wrote:
->>>>> But my tv card isn't being found by kaffeine.  It is this card:
->>>>>
->>>>> 01:08.0 Multimedia video controller: Conexant Systems, Inc.
->>>>> CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
->>>>>
->>>>>         Subsystem: pcHDTV Device 3000
->>>>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>>>         Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
->>>>>         Capabilities: [44] Vital Product Data <?>
->>>>>         Capabilities: [4c] Power Management version 2
->>>>>
->>>>> 01:08.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
->>>>> PCI Video and Audio Decoder [MPEG Port] (rev 05)
->>>>>
->>>>>         Subsystem: pcHDTV Device 3000
->>>>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>>>         Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
->>>>>         Capabilities: [4c] Power Management version 2
->>>>>
->>>>> From an lspci
->>>>>
->>>>> In a make xconfig, I cannot find this specific card in the list of
->>>>> DVB front ends.  What modules do I need to make sure are being
->>>>> built?
->>>>
->>>>You're looking for VIDEO_CX88 ("Conexant 2388x (bt878 successor)
->>>>support") and its various sub-options (esp CX88_DVB). iirc the
->>>>pchdtv3000 had a OR51132 tuner, but right now the config is set to
->>>>auto-select a whole bunch of tuners if you have
->>>>MEDIA_SUBDRV_AUTOSELECT turned on. Otherwise make sure to select that
->>>>tuner device. (Hm, I appear to have both OR51132 and CX22702 enabled,
->>>>and I have that same card.)
->>>>
->>>>  -ilia
->>>
->>> or51132 rings a bell and is enabled, CX22702 is not.  And I don't seem
->>> to be able to find the CX88** at all.  I'll give the CX22702 a shot,
->>> thanks a bunch ilia.
->>
->>grep CX88 .config
->
-> That returns a linefeed only.  And I have done some dozen or so make
-> oldconfigs.
->>
->>If it says "not set" for things like CONFIG_VIDEO_CX88_DVB, you won't
->>get anything to work.
->>
->>  -ilia
->
-> If this fails, I'll see if I can plug that in with an editor, but the last
-> time I tried that, the friggin make did an automatic oldconfig and stripped
-> it.  Its enough to make one want to reduce the neighborhood cat population.
 
-Adding random stuff to .config won't work, as you noticed.
+--lE3gG894P96VuAc/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->From menuconfig search results for CX88 (ugh, sorry about the x's, but
-I'm too lazy to edit them out)
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-  x Symbol: VIDEO_CX88 [=m]                                                 x
-  x Type  : tristate                                                        x
-  x Prompt: Conexant 2388x (bt878 successor) support                        x
-  x   Location:                                                             x
-  x     -> Device Drivers                                                   x
-  x       -> Multimedia support (MEDIA_SUPPORT [=m])                        x
-  x (1)     -> Media PCI Adapters (MEDIA_PCI_SUPPORT [=y])                  x
-  x   Defined at drivers/media/pci/cx88/Kconfig:1                           x
-  x   Depends on: MEDIA_SUPPORT [=m] && MEDIA_PCI_SUPPORT [=y] && (MEDIA_AN x
-  x   Selects: I2C_ALGOBIT [=m] && VIDEO_BTCX [=m] && VIDEOBUF_DMA_SG [=m]  x
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-HTH,
+are available in the git repository at:
 
-  -ilia
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.14-rc4
+
+for you to fetch changes up to bcad2ca37296ab6c09de7975e850cb8f90c44c08:
+
+  Merge remote-tracking branches 'regulator/fix/da9063', 'regulator/fix/max14577' and 'regulator/fix/s5m8767' into regulator-linus (2014-02-23 12:22:18 +0900)
+
+----------------------------------------------------------------
+
+regulator: Fixes for v3.14
+
+Mostly unexciting driver fixes, plus one fix to lower the severity of
+the log message when we don't use an optional regulator - the fixes for
+ACPI system made this come up more often and it was correctly observed
+that it was causing undue concern for users.
+
+----------------------------------------------------------------
+Krzysztof Kozlowski (1):
+      regulator: max14577: Fix invalid return value on DT parse success
+
+Mark Brown (2):
+      Merge remote-tracking branch 'regulator/fix/core' into regulator-linus
+      Merge remote-tracking branches 'regulator/fix/da9063', 'regulator/fix/max14577' and 'regulator/fix/s5m8767' into regulator-linus
+
+Sachin Kamat (2):
+      regulator: s5m8767: Use of_get_child_by_name
+      regulator: s5m8767: Add missing of_node_put
+
+Shuah Khan (1):
+      regulator: core: Change dummy supplies error message to a warning
+
+Steve Twiss (1):
+      regulator: da9063: Bug fix when setting max voltage on LDOs 5-11
+
+ drivers/regulator/core.c             | 2 +-
+ drivers/regulator/da9063-regulator.c | 4 +++-
+ drivers/regulator/max14577.c         | 5 +++--
+ drivers/regulator/s5m8767.c          | 4 +++-
+ 4 files changed, 10 insertions(+), 5 deletions(-)
+
+--lE3gG894P96VuAc/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCXgSAAoJELSic+t+oim9e4oP/i/dEKrJuDfRUP9pKhdQUYWb
+R6TnrSBJlmpacTcEC3nXAYsrC1WrJWU7wqG7hF0bAgftlEWWQKRVGtUW9FjBrBBC
+ZpgP90hT0xHmRI92PDiMhI7tvBT8qdczRAJk8oct//p17AjcvCxL4Mp0Fth4v9/1
+LH+GPHR8t8urWH73YrR2RnF/KEbDr6ZAgnoWLgEBPcugvq+WydT9jDDiuj89Mfu2
+WgWP4rBftkKEXPkjTyXSIX8vwnyUWbKUHrti1Qm1sSb228t0GJc65/PLUeW43EIP
+kk7re7cC3PoXDRYzr6q5Y//jdq3EzQmSF4GB47/hH+jt0KVbZISwHP4koBJAwqZU
+aQM0DbE/8wGpSzu060SOIv0uIP06/DntVkw1LZ3sMJWSuw0dh/0fJedEZ6Z9aes1
+RuryXo/p/7M8SzAwGWUEeRUN9CMmhhuhGSuukUs6AZuCuS1TF6H9CKFDNa+CA3Rz
+qmHMhyKUzV3vIVsSRLF/Yq4f/+lTAqFLc2FGl7SmTv1yRBev0J+JujDnBIyqEs4q
+nVrPm709Ir0imiMOI6/5BHpJR7HLt/vpCxj6ML0r6M0gVlJ2j7RaLbJE4Bex7Sbk
+1L4L2fgt4vRKxWkcLtyt4tj099Tw6D1JHtXLxu6thZ6OojsuoCtMCstla9TkcgC4
+XS57nQB0/pWoUa1txMfw
+=JiRs
+-----END PGP SIGNATURE-----
+
+--lE3gG894P96VuAc/--
