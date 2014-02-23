@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaBWTGo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 14:06:44 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:34857 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaBWTGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 14:06:43 -0500
-Message-ID: <530A46BF.4000107@gmail.com>
-Date: Sun, 23 Feb 2014 21:06:39 +0200
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+	id S1751608AbaBWTOm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 14:14:42 -0500
+Received: from imp02.mtu.ru ([62.5.255.19]:45679 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaBWTOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 14:14:40 -0500
+X-Spam-Flag: NO
+Message-ID: <530A486A.2000802@pavlinux.ru>
+Date: Sun, 23 Feb 2014 23:13:46 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-CC: Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        kvalo@qca.qualcomm.com, linville@tuxdriver.com
-Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet
- length 3149594624
-References: <52FD08D1.3030405@gmail.com> <20140213182105.GN13576@mudshark.cambridge.arm.com> <52FD1243.9040706@gmail.com> <20140213192909.GO13576@mudshark.cambridge.arm.com> <52FE407C.3080002@gmail.com> <20140214162458.GF21986@mudshark.cambridge.arm.com> <52FE4E3F.6020407@gmail.com>
-In-Reply-To: <52FE4E3F.6020407@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.12-rt19
+References: <20140223184727.GA12442@linutronix.de>
+In-Reply-To: <20140223184727.GA12442@linutronix.de>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="kNHKWu79mmwOC2KK6CjDnP6mLv74oirxD"
+X-DCC-STREAM-Metrics: ss27-so03.mtu.ru 10003; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--kNHKWu79mmwOC2KK6CjDnP6mLv74oirxD
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+23.02.2014 22:47, Sebastian Andrzej Siewior =D0=BF=D0=B8=D1=88=D0=B5=D1=82=
+:
+> Dear RT folks!
+>=20
+> I'm pleased to announce the v3.12.12-rt19 patch set.
+Can you create new -RT number for new SUBLEVEL patch?
+
+3.12.10-rt1
+3.12.10-rt2
+3.12.10-rt3
+3.12.10-rt4
+
+3.12.11-rt1
+3.12.11-rt2
+3.12.11-rt3
+=2E..
+=2E..
+=2E..
+3.12.12-rt1
+3.12.12-rt1
 
 
-On 14.02.2014 19:11, Ivaylo Dimitrov wrote:
->
->
-> On 14.02.2014 18:24, Will Deacon wrote:
->>
->> You could try putting back the UNALIGNED_ACCESS in net/mac80211/rx.c and
->> commenting out the skb->len = desc->length  - PLCP_HEADER_LENGTH;  line
->> above.
->
-> This seems to fix the issue too, but I am afraid there is more to be
-> done, as I see
->
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.599853] wlan0: authenticate
-> with 00:23:cd:17:86:d0
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.781860] wlan0: send auth to
-> 00:23:cd:17:86:d0 (try 1/3)
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.799804] wlan0: authenticated
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.806243] wlan0: associating
-> with AP with corrupt probe response
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.814544] wlan0: associate with
-> 00:23:cd:17:86:d0 (try 1/3)
-> Feb 14 18:33:46 Nokia-N900 kernel: [   88.826416] wlan0: RX AssocResp
-> from 00:23:cd:17:86:d0 (capab=0x431 status=0 aid=2)
->
-> spit in dmesg log. AFAIR this is the first time I see "associating with
-> AP with corrupt probe response" in dmesg, no matter of the kernel
-> version. Despite of that error message, wlan seems to work as it should,
-> so far. I guess we need the driver's author saying on the issue.
->
-> Thanks,
-> Ivo
+But not  -rt1, -rt2, -rt3 -rt4, .... -rt99
 
-ping?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--kNHKWu79mmwOC2KK6CjDnP6mLv74oirxD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBCgAGBQJTCkhrAAoJEPtok08Dny2hsecP/2hHCN0OmaztWa+fiBixuQJ2
+SI6IYascHWJH4G/HRUo2KTDojYTXdICwUZxk6jPMpntA3YakYotwryjoH+2M7LO/
+En9+Dicq0YWt0i/PaQo/AwgG3Jjh+FNChuhpRZPn0tWtC45GWVwQBJexCPvWL4Dl
+XqgsrbMHMbPbI6rCQotPUy28Krtm0YsGxxgzA95XMe8VkyWAu7Lju4QAPoRXRfgl
+HfHdLTMSnQm3o7JaK1l7+SE/Yz4sUtc8t4jFsrtbs6cDhU33NFZ0qkf2Hlc8zbU8
+Lqz/7CV4fbx24jBsGNDssF/jz1XmRASQLC3HvIXVQIx/bUAZejWaUf8akO7DJABG
+WYyE7b0YIULXuqVD/w6+nfbMqNmKo/xEzrja24nZQl5hwJyg9mZKnsTGfHHjUhiA
+bP2YiAHuysz0UGc9FpK2ouJbmIUT2iIeUUKpPnzcdcxra7v3lncgSTu6zWIPLSMM
+g98fKsnre/4JzZQV7MJqSF3IXk05eU6pUfbb9dDP1HIQDbP/e117JIN3oSn7D+EY
+70MbSEXzWZtrVZNqbcq0CHviD/5xnYRJyIHowRtqZDkW/ZbtegX4smmG4wTN2age
+XuMbEgrz27MCi6z1AcLVP/RZocgYqlRoDa0PbBpMRk0fyuTESD6KFyH23ZXyC0J8
+Toz4440B6cCkXC922VVz
+=RvwA
+-----END PGP SIGNATURE-----
+
+--kNHKWu79mmwOC2KK6CjDnP6mLv74oirxD--
