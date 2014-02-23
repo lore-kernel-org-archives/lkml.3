@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaBWUGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 15:06:06 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49822 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751557AbaBWUGE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 15:06:04 -0500
-Message-ID: <1393185948.9743.2.camel@dabdike>
-Subject: Re: [PATCH 4/9] firewire: don't use PREPARE_DELAYED_WORK
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, Chris Boot <bootc@bootc.net>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Date: Sun, 23 Feb 2014 14:05:48 -0600
-In-Reply-To: <5308F48C.8080609@hurleysoftware.com>
-References: <1392929071-16555-5-git-send-email-tj@kernel.org>
-			 <5306AF8E.3080006@hurleysoftware.com>
-			 <20140221015935.GF6897@htj.dyndns.org>
-			 <5306B4DF.4000901@hurleysoftware.com>
-			 <20140221021341.GG6897@htj.dyndns.org>
-			 <5306E06C.5020805@hurleysoftware.com>
-			 <20140221100301.GA14653@mtj.dyndns.org>
-			 <53074BE4.1020307@hurleysoftware.com>
-			 <20140221130614.GH6897@htj.dyndns.org>
-			 <5307849A.9050209@hurleysoftware.com>
-			 <20140221165730.GA10929@htj.dyndns.org>
-			 <5307DAC9.2020103@hurleysoftware.com>
-		 <1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
-		 <5308F0E2.3030804@hurleysoftware.com>
-	 <1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
-	 <5308F48C.8080609@hurleysoftware.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751913AbaBWUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 15:22:26 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:49737 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237AbaBWUWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 15:22:23 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Todza Louina <lidza.louina@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH 1/3] staging: dgap: remove unneeded status variables
+Date: Mon, 24 Feb 2014 00:21:51 +0400
+Message-Id: <1393186913-4687-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-02-22 at 14:03 -0500, Peter Hurley wrote:
-> If it is necessary for a RELEASE-ACQUIRE pair to produce a full barrier, the
-> ACQUIRE can be followed by an smp_mb__after_unlock_lock() invocation.  This
-> will produce a full barrier if either (a) the RELEASE and the ACQUIRE are
-> executed by the same CPU or task, or (b) the RELEASE and ACQUIRE act on the
-> same variable.  The smp_mb__after_unlock_lock() primitive is free on many
-> architectures.  Without smp_mb__after_unlock_lock(), the critical sections
-> corresponding to the RELEASE and the ACQUIRE can cross:
-> 
-> 	*A = a;
-> 	RELEASE M
-> 	ACQUIRE N
-> 	*B = b;
-> 
-> could occur as:
-> 
-> 	ACQUIRE N, STORE *B, STORE *A, RELEASE M
+dgap_driver_start and dgap_Major_Control_Registered are used
+to keep status of initialization of the driver as a whole and its "Major Control".
+But the code that checks them is executed once on module init/unload.
+That makes no sense in these variables as far as their values are predictable
+at any time.
 
-Ah, OK, that's an error in the documentation.  The example should read
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/staging/dgap/dgap_driver.c | 105 ++++++++++++++++---------------------
+ 1 file changed, 46 insertions(+), 59 deletions(-)
 
-	*A = a;
- 	RELEASE *N*
- 	ACQUIRE *M*
- 	*B = b;
-
-The point being you can't have speculation that entangles critical
-sections, as I've been saying, because that would speculate you into
-ABBA deadlocks.  Paul McKenny will submit a patch fixing the bug in
-documentation.
-
-James
-
+diff --git a/drivers/staging/dgap/dgap_driver.c b/drivers/staging/dgap/dgap_driver.c
+index 089d017fc291..d7f1e999aaa4 100644
+--- a/drivers/staging/dgap/dgap_driver.c
++++ b/drivers/staging/dgap/dgap_driver.c
+@@ -117,9 +117,6 @@ int			dgap_poll_tick = 20;	/* Poll interval - 20 ms */
+ /*
+  * Static vars.
+  */
+-static int		dgap_Major_Control_Registered = FALSE;
+-static uint		dgap_driver_start = FALSE;
+-
+ static struct class *	dgap_class;
+ 
+ /*
+@@ -283,65 +280,57 @@ static int dgap_start(void)
+ 	int rc = 0;
+ 	unsigned long flags;
+ 
+-	if (dgap_driver_start == FALSE) {
+-
+-		dgap_driver_start = TRUE;
++	/* make sure that the globals are init'd before we do anything else */
++	dgap_init_globals();
+ 
+-	        /* make sure that the globals are init'd before we do anything else */
+-	        dgap_init_globals();
++	dgap_NumBoards = 0;
+ 
+-		dgap_NumBoards = 0;
++	APR(("For the tools package or updated drivers please visit http://www.digi.com\n"));
+ 
+-		APR(("For the tools package or updated drivers please visit http://www.digi.com\n"));
+-
+-		/*
+-		 * Register our base character device into the kernel.
+-		 * This allows the download daemon to connect to the downld device
+-		 * before any of the boards are init'ed.
+-		 */
+-		if (!dgap_Major_Control_Registered) {
+-			/*
+-			 * Register management/dpa devices
+-			 */
+-			rc = register_chrdev(DIGI_DGAP_MAJOR, "dgap", &DgapBoardFops);
+-			if (rc < 0) {
+-				APR(("Can't register dgap driver device (%d)\n", rc));
+-				return (rc);
+-			}
++	/*
++	 * Register our base character device into the kernel.
++	 * This allows the download daemon to connect to the downld device
++	 * before any of the boards are init'ed.
++	 */
+ 
+-			dgap_class = class_create(THIS_MODULE, "dgap_mgmt");
+-			device_create(dgap_class, NULL,
+-				MKDEV(DIGI_DGAP_MAJOR, 0),
+-				NULL, "dgap_mgmt");
+-			device_create(dgap_class, NULL,
+-				MKDEV(DIGI_DGAP_MAJOR, 1),
+-				NULL, "dgap_downld");
+-			dgap_Major_Control_Registered = TRUE;
+-		}
++	/*
++	 * Register management/dpa devices
++	 */
++	rc = register_chrdev(DIGI_DGAP_MAJOR, "dgap", &DgapBoardFops);
++	if (rc < 0) {
++		APR(("Can't register dgap driver device (%d)\n", rc));
++		return (rc);
++	}
+ 
+-		/*
+-		 * Init any global tty stuff.
+-		 */
+-		rc = dgap_tty_preinit();
++	dgap_class = class_create(THIS_MODULE, "dgap_mgmt");
++	device_create(dgap_class, NULL,
++		MKDEV(DIGI_DGAP_MAJOR, 0),
++		NULL, "dgap_mgmt");
++	device_create(dgap_class, NULL,
++		MKDEV(DIGI_DGAP_MAJOR, 1),
++		NULL, "dgap_downld");
+ 
+-		if (rc < 0) {
+-			APR(("tty preinit - not enough memory (%d)\n", rc));
+-			return(rc); 
+-		}
++	/*
++	 * Init any global tty stuff.
++	 */
++	rc = dgap_tty_preinit();
++	if (rc < 0) {
++		APR(("tty preinit - not enough memory (%d)\n", rc));
++		return(rc);
++	}
+ 
+-		/* Start the poller */
+-		DGAP_LOCK(dgap_poll_lock, flags);
+-		init_timer(&dgap_poll_timer);
+-		dgap_poll_timer.function = dgap_poll_handler;
+-		dgap_poll_timer.data = 0;
+-		dgap_poll_time = jiffies + dgap_jiffies_from_ms(dgap_poll_tick);
+-		dgap_poll_timer.expires = dgap_poll_time;
+-		DGAP_UNLOCK(dgap_poll_lock, flags);
++	/* Start the poller */
++	DGAP_LOCK(dgap_poll_lock, flags);
++	init_timer(&dgap_poll_timer);
++	dgap_poll_timer.function = dgap_poll_handler;
++	dgap_poll_timer.data = 0;
++	dgap_poll_time = jiffies + dgap_jiffies_from_ms(dgap_poll_tick);
++	dgap_poll_timer.expires = dgap_poll_time;
++	DGAP_UNLOCK(dgap_poll_lock, flags);
+ 
+-		add_timer(&dgap_poll_timer);
++	add_timer(&dgap_poll_timer);
+ 
+-		dgap_driver_state = DRIVER_NEED_CONFIG_LOAD;
+-	}
++	dgap_driver_state = DRIVER_NEED_CONFIG_LOAD;
+ 
+ 	return (rc);
+ }
+@@ -409,12 +398,10 @@ void dgap_cleanup_module(void)
+ 	dgap_remove_driver_sysfiles(&dgap_driver);
+ 
+ 
+-	if (dgap_Major_Control_Registered) {
+-		device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
+-		device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 1));
+-		class_destroy(dgap_class);
+-		unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
+-	}
++	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
++	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 1));
++	class_destroy(dgap_class);
++	unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
+ 
+ 	kfree(dgap_config_buf);
+ 
+-- 
+1.8.3.2
 
