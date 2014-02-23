@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaBWR6M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 12:58:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51791 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132AbaBWR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 12:58:11 -0500
-Message-ID: <530A3668.2090902@zytor.com>
-Date: Sun, 23 Feb 2014 09:56:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Stephane Eranian <eranian@google.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly processor
- feature names
-References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org> <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org> <20140222204936.GA2534@pd.tnic> <20140222210038.GA19867@thin> <1b6550ce-40bd-4fc4-a3e4-37997da17973@email.android.com> <20140222213640.GA3409@thin>
-In-Reply-To: <20140222213640.GA3409@thin>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751834AbaBWSBM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 13:01:12 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:51462 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaBWSBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 13:01:06 -0500
+From: <vladimir.barinov@cogentembedded.com>
+To: <linux-sh@vger.kernel.org>
+Cc: <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        <magnus.damm@gmail.com>, <horms@verge.net.au>, <gnurou@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
+        <valentine.barshak@cogentembedded.com>
+Subject: [PATCH V4 2/4] ARM: shmobile: r8a7791: Add PCI USB host clock support
+Date: Sun, 23 Feb 2014 22:00:57 +0400
+Message-Id: <1393178459-14637-3-git-send-email-vladimir.barinov@cogentembedded.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1393178459-14637-1-git-send-email-vladimir.barinov@cogentembedded.com>
+References: <1393178459-14637-1-git-send-email-vladimir.barinov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2014 01:36 PM, Josh Triplett wrote:
-> 
-> No, even after removing the ifdefs around the build rules as you
-> suggested (and v3's fixes for the resulting build issues, notably
-> changing some -y's to -$(CONFIG_X86_FEATURE_NAMES)), the makefiles still
-> manage to not build mkcpustr or cpustr.h, because nothing depends on it.
-> 
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 
-How could it miss the rule:
+This adds internal PCI USB host clock support to R-Car M2 SoC.
 
-$(obj)/cpu.o: $(obj)/cpustr.h
+Signed-off-by: Valentine Barshak <valentine.barshak@cogentembedded.com>
+Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 
-> I could change the build rules to generate an empty cpustr.h and avoid
-> this ifdef, but that'd require an additional ifdef block in the Makefile.
+Changes in V4:
+Changes in V3:
+* none.
 
-Typically the way it is done is to generate the #ifdef *inside*
-cpustr.h.  However, cpustr.h is kind of special anyway so it probably
-doesn't matter.
+Changes in V2:
+* capitalized ARM in the subject;
+* rebased on top the latest devel tag.
 
-	-hpa
+---
+ arch/arm/mach-shmobile/clock-r8a7791.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-
+Index: build/arch/arm/mach-shmobile/clock-r8a7791.c
+===================================================================
+--- build.orig/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:52.582571801 +0400
++++ build/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:57.446571701 +0400
+@@ -177,7 +177,7 @@
+ 	MSTP811, MSTP810, MSTP809,
+ 	MSTP726, MSTP724, MSTP723, MSTP721, MSTP720,
+ 	MSTP719, MSTP718, MSTP715, MSTP714,
+-	MSTP704,
++	MSTP704, MSTP703,
+ 	MSTP522,
+ 	MSTP314, MSTP312, MSTP311,
+ 	MSTP216, MSTP207, MSTP206,
+@@ -210,6 +210,7 @@
+ 	[MSTP715] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 15, MSTPSR7, 0), /* SCIF4 */
+ 	[MSTP714] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 14, MSTPSR7, 0), /* SCIF5 */
+ 	[MSTP704] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 4, MSTPSR7, 0), /* HSUSB */
++	[MSTP703] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 3, MSTPSR7, 0), /* EHCI */
+ 	[MSTP522] = SH_CLK_MSTP32_STS(&extal_clk, SMSTPCR5, 22, MSTPSR5, 0), /* Thermal */
+ 	[MSTP314] = SH_CLK_MSTP32_STS(&div4_clks[DIV4_SD0], SMSTPCR3, 14, MSTPSR3, 0), /* SDHI0 */
+ 	[MSTP312] = SH_CLK_MSTP32_STS(&div6_clks[DIV6_SD1], SMSTPCR3, 12, MSTPSR3, 0), /* SDHI1 */
+@@ -285,6 +286,8 @@
+ 	CLKDEV_DEV_ID("sata-r8a7791.1", &mstp_clks[MSTP814]),
+ 	CLKDEV_DEV_ID("renesas_usbhs", &mstp_clks[MSTP704]),
+ 	CLKDEV_ICK_ID("usbhs", "usb_phy_rcar_gen2", &mstp_clks[MSTP704]),
++	CLKDEV_DEV_ID("pci-rcar-gen2.0", &mstp_clks[MSTP703]),
++	CLKDEV_DEV_ID("pci-rcar-gen2.1", &mstp_clks[MSTP703]),
+ };
+ 
+ #define R8A7791_CLOCK_ROOT(e, m, p0, p1, p30, p31)		\
