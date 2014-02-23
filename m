@@ -1,109 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392AbaBWANk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 19:13:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58409 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751547AbaBWANj (ORCPT
+	id S1752465AbaBWAUB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 19:20:01 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36302 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaBWAT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 19:13:39 -0500
-Message-ID: <1393114393.6823.25.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH RFC 1/2] net: macb: Check DMA mappings for error
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>
-Date: Sun, 23 Feb 2014 00:13:13 +0000
-In-Reply-To: <1393011025-18537-2-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393011025-18537-1-git-send-email-soren.brinkmann@xilinx.com>
-	 <1393011025-18537-2-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-owIvHiavApekxpCxz3hC"
-X-Mailer: Evolution 3.8.5-2+b2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:5bf:b21:f20f:3cf5
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 22 Feb 2014 19:19:59 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [RFC] improve_stack: make stack dump output useful again
+Date: Sat, 22 Feb 2014 19:19:37 -0500
+Message-Id: <1393114777-21588-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Right now when people try to report issues in the kernel they send stack
+dumps to eachother, which looks something like this:
 
---=-owIvHiavApekxpCxz3hC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2014-02-21 at 11:30 -0800, Soren Brinkmann wrote:
+[    6.906437]  [<ffffffff811f0e90>] ? backtrace_test_irq_callback+0x20/0x20
+[    6.907121]  [<ffffffff84388ce8>] dump_stack+0x52/0x7f
+[    6.907640]  [<ffffffff811f0ec8>] backtrace_regression_test+0x38/0x110
+[    6.908281]  [<ffffffff813596a0>] ? proc_create_data+0xa0/0xd0
+[    6.908870]  [<ffffffff870a8040>] ? proc_modules_init+0x22/0x22
+[    6.909480]  [<ffffffff810020c2>] do_one_initcall+0xc2/0x1e0
 [...]
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -632,11 +632,16 @@ static void gem_rx_refill(struct macb *bp)
->  					   "Unable to allocate sk_buff\n");
->  				break;
->  			}
-> -			bp->rx_skbuff[entry] =3D skb;
-> =20
->  			/* now fill corresponding descriptor entry */
->  			paddr =3D dma_map_single(&bp->pdev->dev, skb->data,
->  					       bp->rx_buffer_size, DMA_FROM_DEVICE);
-> +			if (dma_mapping_error(&bp->pdev->dev, paddr)) {
-> +				dev_kfree_skb(skb);
-> +				break;
-> +			}
-> +
-> +			bp->rx_skbuff[entry] =3D skb;
 
-This bit looks good.
+However, most of the text you get is pure garbage.
 
->  			if (entry =3D=3D RX_RING_SIZE - 1)
->  				paddr |=3D MACB_BIT(RX_WRAP);
-> @@ -1040,6 +1045,10 @@ static int macb_start_xmit(struct sk_buff *skb, st=
-ruct net_device *dev)
->  	netdev_vdbg(bp->dev, "Allocated ring entry %u\n", entry);
->  	mapping =3D dma_map_single(&bp->pdev->dev, skb->data,
->  				 len, DMA_TO_DEVICE);
-> +	if (dma_mapping_error(&bp->pdev->dev, mapping)) {
-> +		dev_kfree_skb(skb);
+The only useful thing above is the function name. Due to the amount of
+different kernel code versions and various configurations being used, the
+kernel address and the offset into the function are not really helpful in
+determining where the problem actually occured.
 
-You need to unlock bp->lock before returning.  Also, I think this should
-be kfree_skb(), as that can be observed through dropwatch whereas
-dev_kfree_skb() is completely silent.
+Too often the result of someone looking at a stack dump is asking the person
+who sent it for a translation for one or more 'addr2line' translations. Which
+slows down the entire process of debugging the issue (and really annoying).
 
-Ben.
+The "improve_stack" script (wanted: better name) is an attempt to make the
+output more useful and easy to work with by translating all kernel addresses
+in the stack dump into line numbers. Which means that the stack dump we saw
+before would look like this:
 
-> +		return NETDEV_TX_OK;
-> +	}
-> =20
->  	tx_skb =3D &bp->tx_skb[entry];
->  	tx_skb->skb =3D skb;
+[    6.906437]  [<kernel/backtracetest.c:73>] ? backtrace_test_irq_callback+0x20/0x20
+[    6.907121]  [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
+[    6.907640]  [<kernel/backtracetest.c:40 kernel/backtracetest.c:77>] backtrace_regression_test+0x38/0x110
+[    6.908281]  [<fs/proc/generic.c:445>] ? proc_create_data+0xa0/0xd0
+[    6.908870]  [<kernel/kallsyms.c:611>] ? proc_modules_init+0x22/0x22
+[    6.909480]  [<init/main.c:696>] do_one_initcall+0xc2/0x1e0
 
---=20
-Ben Hutchings
-All the simple programs have been written, and all the good names taken.
+It's pretty obvious why this is better than the previous stack dump before.
 
---=-owIvHiavApekxpCxz3hC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Usage is pretty simple:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+	./improve_stack.sh [vmlinux] [base path]
 
-iQIVAwUAUwk9Gee/yOyVhhEJAQr+kBAAwnAsudRcIW7gfaz1uzH0TzvzLlP2s2Y/
-PrTAybrE5Rk1pOaHknjH2SOUEh8sBY5RZ8D8MUjqn/l9RYpKPd0ebbziXTSzQzyP
-QAzrh8OtsSkm12O1ZUmN03lrtWqVG5rvJiISWqwCUGb7fb0eBDy+a6TPsurD3wVh
-KGj2f5hNt4v3zf0Wow6yKYnTUFeayr85/dIl47wlSbf8wSRRMbmHFJi5vtICPZW+
-1J3J4IjdkbjvInwVf3fmCI5i054Mdb1vMxrPP4MNW0mAqPwu0gd1V9QH1RnvYmCY
-l6KPkDb4JnAMiK1OAFSIFJ6zD7FAfVmE1P843yfpH0mJPPgtMt702PreLmfmreUF
-b32JE6ZwfrGg1nUgdm76nQ89vwoSdU7xsw5g36cVel7ALndIbQsvBR/zEVPjy4B4
-qeRBIu+ilBAkZGT69nG7thgC+KFUEDwZ+83A+nwx2f+7zXu2AEibpH6iIH/gTUMG
-Rq4AU9hDFMzVR9gwmbuMOzLMhcDsA/ZPn6SeY1XSsxIk96/Y84qCOmLhM+XI50Mm
-jqXn5GFM3CZ7RuKXknSxBK0xgcTrwa8AiPNnuwAbHn6xMFubFA4jLeGk1Tf5Sr69
-Bx3UVPjpi9/MlYEWMkXkREl/NOWpK4exse1R0eRV6HC2kDLrTrE3l9KF1KqYw0ja
-jsX59nIzXKQ=
-=Tezt
------END PGP SIGNATURE-----
+Where vmlinux is the vmlinux to extract line numbers from and base path is
+the path that points to the root of the build tree, for example:
 
---=-owIvHiavApekxpCxz3hC--
+	./improve_stack.sh vmlinux /home/sasha/linux/
+
+And the stack trace should be piped through it (I, for example, just pipe
+the output of the serial console of my KVM test box through it).
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ scripts/improve_stack.sh |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
+ create mode 100755 scripts/improve_stack.sh
+
+diff --git a/scripts/improve_stack.sh b/scripts/improve_stack.sh
+new file mode 100755
+index 0000000..03a4a90
+--- /dev/null
++++ b/scripts/improve_stack.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++
++if [ $# != "2" ]; then
++	echo "Usage:"
++	echo "	$0 [vmlinux] [base path]"
++	exit 1
++fi
++
++vmlinux=$1
++basepath=$2
++
++while read line; do
++	# Let's see if we have an address in the line
++	if [[ $line =~ \[\<([^]]+)\>\]  ]]; then
++		# Translate address to line numbers
++		code=`addr2line -i -e $vmlinux ${BASH_REMATCH[1]}`
++
++		# Strip useless base path
++		code=${code//$basepath/""}
++
++		# In the case of inlines, move everything to same line
++		code=${code//$'\n'/' '}
++
++		# Replace old address with pretty line numbers
++		newline=${line//${BASH_REMATCH[1]}/$code}
++
++		echo "$newline"
++	else
++		# Nothing special in this line, show it as is
++		echo "$line"
++	fi
++done
+-- 
+1.7.2.5
+
