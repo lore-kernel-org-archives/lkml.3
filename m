@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751024AbaBWGIs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 01:08:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47050 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaBWGIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 01:08:47 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu> <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 22 Feb 2014 22:07:50 -0800
-To: Vince Weaver <vincent.weaver@maine.edu>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>
-Message-ID: <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com>
+	id S1751215AbaBWGLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 01:11:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:59984 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaBWGLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 01:11:07 -0500
+Message-ID: <1393135859.30960.8.camel@marge.simpson.net>
+Subject: Re: It BOOTS! 3.13.5 that is.
+From: Mike Galbraith <bitbucket@online.de>
+To: Gene Heskett <gheskett@wdtv.com>
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 23 Feb 2014 07:10:59 +0100
+In-Reply-To: <201402230018.34029.gheskett@wdtv.com>
+References: <201402222022.20370.gheskett@wdtv.com>
+	 <201402222300.35472.gheskett@wdtv.com>
+	 <CAKb7Uvj1mKeS=gR6xBQnz4J1Ft3kKSftrdCRF7md+CabGy--4g@mail.gmail.com>
+	 <201402230018.34029.gheskett@wdtv.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:spQ5oTDh8gd6Zifcww9QyLM5jk8PicK5pBZfxekNnoh
+ fNqxhrqzEjWxlR8qyZ0T49F5TF6wlzYvwj/UKVd6Y4gCxl1WxE
+ xG8Fk9FVobxqocn2DroIHooc93UgEMO0q6vAU6qluQGW/r1+OG
+ LM8d35R/TtNz69hTPMnZRmDDDy7gtCp0+f2SLco5sOBTeGDR9o
+ rnLueTozLihgWHQuKsZrCI4UNd3fW4q98TRL1sCI7vYec8pl7Q
+ QMMetqp/lyErTFN6qmi6jj6Yl6Fj0OMcmABp1qEMuhj/iR4u8c
+ n0NMj52Qyoqf1Z2PdJiMbdRJ8evSuDJYuNdzY6B4fX2Xpw/fN8
+ 0/qkzTuHACA4IlCM1LBd2YAqa08kbl+rT2R0rBwoXM6v2K9gar
+ LW+ffuhhTkzxQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd be interested in how rbp gets set, too.  It might just be a coincidence and the value in rbp has some other meaning here.
+On Sun, 2014-02-23 at 00:18 -0500, Gene Heskett wrote: 
+> On Saturday 22 February 2014, Ilia Mirkin wrote:
 
-On February 22, 2014 9:18:17 PM PST, Vince Weaver <vincent.weaver@maine.edu> wrote:
->On Fri, 21 Feb 2014, H. Peter Anvin wrote:
->
->> Error 6 reflects a write in userspace to a not-present page.
->> 
->> Since your previous trace indicates that the value of the register in
->question
->> is a different one, I'm guessing that what we have here is PEBS
->getting
->> activated.  0x120 is 2*0x90, and 0x90 is the size of a 64-bit PEBS
->record.
->
->I'm having problems generating a replayable syscall trace that exhibits
->
->the problem.
->
->It turns out that the segfault address listed (the multiple of 0x120) 
->happens to be the value in the RBP register at the time of the
->segfault.
->
->That's odd, as the instruction is
->	movdqa %xmm0,(%rdi)
->and rdi is the valid mmap address of the perf ring buffer
->	rdi            0xf7768000	4151738368
->
->so I'm not sure why RBP is involved at all.
->
->In all of the cases I've investigated the precise_ip value has been set
->
->for the problem event... but none of the events have been hardware
->events
->(software and breakpoint so far).  So probably not PEBS related?
->
->Vince
+> Sorry, no such beast As VIDEO_CX88.
+> 
+> Now that tells me something in the VIDEO dept isn't set, but what?
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Beast radar:
+find drivers -name Kconfig -exec grep -C5 VIDEO_CX88 {} \;
+
+Blip:
+config VIDEO_CX88
+        tristate "Conexant 2388x (bt878 successor) support"
+        depends on VIDEO_DEV && PCI && I2C && RC_CORE  <=== IFF signature
+        select I2C_ALGOBIT
+        select VIDEO_BTCX
+        select VIDEOBUF_DMA_SG
+--
+          TV cards.
+
+          To compile this driver as a module, choose M here: the
+          module will be called cx8800
+
