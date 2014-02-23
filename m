@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaBWRIB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 12:08:01 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:63892 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaBWRH6 (ORCPT
+	id S1751413AbaBWR1W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 12:27:22 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:40669 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaBWR1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 12:07:58 -0500
-Message-ID: <530A2ADF.902@gmail.com>
-Date: Sun, 23 Feb 2014 18:07:43 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sun, 23 Feb 2014 12:27:21 -0500
+Date: Sun, 23 Feb 2014 09:27:14 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
+ stand-alone
+Message-ID: <20140223172714.GA3774@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140219185850.GA23050@linux.vnet.ibm.com>
+ <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
+ <20140220015317.GL4250@linux.vnet.ibm.com>
+ <20140220020213.GA9907@windriver.com>
+ <20140220090039.GQ4250@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: linux-pm@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Pavel Machek <pavel@ucw.cz>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain
- look-up
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>	 <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com> <1392828827.3445.54.camel@pizza.hi.pengutronix.de>
-In-Reply-To: <1392828827.3445.54.camel@pizza.hi.pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220090039.GQ4250@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022317-0928-0000-0000-000006BCF946
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+On Thu, Feb 20, 2014 at 01:00:39AM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 19, 2014 at 09:02:13PM -0500, Paul Gortmaker wrote:
+> > [Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
+> > 
+> > > On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
+> > > > The kbuild test bot uncovered an implicit dependence on the
+> > > > trace header being present before rcu.h in ia64 allmodconfig
+> > > > that looks like this:
+> > > > 
+> > > > In file included from kernel/ksysfs.c:22:0:
+> > > > kernel/rcu/rcu.h: In function '__rcu_reclaim':
+> > > > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
+> > > > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
+> > > > cc1: some warnings being treated as errors
+> > > > 
+> > > > Looking at other rcu.h users, we can find that they all
+> > > > were sourcing the trace header in advance of rcu.h itself,
+> > > > as seen in the context of this diff.  There were also some
+> > > > inconsistencies as to whether it was or wasn't sourced based
+> > > > on the parent tracing Kconfig.
+> > > > 
+> > > > Rather than "fix" it at each use site, and have inconsistent
+> > > > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
+> > > > lets just source the trace header just once, in the actual consumer
+> > > > of it, which is rcu.h itself.  We include it unconditionally, as
+> > > > build testing shows us that is a hard requirement for some files.
+> > > > 
+> > > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> > > > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> > > 
+> > > Queued for 3.16, thank you, Paul!
+> > 
+> > Thanks!
+> > 
+> > I'm assuming you meant 3.15 -- unless of course you are allowing
+> > for an insurance policy for me possibly breaking the build.  ;)
+> 
+> Well, it does seem to be doing better in testing.  ;-)
+> 
+> I split off the stuff for the 3.15 merge window a few days back, but
+> if the lack of this patch is causing a problem, I could be talked into
+> slipping it in.
 
-On 19.02.2014 17:53, Philipp Zabel wrote:
-> Am Samstag, den 11.01.2014, 20:42 +0100 schrieb Tomasz Figa:
+And it does seem to be doing well, so I will be putting it forward for 3.15.
 
-[snip]
+							Thanx, Paul
 
->> +	pd = of_genpd_get_from_provider(&pd_args);
->> +	if (IS_ERR(pd))
->> +		return PTR_ERR(pd);
->> +
->> +	dev_dbg(dev, "adding to power domain %s\n", pd->name);
->> +
->> +	while (1) {
->> +		ret = pm_genpd_add_device(pd, dev);
->
-> Since pm_genpd_add_device is used here, no gpd_timing_data can be
-> provided. Do you have a plan to solve this? Should the timing data be
-> provided from the device tree?
-
-Hmm, a quick grep over kernel sources for genpd_.*_add_device
-gives just a single user of __pm_genpd_name_add_device(), with custom 
-timing data:
-
-> arch/arm/mach-shmobile/pm-rmobile.c-void rmobile_add_device_to_domain_td(const char *domain_name,
-> arch/arm/mach-shmobile/pm-rmobile.c-                                 struct platform_device *pdev,
-> arch/arm/mach-shmobile/pm-rmobile.c-                                 struct gpd_timing_data *td)
-> arch/arm/mach-shmobile/pm-rmobile.c-{
-> arch/arm/mach-shmobile/pm-rmobile.c-    struct device *dev = &pdev->dev;
-> arch/arm/mach-shmobile/pm-rmobile.c-
-> arch/arm/mach-shmobile/pm-rmobile.c:    __pm_genpd_name_add_device(domain_name, dev, td);
-> arch/arm/mach-shmobile/pm-rmobile.c-    if (pm_clk_no_clocks(dev))
-> arch/arm/mach-shmobile/pm-rmobile.c-            pm_clk_add(dev, NULL);
-> arch/arm/mach-shmobile/pm-rmobile.c-}
-> arch/arm/mach-shmobile/pm-rmobile.c-
-> arch/arm/mach-shmobile/pm-rmobile.c-void rmobile_add_devices_to_domains(struct pm_domain_device data[],
-> arch/arm/mach-shmobile/pm-rmobile.c-                                int size)
-> arch/arm/mach-shmobile/pm-rmobile.c-{
-> arch/arm/mach-shmobile/pm-rmobile.c-    struct gpd_timing_data latencies = {
-> arch/arm/mach-shmobile/pm-rmobile.c-            .stop_latency_ns = DEFAULT_DEV_LATENCY_NS,
-> arch/arm/mach-shmobile/pm-rmobile.c-            .start_latency_ns = DEFAULT_DEV_LATENCY_NS,
-> arch/arm/mach-shmobile/pm-rmobile.c-            .save_state_latency_ns = DEFAULT_DEV_LATENCY_NS,
-> arch/arm/mach-shmobile/pm-rmobile.c-            .restore_state_latency_ns = DEFAULT_DEV_LATENCY_NS,
-> arch/arm/mach-shmobile/pm-rmobile.c-    };
-> arch/arm/mach-shmobile/pm-rmobile.c-    int j;
-> arch/arm/mach-shmobile/pm-rmobile.c-
-> arch/arm/mach-shmobile/pm-rmobile.c-    for (j = 0; j < size; j++)
-> arch/arm/mach-shmobile/pm-rmobile.c-            rmobile_add_device_to_domain_td(data[j].domain_name,
-> arch/arm/mach-shmobile/pm-rmobile.c-                                            data[j].pdev, &latencies);
-> arch/arm/mach-shmobile/pm-rmobile.c-}
-
-Moreover the timings used there are just defaults, which makes me wonder 
-if there is any reason to specify them explicitly. Even more interesting 
-is the fact that genpd code can measure those latencies itself.
-
-Do you have a particular use case for those timing data or just 
-wondering? I don't think we need to implement support for them right 
-away, if there is no real need to do so. The code and bindings can be 
-extended later to handle them, if needed.
-
-As for whether DT is appropriate place to define them, I'm not quite 
-sure. Stop and start latencies look like hardware parameters, but state 
-save and restore are likely to be driver-specific, as it depends on 
-driver code how much time it takes to save and restore needed state 
-(e.g. driver with register cache will not need to do any state save), if 
-I understand these timing data correctly.
-
-Best regards,
-Tomasz
