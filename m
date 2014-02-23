@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413AbaBWR1W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 12:27:22 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40669 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaBWR1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 12:27:21 -0500
-Date: Sun, 23 Feb 2014 09:27:14 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
- stand-alone
-Message-ID: <20140223172714.GA3774@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140219185850.GA23050@linux.vnet.ibm.com>
- <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
- <20140220015317.GL4250@linux.vnet.ibm.com>
- <20140220020213.GA9907@windriver.com>
- <20140220090039.GQ4250@linux.vnet.ibm.com>
+	id S1751483AbaBWR6M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 12:58:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51791 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132AbaBWR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 12:58:11 -0500
+Message-ID: <530A3668.2090902@zytor.com>
+Date: Sun, 23 Feb 2014 09:56:56 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140220090039.GQ4250@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022317-0928-0000-0000-000006BCF946
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly processor
+ feature names
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org> <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org> <20140222204936.GA2534@pd.tnic> <20140222210038.GA19867@thin> <1b6550ce-40bd-4fc4-a3e4-37997da17973@email.android.com> <20140222213640.GA3409@thin>
+In-Reply-To: <20140222213640.GA3409@thin>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 01:00:39AM -0800, Paul E. McKenney wrote:
-> On Wed, Feb 19, 2014 at 09:02:13PM -0500, Paul Gortmaker wrote:
-> > [Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
-> > 
-> > > On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
-> > > > The kbuild test bot uncovered an implicit dependence on the
-> > > > trace header being present before rcu.h in ia64 allmodconfig
-> > > > that looks like this:
-> > > > 
-> > > > In file included from kernel/ksysfs.c:22:0:
-> > > > kernel/rcu/rcu.h: In function '__rcu_reclaim':
-> > > > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-> > > > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-> > > > cc1: some warnings being treated as errors
-> > > > 
-> > > > Looking at other rcu.h users, we can find that they all
-> > > > were sourcing the trace header in advance of rcu.h itself,
-> > > > as seen in the context of this diff.  There were also some
-> > > > inconsistencies as to whether it was or wasn't sourced based
-> > > > on the parent tracing Kconfig.
-> > > > 
-> > > > Rather than "fix" it at each use site, and have inconsistent
-> > > > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-> > > > lets just source the trace header just once, in the actual consumer
-> > > > of it, which is rcu.h itself.  We include it unconditionally, as
-> > > > build testing shows us that is a hard requirement for some files.
-> > > > 
-> > > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > > > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > > 
-> > > Queued for 3.16, thank you, Paul!
-> > 
-> > Thanks!
-> > 
-> > I'm assuming you meant 3.15 -- unless of course you are allowing
-> > for an insurance policy for me possibly breaking the build.  ;)
+On 02/22/2014 01:36 PM, Josh Triplett wrote:
 > 
-> Well, it does seem to be doing better in testing.  ;-)
+> No, even after removing the ifdefs around the build rules as you
+> suggested (and v3's fixes for the resulting build issues, notably
+> changing some -y's to -$(CONFIG_X86_FEATURE_NAMES)), the makefiles still
+> manage to not build mkcpustr or cpustr.h, because nothing depends on it.
 > 
-> I split off the stuff for the 3.15 merge window a few days back, but
-> if the lack of this patch is causing a problem, I could be talked into
-> slipping it in.
 
-And it does seem to be doing well, so I will be putting it forward for 3.15.
+How could it miss the rule:
 
-							Thanx, Paul
+$(obj)/cpu.o: $(obj)/cpustr.h
+
+> I could change the build rules to generate an empty cpustr.h and avoid
+> this ifdef, but that'd require an additional ifdef block in the Makefile.
+
+Typically the way it is done is to generate the #ifdef *inside*
+cpustr.h.  However, cpustr.h is kind of special anyway so it probably
+doesn't matter.
+
+	-hpa
+
 
