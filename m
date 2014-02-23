@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaBWNDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 08:03:43 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:41668 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaBWNDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 08:03:42 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Mike Galbraith <bitbucket@online.de>
-Subject: Re: It BOOTS! 3.13.5 that is.
-Date: Sun, 23 Feb 2014 08:03:30 -0500
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201402222022.20370.gheskett@wdtv.com> <201402230018.34029.gheskett@wdtv.com> <1393135859.30960.8.camel@marge.simpson.net>
-In-Reply-To: <1393135859.30960.8.camel@marge.simpson.net>
+	id S1751260AbaBWNFo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 08:05:44 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:34684 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaBWNFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 08:05:42 -0500
+Message-ID: <5309F1F8.6040006@oracle.com>
+Date: Sun, 23 Feb 2014 08:04:56 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, mpm@selenic.com,
+        cpw@sgi.com, kosaki.motohiro@jp.fujitsu.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, xemul@parallels.com, riel@redhat.com,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/11] mempolicy: apply page table walker on queue_pages_range()
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-12-git-send-email-n-horiguchi@ah.jp.nec.com> <5306F29D.8070600@gmail.com> <530785b2.d55c8c0a.3868.ffffa4e1SMTPIN_ADDED_BROKEN@mx.google.com> <53078A53.9030302@oracle.com> <1393003512-qjyhnu0@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1393003512-qjyhnu0@n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201402230803.31091.gheskett@wdtv.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 February 2014, Mike Galbraith wrote:
->On Sun, 2014-02-23 at 00:18 -0500, Gene Heskett wrote:
->> On Saturday 22 February 2014, Ilia Mirkin wrote:
->> 
->> Sorry, no such beast As VIDEO_CX88.
->> 
->> Now that tells me something in the VIDEO dept isn't set, but what?
->
->Beast radar:
->find drivers -name Kconfig -exec grep -C5 VIDEO_CX88 {} \;
->
->Blip:
->config VIDEO_CX88
->        tristate "Conexant 2388x (bt878 successor) support"
->        depends on VIDEO_DEV && PCI && I2C && RC_CORE  <=== IFF signature
->        select I2C_ALGOBIT
->        select VIDEO_BTCX
->        select VIDEOBUF_DMA_SG
->--
->          TV cards.
->
->          To compile this driver as a module, choose M here: the
->          module will be called cx8800
+On 02/21/2014 12:25 PM, Naoya Horiguchi wrote:
+> On Fri, Feb 21, 2014 at 12:18:11PM -0500, Sasha Levin wrote:
+>> On 02/21/2014 11:58 AM, Naoya Horiguchi wrote:
+>>> On Fri, Feb 21, 2014 at 01:30:53AM -0500, Sasha Levin wrote:
+>>>> On 02/10/2014 04:44 PM, Naoya Horiguchi wrote:
+>>>>> queue_pages_range() does page table walking in its own way now,
+>>>>> so this patch rewrites it with walk_page_range().
+>>>>> One difficulty was that queue_pages_range() needed to check vmas
+>>>>> to determine whether we queue pages from a given vma or skip it.
+>>>>> Now we have test_walk() callback in mm_walk for that purpose,
+>>>>> so we can do the replacement cleanly. queue_pages_test_walk()
+>>>>> depends on not only the current vma but also the previous one,
+>>>>> so we use queue_pages->prev to keep it.
+>>>>>
+>>>>> ChangeLog v2:
+>>>>> - rebase onto mmots
+>>>>> - add VM_PFNMAP check on queue_pages_test_walk()
+>>>>>
+>>>>> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+>>>>> ---
+>>>>
+>>>> Hi Naoya,
+>>>>
+>>>> I'm seeing another spew in today's -next, and it seems to be related
+>>>> to this patch. Here's the spew (with line numbers instead of kernel
+>>>> addresses):
+>>>
+>>> Thanks. (line numbers translation is very helpful.)
+>>>
+>>> This bug looks strange to me.
+>>> "kernel BUG at mm/hugetlb.c:3580" means we try to do isolate_huge_page()
+>>> for !PageHead page. But the caller queue_pages_hugetlb() gets the page
+>>> with "page = pte_page(huge_ptep_get(pte))", so it should be the head page!
+>>>
+>>> mm/hugetlb.c:3580 is VM_BUG_ON_PAGE(!PageHead(page), page), so we expect to
+>>> have dump_page output at this point, is that in your kernel log?
+>>
+>> This is usually a sign of a race between that code and thp splitting, see
+>> https://lkml.org/lkml/2013/12/23/457 for example.
+> 
+> queue_pages_hugetlb() is for hugetlbfs, not for thp, so I don't think that
+> it's related to thp splitting, but I agree it's a race.
+> 
+>> I forgot to add the dump_page output to my extraction process and the complete logs all long gone.
+>> I'll grab it when it happens again.
+> 
+> Thank you. It'll be useful.
 
-That part I think (thats probably a bad thing) that because I didn't have 
-SIMPLE_TUNER enabled, which I see is but its not working in this old boot 
-either, but its at least seen, but there is no evidence that 
-/lib/firmware/dvb-fe-or51132-vsb.fw is being loaded even in this old boot.
+And here it is:
 
-The instructions are ambiguous at best in the make xconfig help screen:
+[  755.524966] page:ffffea0000000000 count:0 mapcount:1 mapping:          (null) index:0x0
+[  755.526067] page flags: 0x0()
 
-Oren OR51132 based (DVB_OR51132)
-
-CONFIG_DVB_OR51132:
-
-An ATSC 8VSB and QAM64/256 tuner module. Say Y when you want
-to support this frontend.
-
-This driver needs external firmware. Please use the commands
-"<kerneldir>/Documentation/dvb/get_dvb_firmware or51132_vsb" and/or
-"<kerneldir>/Documentation/dvb/get_dvb_firmware or51132_qam" to
-download firmwares for 8VSB and QAM64/256, respectively. Copy them to
-/usr/lib/hotplug/firmware or /lib/firmware (depending on
-configuration of firmware hotplug).
-
-Symbol: DVB_OR51132 [=m]
-Type : tristate
-Prompt: Oren OR51132 based
--------------------
-That file looks like the download and strip script to put those 2 files
-into /lib/firmware, and both of those firmwares are present in 
-/lib/firmware, but how they actually get loaded is _not_ at all clear.
-
-There is in this machine, a /usr/lib/hotplug/firmware tree also, were these 
-files miss-placed?  I can put copies both places I guess.  Actually, they 
-were simlinks, and that was missing, so I made one.  Reboot again after 
-adding simple_tuner.
+Followed by the same stack trace as before.
 
 
-
-
-Thanks Mike, Ilia.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
+Thanks,
+Sasha
 
