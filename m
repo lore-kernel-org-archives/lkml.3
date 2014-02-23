@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaBWBo4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 20:44:56 -0500
-Received: from mail-ve0-f195.google.com ([209.85.128.195]:56898 "EHLO
-	mail-ve0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240AbaBWBoy (ORCPT
+	id S1752142AbaBWC0l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 21:26:41 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:49389 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaBWC0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 20:44:54 -0500
+	Sat, 22 Feb 2014 21:26:40 -0500
+Date: Sat, 22 Feb 2014 18:26:37 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        Josh Wu <josh.wu@atmel.com>, linux-kernel@vger.kernel.org,
+        dedekind1@gmail.com
+Subject: Re: [PATCH] MTD: atmel_nand: POI fall back is not an issue: change
+ log level
+Message-ID: <20140223022637.GD11836@norris-Latitude-E6410>
+References: <1392204414-20700-1-git-send-email-nicolas.ferre@atmel.com>
+ <20140212114200.GA11498@piout.net>
 MIME-Version: 1.0
-Reply-To: paulcompaoree@gmail.com
-Date: Sun, 23 Feb 2014 02:28:25 +0100
-Message-ID: <CAFftWXctPNSK_cnjoRS=KdEDKE9m8dkVL3_DUWBfnAMGZZOfgw@mail.gmail.com>
-Subject: YOUR URGENT RESPONSE IS NEEDED
-From: "Mr. Paul Compaoree" <mccc214@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140212114200.GA11498@piout.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+On Wed, Feb 12, 2014 at 12:42:00PM +0100, Alexandre Belloni wrote:
+> Small nitpick, subject should read PIO, not POI.
 
-I am Mr. Paul Compaoree, the head of file department Manager of Banque
-Internationale du Burkina (BIB/UBA) Ouagadougou Burkina Faso. In my
-department I discover an  abandoned sum of (US$10.5M) The fund belongs
-to our deceased customer who died with his entire family in Iraq War
-2006, leaving nobody for the claim and as such, I decided to contact
-you to enable us claim the fund. Your share is 40% while 60% for me.
-This transaction is 100% risk free.
+Amended the commit message and pushed to l2-mtd.git. Thanks!
 
-Then after the money is been transferred into your account, i will
-visit your country for an investment under your kind control. A lot of
-customers open private accounts with different Banks without the
-knowledge of their families and when they die, such money will be lost
-to the Bank unless someone comes to claim it. You have to contact my
-Bank directly as the real next of kin of this deceased account with
-next of kin application form which I will send to you immediately I
-hear from you.
-
- I am waiting for your urgent respond to enable us proceed further for
-the transfer.
-
-Yours Faithfully,
-Mr. Paul Compaoree
-Banque Internationale du Burkina (BIB/UBA) ouagadougou
-Burkina Faso.
-Tel:+226 65 37 29 22.
-NB: The fund is free from drug and laundering related offences.
+Brian
