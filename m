@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaBWVWl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:22:41 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:47310 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751618AbaBWVWj (ORCPT
+	id S1751834AbaBWVdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:33:11 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:51373 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaBWVdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:22:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjoJAPllClN5LJYe/2dsb2JhbABZgwaDQ7hdhVOBBxd0giUBAQUnExwjEAgDDgcDCSUPBSUDIROIBMZCFxaOTgeDJIEUBJgzilKHVoNBKA
-Date: Mon, 24 Feb 2014 08:22:31 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v5 2/10] xfs: Add support FALLOC_FL_COLLAPSE_RANGE for
- fallocate
-Message-ID: <20140223212231.GD4317@dastard>
-References: <1392741475-20063-1-git-send-email-linkinjeon@gmail.com>
+	Sun, 23 Feb 2014 16:33:09 -0500
+X-Originating-IP: 50.43.14.201
+Date: Sun, 23 Feb 2014 13:32:52 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
+ processor feature names
+Message-ID: <20140223213252.GA14411@thin>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
+ <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
+ <20140222204936.GA2534@pd.tnic>
+ <20140222210038.GA19867@thin>
+ <1b6550ce-40bd-4fc4-a3e4-37997da17973@email.android.com>
+ <20140222213640.GA3409@thin>
+ <530A3668.2090902@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392741475-20063-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <530A3668.2090902@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 19, 2014 at 01:37:55AM +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+On Sun, Feb 23, 2014 at 09:56:56AM -0800, H. Peter Anvin wrote:
+> On 02/22/2014 01:36 PM, Josh Triplett wrote:
+> > 
+> > No, even after removing the ifdefs around the build rules as you
+> > suggested (and v3's fixes for the resulting build issues, notably
+> > changing some -y's to -$(CONFIG_X86_FEATURE_NAMES)), the makefiles still
+> > manage to not build mkcpustr or cpustr.h, because nothing depends on it.
 > 
-> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for XFS.
+> How could it miss the rule:
 > 
-> The semantics of this flag are following:
-> 1) It collapses the range lying between offset and length by removing any data
->    blocks which are present in this range and than updates all the logical
->    offsets of extents beyond "offset + len" to nullify the hole created by
->    removing blocks. In short, it does not leave a hole.
-> 2) It should be used exclusively. No other fallocate flag in combination.
-> 3) Offset and length supplied to fallocate should be fs block size aligned
->    in case of xfs and ext4.
-> 4) Collaspe range does not work beyond i_size.
+> $(obj)/cpu.o: $(obj)/cpustr.h
+
+Because, in order to un-break the build, v3 wraps an ifdef around that
+dependency, to prevent building cpustr.h.  Otherwise, the rule for
+cpustr.h tries and fails to build mkcpustr.
+
+> > I could change the build rules to generate an empty cpustr.h and avoid
+> > this ifdef, but that'd require an additional ifdef block in the Makefile.
 > 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-.....
-> +	while (!error && !done) {
-> +		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
-> +		tp->t_flags |= XFS_TRANS_RESERVE;
+> Typically the way it is done is to generate the #ifdef *inside*
+> cpustr.h.  However, cpustr.h is kind of special anyway so it probably
+> doesn't matter.
 
-This probably shouldn't use XFS_TRANS_RESERVE. If we are at ENOSPC,
-then the operation simply fails. Yes, we've already punched the
-hole, so we shouldn't get ENOSPC here, but I don't think it's worth
-dipping into the reserve pool as it has much more important uses...
+Given that only one file includes cpustr.h, and that seems unlikely to
+ever change, moving the ifdef inside the header doesn't seem that
+worthwhile.  If it were included more than once, it would definitely
+make sense to generate a stub header.
 
-You don' tneed to resent the entire patch for this - I can remove it
-directly myself....
-
-Otherwise it looks good, so consider it
-
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+- Josh Triplett
