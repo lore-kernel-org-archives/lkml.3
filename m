@@ -1,167 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaBWA4f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 19:56:35 -0500
-Received: from mta.cujae.edu.cu ([200.55.139.24]:42947 "EHLO
-	mtaext1.cujae.edu.cu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752070AbaBWA4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 19:56:33 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.9
-X-Spam-Processed: udio.cujae.edu.cu, Sat, 22 Feb 2014 19:55:27 -0500
- (not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: acabrera@udio.cujae.edu.cu
-X-MDRemoteIP: 10.71.0.97
-X-Return-Path: acabrera@udio.cujae.edu.cu
-X-Envelope-From: acabrera@udio.cujae.edu.cu
-Message-ID: <53097091.50204@udio.cujae.edu.cu>
-Date: Sat, 22 Feb 2014 19:52:49 -0800
-From: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64;
- rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Wim Van Sebroeck <wim@iguana.be>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
-References: <cover.1392212059.git.michal.simek@xilinx.com>
- <7cbb10853a343c9d488346596f604909ab0668b9.1392212059.git.michal.simek@xilinx.com>
- <20140212171509.GB20012@roeck-us.net>
- <20140222184604.GB21504@spo001.leaseweb.com>
- <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net>
-In-Reply-To: <53093038.6000604@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752375AbaBWBEO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 20:04:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34331 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751973AbaBWBEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 20:04:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,527,1389772800"; 
+   d="scan'208";a="488078178"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: "David E. Box" <david.e.box@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com,
+        jacob.jun.pan@intel.com
+Subject: [PATCH RESEND] x86: iosf_mbi: Provide dummy functions if CONFIG_IOSF_MBI not set
+Date: Sat, 22 Feb 2014 17:02:32 -0800
+Message-Id: <1393117352-23717-1-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1392248063-16389-1-git-send-email-david.e.box@linux.intel.com>
+References: <1392248063-16389-1-git-send-email-david.e.box@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/2/2014 3:18 PM, Guenter Roeck wrote:
-> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
->> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
->>> Hi All,
->>>
->>>> Hi Michal,
->>>>
->>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
->>>>> Use of_property_read_u32 functions to clean probe function.
->>>>>
->>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
->>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
->>>>> ---
->>>>>
->>>>> Changes in v3:
->>>>> - Remove one if checking and use variable directly
->>>>>
->>>> Looks good.
->>>>
->>>> Another comment/remark.
->>>>
->>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
->>>>> -                    "clock-frequency", NULL);
->>>>> -
->>>>> -    if (pfreq == NULL) {
->>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
->>>>> "clock-frequency",&pfreq);
->>>>> +    if (rc) {
->>>>>           dev_warn(&pdev->dev,
->>>>>                "The watchdog clock frequency cannot be obtained\n");
->>>>>           no_timeout = true;
->>>>>       }
->>>>>
->>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>>> -                    "xlnx,wdt-interval", NULL);
->>>>> -    if (tmptr == NULL) {
->>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
->>>>> "xlnx,wdt-interval",
->>>>> + &xdev->wdt_interval);
->>>>> +    if (rc) {
->>>>>           dev_warn(&pdev->dev,
->>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
->>>>>           no_timeout = true;
->>>>> -    } else {
->>>>> -        xdev->wdt_interval = *tmptr;
->>>>>       }
->>>>>
->>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
->>>>> -                    "xlnx,wdt-enable-once", NULL);
->>>>> -    if (tmptr == NULL) {
->>>>> +    rc = of_property_read_u32(pdev->dev.of_node, 
->>>>> "xlnx,wdt-enable-once",
->>>>> + &enable_once);
->>>>> +    if (rc)
->>>>>           dev_warn(&pdev->dev,
->>>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
->>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
->>>>> -    }
->>>> All the above properties are optional. Is a warning really
->>>> warranted in this case ? I usually associate a warning with
->>>> something that is wrong, which is not the case here.
->>>>
->>>> I would encourage you to drop those warnings, but that should be
->>>> a separate patch.
->>> I agree with Guenter: these are not really warnings. Seperate patch 
->>> is thus welcome.
->> Hi
->>
->> I support Michal intention, I think it is a warning because device 
->> tree blob must have the "xlnx,wdt-enable-once" property specified in 
->> order to allow the system to be sure of the real value of this 
->> property. In addition to, this warning can be helpful to detect a 
->> wrong device tree specification.
->>
->
-> The dt documentation states that the properties are optional.
->
-> Optional properties:
-> - clock-frequency       : Frequency of clock in Hz
-> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
->                           1 - Watchdog can be enabled just once
-> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock 
-> cycles,
-> <val> is integer from 8 to 31.
->
-> This clearly conflicts with your statement. An optional property
-> is just that, optional. If it warrants a warning, it must
-> not be optional. If you claim that not providing the properties
-> would be "wrong", why are they defined as optional ?
-Hi Guenter
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-I didn't know that these properties was classified as optional...
-I think that they should not be, because all xilinx watchog devices (at 
-least for microblaze processor)
-have these properties defined in theirs MPD files and theirs values can 
-be obtained during the
-hardware specification to device tree conversion.
-> What is your definition of "wrong" and "must have" ?
-what I mean for "must have" is: if these properties can be obtained
-for all xilinx watchdog devices they must be present in the device tree 
-because they allows
-the system (linux/user) to know exactly how a watchdog device is configured.
-Because these properties always can be obtained from hardware design 
-there is no
-reason to leave them out from the device tree. This is why I consider 
-that a device tree without
-these properties should be considered as "wrong" device tree.
-> How do you expect anyone to know that omitting those
-> "optional" properties is by some definition "wrong" ?
-I'm agree with you.
-Maybe these properties shouldn't be optional.
-For example suppose that "xlnx,wdt-enable-once" is missing in the device 
-tree,
-when a watchdog daemon ask for this property what is the obtained value ?
-Independently of this value, why do not warn the user about this missing 
-property
-when it can always be in the device tree ?
+Add iosf_mbi_available function for loadable modules.
+Add dummy functions to prevent symbol lookup errors on loadable modules.
+Clarify that the write opcode is to be used for iosf_mbi_modify().
+Changes Kconfig for IOSF_MBI to default built-in.
 
-Regards
-Alejandro
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+---
+ arch/x86/Kconfig                |    2 +-
+ arch/x86/include/asm/iosf_mbi.h |   39 +++++++++++++++++++++++++++++++++++----
+ arch/x86/kernel/iosf_mbi.c      |    6 ++++++
+ 3 files changed, 42 insertions(+), 5 deletions(-)
 
-
-
-
-50 Aniversario de la Cujae. Inaugurada por Fidel el 2 de diciembre de 1964  http://cujae.edu.cu
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d3b1f8b..e25baf1 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2385,7 +2385,7 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	bool
++	def_bool y
+ 	depends on PCI
+ 	---help---
+ 	  To be selected by modules requiring access to the Intel OnChip System
+diff --git a/arch/x86/include/asm/iosf_mbi.h b/arch/x86/include/asm/iosf_mbi.h
+index 8e71c79..1c93591 100644
+--- a/arch/x86/include/asm/iosf_mbi.h
++++ b/arch/x86/include/asm/iosf_mbi.h
+@@ -5,6 +5,8 @@
+ #ifndef IOSF_MBI_SYMS_H
+ #define IOSF_MBI_SYMS_H
+ 
++#ifdef CONFIG_IOSF_MBI
++
+ #define MBI_MCR_OFFSET		0xD0
+ #define MBI_MDR_OFFSET		0xD4
+ #define MBI_MCRX_OFFSET		0xD8
+@@ -50,6 +52,8 @@
+ #define BT_MBI_PCIE_READ	0x00
+ #define BT_MBI_PCIE_WRITE	0x01
+ 
++extern bool iosf_mbi_available(void);
++
+ /**
+  * iosf_mbi_read() - MailBox Interface read command
+  * @port:	port indicating subunit being accessed
+@@ -60,7 +64,7 @@
+  * Locking is handled by spinlock - cannot sleep.
+  * Return: Nonzero on error
+  */
+-int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
++extern int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
+ 
+ /**
+  * iosf_mbi_write() - MailBox unmasked write command
+@@ -72,19 +76,46 @@ int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr);
+  * Locking is handled by spinlock - cannot sleep.
+  * Return: Nonzero on error
+  */
+-int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
++extern int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr);
+ 
+ /**
+  * iosf_mbi_modify() - MailBox masked write command
+  * @port:	port indicating subunit being accessed
+- * @opcode:	port specific read or write opcode
++ * @opcode:	port specific write opcode
+  * @offset:	register address offset
+  * @mdr:	register data being modified
+  * @mask:	mask indicating bits in mdr to be modified
+  *
++ * Use write opcode for this function.
+  * Locking is handled by spinlock - cannot sleep.
+  * Return: Nonzero on error
+  */
+-int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
++extern int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask);
++
++#else /* CONFIG_IOSF_MBI is not enabled */
++static inline
++bool iosf_mbi_available(void)
++{
++	return false;
++}
++
++static inline
++int iosf_mbi_read(u8 port, u8 opcode, u32 offset, u32 *mdr)
++{
++	return 0;
++}
++
++static inline
++int iosf_mbi_write(u8 port, u8 opcode, u32 offset, u32 mdr)
++{
++	return 0;
++}
++
++static inline
++int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
++{
++	return 0;
++}
++#endif /* CONFIG_IOSF_MBI */
+ 
+ #endif /* IOSF_MBI_SYMS_H */
+diff --git a/arch/x86/kernel/iosf_mbi.c b/arch/x86/kernel/iosf_mbi.c
+index c3aae66..d3803c6 100644
+--- a/arch/x86/kernel/iosf_mbi.c
++++ b/arch/x86/kernel/iosf_mbi.c
+@@ -177,6 +177,12 @@ int iosf_mbi_modify(u8 port, u8 opcode, u32 offset, u32 mdr, u32 mask)
+ }
+ EXPORT_SYMBOL(iosf_mbi_modify);
+ 
++bool iosf_mbi_available(void)
++{
++	return mbi_pdev;
++}
++EXPORT_SYMBOL(iosf_mbi_available);
++
+ static int iosf_mbi_probe(struct pci_dev *pdev,
+ 			  const struct pci_device_id *unused)
+ {
+-- 
+1.7.10.4
 
