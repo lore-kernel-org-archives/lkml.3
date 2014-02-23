@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaBWDop (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 22:44:45 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:40301 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaBWDoo (ORCPT
+	id S1752620AbaBWDpG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 22:45:06 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:43945 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaBWDpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 22:44:44 -0500
+	Sat, 22 Feb 2014 22:45:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <201402222242.45552.gheskett@wdtv.com>
-References: <201402222022.20370.gheskett@wdtv.com>
-	<CAKb7UvjertO2FEPL+5_wKhrFVfYA5_dBe70EoyY9fZ881CY-GQ@mail.gmail.com>
-	<201402222242.45552.gheskett@wdtv.com>
-Date: Sat, 22 Feb 2014 22:44:43 -0500
-X-Google-Sender-Auth: 8u3cTjQ_tCLqyrY5C7hDIR88ydA
-Message-ID: <CAKb7Uvhj3S88VOeprPsOQpzrCzOn3nB5CeDtDUhCxabLuPuPCA@mail.gmail.com>
-Subject: Re: It BOOTS! 3.13.5 that is.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Originating-IP: [42.61.198.132]
+In-Reply-To: <CAKb7Uvh=SQVhxOVEf5bFqhbiythcH4S+xP4OsXjF0xCsVjVk0Q@mail.gmail.com>
+References: <CAMVG2suzT1vphjHAUFCsbVBsd22U69jzQaKVwnEyGLBu6eGOSw@mail.gmail.com>
+	<CAKb7Uvh8jPNcXAfVYkdC3y0wQ7icc52Cid_fN5bpvdBf12KPag@mail.gmail.com>
+	<CAMVG2stJPQhdmhVDJY8a93xjAWUtNptBbTv=KhAswBNfE+ECYA@mail.gmail.com>
+	<CAKb7Uvh=SQVhxOVEf5bFqhbiythcH4S+xP4OsXjF0xCsVjVk0Q@mail.gmail.com>
+Date: Sun, 23 Feb 2014 11:45:02 +0800
+Message-ID: <CAMVG2stzaW9UeosJYL_Rk2JcKFHCPpay5qN1w0yZwzvf63K6=w@mail.gmail.com>
+Subject: Re: nouveau graphical corruption in 3.13.2
+From: Daniel J Blueman <daniel@quora.org>
+To: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
+        Dave Airlie <airlied@linux.ie>
+Cc: "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 10:42 PM, Gene Heskett <gheskett@wdtv.com> wrote:
-> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>On Sat, Feb 22, 2014 at 8:22 PM, Gene Heskett <gheskett@wdtv.com> wrote:
->>> But my tv card isn't being found by kaffeine.  It is this card:
->>>
->>> 01:08.0 Multimedia video controller: Conexant Systems, Inc.
->>> CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
->>>
->>>         Subsystem: pcHDTV Device 3000
->>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>         Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
->>>         Capabilities: [44] Vital Product Data <?>
->>>         Capabilities: [4c] Power Management version 2
->>>
->>> 01:08.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3 PCI
->>> Video and Audio Decoder [MPEG Port] (rev 05)
->>>
->>>         Subsystem: pcHDTV Device 3000
->>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>         Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
->>>         Capabilities: [4c] Power Management version 2
->>>
->>> From an lspci
->>>
->>> In a make xconfig, I cannot find this specific card in the list of DVB
->>> front ends.  What modules do I need to make sure are being built?
+On 9 February 2014 02:57, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
+> On Sat, Feb 8, 2014 at 10:38 AM, Daniel J Blueman <daniel@quora.org> wrote:
+>> Interestingly, there was graphical failure booting 3.6.11, even
+>> nvidia-current fails to initialise, but these two issues could be due
+>> to running the Xorg stack in Ubuntu 14.04 pre-release. Using
+>> nouveau.noaccel=1 works great for the first X session, but after
+>> logging out, lightdm and the next session experiences this consistent
+>> screen corruption:
 >>
->>You're looking for VIDEO_CX88 ("Conexant 2388x (bt878 successor)
->>support") and its various sub-options (esp CX88_DVB). iirc the
->>pchdtv3000 had a OR51132 tuner, but right now the config is set to
->>auto-select a whole bunch of tuners if you have
->>MEDIA_SUBDRV_AUTOSELECT turned on. Otherwise make sure to select that
->>tuner device. (Hm, I appear to have both OR51132 and CX22702 enabled,
->>and I have that same card.)
->>
->>  -ilia
-> or51132 rings a bell and is enabled, CX22702 is not.  And I don't seem to
-> be able to find the CX88** at all.  I'll give the CX22702 a shot, thanks a
-> bunch ilia.
+>> http://quora.org/nouveau-corruption.jpg
+>
+> Does that just happen in 3.6.11 or even in 3.13? If the latter, that.
+> points to some key lack of understanding of... something. With
+> noaccel, we're not using pgraph or anything fancy -- it's just a
+> framebuffer, basically. So if we can't even render _that_ right...
+>
+> Hopefully someone else will pipe up re your other issues -- my
+> knowledge base on this is exhausted :(
 
-grep CX88 .config
+Interestingly, it turns out that the screen corruption occurs on every
+boot (booting with nouveau.noaccel=1 for now), and I can consistently
+work around it by one suspend-resume cycle.
 
-If it says "not set" for things like CONFIG_VIDEO_CX88_DVB, you won't
-get anything to work.
+To that effect, I've captured kernel message output booting 3.14-rc3
+with 'nouveau.noaccel=1 nouveau.debug=trace,DEVINIT=spam drm.debug=0x6
+log_buf_len=16M', and performed a suspend-resume cycle:
+http://quora.org/nouveau-log.txt
 
-  -ilia
+Ben et al, would some specific register tracing or otherwise help to
+locate the issue?
+-- 
+Daniel J Blueman
