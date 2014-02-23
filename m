@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaBWVkE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:40:04 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52188 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaBWVkB (ORCPT
+	id S1752104AbaBWV4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:56:11 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:35765 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaBWV4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:40:01 -0500
-Message-Id: <20140223212736.333718121@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:08 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc <linuxppc-dev@lists.ozlabs.org>
-Subject: [patch 01/26] powerpc: irq: Use generic_handle_irq
-References: <20140223212703.511977310@linutronix.de>
-Content-Disposition: inline; filename=powerpc-irq-use-generic-handle-irq.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 23 Feb 2014 16:56:09 -0500
+X-Originating-IP: 50.43.14.201
+Date: Sun, 23 Feb 2014 13:55:52 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Feng Tang <feng.tang@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Jacob Shin <jacob.shin@amd.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Landley <rob@landley.net>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Stephane Eranian <eranian@google.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 2/2] x86: Support compiling out human-friendly
+ processor feature names
+Message-ID: <20140223215552.GB14411@thin>
+References: <296de15c8addece6dada4ddac982b3934d8ff6fa.1393096111.git.josh@joshtriplett.org>
+ <4bdaeab748d3b51ef24576ca030b5eb80455aff8.1393098813.git.josh@joshtriplett.org>
+ <20140222204936.GA2534@pd.tnic>
+ <20140222210038.GA19867@thin>
+ <1b6550ce-40bd-4fc4-a3e4-37997da17973@email.android.com>
+ <20140222213640.GA3409@thin>
+ <530A3668.2090902@zytor.com>
+ <20140223213252.GA14411@thin>
+ <530A6BB4.2070407@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530A6BB4.2070407@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional change
+On Sun, Feb 23, 2014 at 01:44:20PM -0800, H. Peter Anvin wrote:
+> On 02/23/2014 01:32 PM, Josh Triplett wrote:
+> > 
+> > Because, in order to un-break the build, v3 wraps an ifdef around that
+> > dependency, to prevent building cpustr.h.  Otherwise, the rule for
+> > cpustr.h tries and fails to build mkcpustr.
+> > 
+> 
+> Why did it fail to build mkcpustr?  It would seem that mkcpustr is or at
+> least ought to be completely agnostic to any of these options.
+> 
+> The extra build machinery here seems completely pointless.
+> 
+> I agree that the #ifdef isn't a big deal, but all this extra machinery
+> really indicates something is odd.
+> 
+> Oh, and of course, looking at the v2 patchset, the problem is the ifdef
+> around the mkcapflags shell script which really shouldn't be necessary.
+>  We may have to add a rule to force capflags.c to be built even if
+> capflags.o is not requested, but that is fine.
+> 
+> That will cut down on the Makefile hacks considerably, and will avoid
+> this problem completely.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: ppc <linuxppc-dev@lists.ozlabs.org>
----
- arch/powerpc/kernel/irq.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Why have the build system waste time building several things that won't
+be used?  It seems like the Makefiles are exactly where we *should* have
+the ifdef machinery, rather than in source.  I'd happily add another
+ifdef in the Makefile rule that builds cpustr.h, to generate a stub
+cpustr.h header, and then remove one more ifdef in the source.
 
-Index: tip/arch/powerpc/kernel/irq.c
-===================================================================
---- tip.orig/arch/powerpc/kernel/irq.c
-+++ tip/arch/powerpc/kernel/irq.c
-@@ -465,7 +465,6 @@ static inline void check_stack_overflow(
- 
- void __do_irq(struct pt_regs *regs)
- {
--	struct irq_desc *desc;
- 	unsigned int irq;
- 
- 	irq_enter();
-@@ -487,11 +486,8 @@ void __do_irq(struct pt_regs *regs)
- 	/* And finally process it */
- 	if (unlikely(irq == NO_IRQ))
- 		__get_cpu_var(irq_stat).spurious_irqs++;
--	else {
--		desc = irq_to_desc(irq);
--		if (likely(desc))
--			desc->handle_irq(irq, desc);
--	}
-+	else
-+		generic_handle_irq(irq);
- 
- 	trace_irq_exit(regs);
- 
-
-
+- Josh Triplett
