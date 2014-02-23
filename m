@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaBWOVw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 09:21:52 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:43744 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaBWOVa (ORCPT
+	id S1752538AbaBWOZS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 09:25:18 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:58838 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaBWOV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 09:21:30 -0500
+	Sun, 23 Feb 2014 09:21:27 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
@@ -15,9 +15,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 10/16] pinctrl: mvebu: armada-375: provide generic mpp callbacks
-Date: Sun, 23 Feb 2014 15:21:08 +0100
-Message-Id: <1393165274-32492-11-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 11/16] pinctrl: mvebu: armada-38x: provide generic mpp callbacks
+Date: Sun, 23 Feb 2014 15:21:09 +0100
+Message-Id: <1393165274-32492-12-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1393165274-32492-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
  <1393165274-32492-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -36,7 +36,7 @@ Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Changelog:
 v3->v4:
-- also take care of new Armada 375 pinctrl driver
+- also take care of new Armada 38x pinctrl driver
 - use generic mpp helpers (Suggested by Thomas Petazzoni)
 
 Cc: Linus Walleij <linus.walleij@linaro.org>
@@ -48,32 +48,32 @@ Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pinctrl/mvebu/pinctrl-armada-375.c | 12 ++++++++++++
+ drivers/pinctrl/mvebu/pinctrl-armada-38x.c | 12 ++++++++++++
  1 file changed, 12 insertions(+)
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-375.c b/drivers/pinctrl/mvebu/pinctrl-armada-375.c
-index c741a347e3d8..30958873cd9b 100644
---- a/drivers/pinctrl/mvebu/pinctrl-armada-375.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-armada-375.c
-@@ -23,6 +23,18 @@
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
+index b3aa85e39a22..8b0455777a94 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
+@@ -22,6 +22,18 @@
  
  #include "pinctrl-mvebu.h"
  
 +static void __iomem *mpp_base;
 +
-+static int armada_375_mpp_ctrl_get(unsigned pid, unsigned long *config)
++static int armada_38x_mpp_ctrl_get(unsigned pid, unsigned long *config)
 +{
 +	return default_mpp_ctrl_get(mpp_base, pid, config);
 +}
 +
-+static int armada_375_mpp_ctrl_set(unsigned pid, unsigned long config)
++static int armada_38x_mpp_ctrl_set(unsigned pid, unsigned long config)
 +{
 +	return default_mpp_ctrl_set(mpp_base, pid, config);
 +}
 +
- static struct mvebu_mpp_mode mv88f6720_mpp_modes[] = {
- 	MPP_MODE(0,
- 		 MPP_FUNCTION(0x0, "gpio", NULL),
+ enum {
+ 	V_88F6810 = BIT(0),
+ 	V_88F6820 = BIT(1),
 -- 
 1.8.5.3
 
