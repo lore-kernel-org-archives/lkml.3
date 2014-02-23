@@ -1,217 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaBWTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 14:31:29 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:53910 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaBWTb0 (ORCPT
+	id S1751790AbaBWTiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 14:38:16 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:60832 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaBWTiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 14:31:26 -0500
+	Sun, 23 Feb 2014 14:38:14 -0500
+Date: Sun, 23 Feb 2014 11:38:17 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for v3.14-rc
+Message-ID: <20140223193817.GA25097@quad.lixom.net>
 MIME-Version: 1.0
-In-Reply-To: <20140223063426.GT4250@linux.vnet.ibm.com>
-References: <20140220083032.GN4250@linux.vnet.ibm.com>
-	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	<20140220181116.GT4250@linux.vnet.ibm.com>
-	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	<1392922421.28840.36.camel@triegel.csb>
-	<CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
-	<1393095223.28840.4914.camel@triegel.csb>
-	<CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
-	<20140223003933.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-Date: Sun, 23 Feb 2014 11:31:25 -0800
-X-Google-Sender-Auth: lFHbORT80dnTJzNxrF-i46LPGXQ
-Message-ID: <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 10:34 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> Adding and subtracting integers to/from a RCU-protected pointer makes
-> sense to me.
+Hi Linus,
 
-Ack. And that's normal "access to an object" behavior anyway.
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-> Adding and subtracting integers to/from an RCU-protected integer makes
-> sense in many practical cases, but I worry about the compiler figuring
-> out that the RCU-protected integer cancelled with some other integer.
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-I suspect that in practice, all the same normal rules apply - assuming
-that there aren't any "aliasing" integers, and that the compiler
-doesn't do any value prediction, the end result *should* be exactly
-the same as for the pointer arithmetic. So even if the standard were
-to talk about just pointers, I suspect that in practice, there really
-isn't anything that can go wrong.
+are available in the git repository at:
 
-> I don't feel all that good about subtractions involving an RCU-protected
-> pointer and another pointer, again due to the possibility of arithmetic
-> optimizations cancelling everything.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-Actually, pointer subtraction is a pretty useful operation, even
-without the "gotcha" case of "p-p" just to force a fake dependency.
-Getting an index, or indeed just getting an offset within a structure,
-is valid and common, and people will and should do it. It doesn't
-really matter for my suggested language: it should be perfectly fine
-to do something like
+for you to fetch changes up to a3db2bba6d1933a1398357ba6728c743bdab03e1:
 
-   ptr = atomic_read(pp, mo_consume);
-   index = ptr - array_base;
-   .. pass off 'index' to some function, which then re-generates the
-ptr using it ..
+  MAINTAINERS: add additional ARM BCM281xx/BCM11xxx maintainer (2014-02-23 05:57:03 -0800)
 
-and the compiler will have no trouble generating code, and the
-suggested "ordered wrt that object" guarantee is that the eventual
-ordering is between the pointer load and the use in the function,
-regardless of how it got there (ie turning it into an index and back
-is perfectly fine).
+----------------------------------------------------------------
+ARM: SoC fixes for 3.14-rc
 
-So both from a legalistic language wording standpoint, and from a
-compiler code generation standpoint, this is a non-issue.
+A collection of fixes for ARM platforms. Most are for DTS file fixups.
 
-Now, if you actually lose information (ie some chain there drops
-enough data from the pointer that it cannot be recovered, partially of
-fully), and then "regenerate" the object value by faking it, and still
-end up accessing the right data, but without actually going through
-any of the the pointer that you loaded, that falls under the
-"restricted" heading, and you must clearly at least partially have
-used other information. In which case the standard wording wouldn't
-guarantee anything at all.
+- DT conversion on OMAP which is still finding a few issues here and
+  there, but there's also a split of some of Gumstix Overo into 35xx and
+  36xx platforms -- keeping them common was more hassle than splitting
+  into separate DTs.
 
->> I don't see that you would need to protect anything but the first
->> read, so I think you need rcu_dereference() only on the initial
->> pointer access.
->
-> Let me try an example:
->
->         struct bar {
->                 int a;
->                 unsigned b;
->         };
->
->         struct foo {
->                 struct bar *next;
->                 char c;
->         };
->
->         struct bar bar1;
->         struct foo foo1;
->
->         struct foo *foop;
->
-> T1:     bar1.a = -1;
->         bar1.b = 2;
->         foo1.next = &bar;
->         foo1.c = "*";
->         atomic_store_explicit(&foop, &foo1, memory_order_release);
+- There's a couple of small stale code removal patches that we usually
+  queue for the next release instead, but they seemed harmless enough to
+  bring in now.
 
-So here, the standard requires that the store with release is an
-ordering to all preceding writes. So *all* writes to bar and foo are
-ordered, despite the fact that the pointer just points to foo.
+- Also, a fix for backlight on some PXA platforms, and a cache configuration
+  fix for Tegra, etc.
 
-> T2:     struct foo restrict *p;
->         struct bar *q;
->
->         p = atomic_load_explicit(&foop, memory_order_consume);
->         if (p == NULL)
->                 return -EDEALWITHIT;
->         q = p->next;  /* Ordered with above load. */
->         do_something(q->b); /* Non-decorated pointer, ordered? */
+----------------------------------------------------------------
+Aaro Koskinen (3):
+      ARM: OMAP1: nokia770: enable tahvo-usb
+      ARM: dts: N9/N950: fix boot hang with 3.14-rc1
+      ARM: dts: N900: add missing compatible property
 
-So the theory is that a compiler *could* do some value speculation now
-on "q", and with value speculation move the actual load of "q->p" up
-to before "foop" was even loaded.
+Florian Vaussard (4):
+      ARM: dts: omap3-tobi: Fix boot with OMAP36xx-based Overo
+      ARM: dts: omap3-tobi: Use the correct vendor prefix
+      ARM: dts: Add support for both OMAP35xx and OMAP36xx Overo/Tobi
+      Documentation: dt: OMAP: Update Overo/Tobi
 
-So in practice, I think we agree that this doesn't really affect
-compiler writers (because they'd have to do a whole lot extra code to
-break it intentionally, considering that they can't do
-value-prediction on 'p'), and we just need to make sure to close the
-hole in the language to make this safe, right?
+Jason Cooper (1):
+      ARM: dove: dt: revert PMU interrupt controller node
 
-Let me think about it some more, but my gut feel is that just tweaking
-the definition of what "ordered" means is sufficient.
+Marek Belisko (2):
+      ARM: dts: omap3-gta04: Add EOC irq gpio line handling.
+      ARM: dts: omap3-gta04: Fix mmc1 properties.
 
-So to go back to the suggested ordering rules (ignoring the "restrict"
-part, which is just to clarify that ordering through other means to
-get to the object doesn't matter), I suggested:
+Matt Porter (1):
+      MAINTAINERS: add additional ARM BCM281xx/BCM11xxx maintainer
 
- "the consume ordering guarantees the ordering between that
-  atomic read and the accesses to the object that the pointer
-  points to"
+NeilBrown (1):
+      ARM: dts: omap3-gta04: Fix 'aux' gpio key flags.
 
-and I think the solution is to just say that this ordering acts as a
-fence. It doesn't say exactly *where* the fence is, but it says that
-there is *some* fence between the load of the pointer and any/all
-accesses to the object through that pointer.
+Nishanth Menon (1):
+      ARM: OMAP2+: add missing ARCH_HAS_OPP
 
-So with that definition, the memory accesses that are dependent on 'q'
-will obviously be ordered. Now, they will *not* be ordered wrt the
-load of q itself, but they will be ordered wrt the load from 'foop' -
-because we've made it clear that there is a fence *somewhere* between
-that atomic_load and the load of 'q'.
+Olof Johansson (3):
+      Merge tag 'pwm_pxa_for_v3.14' of https://git.kernel.org/.../hzhuang1/linux into fixes
+      Merge tag 'omap-for-v3.14/fixes-against-rc1' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge tag 'mvebu-dt-fixes-3.14' of git://git.infradead.org/linux-mvebu into fixes
 
-So that handles the ordering guarantee you worry about.
+Paul Bolle (2):
+      ARM: OMAP2+: Remove MACH_NOKIA_N800
+      ARM: OMAP2+: Remove legacy macros for zoom platforms
 
-Now, the other worry is that this "fence" language would impose a
-*stricter* ordering, and that by saying there is a fence, we'd now
-constrain code generation on architectures like ARM and power, agreed?
-And we do not want to do that, other than make it clear that the whole
-"break the dependency chain through value speculation" cannot break it
-past the load from 'foop'. Are we in agreement?
+Pekon Gupta (2):
+      ARM: OMAP2+: gpmc: fix: DT NAND child nodes not probed when MTD_NAND is built as module
+      ARM: OMAP2+: gpmc: fix: DT ONENAND child nodes not probed when MTD_ONENAND is built as module
 
-So we do *not* want that fence to limit re-ordering of independent
-memory operations. All agreed?
+Peter Ujfalusi (2):
+      ARM: DTS: am335x-evmsk: Correct audio clock frequency
+      ARM: dts: am335x-evmsk: Fix mmc1 support
 
-But let's look at any independent chain, especially around that
-consuming load from '&foop'. Say we have some other memory access
-(adding them for visualization into your example):
+Shawn Guo (1):
+      ARM: imx6: build pm-imx6q.c independently of CONFIG_PM
 
-        p = atomic_load_explicit(&foop, memory_order_consume);
-        if (p == NULL)
-                return -EDEALWITHIT;
-        q = p->next;  /* Ordered with above load. */
-+       a = *b; *c = d;
-        do_something(q->b); /* Non-decorated pointer, ordered? */
+Stephen Warren (2):
+      ARM: tegra: fix RTC0 alias for Cardhu
+      ARM: tegra: only run PL310 init on systems with one
 
-and we are looking to make sure that those memory accesses can still
-move around freely.
+Thierry Reding (2):
+      ARM: pxa: Add dummy backlight power supply on Mitac Mio A701
+      ARM: tegra: Add head numbers to display controllers
 
-I'm claiming that they can, even with the "fence" language, because
+Willy Tarreau (1):
+      ARM: mvebu: dt: add missing alias 'eth3' on Armada XP mv78260
 
- (a) we've said 'q' is restricted, so there is no aliasing between q
-and the pointers b/c. So the compiler is free to move those accesses
-around the "q = p->next" access.
-
- (b) once you've moved them to *before* the "q = p->next" access, the
-fence no longer constrains you, because the guarantee is that there is
-a fence *somewhere* between the consuming load and the accesses to
-that object, but it could be *at* the access, so you're done.
-
-So I think the "we guarantee there is an ordering *somewhere* between
-the consuming load and the first ordered access" model actually gives
-us the semantics we need.
-
-(Note that you cannot necessarily move the accesses through the
-pointers b/c past the consuming load, since the only non-aliasing
-guarantee is about the pointer 'p', not about 'foop'. But you may use
-other arguments to move them past that too)
-
-But it's possible that the above argument doesn't really work. It is a
-very off-the-cuff "my intuition says this should work" model.
-
-            Linus
+ .../devicetree/bindings/arm/omap/omap.txt          |  2 +-
+ MAINTAINERS                                        |  1 +
+ arch/arm/boot/dts/Makefile                         |  3 ++-
+ arch/arm/boot/dts/am335x-evmsk.dts                 | 11 ++++++++++-
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi           |  3 ++-
+ arch/arm/boot/dts/dove.dtsi                        | 11 -----------
+ arch/arm/boot/dts/omap3-gta04.dts                  |  6 ++++--
+ arch/arm/boot/dts/omap3-n9.dts                     |  2 +-
+ arch/arm/boot/dts/omap3-n900.dts                   |  4 ++--
+ arch/arm/boot/dts/omap3-n950.dts                   |  2 +-
+ arch/arm/boot/dts/omap3-overo-storm-tobi.dts       | 22 ++++++++++++++++++++++
+ ...omap3-tobi.dts => omap3-overo-tobi-common.dtsi} |  3 ---
+ arch/arm/boot/dts/omap3-overo-tobi.dts             | 22 ++++++++++++++++++++++
+ arch/arm/boot/dts/omap3-overo.dtsi                 |  3 ---
+ arch/arm/boot/dts/tegra114.dtsi                    |  4 ++++
+ arch/arm/boot/dts/tegra20.dtsi                     |  4 ++++
+ arch/arm/boot/dts/tegra30-cardhu.dtsi              |  2 +-
+ arch/arm/boot/dts/tegra30.dtsi                     |  4 ++++
+ arch/arm/mach-imx/Makefile                         |  2 --
+ arch/arm/mach-imx/common.h                         |  4 +---
+ arch/arm/mach-omap1/board-nokia770.c               |  1 +
+ arch/arm/mach-omap2/Kconfig                        |  8 ++++----
+ arch/arm/mach-omap2/gpmc.c                         |  4 ++--
+ arch/arm/mach-omap2/io.c                           |  9 ---------
+ arch/arm/mach-pxa/mioa701.c                        |  9 +++++++++
+ arch/arm/mach-tegra/tegra.c                        | 10 ++++++++++
+ 26 files changed, 108 insertions(+), 48 deletions(-)
+ create mode 100644 arch/arm/boot/dts/omap3-overo-storm-tobi.dts
+ rename arch/arm/boot/dts/{omap3-tobi.dts => omap3-overo-tobi-common.dtsi} (94%)
+ create mode 100644 arch/arm/boot/dts/omap3-overo-tobi.dts
