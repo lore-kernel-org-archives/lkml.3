@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaBWXBa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 18:01:30 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46232 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaBWXB3 (ORCPT
+	id S1752461AbaBWXCh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 18:02:37 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:51110 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaBWXCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 18:01:29 -0500
+	Sun, 23 Feb 2014 18:02:36 -0500
 From: David Roddick <dgroddick@gmail.com>
 To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visiongravers.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, David Roddick <dgroddick@gmail.com>
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        David Roddick <dgroddick@gmail.com>
 Subject: [PATCH] Staging: comedi: Fix coding style issue in poc.c This is a patch to remove unneccessary space after function pointer name found with checkpatch.pl 
-Date: Mon, 24 Feb 2014 10:01:15 +1100
-Message-Id: <1393196475-9684-1-git-send-email-dgroddick@gmail.com>
+Date: Mon, 24 Feb 2014 10:02:25 +1100
+Message-Id: <1393196545-9723-1-git-send-email-dgroddick@gmail.com>
 X-Mailer: git-send-email 1.8.5.3
 Signed-off-by: David Roddick <dgroddick@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
