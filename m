@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaBWVlX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:41:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52374 "EHLO
+	id S1752477AbaBWVkS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:40:18 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52364 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaBWVkT (ORCPT
+	with ESMTP id S1752084AbaBWVkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 16:40:19 -0500
-Message-Id: <20140223212736.987803648@linutronix.de>
+	Sun, 23 Feb 2014 16:40:15 -0500
+Message-Id: <20140223212738.099977064@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:11 -0000
+Date: Sun, 23 Feb 2014 21:40:17 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Jingoo Han <jg1.han@samsung.com>,
-        Mohit Kumar <mohit.kumar@st.com>, pci <linux-pci@vger.kernel.org>
-Subject: [patch 07/26] pci: pcie-designware: Remove irq_desc abuse
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        ia64 <linux-ia64@vger.kernel.org>
+Subject: [patch 17/26] ia64: Use the core irq stats function
 References: <20140223212703.511977310@linutronix.de>
-Content-Disposition: inline;
- filename=pci-pcie-designware-remove-irq-desc-abuse.patch
+Content-Disposition: inline; filename=ia64-use-core-irq-stats-function.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,39 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to care about irq_desc in that context, escpecially
-as irq_data for that interrupt is retrieved as well.
+Let the core do the irq_desc resolution.
 
-Use the proper accessor for the msi descriptor
+No functional change.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Mohit Kumar <mohit.kumar@st.com>
-Cc: pci <linux-pci@vger.kernel.org>
----
- drivers/pci/host/pcie-designware.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: ia64 <linux-ia64@vger.kernel.org>
 
-Index: tip/drivers/pci/host/pcie-designware.c
+---
+ arch/ia64/kernel/irq_ia64.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+Index: tip/arch/ia64/kernel/irq_ia64.c
 ===================================================================
---- tip.orig/drivers/pci/host/pcie-designware.c
-+++ tip/drivers/pci/host/pcie-designware.c
-@@ -294,14 +294,12 @@ no_valid_irq:
- static void clear_irq(unsigned int irq)
- {
- 	unsigned int pos, nvec;
--	struct irq_desc *desc;
- 	struct msi_desc *msi;
- 	struct pcie_port *pp;
- 	struct irq_data *data = irq_get_irq_data(irq);
+--- tip.orig/arch/ia64/kernel/irq_ia64.c
++++ tip/arch/ia64/kernel/irq_ia64.c
+@@ -489,14 +489,13 @@ ia64_handle_irq (ia64_vector vector, str
+ 	ia64_srlz_d();
+ 	while (vector != IA64_SPURIOUS_INT_VECTOR) {
+ 		int irq = local_vector_to_irq(vector);
+-		struct irq_desc *desc = irq_to_desc(irq);
  
- 	/* get the port structure */
--	desc = irq_to_desc(irq);
--	msi = irq_desc_get_msi_desc(desc);
-+	msi = irq_data_get_msi(data);
- 	pp = sys_to_pcie(msi->dev->bus->sysdata);
- 	if (!pp) {
- 		BUG();
+ 		if (unlikely(IS_LOCAL_TLB_FLUSH(vector))) {
+ 			smp_local_flush_tlb();
+-			kstat_incr_irqs_this_cpu(irq, desc);
++			kstat_incr_irq_this_cpu(irq);
+ 		} else if (unlikely(IS_RESCHEDULE(vector))) {
+ 			scheduler_ipi();
+-			kstat_incr_irqs_this_cpu(irq, desc);
++			kstat_incr_irq_this_cpu(irq);
+ 		} else {
+ 			ia64_setreg(_IA64_REG_CR_TPR, vector);
+ 			ia64_srlz_d();
+@@ -549,13 +548,12 @@ void ia64_process_pending_intr(void)
+ 	  */
+ 	while (vector != IA64_SPURIOUS_INT_VECTOR) {
+ 		int irq = local_vector_to_irq(vector);
+-		struct irq_desc *desc = irq_to_desc(irq);
+ 
+ 		if (unlikely(IS_LOCAL_TLB_FLUSH(vector))) {
+ 			smp_local_flush_tlb();
+-			kstat_incr_irqs_this_cpu(irq, desc);
++			kstat_incr_irq_this_cpu(irq);
+ 		} else if (unlikely(IS_RESCHEDULE(vector))) {
+-			kstat_incr_irqs_this_cpu(irq, desc);
++			kstat_incr_irq_this_cpu(irq);
+ 		} else {
+ 			struct pt_regs *old_regs = set_irq_regs(NULL);
+ 
 
 
