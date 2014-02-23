@@ -1,120 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaBWBhn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Feb 2014 20:37:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63801 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240AbaBWBhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Feb 2014 20:37:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,527,1389772800"; 
-   d="scan'208";a="480143058"
-Date: Sun, 23 Feb 2014 09:37:39 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Matija Glavinic Pecotic <matija.glavinic-pecotic.ext@nsn.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>
-Subject: Re: [sctp] ef2820a735: -50% netperf Throughput_Mbps
-Message-ID: <20140223013739.GA13631@localhost>
-References: <20140219132034.GC8704@localhost>
- <5304E49A.3000801@nsn.com>
+	id S1752620AbaBWBo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Feb 2014 20:44:56 -0500
+Received: from mail-ve0-f195.google.com ([209.85.128.195]:56898 "EHLO
+	mail-ve0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240AbaBWBoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Feb 2014 20:44:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5304E49A.3000801@nsn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: paulcompaoree@gmail.com
+Date: Sun, 23 Feb 2014 02:28:25 +0100
+Message-ID: <CAFftWXctPNSK_cnjoRS=KdEDKE9m8dkVL3_DUWBfnAMGZZOfgw@mail.gmail.com>
+Subject: YOUR URGENT RESPONSE IS NEEDED
+From: "Mr. Paul Compaoree" <mccc214@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matija,
+Dear Friend,
 
-On Wed, Feb 19, 2014 at 06:06:34PM +0100, Matija Glavinic Pecotic wrote:
-> Hello Fengguang,
-> 
-> On 02/19/2014 02:20 PM, ext Fengguang Wu wrote:
-> > Hi Matija,
-> > 
-> > We noticed the below changes on commit ef2820a735f74ea60335f8ba3801b844f0cb184d
-> > (" net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer")
-> > in netperf SCTP_STREAM tests:
-> 
-> thanks for the info. Though, I've ran netperf in my environment, with and without patch, and I havent observed any difference.
-> 
-> Could you please give me information on your environment, how do you invoke netperf, and other details you think I might be interested in to observe problem by myself
+I am Mr. Paul Compaoree, the head of file department Manager of Banque
+Internationale du Burkina (BIB/UBA) Ouagadougou Burkina Faso. In my
+department I discover an  abandoned sum of (US$10.5M) The fund belongs
+to our deceased customer who died with his entire family in Iraq War
+2006, leaving nobody for the claim and as such, I decided to contact
+you to enable us claim the fund. Your share is 40% while 60% for me.
+This transaction is 100% risk free.
 
-I see the same regression on both T410 and NHM EX server. On each test
-machine, I'm running (2*nr_logical_cpu) the below command in parallel:
+Then after the money is been transferred into your account, i will
+visit your country for an investment under your kind control. A lot of
+customers open private accounts with different Banks without the
+knowledge of their families and when they die, such money will be lost
+to the Bank unless someone comes to claim it. You have to contact my
+Bank directly as the real next of kin of this deceased account with
+next of kin application form which I will send to you immediately I
+hear from you.
 
-        netperf -t SCTP_STREAM -c -C -l 120
+ I am waiting for your urgent respond to enable us proceed further for
+the transfer.
 
-Thanks,
-Fengguang
-
-> Thanks!
-> 
-> > cd0f0b95fd2cd2b  ef2820a735f74ea60335f8ba3  
-> > ---------------  -------------------------  
-> >          8 ~ 0%     -50.0%          4 ~ 0%  TOTAL netperf.Throughput_Mbps
-> >      54287 ~44%    +338.1%     237842 ~48%  TOTAL cpuidle.C1E-NHM.time
-> >   12008353 ~12%     -56.0%    5281848 ~ 0%  TOTAL proc-vmstat.pgalloc_normal
-> >     114861 ~ 0%     -50.3%      57085 ~ 3%  TOTAL softirqs.NET_RX
-> >   12964639 ~11%     -55.1%    5818663 ~ 0%  TOTAL proc-vmstat.pgfree
-> >     866489 ~ 0%     -43.3%     491417 ~ 0%  TOTAL proc-vmstat.pgalloc_dma32
-> >     119373 ~17%     -39.1%      72661 ~ 1%  TOTAL softirqs.SCHED
-> >       1985 ~13%     -24.3%       1502 ~19%  TOTAL slabinfo.kmalloc-128.active_objs
-> >       2139 ~20%     -28.4%       1532 ~ 4%  TOTAL proc-vmstat.nr_alloc_batch
-> >     124360 ~33%     -31.0%      85748 ~ 2%  TOTAL softirqs.RCU
-> >       1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.active_objs
-> >       1977 ~ 9%     -18.5%       1610 ~ 9%  TOTAL slabinfo.UDP.num_objs
-> >       2066 ~ 6%     -12.9%       1800 ~ 7%  TOTAL slabinfo.kmalloc-128.num_objs
-> >       1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.active_objs
-> >       1738 ~10%     -18.4%       1418 ~ 9%  TOTAL slabinfo.UDPv6.num_objs
-> >        923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.active_objs
-> >        923 ~10%     -17.7%        760 ~ 8%  TOTAL slabinfo.TCPv6.num_objs
-> >        989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.active_objs
-> >        989 ~ 9%     -17.1%        820 ~ 7%  TOTAL slabinfo.TCP.num_objs
-> >     398761 ~44%     -32.6%     268792 ~ 3%  TOTAL numa-vmstat.node2.numa_hit
-> >     389672 ~49%     -32.9%     261443 ~ 3%  TOTAL numa-vmstat.node0.numa_hit
-> >        447 ~ 1%     -13.8%        385 ~ 0%  TOTAL vmstat.system.cs
-> > 
-> > Note: the "~ XX%" numbers are stddev percent.
-> > 
-> >                               netperf.Throughput_Mbps
-> > 
-> >      4 *+-*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*--*--*--*--*-*--*--*--*
-> >        |                                                                    |
-> >        |                                                                    |
-> >    3.5 ++                                                                   |
-> >        |                                                                    |
-> >        |                                                                    |
-> >        |                                                                    |
-> >      3 ++                                                                   |
-> >        |                                                                    |
-> >        |                                                                    |
-> >    2.5 ++                                                                   |
-> >        |                                                                    |
-> >        |                                                                    |
-> >        |                                                                    |
-> >      2 O+-O--O--O--O-O--O--O--O--O--O--O--O-O--O--O--O--O--O--O-------------+
-> > 
-> > 
-> >                                  vmstat.system.cs
-> > 
-> >    460 ++------------------------*--*----------------*----------------------+
-> >        |       .*..    .*..     :    +              +              *..     .*
-> >    450 ++    *.     .*.    *..  :     +    .*..*.. +    *..*..*.. +     .*. |
-> >    440 *+   :      *           :       *..*       *              *    *.    |
-> >        |:   :                 *                                             |
-> >    430 ++: :                                                                |
-> >    420 ++: :                                                                |
-> >        |  *                                                                 |
-> >    410 ++                                                                   |
-> >    400 ++                                                                   |
-> >        |                                                                    |
-> >    390 ++            O        O             O     O        O                |
-> >    380 O+ O  O  O       O  O     O  O  O  O    O     O  O     O             |
-> >        |           O                                                        |
-> >    370 ++-------------------------------------------------------------------+
-> > 
+Yours Faithfully,
+Mr. Paul Compaoree
+Banque Internationale du Burkina (BIB/UBA) ouagadougou
+Burkina Faso.
+Tel:+226 65 37 29 22.
+NB: The fund is free from drug and laundering related offences.
