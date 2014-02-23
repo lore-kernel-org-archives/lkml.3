@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaBWVoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 16:44:16 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52297 "EHLO
+	id S1752843AbaBWVol (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 16:44:41 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52283 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaBWVkK (ORCPT
+	with ESMTP id S1752274AbaBWVkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Feb 2014 16:40:10 -0500
-Message-Id: <20140223212738.579581220@linutronix.de>
+Message-Id: <20140223212738.334260926@linutronix.de>
 User-Agent: quilt/0.60-1
-Date: Sun, 23 Feb 2014 21:40:20 -0000
+Date: Sun, 23 Feb 2014 21:40:19 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Xen <xen-devel@lists.xenproject.org>
-Subject: [patch 21/26] xen: Get rid of the last irq_desc abuse
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [patch 19/26] genirq: Provide irqd_irq_has_actions()
 References: <20140223212703.511977310@linutronix.de>
-Content-Disposition: inline;
- filename=xen-get-rid-of-the-last-irq-to-desc-abuse.patch
+Content-Disposition: inline; filename=genirq-provide-info-about-actions.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,86 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd prefer to drop that completely but there seems to be some mystic
-value to the error printout and the allocation check.
+Xen has an oddball probing_irq() function. Provide a proper interface
+unless Konrad decides that this probing_irq() function can be ripped
+out completely.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Not-Yet-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Xen <xen-devel@lists.xenproject.org>
 ---
- drivers/xen/events/events_base.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ include/linux/irq.h |    7 +++++++
+ kernel/irq/manage.c |    6 +++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-Index: tip/drivers/xen/events/events_base.c
+Index: tip/include/linux/irq.h
 ===================================================================
---- tip.orig/drivers/xen/events/events_base.c
-+++ tip/drivers/xen/events/events_base.c
-@@ -487,13 +487,6 @@ static void pirq_query_unmask(int irq)
- 		info->u.pirq.flags |= PIRQ_NEEDS_EOI;
+--- tip.orig/include/linux/irq.h
++++ tip/include/linux/irq.h
+@@ -173,6 +173,7 @@ struct irq_data {
+  * IRQD_IRQ_DISABLED		- Disabled state of the interrupt
+  * IRQD_IRQ_MASKED		- Masked state of the interrupt
+  * IRQD_IRQ_INPROGRESS		- In progress state of the interrupt
++ * IRQD_IRQ_HAS_ACTION		- Set if action(s) installed
+  */
+ enum {
+ 	IRQD_TRIGGER_MASK		= 0xf,
+@@ -186,6 +187,7 @@ enum {
+ 	IRQD_IRQ_DISABLED		= (1 << 16),
+ 	IRQD_IRQ_MASKED			= (1 << 17),
+ 	IRQD_IRQ_INPROGRESS		= (1 << 18),
++	IRQD_IRQ_HAS_ACTION		= (1 << 19),
+ };
+ 
+ static inline bool irqd_is_setaffinity_pending(struct irq_data *d)
+@@ -257,6 +259,11 @@ static inline bool irqd_irq_inprogress(s
+ 	return d->state_use_accessors & IRQD_IRQ_INPROGRESS;
  }
  
--static bool probing_irq(int irq)
--{
--	struct irq_desc *desc = irq_to_desc(irq);
--
--	return desc && desc->action == NULL;
--}
--
- static void eoi_pirq(struct irq_data *data)
- {
- 	int evtchn = evtchn_from_irq(data->irq);
-@@ -517,7 +510,7 @@ static void mask_ack_pirq(struct irq_dat
- 	eoi_pirq(data);
- }
++static inline bool irqd_irq_has_actions(struct irq_data *d)
++{
++	return d->state_use_accessors & IRQD_IRQ_HAS_ACTION;
++}
++
+ /*
+  * Functions for chained handlers which can be enabled/disabled by the
+  * standard disable_irq/enable_irq calls. Must be called with
+Index: tip/kernel/irq/manage.c
+===================================================================
+--- tip.orig/kernel/irq/manage.c
++++ tip/kernel/irq/manage.c
+@@ -1204,6 +1204,8 @@ __setup_irq(unsigned int irq, struct irq
+ 	desc->irq_count = 0;
+ 	desc->irqs_unhandled = 0;
  
--static unsigned int __startup_pirq(unsigned int irq)
-+static unsigned int __startup_pirq(struct irq_data *data, unsigned int irq)
- {
- 	struct evtchn_bind_pirq bind_pirq;
- 	struct irq_info *info = info_for_irq(irq);
-@@ -535,7 +528,7 @@ static unsigned int __startup_pirq(unsig
- 					BIND_PIRQ__WILL_SHARE : 0;
- 	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
- 	if (rc != 0) {
--		if (!probing_irq(irq))
-+		if (!data || irqd_irq_has_action(data))
- 			pr_info("Failed to obtain physical IRQ %d\n", irq);
- 		return 0;
- 	}
-@@ -562,7 +555,7 @@ out:
++	irqd_set(irq_desc_get_irq_data(desc), IRQD_IRQ_HAS_ACTION);
++
+ 	/*
+ 	 * Check whether we disabled the irq via the spurious handler
+ 	 * before. Reenable it and give it another chance.
+@@ -1319,8 +1321,10 @@ static struct irqaction *__free_irq(unsi
+ 	*action_ptr = action->next;
  
- static unsigned int startup_pirq(struct irq_data *data)
- {
--	return __startup_pirq(data->irq);
-+	return __startup_pirq(data, data->irq);
- }
+ 	/* If this was the last handler, shut down the IRQ line: */
+-	if (!desc->action)
++	if (!desc->action) {
++		irqd_clear(irq_desc_get_irq_data(desc), IRQD_IRQ_HAS_ACTION);
+ 		irq_shutdown(desc);
++	}
  
- static void shutdown_pirq(struct irq_data *data)
-@@ -769,15 +762,13 @@ error_irq:
- 
- int xen_destroy_irq(int irq)
- {
--	struct irq_desc *desc;
- 	struct physdev_unmap_pirq unmap_irq;
- 	struct irq_info *info = info_for_irq(irq);
- 	int rc = -ENOENT;
- 
- 	mutex_lock(&irq_mapping_update_lock);
- 
--	desc = irq_to_desc(irq);
--	if (!desc)
-+	if (!irq_is_allocated(irq))
- 		goto out;
- 
- 	if (xen_initial_domain()) {
-@@ -1432,7 +1423,7 @@ static void restore_pirqs(void)
- 
- 		printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
- 
--		__startup_pirq(irq);
-+		__startup_pirq(irq_get_irq_data(irq), irq);
- 	}
- }
- 
+ #ifdef CONFIG_SMP
+ 	/* make sure affinity_hint is cleaned up */
 
 
