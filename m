@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750946AbaBWGAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 01:00:05 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:56215 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaBWGAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 01:00:03 -0500
+	id S1751024AbaBWGIs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 01:08:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47050 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780AbaBWGIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 01:08:47 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu> <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-In-Reply-To: <201402230018.34029.gheskett@wdtv.com>
-References: <201402222022.20370.gheskett@wdtv.com>
-	<201402222300.35472.gheskett@wdtv.com>
-	<CAKb7Uvj1mKeS=gR6xBQnz4J1Ft3kKSftrdCRF7md+CabGy--4g@mail.gmail.com>
-	<201402230018.34029.gheskett@wdtv.com>
-Date: Sun, 23 Feb 2014 01:00:02 -0500
-X-Google-Sender-Auth: eZGGtyayVYUJREpSdmgD96nLG0o
-Message-ID: <CAKb7UvgA8o7TLC+bR+hFoZLSUQaoSebgV=X2-u6M-kPVy+Vccw@mail.gmail.com>
-Subject: Re: It BOOTS! 3.13.5 that is.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 22 Feb 2014 22:07:50 -0800
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>
+Message-ID: <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 12:18 AM, Gene Heskett <gheskett@wdtv.com> wrote:
-> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>On Sat, Feb 22, 2014 at 11:00 PM, Gene Heskett <gheskett@wdtv.com> wrote:
->>> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>>>On Sat, Feb 22, 2014 at 10:42 PM, Gene Heskett <gheskett@wdtv.com>
-> wrote:
->>>>> On Saturday 22 February 2014, Ilia Mirkin wrote:
->>>>>>On Sat, Feb 22, 2014 at 8:22 PM, Gene Heskett <gheskett@wdtv.com>
-> wrote:
->>>>>>> But my tv card isn't being found by kaffeine.  It is this card:
->>>>>>>
->>>>>>> 01:08.0 Multimedia video controller: Conexant Systems, Inc.
->>>>>>> CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
->>>>>>>
->>>>>>>         Subsystem: pcHDTV Device 3000
->>>>>>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>>>>>         Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
->>>>>>>         Capabilities: [44] Vital Product Data <?>
->>>>>>>         Capabilities: [4c] Power Management version 2
->>>>>>>
->>>>>>> 01:08.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
->>>>>>> PCI Video and Audio Decoder [MPEG Port] (rev 05)
->>>>>>>
->>>>>>>         Subsystem: pcHDTV Device 3000
->>>>>>>         Flags: bus master, medium devsel, latency 32, IRQ 10
->>>>>>>         Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
->>>>>>>         Capabilities: [4c] Power Management version 2
->>>>>>>
->>>>>>> From an lspci
->>>>>>>
->>>>>>> In a make xconfig, I cannot find this specific card in the list of
->>>>>>> DVB front ends.  What modules do I need to make sure are being
->>>>>>> built?
->>>>>>
->>>>>>You're looking for VIDEO_CX88 ("Conexant 2388x (bt878 successor)
->>>>>>support") and its various sub-options (esp CX88_DVB). iirc the
->>>>>>pchdtv3000 had a OR51132 tuner, but right now the config is set to
->>>>>>auto-select a whole bunch of tuners if you have
->>>>>>MEDIA_SUBDRV_AUTOSELECT turned on. Otherwise make sure to select that
->>>>>>tuner device. (Hm, I appear to have both OR51132 and CX22702 enabled,
->>>>>>and I have that same card.)
->>>>>>
->>>>>>  -ilia
->>>>>
->>>>> or51132 rings a bell and is enabled, CX22702 is not.  And I don't
->>>>> seem to be able to find the CX88** at all.  I'll give the CX22702 a
->>>>> shot, thanks a bunch ilia.
->>>>
->>>>grep CX88 .config
->>>>
->>> That returns a linefeed only.  And I have done some dozen or so make
->>> oldconfigs.
->>>
->>>>If it says "not set" for things like CONFIG_VIDEO_CX88_DVB, you won't
->>>>get anything to work.
->>>>
->>>>  -ilia
->>>
->>> If this fails, I'll see if I can plug that in with an editor, but the
->>> last time I tried that, the friggin make did an automatic oldconfig
->>> and stripped it.  Its enough to make one want to reduce the
->>> neighborhood cat population.
->>
->>Adding random stuff to .config won't work, as you noticed.
->>
->>>From menuconfig search results for CX88 (ugh, sorry about the x's, but
->>I'm too lazy to edit them out)
->>
->>  x Symbol: VIDEO_CX88 [=m]
->>  x x Type  : tristate
->>     x x Prompt: Conexant 2388x (bt878 successor) support
->>        x x   Location:
->>           x x     -> Device Drivers
->>              x x       -> Multimedia support (MEDIA_SUPPORT [=m])
->>                 x x (1)     -> Media PCI Adapters (MEDIA_PCI_SUPPORT
->>[=y])                  x x   Defined at drivers/media/pci/cx88/Kconfig:1
->>                          x x   Depends on: MEDIA_SUPPORT [=m] &&
->>MEDIA_PCI_SUPPORT [=y] && (MEDIA_AN x x   Selects: I2C_ALGOBIT [=m] &&
->>VIDEO_BTCX [=m] && VIDEOBUF_DMA_SG [=m]  x
->>
->>HTH,
->>
->>  -ilia
->
-> Sorry, no such beast As VIDEO_CX88.
->
-> Now that tells me something in the VIDEO dept isn't set, but what?
+I'd be interested in how rbp gets set, too.  It might just be a coincidence and the value in rbp has some other meaning here.
 
-Look at the e-mail I sent. It includes the full path to enabling the
-right things. First select "Device Drivers", then enable "Multimedia
-support", then enable "Media PCI Adapters". You should see "Conexant
-2388x" in there.
+On February 22, 2014 9:18:17 PM PST, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>On Fri, 21 Feb 2014, H. Peter Anvin wrote:
+>
+>> Error 6 reflects a write in userspace to a not-present page.
+>> 
+>> Since your previous trace indicates that the value of the register in
+>question
+>> is a different one, I'm guessing that what we have here is PEBS
+>getting
+>> activated.  0x120 is 2*0x90, and 0x90 is the size of a 64-bit PEBS
+>record.
+>
+>I'm having problems generating a replayable syscall trace that exhibits
+>
+>the problem.
+>
+>It turns out that the segfault address listed (the multiple of 0x120) 
+>happens to be the value in the RBP register at the time of the
+>segfault.
+>
+>That's odd, as the instruction is
+>	movdqa %xmm0,(%rdi)
+>and rdi is the valid mmap address of the perf ring buffer
+>	rdi            0xf7768000	4151738368
+>
+>so I'm not sure why RBP is involved at all.
+>
+>In all of the cases I've investigated the precise_ip value has been set
+>
+>for the problem event... but none of the events have been hardware
+>events
+>(software and breakpoint so far).  So probably not PEBS related?
+>
+>Vince
 
-  -ilia
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
