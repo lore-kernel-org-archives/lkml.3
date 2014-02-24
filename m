@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaBXJcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:32:51 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40108 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761AbaBXJaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:30:09 -0500
-From: <vladimir.barinov@cogentembedded.com>
-To: <linux-sh@vger.kernel.org>
-Cc: <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        <magnus.damm@gmail.com>, <horms@verge.net.au>, <gnurou@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
-        <valentine.barshak@cogentembedded.com>
-Subject: [PATCH V5 1/4] ARM: shmobile: r8a7791: Add USBHS clock support
-Date: Mon, 24 Feb 2014 13:30:01 +0400
-Message-Id: <1393234204-24096-2-git-send-email-vladimir.barinov@cogentembedded.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
-References: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
+	id S1752698AbaBXJdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:33:54 -0500
+Received: from mga09.intel.com ([134.134.136.24]:31818 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751509AbaBXJdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 04:33:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,533,1389772800"; 
+   d="scan'208";a="488625012"
+Message-ID: <530B109B.5020901@intel.com>
+Date: Mon, 24 Feb 2014 17:27:55 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: tj@kernel.org, oleg@redhat.com, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Processor: Rework processor throttling with work_on_cpu()
+References: <20140220151721.GB32719@redhat.com> <1392960945-30741-1-git-send-email-tianyu.lan@intel.com> <20140221100630.GA1121@krava.brq.redhat.com> <20140221170709.GC1121@krava.brq.redhat.com>
+In-Reply-To: <20140221170709.GC1121@krava.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valentine Barshak <valentine.barshak@cogentembedded.com>
+On 2014年02月22日 01:07, Jiri Olsa wrote:
+> On Fri, Feb 21, 2014 at 11:06:30AM +0100, Jiri Olsa wrote:
+>> On Fri, Feb 21, 2014 at 01:35:45PM +0800, Lan Tianyu wrote:
+>>> acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+>>> sure struct acpi_processor->acpi_processor_set_throttling() callback
+>>> run on associated cpu. But the function maybe called in a worker which
+>>> has been bound to a cpu. The patch is to replace set_cpus_allowed_ptr()
+>>> with work_on_cpu().
+>>
+>> testing the new patch.. so far so good ;-)
+> 
+> ook.. survived whole day under the test workload without the warning ;-)
+> 
+> jirka
+> 
 
-This adds USBHS clocks to the R8A7791 SoC.
+Hi Jirka:
+	Great. Thanks for test:).
 
-Signed-off-by: Valentine Barshak <valentine.barshak@cogentembedded.com>
-Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 
-Changes in V5:
-Changes in V4:
-Changes in V3:
-* none.
-
-Changes in V2:
-* capitalized ARM in the subject;
-* rebased on top the latest devel tag.
-
----
- arch/arm/mach-shmobile/clock-r8a7791.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: build/arch/arm/mach-shmobile/clock-r8a7791.c
-===================================================================
---- build.orig/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:44.486571967 +0400
-+++ build/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:52.582571801 +0400
-@@ -177,6 +177,7 @@
- 	MSTP811, MSTP810, MSTP809,
- 	MSTP726, MSTP724, MSTP723, MSTP721, MSTP720,
- 	MSTP719, MSTP718, MSTP715, MSTP714,
-+	MSTP704,
- 	MSTP522,
- 	MSTP314, MSTP312, MSTP311,
- 	MSTP216, MSTP207, MSTP206,
-@@ -208,6 +209,7 @@
- 	[MSTP718] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 18, MSTPSR7, 0), /* SCIF3 */
- 	[MSTP715] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 15, MSTPSR7, 0), /* SCIF4 */
- 	[MSTP714] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 14, MSTPSR7, 0), /* SCIF5 */
-+	[MSTP704] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 4, MSTPSR7, 0), /* HSUSB */
- 	[MSTP522] = SH_CLK_MSTP32_STS(&extal_clk, SMSTPCR5, 22, MSTPSR5, 0), /* Thermal */
- 	[MSTP314] = SH_CLK_MSTP32_STS(&div4_clks[DIV4_SD0], SMSTPCR3, 14, MSTPSR3, 0), /* SDHI0 */
- 	[MSTP312] = SH_CLK_MSTP32_STS(&div6_clks[DIV6_SD1], SMSTPCR3, 12, MSTPSR3, 0), /* SDHI1 */
-@@ -281,6 +283,8 @@
- 	CLKDEV_DEV_ID("r8a7791-vin.2", &mstp_clks[MSTP809]),
- 	CLKDEV_DEV_ID("sata-r8a7791.0", &mstp_clks[MSTP815]),
- 	CLKDEV_DEV_ID("sata-r8a7791.1", &mstp_clks[MSTP814]),
-+	CLKDEV_DEV_ID("renesas_usbhs", &mstp_clks[MSTP704]),
-+	CLKDEV_ICK_ID("usbhs", "usb_phy_rcar_gen2", &mstp_clks[MSTP704]),
- };
- 
- #define R8A7791_CLOCK_ROOT(e, m, p0, p1, p30, p31)		\
+-- 
+Best regards
+Tianyu Lan
