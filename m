@@ -1,184 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaBXXCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:02:15 -0500
-Received: from smtp105.biz.mail.ne1.yahoo.com ([98.138.207.12]:21811 "HELO
-	smtp105.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752714AbaBXXBp (ORCPT
+	id S1752938AbaBXXDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:03:24 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:42854 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaBXXDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:01:45 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vfCvdNgVM1lWAm_QQSBGtex9u4F0OcovPEyMP2dHhPCQkiD
- IHcQsC6eQ8VwFwNGTqAX7csrV43Y92TzCUsUUyUl814F957CDczWrXkZlhoQ
- xXxphIbh_54zfUmdXV5850LrGhc27vmYjeUWlCGfFROzmgHiQt0w4sPSmUoo
- qg4SbEe5jlc3vjkR7vUWtHPCr0shS4CtZDwn_mnER69zwf4YMrPMcYk2.bhi
- zBV4uw93pEkiT0R9tfgb2CHhQizNzdhdt6s64eog3DtRxhaK2ih4uO5Eyvnn
- gyBpP4tOhyk9Ay0b0F_nMBrSD1GTkOSog_CyNqMc2Zh3Lv1F3WjB.aPxucFH
- C7sYLrmIiVa4gHO4g4eA6hRZtP4..RUr8_itmzfyKFcKiDPsd3.CCJMNLoWz
- 3mKEYePKqj9iS0SeM35OyygkBoiJL9lopEWE4lpXXkkYxWbSei4nwmANBLUy
- 0cflvNpkZSC83RHJ.Taz8.zCnCDsozJWobexwVUpnDjuZIgArT0R8AxfDomX
- LrAEDoh6ora9u_s2QrUCYKqhM3gFmviFglOwPBWzbhecN19yLDw3TDw--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
-        by smtp105.biz.mail.ne1.yahoo.com with SMTP; 24 Feb 2014 15:01:44 -0800 PST
-Message-ID: <530BCF57.6000304@schaufler-ca.com>
-Date: Mon, 24 Feb 2014 15:01:43 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 18:03:22 -0500
+Message-ID: <530BCFB7.6010707@gmail.com>
+Date: Mon, 24 Feb 2014 15:03:19 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
-References: <cover.1393279025.git.joe@perches.com> <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com> <530BC92D.6030509@schaufler-ca.com>
-In-Reply-To: <530BC92D.6030509@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: dirk.brandewie@gmail.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into account
+ for core busy calculation) sucks rocks
+References: <20140219224752.GA370@kroah.com> <5305465C.7060806@gmail.com> <20140220003537.GA4671@kroah.com> <20140220005148.GA15760@kroah.com> <53061798.6010703@gmail.com> <20140220181046.GA860@kroah.com> <20140224223745.GA26619@kroah.com>
+In-Reply-To: <20140224223745.GA26619@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/2014 2:35 PM, Casey Schaufler wrote:
-> On 2/24/2014 1:59 PM, Joe Perches wrote:
->> Convert printks to pr_<level>
->> Add pr_fmt.
+On 02/24/2014 02:37 PM, Greg KH wrote:
+> On Thu, Feb 20, 2014 at 10:10:46AM -0800, Greg KH wrote:
+>> On Thu, Feb 20, 2014 at 06:56:24AM -0800, Dirk Brandewie wrote:
+>>> On 02/19/2014 04:51 PM, Greg KH wrote:
+>>>> On Wed, Feb 19, 2014 at 04:35:37PM -0800, Greg KH wrote:
+>>>>> On Wed, Feb 19, 2014 at 04:03:40PM -0800, Dirk Brandewie wrote:
+>>>>>> On 02/19/2014 02:47 PM, Greg KH wrote:
+>>>>>>> Hi Dirk,
+>>>>>>>
+>>>>>>> I've been having some huge slowdowns on my box building kernels, and I
+>>>>>>> took the time to bisect it down to commit
+>>>>>>> fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
+>>>>>>> time into account for core busy calculation).  With that patch reverted
+>>>>>>> on Linus's current tree, my build speeds are back up to the normal rate.
+>>>>>>>
+>>>>>>> The difference is huge, 2 minutes to do a kernel build with that patch
+>>>>>>> reverted, 8-10 minutes with it applied!  With all of the stable kernel
+>>>>>>> builds and other trees, this is a huge problem for my workload (all I do
+>>>>>>> is kernel builds it seems...)
+>>>>>>>
+>>>>>>> I see some patches you marked as "fixes" that you sent to Rafael, do you
+>>>>>>> want me to test any of those?  How am I the only one seeing this
+>>>>>>> problem, do you need my cpu information or anything else?
+>>>>>>
+>>>>>> Can you give me a description of you build system?  CPU, number of sockets,
+>>>>>
+>>>>> The last processor in /proc/cpuinfo:
+>>>>>
+>>>>> processor       : 7
+>>>>> vendor_id       : GenuineIntel
+>>>>> cpu family      : 6
+>>>>> model           : 60
+>>>>> model name      : Intel(R) Core(TM) i7-4770K CPU @ 3.50GHz
+>>>>> stepping        : 3
+>>>>> microcode       : 0x9
+>>>>> cpu MHz         : 3556.464
+>>>>> cache size      : 8192 KB
+>>>>> physical id     : 0
+>>>>> siblings        : 8
+>>>>> core id         : 3
+>>>>> cpu cores       : 4
+>>>>> apicid          : 7
+>>>>> initial apicid  : 7
+>>>>> fpu             : yes
+>>>>> fpu_exception   : yes
+>>>>> cpuid level     : 13
+>>>>> wp              : yes
+>>>>> flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 fma cx16 xtpr pdcm pcid sse4_1 sse4_2 movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid
+>>>>> bogomips        : 7000.78
+>>>>> clflush size    : 64
+>>>>> cache_alignment : 64
+>>>>> address sizes   : 39 bits physical, 48 bits virtual
+>>>>>
+>>>>>> building from/to local media.  Any special setup I should use here for my test?
+>>>>>
+>>>>> I build on a SSD-like disk (flash media on PCI Express slot), so I
+>>>>> should have almost no i/o time.
+>>>>>
+>>>>> I build with 'make -j16'
+>>>>>
+>>>>>> If you have time having the output of turbostat for a build with and
+>>>>>> without would be very useful.
+>>>>>
+>>>>>   $ ./turbostat
+>>>>>   turbostat: no /dev/cpu/0/msr
+>>>>>   Try "# modprobe msr": No such file or directory
+>>>>>
+>>>>> Bah, I'll rebuild with msr and get you that info...
+>>>>
+>>>> Attached is two files, "fast_build.txt" is when your patch is reverted,
+>>>> and building a kernel takes only 2 minutes.  "slow_build.txt" is when
+>>>> the patch is not reverted, using Linus's latest tree, and I stopped it
+>>>> after a while because I got bored :)
+>>>>
+>>>> I think the numbers in these two files shows the real problem that is
+>>>> happening...
+>>>
+>>> For some reason intel_pstate is deciding you have no load and no increasing
+>>> the P state :-(
+>>>>
+>>>> If there's anything else you need me to test, please let me know.
+>>>
+>>> I are running on Linus's tree could you run the following script with the patch
+>>> applied and send the output of "perf script".
+>>>
+>>> #! /bin/sh
+>>>
+>>> sudo perf record -C 5  -c 1 -e power:pstate_sample&
+>>> sleep .5
+>>> foo=$!
+>>> taskset -c 5 cat /dev/zero > /dev/null&
+>>> bar=$!
+>>> sleep 1
+>>> kill $bar
+>>> sleep .5
+>>> sudo kill $foo
 >>
->> Signed-off-by: Joe Perches <joe@perches.com>
-> Acked-by: Casey Schaufler <casey@schaufler-ca.com>
->
-> I will take this into the smack-next tree.
-
-Unless James would rather take the whole set, that is.
-
->
->> ---
->>  security/smack/smack_lsm.c |  7 ++++---
->>  security/smack/smackfs.c   | 25 +++++++++++--------------
->>  2 files changed, 15 insertions(+), 17 deletions(-)
+>> The output of this is attached below as "bad.perf", and for comparison,
+>> I ran this with the patch reverted, which is the result in the
+>> "good.perf" file below.
 >>
->> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
->> index 14f52be..a273aad 100644
->> --- a/security/smack/smack_lsm.c
->> +++ b/security/smack/smack_lsm.c
->> @@ -18,6 +18,8 @@
->>   *      as published by the Free Software Foundation.
->>   */
->>  
->> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> +
->>  #include <linux/xattr.h>
->>  #include <linux/pagemap.h>
->>  #include <linux/mount.h>
->> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
->>  		if (sock->sk->sk_family == PF_INET) {
->>  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
->>  			if (rc != 0)
->> -				printk(KERN_WARNING
->> -					"Smack: \"%s\" netlbl error %d.\n",
->> +				pr_warn("\"%s\" netlbl error %d\n",
->>  					__func__, -rc);
->>  		}
->>  	} else
->> @@ -3916,7 +3917,7 @@ static __init int smack_init(void)
->>  	if (tsp == NULL)
->>  		return -ENOMEM;
->>  
->> -	printk(KERN_INFO "Smack:  Initializing.\n");
->> +	pr_info("Initializing\n");
->>  
->>  	/*
->>  	 * Set the security state for the initial task.
->> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
->> index 3198cfe..2e25220 100644
->> --- a/security/smack/smackfs.c
->> +++ b/security/smack/smackfs.c
->> @@ -16,6 +16,8 @@
->>   *
->>   */
->>  
->> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> +
->>  #include <linux/kernel.h>
->>  #include <linux/vmalloc.h>
->>  #include <linux/security.h>
->> @@ -698,8 +700,7 @@ static void smk_cipso_doi(void)
->>  
->>  	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
->>  	if (rc != 0)
->> -		printk(KERN_WARNING "%s:%d remove rc = %d\n",
->> -		       __func__, __LINE__, rc);
->> +		pr_warn("%s:%d remove rc = %d\n", __func__, __LINE__, rc);
->>  
->>  	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
->>  	if (doip == NULL)
->> @@ -713,15 +714,13 @@ static void smk_cipso_doi(void)
->>  
->>  	rc = netlbl_cfg_cipsov4_add(doip, &nai);
->>  	if (rc != 0) {
->> -		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
->> -		       __func__, __LINE__, rc);
->> +		pr_warn("%s:%d cipso add rc = %d\n", __func__, __LINE__, rc);
->>  		kfree(doip);
->>  		return;
->>  	}
->>  	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
->>  	if (rc != 0) {
->> -		printk(KERN_WARNING "%s:%d map add rc = %d\n",
->> -		       __func__, __LINE__, rc);
->> +		pr_warn("%s:%d map add rc = %d\n", __func__, __LINE__, rc);
->>  		kfree(doip);
->>  		return;
->>  	}
->> @@ -741,8 +740,8 @@ static void smk_unlbl_ambient(char *oldambient)
->>  	if (oldambient != NULL) {
->>  		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
->>  		if (rc != 0)
->> -			printk(KERN_WARNING "%s:%d remove rc = %d\n",
->> -			       __func__, __LINE__, rc);
->> +			pr_warn("%s:%d remove rc = %d\n",
->> +				__func__, __LINE__, rc);
->>  	}
->>  	if (smack_net_ambient == NULL)
->>  		smack_net_ambient = &smack_known_floor;
->> @@ -750,8 +749,7 @@ static void smk_unlbl_ambient(char *oldambient)
->>  	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient->smk_known, PF_INET,
->>  				      NULL, NULL, &nai);
->>  	if (rc != 0)
->> -		printk(KERN_WARNING "%s:%d add rc = %d\n",
->> -		       __func__, __LINE__, rc);
->> +		pr_warn("%s:%d add rc = %d\n", __func__, __LINE__, rc);
->>  }
->>  
->>  /*
->> @@ -2302,8 +2300,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
->>  
->>  	rc = simple_fill_super(sb, SMACK_MAGIC, smack_files);
->>  	if (rc != 0) {
->> -		printk(KERN_ERR "%s failed %d while creating inodes\n",
->> -			__func__, rc);
->> +		pr_err("%s failed %d while creating inodes\n", __func__, rc);
->>  		return rc;
->>  	}
->>  
->> @@ -2369,13 +2366,13 @@ static int __init init_smk_fs(void)
->>  
->>  	err = smk_init_sysfs();
->>  	if (err)
->> -		printk(KERN_ERR "smackfs: sysfs mountpoint problem.\n");
->> +		pr_err("smackfs: sysfs mountpoint problem\n");
->>  
->>  	err = register_filesystem(&smk_fs_type);
->>  	if (!err) {
->>  		smackfs_mount = kern_mount(&smk_fs_type);
->>  		if (IS_ERR(smackfs_mount)) {
->> -			printk(KERN_ERR "smackfs:  could not mount!\n");
->> +			pr_err("smackfs: could not mount!\n");
->>  			err = PTR_ERR(smackfs_mount);
->>  			smackfs_mount = NULL;
->>  		}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Anything else I can test?
 >
+> Any progress on this?
+>
+
+Here is the patch I have ATM it has been tested with i7-4770K, i7-2600,
+i5-3230M.
+I am still waiting for results from the people with Baytrail that were
+affected before sending to Rafael.
+
+
+commit 3eed2b5e48543fa9837a77c067986b4831f8f00f
+Author: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Date:   Mon Feb 24 09:11:23 2014 -0800
+
+     intel_pstate: Change busy calculation to use fixed point math.
+
+     Commit fcb6a15c2e Take core C0 time into account for core busy calculation.
+
+     Introduced a regression on some processor SKUs supported by
+     intel_pstate. This was caused by the truncation caused by using
+     integer math to calculate core busy and C0 percentages.
+
+
+
+     References:
+        https://lkml.org/lkml/2014/2/19/626
+        https://bugzilla.kernel.org/show_bug.cgi?id=70941
+
+     Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+  drivers/cpufreq/intel_pstate.c | 28 ++++++++++++++++++----------
+  1 file changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e908161..2cd36b9 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -39,9 +39,10 @@
+  #define BYT_TURBO_RATIOS	0x66c
+
+
+-#define FRAC_BITS 8
++#define FRAC_BITS 6
+  #define int_tofp(X) ((int64_t)(X) << FRAC_BITS)
+  #define fp_toint(X) ((X) >> FRAC_BITS)
++#define FP_ROUNDUP(X) ((X) += 1 << FRAC_BITS)
+
+  static inline int32_t mul_fp(int32_t x, int32_t y)
+  {
+@@ -556,18 +557,20 @@ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
+  static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+  					struct sample *sample)
+  {
+-	u64 core_pct;
+-	u64 c0_pct;
++	int32_t core_pct;
++	int32_t c0_pct;
+
+-	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
++	core_pct = div_fp(int_tofp((sample->aperf)),
++			int_tofp((sample->mperf)));
++	core_pct = mul_fp(core_pct, int_tofp(100));
++	FP_ROUNDUP(core_pct);
++
++	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
+
+-	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
+  	sample->freq = fp_toint(
+-		mul_fp(int_tofp(cpu->pstate.max_pstate),
+-			int_tofp(core_pct * 1000)));
++		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
+
+-	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
+-				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
++	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
+  }
+
+  static inline void intel_pstate_sample(struct cpudata *cpu)
+@@ -579,6 +582,10 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
+  	rdmsrl(MSR_IA32_MPERF, mperf);
+  	tsc = native_read_tsc();
+
++	aperf = aperf >> FRAC_BITS;
++	mperf = mperf >> FRAC_BITS;
++	tsc = tsc >> FRAC_BITS;
++
+  	cpu->sample_ptr = (cpu->sample_ptr + 1) % SAMPLE_COUNT;
+  	cpu->samples[cpu->sample_ptr].aperf = aperf;
+  	cpu->samples[cpu->sample_ptr].mperf = mperf;
+@@ -610,7 +617,8 @@ static inline int32_t intel_pstate_get_scaled_busy(struct 
+cpudata *cpu)
+  	core_busy = cpu->samples[cpu->sample_ptr].core_pct_busy;
+  	max_pstate = int_tofp(cpu->pstate.max_pstate);
+  	current_pstate = int_tofp(cpu->pstate.current_pstate);
+-	return mul_fp(core_busy, div_fp(max_pstate, current_pstate));
++	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
++	return FP_ROUNDUP(core_busy);
+  }
+
+  static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
+
+
 
