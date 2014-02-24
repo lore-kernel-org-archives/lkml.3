@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402AbaBXKcC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:32:02 -0500
-Received: from mail.aswsp.com ([193.34.35.150]:40496 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaBXKb7 convert rfc822-to-8bit (ORCPT
+	id S1752495AbaBXKcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:32:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22661 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaBXKcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:31:59 -0500
-Date: Mon, 24 Feb 2014 11:31:53 +0100
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: Neil Zhang <zhangwm@marvell.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] bug fix for mv_udc_core.c
-Message-ID: <20140224113153.64c5a772@parrot.com>
-In-Reply-To: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
-References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	Mon, 24 Feb 2014 05:32:05 -0500
+Date: Mon, 24 Feb 2014 13:31:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: gregkh@linuxfoundation.org, ufimtseva@gmail.com,
+        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: ced401: fix double unlock bug
+Message-ID: <20140224103151.GO26776@mwanda>
+References: <6036697.Bsd6uoTeJ1@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6036697.Bsd6uoTeJ1@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Mon, 24 Feb 2014 16:03:10 +0800,
-Neil Zhang <zhangwm@marvell.com> a écrit :
-
-> This patch set is mainly for bug fix.
+On Mon, Feb 24, 2014 at 07:23:15PM +0900, Daeseok Youn wrote:
 > 
-> Neil Zhang (6):
->   usb: gadget: mv_udc: remove redundant pull up in udc_start
->   usb: gadget: mv_udc: disable HW zlt for ep0
->   usb: gadget: mv_udc: clear corresponding interrupt when flush fifo
->   usb: gadget: mv_udc: check endpoint before queue dtd
->   USB: gadget: mv_udc: workaroud for missing dTD
->   USB: gadget: mv_udc: fix corner case for missiong dTD
+> After spin_lock() is called, all of if-else conditions in this brace
+> should reach the end of else and spin_unlock() must be called.
+> So It doesn't need to call spin_unlock() without a return statement
+> for handling an error.
 > 
->  drivers/usb/gadget/mv_udc_core.c |   47 ++++++++++++++++++++++++++++++++++----
->  1 file changed, 42 insertions(+), 5 deletions(-)
+> Also sparse says:
+> drivers/staging/ced1401/usb1401.c:1080:28: warning:
+>  context imbalance in 'Handle1401Esc' - unexpected unlock
 > 
 
-Do you have plan to move to the chipidea udc driver ?
+Thank you.
 
-You could have some bug fix for free or share your bug fix with others.
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
 
+regards,
+dan carpenter
 
-Matthieu
