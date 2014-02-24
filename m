@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaBXIQC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:16:02 -0500
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:41307
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752559AbaBXIP6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:15:58 -0500
-From: Peter Chen <Peter.Chen@freescale.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH RESEND v2 1/3] usb: chipidea: msm: Add device tree
- binding information
-Thread-Topic: [PATCH RESEND v2 1/3] usb: chipidea: msm: Add device tree
- binding information
-Thread-Index: AQHPLiH43OV+zb4700mLy7ldJun5K5rEFMEQ
-Date: Mon, 24 Feb 2014 08:15:43 +0000
-Message-ID: <94c57dc0d24f45a09985e05591a90bb2@BL2PR03MB226.namprd03.prod.outlook.com>
-References: <530512F1.3060304@cogentembedded.com>
- <1392889988-24312-1-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1392889988-24312-1-git-send-email-iivanov@mm-sol.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-forefront-prvs: 0132C558ED
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(76786001)(76576001)(77096001)(63696002)(76796001)(74366001)(86362001)(59766001)(77982001)(94946001)(74316001)(69226001)(81542001)(47446002)(93136001)(93516002)(81342001)(79102001)(53806001)(54356001)(76482001)(95416001)(46102001)(51856001)(54316002)(47736001)(49866001)(47976001)(50986001)(4396001)(74706001)(74876001)(19580405001)(80976001)(83322001)(81686001)(81816001)(33646001)(85852003)(56776001)(83072002)(85306002)(87266001)(90146001)(56816005)(66066001)(80022001)(65816001)(95666003)(94316002)(92566001)(74662001)(74502001)(2656002)(87936001)(31966008)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB418;H:BL2PR03MB226.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753079AbaBXIQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:16:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54953 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722AbaBXIAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:00:54 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, iss_storagedev@hp.com,
+        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
+        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 00/23] scsi: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Mon, 24 Feb 2014 09:02:00 +0100
+Message-Id: <cover.1393191330.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> +CI13xxx (Chipidea) USB controllers
-> +
-> +Required properties:
-> +- compatible:   should contain "qcom,ci-hdrc"
-> +- reg:          offset and length of the register set in the memory map
-> +- interrupts:   interrupt-specifier for the controller interrupt.
-> +- usb-phy:      phandle for the PHY device
-> +- dr_mode:      Sould be "peripheral"
-> +
-> +	gadget@f9a55000 {
-> +		compatible = "qcom,ci-hdrc";
-> +		reg = <0xf9a55000 0x400>;
-> +		dr_mode = "peripheral";
-> +		interrupts = <0 134 0>;
-> +		usb-phy = <&usb_otg>;
-> +	};
-> +
+Hello!
 
-usb_otg is not a good name for the node of usb phy.
+This series is against James Bottomley's SCSI tree [1], but it needs
+commit f7fc32c ("PCI/MSI: Add pci_enable_msi_exact() and
+pci_enable_msix_exact()") from from Bjorn Helgaas's PCI tree [2]:
 
-Peter
+1. git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git for-next
+2. git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
+
+Recently pci_enable_msix_exact() function has been accepted to
+the mainline. That is a variation of pci_enable_msix_range() which
+allows a device driver to request a particular number of MSI-Xs.
+
+As result, most of the changes posted in version 1 of this series
+are invalidated and need to use pci_enable_msix_exact() instead of
+originally posted pci_enable_msix_range() usages.
+
+I removed almost all ACKs, since unlike pci_enable_msix_range()
+function which returns the number of MSI-Xs allocated or negative
+errno, pci_enable_msix_exact() returns either zero success code or
+a negative errno. Although this change is simple, it still entails
+an updated error code analysis and would be better reviewed by
+driver maintainers.
+
+Thanks!
+
+Cc: iss_storagedev@hp.com
+Cc: intel-linux-scu@intel.com
+Cc: support@lsi.com
+Cc: DL-MPTFusionLinux@lsi.com
+Cc: qla2xxx-upstream@qlogic.com
+Cc: iscsi-driver@qlogic.com
+Cc: pv-drivers@vmware.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+
+Alexander Gordeev (23):
+  be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  bfa: Do not call pci_enable_msix() after it failed once
+  bfa: Cleanup bfad_setup_intr() function
+  bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  csiostor: Remove superfluous call to pci_disable_msix()
+  csiostor: Use pci_enable_msix_range() instead of pci_enable_msix()
+  fnic: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  hpsa: Fallback to MSI rather than to INTx if MSI-X failed
+  hpsa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  isci: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  lpfc: Remove superfluous call to pci_disable_msix()
+  lpfc: Use pci_enable_msix_range() instead of pci_enable_msix()
+  megaraid: Fail resume if MSI-X re-initialization failed
+  megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+  mpt2sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  mpt3sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  pm8001: Fix invalid return when request_irq() failed
+  pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  pmcraid: Get rid of a redundant assignment
+  pmcraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+  qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
+  qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
+  vmw_pvscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+
+ drivers/scsi/be2iscsi/be_main.c           |    6 +--
+ drivers/scsi/bfa/bfad.c                   |   62 ++++++++++++-----------------
+ drivers/scsi/csiostor/csio_hw.h           |    2 +-
+ drivers/scsi/csiostor/csio_isr.c          |   24 ++++-------
+ drivers/scsi/fnic/fnic_isr.c              |    4 +-
+ drivers/scsi/hpsa.c                       |   12 +-----
+ drivers/scsi/isci/init.c                  |    2 +-
+ drivers/scsi/lpfc/lpfc_init.c             |   54 ++++++++++++-------------
+ drivers/scsi/megaraid/megaraid_sas_base.c |   24 +++++------
+ drivers/scsi/mpt2sas/mpt2sas_base.c       |    6 +-
+ drivers/scsi/mpt3sas/mpt3sas_base.c       |    4 +-
+ drivers/scsi/pm8001/pm8001_init.c         |   44 +++++++++++----------
+ drivers/scsi/pmcraid.c                    |   14 +------
+ drivers/scsi/qla2xxx/qla_isr.c            |   27 +++++-------
+ drivers/scsi/qla4xxx/ql4_nx.c             |    2 +-
+ drivers/scsi/vmw_pvscsi.c                 |    2 +-
+ 16 files changed, 121 insertions(+), 168 deletions(-)
+
+-- 
+1.7.7.6
 
