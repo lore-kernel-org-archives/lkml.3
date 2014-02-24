@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaBXJAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:00:09 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:51357 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752463AbaBXJAF (ORCPT
+	id S1752536AbaBXJAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:00:08 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36986 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458AbaBXJAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:00:05 -0500
-Date: Mon, 24 Feb 2014 09:59:57 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH 1/7] spi: sunxi: Add Allwinner A10 SPI controller driver
-Message-ID: <20140224085957.GB3468@lukather>
-References: <1393104959-12831-1-git-send-email-maxime.ripard@free-electrons.com>
- <1393104959-12831-2-git-send-email-maxime.ripard@free-electrons.com>
- <20140223021530.GD25940@sirena.org.uk>
+	Mon, 24 Feb 2014 04:00:04 -0500
+Message-ID: <d7272b91c74148c56de5f1c27dc7b7c7.squirrel@www.codeaurora.org>
+In-Reply-To: <CAKohpok2rbepUS_7quZ0AThPckvVnAZybVpsV0ctiDWZmxTdRw@mail.gmail.com>
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
+    <530AF7E4.5080806@linux.vnet.ibm.com>
+    <CAKohpok-8_JV8hRDiWnRLYqEqyvD60cyn5Hs1HcZTSEPZjLvOQ@mail.gmail.com>
+    <a7536f7b5a03fe287aaf1974db74ba64.squirrel@www.codeaurora.org>
+    <CAKohpomRqboKjHRF8ev9erJ6MdRWcsX2jO7A=g47gMmewm_ZiQ@mail.gmail.com>
+    <b59f4a49af4ebd12c2d61e58dfb27a39.squirrel@www.codeaurora.org>
+    <CAKohpok2rbepUS_7quZ0AThPckvVnAZybVpsV0ctiDWZmxTdRw@mail.gmail.com>
+Date: Mon, 24 Feb 2014 09:00:03 -0000
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+From: skannan@codeaurora.org
+To: "Viresh Kumar" <viresh.kumar@linaro.org>
+Cc: "Saravana Kannan" <skannan@codeaurora.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+User-Agent: SquirrelMail/1.4.22-3.el6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
-Content-Disposition: inline
-In-Reply-To: <20140223021530.GD25940@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Viresh Kumar wrote:
+> On 24 February 2014 14:17,  <skannan@codeaurora.org> wrote:
+>> Sorry, not sure I understand what you mean.
+>>
+>> I agree, wording in my commit text might be unclear. I'll fix it after
+>> we
+>> agree on the code fix. In the MSM case, each CPU has it's own policy.
+>>
+>> I'm assuming your original complaint was about my confusing wording.
+>> Maybe
+>> that's not what you were pointing out?
+>
+> In your case each CPU has a separate policy structure as they have
+> separately
+> controllable clocks. But you also said that CPU0 is setting CPU1's
+> governor to
+> NULL. I don't see that happening. Each CPU sets its own governor to NULL
+> on
+> init().
 
-Hi,
+When I said "CPU0 is setting CPU1's governor to NULL", I meant
+thread/context running in CPU0 is setting CPU1's governor as part of
+CPU1's ONLINE notifier.
 
-On Sun, Feb 23, 2014 at 11:15:30AM +0900, Mark Brown wrote:
-> On Sat, Feb 22, 2014 at 10:35:53PM +0100, Maxime Ripard wrote:
-> > The older Allwinner SoCs (A10, A13, A10s and A20) all have the
-> > same SPI controller.
->=20
-> Applied, thanks.  Please differentiate between these two devices in
-> the subject line when sending patches for example by using "sun6i"
-> and "sun4i".
+-Saravana
 
-Ok, will do.
-Thanks!
-Maxime
+-- 
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCwoNAAoJEBx+YmzsjxAgl5oP/A4TlhDTNH4pRyyuFwxC21TA
-4IRTp93oGzkeIYp+Kc3luM44jf/JypdKcV4SU6OfDj4428TGUnCpVBgZ6ZtbkDq+
-rP490C78MTCYahOxpAbbY3JS/051Iv90xLphmH9FbVXyqhGIEplr/gEnp1sNqTTe
-9twA7Q4OFq0nDpoOI05CbMyCSw+r3VVSh5Ym9cEIjoZuCXlbqJJhG3ZITsfs4nJi
-RcTe3yBmdbPbPPOLTuibdbeyMiUzLZIKOIU3/dPGGqoEY1VTzspUq6Nag9qxeQ2i
-FzG03hov6zjxApYqax0R/+G8Z/4L4p+SOSsJpYJ9nQc3gD7oqbeo1fVJafaGhGnS
-cza0bn/bkC1CMw7MOfjWaLZbyDl+XmHYajBGdte9TR+8dQZXJsuGRg9+zNJ6i8Mx
-FrQuS9+24BA54NVWGYpKybkR7bN85BYeQpnVZ/5OhWxPyJATxNreiYcyay1IjPCb
-w7lg1PuSq0NOfiVPZtt8NzUp6KuijcZ6pAMJOWsqoN3hAMOhYAfCWXMwqPU45ntp
-csiVpBQnTwWhr34pPECi30sY/ujhvI0reE5GDP9uPyNvr57UivDm6N/FHmd1kdPQ
-e+/qkqFa2FdvSwz4ddVOntg8hWevCc93nD+/dzlmLR3wSXe89ZLZ9Jh/CuRayk79
-+IgcWTnLqGWLhbGz7t0/
-=QMzT
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
