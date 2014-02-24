@@ -1,109 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbaBXWhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:37:09 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60813 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaBXWhH (ORCPT
+	id S1752920AbaBXWjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:39:22 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55842 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276AbaBXWjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:37:07 -0500
-Date: Mon, 24 Feb 2014 14:37:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140224223701.GC8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
- <20140223003933.GQ4250@linux.vnet.ibm.com>
- <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
- <20140223063426.GT4250@linux.vnet.ibm.com>
- <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
- <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
- <20140224172110.GO8264@linux.vnet.ibm.com>
- <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
- <20140224185341.GU8264@linux.vnet.ibm.com>
- <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	Mon, 24 Feb 2014 17:39:21 -0500
+Message-ID: <530BC9F8.2040402@ti.com>
+Date: Mon, 24 Feb 2014 16:38:48 -0600
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022422-0928-0000-0000-000006C658FB
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Lars-Peter Clausen <lars@metafoo.de>, <linux-rt-users@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Ideas/suggestions to avoid repeated locking and reducing too
+ many lists with dmaengine?
+References: <530B9784.5060904@ti.com> <20140224192152.GV27282@n2100.arm.linux.org.uk>
+In-Reply-To: <20140224192152.GV27282@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 11:54:46AM -0800, Linus Torvalds wrote:
-> On Mon, Feb 24, 2014 at 10:53 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > Good points.  How about the following replacements?
-> >
-> > 3.      Adding or subtracting an integer to/from a chained pointer
-> >         results in another chained pointer in that same pointer chain.
-> >         The results of addition and subtraction operations that cancel
-> >         the chained pointer's value (for example, "p-(long)p" where "p"
-> >         is a pointer to char) are implementation defined.
-> >
-> > 4.      Bitwise operators ("&", "|", "^", and I suppose also "~")
-> >         applied to a chained pointer and an integer for the purposes
-> >         of alignment and pointer translation results in another
-> >         chained pointer in that same pointer chain.  Other uses
-> >         of bitwise operators on chained pointers (for example,
-> >         "p|~0") are implementation defined.
-> 
-> Quite frankly, I think all of this language that is about the actual
-> operations is irrelevant and wrong.
-> 
-> It's not going to help compiler writers, and it sure isn't going to
-> help users that read this.
-> 
-> Why not just talk about "value chains" and that any operations that
-> restrict the value range severely end up breaking the chain. There is
-> no point in listing the operations individually, because every single
-> operation *can* restrict things. Listing individual operations and
-> depdendencies is just fundamentally wrong.
-> 
-> For example, let's look at this obvious case:
-> 
->    int q,*p = atomic_read(&pp, consume);
->    .. nothing modifies 'p' ..
->    q = *p;
-> 
-> and there are literally *zero* operations that modify the value
-> change, so obviously the two operations are ordered, right?
-> 
-> Wrong.
-> 
-> What if the "nothing modifies 'p'" part looks like this:
-> 
->     if (p != &myvariable)
->         return;
-> 
-> and now any sane compiler will happily optimize "q = *p" into "q =
-> myvariable", and we're all done - nothing invalid was ever
+Hi Russell,
 
-Yes, the compiler could do that.  But it would still be required to
-carry a dependency from the memory_order_consume read to the "*p",
-which it could do by compiling "q = *p" rather than "q = myvariable"
-on the one hand or by emitting a memory-barrier instruction on the other.
+Firstly, thanks for your quick reply.
 
-This was the point of #12:
+On 02/24/2014 01:21 PM, Russell King - ARM Linux wrote:
+> Wrapping... (I've had to manually edit this.)
+> 
+> On Mon, Feb 24, 2014 at 01:03:32PM -0600, Joel Fernandes wrote:
+>> Just wanted your thoughts/suggestions on how we can avoid overhead in
+>> the EDMA dmaengine driver. I am seeing a lots of performance drop
+>> specially for small transfers with EDMA versus before raw EDMA was
+>> moved to DMAEngine framework (atleast 25%).
+>>
+>> One of the things I am thinking about is the repeated (spin)
+>> locking/unlocking of the virt_dma_chan->lock or vc->lock. In many
+>> cases, there's only 1 user or thread requiring to do a DMA, so I
+>> feel the locking is unnecessary and potential overhead. If there's
+>> a sane way to detect this an avoid locking altogether, that
+>> would be great.
+> 
+> For the case where there's no contention, spinlocks /should/ be light.
+> What will make them more expensive is if you have things like lockdep
+> enabled, which adds much more code into those paths to do state tracking.
+> It's a known side effect of using that debug.
+> 
+> So, if you're developing, then you should always have turned lockdep on.
+> If you're testing for performance, you should have lockdep and spinlock
+> debugging turned off.
 
-12.	A memory_order_consume load carries a dependency to any
-	dereference operator (unary "*", "[]", and "->") in the
-	resulting pointer chain.
+Thanks, indeed I had to turn them off.
 
-							Thanx, Paul
+> 
+>>  Also with respect to virt_dma (which is used by edma to manage all the
+>> descriptors and lists) there are too many lists: submitted, issued,
+>> completed etc and the descriptor moves from one to the other. I am
+>> thinking if there is a way we can avoid using so many lists and just
+>> have 2 lists and move the desc from one list to the other, That could
+>> avoid using the intermediate list altogether and classify dma requests
+>> as "done" or "not done".
+> 
+> The reason I created separate submitted and issued lists is that it's
+> much easier to manage than having everything on a single list.
+> 
+> We could deal with the submitted vs issued list, and that's to have the
+> channel store the cookie for the last issued descriptor - but I wonder
+> if it's worth the effort.
+> 
+> What I'd suggest is to try some profiling, and post some profiling
+> results which show where the problems are, rather than pointing at
+> bits of code you might not particularly like.
+> 
+
+Actually I did do some tracing earlier before I posted this thread- and
+notice there was excessive traces of locking/unlocking. It is very light
+though as you pointed and lighter without debug options. The only other
+notable difference is the fact that we are now going through the dmaengine
+framework in the newer kernel vs the faster one.
+
+One more thing in my trace is omap_dma_sync repeatedly call in memcpy_to_io
+for every barrier call which is not necessary. I am working on a fix this.
+
+On turning off DEBUG_KERNEL and running more tests, I do see some
+improvements however the throughput reduction is still =~ 10%
+
+With a modified openssl speed test app, I sent 16-byte sized block
+repeatedly to the AES crypto hardware accelerator using EDMA:
+
+On v3.13.5 kernel:
+root@am335x-evm:~# openssl speed -evp aes-128-cbc -engine cryptodev
+engine "cryptodev" set.
+Doing aes-128-cbc for 3s on 16 size blocks: 79902 aes-128-cbc's
+
+With v3.2 kernel,
+Doing aes-128-cbc for 3s on 16 size blocks: 92314 aes-128-cbc's
+
+So we're able to encrypt around 13k more ops, or around 4.5k ops/second
+with 3.13.5
+
+As such, I do see this as a problem but difference is much lesser for
+larger blocks so its not a very big alarm. We should just be using PIO mode
+for small blocks.
+
+regards,
+-Joel
+
 
