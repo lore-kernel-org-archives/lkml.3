@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaBXONj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:13:39 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:42732 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752253AbaBXONi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:13:38 -0500
-X-IronPort-AV: E=Sophos;i="4.97,535,1389715200"; 
-   d="scan'208";a="9593914"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH Resend] trace: Replace hardcoding of 19 with MAX_NICE.
-Date: Mon, 24 Feb 2014 22:12:01 +0800
-Message-Id: <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
-References: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/24 22:11:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/24 22:11:17,
-	Serialize complete at 2014/02/24 22:11:17
+	id S1752869AbaBXONy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:13:54 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:50314 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752253AbaBXONx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 09:13:53 -0500
+Message-ID: <530B539B.8050201@mev.co.uk>
+Date: Mon, 24 Feb 2014 14:13:47 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] Staging: comedi: addi-data: cleanup conditional blocks
+ in hwdrv_apci035.c
+References: <1393039229-7184-1-git-send-email-chase.southwood@yahoo.com> <1393039279-7229-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1393039279-7229-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-cc: Steven Rostedt <rostedt@goodmis.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@redhat.com>
-cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/trace/ring_buffer_benchmark.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 2014-02-22 03:21, Chase Southwood wrote:
+> There were some conditional blocks that had an unneccesary level of
+> indentation in them.  We can remove this to improve code clarity.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+>   .../comedi/drivers/addi-data/hwdrv_apci035.c       | 31 ++++++++++------------
+>   1 file changed, 14 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> index 7c40535..34e5321 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci035.c
+> @@ -207,23 +207,22 @@ static int i_APCI035_ConfigTimerWatchdog(struct comedi_device *dev,
+>   		ui_Command =
+>   			(ui_Command & 0xFFF719E2UL) | ui_Mode << 13UL | 0x10UL;
+>
+> -	} else {
+> -		if (data[0] == ADDIDATA_WATCHDOG) {
+> +	} else if (data[0] == ADDIDATA_WATCHDOG) {
+>
+> -			/* Set the mode :             */
+> -			/* - Disable the hardware     */
+> -			/* - Disable the counter mode */
+> -			/* - Disable the warning      */
+> -			/* - Disable the reset        */
+> -			/* - Disable the timer mode   */
+> +		/* Set the mode :             */
+> +		/* - Disable the hardware     */
+> +		/* - Disable the counter mode */
+> +		/* - Disable the warning      */
+> +		/* - Disable the reset        */
+> +		/* - Disable the timer mode   */
+>
+> -			ui_Command = ui_Command & 0xFFF819E2UL;
+> +		ui_Command = ui_Command & 0xFFF819E2UL;
+>
+> -		} else {
+> -			dev_err(dev->class_dev, "The parameter for Timer/watchdog selection is in error\n");
+> -			return -EINVAL;
+> -		}
+> +	} else {
+> +		dev_err(dev->class_dev, "The parameter for Timer/watchdog selection is in error\n");
+> +		return -EINVAL;
+>   	}
+> +
+>   	outl(ui_Command, devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+>   	ui_Command = 0;
+>   	ui_Command = inl(devpriv->iobase + ((i_WatchdogNbr - 1) * 32) + 12);
+> @@ -628,10 +627,8 @@ static void v_APCI035_Interrupt(int irq, void *d)
+>   		send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
+>   	}
+>
+> -	else {
+> -		if ((ui_StatusRegister2 & 0x1) == 0x1)
+> -			send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
+> -	}
+> +	else if ((ui_StatusRegister2 & 0x1) == 0x1)
+> +		send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
 
-diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
-index a5457d5..0434ff1 100644
---- a/kernel/trace/ring_buffer_benchmark.c
-+++ b/kernel/trace/ring_buffer_benchmark.c
-@@ -40,8 +40,8 @@ static int write_iteration = 50;
- module_param(write_iteration, uint, 0644);
- MODULE_PARM_DESC(write_iteration, "# of writes between timestamp readings");
- 
--static int producer_nice = 19;
--static int consumer_nice = 19;
-+static int producer_nice = MAX_NICE;
-+static int consumer_nice = MAX_NICE;
- 
- static int producer_fifo = -1;
- static int consumer_fifo = -1;
-@@ -308,7 +308,7 @@ static void ring_buffer_producer(void)
- 
- 	/* Let the user know that the test is running at low priority */
- 	if (producer_fifo < 0 && consumer_fifo < 0 &&
--	    producer_nice == 19 && consumer_nice == 19)
-+	    producer_nice == MAX_NICE && consumer_nice == MAX_NICE)
- 		trace_printk("WARNING!!! This test is running at lowest priority.\n");
- 
- 	trace_printk("Time:     %lld (usecs)\n", time);
+The usual style there is to put the "else" or the "else if" on the same 
+line as the preceding closing brace.
+
+Also, if any branch in the if, else if, ..., else chain uses braces, 
+they all should (see the bit that says "This does not apply if only one 
+branch of a conditional statement is a single statement; in the latter 
+case use braces in both branches:" in the CodingStyle).
+
+>
+>   	return;
+>   }
+>
+
+
 -- 
-1.8.2.1
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
