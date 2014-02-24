@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaBXMmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 07:42:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:61537 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaBXMmU (ORCPT
+	id S1752578AbaBXMmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 07:42:49 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:58193 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752543AbaBXMms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 07:42:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
-Date: Mon, 24 Feb 2014 13:42:09 +0100
-Message-ID: <1747419.6FxgzfPen0@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <10646.1393243751@warthog.procyon.org.uk>
-References: <20140224084437.GG20680@thin> <201402240902.35977.arnd@arndb.de> <10646.1393243751@warthog.procyon.org.uk>
+	Mon, 24 Feb 2014 07:42:48 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Feb 2014 04:42:40 -0800
+Subject: RE: [PATCH 0/6] bug fix for mv_udc_core.c
+Thread-Topic: [PATCH 0/6] bug fix for mv_udc_core.c
+Thread-Index: Ac8xS6ZLrDzWxAnlSpiemfXgqMnArgAEggng
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC4133CD@SC-VEXCH4.marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+ <20140224113153.64c5a772@parrot.com>
+In-Reply-To: <20140224113153.64c5a772@parrot.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:A2S8y8FnwzQkcuCshdV35GlMRn7wvwgySC+C9ugoxV3
- YQma5g4Dq4dgfRmNJAmo76FtdOakg5D36TdRkLf9jDEoMZk2qg
- FhOYScj27FgD0SlyJSzbvgU0KbPCZ2+TIEdBib/GEmV+f9fbwx
- aTzFBL9oTpWp+kb5+4TdWtkLvoknlsHSYoRW3XSj5t93oXCcN1
- uavKY0OgezpL85Rp5hgLBczRmRkC2wcCQFKpjOx+84Tqap/MXw
- ShDdeJlLbmP9y5sAwySAObIPeqj64oBvdOiEJfH71XeME3lIEG
- wHpV/jMOPrjey2CqBX2HjLpN5rIZDpFs8ZXp51L60JLO5pIG2v
- /aGVsQyqqmoX5hNddJXo=
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-23_03:2014-02-21,2014-02-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402240045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1OCgsA6014253
 
-On Monday 24 February 2014 12:09:11 David Howells wrote:
-> Josh Triplett <josh@joshtriplett.org> wrote:
+
+> -----Original Message-----
+> From: Matthieu CASTET [mailto:matthieu.castet@parrot.com]
+> Sent: 2014ƒÍ2‘¬24»’ 18:32
+> To: Neil Zhang
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/6] bug fix for mv_udc_core.c
 > 
-> > > This means we actually want BUG() to end with __builtin_unreachable()
-> > > as in the CONFIG_BUG=y case, and also ensure it actually is
-> > > unreachable. As I have shown in [1], the there is a small overhead
-> > > of doing this in terms of code size.
-> > 
-> > I agree that allowing BUG() to become a no-op seems suboptimal, if only
-> > because of the resulting warnings and mis-optimizations.  However, I
-> > think the overhead could be cut down massively, such that BUG() just
-> > compiles down to a one-byte undefined instruction.  (__builtin_trap()
-> > might do the right thing here; worth checking.)
+> Le Mon, 24 Feb 2014 16:03:10 +0800,
+> Neil Zhang <zhangwm@marvell.com> a ®¶crit :
 > 
-> Is it possible to use an inline function with an empty body in this?  Let the
-> compiler prune away all the arguments?
+> > This patch set is mainly for bug fix.
+> >
+> > Neil Zhang (6):
+> >   usb: gadget: mv_udc: remove redundant pull up in udc_start
+> >   usb: gadget: mv_udc: disable HW zlt for ep0
+> >   usb: gadget: mv_udc: clear corresponding interrupt when flush fifo
+> >   usb: gadget: mv_udc: check endpoint before queue dtd
+> >   USB: gadget: mv_udc: workaroud for missing dTD
+> >   USB: gadget: mv_udc: fix corner case for missiong dTD
+> >
+> >  drivers/usb/gadget/mv_udc_core.c |   47
+> ++++++++++++++++++++++++++++++++++----
+> >  1 file changed, 42 insertions(+), 5 deletions(-)
+> >
+> 
+> Do you have plan to move to the chipidea udc driver ?
+> 
+> You could have some bug fix for free or share your bug fix with others.
 > 
 
-I think you are thinking of a different problem. BUG() already takes no
-arguments, but we get warnings for code like this:
 
-int f(void)
-{
-	switch (global) {
-	case 0:
-		return 0;
-	case 1:
-		return do_something();
-	default:
-		BUG();
-	}
-}
+Not yet.
+Will estimate it later.
+> 
+> Matthieu
 
-BUG() normally causes a fault and we print helpful messages before killing
-the task, and gcc knows we never continue because of the
-__builtin_unreachable() annotation.
-
-If BUG() is defined as 'do { } while (0)' in the example above, we get
-a warning because the function may end without returning a number.
-If we define it to 'do { unreachable(); } while (0)', we don't get a
-warning, but we can get undefined behavior in the case we ever get to
-the end of the function.
-
-__builtin_trap() would be nice as an architecture independent method,
-but I just checked what it does on ARM, and it just calls abort(),
-which is probably not what we want in the kernel, especially as long
-as the ARM abort() function calls BUG(), and most architectures don't
-define it at all.
-
-'do { } while (1)' is probably a reasonably generic way to not return
-and should compile into a single instruction on most architectures.
-panic() would be another option to do something that won't cause
-additional data corruption, but it's a varargs function, so that won't
-help you much when you just try to save object code size.
-
-	Arnd
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
