@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaBXJHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:07:22 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:55542 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaBXJHS (ORCPT
+	id S1751762AbaBXJO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:14:56 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54770 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaBXJOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:07:18 -0500
+	Mon, 24 Feb 2014 04:14:52 -0500
+Subject: [RFC PATCH v1 0/2] perf: Support for SDT markers
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Date: Mon, 24 Feb 2014 14:44:41 +0530
+Message-ID: <20140224090833.7998.5416.stgit@hemant-fedora>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoQ9ZuAhqmaKU5NLsJBNc0iN7uNdQMS6uCrp0enkFUzrqQ@mail.gmail.com>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
-	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
-	<CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
-	<CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
-	<CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
-	<CANqRtoQ9ZuAhqmaKU5NLsJBNc0iN7uNdQMS6uCrp0enkFUzrqQ@mail.gmail.com>
-Date: Mon, 24 Feb 2014 10:07:17 +0100
-X-Google-Sender-Auth: SCocsXxISIp3R3CfWgUwSvU04-Q
-Message-ID: <CAMuHMdXZx+J8=MDni+QzqiXCO61ThBQAdCxETm9p74nkc0f+hw@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022409-0260-0000-0000-000004691B83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+This patchset helps in listing dtrace style markers(SDT) present in user space
+applications through perf.
+Notes/markers are placed at important places by the
+developers. They have a negligible overhead when not enabled.
+We can enable them and probe at these places and find some important information
+like the arguments' values, etc.
 
-On Mon, Feb 24, 2014 at 9:44 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>> Another question: How about "bus_num" and the platform device id
->>> mapping? I'd like them to be the same if possible, but you are having
->>> this "(idx+1)" bit in your code which I assume is to add offset for
->>> the QSPI bus.
->>
->> "bus_num" is the SPI-specific numbering of SPI masters, which is filled
->> in by spi-sh-msiof.c based on platform_device.id (i.e. the numeric suffix
->> of e.g. "spi_r8a7790_msiof.1").
->> It's used for matching SPI slaves in spi_board_info with SPI masters.
->> As QSPI ("qspi.0") has SPI bus_num 0, the MSIOF SPI masters use
->> bus_num 1 to 4, hence the "idx+1", and the platform device names
->> "spi_r8a7790_msiof.1" to "spi_r8a7790_msiof.4".
->>
->> (Can't spi-sh-msiof.c use "bus_num = pdev->id + 1", so we can have
->>  MSIOF0 as "spi_r8a7790_msiof.0"? No, as that would impact numbering
->>  on all SoCs with MSIOF.)
->
-> Yeah, the bus number that is commonly used for SPI and I2C behaves
-> like that so I agree with what you're saying. I guess historically we
-> usually only have one I2C master and one SPI master which makes it
-> easy to use direct mapping between bus num and pdev->id.
->
-> Now on Lager we have multiple SPI masters (both QSPI and MSIOF unless
-> I'm mistaken), so the question is how to allocate the ranges of
-> bus_num for each SPI master. I believe your current allocation works
-> well but I'm a bit confused by it I must confess.
->
-> I'm used to one of the two schemes:
-> 1) single master with pdev->id equals bus_num
-> 2) compact board specific bus allocation
->
-> I believe you introduce something similar to 1) but for two SPI
-> masters which is totally fine! For some unknown reason I expected 2)
-> with bus_num 0 for QSPI and bus_num 1 for MSIOF1, but I think your
-> allocation scheme is reusable across multiple boards with the same SoC
-> so I think your current code is better when I think about it a bit
-> more.
+We have lots of applications which use SDT markers today, like:
+Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
 
-On our specific boards, we now have a sparse SPI bus numbering,
-but that's just because some MSIOF channels are not used. On other
-boards with the same SoC that may be different.
+To add SDT markers into user applications:
+We need to have this header sys/sdt.h present.
+sys/sdt.h used is version 3.
+If not present, install systemtap-sdt-devel package (for fedora-18).
 
-> Right. I was just confused seeing the pdev->id set to 2 on MSIOF1, but
-> I now understand that it is your intentional design to have bus_num 0
-> as QSPI, bus_num1 as unused MSIOF0 and bus_num 2 as MSIOF1.
+Please refer to the Documentation patch to see how the SDT markers are added into
+a program.
 
-Actually that's too much credit for me: the bus numbering came from the
-BSP through Yoshii-san.
+With this patchset,
+- Use perf to list the markers in the app:
+# perf list sdt ./user_app
 
-> It just takes some time for me to grasp. =)
+./user_app :
+%user_app:foo_start
+%user_app:fun_start
 
-Yes, we're too used to having one single type of each hardware type :-)
+- Also, we can see the SDT markers present in our system in the usual binaries.
+These usual binaries are libraries (dsos) listed by ldconfig --print-cache and some
+binaries present in PATH environment variable.
 
-Gr{oetje,eeting}s,
+First, scan the binaries using :
+# perf list sdt --scan
 
-                        Geert
+Creating a cache of SDT markers...
+perf sdt cache created!
+ Use : "perf list sdt"
+ to see the SDT markers
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+After the sdt cache file is created, use perf list to view the markers :
+# perf list sdt
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+%rtld : init_start
+%rtld : init_complete
+%rtld : map_failed
+%rtld : map_start
+%rtld : lll_futex_wake
+...
+...
+%libgcc : unwind
+%libvirt : rpc_server_client_auth_allow
+%libvirt : rpc_server_client_auth_fail
+%libvirt : rpc_server_client_auth_deny
+
+Alternatively, one can view the /var/cache/perf/perf-sdt.cache directly.
+
+This link shows an example of marker probing with Systemtap:
+https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+
+Also, this link provides important info regarding SDT notes:
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+- Markers in binaries :
+These SDT markers are present in the ELF in the section named
+".note.stapsdt".
+Here, the name of the marker, its provider, type, location, base
+address, semaphore address.
+We can retrieve these values using the members name_off and desc_off in
+Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+
+Changes since last series :
+- Made the SDT markers present in a system more visible through perf list 
+  as suggested by Pekka Enberg.
+- Less complex command line interface to access the SDT markers.
+- Added a cache file to store most of the SDT markers of a system.
+
+TODO:
+- Add support to probe these SDT markers and integrate with a previous patch
+  (support to perf to probe SDT markers) posted in lkml.
+  https://lkml.org/lkml/2013/10/23/10
+
+- Recognizing arguments and support to probe on them.
+
+---
+
+Hemant Kumar (2):
+      perf/sdt : Listing of SDT markers by perf
+      perf/sdt : Documentation
+
+
+ tools/perf/Documentation/SDT-markers.txt |  122 +++++++
+ tools/perf/Documentation/perf-list.txt   |    8 
+ tools/perf/Makefile.perf                 |    1 
+ tools/perf/builtin-list.c                |    4 
+ tools/perf/util/parse-events.h           |    2 
+ tools/perf/util/sdt.c                    |  489 ++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-elf.c             |  227 ++++++++++++++
+ tools/perf/util/symbol.h                 |   19 +
+ 8 files changed, 869 insertions(+), 3 deletions(-)
+ create mode 100644 tools/perf/Documentation/SDT-markers.txt
+ create mode 100644 tools/perf/util/sdt.c
+
+-- 
+
