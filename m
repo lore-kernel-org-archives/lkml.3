@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaBXPWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:22:51 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:3832 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaBXPWu (ORCPT
+	id S1752750AbaBXPbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:31:22 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:41653 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181AbaBXPbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:22:50 -0500
-X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
-   d="scan'208";a="16109042"
-Message-ID: <530B63C7.30103@broadcom.com>
-Date: Mon, 24 Feb 2014 16:22:47 +0100
-From: Arend van Spriel <arend@broadcom.com>
+	Mon, 24 Feb 2014 10:31:20 -0500
+X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
+   d="scan'208";a="103565992"
+Message-ID: <530B65C5.4040201@citrix.com>
+Date: Mon, 24 Feb 2014 15:31:17 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: combine per-cpu trace files
-References: <530B3616.70409@broadcom.com> <20140224083631.192868c0@gandalf.local.home>
-In-Reply-To: <20140224083631.192868c0@gandalf.local.home>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
+ instead of copy
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com> <1392803434.23084.97.camel@kazak.uk.xensource.com>
+In-Reply-To: <1392803434.23084.97.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.68.14.50]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 02:36 PM, Steven Rostedt wrote:
-> On Mon, 24 Feb 2014 13:07:50 +0100
-> Arend van Spriel <arend@broadcom.com> wrote:
-> 
->> Hi Steven,
->>
->> Regarding trace-cmd I have a question about the trace files. While
->> debugging an driver issue I had trace-cmd recording driver events on the
->> target system until it crashed and I had to power down the machine. Now
->> I have three trace-cmd files: trace.dat, trace.cpu1 and trace.cpu2.
->> trace-cmd combines the per-cpu files into final trace.dat, but would it
->> be possible to do that as a separate post process after a crash/abort.
-> 
-> Yep, if you installed the trace-cmd man pages (make install_doc) then
-> do a "man trace-cmd-restore"
+On 19/02/14 09:50, Ian Campbell wrote:
+> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
+>> A long known problem of the upstream netback implementation that on the TX
+>> path (from guest to Dom0) it copies the whole packet from guest memory into
+>> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+>> huge perfomance penalty. The classic kernel version of netback used grant
+>> mapping, and to get notified when the page can be unmapped, it used page
+>> destructors. Unfortunately that destructor is not an upstreamable solution.
+>> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+>> problem, however it seems to be very invasive on the network stack's code,
+>> and therefore haven't progressed very well.
+>> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+>> know when the skb is freed up. That is the way KVM solved the same problem,
+>> and based on my initial tests it can do the same for us. Avoiding the extra
+>> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+>> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+>> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+>> switch)
+>> Based on my investigations the packet get only copied if it is delivered to
+>> Dom0 stack,
+> This is not quite complete/accurate since you previously told me that it
+> is copied in the NAT/routed rather than bridged network topologies.
+>
+> Please can you cover that aspect here too.
+Ok.
 
-Nope. But I have a cloned repo so I think I will manage ;-)
-
-Thanks,
-Arend
-
-> -- Steve
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Zoli
