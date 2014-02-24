@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaBXGn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 01:43:26 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:52824 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaBXGnY convert rfc822-to-8bit (ORCPT
+	id S1752180AbaBXGnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 01:43:39 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:49377 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982AbaBXGnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 01:43:24 -0500
+	Mon, 24 Feb 2014 01:43:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-References: <20140223212703.511977310@linutronix.de>
-	<20140223212737.214342433@linutronix.de>
-	<20140223231755.GA27579@pengutronix.de>
-	<CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-Date: Mon, 24 Feb 2014 14:43:23 +0800
-Message-ID: <CAN1soZy_TfzNigfn4y6kF2qe4K+AQsagd-1KWYrz1VEavMO4bA@mail.gmail.com>
-Subject: Re: [patch 09/26] arm: mmp: Remove pointless fiddling with irq internals
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        arm <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <53063E01.5030808@wwwdotorg.org>
+References: <cover.1392273722.git.viresh.kumar@linaro.org>
+	<52FE71BD.3020103@wwwdotorg.org>
+	<2869027.iYHxWOSS2C@vostro.rjw.lan>
+	<52FEAECA.5080905@wwwdotorg.org>
+	<CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>
+	<5303C018.1020707@wwwdotorg.org>
+	<CAKohponF7ag-tfv77JK0pDVukS6v3QeSY+G_br3FJGskMDCvVw@mail.gmail.com>
+	<5304E93C.9000104@wwwdotorg.org>
+	<90EA67AE-7F57-4F43-8967-642903AD72AC@linaro.org>
+	<BEC64F5C-76E8-40C3-81BE-59096C3838F3@linaro.org>
+	<53063E01.5030808@wwwdotorg.org>
+Date: Mon, 24 Feb 2014 12:13:24 +0530
+Message-ID: <CAKohpok3Y9H96rSFkUL=v3pMwRd9=YyVDfuY7SSSq6FevF1Snw@mail.gmail.com>
+Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
+        "jinchoi@broadcom.com" <jinchoi@broadcom.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 2:07 PM, Chao Xie <xiechao.mail@gmail.com> wrote:
-> On Mon, Feb 24, 2014 at 7:17 AM, Uwe Kleine-König
-> <u.kleine-koenig@pengutronix.de> wrote:
->> Hi Thomas,
->>
->> On Sun, Feb 23, 2014 at 09:40:13PM -0000, Thomas Gleixner wrote:
->>> The pm-mmp2 and pm-pxa910 power management related irq_set_wake
->>> callbacks fiddle pointlessly with the irq actions for no reason except
->>> for lack of understanding how the wakeup mechanism works.
->>>
->>> On supsend the core disables all interrupts lazily, i.e. it does not
->>> mask them at the irq controller level. So any interrupt which is
->>> firing during supsend will mark the corresponding interrupt line as
->> s/supsend/suspend/ twice
->>> pending. Just before the core powers down it checks whether there are
->>> interrupts pending from interrupt lines which are marked as wakeup
->>> sources and if so it aborts the resume and resends the interrupts.
->> It's the suspend that is aborted, not the resume.
->>
->> Other than that your change looks fine.
->>
-> For pxa910 and MMP2, wake up source only wake up the AP subsystem.
-> The AP subsystem includes the APMU(AP Power Mangament Unit) and cores.
-> Now the core is still powered down. APMU will check the interrupt
-> lines, and find
-> that there are interrupt pending, it will power on the cores.
-> So if the irq is disabled, even wake up source can wake up AP subsystem, but the
-> core is still powered down. It will not be powered up by APMU.
->
+On 20 February 2014 23:10, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> Well, except that still leaves a bunch of errors in the kernel log, and
+> I have to remember to ignore them:-/
 
-Yes, suspend/resume can't work if the above code is removed.
+Just for few releases, before this patchset goes in.
 
-Interrupt source (logic AND with interrupt mask register) is connected
-to MPMU as
-wakeup source. If the interrupt is disabled, there's no wakeup source event.
+> It'd be nice if the cpufreq core didn't keep changing its behaviour and
+> adding new error prints. It really should be up to the cpufreq drivers
+> to log the errors if they experience any.
 
-And APMU is waken up by MPMU.
-
-So please don't remove the above code. We must keep these interrupt lines active
-to wake up the whole system.
-
-Regards
-Haojian
+Hmm... not sure.. Its better to do error prints at a single place, i.e. cpufreq
+core on behalf of all drivers. If there is a error being returned from some
+routine, we better print a message for that. Rather than living in the illusion
+that everything is fine :)
