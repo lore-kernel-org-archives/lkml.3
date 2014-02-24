@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaBXP53 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:57:29 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:62051 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaBXP50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:57:26 -0500
+	id S1753209AbaBXP5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:57:35 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57267 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109AbaBXP5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 10:57:32 -0500
+Message-ID: <530B6BC3.6070306@ti.com>
+Date: Mon, 24 Feb 2014 09:56:51 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-References: <20140220083032.GN4250@linux.vnet.ibm.com>
-	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	<20140220181116.GT4250@linux.vnet.ibm.com>
-	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	<1392922421.28840.36.camel@triegel.csb>
-	<CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
-	<1393095223.28840.4914.camel@triegel.csb>
-	<CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
-	<20140223003933.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-Date: Mon, 24 Feb 2014 07:57:24 -0800
-X-Google-Sender-Auth: _JflJg7mWN1Lzz84hbJKe-O5E5c
-Message-ID: <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+To: Mark Rutland <mark.rutland@arm.com>, Sebastian Reichel <sre@debian.org>
+CC: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
+        =?UTF-8?B?0JjQstCw0Lk=?= =?UTF-8?B?0LvQviDQlNC40LzQuNGC0YDQvtCy?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv1 5/6] HSI: Introduce OMAP SSI driver
+References: <1393199401-27197-1-git-send-email-sre@debian.org> <1393199401-27197-6-git-send-email-sre@debian.org> <20140224155132.GK28555@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140224155132.GK28555@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 11:31 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Let me think about it some more, but my gut feel is that just tweaking
-> the definition of what "ordered" means is sufficient.
->
-> So to go back to the suggested ordering rules (ignoring the "restrict"
-> part, which is just to clarify that ordering through other means to
-> get to the object doesn't matter), I suggested:
->
->  "the consume ordering guarantees the ordering between that
->   atomic read and the accesses to the object that the pointer
->   points to"
->
-> and I think the solution is to just say that this ordering acts as a
-> fence. It doesn't say exactly *where* the fence is, but it says that
-> there is *some* fence between the load of the pointer and any/all
-> accesses to the object through that pointer.
+On 02/24/2014 09:51 AM, Mark Rutland wrote:
+> On Sun, Feb 23, 2014 at 11:50:00PM +0000, Sebastian Reichel wrote:
 
-I'm wrong. That doesn't work. At all. There is no ordering except
-through the pointer chain.
+[...]
+>> +static int omap_ssi_port_runtime_suspend(struct device *dev)
+>> +{
+>> +       struct hsi_port *port = dev_get_drvdata(dev);
+>> +       struct omap_ssi_port *omap_port = hsi_port_drvdata(port);
+>> +       struct hsi_controller *ssi = to_hsi_controller(port->device.parent);
+>> +       struct omap_ssi_controller *omap_ssi = hsi_controller_drvdata(ssi);
+>> +
+>> +       dev_dbg(dev, "port runtime suspend!\n");
+>> +
+>> +       ssi_set_port_mode(omap_port, SSI_MODE_SLEEP);
+>> +       if (omap_ssi->get_loss)
+>> +               omap_port->loss_count =
+>> +                               (*omap_ssi->get_loss)(ssi->device.parent);
+> 
+> You don't need to do (*struct->func)(args) when invoking a function
+> pointer. You can jsut have struct->func(args) as we do elsewhere. This
+> can be:
+> 
+>   omap_ssi->get_loss(ssi->device.parent)
+> 
+> This should be fixed up in the other sites too.
 
-So I think saying just that, and nothing else (no magic fences, no
-nothing) is the right thing:
+in fact, we should stop expecting that service and drivers should
+manage their own context_loss detection
+Examples:
+MMC:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0a82e06e6183a252608df48cc4793b83e2d73dfd
 
- "the consume ordering guarantees the ordering between that
-  atomic read and the accesses to the object that the pointer
-  points to directly or indirectly through a chain of pointers"
+DSS: http://marc.info/?l=linux-omap&m=139272358619064&w=2
 
-The thing is, anything but a chain of pointers (and maybe relaxing it
-to "indexes in tables" in addition to pointers) doesn't really work.
 
-The current standard tries to break it at "obvious" points that can
-lose the data dependency (either by turning it into a control
-dependency, or by just dropping the value, like the left-hand side of
-a comma-expression), but the fact is, it's broken.
-
-It's broken not just because the value can be lost other ways (ie the
-"p-p" example), it's broken because the value can be turned into a
-control dependency so many other ways too.
-
-Compilers regularly turn arithmetic ops with logical comparisons into
-branches. So an expression like "a = !!ptr" carries a dependency in
-the current C standard, but it's entirely possible that a compiler
-ends up turning it into a compare-and-branch rather than a
-compare-and-set-conditional, depending on just exactly how "a" ends up
-being used. That's true even on an architecture like ARM that has a
-lot of conditional instructions (there are way less if you compile for
-Thumb, for example, but compilers also do things like "if there are
-more than N predicated instructions I'll just turn it into a
-branch-over instead").
-
-So I think the C standard needs to just explicitly say that you can
-walk a chain of pointers (with that possible "indexes in arrays"
-extension), and nothing more.
-
-                    Linus
+-- 
+Regards,
+Nishanth Menon
