@@ -1,138 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaBXLad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:30:33 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50930 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaBXLab (ORCPT
+	id S1752484AbaBXLbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:31:33 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56575 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaBXLbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:30:31 -0500
-Date: Mon, 24 Feb 2014 20:30:11 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: brian.austin@cirrus.com, Paul.Handrigan@cirrus.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        lgirdwood@gmail.com, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Message-ID: <20140224113011.GE25940@sirena.org.uk>
-References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
+	Mon, 24 Feb 2014 06:31:32 -0500
+Date: Mon, 24 Feb 2014 12:31:39 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+cc: Chao Xie <xiechao.mail@gmail.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [patch 09/26] arm: mmp: Remove pointless fiddling with irq
+ internals
+In-Reply-To: <CAN1soZy_TfzNigfn4y6kF2qe4K+AQsagd-1KWYrz1VEavMO4bA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1402241227400.21251@ionos.tec.linutronix.de>
+References: <20140223212703.511977310@linutronix.de> <20140223212737.214342433@linutronix.de> <20140223231755.GA27579@pengutronix.de> <CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
+ <CAN1soZy_TfzNigfn4y6kF2qe4K+AQsagd-1KWYrz1VEavMO4bA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="myda8z5PGMklj5Rc"
-Content-Disposition: inline
-In-Reply-To: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-798059020-1393241501=:21251"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
---myda8z5PGMklj5Rc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--8323329-798059020-1393241501=:21251
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-On Mon, Feb 24, 2014 at 02:55:29PM +0800, Nicolin Chen wrote:
-> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
-> has four 24-bit A/D and eight 24-bit D/A converters.
+On Mon, 24 Feb 2014, Haojian Zhuang wrote:
 
-Looks generally good, some fairly small nits below.
+> On Mon, Feb 24, 2014 at 2:07 PM, Chao Xie <xiechao.mail@gmail.com> wrote:
+> > On Mon, Feb 24, 2014 at 7:17 AM, Uwe Kleine-König
+> > <u.kleine-koenig@pengutronix.de> wrote:
+> >> Hi Thomas,
+> >>
+> >> On Sun, Feb 23, 2014 at 09:40:13PM -0000, Thomas Gleixner wrote:
+> >>> The pm-mmp2 and pm-pxa910 power management related irq_set_wake
+> >>> callbacks fiddle pointlessly with the irq actions for no reason except
+> >>> for lack of understanding how the wakeup mechanism works.
+> >>>
+> >>> On supsend the core disables all interrupts lazily, i.e. it does not
+> >>> mask them at the irq controller level. So any interrupt which is
+> >>> firing during supsend will mark the corresponding interrupt line as
+> >> s/supsend/suspend/ twice
+> >>> pending. Just before the core powers down it checks whether there are
+> >>> interrupts pending from interrupt lines which are marked as wakeup
+> >>> sources and if so it aborts the resume and resends the interrupts.
+> >> It's the suspend that is aborted, not the resume.
+> >>
+> >> Other than that your change looks fine.
+> >>
+> > For pxa910 and MMP2, wake up source only wake up the AP subsystem.
+> > The AP subsystem includes the APMU(AP Power Mangament Unit) and cores.
+> > Now the core is still powered down. APMU will check the interrupt
+> > lines, and find
+> > that there are interrupt pending, it will power on the cores.
+> > So if the irq is disabled, even wake up source can wake up AP subsystem, but the
+> > core is still powered down. It will not be powered up by APMU.
+> >
+> 
+> Yes, suspend/resume can't work if the above code is removed.
+> 
+> Interrupt source (logic AND with interrupt mask register) is connected
+> to MPMU as
+> wakeup source. If the interrupt is disabled, there's no wakeup source event.
+> 
+> And APMU is waken up by MPMU.
+> 
+> So please don't remove the above code. We must keep these interrupt lines active
+> to wake up the whole system.
 
-> [ CS42888 supports both I2C and SPI control ports. As initial patch,
->   this patch only adds the support for I2C. ]
+They are kept active at the interrupt controller level. You just
+refuse to understand how the internals of the interrupt subsystem
+work.
 
->  5 files changed, 795 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/sound/cs42888.txt
->  create mode 100644 sound/soc/codecs/cs42888.c
->  create mode 100644 sound/soc/codecs/cs42888.h
+And even if you would need this flag, then fiddling with the irq desc
+internals is a big NONO. There is a proper way to hand that in.
 
-Given that we're starting to split out separate bus drivers for the I2C
-and SPI CODECs (look at the recent submissions from Lars-Peter) it'd be
-good to start this off with a separate bus driver for I2C even if the
-SPI one is still to be done - that way the Kconfig stuff for machine
-drivers is all in place and doesn't need updating.
+Thanks,
 
-> +  - clocks : phandle to the clock source for MCLK
-> +
-> +  - clock-names : must contain "mclk".
+	tglx
 
-These should really be lists though there's only one documented element
-so it's purely a documentation update.
 
-> +	/* Disable auto-mute */
-> +	regmap_update_bits(cs42888->regmap, CS42888_TXCTL,
-> +			   CS42888_TXCTL_AMUTE | CS42888_TXCTL_DAC_SZC_MASK,
-> +			   CS42888_TXCTL_DAC_SZC_SR);
-
-Does this interfere with the manual mute controls or is it a separate
-thing?  If it plays nicely with the manual controls it's probably better
-to leave it enabled since it improves performance in some benchmarks
-(that's why hardware tends to have the feature).
-
-> +	/*
-> +	 * We haven't marked the chip revision as volatile due to
-> +	 * sharing a register with the right input volume; explicitly
-> +	 * bypass the cache to read it.
-> +	 */
-> +	regcache_cache_bypass(cs42888->regmap, true);
-
-The other option here is to just not provide a default so that the first
-time it's read it goes to hardware.  It doesn't make much difference
-either way though.
-
-> +static int cs42888_i2c_remove(struct i2c_client *i2c_client)
-> +{
-> +	snd_soc_unregister_codec(&i2c_client->dev);
-> +	return 0;
-> +}
-
-The driver ought to disable runtime PM, the clock and the regulators here.
-
-> +	/*
-> +	 * In case the device was put to hard reset during sleep,
-> +	 * we need to wait 500ns here before any I2C communication
-> +	 */
-> +	mdelay(5);
-
-Do we need 500ns or 5ms? =20
-
-> +	regcache_sync(cs42888->regmap);
-
-Should really check the return value here.
-
-> +	if (!IS_ERR(cs42888->clk))
-> +		clk_disable_unprepare(cs42888->clk);
-
-Does the device work without MCLK?
-
---myda8z5PGMklj5Rc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCy06AAoJELSic+t+oim9NacQAJVraT2HLnDfUAFCMZHgAWvo
-oe2rWCWlkqDqn/tKbsTHCDv3vEJ1HOw8rDFy7CvnS8jrK/TwzwLAi6VrctROFnvw
-coBs3ZHIWw0mFuu6qlNqVqL9ZKNeemESyKdkisJ3FDxaWt/W1nPYWdn8q0y4+6dW
-7TwnXAfWG9r2KNSPp7u7CeRxc+MLe5Z8NyKUPOfz0RfI153E8MHt7lqI1cgM8S2e
-UPM5xb0Tuvdv6bhcHd8sLwOkdVeSvyFdC1aGJfRWC6wPA6o8rdjsYpfKhBHATEwk
-ot1jn7vSTlLJlvTEkkoaWWDy001Xv8GI1CQkLJkFIF+6jbsl+CUoL+xq8bi9+yui
-T7sYceGbY6H5CYGg2OdFPM462FcYLN4PkUR4KfqjKIqCsT7dVuWUBqHKKMkiQQeg
-mf0O40K/DDcGVPzOe+NmeYCj5JS5jbPAtD3pxiYpqFfmheTsaHoiaY/sVHGuK87p
-liYFuk5Je13+krdYyfPg6jAKbqw03m3RO4hcsY4ioegP50fhzkMSU1FGLpmSQOW7
-oOrwNAyAJs4Qm/vSpBJT7RacuOsW0L7hlFO71Q4wPa2JAL17KSQ5NhtAWryc9G+v
-bZzPwzBm/AgBS36r2lkw/TXeZqtN761eK7P+rctPIpvbH2WOYuXOEr4dWd4I9F7+
-LdQ4GWixLlzjIzRoZ0Xp
-=VON1
------END PGP SIGNATURE-----
-
---myda8z5PGMklj5Rc--
+--8323329-798059020-1393241501=:21251--
