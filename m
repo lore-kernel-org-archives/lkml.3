@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794AbaBXQTk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:19:40 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63776 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722AbaBXQTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:19:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
-   d="scan'208";a="487176381"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <linux-usb@vger.kernel.org>
-Cc: <sarah.a.sharp@linux.intel.com>, david.a.cohen@linux.intel.com,
-        jianqiang.tang@intel.com, <dan.j.williams@intel.com>,
-        <stern@rowland.harvard.edu>, <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v2] xhci: Prevent runtime pm from autosuspending during initialization
-Date: Mon, 24 Feb 2014 18:29:03 +0200
-Message-Id: <1393259343-825-1-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1752941AbaBXQTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:19:51 -0500
+Received: from [65.55.88.14] ([65.55.88.14]:53393 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751867AbaBXQTs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:19:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dIc89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h93fhd25hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+Date: Tue, 25 Feb 2014 00:06:49 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: "Austin, Brian" <Brian.Austin@cirrus.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
+Message-ID: <20140224160648.GC6132@MrMyself>
+References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140224113011.GE25940@sirena.org.uk>
+ <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-to register its usb-2 bus, and then continue to manually register the
-usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-might thus trigger a runtime suspend before the usb-3 bus is ready.
+On Mon, Feb 24, 2014 at 03:52:24PM +0000, Austin, Brian wrote:
+> >> +	if (!IS_ERR(cs42888->clk))
+> >> +		clk_disable_unprepare(cs42888->clk);
+> > 
+> > Does the device work without MCLK?
+> Yes, MCLK is required. If you can’t get the clock you should error out.
 
-Prevent the runtime suspend by increasing the usage count in the
-beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
-ready.
+Wait...Regarding this clock part, I just forgot the reason I put the code:
 
-xhci-platform driver is not using usb_hcd_pci_probe to set up
-busses and should not need to have it's usage count increased during probe.
+385         cs42888->clk = devm_clk_get(&i2c->dev, "mclk");
+386         if (IS_ERR(cs42888->clk))
+387                 dev_warn(&i2c->dev, "failed to get the clock: %ld\n",
+388                                 PTR_ERR(cs42888->clk));
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-pci.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+was because the MCLK might be provided from SoC (DAI master) so it could
+be totally controlled by CPU DAI driver, ESAI for example has its own
+dividers to derive the HCKT clock (MCLK for Tx) from ahb clock in SoC
+clock tree, in which case we might not easily pass a valid clock phandle
+via DT. (RFC to this thought.)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 04f986d..ea7158b 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct usb_hcd *hcd;
- 
- 	driver = (struct hc_driver *)id->driver_data;
-+
-+	/* Prevent USB-2 roothub runtime suspend until USB-3 is initialized. */
-+	pm_runtime_get_noresume(&dev->dev);
-+
- 	/* Register the USB 2.0 roothub.
- 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
- 	 * This is sort of silly, because we could just set the HCD driver flags
-@@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	retval = usb_hcd_pci_probe(dev, id);
- 
- 	if (retval)
--		return retval;
-+		goto put_runtime_pm;
- 
- 	/* USB 2.0 roothub is stored in the PCI device now. */
- 	hcd = dev_get_drvdata(&dev->dev);
-@@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (xhci->quirks & XHCI_LPM_SUPPORT)
- 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
- 
-+	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-+	pm_runtime_put_noidle(&dev->dev);
-+
- 	return 0;
- 
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
- dealloc_usb2_hcd:
- 	usb_hcd_pci_remove(dev);
-+put_runtime_pm:
-+	pm_runtime_put_noidle(&dev->dev);
- 	return retval;
- }
- 
--- 
-1.8.1.2
+Thank you,
+Nicolin Chen
+
 
