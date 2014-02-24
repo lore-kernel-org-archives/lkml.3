@@ -1,98 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBXL1X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:27:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56538 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaBXL1W (ORCPT
+	id S1752182AbaBXL26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:28:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34586 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaBXL25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:27:22 -0500
-Date: Mon, 24 Feb 2014 12:27:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [patch 09/26] arm: mmp: Remove pointless fiddling with irq
- internals
-In-Reply-To: <CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1402241207010.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212737.214342433@linutronix.de> <20140223231755.GA27579@pengutronix.de> <CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 24 Feb 2014 06:28:57 -0500
+Date: Mon, 24 Feb 2014 12:28:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: x86_pmu_start WARN_ON.
+Message-ID: <20140224112839.GQ15586@twins.programming.kicks-ass.net>
+References: <20140217152859.GF15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
+ <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
+ <20140220100830.GN6835@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu>
+ <20140220182300.GN9987@twins.programming.kicks-ass.net>
+ <20140221150312.GF3104@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402211514560.6395@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-794881041-1393241246=:21251"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1402211514560.6395@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Feb 21, 2014 at 03:18:38PM -0500, Vince Weaver wrote:
+> I've applied the patch and have been unable to trigger the warning with 
+> either my testcase or a few hours of fuzzing.
 
---8323329-794881041-1393241246=:21251
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Yay.
 
-On Mon, 24 Feb 2014, Chao Xie wrote:
+> My only comment on the patch is it could always use some comments.
+> 
+> The perf_event code is really hard to follow as is, without adding
+> more uncommented special cases.
 
-> On Mon, Feb 24, 2014 at 7:17 AM, Uwe Kleine-König
-> <u.kleine-koenig@pengutronix.de> wrote:
-> > Hi Thomas,
-> >
-> > On Sun, Feb 23, 2014 at 09:40:13PM -0000, Thomas Gleixner wrote:
-> >> The pm-mmp2 and pm-pxa910 power management related irq_set_wake
-> >> callbacks fiddle pointlessly with the irq actions for no reason except
-> >> for lack of understanding how the wakeup mechanism works.
-> >>
-> >> On supsend the core disables all interrupts lazily, i.e. it does not
-> >> mask them at the irq controller level. So any interrupt which is
-> >> firing during supsend will mark the corresponding interrupt line as
-> > s/supsend/suspend/ twice
-> >> pending. Just before the core powers down it checks whether there are
-> >> interrupts pending from interrupt lines which are marked as wakeup
-> >> sources and if so it aborts the resume and resends the interrupts.
-> > It's the suspend that is aborted, not the resume.
-> >
-> > Other than that your change looks fine.
-> >
-> For pxa910 and MMP2, wake up source only wake up the AP subsystem.
-> The AP subsystem includes the APMU(AP Power Mangament Unit) and cores.
-> Now the core is still powered down. APMU will check the interrupt
-> lines, and find
-> that there are interrupt pending, it will power on the cores.
-> So if the irq is disabled, even wake up source can wake up AP subsystem, but the
-> core is still powered down. It will not be powered up by APMU.
+Does the below help a bit? Or is there anywhere in particular you want
+more comments?
 
-The interrupt is NOT disabled at the interrupt chip level. The core does:
+---
+Subject: perf, x86: Add a few more comments
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Mon Feb 24 12:26:21 CET 2014
 
-suspend_device_irqs() {
-  __disable_irq() {
-    if (!desc->depth++)
-      irq_disable(desc) {
-        irq_state_set_disabled(desc);
-        if (desc->irq_data.chip->irq_disable) {
-          desc->irq_data.chip->irq_disable(&desc->irq_data);
-          irq_state_set_masked(desc);
-        }
+Add a few comments on the ->add(), ->del() and ->*_txn()
+implementation.
 
-Your chip does not have a chip->irq_disable() callback installed, so
-the interrupt is not masked at the controller level. So APMU sees the
-interrupt enabled.
+Requested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/kernel/cpu/perf_event.c |   49 +++++++++++++++++++++++++++------------
+ arch/x86/kernel/cpu/perf_event.h |    8 +++---
+ 2 files changed, 39 insertions(+), 18 deletions(-)
 
-APMU does not care about the irq_desc->depth counter and the irq_data
-IRQD_DISABLED state bit.
-
-So this hackery is completely pointless.
-
-Thanks,
-
-	tglx
-
---8323329-794881041-1393241246=:21251--
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -892,7 +892,6 @@ static void x86_pmu_enable(struct pmu *p
+ 		 * hw_perf_group_sched_in() or x86_pmu_enable()
+ 		 *
+ 		 * step1: save events moving to new counters
+-		 * step2: reprogram moved events into new counters
+ 		 */
+ 		for (i = 0; i < n_running; i++) {
+ 			event = cpuc->event_list[i];
+@@ -918,6 +917,9 @@ static void x86_pmu_enable(struct pmu *p
+ 			x86_pmu_stop(event, PERF_EF_UPDATE);
+ 		}
+ 
++		/*
++		 * step2: reprogram moved events into new counters
++		 */
+ 		for (i = 0; i < cpuc->n_events; i++) {
+ 			event = cpuc->event_list[i];
+ 			hwc = &event->hw;
+@@ -1043,7 +1045,7 @@ static int x86_pmu_add(struct perf_event
+ 	/*
+ 	 * If group events scheduling transaction was started,
+ 	 * skip the schedulability test here, it will be performed
+-	 * at commit time (->commit_txn) as a whole
++	 * at commit time (->commit_txn) as a whole.
+ 	 */
+ 	if (cpuc->group_flag & PERF_EVENT_TXN)
+ 		goto done_collect;
+@@ -1058,6 +1060,10 @@ static int x86_pmu_add(struct perf_event
+ 	memcpy(cpuc->assign, assign, n*sizeof(int));
+ 
+ done_collect:
++	/*
++	 * Commit the collect_events() state. See x86_pmu_del() and
++	 * x86_pmu_*_txn().
++	 */
+ 	cpuc->n_events = n;
+ 	cpuc->n_added += n - n0;
+ 	cpuc->n_txn += n - n0;
+@@ -1183,28 +1189,38 @@ static void x86_pmu_del(struct perf_even
+ 	 * If we're called during a txn, we don't need to do anything.
+ 	 * The events never got scheduled and ->cancel_txn will truncate
+ 	 * the event_list.
++	 *
++	 * XXX assumes any ->del() called during a TXN will only be on
++	 * an event added during that same TXN.
+ 	 */
+ 	if (cpuc->group_flag & PERF_EVENT_TXN)
+ 		return;
+ 
++	/*
++	 * Not a TXN, therefore cleanup properly.
++	 */
+ 	x86_pmu_stop(event, PERF_EF_UPDATE);
+ 
+ 	for (i = 0; i < cpuc->n_events; i++) {
+-		if (event == cpuc->event_list[i]) {
+-
+-			if (i >= cpuc->n_events - cpuc->n_added)
+-				--cpuc->n_added;
++		if (event == cpuc->event_list[i])
++			break;
++	}
+ 
+-			if (x86_pmu.put_event_constraints)
+-				x86_pmu.put_event_constraints(cpuc, event);
++	if (WARN_ON_ONCE(i == cpuc->n_events)) /* called ->del() without ->add() ? */
++		return;
+ 
+-			while (++i < cpuc->n_events)
+-				cpuc->event_list[i-1] = cpuc->event_list[i];
++	/* If we have a newly added event; make sure to decrease n_added. */
++	if (i >= cpuc->n_events - cpuc->n_added)
++		--cpuc->n_added;
++
++	if (x86_pmu.put_event_constraints)
++		x86_pmu.put_event_constraints(cpuc, event);
++
++	/* Delete the array entry. */
++	while (++i < cpuc->n_events)
++		cpuc->event_list[i-1] = cpuc->event_list[i];
++	--cpuc->n_events;
+ 
+-			--cpuc->n_events;
+-			break;
+-		}
+-	}
+ 	perf_event_update_userpage(event);
+ }
+ 
+@@ -1598,7 +1614,8 @@ static void x86_pmu_cancel_txn(struct pm
+ {
+ 	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
+ 	/*
+-	 * Truncate the collected events.
++	 * Truncate collected array by the number of events added in this
++	 * transaction. See x86_pmu_add() and x86_pmu_*_txn().
+ 	 */
+ 	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
+ 	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
+@@ -1609,6 +1626,8 @@ static void x86_pmu_cancel_txn(struct pm
+  * Commit group events scheduling transaction
+  * Perform the group schedulability test as a whole
+  * Return 0 if success
++ *
++ * Does not cancel the transaction on failure; expects the caller to do this.
+  */
+ static int x86_pmu_commit_txn(struct pmu *pmu)
+ {
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -130,9 +130,11 @@ struct cpu_hw_events {
+ 	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	int			enabled;
+ 
+-	int			n_events;
+-	int			n_added;
+-	int			n_txn;
++	int			n_events; /* the # of events in the below arrays */
++	int			n_added;  /* the # last events in the below arrays;
++					     they've never been enabled yet */
++	int			n_txn;    /* the # last events in the below arrays;
++					     added in the current transaction */
+ 	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
+ 	u64			tags[X86_PMC_IDX_MAX];
+ 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
