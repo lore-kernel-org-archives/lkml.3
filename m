@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaBXPy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:54:59 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:60702 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752260AbaBXPy5 (ORCPT
+	id S1753017AbaBXP4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:56:22 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:56403 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaBXP4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:54:57 -0500
-Date: Mon, 24 Feb 2014 10:54:54 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
-Message-ID: <20140224105454.3e1981ba@gandalf.local.home>
-In-Reply-To: <1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140211072738.GA24232@gmail.com>
-	<20140211234534.6bc34e57@gandalf.local.home>
-	<1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com>
-	<20140213102817.4bfd5eac@gandalf.local.home>
-	<2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com>
-	<20140213154507.4040fb06@gandalf.local.home>
-	<1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Mon, 24 Feb 2014 10:56:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <530B621E.9010309@redhat.com>
+References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<530B4AFB.5060006@redhat.com>
+	<CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
+	<530B621E.9010309@redhat.com>
+Date: Tue, 25 Feb 2014 00:56:20 +0900
+Message-ID: <CAAmzW4MkXg+ZEYCxkrYNns8T9MKr=ZTGxCRXoXYs133n7c9PvQ@mail.gmail.com>
+Subject: Re: [PATCH] zram: support REQ_DISCARD
+From: Joonsoo Kim <js1304@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Feb 2014 03:49:04 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> >  
-> >  	mutex_lock(&tracepoints_mutex);
-> >  	old = tracepoint_add_probe(name, probe, data);
-> > @@ -388,9 +393,15 @@ int tracepoint_probe_register(const char *name, void
-> > *probe, void *data)
-> >  		return PTR_ERR(old);
-> >  	}
-> >  	tracepoint_update_probes();		/* may update entry */
-> > +	entry = get_tracepoint(name);
-> > +	/* Make sure the entry was enabled */
-> > +	if (!entry || !entry->enabled) {
-> > +		tracepoint_entry_remove_probe(entry, probe, data);
-> 
-> I'm OK with returning some kind of feedback about whether the tracepoint is
-> enabled or not, but there is one use-case I care about this change breaks:
-> registering a tracepoint probe for a module that is not yet loaded. The change
-> you propose here removes the probe if no tracepoint is found when the probe is
-> registered.
+2014-02-25 0:15 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
+> On 02/24/2014 04:02 PM, Joonsoo Kim wrote:
+>> 2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
+>>> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
+>>>> zram is ram based block device and can be used by backend of filesystem.
+>>>> When filesystem deletes a file, it normally doesn't do anything on data
+>>>> block of that file. It just marks on metadata of that file. This behavior
+>>>> has no problem on disk based block device, but has problems on ram based
+>>>> block device, since we can't free memory used for data block. To overcome
+>>>> this disadvantage, there is REQ_DISCARD functionality. If block device
+>>>> support REQ_DISCARD and filesystem is mounted with discard option,
+>>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
+>>>> discarded. All we have to do is to handle this request.
+>>>>
+>>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+>>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+>>>> used.
+>>>>
+>>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>>> ---
+>>>> This patch is based on master branch of linux-next tree.
+>>>>
+>>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>>>> index 5ec61be..cff2c0e 100644
+>>>> --- a/drivers/block/zram/zram_drv.c
+>>>> +++ b/drivers/block/zram/zram_drv.c
+>>>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>>>       return ret;
+>>>>  }
+>>>>
+>>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
+>>>> +{
+>>>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>>>
+>>> Hi Joonsoo,
+>>>
+>>> If bi_sector is not aligned on a page size, we might end up discarding
+>>> a page that still contain valid data.
+>>>
+>>>
+>>
+>> Hello, Jerome.
+>>
+>> Is it possible that request isn't aligned on a page size if
+>> logical/physical block size
+>> is PAGE_SIZE?
+>
+> Yes, zram has an logical block size of 4k (ZRAM_LOGICAL_BLOCK_SIZE),
+> while its physical block size, which is a page size, can be bigger.
+>
+>> When I tested it, I didn't find any invalid io.
+>> If we meet any misaligned request, it would be filtered by
+>> valid_io_request(). :)
+>
+> zram accepts request aligned on logical blocks. So valid_io_request()
+> wouldn't filter misaligned requests out as long as they are aligned
+> on logical blocks.
+> If your system use 4k pages, your tests would never trigger the issue,
+> but on a system which uses 64k pages, it could.
 
-The thing is, there's no in-tree user of that interface.
+Okay. I got it.
+So, how about using PAGE_SIZE as ZRAM_LOGICAL_BLOCK_SIZE?
+Is there any reason to set 4096 to ZRAM_LOGICAL_BLOCK_SIZE,
+instead of setting PAGE_SIZE to ZRAM_LOGICAL_BLOCK_SIZE?
 
-I was thinking of adding a tracepoint_probe_register_future() that
-wouldn't remove the probe, but this storing of a tracepoint that does
-not exist (and may never exist), is IMHO a broken design.
-
-The real answer to this is to enabled the tracepoints on module load,
-with a module parameter. We've talked about this before, and I also
-think there's some patches out there that do this. (I remember creating
-something myself). I'll have to go dig them out and we can work to get
-them in 3.15.
-
-> 
-> Another way to do this, without requiring changes to the existing
-> tracepoint_probe_register() API, is to simply add e.g. (better function
-> names welcome):
-> 
-> int tracepoint_has_callsites(const char *name)
-> {
->     struct tracepoint_entry *entry;
->     int ret = 0;
-> 
->     mutex_lock(&tracepoints_mutex);
->     entry = get_tracepoint(name);
->     if (entry && entry->refcount) {
->         ret = 1;
->     }
->     mutex_unlock(&tracepoints_mutex);
->     return ret;
-> }
-
-No, I'm not about to change the interface for something that is broken.
-tracepoint_probe_register() should fail if it does not register a
-tracepoint. It should not store it off for later. I'm not aware of any
-other "register" function in the kernel that does such a thing. Is
-there one that you know of?
-
-> 
-> So tools which care about providing feedback to their users about the
-> fact that tracepoint callsites are not there can call this new function.
-> The advantage is that it would not change the return values of the existing
-> API. Also, it would be weird to have tracepoint_probe_register() return
-> an error value but leave the tracepoint in a registered state. Moving this
-> into a separate query function seems more consistent IMHO.
-
-Again, the existing API is not a user interface. It is free to change,
-and this change wont break any existing in-tree uses. In fact, the fact
-that you had this stupid way of doing it, *broke* the in-tree users!
-That is, no error messages were ever displayed when the probe was not
-registered. This is why I consider this a broken design.
-
-If you want LTTng to enable tracepoints before loading, then have your
-module save off these these tracepoints and register a handler to
-be called when a module is loaded and enable them yourself.
-
-For now, I'm going to push this in, and also mark it for stable.
-
--- Steve
+Thanks.
