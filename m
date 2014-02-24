@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaBXKL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:11:27 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:57218 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaBXKLV (ORCPT
+	id S1752604AbaBXKL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:11:26 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:64032 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536AbaBXKLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:11:21 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-42-530b1ac2a159
+	Mon, 24 Feb 2014 05:11:20 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-4b-530b1ac42426
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Chanwoo Choi <cw00.choi@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
@@ -19,23 +19,24 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v4 05/16] mfd: max14577: Add detection of device type
-Date: Mon, 24 Feb 2014 11:10:30 +0100
-Message-id: <1393236641-14977-6-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v4 07/16] extcon: max14577: Choose muic_irqs according to
+ device type
+Date: Mon, 24 Feb 2014 11:10:32 +0100
+Message-id: <1393236641-14977-8-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
 References: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xy7qHpLiDDW6vsrTYOGM9q8XUh0/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xy7pHpLiDDV6vFLXYOGM9q8XUh0/Y
 	LK5/ec5qMenJe2aLiSsnM1u8fmFocbbpDbvF/a9HGS02Pb7GanF51xw2i7VH7rJbnO5mtVg/
 	4zWLA6/Hzll32T02r9Dy2LSqk83jzrU9bB7zTgZ6bF5S79G3ZRWjx+dNcgEcUVw2Kak5mWWp
-	Rfp2CVwZbV8XMxdc0K7YeOwFSwNjq0oXIyeHhICJxN0v69ggbDGJC/fWA9lcHEICSxklfvQ8
-	YYJw+pgkZi1bwAhSxSZgLLF5+RKwKhGBLUwSvR++MII4zALPGSU+LprJDlIlLOAqsXD/emYQ
-	m0VAVWJS+1IWEJtXwF3ixY3PQGM5gPYpSMyZZAMS5hTwkLjb8oAVxBYCKvk27zrLBEbeBYwM
-	qxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCAvXLDsbFx6wOMQpwMCrx8EpUcwULsSaWFVfm
-	HmKU4GBWEuE14+UOFuJNSaysSi3Kjy8qzUktPsTIxMEp1cCoev+w8NNcW78sa0u5Hc/OtwrI
-	mYhMjEuauHVZ0mS+CXt6rS7blc/7vYlP59YN/c+eggYtMm+Mm/5PCw+TOsWWpc4nWjzz7x/V
-	Sj35PAmuxeu7N649yDP9ixef/4eff1k71+1r+RbLw3tn7Tb2XS8qw9Z25ARMThO1LX0oqMEt
-	3HLPM2SRwTMlluKMREMt5qLiRAC3ahS9MgIAAA==
+	Rfp2CVwZZzedZS1YqVCx7eZH9gbGx1JdjJwcEgImEut+X2WHsMUkLtxbz9bFyMUhJLCUUeLm
+	rwssEE4fk8S5JdPZQKrYBIwlNi9fAlYlIrCFSaL3wxdGEIdZ4DmjxMdFM8FmCQuES5xvvskK
+	YrMIqEr8uHeaCcTmFXCXuPzjD3MXIwfQPgWJOZNsQMKcAh4Sd1segJULAZV8m3edZQIj7wJG
+	hlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIYH6ZQfj4mNWhxgFOBiVeHglqrmChVgTy4or
+	cw8xSnAwK4nwmvFyBwvxpiRWVqUW5ccXleakFh9iZOLglGpgjFNbc9/3Qvavvf+u/jado2X4
+	ymvqqogNYr17HSY7s/p1nrqst/X96Y8WBdsdp29wZU1SPqnwdKqxusOa90VlU5c+UXZ5PqtQ
+	7bFmcsMPgf3V6lkz5Y6+N5gx9XJ2Jqsuq2Gxf7HWWr/5oSZWPmvX23w9z2w4V4R77aGIo3LX
+	8z48lJgVuyvzjxJLcUaioRZzUXEiANrIIvQyAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,181 +44,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch continues the preparation for adding support for max77836
 device to existing max14577 driver.
 
-Add enum for types of devices supported by this driver. The device type
-will be detected by matching of_device_id, or i2c_device_id as a
-fallback.
-
-The patch also moves to separate function the code related to displaying
-DeviceID register values.
+During probe choose muic_irqs according to device type. Currently there
+are only "max14577_muic_irqs" but later patch will add max77836
+interrupts.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/mfd/max14577.c               |   64 ++++++++++++++++++++++++----------
- include/linux/mfd/max14577-private.h |   12 ++++---
- 2 files changed, 53 insertions(+), 23 deletions(-)
+ drivers/extcon/extcon-max14577.c |   65 ++++++++++++++++++++++----------------
+ 1 file changed, 37 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index b217c9f0a755..3a3530814d9c 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -20,6 +20,7 @@
- 
- #include <linux/module.h>
- #include <linux/interrupt.h>
-+#include <linux/of_device.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/max14577.h>
- #include <linux/mfd/max14577-private.h>
-@@ -36,6 +37,14 @@ static struct mfd_cell max14577_devs[] = {
- 	{ .name = "max14577-charger", },
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index fb343f4042d2..e986a9b92b60 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -39,6 +39,29 @@ enum max14577_muic_status {
+ 	MAX14577_MUIC_STATUS_END,
  };
  
-+static struct of_device_id max14577_dt_match[] = {
-+	{
-+		.compatible = "maxim,max14577",
-+		.data = (void *)MAXIM_DEVICE_TYPE_MAX14577,
-+	},
-+	{},
++/**
++ * struct max14577_muic_irq
++ * @irq: the index of irq list of MUIC device.
++ * @name: the name of irq.
++ * @virq: the virtual irq to use irq domain
++ */
++struct max14577_muic_irq {
++	unsigned int irq;
++	const char *name;
++	unsigned int virq;
 +};
 +
- static bool max14577_muic_volatile_reg(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
-@@ -82,13 +91,34 @@ static const struct regmap_irq_chip max14577_irq_chip = {
- 	.num_irqs		= ARRAY_SIZE(max14577_irqs),
- };
- 
-+static void max14577_print_dev_type(struct maxim_core *maxim_core)
-+{
-+	u8 reg_data, vendor_id, device_id;
-+	int ret;
++static struct max14577_muic_irq max14577_muic_irqs[] = {
++	{ MAXIM_IRQ_INT1_ADC,		"muic-ADC" },
++	{ MAXIM_IRQ_INT1_ADCLOW,	"muic-ADCLOW" },
++	{ MAXIM_IRQ_INT1_ADCERR,	"muic-ADCError" },
++	{ MAXIM_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
++	{ MAXIM_IRQ_INT2_CHGDETRUN,	"muic-CHGDETRUN" },
++	{ MAXIM_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
++	{ MAXIM_IRQ_INT2_DBCHG,		"muic-DBCHG" },
++	{ MAXIM_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
++};
 +
-+	ret = max14577_read_reg(maxim_core->regmap_muic,
-+			MAXIM_MUIC_REG_DEVICEID, &reg_data);
-+	if (ret) {
-+		dev_err(maxim_core->dev,
-+			"Failed to read DEVICEID register: %d\n", ret);
-+		return;
-+	}
-+
-+	vendor_id = ((reg_data & MAXIM_DEVID_VENDORID_MASK) >>
-+				MAXIM_DEVID_VENDORID_SHIFT);
-+	device_id = ((reg_data & MAXIM_DEVID_DEVICEID_MASK) >>
-+				MAXIM_DEVID_DEVICEID_SHIFT);
-+
-+	dev_info(maxim_core->dev, "Device type: %u (ID: 0x%x, vendor: 0x%x)\n",
-+			maxim_core->dev_type, device_id, vendor_id);
-+}
-+
- static int max14577_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
+ struct max14577_muic_info {
+ 	struct device *dev;
  	struct maxim_core *maxim_core;
- 	struct max14577_platform_data *pdata = dev_get_platdata(&i2c->dev);
- 	struct device_node *np = i2c->dev.of_node;
--	u8 reg_data;
- 	int ret = 0;
+@@ -47,6 +70,8 @@ struct max14577_muic_info {
+ 	int prev_chg_type;
+ 	u8 status[MAX14577_MUIC_STATUS_END];
  
- 	if (np) {
-@@ -121,19 +151,17 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
- 		return ret;
- 	}
- 
--	ret = max14577_read_reg(maxim_core->regmap_muic,
--			MAXIM_MUIC_REG_DEVICEID, &reg_data);
--	if (ret) {
--		dev_err(maxim_core->dev, "Device not found on this channel: %d\n",
--				ret);
--		return ret;
-+	if (np) {
-+		const struct of_device_id *of_id;
-+
-+		of_id = of_match_device(max14577_dt_match, &i2c->dev);
-+		if (of_id)
-+			maxim_core->dev_type = (unsigned int)of_id->data;
-+	} else {
-+		maxim_core->dev_type = id->driver_data;
- 	}
--	maxim_core->vendor_id = ((reg_data & MAXIM_DEVID_VENDORID_MASK) >>
--				MAXIM_DEVID_VENDORID_SHIFT);
--	maxim_core->device_id = ((reg_data & MAXIM_DEVID_DEVICEID_MASK) >>
--				MAXIM_DEVID_DEVICEID_SHIFT);
--	dev_info(maxim_core->dev, "Device ID: 0x%x, vendor: 0x%x\n",
--			maxim_core->device_id, maxim_core->vendor_id);
-+
-+	max14577_print_dev_type(maxim_core);
- 
- 	ret = regmap_add_irq_chip(maxim_core->regmap_muic, maxim_core->irq,
- 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT, 0,
-@@ -172,7 +200,7 @@ static int max14577_i2c_remove(struct i2c_client *i2c)
- }
- 
- static const struct i2c_device_id max14577_i2c_id[] = {
--	{ "max14577", 0 },
-+	{ "max14577", MAXIM_DEVICE_TYPE_MAX14577, },
- 	{ }
++	struct max14577_muic_irq *muic_irqs;
++	unsigned int muic_irqs_num;
+ 	bool irq_adc;
+ 	bool irq_chg;
+ 	struct work_struct irq_work;
+@@ -73,29 +98,6 @@ enum max14577_muic_cable_group {
+ 	MAX14577_CABLE_GROUP_CHG,
  };
- MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
-@@ -215,11 +243,6 @@ static int max14577_resume(struct device *dev)
- }
- #endif /* CONFIG_PM_SLEEP */
  
--static struct of_device_id max14577_dt_match[] = {
--	{ .compatible = "maxim,max14577", },
--	{},
+-/**
+- * struct max14577_muic_irq
+- * @irq: the index of irq list of MUIC device.
+- * @name: the name of irq.
+- * @virq: the virtual irq to use irq domain
+- */
+-struct max14577_muic_irq {
+-	unsigned int irq;
+-	const char *name;
+-	unsigned int virq;
 -};
 -
- static SIMPLE_DEV_PM_OPS(max14577_pm, max14577_suspend, max14577_resume);
- 
- static struct i2c_driver max14577_i2c_driver = {
-@@ -236,6 +259,9 @@ static struct i2c_driver max14577_i2c_driver = {
- 
- static int __init max14577_i2c_init(void)
- {
-+	BUILD_BUG_ON(ARRAY_SIZE(max14577_i2c_id) != MAXIM_DEVICE_TYPE_NUM);
-+	BUILD_BUG_ON(ARRAY_SIZE(max14577_dt_match) != MAXIM_DEVICE_TYPE_NUM);
-+
- 	return i2c_add_driver(&max14577_i2c_driver);
- }
- subsys_initcall(max14577_i2c_init);
-diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index d69c56f02eac..afa4e525f9b7 100644
---- a/include/linux/mfd/max14577-private.h
-+++ b/include/linux/mfd/max14577-private.h
-@@ -22,6 +22,13 @@
- #include <linux/i2c.h>
- #include <linux/regmap.h>
- 
-+enum maxim_device_type {
-+	MAXIM_DEVICE_TYPE_UNKNOWN	= 0,
-+	MAXIM_DEVICE_TYPE_MAX14577,
-+
-+	MAXIM_DEVICE_TYPE_NUM,
-+};
-+
- /* Slave addr = 0x4A: MUIC and Charger */
- enum maxim_muic_reg {
- 	MAXIM_MUIC_REG_DEVICEID			= 0x00,
-@@ -250,15 +257,12 @@ enum maxim_irq {
- struct maxim_core {
- 	struct device *dev;
- 	struct i2c_client *i2c; /* Slave addr = 0x4A */
-+	enum maxim_device_type dev_type;
- 
- 	struct regmap *regmap_muic;
- 
- 	struct regmap_irq_chip_data *irq_data_muic;
- 	int irq;
+-static struct max14577_muic_irq max14577_muic_irqs[] = {
+-	{ MAXIM_IRQ_INT1_ADC,		"muic-ADC" },
+-	{ MAXIM_IRQ_INT1_ADCLOW,	"muic-ADCLOW" },
+-	{ MAXIM_IRQ_INT1_ADCERR,	"muic-ADCError" },
+-	{ MAXIM_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
+-	{ MAXIM_IRQ_INT2_CHGDETRUN,	"muic-CHGDETRUN" },
+-	{ MAXIM_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
+-	{ MAXIM_IRQ_INT2_DBCHG,		"muic-DBCHG" },
+-	{ MAXIM_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
+-};
 -
--	/* Device ID */
--	u8 vendor_id;	/* Vendor Identification */
--	u8 device_id;	/* Chip Version */
- };
+ /* Define supported accessory type */
+ enum max14577_muic_acc_type {
+ 	MAX14577_MUIC_ADC_GROUND = 0x0,
+@@ -541,9 +543,9 @@ static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
+ 	 * However we only need to know whether it was ADC, charger
+ 	 * or both interrupts so decode IRQ and turn on proper flags.
+ 	 */
+-	for (i = 0; i < ARRAY_SIZE(max14577_muic_irqs); i++)
+-		if (irq == max14577_muic_irqs[i].virq)
+-			irq_type = max14577_muic_irqs[i].irq;
++	for (i = 0; i < info->muic_irqs_num; i++)
++		if (irq == info->muic_irqs[i].virq)
++			irq_type = info->muic_irqs[i].irq;
  
- /* MAX14577 shared regmap API function */
+ 	switch (irq_type) {
+ 	case MAXIM_IRQ_INT1_ADC:
+@@ -646,9 +648,16 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 
+ 	INIT_WORK(&info->irq_work, max14577_muic_irq_work);
+ 
++	switch (maxim_core->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		info->muic_irqs = max14577_muic_irqs;
++		info->muic_irqs_num = ARRAY_SIZE(max14577_muic_irqs);
++	}
++
+ 	/* Support irq domain for max14577 MUIC device */
+-	for (i = 0; i < ARRAY_SIZE(max14577_muic_irqs); i++) {
+-		struct max14577_muic_irq *muic_irq = &max14577_muic_irqs[i];
++	for (i = 0; i < info->muic_irqs_num; i++) {
++		struct max14577_muic_irq *muic_irq = &info->muic_irqs[i];
+ 		unsigned int virq = 0;
+ 
+ 		virq = regmap_irq_get_virq(maxim_core->irq_data_muic,
 -- 
 1.7.9.5
 
