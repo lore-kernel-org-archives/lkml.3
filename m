@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaBXQlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:41:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25430 "EHLO mx1.redhat.com"
+	id S1753274AbaBXQl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:41:27 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:50706 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097AbaBXQlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:41:06 -0500
-Message-ID: <530B7619.2050805@redhat.com>
-Date: Mon, 24 Feb 2014 17:40:57 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752815AbaBXQl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:41:26 -0500
+Message-ID: <530B7631.4030903@mev.co.uk>
+Date: Mon, 24 Feb 2014 16:41:21 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "'kvm@vger.kernel.org'" <kvm@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'qemu-devel@nongnu.org'" <qemu-devel@nongnu.org>
-CC: "'gleb@redhat.com'" <gleb@redhat.com>, "'hpa@zytor.com'" <hpa@zytor.com>
-Subject: Re: [PATCH v5 3/3] KVM: x86: Enable Intel MPX for guest
-References: <DE8DF0795D48FD4CA783C40EC82923350150E43C@SHSMSX101.ccr.corp.intel.com> <530B2949.4030000@redhat.com> <DE8DF0795D48FD4CA783C40EC82923350150F2D0@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350150F2D0@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3 v2] Staging: comedi: addi-data: fix a couple of lines
+ that are too long
+References: <1393039316-7274-1-git-send-email-chase.southwood@yahoo.com> <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/02/2014 16:37, Liu, Jinsong ha scritto:
-> So patch v5 would be applied except you will remove the incorrect
-> hunk, and you will send a patch strengthenning guest_supported_xcr0?
+On 2014-02-24 16:35, Chase Southwood wrote:
+> There are a couple of cases where a comment being on the same line as a
+> statement is causing the line to be over 80 characters long.  This is an
+> easy fix, move these comments to the previous line.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> 2: Some changes to PATCH 2/3 v2 occurred in the immediate context of
+> changes in this patch.  I've redone this patch after updating PATCH 2/3
+> so that it still applies cleanly.
 
-Yes.
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-Paolo
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
