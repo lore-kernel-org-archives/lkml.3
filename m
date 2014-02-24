@@ -1,115 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaBYABo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:01:44 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:57065 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaBYABm (ORCPT
+	id S1753316AbaBYAB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:01:58 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:43066 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaBYAB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:01:42 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<87eh34jbsl.fsf_-_@xmission.com>
-	<20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu>
-Date: Mon, 24 Feb 2014 16:01:29 -0800
-In-Reply-To: <20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu> (Miklos
-	Szeredi's message of "Tue, 18 Feb 2014 18:40:53 +0100")
-Message-ID: <87y510dpra.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 24 Feb 2014 19:01:56 -0500
+Date: Tue, 25 Feb 2014 02:58:24 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 5/6] zram: enalbe multi stream compression support in
+ zram
+Message-ID: <20140224235824.GC2293@swordfish>
+References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392983443-9807-6-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140224235315.GE24325@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18eInVeFUNxEMiMsm5pDGKrSqzBrmrp4NA=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0001]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 08/11] vfs: Merge check_submounts_and_drop and d_invalidate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224235315.GE24325@bbox>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> writes:
+On (02/25/14 08:53), Minchan Kim wrote:
+> On Fri, Feb 21, 2014 at 02:50:42PM +0300, Sergey Senozhatsky wrote:
+> > 1) Add ZRAM_MULTI_STREAM configuration option and make multi stream
+> > zcomp support available.
+> > 
+> > 2) Introduce zram device attribute max_comp_streams to show and store
+> > current zcomp's max number of zcomp streams (num_strm).
+> > 
+> > 3) Extend zcomp zcomp_create() with `num_strm' parameter. `num_strm'
+> > limits the number of zcomp_strm structs in compression backend's idle
+> > list (max_comp_streams).
+> > 
+> > If ZRAM_MULTI_STREAM option selected:
+> > -- user can change max number of compression streams (max_comp_streams),
+> >    otherwise, attempt to change its default value (1) will be ignored.
+> > -- passing to zcomp_create() num_strm equals to 1 will initialise zcomp
+> >    using single compression stream zcomp_strm_single (mutex-based locking)
+> > -- passing to zcomp_create() num_strm greater than 1 will initialise zcomp
+> >    using multi compression stream zcomp_strm_multi (spinlock-based locking)
+> > 
+> > If ZRAM_MULTI_STREAM has not been selected, only single compression stream
+> > support available.
+> > 
+> > iozone -t 3 -R -r 16K -s 60M -I +Z
+> > 
+> >        test           base       1 strm (mutex)     3 strm (spinlock)
+> > -----------------------------------------------------------------------
+> >  Initial write      589286.78       583518.39          718011.05
+> >        Rewrite      604837.97       596776.38         1515125.72
+> >   Random write      584120.11       595714.58         1388850.25
+> >         Pwrite      535731.17       541117.38          739295.27
+> >         Fwrite     1418083.88      1478612.72         1484927.06
+> > 
+> > Usage example:
+> > set max_comp_streams to 4
+> >         echo 4 > /sys/block/zram0/max_comp_streams
+> > 
+> > show current max_comp_streams (default value is 1).
+> >         cat /sys/block/zram0/max_comp_streams
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > ---
+> >  drivers/block/zram/Kconfig    | 10 ++++++++++
+> >  drivers/block/zram/zcomp.c    | 13 +++++++++++--
+> >  drivers/block/zram/zcomp.h    |  2 +-
+> >  drivers/block/zram/zram_drv.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+> >  drivers/block/zram/zram_drv.h |  2 +-
+> >  5 files changed, 65 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+> > index 3450be8..a2ba9a9 100644
+> > --- a/drivers/block/zram/Kconfig
+> > +++ b/drivers/block/zram/Kconfig
+> > @@ -15,6 +15,16 @@ config ZRAM
+> >  
+> >  	  See zram.txt for more information.
+> >  
+> > +config ZRAM_MULTI_STREAM
+> > +	bool "Multi stream compression support"
+> > +	depends on ZRAM
+> > +	default n
+> > +	help
+> > +	  This option adds additional functionality to ZRAM, that enables
+> > +	  multi compression stream support and provides ability to control
+> > +	  maximum number of parallel compressions using max_comp_streams
+> > +	  device attribute.
+> > +
+> >  config ZRAM_DEBUG
+> >  	bool "Compressed RAM block device debug support"
+> >  	depends on ZRAM
+> > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> > index 41325ed..7faa6bd 100644
+> > --- a/drivers/block/zram/zcomp.c
+> > +++ b/drivers/block/zram/zcomp.c
+> > @@ -240,8 +240,9 @@ void zcomp_destroy(struct zcomp *comp)
+> >   * if requested algorithm is not supported or in case
+> >   * of init error
+> >   */
+> > -struct zcomp *zcomp_create(const char *compress)
+> > +struct zcomp *zcomp_create(const char *compress, int num_strm)
+> >  {
+> > +	int ret;
+> >  	struct zcomp *comp;
+> >  	struct zcomp_backend *backend;
+> >  
+> > @@ -254,7 +255,15 @@ struct zcomp *zcomp_create(const char *compress)
+> >  		return NULL;
+> >  
+> >  	comp->backend = backend;
+> > -	if (zcomp_strm_single_create(comp) != 0) {
+> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> > +	if (num_strm > 1)
+> > +		ret = zcomp_strm_multi_create(comp, num_strm);
+> > +	else
+> > +		ret = zcomp_strm_single_create(comp);
+> > +#else
+> > +	ret = zcomp_strm_single_create(comp);
+> > +#endif
+> > +	if (ret != 0) {
+> >  		zcomp_destroy(comp);
+> >  		return NULL;
+> >  	}
+> > diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> > index 8dc1d7f..d7e1229 100644
+> > --- a/drivers/block/zram/zcomp.h
+> > +++ b/drivers/block/zram/zcomp.h
+> > @@ -42,7 +42,7 @@ struct zcomp {
+> >  	void (*destroy)(struct zcomp *comp);
+> >  };
+> >  
+> > -struct zcomp *zcomp_create(const char *comp);
+> > +struct zcomp *zcomp_create(const char *comp, int num_strm);
+> >  void zcomp_destroy(struct zcomp *comp);
+> >  
+> >  struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 200c12a..c147e6f 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -107,6 +107,42 @@ static ssize_t mem_used_total_show(struct device *dev,
+> >  	return sprintf(buf, "%llu\n", val);
+> >  }
+> >  
+> > +static ssize_t max_comp_streams_show(struct device *dev,
+> > +		struct device_attribute *attr, char *buf)
+> > +{
+> > +	long val;
+> 
+> Why 'long'?
+> 
+> > +	struct zram *zram = dev_to_zram(dev);
+> > +
+> > +	down_read(&zram->init_lock);
+> > +	val = zram->max_comp_streams;
+> > +	up_read(&zram->init_lock);
+> > +
+> > +	return sprintf(buf, "%ld\n", val);
+> > +}
+> > +
+> > +static ssize_t max_comp_streams_store(struct device *dev,
+> > +		struct device_attribute *attr, const char *buf, size_t len)
+> > +{
+> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> > +	long num;
+> > +	struct zram *zram = dev_to_zram(dev);
+> > +
+> > +	if (kstrtol(buf, 0, &num))
+> > +		return -EINVAL;
+> > +	if (num < 1)
+> > +		return -EINVAL;
+> > +	down_write(&zram->init_lock);
+> > +	if (init_done(zram)) {
+> > +		up_write(&zram->init_lock);
+> > +		pr_info("Can't set max_comp_streams for initialized device\n");
+> > +		return -EBUSY;
+> > +	}
+> > +	zram->max_comp_streams = num;
+> > +	up_write(&zram->init_lock);
+> 
+> If user decrease max stream in runtime, who care of freeing streams?
+> 
 
-> On Sat, Feb 15, 2014 at 01:39:22PM -0800, Eric W. Biederman wrote:
->> 
->> Now that d_invalidate is the only caller of check_submounts_and_drop,
->> expand check_submounts_and_drop inline in d_invalidate.
->> 
->> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->> ---
->>  fs/dcache.c            |   55 +++++++++++++++++++----------------------------
->>  include/linux/dcache.h |    1 -
->>  2 files changed, 22 insertions(+), 34 deletions(-)
->> 
->> diff --git a/fs/dcache.c b/fs/dcache.c
->> index 27585b1dd6f1..5b41205cbf33 100644
->> --- a/fs/dcache.c
->> +++ b/fs/dcache.c
+at the moment (to make it simpler), user can set max stream number
+only for un-initialised device. once zcomp created and initialised
+user cannot change max streams
 
->> -int check_submounts_and_drop(struct dentry *dentry)
->> +int d_invalidate(struct dentry *dentry)
->>  {
->>  	int ret = 0;
->>  
->> +	/*
->> +	 * If it's already been dropped, return OK.
->> +	 */
->> +	spin_lock(&dentry->d_lock);
->> +	if (d_unhashed(dentry)) {
->> +		spin_unlock(&dentry->d_lock);
->> +		return 0;
->> +	}
->> +	spin_unlock(&dentry->d_lock);
->> +
->>  	/* Negative dentries can be dropped without further checks */
->>  	if (!dentry->d_inode) {
->>  		d_drop(dentry);
->
->
-> You can optimize this by including the negative check within the above d_locked
-> region and calling __d_drop() instead.
+	pr_info("Can't set max_comp_streams for initialized device\n");
 
-For this patch just moving the code and not changing it is the corret
-thing to do because it helps with review and understanding the code.
-
-There are two ways I could see going with optimizing the preamble.
-Simply dropping the d_lock from around the d_unhashed test as a pointer
-dereference should be atomic, and the test is racy against
-d_materialise_unique. (We don't always hold the parent
-directories inode mutex when d_invalidate is called).  So the d_lock
-buys us very little.  Alternatively we could move the work into the
-d_walk callbacks.
-
-That kind of optimization deserves it's own patch that can be reviewed
-independently.
-
-Eric
+> > +#endif
+> > +	return len;
+> > +}
+> > +
+> >  /* flag operations needs meta->tb_lock */
+> >  static int zram_test_flag(struct zram_meta *meta, u32 index,
+> >  			enum zram_pageflags flag)
+> > @@ -503,6 +539,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  
+> >  	zcomp_destroy(zram->comp);
+> >  	zram->comp = NULL;
+> > +	zram->max_comp_streams = 1;
+> >  
+> >  	zram_meta_free(zram->meta);
+> >  	zram->meta = NULL;
+> > @@ -532,7 +569,7 @@ static ssize_t disksize_store(struct device *dev,
+> >  		return -EBUSY;
+> >  	}
+> >  
+> > -	zram->comp = zcomp_create(default_compressor);
+> > +	zram->comp = zcomp_create(default_compressor, zram->max_comp_streams);
+> >  	if (!zram->comp) {
+> >  		up_write(&zram->init_lock);
+> >  		pr_info("Cannot initialise compressing backend\n");
+> > @@ -695,6 +732,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+> >  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+> >  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> > +static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+> > +		max_comp_streams_show, max_comp_streams_store);
+> >  
+> >  ZRAM_ATTR_RO(num_reads);
+> >  ZRAM_ATTR_RO(num_writes);
+> > @@ -719,6 +758,7 @@ static struct attribute *zram_disk_attrs[] = {
+> >  	&dev_attr_orig_data_size.attr,
+> >  	&dev_attr_compr_data_size.attr,
+> >  	&dev_attr_mem_used_total.attr,
+> > +	&dev_attr_max_comp_streams.attr,
+> >  	NULL,
+> >  };
+> >  
+> > @@ -782,6 +822,7 @@ static int create_device(struct zram *zram, int device_id)
+> >  
+> >  	zram->meta = NULL;
+> >  	zram->comp = NULL;
+> > +	zram->max_comp_streams = 1;
+> >  	return 0;
+> >  
+> >  out_free_disk:
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index 45e04f7..8dccb22 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -99,7 +99,7 @@ struct zram {
+> >  	 * we can store in a disk.
+> >  	 */
+> >  	u64 disksize;	/* bytes */
+> > -
+> > +	long max_comp_streams;
+> >  	struct zram_stats stats;
+> >  };
+> >  #endif
+> > -- 
+> > 1.9.0.291.g027825b
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
