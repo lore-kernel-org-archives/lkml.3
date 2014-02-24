@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaBXIJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:09:39 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45661 "EHLO
+	id S1753206AbaBXIJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:09:37 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45706 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312AbaBXIJc (ORCPT
+	with ESMTP id S1752713AbaBXIJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:09:32 -0500
+	Mon, 24 Feb 2014 03:09:33 -0500
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 1/8] perf tools: Count periods of filtered entries separately
-Date: Mon, 24 Feb 2014 17:09:21 +0900
-Message-Id: <1393229368-31412-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 4/8] perf top: Add --percentage option
+Date: Mon, 24 Feb 2014 17:09:24 +0900
+Message-Id: <1393229368-31412-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1393229368-31412-1-git-send-email-namhyung@kernel.org>
 References: <1393229368-31412-1-git-send-email-namhyung@kernel.org>
@@ -26,191 +26,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if a sample was filtered by command line option, it just
-dropped.  But this affects final output in that the percentage can be
-different since the filtered entries were not included to the total.
+The --percentage option is for controlling overhead percentage
+displayed.  It can only receive either of "relative" or "absolute".
+Move the parser callback function into a common location since it's
+used by multiple commands now.
 
-But user might want to see the original percentages when filter
-applied so add new total_filtered_period filed to hists->stats in
-order to be controlled by user later.  It doesn't change the current
-behavior yet.
+For more information, please see previous commit same thing done to
+"perf report".
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c |  2 +-
- tools/perf/util/event.c     | 22 ++++++++++------------
- tools/perf/util/hist.c      | 10 ++--------
- tools/perf/util/hist.h      | 10 ++++++++++
- tools/perf/util/symbol.h    |  2 +-
- 5 files changed, 24 insertions(+), 22 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 18 +++++++++++++++---
+ tools/perf/builtin-report.c           | 16 +---------------
+ tools/perf/builtin-top.c              |  2 ++
+ tools/perf/util/hist.c                | 13 +++++++++++++
+ tools/perf/util/hist.h                |  5 +++++
+ 5 files changed, 36 insertions(+), 18 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index cdd8d4946dba..0acf54f203f0 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -124,13 +124,16 @@ Default is to monitor all CPUS.
+ 	Show a column with the sum of periods.
+ 
+ --dsos::
+-	Only consider symbols in these dsos.
++	Only consider symbols in these dsos.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
+ 
+ --comms::
+-	Only consider symbols in these comms.
++	Only consider symbols in these comms.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
+ 
+ --symbols::
+-	Only consider these symbols.
++	Only consider these symbols.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
+ 
+ -M::
+ --disassembler-style=:: Set disassembler style for objdump.
+@@ -166,6 +169,15 @@ Default is to monitor all CPUS.
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
+ 
++--percentage::
++	Determine how to display the overhead percentage of filtered entries.
++	Filters can be applied by --comms, --dsos and/or --symbols options and
++	Zoom operations on the TUI (thread, dso, etc).
++
++	"relative" means it's relative to filtered entries only so that the
++	sum of shown entries will be always 100%. "absolute" means it retains
++	the original value before and after the filter is applied.
++
+ INTERACTIVE PROMPTING KEYS
+ --------------------------
+ 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d882b6f96411..5f7f1a332186 100644
+index 2385e694c8c2..ca9a7fd2780e 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -223,7 +223,7 @@ static int process_sample_event(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
-+	if (rep->hide_unresolved && al.sym == NULL)
- 		return 0;
- 
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index b0f3ca850e9e..21aa8c6248ee 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -3,6 +3,7 @@
- #include "debug.h"
- #include "machine.h"
- #include "sort.h"
-+#include "hist.h"
- #include "string.h"
- #include "strlist.h"
- #include "thread.h"
-@@ -661,7 +662,7 @@ void thread__find_addr_map(struct thread *thread,
- 	al->thread = thread;
- 	al->addr = addr;
- 	al->cpumode = cpumode;
--	al->filtered = false;
-+	al->filtered = 0;
- 
- 	if (machine == NULL) {
- 		al->map = NULL;
-@@ -687,11 +688,11 @@ void thread__find_addr_map(struct thread *thread,
- 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
- 			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
- 			!perf_guest)
--			al->filtered = true;
-+			al->filtered |= (1 << HIST_FILTER__GUEST);
- 		if ((cpumode == PERF_RECORD_MISC_USER ||
- 			cpumode == PERF_RECORD_MISC_KERNEL) &&
- 			!perf_host)
--			al->filtered = true;
-+			al->filtered |= (1 << HIST_FILTER__HOST);
- 
- 		return;
- 	}
-@@ -748,9 +749,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (thread == NULL)
- 		return -1;
- 
--	if (thread__is_filtered(thread))
--		goto out_filtered;
--
- 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
- 	/*
- 	 * Have we already created the kernel maps for this machine?
-@@ -765,6 +763,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
- 			      sample->ip, al);
-+
-+	if (thread__is_filtered(thread))
-+		al->filtered |= (1 << HIST_FILTER__THREAD);
-+
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-@@ -780,7 +782,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 			       (dso->short_name != dso->long_name &&
- 				strlist__has_entry(symbol_conf.dso_list,
- 						   dso->long_name)))))
--			goto out_filtered;
-+			al->filtered |= (1 << HIST_FILTER__DSO);
- 
- 		al->sym = map__find_symbol(al->map, al->addr,
- 					   machine->symbol_filter);
-@@ -789,11 +791,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	if (symbol_conf.sym_list &&
- 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
- 						al->sym->name)))
--		goto out_filtered;
--
--	return 0;
-+		al->filtered |= (1 << HIST_FILTER__SYMBOL);
- 
--out_filtered:
--	al->filtered = true;
+@@ -709,20 +709,6 @@ parse_percent_limit(const struct option *opt, const char *str,
  	return 0;
  }
+ 
+-static int
+-parse_percentage(const struct option *opt __maybe_unused, const char *str,
+-		 int unset __maybe_unused)
+-{
+-	if (!strcmp(str, "relative"))
+-		symbol_conf.filter_relative = true;
+-	else if (!strcmp(str, "absolute"))
+-		symbol_conf.filter_relative = false;
+-	else
+-		return -1;
+-
+-	return 0;
+-}
+-
+ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	struct perf_session *session;
+@@ -846,7 +832,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
+-		     "how to display percentage of filtered entries", parse_percentage),
++		     "how to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	struct perf_data_file file = {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ed99ec4a309f..18a2467bdf00 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1114,6 +1114,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &top, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
++	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
++		     "How to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	const char * const top_usage[] = {
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 0466efa71140..d0c40897c955 100644
+index 7d72deb96b77..3143b8c14a4b 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
- static bool hists__filter_entry_by_symbol(struct hists *hists,
- 					  struct hist_entry *he);
- 
--enum hist_filter {
--	HIST_FILTER__DSO,
--	HIST_FILTER__THREAD,
--	HIST_FILTER__PARENT,
--	HIST_FILTER__SYMBOL,
--};
--
- struct callchain_param	callchain_param = {
- 	.mode	= CHAIN_GRAPH_REL,
- 	.min_percent = 0.5,
-@@ -330,6 +323,7 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
- 		hists__calc_col_len(hists, h);
- 		++hists->nr_entries;
- 		hists->stats.total_period += h->stat.period;
-+		hists->stats.total_filtered_period += h->stat.period;
- 	}
+@@ -940,3 +940,16 @@ u64 hists__total_period(struct hists *hists)
+ 	return symbol_conf.filter_relative ? hists->stats.total_filtered_period :
+ 		hists->stats.total_period;
  }
- 
-@@ -429,7 +423,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 			.weight = weight,
- 		},
- 		.parent = sym_parent,
--		.filtered = symbol__parent_filter(sym_parent),
-+		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
- 		.hists	= hists,
- 		.branch_info = bi,
- 		.mem_info = mi,
++
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused)
++{
++	if (!strcmp(arg, "relative"))
++		symbol_conf.filter_relative = true;
++	else if (!strcmp(arg, "absolute"))
++		symbol_conf.filter_relative = false;
++	else
++		return -1;
++
++	return 0;
++}
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a59743fa3ef7..bdfd821e2435 100644
+index 70052f30e907..d0178eab31d5 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -14,6 +14,15 @@ struct hist_entry;
- struct addr_location;
- struct symbol;
+@@ -238,4 +238,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ #endif
  
-+enum hist_filter {
-+	HIST_FILTER__DSO,
-+	HIST_FILTER__THREAD,
-+	HIST_FILTER__PARENT,
-+	HIST_FILTER__SYMBOL,
-+	HIST_FILTER__GUEST,
-+	HIST_FILTER__HOST,
-+};
+ unsigned int hists__sort_list_width(struct hists *hists);
 +
- /*
-  * The kernel collects the number of events it couldn't send in a stretch and
-  * when possible sends this number in a PERF_RECORD_LOST event. The number of
-@@ -28,6 +37,7 @@ struct symbol;
-  */
- struct events_stats {
- 	u64 total_period;
-+	u64 total_filtered_period;
- 	u64 total_lost;
- 	u64 total_invalid_chains;
- 	u32 nr_events[PERF_RECORD_HEADER_MAX];
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 2553ae04b788..501e4e722e8e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -186,7 +186,7 @@ struct addr_location {
- 	struct symbol *sym;
- 	u64	      addr;
- 	char	      level;
--	bool	      filtered;
-+	u8	      filtered;
- 	u8	      cpumode;
- 	s32	      cpu;
- };
++struct option;
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused);
++
+ #endif	/* __PERF_HIST_H */
 -- 
 1.7.11.7
 
