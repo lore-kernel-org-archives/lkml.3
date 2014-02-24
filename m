@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaBXJbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:31:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476AbaBXJbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:31:15 -0500
-From: Jan Kara <jack@suse.cz>
-To: linux-fsdevel@vger.kernel.org
-Cc: poma <pomidorabelisima@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, eparis@parisplace.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/3] fanotify: Handle overflow in case of permission events
-Date: Mon, 24 Feb 2014 10:31:06 +0100
-Message-Id: <1393234267-22937-3-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1393234267-22937-1-git-send-email-jack@suse.cz>
-References: <1393234267-22937-1-git-send-email-jack@suse.cz>
+	id S1752674AbaBXJcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:32:51 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:40108 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaBXJaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 04:30:09 -0500
+From: <vladimir.barinov@cogentembedded.com>
+To: <linux-sh@vger.kernel.org>
+Cc: <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        <magnus.damm@gmail.com>, <horms@verge.net.au>, <gnurou@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
+        <valentine.barshak@cogentembedded.com>
+Subject: [PATCH V5 1/4] ARM: shmobile: r8a7791: Add USBHS clock support
+Date: Mon, 24 Feb 2014 13:30:01 +0400
+Message-Id: <1393234204-24096-2-git-send-email-vladimir.barinov@cogentembedded.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
+References: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the event queue overflows when we are handling permission event, we
-will never get response from userspace. So we must avoid waiting for it.
-Change fsnotify_add_notify_event() to return whether overflow has
-happened so that we can detect it in fanotify_handle_event() and act
-accordingly.
+From: Valentine Barshak <valentine.barshak@cogentembedded.com>
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+This adds USBHS clocks to the R8A7791 SoC.
+
+Signed-off-by: Valentine Barshak <valentine.barshak@cogentembedded.com>
+Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+
+Changes in V5:
+Changes in V4:
+Changes in V3:
+* none.
+
+Changes in V2:
+* capitalized ARM in the subject;
+* rebased on top the latest devel tag.
+
 ---
- fs/notify/fanotify/fanotify.c |  6 ++++--
- fs/notify/notification.c      | 14 ++++++++++----
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ arch/arm/mach-shmobile/clock-r8a7791.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index 0e792f5e3147..7564a070e6e8 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -192,10 +192,12 @@ static int fanotify_handle_event(struct fsnotify_group *group,
+Index: build/arch/arm/mach-shmobile/clock-r8a7791.c
+===================================================================
+--- build.orig/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:44.486571967 +0400
++++ build/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:52.582571801 +0400
+@@ -177,6 +177,7 @@
+ 	MSTP811, MSTP810, MSTP809,
+ 	MSTP726, MSTP724, MSTP723, MSTP721, MSTP720,
+ 	MSTP719, MSTP718, MSTP715, MSTP714,
++	MSTP704,
+ 	MSTP522,
+ 	MSTP314, MSTP312, MSTP311,
+ 	MSTP216, MSTP207, MSTP206,
+@@ -208,6 +209,7 @@
+ 	[MSTP718] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 18, MSTPSR7, 0), /* SCIF3 */
+ 	[MSTP715] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 15, MSTPSR7, 0), /* SCIF4 */
+ 	[MSTP714] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 14, MSTPSR7, 0), /* SCIF5 */
++	[MSTP704] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 4, MSTPSR7, 0), /* HSUSB */
+ 	[MSTP522] = SH_CLK_MSTP32_STS(&extal_clk, SMSTPCR5, 22, MSTPSR5, 0), /* Thermal */
+ 	[MSTP314] = SH_CLK_MSTP32_STS(&div4_clks[DIV4_SD0], SMSTPCR3, 14, MSTPSR3, 0), /* SDHI0 */
+ 	[MSTP312] = SH_CLK_MSTP32_STS(&div6_clks[DIV6_SD1], SMSTPCR3, 12, MSTPSR3, 0), /* SDHI1 */
+@@ -281,6 +283,8 @@
+ 	CLKDEV_DEV_ID("r8a7791-vin.2", &mstp_clks[MSTP809]),
+ 	CLKDEV_DEV_ID("sata-r8a7791.0", &mstp_clks[MSTP815]),
+ 	CLKDEV_DEV_ID("sata-r8a7791.1", &mstp_clks[MSTP814]),
++	CLKDEV_DEV_ID("renesas_usbhs", &mstp_clks[MSTP704]),
++	CLKDEV_ICK_ID("usbhs", "usb_phy_rcar_gen2", &mstp_clks[MSTP704]),
+ };
  
- 	ret = fsnotify_add_notify_event(group, fsn_event, fanotify_merge);
- 	if (ret) {
--		BUG_ON(mask & FAN_ALL_PERM_EVENTS);
-+		/* Permission events shouldn't be merged */
-+		BUG_ON(ret == 1 && mask & FAN_ALL_PERM_EVENTS);
- 		/* Our event wasn't used in the end. Free it. */
- 		fsnotify_destroy_event(group, fsn_event);
--		ret = 0;
-+
-+		return 0;
- 	}
- 
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-diff --git a/fs/notify/notification.c b/fs/notify/notification.c
-index 6bec2f4918f9..6a4ba17c0395 100644
---- a/fs/notify/notification.c
-+++ b/fs/notify/notification.c
-@@ -80,7 +80,8 @@ void fsnotify_destroy_event(struct fsnotify_group *group,
- /*
-  * Add an event to the group notification queue.  The group can later pull this
-  * event off the queue to deal with.  The function returns 0 if the event was
-- * added to the queue, 1 if the event was merged with some other queued event.
-+ * added to the queue, 1 if the event was merged with some other queued event,
-+ * 2 if the queue of events has overflown.
-  */
- int fsnotify_add_notify_event(struct fsnotify_group *group,
- 			      struct fsnotify_event *event,
-@@ -95,10 +96,14 @@ int fsnotify_add_notify_event(struct fsnotify_group *group,
- 	mutex_lock(&group->notification_mutex);
- 
- 	if (group->q_len >= group->max_events) {
-+		ret = 2;
- 		/* Queue overflow event only if it isn't already queued */
--		if (list_empty(&group->overflow_event.list))
--			event = &group->overflow_event;
--		ret = 1;
-+		if (!list_empty(&group->overflow_event.list)) {
-+			mutex_unlock(&group->notification_mutex);
-+			return ret;
-+		}
-+		event = &group->overflow_event;
-+		goto queue;
- 	}
- 
- 	if (!list_empty(list) && merge) {
-@@ -109,6 +114,7 @@ int fsnotify_add_notify_event(struct fsnotify_group *group,
- 		}
- 	}
- 
-+queue:
- 	group->q_len++;
- 	list_add_tail(&event->list, list);
- 	mutex_unlock(&group->notification_mutex);
--- 
-1.8.1.4
-
+ #define R8A7791_CLOCK_ROOT(e, m, p0, p1, p30, p31)		\
