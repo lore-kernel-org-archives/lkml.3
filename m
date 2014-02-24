@@ -1,175 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaBXWXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:23:15 -0500
-Received: from smtp103.biz.mail.ne1.yahoo.com ([98.138.207.10]:23050 "HELO
-	smtp103.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752376AbaBXWXN (ORCPT
+	id S1752792AbaBXWXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:23:24 -0500
+Received: from smtprelay0108.hostedemail.com ([216.40.44.108]:58329 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752376AbaBXWXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:23:13 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: zL8_l4YVM1khj2ST8LLhFv6bFnxL7G_4d7ACC0xyeGhGORQ
- lMrbUkCJGqKYkts9Jy.59a_Uekj1gfEv7ykppui39cEEDY0UrtzwgPHwbM54
- DyVcHMr22bhcx16.SFK1jbnBYPVL34gC661PWjhmsIHcDPzb6EZmYySOBDgG
- ymgZW3EjnTGDf.yEBpmeR59mkEuvsXBhAc9WjGcx45p3x1JwSGGE58jVQYKQ
- ZQ2OBZ8MWN4KSftu6L3LXqhPnyliJYjas7HbHJKfrbYg1MA3fSDetXnoDVre
- qkxka0vWZGjy1uv3Nsgrsmm3fEgMi827UrGNCgW0MpXxKalxTHyWzgC0dVgW
- T9m9ciBC0FVz22nUMPOI0RyHBeWAO3PP2ouW05AT4CsQJK28pkH0xDWL1wcE
- fGL6XvJL08RPlfAtTJGBS5UyCPFxDReKIuyi65HgtYU9APQaqaBRIhg1zBYV
- BYuAbR3sezWYpfG9u62UsI9sZcz22cacN2b3U4NJcd71f.f76mwPz1nEkK5L
- BnpeU1Q_BnCkF5mvRJdp4aKLkIIo.3cKMJdIBWjG86v3Y91sJkg--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
-        by smtp103.biz.mail.ne1.yahoo.com with SMTP; 24 Feb 2014 14:16:32 -0800 PST
-Message-ID: <530BC4BF.2000904@schaufler-ca.com>
-Date: Mon, 24 Feb 2014 14:16:31 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
+	Mon, 24 Feb 2014 17:23:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:2894:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:4321:5007:6119:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fish60_5736604d43412
+X-Filterd-Recvd-Size: 2055
+Message-ID: <1393280598.11020.77.camel@joe-AO722>
 Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
-References: <cover.1393279025.git.joe@perches.com> <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>
-In-Reply-To: <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Joe Perches <joe@perches.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Date: Mon, 24 Feb 2014 14:23:18 -0800
+In-Reply-To: <530BC4BF.2000904@schaufler-ca.com>
+References: <cover.1393279025.git.joe@perches.com>
+	 <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>
+	 <530BC4BF.2000904@schaufler-ca.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/2014 1:59 PM, Joe Perches wrote:
-> Convert printks to pr_<level>
-> Add pr_fmt.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  security/smack/smack_lsm.c |  7 ++++---
->  security/smack/smackfs.c   | 25 +++++++++++--------------
->  2 files changed, 15 insertions(+), 17 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 14f52be..a273aad 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -18,6 +18,8 @@
->   *      as published by the Free Software Foundation.
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
+On Mon, 2014-02-24 at 14:16 -0800, Casey Schaufler wrote:
+> On 2/24/2014 1:59 PM, Joe Perches wrote:
+> > Convert printks to pr_<level>
+> > Add pr_fmt.
 
-What is pr_fmt() for?
+> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+[]
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +
+> 
+> What is pr_fmt() for?
 
->  #include <linux/xattr.h>
->  #include <linux/pagemap.h>
->  #include <linux/mount.h>
-> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
->  		if (sock->sk->sk_family == PF_INET) {
->  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
->  			if (rc != 0)
-> -				printk(KERN_WARNING
-> -					"Smack: \"%s\" netlbl error %d.\n",
-> +				pr_warn("\"%s\" netlbl error %d\n",
->  					__func__, -rc);
->  		}
->  	} else
-> @@ -3916,7 +3917,7 @@ static __init int smack_init(void)
->  	if (tsp == NULL)
->  		return -ENOMEM;
->  
-> -	printk(KERN_INFO "Smack:  Initializing.\n");
-> +	pr_info("Initializing\n");
->  
->  	/*
->  	 * Set the security state for the initial task.
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 3198cfe..2e25220 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -16,6 +16,8 @@
->   *
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/kernel.h>
->  #include <linux/vmalloc.h>
->  #include <linux/security.h>
-> @@ -698,8 +700,7 @@ static void smk_cipso_doi(void)
->  
->  	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
->  	if (rc != 0)
-> -		printk(KERN_WARNING "%s:%d remove rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d remove rc = %d\n", __func__, __LINE__, rc);
->  
->  	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
->  	if (doip == NULL)
-> @@ -713,15 +714,13 @@ static void smk_cipso_doi(void)
->  
->  	rc = netlbl_cfg_cipsov4_add(doip, &nai);
->  	if (rc != 0) {
-> -		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d cipso add rc = %d\n", __func__, __LINE__, rc);
->  		kfree(doip);
->  		return;
->  	}
->  	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
->  	if (rc != 0) {
-> -		printk(KERN_WARNING "%s:%d map add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d map add rc = %d\n", __func__, __LINE__, rc);
->  		kfree(doip);
->  		return;
->  	}
-> @@ -741,8 +740,8 @@ static void smk_unlbl_ambient(char *oldambient)
->  	if (oldambient != NULL) {
->  		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
->  		if (rc != 0)
-> -			printk(KERN_WARNING "%s:%d remove rc = %d\n",
-> -			       __func__, __LINE__, rc);
-> +			pr_warn("%s:%d remove rc = %d\n",
-> +				__func__, __LINE__, rc);
->  	}
->  	if (smack_net_ambient == NULL)
->  		smack_net_ambient = &smack_known_floor;
-> @@ -750,8 +749,7 @@ static void smk_unlbl_ambient(char *oldambient)
->  	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient->smk_known, PF_INET,
->  				      NULL, NULL, &nai);
->  	if (rc != 0)
-> -		printk(KERN_WARNING "%s:%d add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d add rc = %d\n", __func__, __LINE__, rc);
->  }
->  
->  /*
-> @@ -2302,8 +2300,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
->  
->  	rc = simple_fill_super(sb, SMACK_MAGIC, smack_files);
->  	if (rc != 0) {
-> -		printk(KERN_ERR "%s failed %d while creating inodes\n",
-> -			__func__, rc);
-> +		pr_err("%s failed %d while creating inodes\n", __func__, rc);
->  		return rc;
->  	}
->  
-> @@ -2369,13 +2366,13 @@ static int __init init_smk_fs(void)
->  
->  	err = smk_init_sysfs();
->  	if (err)
-> -		printk(KERN_ERR "smackfs: sysfs mountpoint problem.\n");
-> +		pr_err("smackfs: sysfs mountpoint problem\n");
->  
->  	err = register_filesystem(&smk_fs_type);
->  	if (!err) {
->  		smackfs_mount = kern_mount(&smk_fs_type);
->  		if (IS_ERR(smackfs_mount)) {
-> -			printk(KERN_ERR "smackfs:  could not mount!\n");
-> +			pr_err("smackfs: could not mount!\n");
->  			err = PTR_ERR(smackfs_mount);
->  			smackfs_mount = NULL;
->  		}
+Prefixing "smack: " to the pr_<level> uses.
+
+> > @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
+> >  		if (sock->sk->sk_family == PF_INET) {
+> >  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
+> >  			if (rc != 0)
+> > -				printk(KERN_WARNING
+> > -					"Smack: \"%s\" netlbl error %d.\n",
+> > +				pr_warn("\"%s\" netlbl error %d\n",
+> >  					__func__, -rc);
+
+This will be now be emitted as
+
+<4>smack: "smack_inode_setsecurity" netlbl error -<d>
+
+instead of
+
+<4>Smack: "smack_inode_setsecurity" netlbl error -<d>
+
+Though it'd be a lot more common to use:
+
+					pr_warn("%s: netlbl error: %d\n",
+						__func__, -rc);
+
+so the output would be:
+
+<4>smack: smack_inode_setsecurity: netlbl error: -<d>
+
 
