@@ -1,182 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBXSKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:10:38 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:55410 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752545AbaBXSKh (ORCPT
+	id S1752896AbaBXSKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:10:48 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:58103 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752545AbaBXSKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:10:37 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v3] clk: respect the clock dependencies in of_clk_init
-Date: Mon, 24 Feb 2014 19:10:13 +0100
-Message-Id: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 24 Feb 2014 13:10:43 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+V4gLc/2LBiJlJQZvveMyp5PKj3Ue6OL0=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 79B1C53276B
+Date: Mon, 24 Feb 2014 13:10:23 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
+ Dove pinctrl
+Message-ID: <20140224181023.GA1010@titan.lakedaemon.net>
+References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now the clock providers were initialized in the order found in
-the device tree. This led to have the dependencies between the clocks
-not respected: children clocks could be initialized before their
-parent clocks.
+Sebastian, Linus,
 
-Instead of forcing each platform to manage its own initialization order,
-this patch adds this work inside the framework itself.
+I've now created mvebu/pinctrl-dove for this series.  It's based on
+v3.14-rc1, and depends on mvebu/pinctrl (which depends on
+mvebu/pinctrl-3xx).
 
-Using the data of the device tree the of_clk_init function now delayed
-the initialization of a clock provider if its parent provider was not
-ready yet.
+I've kept this series in a separate branch in case we encounter an
+unforeseen problem with something in here.  Then this branch can be
+dropped, and /pinctrl-3xx and /pinctrl will still make it in.
 
-The strict dependency check (all parents of a given clk must be
-initialized) was added by Boris BREZILLON
+So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
+in mvebu/dt.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
-Mike,
+thx,
 
-This patch depend on the patch "clk: return probe defer when DT clock
-not yet ready": http://article.gmane.org/gmane.linux.kernel/1643466
+Jason.
 
-If for any reason you don't want to take it, then I will write a new
-version closer to the v2 for the parent_ready() function.
-
-I have taken into account all the remarks from Tomasz.
-
-Thanks,
-
-Changelog:
-v2->v3:
-
-- added the SoB flag of Boris
-- used of_clk_get(np, i) in the parent_ready() function.
-- simplified the loops to manage the order dependencies in of_clk_init()
-
-v1 -> v2:
-Merged the  strict dependency check from Boris.
-
-
- drivers/clk/clk.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 79 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 32d84e921b23..3a07f8ac2e11 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2526,24 +2526,99 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
- }
- EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
- 
-+struct clock_provider {
-+	of_clk_init_cb_t clk_init_cb;
-+	struct device_node *np;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(clk_provider_list);
-+
-+/*
-+ * This function looks for a parent clock. If there is one, then it
-+ * checks that the provider for this parent clock was initialized, in
-+ * this case the parent clock will be ready.
-+ */
-+static int parent_ready(struct device_node *np)
-+{
-+	int i = 0;
-+
-+	while (true) {
-+		struct clk *clk = of_clk_get(np, i);
-+
-+		/* this parent is ready we can check the next one */
-+		if (!IS_ERR(clk)) {
-+			clk_put(clk);
-+			i++;
-+			continue;
-+		}
-+
-+		/* at least one parent is not ready, we exit now */
-+		if (PTR_ERR(clk) == -EPROBE_DEFER)
-+			return 0;
-+
-+		/*
-+		 * Here we make assumption that the device tree is
-+		 * written correctly. So an error means that there is
-+		 * no more parent. As we didn't exit yet, then the
-+		 * previous parent are ready. If there is no clock
-+		 * parent, no need to wait for them, then we can
-+		 * consider their absence as being ready
-+		 */
-+		return 1;
-+	}
-+}
-+
- /**
-  * of_clk_init() - Scan and init clock providers from the DT
-  * @matches: array of compatible values and init functions for providers.
-  *
-- * This function scans the device tree for matching clock providers and
-- * calls their initialization functions
-+ * This function scans the device tree for matching clock providers
-+ * and calls their initialization functions. It also do it by trying
-+ * to follow the dependencies.
-  */
- void __init of_clk_init(const struct of_device_id *matches)
- {
- 	const struct of_device_id *match;
- 	struct device_node *np;
-+	struct clock_provider *clk_provider, *next;
-+	bool is_init_done;
-+	bool force = false;
- 
- 	if (!matches)
- 		matches = &__clk_of_table;
- 
-+	/* First prepare the list of the clocks providers */
- 	for_each_matching_node_and_match(np, matches, &match) {
--		of_clk_init_cb_t clk_init_cb = match->data;
--		clk_init_cb(np);
-+		struct clock_provider *parent =
-+			kzalloc(sizeof(struct clock_provider),	GFP_KERNEL);
-+
-+		parent->clk_init_cb = match->data;
-+		parent->np = np;
-+		list_add(&parent->node, &clk_provider_list);
-+	}
-+
-+	while (!list_empty(&clk_provider_list)) {
-+		is_init_done = false;
-+		list_for_each_entry_safe(clk_provider, next,
-+					&clk_provider_list, node) {
-+			if (force || parent_ready(clk_provider->np)) {
-+				clk_provider->clk_init_cb(clk_provider->np);
-+				list_del(&clk_provider->node);
-+				kfree(clk_provider);
-+				is_init_done = true;
-+			}
-+		}
-+
-+		/*
-+		 * We didn't managed to initialize any of the
-+		 * remaining providers during the last loop, so now we
-+		 * initialize all the remaining ones unconditionally
-+		 * in case the clock parent was not mandatory
-+		 */
-+		if (!is_init_done)
-+			force = true;
-+
- 	}
- }
- #endif
--- 
-1.8.1.2
-
+On Mon, Feb 24, 2014 at 09:42:52AM +0100, Sebastian Hesselbarth wrote:
+> This is a patches separated from one sent earlier [1] with just the
+> removal of any hard-coded reg addresses from Dove pinctrl stub. This
+> is a required step for Dove to leave mach-dove, hop into mach-mvebu,
+> and become part of multi_v7.
+> 
+> In the meantime, support for new Armada 375/38x was added that also
+> contain patches for pinctrl [2]. The cleanup patches [3] split off from
+> the original patch set take care of pinctrl-related changes for Armada
+> 375/38x. Since this patch set now already depends on Armada 375/38x
+> pinctrl through those cleanup patches, we take care of Armada 375/38x
+> binding updates here, too.
+> 
+> For Dove, this patch set removes all hardcoded addresses from
+> pinctrl-dove by either requesting additional resources or a syscon
+> provided regmap for global config registers. As this changes existing
+> driver to DT binding relationship, all additional resources are probed
+> in a backward compatible way. If the corresponding resource cannot be
+> found, we derive it from the existing pinctrl resource and warn about
+> the old DTB firmware.
+> 
+> Patches 1-2 add or update binding documentation for dove, global config
+> syscon, and pinctrl-dove. Patch 2 also documents missing reg property
+> requirement for other mvebu pinctrl nodes, including new Armada 375/38x.
+> 
+> Patch 3 and 4 add the new pinctrl reg property values and global config
+> register syscon to exisiting dove.dtsi.
+> 
+> Patches 5-6 request either additional reg ranges or the syscon regmap
+> in a DT-backward compatible way. If any resource cannot be derived from
+> DT node, we warn about an old DTB firmware.
+> 
+> Patches 7-10 finally remove any hardcoded addresses from Dove SoC
+> pinctrl driver and use the iomap/regmap resources instead.
+> 
+> DT and binding related patches have also been sent to DT maintainers
+> and corresponding lists, additional pinctrl related patches have been
+> sent to pinctrl/mvebu maintainers and LAKML only.
+> 
+> This patch set is based on v3.14-rc1 and depends on some cleanup patches
+> that will go into v3.15. We have a lot of stuff for v3.15 already in
+> mvebu, so I am okay with postponing this and/or the following dove-to-
+> mvebu patches for v3.16. As Jason prepares mvebu pinctrl PRs for LinusW,
+> it is up to him when to take it with LinusW's Acked-by.
+> 
+> Nevertheless, there is an *unstable* branch based on v3.14-rc1, with
+> mvebu/pinctrl-3xx and mvebu/pinctrl merged in at (still named -for-3.15)
+> 
+> https://github.com/shesselba/linux-dove.git unstable/dove-pinctrl-for-3.15_v1
+> 
+> [1] http://www.spinics.net/lists/arm-kernel/msg303496.html
+> [2] http://www.spinics.net/lists/arm-kernel/msg306409.html
+> [3] http://lkml.org/lkml/2014/2/23/43
+> 
+> Sebastian Hesselbarth (10):
+>   devicetree: bindings: add missing Marvell Dove SoC documentation
+>   devicetree: bindings: update MVEBU pinctrl binding documentation
+>   ARM: dove: add additional pinctrl registers
+>   ARM: dove: add global-config register node
+>   pinctrl: mvebu: dove: request additional resources
+>   pinctrl: mvebu: dove: request syscon regmap for global registers
+>   pinctrl: mvebu: dove: use remapped mpp base registers
+>   pinctrl: mvebu: dove: use remapped mpp4 register
+>   pinctrl: mvebu: dove: use remapped pmu_mpp registers
+>   pinctrl: mvebu: dove: use global register regmap
+> 
+>  .../devicetree/bindings/arm/marvell,dove.txt       |  22 ++
+>  .../pinctrl/marvell,armada-370-pinctrl.txt         |   1 +
+>  .../pinctrl/marvell,armada-375-pinctrl.txt         |   1 +
+>  .../pinctrl/marvell,armada-38x-pinctrl.txt         |   1 +
+>  .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |   1 +
+>  .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   1 +
+>  .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |   1 +
+>  .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   2 +-
+>  arch/arm/boot/dts/dove.dtsi                        |  10 +-
+>  drivers/pinctrl/mvebu/Kconfig                      |   1 +
+>  drivers/pinctrl/mvebu/pinctrl-dove.c               | 286 +++++++++++++--------
+>  11 files changed, 213 insertions(+), 114 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/marvell,dove.txt
+> 
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> -- 
+> 1.8.5.3
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
