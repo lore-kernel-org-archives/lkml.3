@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139AbaBXPK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:10:29 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44711 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaBXPK2 convert rfc822-to-8bit (ORCPT
+	id S1753154AbaBXPLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:11:00 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:39942 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaBXPK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:10:28 -0500
+	Mon, 24 Feb 2014 10:10:58 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19xCAvc25Lg8/Oh5NuRa4vuQd3C/A0w9SM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D09845321AE
+Date: Mon, 24 Feb 2014 10:10:18 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        andrew@lunn.ch, gregory.clement@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: linux-next: manual merge of the sound-asoc tree with the mvebu
+ tree
+Message-ID: <20140224151018.GE14250@titan.lakedaemon.net>
+References: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <530B6023.5020400@epfl.ch>
-References: <530B4CB6.9010608@epfl.ch>
-	<CAK9yfHy+ZNtY1bsiupyhf7LTPkAUSntB5O7sqgt7Lk+B2EowZg@mail.gmail.com>
-	<530B6023.5020400@epfl.ch>
-Date: Mon, 24 Feb 2014 20:40:27 +0530
-Message-ID: <CAK9yfHyAK+LtQLr_b-OLHa63dSNT5KN7MBHxqVoTbiHVb4-7DA@mail.gmail.com>
-Subject: Re: [PATCH 13/16] regulator: mc13xxx: Use of_get_child_by_name
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: =?ISO-8859-1?Q?Philippe_R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Cc: Mark Brown <broonie@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 February 2014 20:37, Philippe Rétornaz <philippe.retornaz@epfl.ch> wrote:
-> Le 24/02/2014 15:51, Sachin Kamat a écrit :
->
->> On 24 February 2014 19:14, Philippe Rétornaz
->> <philippe.retornaz@epfl.ch> wrote:
->>>
->>> Hi
->>>
->>> This patch breaks DT-Enabled kernel run on non-DT board: [
->>> 0.822977] Unable to handle kernel NULL pointer dereference at
->>> virtual address 0000001c (...) [    0.880320] [<c02f3e94>]
->>> (of_get_next_child) from [<c02f5420>]
->>> (of_get_child_by_name+0x38/0x50) [    0.881449] [<c02f5420>]
->>> (of_get_child_by_name) from [<c01f6258>]
->>> (mc13xxx_get_num_regulators_dt+0x18/0x64) [    0.882707]
->>> [<c01f6258>] (mc13xxx_get_num_regulators_dt) from [<c01f5d38>]
->>> (mc13783_regulator_probe+0x34/0x17c) [    0.884011] [<c01f5d38>]
->>> (mc13783_regulator_probe) from [<c021fed0>]
->>> (platform_drv_probe+0x20/0x54) [    0.885182] [<c021fed0>]
->>> (platform_drv_probe) from [<c021e674>]
->>> (driver_probe_device+0x144/0x360) (...)
->>>
->>> Because mc13783-regulator do in its probe: static int
->>> mc13783_regulator_probe(struct platform_device *pdev) { (...) int
->>> i, num_regulators;
->>>
->>> num_regulators = mc13xxx_get_num_regulators_dt(pdev); if
->>> (num_regulators <= 0 && pdata) num_regulators =
->>> pdata->num_regulators
->>>
->>>
->>> and mc13xxx_get_num_regulators_dt() do, before your patch:
->>>
->>> parent = of_find_node_by_name(pdev->dev.parent->of_node,
->>> "regulators"); if (!parent) return -ENODEV;
->>>
->>> of_find_node_by_name will return NULL if the node passed is NULL
->>> and the DT is non-existant.
->>>
->>> But, with your change we use this: parent =
->>> of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
->>>
->>> Which will OOPS as it does not expect to have a NULL node passed as
->>> argument.
->>>
->>> So please revert this patch.
->>
->>
->> Sorry for the issue caused due to this patch. I would prefer to try
->> to have this fixed before reverting. Can you please try with below
->> change and let me know if it works:
->>
->> parent = of_get_child_by_name(pdev->dev->of_node, "regulators");
->>
->
-> You meant pdev->dev.of_node here I guess ?
+Stephen,
 
-Yes right. Sorry for the typo.
+On Mon, Feb 24, 2014 at 01:37:52PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the sound-asoc tree got a conflict in
+> sound/soc/kirkwood/Kconfig between commit cd34edc2eab2 ("drivers: Enable
+> building of Kirkwood drivers for mach-mvebu") from the  tree and commit
+> 9a0d5113ac0e ("ASoC: kirkwood: enable Kirkwood driver for mvebu
+> platforms") from the sound-asoc tree.
+> 
+> I fixed it up (Probably incorrectly - see below) and can carry the fix as
+> necessary (no action is required).
 
-> This still OOPS as the board is not booting with DT, so all of_node are
-> NULL.
+Yes, sorry this isn't ideal.  We're moving all DT support from
+mach-kirkwood to mach-mvebu and having to keep legacy support for a
+cycle.  Hence the confusing config symbols.
 
-So this is non-DT mode. Please see further comments below.
+This resolution is correct.
 
->
->> Also, how about adding NULL check to see it the node exists at all?
->>
->
-> Could be an option. BTW, mc13xxx_parse_regulators_dt() has the same problem.
+thx,
 
-I would suggest adding a check at the initial stage itself to see if
-it is non-DT and then either
-error out or skip appropriately.
+Jason.
 
--- 
-With warm regards,
-Sachin
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc sound/soc/kirkwood/Kconfig
+> index 106e2e22fed2,2dc3ecf34801..000000000000
+> --- a/sound/soc/kirkwood/Kconfig
+> +++ b/sound/soc/kirkwood/Kconfig
+> @@@ -1,6 -1,6 +1,6 @@@
+>   config SND_KIRKWOOD_SOC
+>   	tristate "SoC Audio for the Marvell Kirkwood and Dove chips"
+> - 	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || COMPILE_TEST
+>  -	depends on ARCH_KIRKWOOD || ARCH_DOVE || ARCH_MVEBU || COMPILE_TEST
+> ++	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || ARCH_MVEBU || COMPILE_TEST
+>   	help
+>   	  Say Y or M if you want to add support for codecs attached to
+>   	  the Kirkwood I2S interface. You will also need to select the
+
+
