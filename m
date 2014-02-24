@@ -1,281 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaBXXvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:51:00 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34841 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaBXXu7 (ORCPT
+	id S1753223AbaBXXvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:51:47 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38791 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaBXXvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:50:59 -0500
-X-Original-SENDERIP: 10.177.220.194
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 25 Feb 2014 08:51:25 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 4/6] zram: add multi stream functionality
-Message-ID: <20140224235125.GD24325@bbox>
-References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392983443-9807-5-git-send-email-sergey.senozhatsky@gmail.com>
- <20140224234313.GC24325@bbox>
+	Mon, 24 Feb 2014 18:51:45 -0500
+Date: Mon, 24 Feb 2014 15:51:39 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+Message-ID: <20140224235139.GH8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140207140536.943daf965008b9428cdcb468@linux-foundation.org>
+ <201402081055.BGJ73403.tQMLFVOJSOOFFH@I-love.SAKURA.ne.jp>
+ <20140207180647.5944fe3d.akpm@linux-foundation.org>
+ <201402092327.JAD12489.QOLSFVMHJtFOOF@I-love.SAKURA.ne.jp>
+ <201402102243.IEJ52676.JOFVMOQFOFSLtH@I-love.SAKURA.ne.jp>
+ <201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140224234313.GC24325@bbox>
+In-Reply-To: <201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022423-7164-0000-0000-000006634307
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:43:13AM +0900, Minchan Kim wrote:
-> On Fri, Feb 21, 2014 at 02:50:41PM +0300, Sergey Senozhatsky wrote:
-> > This patch implements multi stream compression support.
-> > 
-> > Introduce struct zcomp_strm_multi and a set of functions to manage
-> > zcomp_strm stream access. zcomp_strm_multi has a list of idle zcomp_strm
-> > structs, spinlock to protect idle list and wait queue, making it possible
-> > to perform parallel compressions.
-> > 
-> > The following set of functions added:
-> > - zcomp_strm_multi_get()/zcomp_strm_multi_put()
-> >   get and put compression stream, implement required locking
-> > - zcomp_strm_multi_create()/zcomp_strm_multi_destroy()
-> >   create and destroy zcomp_strm_multi
-> > 
-> > zcomp ->strm_get() and ->strm_put() callbacks are set during initialisation
-> > to zcomp_strm_multi_get()/zcomp_strm_multi_put() correspondingly.
-> > 
-> > Each time zcomp issues a zcomp_strm_multi_get() call, the following set of
-> > operations performed:
-> > - spin lock strm_lock
-> > - if idle list is not empty, remove zcomp_strm from idle list, spin
-> >   unlock and return zcomp stream pointer to caller
-> > - if idle list is empty, current adds itself to wait queue. it will be
-> >   awaken by zcomp_strm_multi_put() caller.
-> > 
-> > zcomp_strm_multi_put():
-> > - spin lock strm_lock
-> > - add zcomp stream to idle list
-> > - spin unlock, wake up sleeper
-> > 
-> > Minchan Kim reported that spinlock-based locking scheme has demonstrated a
-> > severe perfomance regression for single compression stream case, comparing
-> > to mutex-based (https://lkml.org/lkml/2014/2/18/16)
-> > 
-> > base                      spinlock                    mutex
-> > 
-> > ==Initial write           ==Initial write             ==Initial  write
-> > records:  5               records:  5                 records:   5
-> > avg:      1642424.35      avg:      699610.40         avg:       1655583.71
-> > std:      39890.95(2.43%) std:      232014.19(33.16%) std:       52293.96
-> > max:      1690170.94      max:      1163473.45        max:       1697164.75
-> > min:      1568669.52      min:      573429.88         min:       1553410.23
-> > ==Rewrite                 ==Rewrite                   ==Rewrite
-> > records:  5               records:  5                 records:   5
-> > avg:      1611775.39      avg:      501406.64         avg:       1684419.11
-> > std:      17144.58(1.06%) std:      15354.41(3.06%)   std:       18367.42
-> > max:      1641800.95      max:      531356.78         max:       1706445.84
-> > min:      1593515.27      min:      488817.78         min:       1655335.73
-> > ==Random  write           ==Random  write             ==Random   write
-> > records:  5               records:  5                 records:   5
-> > avg:      1626318.29      avg:      497250.78         avg:       1695582.06
-> > std:      38550.23(2.37%) std:      1405.42(0.28%)    std:       9211.98
-> > max:      1665839.62      max:      498585.88         max:       1703808.22
-> > min:      1562141.21      min:      494526.45         min:       1677664.94
-> > ==Pwrite                  ==Pwrite                    ==Pwrite
-> > records:  5               records:  5                 records:   5
-> > avg:      1654641.25      avg:      581709.22         avg:       1641452.34
-> > std:      47202.59(2.85%) std:      9670.46(1.66%)    std:       38963.62
-> > max:      1740682.36      max:      591300.09         max:       1687387.69
-> > min:      1611436.34      min:      564324.38         min:       1570496.11
-> > 
-> > When only one compression stream available, mutex with spin on owner tends
-> > to perform much better than frequent wait_event()/wake_up(). This is why
-> > single stream implemented as a special case with mutex locking.
+On Mon, Feb 17, 2014 at 08:27:31PM +0900, Tetsuo Handa wrote:
+> Tetsuo Handa wrote:
+> > This is a draft patch which changes task_struct->comm to use RCU.
 > 
-> Side note:
+> Changes from previous draft version:
 > 
-> It's true for x86 but it could be changed in embedded system like ARM
-> which is lower power compared to x86 and it also could depend on
-> compression algorithm speed so I am thinking we need adaptive locking
-> which sometime work with mutex sometime work with spinlock dynamically.
-> Anyway, it is further work and I should investigate more.
+>   Changed "struct rcu_comm" to use copy-on-write approach. Those multi-thread
+>   or multi-process applications which do not change comm name will consume
+>   memory for only one "struct rcu_comm".
 > 
-> Most important thing is that this patchset wouldn't make any regression
-> if we use mutex for single stream as default so I'm okay now.
+>   Changed do_commset() not to sleep.
 > 
-> > 
-> > In order to compile this functionality ZRAM_MULTI_STREAM config option
-> > required to be set, which will be introduced later.
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  drivers/block/zram/zcomp.c | 101 ++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 100 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-> > index 9661226..41325ed 100644
-> > --- a/drivers/block/zram/zcomp.c
-> > +++ b/drivers/block/zram/zcomp.c
-> > @@ -12,9 +12,14 @@
-> >  #include <linux/slab.h>
-> >  #include <linux/wait.h>
-> >  #include <linux/sched.h>
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +#include <linux/spinlock.h>
-> > +#endif
+>   Changed to tolerate loss of consistency when memory allocation failed.
 > 
-> Do we really need to include spinlock.h?
+>   Fixed race condition in copy_process().
 > 
-> >  
-> >  #include "zcomp.h"
-> >  
-> > +extern struct zcomp_backend zcomp_lzo;
-> > +
-> >  /*
-> >   * single zcomp_strm backend private part
-> >   */
-> > @@ -23,7 +28,18 @@ struct zcomp_strm_single {
-> >  	struct zcomp_strm *zstrm;
-> >  };
-> >  
-> > -extern struct zcomp_backend zcomp_lzo;
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +/*
-> > + * multi zcomp_strm backend private part
-> > + */
-> > +struct zcomp_strm_multi {
-> > +	/* protect strm list */
-> > +	spinlock_t strm_lock;
-> > +	/* list of available strms */
-> > +	struct list_head idle_strm;
-> > +	wait_queue_head_t strm_wait;
-> > +};
-> > +#endif
-> >  
-> >  static struct zcomp_backend *find_backend(const char *compress)
-> >  {
-> > @@ -63,6 +79,89 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
-> >  	return zstrm;
-> >  }
-> >  
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +/*
-> > + * get existing idle zcomp_strm or wait until other process release
-> > + * (zcomp_strm_put()) one for us
-> > + */
-> > +static struct zcomp_strm *zcomp_strm_multi_get(struct zcomp *comp)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
+> Regards.
+> ----------
+> >From ada6c4d94f5afda36c7c21869d38b7111a6fe9bc Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 17 Feb 2014 14:32:11 +0900
+> Subject: [PATCH] Change task_struct->comm to use RCU.
 > 
-> How about comp->stream instead of private?
+> This patch changes task_struct->comm to be updated using RCU
+> (unless memory allocation fails).
 > 
-> Other than that, Looks good to me.
-> 
-> > +	struct zcomp_strm *zstrm;
-> > +
-> > +	while (1) {
-> > +		spin_lock(&zp->strm_lock);
-> > +		if (list_empty(&zp->idle_strm)) {
-> > +			spin_unlock(&zp->strm_lock);
-> > +			wait_event(zp->strm_wait,
-> > +					!list_empty(&zp->idle_strm));
-> > +			continue;
-> > +		}
-> > +
-> > +		zstrm = list_entry(zp->idle_strm.next,
-> > +				struct zcomp_strm, list);
-> > +		list_del(&zstrm->list);
-> > +		spin_unlock(&zp->strm_lock);
-> > +		break;
-> > +	}
-> > +	return zstrm;
-> > +}
-> > +
-> > +/* add zcomp_strm back to idle list and wake up waiter */
-> > +static void zcomp_strm_multi_put(struct zcomp *comp, struct zcomp_strm *zstrm)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
-> > +
-> > +	spin_lock(&zp->strm_lock);
-> > +	list_add(&zstrm->list, &zp->idle_strm);
-> > +	spin_unlock(&zp->strm_lock);
-> > +
-> > +	wake_up(&zp->strm_wait);
-> > +}
-> > +
-> > +static void zcomp_strm_multi_destroy(struct zcomp *comp)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
-> > +	struct zcomp_strm *zstrm;
-> > +	while (!list_empty(&zp->idle_strm)) {
-> > +		zstrm = list_entry(zp->idle_strm.next,
-> > +				struct zcomp_strm, list);
-> > +		list_del(&zstrm->list);
-> > +		zcomp_strm_free(comp, zstrm);
-> > +	}
-> > +	kfree(zp);
-> > +}
-> > +
-> > +static int zcomp_strm_multi_create(struct zcomp *comp, int num_strm)
-> > +{
-> > +	int i;
-> > +	struct zcomp_strm *zstrm;
-> > +	struct zcomp_strm_multi *zp;
-> > +
-> > +	comp->destroy = zcomp_strm_multi_destroy;
-> > +	comp->strm_get = zcomp_strm_multi_get;
-> > +	comp->strm_put = zcomp_strm_multi_put;
-> > +	zp = kmalloc(sizeof(struct zcomp_strm_multi), GFP_KERNEL);
-> > +	comp->private = zp;
-> > +	if (!zp)
-> > +		return -ENOMEM;
-> > +
-> > +	spin_lock_init(&zp->strm_lock);
-> > +	INIT_LIST_HEAD(&zp->idle_strm);
-> > +	init_waitqueue_head(&zp->strm_wait);
-> > +
-> > +	for (i = 0; i < num_strm; i++) {
-> > +		zstrm = zcomp_strm_alloc(comp);
-> > +		if (!zstrm) {
-> > +			zcomp_strm_multi_destroy(comp);
-> > +			return -ENOMEM;
-> > +		}
-> > +		list_add(&zstrm->list, &zp->idle_strm);
-> > +	}
-> > +	return 0;
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-One thing I missed.
+A few questions and comments below.  With those addressed,
 
-How about adding new comp stream dynamically rather than creating
-all device is initialized?
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
+> ---
+>  fs/exec.c                 |  145 +++++++++++++++++++++++++++++++++++++++------
+>  include/linux/init_task.h |    4 +-
+>  include/linux/sched.h     |   37 ++++++++++--
+>  kernel/fork.c             |    9 +++
+>  kernel/kthread.c          |    4 +-
+>  kernel/sched/core.c       |    2 +-
+>  6 files changed, 173 insertions(+), 28 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index a781dec..8a68ab3 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -263,6 +263,11 @@ extern char ___assert_task_state[1 - 2*!!(
+> 
+>  /* Task command name length */
+>  #define TASK_COMM_LEN 16
+> +struct rcu_comm {
+> +	char name[TASK_COMM_LEN];
+> +	atomic_t usage;
+> +	struct rcu_head rcu;
+> +};
+> 
+>  #include <linux/spinlock.h>
+> 
+> @@ -1317,10 +1322,12 @@ struct task_struct {
+>  					 * credentials (COW) */
+>  	const struct cred __rcu *cred;	/* effective (overridable) subjective task
+>  					 * credentials (COW) */
+> -	char comm[TASK_COMM_LEN]; /* executable name excluding path
+> -				     - access with [gs]et_task_comm (which lock
+> -				       it with task_lock())
+> -				     - initialized normally by setup_new_exec */
+> +	struct rcu_comm __rcu *rcu_comm; /* executable name excluding path (COW)
+> +					    - update with set_task_comm() or
+> +					      do_set_task_comm[_fmt]()
+> +					    - read with commcpy() or %pT
+> +					    - initialized normally by
+> +					      setup_new_exec */
+>  /* file system info */
+>  	int link_count, total_link_count;
+>  #ifdef CONFIG_SYSVIPC
+> @@ -1792,6 +1799,23 @@ static inline cputime_t task_gtime(struct task_struct *t)
+>  extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+>  extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+> 
+> +/**
+> + * commcpy - Copy task_struct->comm to buffer.
+> + *
+> + * @buf: Buffer to copy @tsk->comm which must be at least TASK_COMM_LEN bytes.
+> + * @tsk: Pointer to "struct task_struct".
+> + *
+> + * Returns @buf .
+> + */
+> +static inline char *commcpy(char *buf, const struct task_struct *tsk)
+> +{
+> +	rcu_read_lock();
+> +	memcpy(buf, rcu_dereference(tsk->rcu_comm)->name, TASK_COMM_LEN);
+> +	rcu_read_unlock();
+> +	buf[TASK_COMM_LEN - 1] = '\0';
+> +	return buf;
+> +}
+> +
+>  /*
+>   * Per process flags
+>   */
+> @@ -2320,7 +2344,10 @@ struct task_struct *fork_idle(int);
+>  extern pid_t kernel_thread(int (*fn)(void *), void *arg, unsigned long flags);
+> 
+>  extern void set_task_comm(struct task_struct *tsk, char *from);
+> -extern char *get_task_comm(char *to, struct task_struct *tsk);
+> +extern void do_set_task_comm(struct task_struct *tsk, const char *buf);
+> +extern void do_set_task_comm_fmt(struct task_struct *tsk, const char *fmt, ...)
+> +	__printf(2, 3);
+> +extern void put_commname(struct rcu_comm *comm);
+> 
+>  #ifdef CONFIG_SMP
+>  void scheduler_ipi(void);
+> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> index 6df7f9f..b217f8c 100644
+> --- a/include/linux/init_task.h
+> +++ b/include/linux/init_task.h
+> @@ -154,7 +154,7 @@ extern struct task_group root_task_group;
+>  # define INIT_VTIME(tsk)
+>  #endif
+> 
+> -#define INIT_TASK_COMM "swapper"
+> +extern struct rcu_comm init_rcu_comm;
+> 
+>  #ifdef CONFIG_RT_MUTEXES
+>  # define INIT_RT_MUTEXES(tsk)						\
+> @@ -201,7 +201,7 @@ extern struct task_group root_task_group;
+>  	.group_leader	= &tsk,						\
+>  	RCU_POINTER_INITIALIZER(real_cred, &init_cred),			\
+>  	RCU_POINTER_INITIALIZER(cred, &init_cred),			\
+> -	.comm		= INIT_TASK_COMM,				\
+> +	.rcu_comm       = &init_rcu_comm,				\
+>  	.thread		= INIT_THREAD,					\
+>  	.fs		= &init_fs,					\
+>  	.files		= &init_files,					\
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 3d78fcc..85c57a6 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1026,30 +1026,11 @@ killed:
+>  	return -EAGAIN;
+>  }
+> 
+> -char *get_task_comm(char *buf, struct task_struct *tsk)
+> -{
+> -	/* buf must be at least sizeof(tsk->comm) in size */
+> -	task_lock(tsk);
+> -	strncpy(buf, tsk->comm, sizeof(tsk->comm));
+> -	task_unlock(tsk);
+> -	return buf;
+> -}
+> -EXPORT_SYMBOL_GPL(get_task_comm);
+> -
+>  /*
+>   * These functions flushes out all traces of the currently running executable
+>   * so that a new one can be started
+>   */
+> 
+> -void set_task_comm(struct task_struct *tsk, char *buf)
+> -{
+> -	task_lock(tsk);
+> -	trace_task_rename(tsk, buf);
+> -	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+> -	task_unlock(tsk);
+> -	perf_event_comm(tsk);
+> -}
+> -
+>  static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
+>  {
+>  	int i, ch;
+> @@ -1626,3 +1607,129 @@ asmlinkage long compat_sys_execve(const char __user * filename,
+>  	return compat_do_execve(getname(filename), argv, envp);
+>  }
+>  #endif
+> +
+> +/* Task's comm name handler functions. */
+> +static struct kmem_cache *commname_cachep __read_mostly;
+> +
+> +/* comm name for init_task. */
+> +struct rcu_comm init_rcu_comm = {
+> +	.name = "swapper",
+> +	.usage = ATOMIC_INIT(INT_MAX) /* Mark this object static. */
+> +};
+> +
+> +/**
+> + * set_task_comm - Change task_struct->comm with tracer and perf hooks called.
+> + *
+> + * @tsk: Pointer to "struct task_struct".
+> + * @buf: New comm name.
+> + *
+> + * Returns nothing.
+> + */
+> +void set_task_comm(struct task_struct *tsk, char *buf)
+> +{
+> +	/*
+> +	 * Question: Do we need to use task_lock()/task_unlock() ?
 
-> > +}
-> > +#endif
-> > +
-> >  static struct zcomp_strm *zcomp_strm_single_get(struct zcomp *comp)
-> >  {
-> >  	struct zcomp_strm_single *zp = comp->private;
-> > -- 
-> > 1.9.0.291.g027825b
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+The have-memory path through do_set_task_comm() does tolerate multiple
+CPUs concurrently setting the comm of a given task, but the no-memory
+path does not.  I advise keeping the locking, at least unless/until
+some workload is having lots of CPUs concurrently changing a given
+task's comm.  For some good reason, I hasten to add!  ;-)
+
+Another reason to get rid of the lock is to allow do_set_task_comm()
+to sleep waiting for memory to become available, but not sure that
+this is a good approach.
+
+> +	 */
+> +	task_lock(tsk);
+> +	trace_task_rename(tsk, buf);
+> +	task_unlock(tsk);
+> +	do_set_task_comm(tsk, buf);
+> +	perf_event_comm(tsk);
+> +}
+> +
+> +/**
+> + * do_set_task_comm_fmt - Change task_struct->comm.
+> + *
+> + * @tsk: Pointer to "struct task_struct".
+> + * @fmt: Format string, followed by arguments.
+> + *
+> + * Returns nothing.
+> + */
+> +void do_set_task_comm_fmt(struct task_struct *tsk, const char *fmt, ...)
+> +{
+> +	va_list args;
+> +	char name[TASK_COMM_LEN];
+> +
+> +	va_start(args, fmt);
+> +	vsnprintf(name, TASK_COMM_LEN, fmt, args);
+> +	va_end(args);
+> +	do_set_task_comm(tsk, name);
+> +}
+> +
+> +/**
+> + * do_set_task_comm - Change task_struct->comm.
+> + *
+> + * @tsk: Pointer to "struct task_struct".
+> + * @buf: New comm name.
+> + *
+> + * Returns nothing.
+> + */
+> +void do_set_task_comm(struct task_struct *tsk, const char *buf)
+> +{
+> +	struct rcu_comm *comm;
+> +
+> +	comm = kmem_cache_zalloc(commname_cachep, GFP_ATOMIC | __GFP_NOWARN);
+> +	if (likely(comm)) {
+> +		atomic_set(&comm->usage, 1);
+> +		strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+> +		smp_wmb(); /* Behave like rcu_assign_pointer(). */
+> +		comm = xchg(&tsk->rcu_comm, comm);
+
+The value-returning xchg() implies a full memory barrier, so the
+smp_wmb() is not needed.
+
+> +		put_commname(comm);
+> +	} else {
+> +		/*
+> +		 * Memory allocation failed. We have to tolerate loss of
+> +		 * consistency.
+> +		 *
+> +		 * Question 1: Do we want to reserve some amount of static
+> +		 * "struct rcu_comm" arrays for use upon allocation failures?
+> +		 *
+> +		 * Question 2: Do we perfer unchanged comm name over
+> +		 * overwritten comm name because comm name is copy-on-write ?
+> +		 */
+> +		WARN_ONCE(1, "Failed to allocate memory for comm name.\n");
+> +		rcu_read_lock();
+> +		do {
+> +			comm = rcu_dereference(tsk->rcu_comm);
+> +		} while (!atomic_read(&comm->usage));
+
+So the idea here is to avoid races with someone who might be freeing
+this same ->rcu_comm structure, right?  If we see a non-zero reference,
+they might still free it, but that would be OK because we are in an
+RCU read-side critical section, so it won't actually be freed until
+we get done.  And our change is being overwritten by someone else's
+in that case, but that is OK because it could happen anyway.
+
+So the loop shouldn't go through many cycles, especially if memory
+remains low.
+
+If I am correct, might be worth a comment.  Doubly so if I am wrong.  ;-)
+
+> +		strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+> +		rcu_read_unlock();
+> +	}
+> +}
+> +
+> +/**
+> + * free_commname - Release "struct rcu_comm".
+> + *
+> + * @rcu: Pointer to "struct rcu_head".
+> + *
+> + * Returns nothing.
+> + */
+> +static void free_commname(struct rcu_head *rcu)
+> +{
+> +	struct rcu_comm *comm = container_of(rcu, struct rcu_comm, rcu);
+> +	kmem_cache_free(commname_cachep, comm);
+> +}
+> +
+> +/**
+> + * put_commname - Release "struct rcu_comm".
+> + *
+> + * @comm: Pointer to "struct rcu_comm".
+> + *
+> + * Returns nothing.
+> + */
+> +void put_commname(struct rcu_comm *comm)
+> +{
+> +	if (atomic_dec_and_test(&comm->usage))
+> +		call_rcu(&comm->rcu, free_commname);
+> +}
+> +
+> +/**
+> + * commname_init - Initialize "struct rcu_comm".
+> + *
+> + * Returns nothing.
+> + */
+> +void __init commname_init(void)
+> +{
+> +	commname_cachep = kmem_cache_create("commname",
+> +					    sizeof(struct rcu_comm),
+> +					    0, SLAB_PANIC, NULL);
+> +}
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index a17621c..23be1ef 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -214,6 +214,7 @@ void free_task(struct task_struct *tsk)
+>  	ftrace_graph_exit_task(tsk);
+>  	put_seccomp_filter(tsk);
+>  	arch_release_task_struct(tsk);
+> +	put_commname(tsk->rcu_comm);
+>  	free_task_struct(tsk);
+>  }
+>  EXPORT_SYMBOL(free_task);
+> @@ -249,6 +250,8 @@ EXPORT_SYMBOL_GPL(__put_task_struct);
+> 
+>  void __init __weak arch_task_cache_init(void) { }
+> 
+> +extern void __init commname_init(void);
+> +
+>  void __init fork_init(unsigned long mempages)
+>  {
+>  #ifndef CONFIG_ARCH_TASK_STRUCT_ALLOCATOR
+> @@ -260,6 +263,7 @@ void __init fork_init(unsigned long mempages)
+>  		kmem_cache_create("task_struct", sizeof(struct task_struct),
+>  			ARCH_MIN_TASKALIGN, SLAB_PANIC | SLAB_NOTRACK, NULL);
+>  #endif
+> +	commname_init();
+> 
+>  	/* do the arch specific task caches init */
+>  	arch_task_cache_init();
+> @@ -1191,6 +1195,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  	p = dup_task_struct(current);
+>  	if (!p)
+>  		goto fork_out;
+> +	rcu_read_lock();
+> +	do {
+> +		p->rcu_comm = rcu_dereference(current->rcu_comm);
+> +	} while (!atomic_inc_not_zero(&p->rcu_comm->usage));
+
+OK, loop until we get the sole reference on the comm...  But
+I suggest an rcu_read_unlock() followed by an rcu_read_lock() as the
+first thing in the loop.  Just to prevent adding an RCU CPU stall to
+our woes if we cannot get a reference.
+
+And here the two tasks (parent and child) share the name until one
+or the other either changes its name or exits.  OK.
+
+> +	rcu_read_unlock();
+> 
+>  	ftrace_graph_init_task(p);
+>  	get_seccomp_filter(p);
+> diff --git a/kernel/kthread.c b/kernel/kthread.c
+> index b5ae3ee..e83b67c 100644
+> --- a/kernel/kthread.c
+> +++ b/kernel/kthread.c
+> @@ -309,10 +309,12 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+>  	if (!IS_ERR(task)) {
+>  		static const struct sched_param param = { .sched_priority = 0 };
+>  		va_list args;
+> +		char name[TASK_COMM_LEN];
+> 
+>  		va_start(args, namefmt);
+> -		vsnprintf(task->comm, sizeof(task->comm), namefmt, args);
+> +		vsnprintf(name, TASK_COMM_LEN, namefmt, args);
+>  		va_end(args);
+> +		do_set_task_comm(task, name);
+>  		/*
+>  		 * root may have changed our (kthreadd's) priority or CPU mask.
+>  		 * The kernel thread should not inherit these properties.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b46131e..bbb7c94 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4488,7 +4488,7 @@ void init_idle(struct task_struct *idle, int cpu)
+>  	ftrace_graph_init_idle_task(idle, cpu);
+>  	vtime_init_idle(idle, cpu);
+>  #if defined(CONFIG_SMP)
+> -	sprintf(idle->comm, "%s/%d", INIT_TASK_COMM, cpu);
+> +	do_set_task_comm_fmt(idle, "swapper/%d", cpu);
+>  #endif
+>  }
 > 
 > -- 
-> Kind regards,
-> Minchan Kim
+> 1.7.1
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
--- 
-Kind regards,
-Minchan Kim
