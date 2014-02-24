@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaBXSxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:53:50 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41756 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaBXSxr (ORCPT
+	id S1752937AbaBXSxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:53:44 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35110 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbaBXSxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:53:47 -0500
-Date: Mon, 24 Feb 2014 10:53:41 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140224185341.GU8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
- <1393095223.28840.4914.camel@triegel.csb>
- <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
- <20140223003933.GQ4250@linux.vnet.ibm.com>
- <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
- <20140223063426.GT4250@linux.vnet.ibm.com>
- <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
- <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
- <20140224172110.GO8264@linux.vnet.ibm.com>
- <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+	Mon, 24 Feb 2014 13:53:41 -0500
+Message-ID: <530B952D.2000006@wwwdotorg.org>
+Date: Mon, 24 Feb 2014 11:53:33 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022418-6688-0000-0000-000006F033D2
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: devicetree@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: add device tree for SHIELD
+References: <1393237593-28121-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1393237593-28121-1-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:14:01AM -0800, Linus Torvalds wrote:
-> On Mon, Feb 24, 2014 at 9:21 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > 4.      Bitwise operators ("&", "|", "^", and I suppose also "~")
-> >         applied to a chained pointer and an integer results in another
-> >         chained pointer in that same pointer chain.
-> 
-> No. You cannot define it this way. Taking the value of a pointer and
-> doing a bitwise operation that throws away all the bits (or even
-> *most* of the bits) results in the compiler easily being able to turn
-> the "chain" into a non-chain.
-> 
-> The obvious example being "val & 0", but things like "val & 1" are in
-> practice also something that compilers easily turn into control
-> dependencies instead of data dependencies.
+On 02/24/2014 03:26 AM, Alexandre Courbot wrote:
+> Add a device tree for NVIDIA SHIELD. The set of enabled features is
+> still minimal with no display option (although HDMI should be easy
+> to get to work) and USB requiring external power.
 
-Indeed, most of the bits need to remain for this to work.
+You could add a simple-framebuffer node for now, I think?
 
-> So you can talk about things like "aligning the pointer value to
-> object boundaries" etc, but it really cannot and *must* not be about
-> the syntactic operations.
-> 
-> The same goes for "adding and subtracting an integer". The *syntax*
-> doesn't matter. It's about remaining information. Doing "p-(int)p" or
-> "p+(-(int)p)" doesn't leave any information despite being "subtracting
-> and adding an integer" at a syntactic level.
-> 
-> Syntax is meaningless. Really.
+> diff --git a/arch/arm/boot/dts/tegra114-roth.dts b/arch/arm/boot/dts/tegra114-roth.dts
 
-Good points.  How about the following replacements?
+> +	memory {
+> +		reg = <0x80000000 0x79600000>;
 
-3.	Adding or subtracting an integer to/from a chained pointer
-	results in another chained pointer in that same pointer chain.
-	The results of addition and subtraction operations that cancel
-	the chained pointer's value (for example, "p-(long)p" where "p"
-	is a pointer to char) are implementation defined.
+It might be worth a comment here pointing out that the rest of RAM is
+reserved for some carveouts/..., or at least that these values are set
+this way in order to match what the bootloader usually passes to
+downstream kernels in the command-line?
 
-4.	Bitwise operators ("&", "|", "^", and I suppose also "~")
-	applied to a chained pointer and an integer for the purposes
-	of alignment and pointer translation results in another
-	chained pointer in that same pointer chain.  Other uses
-	of bitwise operators on chained pointers (for example,
-	"p|~0") are implementation defined.
+> +	i2c@7000d000 {
 
-> > 8.      Applying any of the following operators to a chained pointer
-> >         results in something that is not a chained pointer:
-> >         "()", sizeof, "!", "*", "/", "%", ">>", "<<", "<", ">", "<=",
-> >         ">=", "==", "!=", "&&", and "||".
-> 
-> Parenthesis? I'm assuming that you mean calling through the chained pointer.
+> +		palmas: pmic@58 {
+> +			compatible = "ti,palmas";
+> +			reg = <0x58>;
+> +			interrupts = <0 86 IRQ_TYPE_LEVEL_HIGH>;
+> +			ti,irq-externally-inverted;
 
-Yes, good point.  Of course, parentheses for grouping just pass the
-value through without affecting the chained-ness.
+Unfortunately, the patch I sent to document/implement that last property
+hasn't yet been ack'd/applied, so I'll hold off applying this until it has.
 
-> Also, I think all of /, * and % are perfectly fine, and might be used
-> for that "aligning the pointer" operation that is fine.
+> +	/* Wifi */
+> +	sdhci@78000000 {
+> +		status = "okay";
+> +		bus-width = <4>;
+> +		broken-cd;
+> +		keep-power-in-suspend;
+> +		cap-sdio-irq;
 
-Something like this?
+Is non-removable better than broken-cd, or are they entirely unrelated?
 
-	char *p;
+Should we add broken-cd and/or cap-sdio-irq to the SDIO WiFi on other
+boards (Springbank, Ventana, Cardhu)?
 
-	p = p - (unsigned long)p % 8;
+> +	usb-phy@7d000000 {
+> +		status = "okay";
+> +		nvidia,xcvr-setup = <7>;
+> +		nvidia,xcvr-lsfslew = <2>;
+> +		nvidia,xcvr-lsrslew = <2>;
+> +		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+> +		dr_mode = "otg";
 
-I was thinking of this as subtraction -- the "p" gets moduloed by 8,
-which loses the chained-pointer designation.  But that is OK because
-that designation gets folded back in by the subtraction.  Am I missing
-a use case?
-
-That leaves things like this one:
-
-	p = (p / 8) * 8;
-
-I cannot think of any other legitimate use for "/" and "*".
-
-Here is an updated #8 and a new 8a:
-
-8.	Applying any of the following operators to a chained pointer
-	results in something that is not a chained pointer: function call
-	"()", sizeof, "!", "%", ">>", "<<", "<", ">", "<=", ">=", "==",
-	"!=", "&&", "||", and "kill_dependency()".
-
-8a.	Dividing a chained pointer by an integer and multiplying it
-	by that same integer (for example, to align that pointer) results
-	in a chained pointer in that same pointer chain.  The ordering
-	effects of other uses of infix "*" and "/" on chained pointers
-	are implementation defined.
-
-Does that capture it?
-
-							Thanx, Paul
-
+While opt is probably accurate, we don't actually support otg upstream,
+but only host. While the DT is supposed to represent HW rather than
+SW/OS details, I've tried to avoid putting otg into the DT, since I'm
+not sure that the DT binding for otg is stable, since we can't test it,
+whereas host probably is. Still, this is a pretty minor detail, and we
+can ignore that if you want ("otg" evidently /works/ fine on Seaboard,
+so it's OK if you keep this).
