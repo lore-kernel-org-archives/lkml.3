@@ -1,92 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaBXBSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:18:12 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:34363 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaBXBSK (ORCPT
+	id S1752152AbaBXBS0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:18:26 -0500
+Received: from prifuk.spider.cz ([31.31.77.241]:41660 "EHLO prifuk.cz"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaBXBSY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:18:10 -0500
-Date: Sun, 23 Feb 2014 17:18:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used
- stand-alone
-Message-ID: <20140224011802.GD8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140219185850.GA23050@linux.vnet.ibm.com>
- <1392838407-29704-1-git-send-email-paul.gortmaker@windriver.com>
- <20140220015317.GL4250@linux.vnet.ibm.com>
- <20140220020213.GA9907@windriver.com>
- <20140220090039.GQ4250@linux.vnet.ibm.com>
- <20140223172714.GA3774@linux.vnet.ibm.com>
- <20140224000103.GB13295@windriver.com>
+	Sun, 23 Feb 2014 20:18:24 -0500
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
+        simon@mungewell.org
+Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
+Date: Mon, 24 Feb 2014 02:18:21 +0100
+Message-ID: <3296661.ZtKKWyXPzF@geidi-prime>
+User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <530A931D.9030308@iki.fi>
+References: <1516865.M993BQAYe4@geidi-prime> <3364546.xScl1m6sdc@geidi-prime> <530A931D.9030308@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140224000103.GB13295@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022401-1344-0000-0000-00000605458E
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 07:01:04PM -0500, Paul Gortmaker wrote:
-> [Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 23/02/2014 (Sun 09:27) Paul E. McKenney wrote:
-> 
-> > On Thu, Feb 20, 2014 at 01:00:39AM -0800, Paul E. McKenney wrote:
-> > > On Wed, Feb 19, 2014 at 09:02:13PM -0500, Paul Gortmaker wrote:
-> > > > [Re: [PATCH v2] rcu: ensure kernel/rcu/rcu.h can be sourced/used stand-alone] On 19/02/2014 (Wed 17:53) Paul E. McKenney wrote:
-> > > > 
-> > > > > On Wed, Feb 19, 2014 at 02:33:27PM -0500, Paul Gortmaker wrote:
-> > > > > > The kbuild test bot uncovered an implicit dependence on the
-> > > > > > trace header being present before rcu.h in ia64 allmodconfig
-> > > > > > that looks like this:
-> > > > > > 
-> > > > > > In file included from kernel/ksysfs.c:22:0:
-> > > > > > kernel/rcu/rcu.h: In function '__rcu_reclaim':
-> > > > > > kernel/rcu/rcu.h:107:3: error: implicit declaration of function 'trace_rcu_invoke_kfree_callback' [-Werror=implicit-function-declaration]
-> > > > > > kernel/rcu/rcu.h:112:3: error: implicit declaration of function 'trace_rcu_invoke_callback' [-Werror=implicit-function-declaration]
-> > > > > > cc1: some warnings being treated as errors
-> > > > > > 
-> > > > > > Looking at other rcu.h users, we can find that they all
-> > > > > > were sourcing the trace header in advance of rcu.h itself,
-> > > > > > as seen in the context of this diff.  There were also some
-> > > > > > inconsistencies as to whether it was or wasn't sourced based
-> > > > > > on the parent tracing Kconfig.
-> > > > > > 
-> > > > > > Rather than "fix" it at each use site, and have inconsistent
-> > > > > > use based on whether "#ifdef CONFIG_RCU_TRACE" was used or not,
-> > > > > > lets just source the trace header just once, in the actual consumer
-> > > > > > of it, which is rcu.h itself.  We include it unconditionally, as
-> > > > > > build testing shows us that is a hard requirement for some files.
-> > > > > > 
-> > > > > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > > > > > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > > > > 
-> > > > > Queued for 3.16, thank you, Paul!
-> > > > 
-> > > > Thanks!
-> > > > 
-> > > > I'm assuming you meant 3.15 -- unless of course you are allowing
-> > > > for an insurance policy for me possibly breaking the build.  ;)
-> > > 
-> > > Well, it does seem to be doing better in testing.  ;-)
-> > > 
-> > > I split off the stuff for the 3.15 merge window a few days back, but
-> > > if the lack of this patch is causing a problem, I could be talked into
-> > > slipping it in.
+On Monday 24 of February 2014 02:32:29 Anssi Hannula wrote:
+> 24.02.2014 01:29, Michal Malý kirjoitti:
+> > Introduce ff-memless-next module as a possible future replacement of
+> > ff-memless.
 > > 
-> > And it does seem to be doing well, so I will be putting it forward for 3.15.
+> > Tested-by: Elias Vanderstuyft <elias.vds@gmail.com>
+> > Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
 > 
-> Great, thanks -- there was really no rush; I'd just assumed that the
-> 3.16 was a typo, since I personally can't plan that far ahead.  ;)
+> Some comments below.
+> 
+> > ---
+> > 
+> >  v2:
+> >   Handle upload and removal of uncombinable effects correctly
+> >   Remove redundant information from the documentation file
+> >   Invert direction of force along Y axis to conform to common conventions
+> >   Set FF_GAIN bit
+> >  
+> >  Documentation/input/ff-memless-next.txt | 141 ++++++
+> >  drivers/input/Kconfig                   |  11 +
+> >  drivers/input/Makefile                  |   1 +
+> >  drivers/input/ff-memless-next.c         | 789
+> >  ++++++++++++++++++++++++++++++++ include/linux/input/ff-memless-next.h  
+> >  |  32 ++
+> >  5 files changed, 974 insertions(+)
+> >  create mode 100644 Documentation/input/ff-memless-next.txt
+> >  create mode 100644 drivers/input/ff-memless-next.c
+> >  create mode 100644 include/linux/input/ff-memless-next.h
+> > 
+> > diff --git a/Documentation/input/ff-memless-next.txt
+> > b/Documentation/input/ff-memless-next.txt new file mode 100644
+> > index 0000000..1b550dc
+> > --- /dev/null
+> > +++ b/Documentation/input/ff-memless-next.txt
+> > @@ -0,0 +1,141 @@
+> 
+> [...]
+> 
+> > +3. API provided by "ff-memless-next"
+> > +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> > +"ff-memless-next" provides an API for developers of hardware-specific
+> > +drivers. In order to use the API, the hardware-specific driver should
+> > +include <linux/input/ff-memless-next.h>
+> 
+> > +Functions and structs defined by this API are:
+> [...]
+> 
+> This kind of basic API documentation belongs in the headers (kernel-doc
+> format).
+> 
+> [...]
+> 
+> > +	MLNX_UPLOAD_UNCOMB - Check if the device can accept and play
+> > +			     "uncombinable" effect and upload the effect into
+> > +			     the device's internal memory.
+> > +			     Hardware-specific driver should return 0
+> > +			     on success.
+> > +	MLNX_ERASE_UNCOMB - Remove "uncombinable" effect from device's
+> > +			    internal memory.
+> > +			    Hardware-specific driver should return 0
+> > +			    on success.
+> > +	MLNX_START_UNCOMB - Start playback of "uncombinable" effect.
+> > +	MLNX_STOP_UNCOMB - Stop playback of "uncombinable" effect.
+> 
+> These seem to be unused by any drivers?
+> 
+> I don't think they should be added to the kernel before there is an
+> implementation using them (it also makes reviewing them more difficult).
 
-I like to hammer new patches for a few weeks before passing them on.
-My experience is that if I fail to do so, they hammer me somewhat later.  ;-)
+They are used by my dummy driver (link to the source is in the documentation). 
+Handling uncombinable effects in lg4ff would be a bit more involved so I 
+decided to add support for these in a separate patch series.
 
-							Thanx, Paul
+> [...]
+> 
+> > +4. Specifics of "ff-memless-next" for userspace developers
+> > +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> > +None of the persons involved in development or testing of
+> > "ff-memless-next" +is aware of any reference force feedback
+> > specifications. "ff-memless-next" +tries to adhere to Microsoft's
+> > DirectInput specifications because we +believe that is what most
+> > developers have experience with.
+> > +
+> > +- Waveforms of periodic effects do not start at the origin, but as
+> > follows: +	SAW_UP: At minimum
+> > +	SAW_DOWN: At maximum
+> > +	SQUARE: At maximum
+> > +	TRIANGLE: At maximum
+> > +	SINE: At origin
+> > +
+> > +- Updating periodic effects:
+> > +	- All periodic effects are restarted when their parameters are 
+updated.
+> > +
+> > +- Updating effects of finite duration:
+> > +	- Once an effect of finite length finishes playing, it is considered
+> > +	  stopped. Only effects that are playing can be updated on the fly.
+> > +	  Therefore effects of finite duration can be updated only until
+> > +	  they finish playing.
+> 
+> Stopped effects should still be able to be updated.
+> 
+> Anyway, if you want to target userspace developers with this
+> information, you should put it in generic documentation ("it is not
+> guaranteed that X", etc.). If not, don't say "for userspace developers".
+> 
+> [...]
+> 
+> > diff --git a/drivers/input/ff-memless-next.c
+> > b/drivers/input/ff-memless-next.c new file mode 100644
+> > index 0000000..843a223
+> > --- /dev/null
+> > +++ b/drivers/input/ff-memless-next.c
+> > @@ -0,0 +1,789 @@
+> > +/*
+> > + * Force feedback support for memoryless devices
+> > + *
+> > + * This module is based on "ff-memless" orignally written by Anssi
+> > Hannula. + * It is extended to support all force feedback effects
+> > currently supported + * by the Linux input stack.
+> > + *
+> > + * Copyright(c) 2013 Michal Maly <madcatxster@prifuk.cz>
+> > + *
+> > + */
+> 
+> [...]
+> 
+> > +static int mlnx_upload(struct input_dev *dev, struct ff_effect *effect,
+> > +		       struct ff_effect *old)
+> > +{
+> 
+> [...]
+> 
+> > +		}
+> > +
+> > +		mlnx_schedule_playback(mlnxdev);
+> > +		spin_unlock_irq(&dev->event_lock);
+> > +		return 0;
+> 
+> The above two lines are unneeded.
+Oops...
 
+> > +	}
+> > +
+> > +	spin_unlock_irq(&dev->event_lock);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> 
+> [...]
+> 
+> > diff --git a/include/linux/input/ff-memless-next.h
+> > b/include/linux/input/ff-memless-next.h new file mode 100644
+> > index 0000000..ba89ba1
+> > --- /dev/null
+> > +++ b/include/linux/input/ff-memless-next.h
+> > @@ -0,0 +1,32 @@
+> 
+> [...]
+> 
+> > +int input_ff_create_mlnx(struct input_dev *dev, void *data,
+> > +			 int(*control_effect)(struct input_dev *, void *, const 
+struct
+> > mlnx_effect_command *), +			 const u16 update_rate);
+> 
+> Why is update_rate now driver-selectable?
+Because it is my intention to replace ff-memless with MLNX, I want to account 
+for (very old?) devices that might have a limit on how many commands they can 
+accept within a given timeframe. Update interval in ff-memless is 50 msecs 
+whereas Logitech wheels can go as low as 8 msecs. The lower the update 
+interval - the better the quality of periodic, ramp and envelope effects. 
+Allowing the driver to choose how fast will MLNX generate updates seemed like 
+the best way to go.
+
+
+Your feedback is very much appreciated...
+
+Michal M.
