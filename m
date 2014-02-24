@@ -1,86 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaBXXBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:01:39 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:41659 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaBXXBh (ORCPT
+	id S1752884AbaBXXCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:02:15 -0500
+Received: from smtp105.biz.mail.ne1.yahoo.com ([98.138.207.12]:21811 "HELO
+	smtp105.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752714AbaBXXBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:01:37 -0500
+	Mon, 24 Feb 2014 18:01:45 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vfCvdNgVM1lWAm_QQSBGtex9u4F0OcovPEyMP2dHhPCQkiD
+ IHcQsC6eQ8VwFwNGTqAX7csrV43Y92TzCUsUUyUl814F957CDczWrXkZlhoQ
+ xXxphIbh_54zfUmdXV5850LrGhc27vmYjeUWlCGfFROzmgHiQt0w4sPSmUoo
+ qg4SbEe5jlc3vjkR7vUWtHPCr0shS4CtZDwn_mnER69zwf4YMrPMcYk2.bhi
+ zBV4uw93pEkiT0R9tfgb2CHhQizNzdhdt6s64eog3DtRxhaK2ih4uO5Eyvnn
+ gyBpP4tOhyk9Ay0b0F_nMBrSD1GTkOSog_CyNqMc2Zh3Lv1F3WjB.aPxucFH
+ C7sYLrmIiVa4gHO4g4eA6hRZtP4..RUr8_itmzfyKFcKiDPsd3.CCJMNLoWz
+ 3mKEYePKqj9iS0SeM35OyygkBoiJL9lopEWE4lpXXkkYxWbSei4nwmANBLUy
+ 0cflvNpkZSC83RHJ.Taz8.zCnCDsozJWobexwVUpnDjuZIgArT0R8AxfDomX
+ LrAEDoh6ora9u_s2QrUCYKqhM3gFmviFglOwPBWzbhecN19yLDw3TDw--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
+        by smtp105.biz.mail.ne1.yahoo.com with SMTP; 24 Feb 2014 15:01:44 -0800 PST
+Message-ID: <530BCF57.6000304@schaufler-ca.com>
+Date: Mon, 24 Feb 2014 15:01:43 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Date: Mon, 24 Feb 2014 15:01:36 -0800
-Message-ID: <CAHTgTXWwLEjPxaS07DtW51WtFmpew6oZ0tOw1PAvniPnw44UUQ@mail.gmail.com>
-Subject: kernel BUG at mm/mlock.c:79! on 3.10
-From: Vinson Lee <vlee@twopensource.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org, trinity@vger.kernel.org
+To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+CC: James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
+References: <cover.1393279025.git.joe@perches.com> <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com> <530BC92D.6030509@schaufler-ca.com>
+In-Reply-To: <530BC92D.6030509@schaufler-ca.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On 2/24/2014 2:35 PM, Casey Schaufler wrote:
+> On 2/24/2014 1:59 PM, Joe Perches wrote:
+>> Convert printks to pr_<level>
+>> Add pr_fmt.
+>>
+>> Signed-off-by: Joe Perches <joe@perches.com>
+> Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+>
+> I will take this into the smack-next tree.
 
-This kernel BUG was triggered while running trinity fuzzer on 3.10.
+Unless James would rather take the whole set, that is.
 
-[413679.376565] ------------[ cut here ]------------
-[413679.395034] kernel BUG at mm/mlock.c:79!
-[413679.395611] invalid opcode: 0000 [#1] SMP
-[413679.396206] Modules linked in: l2tp_ppp l2tp_netlink l2tp_core
-af_key ipt_ULOG nfnetlink can_bcm can_raw scsi_transport_iscsi can
-pppoe pppox ppp_generic slhc rds ipv6 bonding dm_multipath video sbs
-sbshc hed acpi_pad acpi_ipmi acpi_i2c parport_pc lp parport tcp_diag
-inet_diag ipmi_si ipmi_devintf ipmi_msghandler dell_rbu iTCO_wdt
-iTCO_vendor_support dcdbas igb i2c_algo_bit ptp pps_core i2c_i801
-i2c_core microcode lpc_ich mfd_core i7core_edac ioatdma edac_core
-shpchp dca freq_table mperf
-[413679.436926] CPU: 0 PID: 34852 Comm: trinity-c0 Not tainted 3.10.28 #1
-[413679.455720] task: ffff88032d7cc5c0 ti: ffff88032bd70000 task.ti:
-ffff88032bd70000
-[413679.456775] RIP: 0010:[<ffffffff8110cd2d>]  [<ffffffff8110cd2d>]
-mlock_vma_page+0x14/0x70
-[413679.474912] RSP: 0000:ffff88032bd71d08  EFLAGS: 00010246
-[413679.475625] RAX: 080000000038002c RBX: ffffea000703e340 RCX:
-000000000703e340
-[413679.476506] RDX: 80000001c0f8d027 RSI: 00000000f76e8000 RDI:
-ffffea000703e340
-[413679.494662] RBP: ffff88032bd71d10 R08: 0000000000000000 R09:
-ffffffff811130a7
-[413679.495571] R10: ffff88032a6a5f88 R11: 0000000000000911 R12:
-ffff88032a6a5f00
-[413679.496452] R13: ffffea000703e340 R14: ffffea000c5d3bc0 R15:
-0000000000020000
-[413679.497323] FS:  00000000016c8840(0063) GS:ffff880332600000(0000)
-knlGS:0000000000000000
-[413679.515582] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-[413679.516332] CR2: 00000000ff80d330 CR3: 0000000300a8b000 CR4:
-00000000000007f0
-[413679.517212] DR0: 0000000000000000 DR1: 00000000016cd000 DR2:
-0000000000000000
-[413679.535236] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000600
-[413679.536262] Stack:
-[413679.536485]  ffff8803094bfc08 ffff88032bd71dc0 ffffffff81113136
-ffff88032a6a6270
-[413679.555195]  ffff88032d7cc5c0 ffffea000c12d4c0 ffff88032a6a5f70
-ffff880328849d70
-[413679.556294]  0000000000020000 0000000300000001 00000000f76e9000
-ffff880328849d60
-[413679.557254] Call Trace:
-[413679.557538]  [<ffffffff81113136>] try_to_unmap_file+0x319/0x4be
-[413679.575403]  [<ffffffff81113bd2>] try_to_unmap+0x3d/0x52
-[413679.575970]  [<ffffffff8112bf08>] migrate_pages+0x1e2/0x3ce
-[413679.576682]  [<ffffffff8112b0be>] ? pte_to_swp_entry+0x22/0x22
-[413679.594735]  [<ffffffff8112c5c2>] SyS_move_pages+0x36c/0x4d6
-[413679.595456]  [<ffffffff8112c2b2>] ? SyS_move_pages+0x5c/0x4d6
-[413679.596219]  [<ffffffff81099cd7>] compat_sys_move_pages+0x9c/0xab
-[413679.597032]  [<ffffffff814cbaa9>] ia32_do_call+0x13/0x13
-[413679.614814] Code: 13 48 8b 03 a9 00 00 10 00 74 09 65 48 ff 04 25
-a8 f5 1c 00 5b 5d c3 66 66 66 66 90 55 48 89 e5 53 48 89 fb 48 8b 07
-a8 01 75 02 <0f> 0b f0 0f ba 2f 15 19 c0 85 c0 75 4c 48 8b 3f ba 01 00
-00 00
-[413679.617503] RIP  [<ffffffff8110cd2d>] mlock_vma_page+0x14/0x70
-[413679.635066]  RSP <ffff88032bd71d08>
-[413679.636094] ---[ end trace dd8b701ea9903fd6 ]---
+>
+>> ---
+>>  security/smack/smack_lsm.c |  7 ++++---
+>>  security/smack/smackfs.c   | 25 +++++++++++--------------
+>>  2 files changed, 15 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+>> index 14f52be..a273aad 100644
+>> --- a/security/smack/smack_lsm.c
+>> +++ b/security/smack/smack_lsm.c
+>> @@ -18,6 +18,8 @@
+>>   *      as published by the Free Software Foundation.
+>>   */
+>>  
+>> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> +
+>>  #include <linux/xattr.h>
+>>  #include <linux/pagemap.h>
+>>  #include <linux/mount.h>
+>> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
+>>  		if (sock->sk->sk_family == PF_INET) {
+>>  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
+>>  			if (rc != 0)
+>> -				printk(KERN_WARNING
+>> -					"Smack: \"%s\" netlbl error %d.\n",
+>> +				pr_warn("\"%s\" netlbl error %d\n",
+>>  					__func__, -rc);
+>>  		}
+>>  	} else
+>> @@ -3916,7 +3917,7 @@ static __init int smack_init(void)
+>>  	if (tsp == NULL)
+>>  		return -ENOMEM;
+>>  
+>> -	printk(KERN_INFO "Smack:  Initializing.\n");
+>> +	pr_info("Initializing\n");
+>>  
+>>  	/*
+>>  	 * Set the security state for the initial task.
+>> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+>> index 3198cfe..2e25220 100644
+>> --- a/security/smack/smackfs.c
+>> +++ b/security/smack/smackfs.c
+>> @@ -16,6 +16,8 @@
+>>   *
+>>   */
+>>  
+>> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> +
+>>  #include <linux/kernel.h>
+>>  #include <linux/vmalloc.h>
+>>  #include <linux/security.h>
+>> @@ -698,8 +700,7 @@ static void smk_cipso_doi(void)
+>>  
+>>  	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
+>>  	if (rc != 0)
+>> -		printk(KERN_WARNING "%s:%d remove rc = %d\n",
+>> -		       __func__, __LINE__, rc);
+>> +		pr_warn("%s:%d remove rc = %d\n", __func__, __LINE__, rc);
+>>  
+>>  	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
+>>  	if (doip == NULL)
+>> @@ -713,15 +714,13 @@ static void smk_cipso_doi(void)
+>>  
+>>  	rc = netlbl_cfg_cipsov4_add(doip, &nai);
+>>  	if (rc != 0) {
+>> -		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
+>> -		       __func__, __LINE__, rc);
+>> +		pr_warn("%s:%d cipso add rc = %d\n", __func__, __LINE__, rc);
+>>  		kfree(doip);
+>>  		return;
+>>  	}
+>>  	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
+>>  	if (rc != 0) {
+>> -		printk(KERN_WARNING "%s:%d map add rc = %d\n",
+>> -		       __func__, __LINE__, rc);
+>> +		pr_warn("%s:%d map add rc = %d\n", __func__, __LINE__, rc);
+>>  		kfree(doip);
+>>  		return;
+>>  	}
+>> @@ -741,8 +740,8 @@ static void smk_unlbl_ambient(char *oldambient)
+>>  	if (oldambient != NULL) {
+>>  		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
+>>  		if (rc != 0)
+>> -			printk(KERN_WARNING "%s:%d remove rc = %d\n",
+>> -			       __func__, __LINE__, rc);
+>> +			pr_warn("%s:%d remove rc = %d\n",
+>> +				__func__, __LINE__, rc);
+>>  	}
+>>  	if (smack_net_ambient == NULL)
+>>  		smack_net_ambient = &smack_known_floor;
+>> @@ -750,8 +749,7 @@ static void smk_unlbl_ambient(char *oldambient)
+>>  	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient->smk_known, PF_INET,
+>>  				      NULL, NULL, &nai);
+>>  	if (rc != 0)
+>> -		printk(KERN_WARNING "%s:%d add rc = %d\n",
+>> -		       __func__, __LINE__, rc);
+>> +		pr_warn("%s:%d add rc = %d\n", __func__, __LINE__, rc);
+>>  }
+>>  
+>>  /*
+>> @@ -2302,8 +2300,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+>>  
+>>  	rc = simple_fill_super(sb, SMACK_MAGIC, smack_files);
+>>  	if (rc != 0) {
+>> -		printk(KERN_ERR "%s failed %d while creating inodes\n",
+>> -			__func__, rc);
+>> +		pr_err("%s failed %d while creating inodes\n", __func__, rc);
+>>  		return rc;
+>>  	}
+>>  
+>> @@ -2369,13 +2366,13 @@ static int __init init_smk_fs(void)
+>>  
+>>  	err = smk_init_sysfs();
+>>  	if (err)
+>> -		printk(KERN_ERR "smackfs: sysfs mountpoint problem.\n");
+>> +		pr_err("smackfs: sysfs mountpoint problem\n");
+>>  
+>>  	err = register_filesystem(&smk_fs_type);
+>>  	if (!err) {
+>>  		smackfs_mount = kern_mount(&smk_fs_type);
+>>  		if (IS_ERR(smackfs_mount)) {
+>> -			printk(KERN_ERR "smackfs:  could not mount!\n");
+>> +			pr_err("smackfs: could not mount!\n");
+>>  			err = PTR_ERR(smackfs_mount);
+>>  			smackfs_mount = NULL;
+>>  		}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Cheers,
-Vinson
