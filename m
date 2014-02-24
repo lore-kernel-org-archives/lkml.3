@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaBXA3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 19:29:18 -0500
-Received: from p3plsmtpa07-08.prod.phx3.secureserver.net ([173.201.192.237]:57221
-	"EHLO p3plsmtpa07-08.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751851AbaBXA3P (ORCPT
+	id S1752115AbaBXAcG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 19:32:06 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:65033 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaBXAcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 19:29:15 -0500
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Feb 2014 19:29:15 EST
-From: Andy Johnson <andy@asjohnson.com>
-To: linux-kernel@vger.kernel.org
-Reply-To: andy@asjohnson.com
-Subject: IO_PAGE_FAULT in 3.13.5
-Date: Sun, 23 Feb 2014 18:21:23 -0600
-Message-ID: <11058770.VGBV2VhNFW@dads>
-User-Agent: KMail/4.10.5 (Linux/3.13.5-asj; KDE/4.10.5; x86_64; ; )
+	Sun, 23 Feb 2014 19:32:05 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20140223212736.664624945@linutronix.de>
+References: <20140223212703.511977310@linutronix.de>
+	<20140223212736.664624945@linutronix.de>
+Date: Mon, 24 Feb 2014 04:32:03 +0400
+Message-ID: <CAMo8BfKWJuoVUWB7reqa2AGLuEbS8_9YFoctof_M1V59g8J6gw@mail.gmail.com>
+Subject: Re: [patch 04/26] xtensa: Use irq_set_affinity instead of homebrewn code
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Chris Zankel <chris@zankel.net>,
+        xtensa <linux-xtensa@linux-xtensa.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm getting a combination of the following two messages about 500 times in dmesg in 3.13.5:
+On Mon, Feb 24, 2014 at 1:40 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> There is no point in having an incomplete copy of irq_set_affinity()
+> for the hotplug irq migration code.
+>
+> Use the core function instead and while at it switch to
+> for_each_active_irq()
+>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Chris Zankel <chris@zankel.net>
+> Cc: xtensa <linux-xtensa@linux-xtensa.org>
+> ---
+>  arch/xtensa/kernel/irq.c |   20 +++-----------------
+>  1 file changed, 3 insertions(+), 17 deletions(-)
 
-[    0.358123] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:13.0 domain=0x000f address=0x00000000ffffffc0 flags=0x0010]
-[    0.358124] AMD-Vi: Event logged [IO_PAGE_FAULT device=00:12.0 domain=0x000d address=0x00000000ffffffc0 flags=0x0010]
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
 
-This didn't happen in 3.13.2. The two devices correspond to the OHCI controllers.
-I compiled this myself from source from kernel.org, on Slackware 14.1. Let me know
-what other information is needed about my system. I didn't want to post a ton of
-stuff that might not be relevant. This also happened with a b43 supported wireless
-card I had, but I swapped it out with an Atheros based card and the problem went away.
-
-Please CC me,
-
-Andy Johnson
-
+-- 
+Thanks.
+-- Max
