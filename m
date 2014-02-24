@@ -1,146 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaBXUvJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 15:51:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48467 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881AbaBXUvH (ORCPT
+	id S1753036AbaBXU62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 15:58:28 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:43905 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaBXU60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 15:51:07 -0500
-Date: Mon, 24 Feb 2014 21:50:58 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] regulator: core: Fix ops->enable/disable usage
-Message-ID: <20140224205058.GA18317@pengutronix.de>
-References: <1392914164-28596-1-git-send-email-mpa@pengutronix.de>
- <20140223051209.GK25940@sirena.org.uk>
- <CAOMZO5BPvCcx_f09Khuw8MVxrR18fnv9e1xeuJ0c_8G22AR53g@mail.gmail.com>
+	Mon, 24 Feb 2014 15:58:26 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5BPvCcx_f09Khuw8MVxrR18fnv9e1xeuJ0c_8G22AR53g@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:34:53 up 184 days,  6:05, 46 users,  load average: 0.12, 0.07,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <3851541.s2776YTCMH@vostro.rjw.lan>
+References: <1853950.oxM3KDpyLu@vostro.rjw.lan> <3851541.s2776YTCMH@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 24 Feb 2014 13:58:05 -0700
+Message-ID: <CAErSpo5rX=1YnAR8QZYLsww-1c4_KvAgEZEkkQ5C26=+cEYqFw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI / PM: Resume runtime-suspended devices later
+ during system suspend
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Feb 23, 2014 at 4:21 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Runtime-suspended devices are resumed during system suspend by
+> pci_pm_prepare() for two reasons: First, because they may need
+> to be reprogrammed in order to change their wakeup settings and,
+> second, because they may need to be operatonal for their children
+> to be successfully suspended.  That is a problem, though, if there
+> are many runtime-suspended devices that need to be resumed this
+> way during system suspend, because the .prepare() PM callbacks of
+> devices are executed sequentially and the times taken by them
+> accumulate, which may increase the total system suspend time quite
+> a bit.
+>
+> For this reason, move the resume of runtime-suspended devices up
+> to the next phase of device suspend (during system suspend), except
+> for the ones that have power.ignore_children set.  The exception is
+> made, because the devices with power.ignore_children set may still
+> be necessary for their children to be successfully suspended (during
+> system suspend) and they won't be resumed automatically as a result
+> of the runtime resume of their children.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Hi Fabio,
+You can merge these two via your tree if you want.  I don't have any
+changes queued up for pci-driver.c.
 
-On Mon, Feb 24, 2014 at 02:23:50PM -0300, Fabio Estevam wrote:
-> On Sun, Feb 23, 2014 at 2:12 AM, Mark Brown <broonie@kernel.org> wrote:
-> > On Thu, Feb 20, 2014 at 05:36:02PM +0100, Markus Pargmann wrote:
-> >> Hi,
-> >>
-> >> These two patches replace all ops->enable/disable by
-> >> _regulator_do_disable/enable function calls. These wrappers also handl=
-e gpio
-> >> regulators.
-> >
-> > Applied both, thanks.
->=20
-> With these two patches applied I get the following error on
-> mx6qsabresd running today's linux-next:
->=20
-> vdd1p1: failed to enable
-> anatop_regulator regulator-1p1.2: failed to register vdd1p1
-> anatop_regulator: probe of regulator-1p1.2 failed with error -22
-> vdd3p0: failed to enable
-> anatop_regulator regulator-3p0.3: failed to register vdd3p0
-> anatop_regulator: probe of regulator-3p0.3 failed with error -22
-> vdd2p5: failed to enable
-> anatop_regulator regulator-2p5.4: failed to register vdd2p5
-> anatop_regulator: probe of regulator-2p5.4 failed with error -22
-> vddarm: 725 <--> 1450 mV at 1100 mV
-> vddpu: 725 <--> 1450 mV at 1100 mV
-> vddsoc: 725 <--> 1450 mV at 1175 mV
-> ....
->=20
-> pfuze100-regulator 1-0008: Full layer: 1, Metal layer: 0
-> pfuze100-regulator 1-0008: FAB: 0, FIN: 0
-> SW1AB: failed to enable
-> pfuze100-regulator 1-0008: register regulatorSW1AB failed
-> pfuze100-regulator: probe of 1-0008 failed with error -22
->=20
->=20
-> Reverting these two patches the regulators probe successfully.
->=20
-> Any ideas?
+Bjorn
 
-Thanks, I just searched for the reason and found it. My patches do not
-handle dummy regulators correctly:
-
-_regulator_do_enable() line 1764:
-        if (rdev->ena_pin) {
-                ret =3D regulator_ena_gpio_ctrl(rdev, true);
-                if (ret < 0)
-                        return ret;
-                rdev->ena_gpio_state =3D 1;
-        } else if (rdev->desc->ops->enable) {
-                ret =3D rdev->desc->ops->enable(rdev);
-                if (ret < 0)
-                        return ret;
-        } else {
-                return -EINVAL;
-        }
-
-The only situation where this returns -EINVAL is a dummy regulator that
-is not always_on. As it doesn't make sense to have a dummy regulator
-that is not always_on, I will add a check for exactly this situation to
-the regulator_register function and drop the "return -EINVAL" above.
-
-Regards,
-
-Markus
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTC7CyAAoJEEpcgKtcEGQQuycP/RLA9jVO3IyGp8YTaPJRJXkN
-Ht0V4ClglKGTQ/FlalQaCtb5K7aJhqDVUaYjW3kuPGtMT9dwx34PA3+unU//3ugi
-fV4IDUlWs3U8RuIEGROPwQAk+q/22HiO51e0K2KFAW7LNWaG15LwaFNYY4rDylVl
-RxqdSBcKOWINiSgPPf97fcMNTLOhdPgrmUgRjeBnsTGpF7DrimdrTfyaxiAkKj9s
-z4Beot+P4CstrzuCc5zhvgcaTczS1zHaQoyw0rLPjN8L0oPX2bPiMaxdpZY3QzDX
-gx6jj1cPfhEGy+JOsFvzhKI4xHK7Jj9ie4nnBwiwZdnaNasaii9Nuc6W19mznoa2
-CIvY5b0fqju3szOZh3t5eyQ0txaoxZBWZ7Zo25SwixwbpPVz6aK68X/4INxaqVrw
-rnMy4Pb6LsloEHQ0+wQJmcYZjjVfsA6l6Ji10pvUcht6zquuGrqKT1+WfRrm03Dg
-OFzcg6YEY6scMUMwtWEsgmWq9q1M33DJJiwqvlrf8hl7bPNNsDj4ixVddiY53Nhn
-xaMAaGE6tP/9EJqa8Z+BgROgl40dQVV6pBl6JSEURPuDBEFTKPxyLLrrXlJ34WU+
-4PHQ7SXGmFCaX/plD7OS9VO0Tl75SldnF9wztlctzCS2Y4Xtob3JoH4kJfG6Qu1E
-nkuLP6fLCSm3Lo1L+wN4
-=tj9x
------END PGP SIGNATURE-----
-
---sm4nu43k4a2Rpi4c--
+> ---
+>  drivers/pci/pci-driver.c |   33 +++++++++++++++++++++++++--------
+>  1 file changed, 25 insertions(+), 8 deletions(-)
+>
+> Index: linux-pm/drivers/pci/pci-driver.c
+> ===================================================================
+> --- linux-pm.orig/drivers/pci/pci-driver.c
+> +++ linux-pm/drivers/pci/pci-driver.c
+> @@ -616,15 +616,11 @@ static int pci_pm_prepare(struct device
+>         int error = 0;
+>
+>         /*
+> -        * PCI devices suspended at run time need to be resumed at this
+> -        * point, because in general it is necessary to reconfigure them for
+> -        * system suspend.  Namely, if the device is supposed to wake up the
+> -        * system from the sleep state, we may need to reconfigure it for this
+> -        * purpose.  In turn, if the device is not supposed to wake up the
+> -        * system from the sleep state, we'll have to prevent it from signaling
+> -        * wake-up.
+> +        * Devices having power.ignore_children set may still be necessary for
+> +        * suspending their children in the next phase of device suspend.
+>          */
+> -       pm_runtime_resume(dev);
+> +       if (dev->power.ignore_children)
+> +               pm_runtime_resume(dev);
+>
+>         if (drv && drv->pm && drv->pm->prepare)
+>                 error = drv->pm->prepare(dev);
+> @@ -654,6 +650,16 @@ static int pci_pm_suspend(struct device
+>                 goto Fixup;
+>         }
+>
+> +       /*
+> +        * PCI devices suspended at run time need to be resumed at this point,
+> +        * because in general it is necessary to reconfigure them for system
+> +        * suspend.  Namely, if the device is supposed to wake up the system
+> +        * from the sleep state, we may need to reconfigure it for this purpose.
+> +        * In turn, if the device is not supposed to wake up the system from the
+> +        * sleep state, we'll have to prevent it from signaling wake-up.
+> +        */
+> +       pm_runtime_resume(dev);
+> +
+>         pci_dev->state_saved = false;
+>         if (pm->suspend) {
+>                 pci_power_t prev = pci_dev->current_state;
+> @@ -808,6 +814,14 @@ static int pci_pm_freeze(struct device *
+>                 return 0;
+>         }
+>
+> +       /*
+> +        * This used to be done in pci_pm_prepare() for all devices and some
+> +        * drivers may depend on it, so do it here.  Ideally, runtime-suspended
+> +        * devices should not be touched during freeze/thaw transitions,
+> +        * however.
+> +        */
+> +       pm_runtime_resume(dev);
+> +
+>         pci_dev->state_saved = false;
+>         if (pm->freeze) {
+>                 int error;
+> @@ -915,6 +929,9 @@ static int pci_pm_poweroff(struct device
+>                 goto Fixup;
+>         }
+>
+> +       /* The reason to do that is the same as in pci_pm_suspend(). */
+> +       pm_runtime_resume(dev);
+> +
+>         pci_dev->state_saved = false;
+>         if (pm->poweroff) {
+>                 int error;
+>
