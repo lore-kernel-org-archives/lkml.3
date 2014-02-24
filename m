@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaBXRwC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:52:02 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19623 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752997AbaBXRv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:51:59 -0500
-Date: Mon, 24 Feb 2014 09:51:52 -0800
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Joe Perches <joe@perches.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andy Gross <agross@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v3 2/2] i2c: New bus driver for the Qualcomm QUP I2C
- controller
-Message-ID: <20140224175152.GB32621@sonymobile.com>
-References: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1392943090-30556-3-git-send-email-bjorn.andersson@sonymobile.com>
- <1392943934.2594.14.camel@joe-AO722>
+	id S1753229AbaBXRwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:52:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39225 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260AbaBXRwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 12:52:54 -0500
+Message-ID: <530B86CB.3070702@zytor.com>
+Date: Mon, 24 Feb 2014 09:52:11 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1392943934.2594.14.camel@joe-AO722>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+References: <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu> <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com> <alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu> <530AD71E.50800@zytor.com> <alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com> <alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu> <20140224172536.GD9987@twins.programming.kicks-ass.net>
+In-Reply-To: <20140224172536.GD9987@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20 Feb 16:52 PST 2014, Joe Perches wrote:
-
-> On Thu, 2014-02-20 at 16:38 -0800, Bjorn Andersson wrote:
-> > This bus driver supports the QUP i2c hardware controller in the Qualcomm SOCs.
-> > The Qualcomm Universal Peripheral Engine (QUP) is a general purpose data path
-> > engine with input/output FIFOs and an embedded i2c mini-core. The driver
-> > supports FIFO mode (for low bandwidth applications) and block mode (interrupt
-> > generated for each block-size data transfer).
+On 02/24/2014 09:25 AM, Peter Zijlstra wrote:
+>>
+>> What is likely happening is the user page fault is triggering 
+>> code to do a "perf_callchain" dump, which is calling copy_from_user_nmi()
+>> which calls copy_user_generic_string() which is somehow getting the user
+>> RBP in the RDI register somehow?
 > 
-> trivia:
+> So that code very much relies on the 'recursive' NMI/iret magic from
+> Steve, patch 3f3c8b8c4b2a3 (and assorted fixes later).
 > 
-> > diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
-> []
-> > +#ifdef CONFIG_PM_SLEEP
-> > +static int qup_i2c_suspend(struct device *device)
-> > +{
-> > +	dev_dbg(device, "system suspend");
-> > +	qup_i2c_pm_suspend_runtime(device);
-> > +	return 0;
-> > +}
-> > +
-> > +static int qup_i2c_resume(struct device *device)
-> > +{
-> > +	dev_dbg(device, "system resume");
-> > +	qup_i2c_pm_resume_runtime(device);
-> > +	pm_runtime_mark_last_busy(device);
-> > +	pm_request_autosuspend(device);
-> > +	return 0;
-> > +}
-> > +#endif
+> If CR2 is getting corrupted; 7fbb98c5cb075 seems relevant.
 > 
-> Missing terminating newlines for dev_dbg statements.
+> Peter, does x32 have a slightly different ABI/calling convention that
+> would make any of these patches just slightly 'off'?
+> 
 
-Thanks Joe, missed those.
+As long as we're talking kernel code, x32 isn't even involved (we do not
+support compiling the kernel as x32 and most likely never will.)
 
-Regards,
-Bjorn
+	-hpa
+
+
