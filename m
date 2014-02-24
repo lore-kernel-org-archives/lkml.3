@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaBXPbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:31:22 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:41653 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181AbaBXPbU (ORCPT
+	id S1752856AbaBXPdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:33:37 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:35487 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442AbaBXPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:31:20 -0500
-X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
-   d="scan'208";a="103565992"
-Message-ID: <530B65C5.4040201@citrix.com>
-Date: Mon, 24 Feb 2014 15:31:17 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 10:33:36 -0500
+Date: Mon, 24 Feb 2014 10:35:34 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <530AD71E.50800@zytor.com>
+Message-ID: <alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu>
+ <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu> <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com> <alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu> <530AD71E.50800@zytor.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
- instead of copy
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com> <1392803434.23084.97.camel@kazak.uk.xensource.com>
-In-Reply-To: <1392803434.23084.97.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.68.14.50]
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/14 09:50, Ian Campbell wrote:
-> On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
->> A long known problem of the upstream netback implementation that on the TX
->> path (from guest to Dom0) it copies the whole packet from guest memory into
->> Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
->> huge perfomance penalty. The classic kernel version of netback used grant
->> mapping, and to get notified when the page can be unmapped, it used page
->> destructors. Unfortunately that destructor is not an upstreamable solution.
->> Ian Campbell's skb fragment destructor patch series [1] tried to solve this
->> problem, however it seems to be very invasive on the network stack's code,
->> and therefore haven't progressed very well.
->> This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
->> know when the skb is freed up. That is the way KVM solved the same problem,
->> and based on my initial tests it can do the same for us. Avoiding the extra
->> copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
->> Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
->> running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
->> switch)
->> Based on my investigations the packet get only copied if it is delivered to
->> Dom0 stack,
-> This is not quite complete/accurate since you previously told me that it
-> is copied in the NAT/routed rather than bridged network topologies.
->
-> Please can you cover that aspect here too.
-Ok.
+On Sun, 23 Feb 2014, H. Peter Anvin wrote:
 
-Zoli
+> So we do a write to the buffer rather immediately before this happens,
+> and in particular that will update the head:
+> 
+> 	rb->user_page->data_head = head;
+> 
+> However, that doesn't explain what is going on and in particular the
+> write to whatever address was in %rbp.  The rest pretty much seems to be
+> the page fault logic.
+
+It turns out you don't even have to over-write rb->user_page->data_head.
+Just touching the mmap page with a write of a single byte (it doesn't 
+matter where) is enough to trigger the bug.
+
+This is a pain to track down, it would be easier if I could get a 
+replayable syscall trace, but even though the segfault is very 
+reproducible with my fuzzer, it's very sensitive to extra syscalls in the 
+trace path and the fuzzer logger/replayer path has a different number of 
+write syscalls and won't trigger the problem.
+
+> Incidentally, I doubt that this is x32-related in any way; there seems
+> to be absolutely no difference between x86-64 perf and x32 perf; more
+> likely it just makes the error more reproducible because the address
+> space is so much smaller.
+
+quite possibly.  I only began chasing the problem because when compiled 
+for x32 this bug apparently will reboot the machine now and then (not just 
+segfault the program).  I never saw that failure mode with x86_64, but 
+again maybe it's just easier to hit with the reduced address space as you 
+say.
+
+Vince
