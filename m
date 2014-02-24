@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaBXP6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:58:18 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:24272
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752260AbaBXP6P convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:58:15 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIc89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h93fhd25hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
-Date: Mon, 24 Feb 2014 23:47:52 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: "Austin, Brian" <Brian.Austin@cirrus.com>
-CC: Mark Brown <broonie@kernel.org>,
-        "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
-Message-ID: <20140224154751.GB6132@MrMyself>
-References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140224113011.GE25940@sirena.org.uk>
- <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1753056AbaBXQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:00:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31272 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181AbaBXQA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:00:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
+   d="scan'208";a="487165097"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Lan Tianyu <tianyu.lan@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Alan Cox <alan.cox@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 0/6] gpio / ACPI: Rework ACPI GPIO events and add support for operation regions
+Date: Mon, 24 Feb 2014 18:00:05 +0200
+Message-Id: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.9.0.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 03:52:24PM +0000, Austin, Brian wrote:
-> 
-> > 
-> >> +	/* Disable auto-mute */
-> >> +	regmap_update_bits(cs42888->regmap, CS42888_TXCTL,
-> >> +			   CS42888_TXCTL_AMUTE | CS42888_TXCTL_DAC_SZC_MASK,
-> >> +			   CS42888_TXCTL_DAC_SZC_SR);
-> > 
-> > Does this interfere with the manual mute controls or is it a separate
-> > thing?  If it plays nicely with the manual controls it's probably better
-> > to leave it enabled since it improves performance in some benchmarks
-> > (that's why hardware tends to have the feature).
-> 
-> Auto-Mute should be enabled by default.
-> 
-> > 
-> >> +	if (!IS_ERR(cs42888->clk))
-> >> +		clk_disable_unprepare(cs42888->clk);
-> > 
-> > Does the device work without MCLK?
-> Yes, MCLK is required. If you can’t get the clock you should error out.
-> 
-> 
+Hi,
 
-Will refine it as you suggest.
+This series tries to add what is missing in current Linux ACPI GPIO
+support. There are two new features that were introduced with ACPI 5.0: 
 
-Thank you for the comments.
-Nicolin Chen
+ * ACPI GPIO signaled events
+ * ACPI GPIO operation regions
 
+The current ACPI GPIO support code already added preliminary support for
+GPIO signaled events but at the time we didn't have real hardware with real
+GPIO triggered events so it was never properly tested. Now there are
+devices like Asus T100TA transformer that uses these events so we were able
+to see that the ASL code is being executed when a GPIO interrupt is
+triggered.
+
+Patches [3,4/6] Rework the ACPI GPIO signaled event support.
+
+Support for GPIO operation regions is a new thing (well, kind of, it was
+tried already once [1] but never got further from that). The idea here is
+that the ASL code can toggle GPIOs via help of ACPI enabled Linux GPIO
+driver. Implementation is in Patch [6/6].
+
+These patches are based on two patches from Alexandre Courbot [2] which
+introduce gpiochip_get_desc() function.
+
+[1] http://www.spinics.net/lists/linux-acpi/msg46230.html
+[2] https://lkml.org/lkml/2014/2/9/24
+
+Mika Westerberg (6):
+  gpiolib: Allow GPIO chips to request their own GPIOs
+  gpio / ACPI: Allocate ACPI specific data directly in acpi_gpiochip_add()
+  gpio / ACPI: Rename acpi_gpio_evt_pin to acpi_gpio_event
+  gpio / ACPI: Embed events list directly into struct acpi_gpio_chip
+  gpio / ACPI: Rework ACPI GPIO event handling
+  gpio / ACPI: Add support for ACPI GPIO operation regions
+
+ drivers/gpio/gpiolib-acpi.c | 465 ++++++++++++++++++++++++++++++++------------
+ drivers/gpio/gpiolib.c      |  60 +++++-
+ drivers/gpio/gpiolib.h      |   3 +
+ 3 files changed, 398 insertions(+), 130 deletions(-)
+
+-- 
+1.9.0.rc3
 
