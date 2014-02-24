@@ -1,98 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBXMQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 07:16:09 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56552 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaBXMQI convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 24 Feb 2014 07:16:08 -0500
-Message-Id: <530B4613020000780011EB8E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 24 Feb 2014 12:16:03 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Borkmann" <dborkman@redhat.com>
-Cc: <davem@davemloft.net>, <mingo@elte.hu>, <tglx@linutronix.de>,
-        <ffusco@redhat.com>, <tgraf@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH 2/3] x86/hash: swap parameters of crc32_u32()
-References: <53073986020000780011E2E1@nat28.tlf.novell.com>
- <5308938A.8070506@redhat.com>
- <530B0AF2020000780011E97B@nat28.tlf.novell.com>
- <530B1D60.8010602@redhat.com>
- <530B32A4020000780011EACB@nat28.tlf.novell.com>
- <530B3102.4050102@redhat.com>
-In-Reply-To: <530B3102.4050102@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752283AbaBXMSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 07:18:03 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:36262 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaBXMSB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 07:18:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E062D8.1060206@gmail.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+	<1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
+	<20140123001802.GF13785@codeaurora.org>
+	<52E062D8.1060206@gmail.com>
+Date: Mon, 24 Feb 2014 13:11:00 +0100
+Message-ID: <CAPDyKFrvewrPKuhW8BTxcqH=SOxc8oWfrUuN-aZYnP2Kv+We7A@mail.gmail.com>
+Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain look-up
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Pavel Machek <pavel@ucw.cz>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.02.14 at 12:46, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 02/24/2014 11:53 AM, Jan Beulich wrote:
->>>>> On 24.02.14 at 11:22, Daniel Borkmann <dborkman@redhat.com> wrote:
->>> On 02/24/2014 09:03 AM, Jan Beulich wrote:
->>>>>>> On 22.02.14 at 13:09, Daniel Borkmann <dborkman@redhat.com> wrote:
->>>>> On 02/21/2014 11:33 AM, Jan Beulich wrote:
->>>>>> ... to match its two callers (i.e. the alternative would have been to
->>>>>> swap the arguments at the call sites).
->>>>>>
->>>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->>>>>> Cc: Francesco Fusco <ffusco@redhat.com>
->>>>>> Cc: Daniel Borkmann <dborkman@redhat.com>
->>>>>> Cc: Thomas Graf <tgraf@redhat.com>
->>>>>> Cc: David S. Miller <davem@davemloft.net>
->>>>>> ---
->>>>>>     arch/x86/lib/hash.c |    2 +-
->>>>>>     1 file changed, 1 insertion(+), 1 deletion(-)
->>>>>>
->>>>>> --- 3.14-rc3-x86-hash-crc32.orig/arch/x86/lib/hash.c
->>>>>> +++ 3.14-rc3-x86-hash-crc32/arch/x86/lib/hash.c
->>>>>> @@ -37,7 +37,7 @@
->>>>>>     #include <asm/cpufeature.h>
->>>>>>     #include <asm/hash.h>
->>>>>>
->>>>>> -static inline u32 crc32_u32(u32 crc, u32 val)
->>>>>> +static inline u32 crc32_u32(u32 val, u32 crc)
->>>>>>     {
->>>>>>     #ifdef CONFIG_AS_CRC32
->>>>>>     	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
->>>>>
->>>>> Can you elaborate?
->>>>>
->>>>> Sorry, I need to ask here (even if it's a stupid question ;)) if this
->>>>> change is safe to do; are referring to a cleanup or fixing a concrete
->>>>> bug? The code is a modified version of the DPDK hash which you can find
->>>>> in [1]. Arguments of the caller are in the correct order, afaik.
->>>>>
->>>>>      [1] http://dpdk.org/browse/dpdk/tree/lib/librte_hash/rte_hash_crc.h 
->>>>
->>>> Yes, that file appears to be correct:
->>>>
->>>> rte_hash_crc_4byte(uint32_t data, uint32_t init_val)
->>>>
->>>> as opposed to
->>>>
->>>> static inline u32 crc32_u32(u32 crc, u32 val)
->>>>
->>>> (quite obviously data <-> val and crc <-> init_val, supported
->>>> by the second argument in each caller being named "seed").
->>>
->>> If you want a more descriptive name, feel free to rename these vars,
->>> but check it yourself, it's not a bug as you claim; results are the
->>> same:
+On 23 January 2014 01:31, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Stephen,
+>
+>
+> On 23.01.2014 01:18, Stephen Boyd wrote:
 >>
->> Even if the results are the same (operands being symmetric?), check
->> the generated code for your version and the fixed up one: The crc32
->> instruction allows one of its operands to be in memory for a reason.
-> 
-> I'm fine with that. But then, please reflect these details in your
-> commit message.
+>> On 01/11, Tomasz Figa wrote:
+>>>
+>>> +
+>>> +/**
+>>> + * of_genpd_lock() - Lock access to of_genpd_providers list
+>>> + */
+>>> +static void of_genpd_lock(void)
+>>> +{
+>>> +       mutex_lock(&of_genpd_mutex);
+>>> +}
+>>> +
+>>> +/**
+>>> + * of_genpd_unlock() - Unlock access to of_genpd_providers list
+>>> + */
+>>> +static void of_genpd_unlock(void)
+>>> +{
+>>> +       mutex_unlock(&of_genpd_mutex);
+>>> +}
+>>
+>>
+>> Why do we need these functions? Can't we just call
+>> mutex_lock/unlock directly?
+>
+>
+> That would be fine as well, I guess. Just duplicated the pattern used in
+> CCF, but can remove them in next version if it's found to be better.
+>
+>
+>>
+>>> +
+>>> +/**
+>>> + * of_genpd_add_provider() - Register a domain provider for a node
+>>> + * @np: Device node pointer associated with domain provider
+>>> + * @genpd_src_get: callback for decoding domain
+>>> + * @data: context pointer for @genpd_src_get callback.
+>>
+>>
+>> These look a little outdated.
+>
+>
+> Oops, missed this.
+>
+>
+>>
+>>> + */
+>>> +int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
+>>> +                         void *data)
+>>> +{
+>>> +       struct of_genpd_provider *cp;
+>>> +
+>>> +       cp = kzalloc(sizeof(struct of_genpd_provider), GFP_KERNEL);
+>>
+>>
+>> Please use sizeof(*cp) instead.
+>
+>
+> Right.
+>
+>
+>>
+>>> +       if (!cp)
+>>> +               return -ENOMEM;
+>>> +
+>>> +       cp->node = of_node_get(np);
+>>> +       cp->data = data;
+>>> +       cp->xlate = xlate;
+>>> +
+>>> +       of_genpd_lock();
+>>> +       list_add(&cp->link, &of_genpd_providers);
+>>> +       of_genpd_unlock();
+>>> +       pr_debug("Added domain provider from %s\n", np->full_name);
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(of_genpd_add_provider);
+>>> +
+>>
+>> [...]
+>>>
+>>> +
+>>> +/* See of_genpd_get_from_provider(). */
+>>> +static struct generic_pm_domain *__of_genpd_get_from_provider(
+>>> +                                       struct of_phandle_args
+>>> *genpdspec)
+>>> +{
+>>> +       struct of_genpd_provider *provider;
+>>> +       struct generic_pm_domain *genpd = ERR_PTR(-ENOENT);
+>>
+>>
+>> Can this be -EPROBE_DEFER so that we can defer probe until a
+>> later time if the power domain provider hasn't registered yet?
+>
+>
+> Yes, this could be useful. Makes me wonder why clock code (on which I based
+> this code) doesn't have it done this way.
+>
+>
+>>
+>>> +
+>>> +       /* Check if we have such a provider in our array */
+>>> +       list_for_each_entry(provider, &of_genpd_providers, link) {
+>>> +               if (provider->node == genpdspec->np)
+>>> +                       genpd = provider->xlate(genpdspec,
+>>> provider->data);
+>>> +               if (!IS_ERR(genpd))
+>>> +                       break;
+>>> +       }
+>>> +
+>>> +       return genpd;
+>>> +}
+>>> +
+>>
+>> [...]
+>>>
+>>> +static int of_genpd_notifier_call(struct notifier_block *nb,
+>>> +                                 unsigned long event, void *data)
+>>> +{
+>>> +       struct device *dev = data;
+>>> +       int ret;
+>>> +
+>>> +       if (!dev->of_node)
+>>> +               return NOTIFY_DONE;
+>>> +
+>>> +       switch (event) {
+>>> +       case BUS_NOTIFY_BIND_DRIVER:
+>>> +               ret = of_genpd_add_to_domain(dev);
+>>> +               break;
+>>> +
+>>> +       case BUS_NOTIFY_UNBOUND_DRIVER:
+>>> +               ret = of_genpd_del_from_domain(dev);
+>>> +               break;
+>>> +
+>>> +       default:
+>>> +               return NOTIFY_DONE;
+>>> +       }
+>>> +
+>>> +       return notifier_from_errno(ret);
+>>> +}
+>>> +
+>>> +static struct notifier_block of_genpd_notifier_block = {
+>>> +       .notifier_call = of_genpd_notifier_call,
+>>> +};
+>>> +
+>>> +static int of_genpd_init(void)
+>>> +{
+>>> +       return bus_register_notifier(&platform_bus_type,
+>>> +                                       &of_genpd_notifier_block);
+>>> +}
+>>> +core_initcall(of_genpd_init);
+>>
+>>
+>> Would it be possible to call the of_genpd_add_to_domain() and
+>> of_genpd_del_from_domain() functions directly in the driver core,
+>> similar to how the pinctrl framework has a hook in there? That
+>> way we're not relying on any initcall ordering for this.
+>
+>
+> Hmm, the initcall here just registers a notifier, which needs to be done
+> just before any driver registers. So, IMHO, current variant is safe, given
+> an early enough initcall level is used.
+>
+> However, doing it the pinctrl way might still have an advantage of not
+> relying on specific bus type, so this is worth consideration indeed. I'd
+> like to hear Rafael's and Kevin's opinions on this (and other comments above
+> too).
 
-Hmm, to me it says exactly that.
+As you say; certainly there will be other bus types that we need to
+support as well. For example the amba bus (drivers/amba/bus.c).
 
-Jan
+Additionally I believe similar reasons, why we added the pinctrl
+handling to driver core, applies to generic power domains. So I think
+we should give it a try!
 
+Kind regards
+Ulf Hansson
+
+>
+> Best regards,
+> Tomasz
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
