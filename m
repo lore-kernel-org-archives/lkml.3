@@ -1,103 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaBXUTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 15:19:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58939 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212AbaBXUTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 15:19:46 -0500
-Date: Mon, 24 Feb 2014 21:19:43 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140224201943.GA4397@pd.tnic>
-References: <20140224162400.GE16457@pd.tnic>
+	id S1753233AbaBXUXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 15:23:20 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36431 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147AbaBXUXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 15:23:14 -0500
+Message-ID: <530BAA31.4050701@codeaurora.org>
+Date: Mon, 24 Feb 2014 12:23:13 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140224162400.GE16457@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org> <530AF7E4.5080806@linux.vnet.ibm.com> <1f7bd419ce78af0137c0d63189c6ad35.squirrel@www.codeaurora.org> <CAKohponY-OXwAEZT0WRjxpHmvi78Ne9kv6LOHXvLOFG-KjU1FQ@mail.gmail.com>
+In-Reply-To: <CAKohponY-OXwAEZT0WRjxpHmvi78Ne9kv6LOHXvLOFG-KjU1FQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw,
+On 02/24/2014 02:55 AM, Viresh Kumar wrote:
+> On 24 February 2014 14:09,  <skannan@codeaurora.org> wrote:
+>>
+>> Srivatsa S. Bhat wrote:
+>>> On 02/24/2014 12:27 PM, Saravana Kannan wrote:
+>>>> The existing code sets the per CPU policy to a non-NULL value before all
+>>>> the steps performed during the hotplug online path is done.
+>>>> Specifically,
+>>>> this is done before the policy min/max, governors, etc are initialized
+>>>> for
+>>>> the policy.  This in turn means that calls to cpufreq_cpu_get() return a
+>>>> non-NULL policy before the policy/CPU is ready to be used.
+>>>>
+>>>> To fix this, move the update of per CPU policy to a valid value after
+>>>> all
+>>>> the initialization steps for the policy are completed.
+>>>>
+>>>> Example kernel panic without this fix:
+>>>> [  512.146185] Unable to handle kernel NULL pointer dereference at
+>>>> virtual address 00000020
+>>>> [  512.146195] pgd = c0003000
+>>>> [  512.146213] [00000020] *pgd=80000000004003, *pmd=00000000
+>>>> [  512.146228] Internal error: Oops: 206 [#1] PREEMPT SMP ARM
+>>>> <snip>
+>>>> [  512.146297] PC is at __cpufreq_governor+0x10/0x1ac
+>>>> [  512.146312] LR is at cpufreq_update_policy+0x114/0x150
+>>>> <snip>
+>>>> [  512.149740] ---[ end trace f23a8defea6cd706 ]---
+>>>> [  512.149761] Kernel panic - not syncing: Fatal exception
+>>>> [  513.152016] CPU0: stopping
+>>>> [  513.154710] CPU: 0 PID: 7136 Comm: mpdecision Tainted: G      D W
+>>>> 3.10.0-gd727407-00074-g979ede8 #396
+>>>> <snip>
+>>>> [  513.317224] [<c0afe180>] (notifier_call_chain+0x40/0x68) from
+>>>> [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
+>>>> [  513.327809] [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
+>>>> from [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
+>>>> [  513.339182] [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
+>>>> from [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8)
+>>>> [  513.349594] [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8) from
+>>>> [<c0803e7c>] (cpufreq_init_policy+0x30/0x98)
+>>>> [  513.359231] [<c0803e7c>] (cpufreq_init_policy+0x30/0x98) from
+>>>> [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4)
+>>>> [  513.369560] [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4) from
+>>>> [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84)
+>>>> [  513.379978] [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84) from
+>>>> [<c0afe180>] (notifier_call_chain+0x40/0x68)
+>>>> [  513.389704] [<c0afe180>] (notifier_call_chain+0x40/0x68) from
+>>>> [<c02812dc>] (__cpu_notify+0x28/0x44)
+>>>> [  513.398728] [<c02812dc>] (__cpu_notify+0x28/0x44) from [<c0aeed90>]
+>>>> (_cpu_up+0xf4/0x1dc)
+>>>> [  513.406797] [<c0aeed90>] (_cpu_up+0xf4/0x1dc) from [<c0aeeed4>]
+>>>> (cpu_up+0x5c/0x78)
+>>>> [  513.414357] [<c0aeeed4>] (cpu_up+0x5c/0x78) from [<c0aec808>]
+>>>> (store_online+0x44/0x74)
+>>>> [  513.422253] [<c0aec808>] (store_online+0x44/0x74) from [<c03a40f4>]
+>>>> (sysfs_write_file+0x108/0x14c)
+>>>> [  513.431195] [<c03a40f4>] (sysfs_write_file+0x108/0x14c) from
+>>>> [<c03517d4>] (vfs_write+0xd0/0x180)
+>>>> [  513.439958] [<c03517d4>] (vfs_write+0xd0/0x180) from [<c0351ca8>]
+>>>> (SyS_write+0x38/0x68)
+>>>> [  513.447947] [<c0351ca8>] (SyS_write+0x38/0x68) from [<c0205de0>]
+>>>> (ret_fast_syscall+0x0/0x30)
+>>>>
+>>>> In this specific case, CPU0 set's CPU1's policy->governor in
+>>>> cpufreq_init_policy() to NULL while CPU1 is using the policy->governor
+>>>> in
+>>>> __cpufreq_governor().
+>>>>
+>>>
+>>> Whoa! That's horrible! Can you please explain how exactly you
+>>> triggered this? I'm curious...
+>>
+>> Just call cpufreq_update_policy(cpu) on a CPU and have another thread
+>> online/offline it.
+>
+> But would you do that? Means why would you call them this way?
+> cpufreq_update_policy() shouldn't be called that way I believe..
 
-I don't know whether the following observation is related or not, but it
-so happens that after resume from suspend-to-disk, I see the booting up
-of the resume kernel on the console but when it is time for the original
-kernel to take over and switch to graphics, the screen remains black but
-the machine is responsive over the network.
+I was simplifying the scenario that causes it. We change the min/max 
+using ADJUST notifiers for multiple reasons -- thermal being one of them.
 
-And this doesn't happen on every resume but only sporadically.
+thermal/cpu_cooling is one example of it.
 
-And yep, -rc3 was fine.
+So, cpufreq_update_policy() can be called on any CPU. If that races with 
+someone offlining a CPU and onlining it, you'll get this crash.
 
-On Mon, Feb 24, 2014 at 05:24:00PM +0100, Borislav Petkov wrote:
-> This started happening this morning after booting -rc4+tip, let's
-> add *everybody* to CC :-)
-> 
-> We have intel_uncore_init, snb_uncore_imc_init_box, uncore_pci_probe and
-> other goodies on the stack.
-> 
-> ...
-> [    0.488998] software IO TLB [mem 0xcac30000-0xcec30000] (64MB) mapped at [ffff8800cac30000-ffff8800cec2ffff]
-> [    0.489975] resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
-> [    0.490079] ------------[ cut here ]------------
-> [    0.490204] WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x372/0x380()
-> [    0.490306] Info: mapping multiple BARs. Your kernel is fine.
-> [    0.490371] Modules linked in:
-> [    0.490558] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+ #1
-> [    0.490642] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
-> [    0.490742]  00000000000000ab ffff880213d01ad8 ffffffff816112e3 0000000000000006
-> [    0.491032]  ffff880213d01b28 ffff880213d01b18 ffffffff8104e9bc ffff880213d01b08
-> [    0.491343]  ffffc90000c58000 00000000fed10000 00000000fed10000 0000000000006000
-> [    0.491631] Call Trace:
-> [    0.493337]  [<ffffffff816112e3>] dump_stack+0x4f/0x7c
-> [    0.493420]  [<ffffffff8104e9bc>] warn_slowpath_common+0x8c/0xc0
-> [    0.493503]  [<ffffffff8104eaa6>] warn_slowpath_fmt+0x46/0x50
-> [    0.493588]  [<ffffffff8103f1e2>] __ioremap_caller+0x372/0x380
-> [    0.493674]  [<ffffffff810211a2>] ? snb_uncore_imc_init_box+0x62/0x90
-> [    0.493761]  [<ffffffff8103f247>] ioremap_nocache+0x17/0x20
-> [    0.493846]  [<ffffffff810211a2>] snb_uncore_imc_init_box+0x62/0x90
-> [    0.493933]  [<ffffffff81022925>] uncore_pci_probe+0xe5/0x1e0
-> [    0.494020]  [<ffffffff812d487e>] local_pci_probe+0x4e/0xa0
-> [    0.494104]  [<ffffffff81418a59>] ? get_device+0x19/0x20
-> [    0.494213]  [<ffffffff812d5cd1>] pci_device_probe+0xe1/0x130
-> [    0.494300]  [<ffffffff8141d3cb>] driver_probe_device+0x7b/0x240
-> [    0.494385]  [<ffffffff8141d63b>] __driver_attach+0xab/0xb0
-> [    0.494469]  [<ffffffff8141d590>] ? driver_probe_device+0x240/0x240
-> [    0.494551]  [<ffffffff8141b71e>] bus_for_each_dev+0x5e/0x90
-> [    0.494634]  [<ffffffff8141cede>] driver_attach+0x1e/0x20
-> [    0.494718]  [<ffffffff8141ca57>] bus_add_driver+0x117/0x230
-> [    0.494802]  [<ffffffff8141dd34>] driver_register+0x64/0xf0
-> [    0.494884]  [<ffffffff812d4c14>] __pci_register_driver+0x64/0x70
-> [    0.494972]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
-> [    0.495056]  [<ffffffff81d03312>] intel_uncore_init+0x177/0x41c
-> [    0.495155]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
-> [    0.495242]  [<ffffffff8100029e>] do_one_initcall+0x4e/0x170
-> [    0.495326]  [<ffffffff81071100>] ? parse_args+0x60/0x360
-> [    0.495411]  [<ffffffff81cfbfb8>] kernel_init_freeable+0x106/0x19a
-> [    0.495497]  [<ffffffff81cfb83b>] ? do_early_param+0x86/0x86
-> [    0.495582]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
-> [    0.495666]  [<ffffffff81607efe>] kernel_init+0xe/0xf0
-> [    0.495749]  [<ffffffff81621f6c>] ret_from_fork+0x7c/0xb0
-> [    0.495831]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
-> [    0.495921] ---[ end trace 428f365c054d9a01 ]---
-> [    0.496196] RAPL PMU detected, hw unit 2^-16 Joules, API unit is 2^-32 Joules, 3 fixed counters 163840 ms ovfl timer
-> [    0.498598] futex hash table entries: 1024 (order: 5, 131072 bytes)
-> [    0.498833] audit: initializing netlink subsys (disabled)
-> [    0.499024] audit: type=2000 audit(1393259866.477:1): initialized
+>>>> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+>>>> ---
+>>>>   drivers/cpufreq/cpufreq.c | 10 +++++-----
+>>>>   1 file changed, 5 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>>> index cb003a6..d5ceb43 100644
+>>>> --- a/drivers/cpufreq/cpufreq.c
+>>>> +++ b/drivers/cpufreq/cpufreq.c
+>>>> @@ -1109,11 +1109,6 @@ static int __cpufreq_add_dev(struct device *dev,
+>>>> struct subsys_interface *sif,
+>>>>               goto err_set_policy_cpu;
+>>>>       }
+>>>>
+>>>> -    write_lock_irqsave(&cpufreq_driver_lock, flags);
+>>>> -    for_each_cpu(j, policy->cpus)
+>>>> -            per_cpu(cpufreq_cpu_data, j) = policy;
+>>>> -    write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>>>> -
+>>>>       if (cpufreq_driver->get) {
+>>>>               policy->cur = cpufreq_driver->get(policy->cpu);
+>>>
+>>> If you move the per-cpu init further down, then what happens to the
+>>> cpufreq_generic_get() that gets invoked here by some of the drivers?
+>>
+>> While cpufreq_generic_get() was a good refactor, I think it's causing
+>> unnecessary cyclic dependency. You need that function to not fail for a
+>> policy to get added properly and you need a proper policy for the function
+>> to work. I care more about fixing the panic than trying to keep
+>> cpufreq_generic_get().
+>
+> Surely, I will like a solution which would keep this as is :)..
+> cpufreq_generic_get() should pass..
 
+The idea would exist, but we can just call cpufreq_generic_get() and 
+pass it policy->clk if it is not NULL. Does that work for you?
+
+>>> It will almost always fail (because policy will be NULL) and hence
+>>> CPU online will be unsuccessful (though you wont observe it because
+>>> the error code is not bubbled up to the CPU hotplug core; perhaps we
+>>> should).
+>>
+>> Good catch. I actually hit this issue, fixed and test it on a 3.12 cpufreq
+>> code base. Since this new function isn't there at that point, I missed it.
+>> Even if I did use the latest kernel, I wouldn't have hit this issue,
+>> because the MSM cpufreq driver doesn't use this function.
+>>
+>>>
+>>> IMHO, we should fix the synchronization in cpufreq_init_policy().
+>>> I notice cpufreq_update_policy() as well as __cpufreq_governor() in
+>>> your stack trace, which means cpufreq_set_policy() was involved.
+>>> cpufreq_update_policy() takes the policy->rwsem for write, whereas
+>>> cpufreq_init_policy() doesn't take that lock at all, which is clearly
+>>> wrong.
+>>>
+>>> My guess is that, if we fix that locking, everything will be fine and
+>>> you won't hit the bug. Would you like to give that a shot?
+>>
+>> While locking might need fixing, this is not about the locking though.
+>> Plenty of drivers and the framework use cpufreq_cpu_get() to get a policy
+>> that they consider valid and also use it as a way to check and reject API
+>> calls trying to manipulate an offline CPU.
+>>
+>> Without this fix, the framework is advertising an incomplete policy object
+>> as available. I think that breaks the CPUfreq framework APIs in a very
+>> fundamental sense. This is a "no-no" in programming.
+>>
+>> It's like trying to register a CPUfreq driver before getting the clocks to
+>> control the CPU.
+>
+> So the real question here is: What fields of 'policy' do we need to guarantee
+> to be initialized before policy is made available for others? And probably
+> that is what we need to fix.
+
+That's going to be hard to define since future uses could be looking at 
+different fields. What is the API semantics of cpufreq_cpu_get(). I 
+can't ever imagine it being correct for any API to return a partially 
+initialized data structure.
+
+> Even your current solution would break things. For example, below will happen
+> before policy is set in per-cpu variable:
+> - CPUFREQ_CREATE_POLICY notifier will be fired and calls to do cpufreq_cpu_get()
+> there will fail. And hence cpufreq-stats sysfs will break.
+I did this on 3.12. I'll fix it up to handle this one.
+
+> - Governors also use cpufreq_cpu_get() and so those would also fail as they
+> are started from cpufreq_init_policy()..
+The only use of this in governors is in update_sampling_rate() and the 
+behavior after this fix would be correct in that case. If the policy is 
+not fully initialized -- that update doesn't get to go through.
+
+All other uses of this API fall under one of these categories:
+* CPUs are already fully offline whenever it's called.
+* Already get the real policy as part of the notifier so don't need to
+   call cpufreq_cpu_get
+
+If I find any that doesn't fit the above, I would be glad to fix that if 
+it's pointed out.
+
+Regards,
+Saravana
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
