@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaBXInW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:43:22 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:33517 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaBXInO (ORCPT
+	id S1752596AbaBXInU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:43:20 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:57925 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaBXInP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:43:14 -0500
+	Mon, 24 Feb 2014 03:43:15 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] pinctrl: mvebu: dove: request syscon regmap for global registers
-Date: Mon, 24 Feb 2014 09:42:58 +0100
-Message-Id: <1393231382-11078-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 08/10] pinctrl: mvebu: dove: use remapped mpp4 register
+Date: Mon, 24 Feb 2014 09:43:00 +0100
+Message-Id: <1393231382-11078-9-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dove pinctrl uses some global config registers to control pins.
-This patch requests a syscon regmap for those registers. As this
-changes DT to driver requirements, fallback to a self-registered
-regmap with hardcoded resources, if the corresponding syscon DT
-node is missing. Also, WARN about old DT binding usage to encourage
-users to update their DTBs.
+Now that we have an ioremapped mpp4 register, get rid of hardcoded
+physical addresses. While at it, also remove DOVE_ prefix from those
+macros.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
@@ -39,89 +36,157 @@ Cc: Gregory Clement <gregory.clement@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pinctrl/mvebu/Kconfig        |  1 +
- drivers/pinctrl/mvebu/pinctrl-dove.c | 27 +++++++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
+ drivers/pinctrl/mvebu/pinctrl-dove.c | 53 ++++++++++++++++++------------------
+ 1 file changed, 27 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/pinctrl/mvebu/Kconfig b/drivers/pinctrl/mvebu/Kconfig
-index a22b0302922d..cc298fade93a 100644
---- a/drivers/pinctrl/mvebu/Kconfig
-+++ b/drivers/pinctrl/mvebu/Kconfig
-@@ -8,6 +8,7 @@ config PINCTRL_MVEBU
- config PINCTRL_DOVE
- 	bool
- 	select PINCTRL_MVEBU
-+	select MFD_SYSCON
- 
- config PINCTRL_KIRKWOOD
- 	bool
 diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index 8d57d4bc1f0c..e4f954a78b15 100644
+index 902c18f11b94..d48db53957e0 100644
 --- a/drivers/pinctrl/mvebu/pinctrl-dove.c
 +++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -18,7 +18,9 @@
- #include <linux/clk.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/mfd/syscon.h>
- #include <linux/pinctrl/pinctrl.h>
-+#include <linux/regmap.h>
+@@ -46,18 +46,19 @@
+ #define  DOVE_AU1_SPDIFO_GPIO_EN	BIT(1)
+ #define  DOVE_NAND_GPIO_EN		BIT(0)
+ #define DOVE_GPIO_LO_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0400)
+-#define DOVE_MPP_CTRL4_VIRT_BASE	(DOVE_GPIO_LO_VIRT_BASE + 0x40)
+-#define  DOVE_SPI_GPIO_SEL		BIT(5)
+-#define  DOVE_UART1_GPIO_SEL		BIT(4)
+-#define  DOVE_AU1_GPIO_SEL		BIT(3)
+-#define  DOVE_CAM_GPIO_SEL		BIT(2)
+-#define  DOVE_SD1_GPIO_SEL		BIT(1)
+-#define  DOVE_SD0_GPIO_SEL		BIT(0)
  
- #include "pinctrl-mvebu.h"
+ /* MPP Base registers */
+ #define PMU_MPP_GENERAL_CTRL	0x10
+ #define  AU0_AC97_SEL		BIT(16)
  
-@@ -26,6 +28,7 @@
- #define INT_REGS_MASK		~(SZ_1M - 1)
- #define MPP4_REGS_OFFS		0xd0440
- #define PMU_REGS_OFFS		0xd802c
-+#define GC_REGS_OFFS		0xe802c
++/* MPP Control 4 register */
++#define SPI_GPIO_SEL		BIT(5)
++#define UART1_GPIO_SEL		BIT(4)
++#define AU1_GPIO_SEL		BIT(3)
++#define CAM_GPIO_SEL		BIT(2)
++#define SD1_GPIO_SEL		BIT(1)
++#define SD0_GPIO_SEL		BIT(0)
++
+ #define CONFIG_PMU	BIT(4)
  
- #define DOVE_SB_REGS_VIRT_BASE		IOMEM(0xfde00000)
- #define DOVE_MPP_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0200)
-@@ -59,6 +62,7 @@
  static void __iomem *mpp_base;
- static void __iomem *mpp4_base;
- static void __iomem *pmu_base;
-+static struct regmap *gconfmap;
+@@ -115,24 +116,24 @@ static int dove_pmu_mpp_ctrl_set(unsigned pid, unsigned long config)
  
- static int dove_mpp_ctrl_get(unsigned pid, unsigned long *config)
+ static int dove_mpp4_ctrl_get(unsigned pid, unsigned long *config)
  {
-@@ -756,6 +760,13 @@ static struct of_device_id dove_pinctrl_of_match[] = {
- 	{ }
- };
+-	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long mpp4 = readl(mpp4_base);
+ 	unsigned long mask;
  
-+static struct regmap_config gc_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+	.max_register = 5,
-+};
-+
- static int dove_pinctrl_probe(struct platform_device *pdev)
+ 	switch (pid) {
+ 	case 24: /* mpp_camera */
+-		mask = DOVE_CAM_GPIO_SEL;
++		mask = CAM_GPIO_SEL;
+ 		break;
+ 	case 40: /* mpp_sdio0 */
+-		mask = DOVE_SD0_GPIO_SEL;
++		mask = SD0_GPIO_SEL;
+ 		break;
+ 	case 46: /* mpp_sdio1 */
+-		mask = DOVE_SD1_GPIO_SEL;
++		mask = SD1_GPIO_SEL;
+ 		break;
+ 	case 58: /* mpp_spi0 */
+-		mask = DOVE_SPI_GPIO_SEL;
++		mask = SPI_GPIO_SEL;
+ 		break;
+ 	case 62: /* mpp_uart1 */
+-		mask = DOVE_UART1_GPIO_SEL;
++		mask = UART1_GPIO_SEL;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -145,24 +146,24 @@ static int dove_mpp4_ctrl_get(unsigned pid, unsigned long *config)
+ 
+ static int dove_mpp4_ctrl_set(unsigned pid, unsigned long config)
  {
- 	struct resource *res, *mpp_res;
-@@ -808,6 +819,22 @@ static int dove_pinctrl_probe(struct platform_device *pdev)
- 	if (IS_ERR(pmu_base))
- 		return PTR_ERR(pmu_base);
+-	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned long mpp4 = readl(mpp4_base);
+ 	unsigned long mask;
  
-+	gconfmap = syscon_regmap_lookup_by_compatible("marvell,dove-global-config");
-+	if (IS_ERR(gconfmap)) {
-+		void __iomem *gc_base;
-+
-+		dev_warn(&pdev->dev, "falling back to hardcoded global registers\n");
-+		adjust_resource(&fb_res,
-+			(mpp_res->start & INT_REGS_MASK) + GC_REGS_OFFS, 0x14);
-+		gc_base = devm_ioremap_resource(&pdev->dev, &fb_res);
-+		if (IS_ERR(gc_base))
-+			return PTR_ERR(gc_base);
-+		gconfmap = devm_regmap_init_mmio(&pdev->dev,
-+						 gc_base, &gc_regmap_config);
-+		if (IS_ERR(gconfmap))
-+			return PTR_ERR(gconfmap);
-+	}
-+
- 	/* Warn on any missing DT resource */
- 	WARN(fb_res.start, FW_BUG "Missing pinctrl regs in DTB. Please update your firmware.\n");
+ 	switch (pid) {
+ 	case 24: /* mpp_camera */
+-		mask = DOVE_CAM_GPIO_SEL;
++		mask = CAM_GPIO_SEL;
+ 		break;
+ 	case 40: /* mpp_sdio0 */
+-		mask = DOVE_SD0_GPIO_SEL;
++		mask = SD0_GPIO_SEL;
+ 		break;
+ 	case 46: /* mpp_sdio1 */
+-		mask = DOVE_SD1_GPIO_SEL;
++		mask = SD1_GPIO_SEL;
+ 		break;
+ 	case 58: /* mpp_spi0 */
+-		mask = DOVE_SPI_GPIO_SEL;
++		mask = SPI_GPIO_SEL;
+ 		break;
+ 	case 62: /* mpp_uart1 */
+-		mask = DOVE_UART1_GPIO_SEL;
++		mask = UART1_GPIO_SEL;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -172,7 +173,7 @@ static int dove_mpp4_ctrl_set(unsigned pid, unsigned long config)
+ 	if (config)
+ 		mpp4 |= mask;
  
+-	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
++	writel(mpp4, mpp4_base);
+ 
+ 	return 0;
+ }
+@@ -222,13 +223,13 @@ static int dove_audio0_ctrl_set(unsigned pid, unsigned long config)
+ 
+ static int dove_audio1_ctrl_get(unsigned pid, unsigned long *config)
+ {
+-	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned int mpp4 = readl(mpp4_base);
+ 	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
+ 	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
+ 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
+ 
+ 	*config = 0;
+-	if (mpp4 & DOVE_AU1_GPIO_SEL)
++	if (mpp4 & AU1_GPIO_SEL)
+ 		*config |= BIT(3);
+ 	if (sspc1 & DOVE_SSP_ON_AU1)
+ 		*config |= BIT(2);
+@@ -248,7 +249,7 @@ static int dove_audio1_ctrl_get(unsigned pid, unsigned long *config)
+ 
+ static int dove_audio1_ctrl_set(unsigned pid, unsigned long config)
+ {
+-	unsigned long mpp4 = readl(DOVE_MPP_CTRL4_VIRT_BASE);
++	unsigned int mpp4 = readl(mpp4_base);
+ 	unsigned long sspc1 = readl(DOVE_SSP_CTRL_STATUS_1);
+ 	unsigned long gmpp = readl(DOVE_MPP_GENERAL_VIRT_BASE);
+ 	unsigned long gcfg2 = readl(DOVE_GLOBAL_CONFIG_2);
+@@ -259,7 +260,7 @@ static int dove_audio1_ctrl_set(unsigned pid, unsigned long config)
+ 	gcfg2 &= ~DOVE_TWSI_OPTION3_GPIO;
+ 	gmpp &= ~DOVE_AU1_SPDIFO_GPIO_EN;
+ 	sspc1 &= ~DOVE_SSP_ON_AU1;
+-	mpp4 &= ~DOVE_AU1_GPIO_SEL;
++	mpp4 &= ~AU1_GPIO_SEL;
+ 
+ 	if (config & BIT(0))
+ 		gcfg2 |= DOVE_TWSI_OPTION3_GPIO;
+@@ -268,9 +269,9 @@ static int dove_audio1_ctrl_set(unsigned pid, unsigned long config)
+ 	if (config & BIT(2))
+ 		sspc1 |= DOVE_SSP_ON_AU1;
+ 	if (config & BIT(3))
+-		mpp4 |= DOVE_AU1_GPIO_SEL;
++		mpp4 |= AU1_GPIO_SEL;
+ 
+-	writel(mpp4, DOVE_MPP_CTRL4_VIRT_BASE);
++	writel(mpp4, mpp4_base);
+ 	writel(sspc1, DOVE_SSP_CTRL_STATUS_1);
+ 	writel(gmpp, DOVE_MPP_GENERAL_VIRT_BASE);
+ 	writel(gcfg2, DOVE_GLOBAL_CONFIG_2);
 -- 
 1.8.5.3
 
