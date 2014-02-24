@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaBXQMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:12:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33843 "EHLO mx2.suse.de"
+	id S1753280AbaBXQNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:13:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33853 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830AbaBXQMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:12:48 -0500
+	id S1751781AbaBXQNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:13:09 -0500
 From: Petr Mladek <pmladek@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -13,9 +13,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
         x86@kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: [PATCH 1/3] ftrace/x86: One more missing sync after fixup of function modification failure
-Date: Mon, 24 Feb 2014 17:12:20 +0100
-Message-Id: <1393258342-29978-2-git-send-email-pmladek@suse.cz>
+Subject: [PATCH 2/3] ftrace: Warn on error when modifying ftrace function
+Date: Mon, 24 Feb 2014 17:12:21 +0100
+Message-Id: <1393258342-29978-3-git-send-email-pmladek@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1393258342-29978-1-git-send-email-pmladek@suse.cz>
 References: <1393258342-29978-1-git-send-email-pmladek@suse.cz>
@@ -23,31 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a failure occurs while modifying ftrace function, it bails out and will
-remove the tracepoints to be back to what the code originally was.
+We should print some warning and kill ftrace functionality when the ftrace
+function is not set correctly. Otherwise, ftrace might do crazy things without
+an explanation. The error value has been ignored so far.
 
-There is missing the final sync run across the CPUs after the fix up is done
-and before the ftrace int3 handler flag is reset.
+Note that an error that happens during updating all the traced calls is handled
+in ftrace_replace_code(). We print more details about the particular
+failing address via ftrace_bug() there.
 
 Signed-off-by: Petr Mladek <pmladek@suse.cz>
 ---
- arch/x86/kernel/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ftrace.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 6b566c82d82c..69885e2f2095 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -660,8 +660,8 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
- 		ret = -EPERM;
- 		goto out;
- 	}
--	run_sync();
-  out:
-+	run_sync();
- 	return ret;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index cd7f76d1eb86..2f139023e789 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1994,6 +1994,7 @@ int __weak ftrace_arch_code_modify_post_process(void)
+ void ftrace_modify_all_code(int command)
+ {
+ 	int update = command & FTRACE_UPDATE_TRACE_FUNC;
++	int err = 0;
  
-  fail_update:
+ 	/*
+ 	 * If the ftrace_caller calls a ftrace_ops func directly,
+@@ -2005,8 +2006,11 @@ void ftrace_modify_all_code(int command)
+ 	 * to make sure the ops are having the right functions
+ 	 * traced.
+ 	 */
+-	if (update)
+-		ftrace_update_ftrace_func(ftrace_ops_list_func);
++	if (update) {
++		err = ftrace_update_ftrace_func(ftrace_ops_list_func);
++		if (FTRACE_WARN_ON(err))
++			return;
++	}
+ 
+ 	if (command & FTRACE_UPDATE_CALLS)
+ 		ftrace_replace_code(1);
+@@ -2019,13 +2023,16 @@ void ftrace_modify_all_code(int command)
+ 		/* If irqs are disabled, we are in stop machine */
+ 		if (!irqs_disabled())
+ 			smp_call_function(ftrace_sync_ipi, NULL, 1);
+-		ftrace_update_ftrace_func(ftrace_trace_function);
++		err = ftrace_update_ftrace_func(ftrace_trace_function);
++		if (FTRACE_WARN_ON(err))
++			return;
+ 	}
+ 
+ 	if (command & FTRACE_START_FUNC_RET)
+-		ftrace_enable_ftrace_graph_caller();
++		err = ftrace_enable_ftrace_graph_caller();
+ 	else if (command & FTRACE_STOP_FUNC_RET)
+-		ftrace_disable_ftrace_graph_caller();
++		err = ftrace_disable_ftrace_graph_caller();
++	FTRACE_WARN_ON(err);
+ }
+ 
+ static int __ftrace_modify_code(void *data)
 -- 
 1.8.4
 
