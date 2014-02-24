@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaBXCp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:45:26 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:58994 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaBXCpW (ORCPT
+	id S1752028AbaBXCz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:55:59 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:37063
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751509AbaBXCz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:45:22 -0500
+	Sun, 23 Feb 2014 21:55:57 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 24 Feb 2014 10:55:41 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        arm <linux-arm-kernel@lists.infradead.org>,
+        omap <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [patch 08/26] arm: Replace various irq_desc accesses
+Message-ID: <20140224025539.GE25011@S2101-09.ap.freescale.net>
+References: <20140223212703.511977310@linutronix.de>
+ <20140223212737.099151500@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
-	<1392907389-21798-8-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
-	<CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
-Date: Mon, 24 Feb 2014 11:45:19 +0900
-Message-ID: <CANqRtoSJTROkkbGxV_p+B2S7b7jZ7jgHQ+q4_WG54m+Pxgfcpw@mail.gmail.com>
-Subject: Re: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140223212737.099151500@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Sun, Feb 23, 2014 at 09:40:12PM -0000, Thomas Gleixner wrote:
+> Use the proper functions. There is no need to fiddle with irq_desc.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+...
+>  arch/arm/mach-imx/pm-imx6q.c        |    7 +++----
 
-On Fri, Feb 21, 2014 at 1:13 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Thu, Feb 20, 2014 at 4:41 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> On thing stuck out a bit with the bindings. I can see that you specify
->> both fifo size and use the SoC suffix for the r8a7790 and r8a7791
->> bindings. Isn't that a bit of redundant information there, if we know
->> that the SoC is r8a7790 or r8a7791 then can't we simply put that
->> information in r8a779x_data above and perhaps keep the binding
->> simpler? Perhaps same thing applies to other properties as well?
->
-> "renesas,tx-fifo-size" and "renesas,rx-fifo-size" are part of the existing
-> bindings, so I'm a bit reluctant to change these.
-> Hmm, since the original bindings didn't specify the default values,
-> I could make them chip-specific, though.
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Thanks, yes I think treating the "renesas,tx-fifo-size" and
-"renesas,rx-fifo-size" bindings as optional and allow us to rely on
-chip-specific default values makes sense.
-
-> The only other property is "num-cs", which can have any value if you
-> start using the generic "cs-gpios".
-
-I see. It looks to me that such a setting is board-specific, so what
-is a sane default in the SoC DTSI? You seem to have it set to "1"
-today, but if the board is supposed to override it anyway then do we
-need to set it?
-
-Anyway, "num-cs" is a minor detail so no need to bother about that too much!
-
-Cheers,
-
-/ magnus
