@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaBXGoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 01:44:06 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:37494 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043AbaBXGoD (ORCPT
+	id S1752345AbaBXGoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 01:44:46 -0500
+Received: from [65.55.88.13] ([65.55.88.13]:30730 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751595AbaBXGop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 01:44:03 -0500
+	Mon, 24 Feb 2014 01:44:45 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <alsa-devel@alsa-project.org>, <perex@perex.cz>, <tiwai@suse.de>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: core: add snd_soc_dai_set_tdm_slot_xlate()
+Date: Mon, 24 Feb 2014 13:37:31 +0800
+Message-ID: <1393220251-12167-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-In-Reply-To: <cover.1392629003.git.viresh.kumar@linaro.org>
-References: <cover.1392629003.git.viresh.kumar@linaro.org>
-Date: Mon, 24 Feb 2014 12:14:01 +0530
-Message-ID: <CAKohpomqgnavOUWPyKhSsP0+f6RE3x1FrZ5zD_f=LWScBZs4uw@mail.gmail.com>
-Subject: Re: [PATCH V6 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        "jinchoi@broadcom.com" <jinchoi@broadcom.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 February 2014 14:55, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> This patchset creates/calls cpufreq suspend/resume callbacks from dpm_{suspend|resume}()
-> for handling suspend/resume of cpufreq governors and core.
->
-> There are multiple problems that are fixed by this patch:
-> - Nishanth Menon (TI) found an interesting problem on his platform, OMAP. His board
->   wasn't working well with suspend/resume as calls for removing non-boot CPUs
->   was turning out into a call to drivers ->target() which then tries to play
->   with regulators. But regulators and their I2C bus were already suspended and
->   this resulted in a failure. Many platforms have such problems, samsung, tegra,
->   etc.. They solved it with driver specific PM notifiers where they used to
->   disable their driver's ->target() routine.
-> - Lan Tianyu (Intel) & Jinhyuk Choi (Broadcom) found an issue where tunables
->   configuration for clusters/sockets with non-boot CPUs was getting lost after
->   suspend/resume, as we were notifying governors with CPUFREQ_GOV_POLICY_EXIT on
->   removal of the last cpu for that policy and so deallocating memory for
->   tunables.  This is fixed by this patch as we don't allow any operation on
->   governors after device suspend and before device resume now.
->
-> This is already tested by few people and so incorporating their Tested-by as
-> well.
->
-> I have tested this again on latest stuff on my thinkpad for several
-> suspend/resume cycles.
->
-> V6->V7:
-> - Fixed crash reported by S.Warren on systems without a cpufreq driver.
-> - Moved some function doc-comments to patch 1 from a later patch.
->
-> For-v3.15
->
-> Viresh Kumar (7):
->   cpufreq: suspend governors on system suspend/hibernate
->   cpufreq: suspend governors from dpm_{suspend|resume}()
->   cpufreq: call driver's suspend/resume for each policy
->   cpufreq: Implement cpufreq_generic_suspend()
->   cpufreq: exynos: Use cpufreq_generic_suspend()
->   cpufreq: s5pv210: Use cpufreq_generic_suspend()
->   cpufreq: Tegra: Use cpufreq_generic_suspend()
->
->  drivers/base/power/main.c         |   5 ++
->  drivers/cpufreq/cpufreq.c         | 137 +++++++++++++++++++++++---------------
->  drivers/cpufreq/exynos-cpufreq.c  |  96 ++------------------------
->  drivers/cpufreq/s5pv210-cpufreq.c |  49 +-------------
->  drivers/cpufreq/tegra-cpufreq.c   |  46 ++-----------
->  include/linux/cpufreq.h           |  11 +++
->  6 files changed, 113 insertions(+), 231 deletions(-)
+The parameters of rx_mask and tx_mask has no use for
+snd_soc_dai_set_tdm_slot(), because they could be generated by
+{XXX_ .}of_xlate_tdm_slot_mask().
 
-Hi Rafael,
+This patch add snd_soc_dai_set_tdm_slot_xlate() which will replace
+the snd_soc_dai_set_tdm_slot() eventually.
 
-I think this patch is good to go now for 3.15?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ include/sound/soc-dai.h |  3 +++
+ sound/soc/soc-core.c    | 33 ++++++++++++++++++++++++++++-----
+ 2 files changed, 31 insertions(+), 5 deletions(-)
 
---
-viresh
+diff --git a/include/sound/soc-dai.h b/include/sound/soc-dai.h
+index d86e0fc..68569ee 100644
+--- a/include/sound/soc-dai.h
++++ b/include/sound/soc-dai.h
+@@ -110,6 +110,9 @@ int snd_soc_dai_set_bclk_ratio(struct snd_soc_dai *dai, unsigned int ratio);
+ /* Digital Audio interface formatting */
+ int snd_soc_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt);
+ 
++int snd_soc_dai_set_tdm_slot_xlate(struct snd_soc_dai *dai,
++				   unsigned int slots,
++				   unsigned int slot_width);
+ int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+ 	unsigned int tx_mask, unsigned int rx_mask, int slots, int slot_width);
+ 
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 0911856..e5a535b 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3687,19 +3687,20 @@ static int snd_soc_of_xlate_tdm_slot_mask(unsigned int slots,
+ }
+ 
+ /**
+- * snd_soc_dai_set_tdm_slot - configure DAI TDM.
++ * snd_soc_dai_set_tdm_slot_xlate - configure DAI TDM with of xlate.
+  * @dai: DAI
+- * @tx_mask: bitmask representing active TX slots.
+- * @rx_mask: bitmask representing active RX slots.
+  * @slots: Number of slots in use.
+  * @slot_width: Width in bits for each slot.
+  *
+  * Configures a DAI for TDM operation. Both mask and slots are codec and DAI
+  * specific.
+  */
+-int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+-	unsigned int tx_mask, unsigned int rx_mask, int slots, int slot_width)
++int snd_soc_dai_set_tdm_slot_xlate(struct snd_soc_dai *dai,
++				   unsigned int slots,
++				   unsigned int slot_width)
+ {
++	unsigned int tx_mask, rx_mask;
++
+ 	if (dai->driver && dai->driver->ops->of_xlate_tdm_slot_mask)
+ 		dai->driver->ops->of_xlate_tdm_slot_mask(slots,
+ 						&tx_mask, &rx_mask);
+@@ -3712,6 +3713,28 @@ int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+ 	else
+ 		return -ENOTSUPP;
+ }
++EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot_xlate);
++
++/**
++ * snd_soc_dai_set_tdm_slot - configure DAI TDM.
++ * @dai: DAI
++ * @tx_mask: bitmask representing active TX slots.
++ * @rx_mask: bitmask representing active RX slots.
++ * @slots: Number of slots in use.
++ * @slot_width: Width in bits for each slot.
++ *
++ * Configures a DAI for TDM operation. Both mask and slots are codec and DAI
++ * specific.
++ */
++int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
++	unsigned int tx_mask, unsigned int rx_mask, int slots, int slot_width)
++{
++	if (dai->driver && dai->driver->ops->set_tdm_slot)
++		return dai->driver->ops->set_tdm_slot(dai, tx_mask, rx_mask,
++				slots, slot_width);
++	else
++		return -ENOTSUPP;
++}
+ EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot);
+ 
+ /**
+-- 
+1.8.4
+
+
