@@ -1,88 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaBXA7D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 19:59:03 -0500
-Received: from www.prifuk.cz ([31.31.77.241]:41629 "EHLO prifuk.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310AbaBXA7A convert rfc822-to-8bit (ORCPT
+	id S1752021AbaBXBBU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:01:20 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:57112 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaBXBBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 19:59:00 -0500
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
-        simon@mungewell.org
-Subject: Re: [PATCH v2 0/4] Add ff-memless-next and make hid-lg4ff use it
-Date: Mon, 24 Feb 2014 01:58:53 +0100
-Message-ID: <14991521.KzMVP7XS2h@geidi-prime>
-User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <530A931B.3020606@iki.fi>
-References: <1516865.M993BQAYe4@geidi-prime> <530A931B.3020606@iki.fi>
+	Sun, 23 Feb 2014 20:01:18 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-55-530a99dbc1f0
+Date: Mon, 24 Feb 2014 10:01:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 2/6] zram: use zcomp compressing backends
+Message-ID: <20140224010140.GE16240@bbox>
+References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392983443-9807-3-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392983443-9807-3-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 of February 2014 02:32:27 Anssi Hannula wrote:
-> 24.02.2014 01:24, Michal Malý kirjoitti:
-> > Hi everybody,
+On Fri, Feb 21, 2014 at 02:50:39PM +0300, Sergey Senozhatsky wrote:
+> Do not perform direct LZO compress/decompress calls, initialise
+> and use zcomp LZO backend (single compression stream) instead.
 > 
-> Hi,
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/Makefile   |  2 +-
+>  drivers/block/zram/zram_drv.c | 62 +++++++++++++++++++------------------------
+>  drivers/block/zram/zram_drv.h |  8 +++---
+>  3 files changed, 32 insertions(+), 40 deletions(-)
 > 
-> > this patch series is a result of my work to improve FFB support for
-> > memoryless devices. ff-memless-next is an improvement over the currently
-> > available ff-memless which is well suited for joypads but cannot handle
-> > more advanced devices such as racing wheels properly. As I have explained
-> > in one of RFCs regarding ff-memless-next, the extent of the changes makes
-> > implementing ff-memless-next as a patch to ff-memless unfeasible. As of
-> > now there is a total of 27 drivers using ff-memless (including lg4ff) - a
-> > lot of them joypads. I do not have access to any FFB joypad at the moment
-> > so I cannot
-> > implement the functionality required to handle joypads properly - namely
-> > FF_RUMBLE and emulation of FF_PERIODIC through FF_RUMBLE.
-> > The plan is to implement the missing functionality and replace ff-memless
-> > completely in the future.
-> 
-> I think we should extend the current ff-memless instead of duplicating
-> its functionality (even on a "for now" basis).
-> 
-> Having looked at ff-memless-next briefly, it seems very similar to
-> ff-memless on its basic working principle, and therefore I don't really
-> see why extending ff-memless would be too cumbersome. Unless I'm missing
-> something - in that case, feel free to point it out to me :)
+> diff --git a/drivers/block/zram/Makefile b/drivers/block/zram/Makefile
+> index cb0f9ce..757c6a5 100644
+> --- a/drivers/block/zram/Makefile
+> +++ b/drivers/block/zram/Makefile
+> @@ -1,3 +1,3 @@
+> -zram-y	:=	zram_drv.o
+> +zram-y	:=	zcomp_lzo.o zcomp.o zram_drv.o
+>  
+>  obj-$(CONFIG_ZRAM)	+=	zram.o
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9baac5b..200c12a 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -29,15 +29,14 @@
+>  #include <linux/genhd.h>
+>  #include <linux/highmem.h>
+>  #include <linux/slab.h>
+> -#include <linux/lzo.h>
+>  #include <linux/string.h>
+> -#include <linux/vmalloc.h>
 
-Deciding whether to patch ff-memless or write a new driver from scratch was a 
-perfect example of being caught between the rock and a hard place. I am not
-particularly fond of the fact that we would have two modules doing pretty much
-the same thing. My reasons for writing a separate module were:
-- Periodic effects. ff-memless doesn't do "real" periodic effects, it simply 
-emulates them through rumble effect. Devices without rumble effect support 
-require emulation through constant force effect. Just this was not something 
-one could write in one afternoon:)
-- Conditional effects. These effects cannot be by nature combined into one 
-overall force (at least not easily) so they have to be handled one by one - 
-this is a concept ff-memless does not seem to consider. FFB devices have 
-limits as to how many conditional (referred to as "uncombinable" in MLNX) 
-effects can be active simultaneously, etc.
-All in all it seemed less error prone to write a new driver based on the ff-
-memless logic, test and deploy it on devices I have access to and once we are 
-sure there are no nasty regressions port the rest of the drivers to the new 
-API. Given the scope of the changes I am afraid that a "patch" to ff-memless 
-would be pretty close to a rewrite anyway.
+In ARM,
 
-> Duplicating the module makes reviewing it somewhat difficult since the
-> changes are not clearly visible.
-> 
-> As for the amount of drivers using ff-memless, those are ~all very
-> simple (single function call registering a single callback) so it should
-> be easy to apply any API conversion if needed.
-> And I don't see a real need for you to have access to a rumble joypad -
-> that support is already implemented in ff-memless, and other people can
-> test that it isn't broken by your changes.
-It has been my intention to add handling of rumble effects in a followup 
-patch. I wanted to limit the extent of changes I dump in a one massive patch, 
-especially when I cannot test the rumble effect on a real hardware.
+drivers/block/zram/zram_drv.c:161:2: error: implicit declaration of function 'vfree' 
+drivers/block/zram/zram_drv.c:173:2: error: implicit declaration of function 'vzalloc' 
 
-Michal
+
+>  
+>  #include "zram_drv.h"
+>  
+>  /* Globals */
+>  static int zram_major;
+>  static struct zram *zram_devices;
+> +static const char *default_compressor = "lzo";
+>  
+>  /* Module params (documentation at end) */
+>  static unsigned int num_devices = 1;
+> @@ -160,8 +159,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
+>  static void zram_meta_free(struct zram_meta *meta)
+>  {
+>  	zs_destroy_pool(meta->mem_pool);
+> -	kfree(meta->compress_workmem);
+> -	free_pages((unsigned long)meta->compress_buffer, 1);
+>  	vfree(meta->table);
+>  	kfree(meta);
+>  }
+> @@ -173,22 +170,11 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+>  	if (!meta)
+>  		goto out;
+>  
+> -	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> -	if (!meta->compress_workmem)
+> -		goto free_meta;
+> -
+> -	meta->compress_buffer =
+> -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+> -	if (!meta->compress_buffer) {
+> -		pr_err("Error allocating compressor buffer space\n");
+> -		goto free_workmem;
+> -	}
+> -
+>  	num_pages = disksize >> PAGE_SHIFT;
+>  	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+>  	if (!meta->table) {
+>  		pr_err("Error allocating zram address table\n");
+> -		goto free_buffer;
+> +		goto free_meta;
+>  	}
+>  
+>  	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
+> @@ -198,15 +184,10 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+>  	}
+>  
+>  	rwlock_init(&meta->tb_lock);
+> -	mutex_init(&meta->buffer_lock);
+>  	return meta;
+>  
+>  free_table:
+>  	vfree(meta->table);
+> -free_buffer:
+> -	free_pages((unsigned long)meta->compress_buffer, 1);
+> -free_workmem:
+> -	kfree(meta->compress_workmem);
+>  free_meta:
+>  	kfree(meta);
+>  	meta = NULL;
+> @@ -280,8 +261,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  
+>  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  {
+> -	int ret = LZO_E_OK;
+> -	size_t clen = PAGE_SIZE;
+> +	int ret = 0;
+>  	unsigned char *cmem;
+>  	struct zram_meta *meta = zram->meta;
+>  	unsigned long handle;
+> @@ -301,12 +281,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  	if (size == PAGE_SIZE)
+>  		copy_page(mem, cmem);
+>  	else
+> -		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
+> +		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+>  	zs_unmap_object(meta->mem_pool, handle);
+>  	read_unlock(&meta->tb_lock);
+>  
+>  	/* Should NEVER happen. Return bio error if it does. */
+> -	if (unlikely(ret != LZO_E_OK)) {
+> +	if (unlikely(ret)) {
+>  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+>  		atomic64_inc(&zram->stats.failed_reads);
+>  		return ret;
+> @@ -349,7 +329,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  
+>  	ret = zram_decompress_page(zram, uncmem, index);
+>  	/* Should NEVER happen. Return bio error if it does. */
+> -	if (unlikely(ret != LZO_E_OK))
+> +	if (unlikely(ret))
+>  		goto out_cleanup;
+>  
+>  	if (is_partial_io(bvec))
+> @@ -374,11 +354,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	struct page *page;
+>  	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+>  	struct zram_meta *meta = zram->meta;
+> +	struct zcomp_strm *zstrm;
+>  	bool locked = false;
+>  
+>  	page = bvec->bv_page;
+> -	src = meta->compress_buffer;
+> -
+>  	if (is_partial_io(bvec)) {
+>  		/*
+>  		 * This is a partial IO. We need to read the full page
+> @@ -394,7 +373,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  			goto out;
+>  	}
+>  
+> -	mutex_lock(&meta->buffer_lock);
+> +	zstrm = zcomp_strm_get(zram->comp);
+>  	locked = true;
+>  	user_mem = kmap_atomic(page);
+>  
+> @@ -420,19 +399,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		goto out;
+>  	}
+>  
+> -	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+> -			       meta->compress_workmem);
+> +	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
+>  	if (!is_partial_io(bvec)) {
+>  		kunmap_atomic(user_mem);
+>  		user_mem = NULL;
+>  		uncmem = NULL;
+>  	}
+>  
+> -	if (unlikely(ret != LZO_E_OK)) {
+> +	if (unlikely(ret)) {
+>  		pr_err("Compression failed! err=%d\n", ret);
+>  		goto out;
+>  	}
+> -
+> +	src = zstrm->buffer;
+>  	if (unlikely(clen > max_zpage_size)) {
+>  		clen = PAGE_SIZE;
+>  		src = NULL;
+
+Do we need this line? src = NULL?
+
+> @@ -457,6 +435,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		memcpy(cmem, src, clen);
+>  	}
+>  
+> +	zcomp_strm_put(zram->comp, zstrm);
+> +	locked = false;
+>  	zs_unmap_object(meta->mem_pool, handle);
+>  
+>  	/*
+> @@ -475,10 +455,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	atomic64_inc(&zram->stats.pages_stored);
+>  out:
+>  	if (locked)
+> -		mutex_unlock(&meta->buffer_lock);
+> +		zcomp_strm_put(zram->comp, zstrm);
+>  	if (is_partial_io(bvec))
+>  		kfree(uncmem);
+> -
+
+Unnecessary new line
+
+>  	if (ret)
+>  		atomic64_inc(&zram->stats.failed_writes);
+>  	return ret;
+> @@ -522,6 +501,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  		zs_free(meta->mem_pool, handle);
+>  	}
+>  
+> +	zcomp_destroy(zram->comp);
+> +	zram->comp = NULL;
+
+Just a nitpick:
+Do we need to reset zram->comp to NULL?
+
+> +
+>  	zram_meta_free(zram->meta);
+>  	zram->meta = NULL;
+>  	/* Reset stats */
+> @@ -550,9 +532,18 @@ static ssize_t disksize_store(struct device *dev,
+>  		return -EBUSY;
+>  	}
+>  
+> +	zram->comp = zcomp_create(default_compressor);
+> +	if (!zram->comp) {
+> +		up_write(&zram->init_lock);
+> +		pr_info("Cannot initialise compressing backend\n");
+
+Pz, add compressor name in info.
+
+Okay, Now we have only lzo so anyone doesn't confuse but I'm afraid
+that we forget to fix this when we add new compressor. :(
+
+> +		return -EINVAL;
+> +	}
+> +
+>  	disksize = PAGE_ALIGN(disksize);
+>  	zram->meta = zram_meta_alloc(disksize);
+>  	if (!zram->meta) {
+> +		zcomp_destroy(zram->comp);
+> +		zram->comp = NULL;
+
+I'd like to know why we need to reset zram->comp to NULL.
+Do you have in a mind?
+
+>  		up_write(&zram->init_lock);
+>  		return -ENOMEM;
+>  	}
+> @@ -790,6 +781,7 @@ static int create_device(struct zram *zram, int device_id)
+>  	}
+>  
+>  	zram->meta = NULL;
+> +	zram->comp = NULL;
+
+Ditto.
+
+>  	return 0;
+>  
+>  out_free_disk:
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 1d5b1f5..45e04f7 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -16,9 +16,10 @@
+>  #define _ZRAM_DRV_H_
+>  
+>  #include <linux/spinlock.h>
+> -#include <linux/mutex.h>
+>  #include <linux/zsmalloc.h>
+>  
+> +#include "zcomp.h"
+> +
+>  /*
+>   * Some arbitrary value. This is just to catch
+>   * invalid value for num_devices module parameter.
+> @@ -81,17 +82,16 @@ struct zram_stats {
+>  
+>  struct zram_meta {
+>  	rwlock_t tb_lock;	/* protect table */
+> -	void *compress_workmem;
+> -	void *compress_buffer;
+>  	struct table *table;
+>  	struct zs_pool *mem_pool;
+> -	struct mutex buffer_lock; /* protect compress buffers */
+>  };
+>  
+>  struct zram {
+>  	struct zram_meta *meta;
+>  	struct request_queue *queue;
+>  	struct gendisk *disk;
+> +	struct zcomp *comp;
+> +
+>  	/* Prevent concurrent execution of device init, reset and R/W request */
+>  	struct rw_semaphore init_lock;
+>  	/*
+> -- 
+
+Other than that,
+Acked-by: Minchan Kim <minchan@kernel.org>
+
+-- 
+Kind regards,
+Minchan Kim
