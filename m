@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaBXFNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:13:14 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64673 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaBXFNK (ORCPT
+	id S1752491AbaBXFNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:13:22 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:65139 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316AbaBXFNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:13:10 -0500
+	Mon, 24 Feb 2014 00:13:17 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com
-Subject: [PATCH 04/10] sched: unify imbalance bias for target group
-Date: Mon, 24 Feb 2014 13:12:19 +0800
-Message-Id: <1393218745-8795-5-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 05/10] sched: rewrite update_cpu_load_nohz
+Date: Mon, 24 Feb 2014 13:12:20 +0800
+Message-Id: <1393218745-8795-6-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1393218745-8795-1-git-send-email-alex.shi@linaro.org>
 References: <1393218745-8795-1-git-send-email-alex.shi@linaro.org>
@@ -27,131 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Old code considers the bias in source/target_load already. but still
-use imbalance_pct as last check in idlest/busiest group finding. It is
-also a kind of redundant job. If we bias imbalance in source/target_load,
-we'd better not use imbalance_pct again.
-
-After cpu_load array removed, it is nice time to unify the target bias
-consideration. So I remove the imbalance_pct from last check and add the
-live bias using.
-
-On wake_affine, since all archs' wake_idx is 0, current logical is just
-want to prefer current cpu. so we follows this logical. Just renaming the
-target_load/source_load to wegithed_cpuload for more exact meaning.
-Thanks for reminding from Morten!
+After change to sched_avg, the cpu load in idle exit was decayed.
+So, it maybe near zero if waking a long time sleep task, or, a full
+non-decay load if waking a new forked task. Then, we can use it to
+reflect the cpu load, don't need to pretend 0.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- kernel/sched/fair.c | 32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
+ kernel/sched/proc.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index eeffe75..5a3ea72 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1016,7 +1016,7 @@ bool should_numa_migrate_memory(struct task_struct *p, struct page * page,
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index 057bb9b..383c4ba 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -461,28 +461,13 @@ void update_idle_cpu_load(struct rq *this_rq)
+ }
  
- static unsigned long weighted_cpuload(const int cpu);
- static unsigned long source_load(int cpu);
--static unsigned long target_load(int cpu);
-+static unsigned long target_load(int cpu, int imbalance_pct);
- static unsigned long power_of(int cpu);
- static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
- 
-@@ -3967,7 +3967,7 @@ static unsigned long source_load(int cpu)
-  * Return a high guess at the load of a migration-target cpu weighted
-  * according to the scheduling class and "nice" value.
+ /*
+- * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
++ * Called from tick_nohz_idle_exit()
   */
--static unsigned long target_load(int cpu)
-+static unsigned long target_load(int cpu, int imbalance_pct)
+ void update_cpu_load_nohz(void)
  {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long total = weighted_cpuload(cpu);
-@@ -3975,6 +3975,11 @@ static unsigned long target_load(int cpu)
- 	if (!sched_feat(LB_BIAS))
- 		return total;
+ 	struct rq *this_rq = this_rq();
+-	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+-	unsigned long pending_updates;
+-
+-	if (curr_jiffies == this_rq->last_load_update_tick)
+-		return;
  
-+	/*
-+	 * Bias target load with imbalance_pct.
-+	 */
-+	total = total * imbalance_pct / 100;
-+
- 	return max(rq->cpu_load, total);
- }
- 
-@@ -4190,8 +4195,8 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
--	load	  = source_load(prev_cpu);
--	this_load = target_load(this_cpu);
-+	load	  = weighted_cpuload(prev_cpu);
-+	this_load = weighted_cpuload(this_cpu);
- 
- 	/*
- 	 * If sync wakeup then subtract the (maximum possible)
-@@ -4247,7 +4252,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 
- 	if (balanced ||
- 	    (this_load <= load &&
--	     this_load + target_load(prev_cpu) <= tl_per_task)) {
-+		     this_load + weighted_cpuload(prev_cpu) <= tl_per_task)) {
- 		/*
- 		 * This domain has SD_WAKE_AFFINE and
- 		 * p is cache cold in this domain, and
-@@ -4293,7 +4298,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
- 			if (local_group)
- 				load = source_load(i);
- 			else
--				load = target_load(i);
-+				load = target_load(i, imbalance);
- 
- 			avg_load += load;
- 		}
-@@ -4309,7 +4314,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
- 		}
- 	} while (group = group->next, group != sd->groups);
- 
--	if (!idlest || 100*this_load < imbalance*min_load)
-+	if (!idlest || this_load < min_load)
- 		return NULL;
- 	return idlest;
- }
-@@ -5745,6 +5750,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- {
- 	unsigned long load;
- 	int i;
-+	int bias = 100 + (env->sd->imbalance_pct - 100) / 2;
- 
- 	memset(sgs, 0, sizeof(*sgs));
- 
-@@ -5752,8 +5758,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		struct rq *rq = cpu_rq(i);
- 
- 		/* Bias balancing toward cpus of our domain */
--		if (local_group)
--			load = target_load(i);
-+		if (local_group && env->idle != CPU_IDLE)
-+			load = target_load(i, bias);
- 		else
- 			load = source_load(i);
- 
-@@ -6193,14 +6199,6 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
- 		if ((local->idle_cpus < busiest->idle_cpus) &&
- 		    busiest->sum_nr_running <= busiest->group_weight)
- 			goto out_balanced;
--	} else {
+-	raw_spin_lock(&this_rq->lock);
+-	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+-	if (pending_updates) {
+-		this_rq->last_load_update_tick = curr_jiffies;
 -		/*
--		 * In the CPU_NEWLY_IDLE, CPU_NOT_IDLE cases, use
--		 * imbalance_pct to be conservative.
+-		 * We were idle, this means load 0, the current load might be
+-		 * !0 due to remote wakeups and the sort.
 -		 */
--		if (100 * busiest->avg_load <=
--				env->sd->imbalance_pct * local->avg_load)
--			goto out_balanced;
- 	}
+-		__update_cpu_load(this_rq, 0);
+-	}
+-	raw_spin_unlock(&this_rq->lock);
++	update_idle_cpu_load(this_rq);
+ }
+ #endif /* CONFIG_NO_HZ */
  
- force_balance:
 -- 
 1.8.1.2
 
