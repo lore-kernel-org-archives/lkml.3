@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaBXInY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:43:24 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:40325 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982AbaBXInO (ORCPT
+	id S1752952AbaBXIqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:46:03 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:44179 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaBXInX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:43:14 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] ARM: dove: add global-config register node
-Date: Mon, 24 Feb 2014 09:42:56 +0100
-Message-Id: <1393231382-11078-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 24 Feb 2014 03:43:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <a7536f7b5a03fe287aaf1974db74ba64.squirrel@www.codeaurora.org>
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
+	<530AF7E4.5080806@linux.vnet.ibm.com>
+	<CAKohpok-8_JV8hRDiWnRLYqEqyvD60cyn5Hs1HcZTSEPZjLvOQ@mail.gmail.com>
+	<a7536f7b5a03fe287aaf1974db74ba64.squirrel@www.codeaurora.org>
+Date: Mon, 24 Feb 2014 14:13:22 +0530
+Message-ID: <CAKohpomRqboKjHRF8ev9erJ6MdRWcsX2jO7A=g47gMmewm_ZiQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We share global config registers by syscon node, add it to dove.dtsi.
+On 24 February 2014 14:11,  <skannan@codeaurora.org> wrote:
+> I just replied to the other email. I think I answered both your questions
+> there. Sorry about mixing up CPU and policy. In my case, each CPU is
+> independently scalable -- so for now take CPU == policy. I'll fix it up
+> once we agree on the fix.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/dove.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+But why do you say this then?
 
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index c5e90f0287b9..eeb08edb67ac 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -616,6 +616,12 @@
- 				interrupts = <5>;
- 			};
- 
-+			gconf: global-config@e802c {
-+				compatible = "marvell,dove-global-config",
-+				             "syscon";
-+				reg = <0xe802c 0x14>;
-+			};
-+
- 			gpio2: gpio-ctrl@e8400 {
- 				compatible = "marvell,orion-gpio";
- 				#gpio-cells = <2>;
--- 
-1.8.5.3
-
+>>> In this specific case, CPU0 set's CPU1's policy->governor in
+>>> cpufreq_init_policy() to NULL while CPU1 is using the policy->governor
+>>> in __cpufreq_governor().
