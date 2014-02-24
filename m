@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaBXUd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 15:33:59 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:55302 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655AbaBXUd5 (ORCPT
+	id S1753156AbaBXUhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 15:37:51 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:36147 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649AbaBXUhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 15:33:57 -0500
+	Mon, 24 Feb 2014 15:37:50 -0500
+Date: Mon, 24 Feb 2014 21:37:45 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jens Axboe <axboe@fb.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jan Kara <jack@suse.cz>, Don Zickus <dzickus@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 00/11] smp: Single IPI cleanups v2
+Message-ID: <20140224203743.GF14009@localhost.localdomain>
+References: <1393256402-16907-1-git-send-email-fweisbec@gmail.com>
+ <530B7F75.1050600@fb.com>
 MIME-Version: 1.0
-In-Reply-To: <1393266120.8041.19.camel@dcbw.local>
-References: <1392433180-16052-1-git-send-email-mcgrof@do-not-panic.com>
- <1392433180-16052-3-git-send-email-mcgrof@do-not-panic.com>
- <1392668638.21106.5.camel@dcbw.local> <CAB=NE6XGBp1RwO63W0ac6tTr9JcRM9TB9sap4pa+8PMWwjxu6g@mail.gmail.com>
- <1392828325.21976.6.camel@dcbw.local> <CAB=NE6VpUqwNNY4pgbS6du2VsZ6dH0TzQYXmiw6GGN-EiOsV6g@mail.gmail.com>
- <1392857777.22693.14.camel@dcbw.local> <CAB=NE6Xvqcdje5OSxjzTRa3wv-vZHr+MJHY86ZCfFXU2Lpzi8Q@mail.gmail.com>
- <1393266120.8041.19.camel@dcbw.local>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 24 Feb 2014 12:33:35 -0800
-X-Google-Sender-Auth: TUN7TrnKUkqBii9Sr230e-SNypY
-Message-ID: <CAB=NE6Uf63XAAi_Sy5iSy2sjfNdWd9QsPECMBVBrUX9z4_L5-g@mail.gmail.com>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-To: Dan Williams <dcbw@redhat.com>
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530B7F75.1050600@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:22 AM, Dan Williams <dcbw@redhat.com> wrote:
-> My use-case would simply be to have an analogue for the disable_ipv6
-> case.  In the future I expect more people will want to disable IPv4 as
-> they move to IPv6.  If you don't have something like disable_ipv4, then
-> there's no way to ensure that some random program or something doesn't
-> set up IPv4 stuff that you don't want.
->
-> Same thing for IPv6; some people really don't want IPv6 enabled on an
-> interface no matter what; they don't want an IPv6LL address assigned,
-> they don't want kernel SLAAC, they want to ensure that *nothing*
-> IPv6-related gets done for that interface.  The same can be true for
-> IPv4, but we don't have a way of doing that right now.
+On Mon, Feb 24, 2014 at 09:20:53AM -0800, Jens Axboe wrote:
+> On 2014-02-24 07:39, Frederic Weisbecker wrote:
+> >Hi,
+> >
+> >This version includes:
+> >
+> >* Rename __smp_call_function_single to smp_call_function_single() as
+> >   suggested by Christoph.
+> >
+> >* Acks and reviewed-by added.
+> >
+> >* Rebase against -rc4
+> >
+> >Thanks.
+> 
+> I'd be happy to take this in, as it's mostly centered around the blk
+> cleanups.
 
-I'll add this to my queue.
+I initially planned to push this tree to Ingo because I have some nohz patches
+that will depend on this set.
 
-  Luis
+But there is indeed quite some block changes there. So I should let these go
+through your tree to avoid bad conflicts. If you never rebase your tree I can
+work on top if it.
+
+Thanks!
