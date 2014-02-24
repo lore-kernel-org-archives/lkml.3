@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999AbaBXShZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:37:25 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:65139 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaBXShY (ORCPT
+	id S1752545AbaBXSks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:40:48 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:40274 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867AbaBXSkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:37:24 -0500
-X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 13:37:24 EST
-Date: Mon, 24 Feb 2014 13:29:36 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Christian Daudt <bcm@fixthebug.org>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Sherman Yin <syin@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        arm@kernel.org
-Subject: Re: [GIT PULL] bcm pinctrl rename
-Message-ID: <20140224182936.GU5038@beef>
-References: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
- <20140221222947.GB13233@quad.lixom.net>
- <CAEPRUYqnGwRCzGPP8ouEguj8gWrJKic7XyNHu+B_aJ=K0=MZYg@mail.gmail.com>
-MIME-Version: 1.0
+	Mon, 24 Feb 2014 13:40:47 -0500
+Date: Mon, 24 Feb 2014 14:39:39 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Paul Bolle <pebolle@tiscali.nl>, phcoder@gmail.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        xen-devel@lists.xenproject.org, Thomas Gleixner <tglx@linutronix.de>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen: remove XEN_PRIVILEGED_GUEST
+Message-ID: <20140224183939.GA26794@andromeda.dapyr.net>
+References: <201402171223.s1HCNG0S023567@userz7022.oracle.com> <1392642197.13000.20.camel@x220> <20140217144307.GB28658@localhost.localdomain> <1392718467.30073.12.camel@x220>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAEPRUYqnGwRCzGPP8ouEguj8gWrJKic7XyNHu+B_aJ=K0=MZYg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392718467.30073.12.camel@x220>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 09:32:47AM -0800, Christian Daudt wrote:
-> On Fri, Feb 21, 2014 at 2:29 PM, Olof Johansson <olof@lixom.net> wrote:
-> > On Wed, Feb 12, 2014 at 09:20:13AM -0800, Christian Daudt wrote:
-> >> The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
-> >>
-> >>   Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   git://github.com/broadcom/bcm11351.git tags/bcm-for-3.14-pinctrl-rename
-> >>
-> >> for you to fetch changes up to f5310a1712b68c7f83539fce6ebbfb6f0f510f5b:
-> >>
-> >>   Update dtsi with new pinctrl compatible string (2014-02-12 09:06:53 -0800)
-> >>
-> >> ----------------------------------------------------------------
-> >> Renaming pinctrl code to keep in line with rest of bcm mobile
-> >>
-> >> Given that this driver has been in the works for a while, it
-> >> was written prior to the code standardizing on bcm-based naming.
-> >> this patchset brings it in line with the remainder of the code.
-> >>
-> >> ----------------------------------------------------------------
-> >> Sherman Yin (4):
-> >>       pinctrl: Rename Broadcom Capri pinctrl binding
-> >>       pinctrl: Rename Broadcom Capri pinctrl driver
-> >>       Update bcm_defconfig with new pinctrl CONFIG
-> >>       Update dtsi with new pinctrl compatible string
-> >
-> > Hi,
-> >
-> > (As per irc discussion). The rename isn't the right thing to do at this
-> > time in the release, but the binding needs to be tweaked before it ships
-> > in a full release, or we'll always need to live with it.
-> >
-> > So, I'll be happy to take the bindings piece and the dtsi piece (and the
-> > small edit to the driver to change the compatible string match table),
-> > but the file rename and Kconfig entry edit is 3.15 material.
-> >
-> > Please send new pull request with just that (or, if you prefer, just send the
-> > patches and we can apply them too).
-> >
-> >
-> > -Olof
+On Tue, Feb 18, 2014 at 11:14:27AM +0100, Paul Bolle wrote:
+> On Mon, 2014-02-17 at 09:43 -0500, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Feb 17, 2014 at 02:03:17PM +0100, Paul Bolle wrote:
+> > > On Mon, 2014-02-17 at 07:23 -0500, Konrad Rzeszutek Wilk wrote:
+> > > > On Feb 16, 2014 3:07 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > > > Please look in the grub git tree. They have fixed their code to not do
+> > > > this anymore. This should be reflected in the patch description.
+> > > 
+> > > Thanks, I didn't know that. That turned out to be grub commit
+> > > ec824e0f2a399ce2ab3a2e3353d372a236595059 ("Implement grub_file tool and
+> > > use it to implement generating of config"), see
+> > > http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=ec824e0f2a399ce2ab3a2e3353d372a236595059
 > 
-> Ok, I have this ready to go, just need an ack for this patch (which
-> will replace "pinctrl: Rename Broadcom Capri pinctrl driver"):
-> Subject: [PATCH] pinctrl: refer to updated dt binding string.
+> And that commit was reverted a week later in grub commit
+> faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 ("Revert grub-file usage in
+> grub-mkconfig."), see
+> http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 .
 > 
-> Bring the driver in line with the bcm-based dt name for pinctrl.
-> This is being done to keep consistency with other Broadcom mobile
-> SoC drivers.
-> 
-> Signed-off-by: Christian Daudt <bcm@fixthebug.org>
-> 
-> diff --git a/drivers/pinctrl/pinctrl-capri.c b/drivers/pinctrl/pinctrl-capri.c
-> index 4669c53..eb25002 100644
-> --- a/drivers/pinctrl/pinctrl-capri.c
-> +++ b/drivers/pinctrl/pinctrl-capri.c
-> @@ -1435,7 +1435,7 @@ int __init capri_pinctrl_probe(struct
-> platform_device *pdev)
->  }
-> 
->  static struct of_device_id capri_pinctrl_of_match[] = {
-> -       { .compatible = "brcm,capri-pinctrl", },
-> +       { .compatible = "brcm,bcm11351-pinctrl", },
->         { },
->  };
+> That commit has no explanation (other than its one line summary). So
+> we're left guessing why this was done. Luckily, it doesn't matter here,
+> because the test for CONFIG_XEN_PRIVILEGED_GUEST is superfluous.
 
+How about we ask Vladimir?
 
-Looks good. Does the binding rename patch stay as is?
+Vladimir - could you shed some light on it? Thanks!
 
-Reviewed-by: Matt Porter <mporter@linaro.org>
+> 
+> Anyhow, I hope to submit a second version of this patch later this day.
+> 
+> 
+> Paul Bolle
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
