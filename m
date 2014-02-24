@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaBXV23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 16:28:29 -0500
-Received: from smtprelay0134.hostedemail.com ([216.40.44.134]:54422 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751514AbaBXV22 (ORCPT
+	id S1752539AbaBXVbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 16:31:35 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54244 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXVbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 16:28:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3873:3874:4078:4081:4250:4321:5007:6119:7652:7903:9010:10004:10400:10848:11026:11232:11473:11658:11914:12043:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shape72_2c85321abd645
-X-Filterd-Recvd-Size: 2165
-Message-ID: <1393277304.11020.64.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-From: Joe Perches <joe@perches.com>
+	Mon, 24 Feb 2014 16:31:34 -0500
+Date: Mon, 24 Feb 2014 13:31:28 -0800
+From: josh@joshtriplett.org
 To: Tom Rini <trini@ti.com>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Date: Mon, 24 Feb 2014 13:28:24 -0800
-In-Reply-To: <530BB571.8080509@ti.com>
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
+Message-ID: <20140224213128.GB12233@cloud>
 References: <1393274296-26179-1-git-send-email-trini@ti.com>
-	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393274296-26179-1-git-send-email-trini@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 16:11 -0500, Tom Rini wrote:
-> On 02/24/2014 04:00 PM, Joe Perches wrote:
-> > On Mon, 2014-02-24 at 15:38 -0500, Tom Rini wrote:
-> >> While there are valid reasons to use __packed, often the answer is that
-> >> you should be doing something else here instead.
-[]
-> > How often is this actually a problem?
+On Mon, Feb 24, 2014 at 03:38:16PM -0500, Tom Rini wrote:
+> While there are valid reasons to use __packed, often the answer is that
+> you should be doing something else here instead.
 > 
-> I think the first line answers the second one, honestly.  If one wants
-> to get pedantic about things and really investigate there's probably
-> some unneeded usages scattered about, and that's generally the type of
-> thing one wants to address when checking whole files, right?
-
-Maybe not.
-
-That entirely depends on the correct and necessary uses of
-packed vs the incorrect usage rates.
-
-I think almost all packed uses are correct and there might
-be a lot of patches submitted to remove them by over-zealous
-advocates of checkpatch -f.
-
-> > This may be better as
-> > 	"Using 'packed' can impact performance\n"
-> > and only tested when not in --file mode.
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Tom Rini <trini@ti.com>
+> ---
+>  scripts/checkpatch.pl |    5 +++++
+>  1 file changed, 5 insertions(+)
 > 
-> I can also make this change, sure, just point me off-list for an example
-> to crib from and test?
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 0ea2a1e..fef3b13 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -4010,6 +4010,11 @@ sub process {
+>  			WARN("PREFER_PACKED",
+>  			     "__packed is preferred over __attribute__((packed))\n" . $herecurr);
+>  		}
+> +# Check for new packed usage, warn to use care
+> +		if ($line =~ /\b(__attribute__\s*\(\s*\(.*\bpacked|__packed)\b/) {
+> +			WARN("NEW_PACKED",
+> +			     "Adding new packed members is to be done with care\n" . $herecurr);
+> +		}
 
-Look at the FSF mailing address test as an example:
+This seems wrong; "is to be done with care" is the very definition of a
+false positive.  At *best* this should always be CHK, and even then it
+seems excessive.
 
-			my $msg_type = \&ERROR;
-			$msg_type = \&CHK if ($file);
-			&{$msg_type}("FSF_MAILING_ADDRESS",
-
-
-
+- Josh Triplett
