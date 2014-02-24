@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaBXNCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:02:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58059 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722AbaBXNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:02:08 -0500
-Date: Mon, 24 Feb 2014 14:02:05 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Felipe Balbi <balbi@ti.com>, Grant Edwards <grant.b.edwards@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, stable@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix low_latency BUG
-Message-ID: <20140224130205.GD16073@suse.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Peter Hurley <peter@hurleysoftware.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-	Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
-	linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-	Felipe Balbi <balbi@ti.com>,
-	Grant Edwards <grant.b.edwards@gmail.com>,
-	Stanislaw Gruszka <sgruszka@redhat.com>,
-	Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-	Alan Cox <gnomes@lxorguk.ukuu.org.uk>, stable@vger.kernel.org
-References: <1393072281-5814-1-git-send-email-peter@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752521AbaBXNID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:08:03 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:54187 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163AbaBXNIB convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 24 Feb 2014 08:08:01 -0500
+Message-Id: <530B523C020000780011EC49@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 24 Feb 2014 13:07:56 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Borkmann" <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: <davem@davemloft.net>, <mingo@elte.hu>, <tglx@linutronix.de>,
+        <ffusco@redhat.com>, <tgraf@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] x86/hash: swap parameters of crc32_u32()
+References: <53073986020000780011E2E1@nat28.tlf.novell.com>
+ <5308938A.8070506@redhat.com>
+ <530B0AF2020000780011E97B@nat28.tlf.novell.com>
+ <530B1D60.8010602@redhat.com>
+ <530B32A4020000780011EACB@nat28.tlf.novell.com>
+ <530B3102.4050102@redhat.com> <530B3BDB.3010908@zytor.com>
+ <530B4C0C020000780011EC0D@nat28.tlf.novell.com> <530B4058.80705@zytor.com>
+ <530B429C.2090507@zytor.com>
+In-Reply-To: <530B429C.2090507@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1393072281-5814-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 22, 2014 at 07:31:21AM -0500, Peter Hurley wrote:
-> --- a/drivers/tty/ipwireless/tty.c
-> +++ b/drivers/tty/ipwireless/tty.c
-> @@ -176,9 +176,6 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
->  				": %d chars not inserted to flip buffer!\n",
->  				length - work);
->  
-> -	/*
-> -	 * This may sleep if ->low_latency is set
-> -	 */
+>>> On 24.02.14 at 14:01, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> I never expected that the CRC32 operation would be commutative.  Very 
+> fascinating.
 
-This is a no-op change for the ipwireless driver itself, nevertheless
-here goes the maintainer's
+Neither did I, which is why I was very surprised for Daniel to say that
+things worked with the apparently wrong order.
 
-Acked-by: David Sterba <dsterba@suse.cz>
-
->  	if (work)
->  		tty_flip_buffer_push(&tty->port);
->  }
+Jan
 
