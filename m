@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaBXIAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:00:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12094 "EHLO mx1.redhat.com"
+	id S1753154AbaBXIR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:17:58 -0500
+Received: from sauhun.de ([89.238.76.85]:38248 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaBXIAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:00:47 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 02/23] bfa: Do not call pci_enable_msix() after it failed once
-Date: Mon, 24 Feb 2014 09:02:02 +0100
-Message-Id: <e19ade23db801b0b4310947ad2aeb3350bc1aab5.1393191330.git.agordeev@redhat.com>
-In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
-References: <cover.1393191330.git.agordeev@redhat.com>
+	id S1752585AbaBXIR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:17:57 -0500
+Date: Mon, 24 Feb 2014 09:17:54 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        kbuild-all@01.org, daniel.lezcano@linaro.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH] avr32: remove cpu_data macro to fix compiles
+Message-ID: <20140224081754.GA2617@katana>
+References: <53060d5d.XcmAdOiLt1MCo6Y5%fengguang.wu@intel.com>
+ <1393057709-17925-1-git-send-email-wsa@the-dreams.de>
+ <20140224072820.GA9069@samfundet.no>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <20140224072820.GA9069@samfundet.no>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function pci_enable_msix() should not be called in case
-it threw a negative errno from a previous call.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Anil Gurumurthy <agurumur@brocade.com>
-Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/bfa/bfad.c |   48 ++++++++++++++++++++++------------------------
- 1 files changed, 23 insertions(+), 25 deletions(-)
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index cc0fbcd..972ff8d 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1235,33 +1235,31 @@ bfad_setup_intr(struct bfad_s *bfad)
- 	   (bfa_asic_id_cb(pdev->device) && !msix_disable_cb)) {
- 
- 		error = pci_enable_msix(bfad->pcidev, msix_entries, bfad->nvec);
--		if (error) {
--			/* In CT1 & CT2, try to allocate just one vector */
--			if (bfa_asic_id_ctc(pdev->device)) {
--				printk(KERN_WARNING "bfa %s: trying one msix "
--				       "vector failed to allocate %d[%d]\n",
--				       bfad->pci_name, bfad->nvec, error);
--				bfad->nvec = 1;
--				error = pci_enable_msix(bfad->pcidev,
-+		/* In CT1 & CT2, try to allocate just one vector */
-+		if (error > 0 && bfa_asic_id_ctc(pdev->device)) {
-+			printk(KERN_WARNING "bfa %s: trying one msix "
-+			       "vector failed to allocate %d[%d]\n",
-+			       bfad->pci_name, bfad->nvec, error);
-+			bfad->nvec = 1;
-+			error = pci_enable_msix(bfad->pcidev,
- 						msix_entries, bfad->nvec);
--			}
-+		}
- 
--			/*
--			 * Only error number of vector is available.
--			 * We don't have a mechanism to map multiple
--			 * interrupts into one vector, so even if we
--			 * can try to request less vectors, we don't
--			 * know how to associate interrupt events to
--			 *  vectors. Linux doesn't duplicate vectors
--			 * in the MSIX table for this case.
--			 */
--			if (error) {
--				printk(KERN_WARNING "bfad%d: "
--				       "pci_enable_msix failed (%d), "
--				       "use line based.\n",
--					bfad->inst_no, error);
--				goto line_based;
--			}
-+		/*
-+		 * Only error number of vector is available.
-+		 * We don't have a mechanism to map multiple
-+		 * interrupts into one vector, so even if we
-+		 * can try to request less vectors, we don't
-+		 * know how to associate interrupt events to
-+		 *  vectors. Linux doesn't duplicate vectors
-+		 * in the MSIX table for this case.
-+		 */
-+		if (error) {
-+			printk(KERN_WARNING "bfad%d: "
-+			       "pci_enable_msix failed (%d), "
-+			       "use line based.\n",
-+				bfad->inst_no, error);
-+			goto line_based;
- 		}
- 
- 		/* Disable INTX in MSI-X mode */
--- 
-1.7.7.6
+On Mon, Feb 24, 2014 at 08:28:20AM +0100, Hans-Christian Egtvedt wrote:
+> Around Sat 22 Feb 2014 09:28:27 +0100 or thereabout, Wolfram Sang wrote:
+> > Having cpu_data as a parameterless macro can easily cause build failures
+> > because it can be a variable name like in linux/pm_domain.h [1]. So,
+> > remove the macro and convert its only user. Because this architecture
+> > cannot do SMP, remove the whole SMP block, too. Only compile tested due
+> > to no hardware.
+>=20
+> Looks sane, AVR32 doesn't support SMP, so this change should be fine.
 
+Great!
+
+> > [1] https://lists.01.org/pipermail/kbuild-all/2014-February/003252.html
+> >
+>=20
+> clockevents/3.15 branch, mens what you have queued up for 3.15?
+
+Daniel has picked up changes from me for 3.15, yes. Because those
+contain COMPILE_TEST this build failure was triggered.
+
+> I can queue this in my linux-next, and send Linus an early pull request t=
+he
+> moment 3.14 is released.
+
+That would be the best solution IMO. Thanks!
+
+All the best,
+
+   Wolfram
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCwAyAAoJEBQN5MwUoCm2AMUQAJB0tQDGvXL5XlQJocYsWtlg
+NnsgohYPA05tpUsHxXEflpVMY2GdTHLvKD4gxgHqKGDZAZXtQxh94dBeQackiAI2
+vwZdJafgrV/6DP4UqPCBNsMFg/N86J0nyd5ul9MxmD0JqtX9mAdv5hr3agzR2xiT
+MkPgNQxoKZd/b24tm7/P9WdZv1aViX+wiBZEbikyuQXZC22Vz+0OMHH4DaapilzT
+m7gLxyVimZwezSwuqQMus1D6O+XAt5ramxQmn/wlCzpE8OElp2/bFeICKGtlGi5T
+ae7eR5QyNzG7GNrft4Gj0D4pNtqikeNUrRKSqC1+NPHtqVxTghK7OojrZZvLqEiS
+ebd7R13AhLIIXqWls8JyhSa2+N6nT15ALjd23JyjbYj1NRgjdhBFW7WuhitE1dX4
+ohloeWyqeI0rwrdmGbkd8D9h04mSeXVN012qSxDeYxs6Mvm2rnkOyLUm2HKRVBQa
+1GKKQzoF01Md1M2VmvIw+p6PZjN3n2/4rON9bMOtVK5ejU5NVmfAVZv+PCuG58Rf
+asmBDb+eE/MqSr9EPmv9imEuXnJkQ7PQG1jqFzES69AuEnBkaa62XPPuE+n32T8/
+LrmG2Oe/LpnpOYA/OCOuKvCiRz+GPUq3z9e39iPIGoBHmM1i1QMc2W0IzaFZA27F
+HqapgJB/93/Rq8qiroGB
+=ya8S
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
