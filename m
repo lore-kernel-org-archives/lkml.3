@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaBXDVx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 22:21:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472AbaBXDVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 22:21:52 -0500
-Date: Mon, 24 Feb 2014 11:22:05 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>
-Subject: Re: [PATCH] kexec: Fix ->unuseable_pages typo
-Message-ID: <20140224032204.GC4043@dhcp-16-126.nay.redhat.com>
-References: <1392819695-24116-1-git-send-email-bp@alien8.de>
+	id S1752415AbaBXDYW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 22:24:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39740 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaBXDYV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 22:24:21 -0500
+Message-ID: <530ABB44.5000601@oracle.com>
+Date: Sun, 23 Feb 2014 22:23:48 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392819695-24116-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael wang <wangyun@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: hang in migrate_swap
+References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com>
+In-Reply-To: <53080122.609@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/14 at 03:21pm, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Let's use the more common "unusable".
-> 
-> Cc: Eric Biederman <ebiederm@xmission.com>
-> Cc: kexec@lists.infradead.org
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  include/linux/kexec.h | 2 +-
->  kernel/kexec.c        | 6 +++---
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index 6d4066cdb5b5..969237e338d1 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -100,7 +100,7 @@ struct kimage {
->  
->  	struct list_head control_pages;
->  	struct list_head dest_pages;
-> -	struct list_head unuseable_pages;
-> +	struct list_head unusable_pages;
->  
->  	/* Address of next control page to allocate for crash kernels. */
->  	unsigned long control_page;
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 60bafbed06ab..a2d0c5f80bf2 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -152,7 +152,7 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
->  	INIT_LIST_HEAD(&image->dest_pages);
->  
->  	/* Initialize the list of unusable pages */
-> -	INIT_LIST_HEAD(&image->unuseable_pages);
-> +	INIT_LIST_HEAD(&image->unusable_pages);
->  
->  	/* Read in the segments */
->  	image->nr_segments = nr_segments;
-> @@ -607,7 +607,7 @@ static void kimage_free_extra_pages(struct kimage *image)
->  	kimage_free_page_list(&image->dest_pages);
->  
->  	/* Walk through and free any unusable pages I have cached */
-> -	kimage_free_page_list(&image->unuseable_pages);
-> +	kimage_free_page_list(&image->unusable_pages);
->  
->  }
->  static void kimage_terminate(struct kimage *image)
-> @@ -731,7 +731,7 @@ static struct page *kimage_alloc_page(struct kimage *image,
->  		/* If the page cannot be used file it away */
->  		if (page_to_pfn(page) >
->  				(KEXEC_SOURCE_MEMORY_LIMIT >> PAGE_SHIFT)) {
-> -			list_add(&page->lru, &image->unuseable_pages);
-> +			list_add(&page->lru, &image->unusable_pages);
->  			continue;
->  		}
->  		addr = page_to_pfn(page) << PAGE_SHIFT;
+On 02/21/2014 08:45 PM, Michael wang wrote:
+> On 02/22/2014 12:43 AM, Sasha Levin wrote:
+>> On 02/19/2014 11:32 PM, Michael wang wrote:
+>>> On 02/20/2014 02:08 AM, Sasha Levin wrote:
+>>>>> Hi all,
+>>>>>
+>>>>> While fuzzing with trinity inside a KVM tools guest, running latest
+>>>>> -next kernel, I see to hit the following hang quite often.
+>>> Fix for the stuck issue around idle_balance() is now in progress, this
+>>> may caused be the same problem, I suggest we do some retest after these
+>>> patch got merged.
+>>
+>> Could I get a link to the patch please? It's a pain testing other things
+>> with this issue reproducing every time.
+>
+> Please take a try on the latest tip tree, patches has been merged as I
+> saw :)
 
-Acked-by: Dave Young <dyoung@redhat.com>
+Nope, still see it with latest -tip.
 
---
-Thanks
-Dave
+I ran tip's master branch, should I have tried a different one?
+
+
+Thanks,
+sasha
+
