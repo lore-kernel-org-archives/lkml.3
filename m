@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464AbaBXNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:40:25 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39681 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaBXNkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:40:24 -0500
+	id S1752785AbaBXNmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:42:00 -0500
+Received: from imap.thunk.org ([74.207.234.97]:33491 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752399AbaBXNl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 08:41:57 -0500
+Date: Mon, 24 Feb 2014 08:41:50 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
+Subject: Re: SPDX-License-Identifier
+Message-ID: <20140224134150.GB25357@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Michal Simek <monstr@monstr.eu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Felipe Balbi <balbi@ti.com>,
+	Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+	devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
+References: <20140221160442.GA17506@kroah.com>
+ <5307790A.4050806@monstr.eu>
+ <20140221161246.GM31902@saruman.home>
+ <53077C5F.9000407@monstr.eu>
+ <20140221162045.GN31902@saruman.home>
+ <20140221165633.GA5465@kroah.com>
+ <53078C30.7060703@monstr.eu>
+ <20140221175720.GA21660@kroah.com>
+ <20140221190125.GL31047@thunk.org>
+ <530B1B25.5090601@monstr.eu>
 MIME-Version: 1.0
-In-Reply-To: <201402141754.02159.arnd@arndb.de>
-References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
-	<20140213131720.GC3403@lee--X1>
-	<CACRpkdaoqwiy0n-oN0gKqgX_enGXw+BggRQy9yz8eQNyJ3MvsA@mail.gmail.com>
-	<201402141754.02159.arnd@arndb.de>
-Date: Mon, 24 Feb 2014 14:40:23 +0100
-Message-ID: <CACRpkdYTd+x=tEviRxXv6HANscJjWqfeVOhDtpefFmxiuCsVDw@mail.gmail.com>
-Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530B1B25.5090601@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 5:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 14 February 2014, Linus Walleij wrote:
+On Mon, Feb 24, 2014 at 11:12:53AM +0100, Michal Simek wrote:
+> > But of course, I'm not a lawyer, and if your company has is paying for
+> > the development of the driver, the Golden Rule applies (he who has the
+> > Gold, makes the Rules), and each of our respective corporate lawyers
+> > may have different opinions about what might happen if the question
+> > was ever to be adjudicated in court.
+> 
+> Aren't all these points already answered by SPDX project?
+> I believe that they should know how this should be handled properly.
 
->> > I'm happy to do either, but the latter will require an ARM-SoC Ack.
->>
->> OK Olof/Arnd/Kevin: can you ACK this patch for queueing
->> through MFD? It only hits arch/arm/mach-ux500/*
->
-> Sounds good. Great job at cleaning up that stuff!
+The SPDX can not give legal advice; not to you, and not to your
+company.  One lawyer might believe that 
 
-Lee this sounds like an ACK :-)
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ */
 
-Please queue this patch, I will probably avoid doing more
-of this stuff for the next merge window so I think it won't
-collide with anything.
+Might be sufficient.  Others might believe you need to do:
 
-Yours,
-Linus Walleij
+/*
+ * Copyright Ty Coon, 2012.
+ * 
+ * SPDX-License-Identifier: GPL-2.0
+ */
+
+Still others might believe you need at the very least:
+
+/*
+ * Copyright Ty Coon, 2012.
+ * 
+ * All Rights Reserved.
+ *
+ * SPDX-License-Identifier: GPL-2.0
+ */
+
+As far as I know, there is no case law on point about whether or not
+SPDX-License-Identifier has legal significance, or whether the court
+would consider that to be a valid copyright permission statement.  So
+any "answers" made by any lawyer would be guesses.  Of course, an
+guess by a lawyer which is retained by *you* or your company and fully
+informed with the unique parameters of your situation would constitute
+legal advice.  Anything else, including anything any of us could say
+on this mailing list, would be biovating.  :-)
+
+Cheers,
+
+					- Ted
