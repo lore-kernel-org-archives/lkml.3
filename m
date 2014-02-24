@@ -1,102 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaBXHm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 02:42:28 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:64274 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaBXHm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 02:42:26 -0500
-Message-ID: <530AF7DF.1000004@cogentembedded.com>
-Date: Mon, 24 Feb 2014 11:42:23 +0400
-From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>
-CC: SH-Linux <linux-sh@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-gpio <linux-gpio@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH] gpio: gpio-rcar: init at postcore level
-References: <1393173467-12240-1-git-send-email-vladimir.barinov@cogentembedded.com> <CANqRtoSu7HMCkqeefBFdMgEPvVZNDEK8k7=1OHp1wf5GRizBvA@mail.gmail.com>
-In-Reply-To: <CANqRtoSu7HMCkqeefBFdMgEPvVZNDEK8k7=1OHp1wf5GRizBvA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752120AbaBXHnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 02:43:55 -0500
+Received: from mx.mmd.net ([80.83.0.3]:55322 "EHLO mx.mmd.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaBXHny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 02:43:54 -0500
+X-Greylist: delayed 1050 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 02:43:53 EST
+From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+To: linux-pm@vger.kernel.org, rjw@rjwysocki.net
+Cc: daniel.lezcano@linaro.org, tuukka.tikkanen@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/7] Cpuidle: Do not substract exit latency from assumed sleep length
+Date: Mon, 24 Feb 2014 08:29:34 +0200
+Message-Id: <1393223377-5744-5-git-send-email-tuukka.tikkanen@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
+References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+The menu governor statistics update function tries to determine the
+amount of time between entry to low power state and the occurrence
+of the wakeup event. However, the time measured by the framework
+includes exit latency on top of the desired value. This exit latency
+is substracted from the measured value to obtain the desired value.
 
-On 02/24/2014 06:57 AM, Magnus Damm wrote:
-> Hi Vladimir,
->
-> On Mon, Feb 24, 2014 at 1:37 AM,<vladimir.barinov@cogentembedded.com>  wrote:
->> From: Vladimir Barinov<vladimir.barinov@cogentembedded.com>
->>
->> This adds ability to use gpio API at board init_machine level.
->>
->> F.e. it can be used in the following situation.
->> Many reference hardware has onboard switches that selects which periferals
->> to connect to the system. The gpio input state from switches can be used
->> in choosing platform devices runtime in board code instead of ifdefs/defconfig
->> changes.
->>
->> Signed-off-by:<vladimir.barinov@cogentembedded.com>
->>
->> ---
->>   drivers/gpio/gpio-rcar.c |   12 +++++++++++-
->>   1 file changed, 11 insertions(+), 1 deletion(-)
->>
->> Index: build/drivers/gpio/gpio-rcar.c
->> ===================================================================
->> --- build.orig/drivers/gpio/gpio-rcar.c 2014-02-22 23:21:51.456229152 +0400
->> +++ build/drivers/gpio/gpio-rcar.c      2014-02-22 23:21:52.320229133 +0400
->> @@ -485,7 +485,17 @@
->>          }
->>   };
->>
->> -module_platform_driver(gpio_rcar_device_driver);
->> +static int __init gpio_rcar_init(void)
->> +{
->> +       return platform_driver_register(&gpio_rcar_device_driver);
->> +}
->> +postcore_initcall(gpio_rcar_init);
->> +
->> +static void __exit gpio_rcar_exit(void)
->> +{
->> +       platform_driver_unregister(&gpio_rcar_device_driver);
->> +}
->> +module_exit(gpio_rcar_exit);
->>
->>   MODULE_AUTHOR("Magnus Damm");
->>   MODULE_DESCRIPTION("Renesas R-Car GPIO Driver");
-> Hi Vladimir,
->
-> Thanks for your help. Good to see that you are working on enabling the
-> dual role USB port on Koelsch.
->
-> Your current board code is checking some DIP switch value during boot,
-> and that kind of early use of GPIO would require a change in the probe
-> order like this patch implements. I do however believe that we should
-> not implement checking during boot like this.
->
-> If you for instance check the legacy Lager USBHS DIP switch code that
-> runs during driver probe() then that can run can use GPIO without the
-> need for a change like this. So your GPIO user code needs to be
-> adjusted.
-Yes, this is true for USBHS that has platform callbacks like 
-hardware_init/exit.
-But this is not acceptable for other devices like EHCI PCI/PHY and others.
-So we wouldn't be able to do such fixup for other cases.
->
-> So this patch will receive a NAK from me I'm afraid.
->
->
-Thank you for review.
+When measured value is not available, the menu governor assumes
+the wakeup was caused by the timer and the time is equal to remaining
+timer length. No exit latency should be substracted from this value.
 
-Regards,
-Vladimir
+This patch prevents the erroneous substraction and clarifies the
+associated comment. It also removes one intermediate variable that
+serves no purpose.
+
+Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+---
+ drivers/cpuidle/governors/menu.c |   44 ++++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index f0995dd..b347c10 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -387,32 +387,40 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int last_idx = data->last_state_idx;
+-	unsigned int last_idle_us = cpuidle_get_last_residency(dev);
+ 	struct cpuidle_state *target = &drv->states[last_idx];
+ 	unsigned int measured_us;
+ 	unsigned int new_factor;
+ 
+ 	/*
+-	 * Ugh, this idle state doesn't support residency measurements, so we
+-	 * are basically lost in the dark.  As a compromise, assume we slept
+-	 * for the whole expected time.
++	 * Try to figure out how much time passed between entry to low
++	 * power state and occurrence of the wakeup event.
++	 *
++	 * If the entered idle state didn't support residency measurements,
++	 * we are basically lost in the dark how much time passed.
++	 * As a compromise, assume we slept for the whole expected time.
++	 *
++	 * Any measured amount of time will include the exit latency.
++	 * Since we are interested in when the wakeup begun, not when it
++	 * was completed, we must substract the exit latency. However, if
++	 * the measured amount of time is less than the exit latency,
++	 * assume the state was never reached and the exit latency is 0.
+ 	 */
+-	if (unlikely(!(target->flags & CPUIDLE_FLAG_TIME_VALID)))
+-		last_idle_us = data->next_timer_us;
+-
++	if (unlikely(!(target->flags & CPUIDLE_FLAG_TIME_VALID))) {
++		/* Use timer value as is */
++		measured_us = data->next_timer_us;
+ 
+-	measured_us = last_idle_us;
++	} else {
++		/* Use measured value */
++		measured_us = cpuidle_get_last_residency(dev);
+ 
+-	/*
+-	 * We correct for the exit latency; we are assuming here that the
+-	 * exit latency happens after the event that we're interested in.
+-	 */
+-	if (measured_us > target->exit_latency)
+-		measured_us -= target->exit_latency;
++		/* Deduct exit latency */
++		if (measured_us > target->exit_latency)
++			measured_us -= target->exit_latency;
+ 
+-	/* Make sure our coefficients do not exceed unity */
+-	if (measured_us > data->next_timer_us)
+-		measured_us = data->next_timer_us;
++		/* Make sure our coefficients do not exceed unity */
++		if (measured_us > data->next_timer_us)
++			measured_us = data->next_timer_us;
++	}
+ 
+ 	/* Update our correction ratio */
+ 	new_factor = data->correction_factor[data->bucket];
+@@ -439,7 +447,7 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	data->correction_factor[data->bucket] = new_factor;
+ 
+ 	/* update the repeating-pattern data */
+-	data->intervals[data->interval_ptr++] = last_idle_us;
++	data->intervals[data->interval_ptr++] = measured_us;
+ 	if (data->interval_ptr >= INTERVALS)
+ 		data->interval_ptr = 0;
+ }
+-- 
+1.7.9.5
+
