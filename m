@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaBXBff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:35:35 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:36218 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaBXBf3 (ORCPT
+	id S1752108AbaBXBge (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:36:34 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46362 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaBXBgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:35:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140224011651.GC8264@linux.vnet.ibm.com>
-References: <20140220181116.GT4250@linux.vnet.ibm.com>
-	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	<1392922421.28840.36.camel@triegel.csb>
-	<CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
-	<1393095223.28840.4914.camel@triegel.csb>
-	<CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
-	<20140223003933.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-	<20140224011651.GC8264@linux.vnet.ibm.com>
-Date: Sun, 23 Feb 2014 17:35:28 -0800
-X-Google-Sender-Auth: yhkRb2Oev_0B1RGJWd3AjXd6dYU
-Message-ID: <CA+55aFx06UTTeypXOGUiwwbzJyqpVNR90zBDLPmxFzBkz=VwgQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 23 Feb 2014 20:36:33 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 24 Feb 2014 01:32:54 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        Chris Boot <bootc@bootc.net>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: memory-barriers.txt again (was Re: [PATCH 4/9] firewire: don't
+ use PREPARE_DELAYED_WORK)
+Message-ID: <20140224013254.5004c4fb@stein>
+In-Reply-To: <20140223235012.GB8264@linux.vnet.ibm.com>
+References: <5307849A.9050209@hurleysoftware.com>
+	<20140221165730.GA10929@htj.dyndns.org>
+	<5307DAC9.2020103@hurleysoftware.com>
+	<1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
+	<5308F0E2.3030804@hurleysoftware.com>
+	<1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
+	<5308F48C.8080609@hurleysoftware.com>
+	<20140223022303.3240093c@stein>
+	<20140223163743.GU4250@linux.vnet.ibm.com>
+	<530A5B93.7010304@hurleysoftware.com>
+	<20140223235012.GB8264@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 5:16 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->>
->>  (a) we've said 'q' is restricted, so there is no aliasing between q
->> and the pointers b/c. So the compiler is free to move those accesses
->> around the "q = p->next" access.
->
-> Ah, if I understand you, very good!
->
-> My example intentionally left "q" -not- restricted.
+On Feb 23 Paul E. McKenney wrote:
+>>> Please see below for a patch against the current version of
+>>> Documentation/memory-barriers.txt.  Does this update help?
 
-No, I 100% agree with that. "q" is *not* restricted. But "p" is, since
-it came from that consuming load.
+Thank you, this clarifies it.
 
-But "q = p->next" is ordered by how something can alias "p->next", not by 'q'!
-
-There is no need to restrict anything but 'p' for all of this to work.
-
-Btw, it's also worth pointing out that I do *not* in any way expect
-people to actually write the "restrict" keyword anywhere. So no need
-to change source code.
-
-What you have is a situation where the pointer coming out of the
-memory_order_consume is restricted. But if you assign it to a
-non-restricted pointer, that's *fine*. That's perfectly normal C
-behavior. The "restrict" concept is not something that the programmer
-needs to worry about or ever even notice, it's basically just a
-promise to the compiler that "if somebody has another pointer lying
-around, accesses though that other pointer do not require ordering".
-
-So it sounds like you believe that the programmer would mark things
-"restrict", and I did not mean that at all.
-
-             Linus
+[...]
+A new nit:
+> +The operations will always occur in one of the following orders:
+>  
+> -	STORE *A, RELEASE, ACQUIRE, STORE *B
+> -	STORE *A, ACQUIRE, RELEASE, STORE *B
+> +	STORE *A, RELEASE, ACQUIRE, smp_mb__after_unlock_lock(), STORE *B
+> +	STORE *A, ACQUIRE, RELEASE, smp_mb__after_unlock_lock(), STORE *B
+> +	ACQUIRE, STORE *A, RELEASE, smp_mb__after_unlock_lock(), STORE *B
+>  
+> -If the RELEASE and ACQUIRE were instead both operating on the same lock
+> -variable, only the first of these two alternatives can occur.
+> +If the RELEASE and ACQUIRE were instead both operating on the
+> +same lock variable, only the first of these two alternatives can
+> +occur.
+                                               ^^^
+...these {,three} alternatives...
+-- 
+Stefan Richter
+-=====-====- --=- ==---
+http://arcgraph.de/sr/
