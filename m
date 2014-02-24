@@ -1,130 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaBXCLJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:11:09 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:64114 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaBXCLH (ORCPT
+	id S1752326AbaBXCLT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:11:19 -0500
+Received: from sinikuusama.dnainternet.net ([83.102.40.134]:48438 "EHLO
+	sinikuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752264AbaBXCLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:11:07 -0500
+	Sun, 23 Feb 2014 21:11:14 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <530AAA38.3090700@iki.fi>
+Date: Mon, 24 Feb 2014 04:11:04 +0200
+From: Anssi Hannula <anssi.hannula@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <tip-vmme4f49psirp966pklm5l9j@git.kernel.org>
-References: <tip-vmme4f49psirp966pklm5l9j@git.kernel.org>
-Date: Mon, 24 Feb 2014 10:11:05 +0800
-Message-ID: <CALZhoSRZT+T-DxJP2QD0na58bsjf7t89_v0+iMxZZMcc_r1cBQ@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched, nohz: Exclude isolated cores from load balancing
-From: Lei Wen <adrian.wenl@gmail.com>
-To: mingo@kernel.org, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, leiwen@marvell.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
+To: =?ISO-8859-1?Q?Michal_Mal=FD?= <madcatxster@prifuk.cz>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
+        simon@mungewell.org
+Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
+References: <1516865.M993BQAYe4@geidi-prime> <3364546.xScl1m6sdc@geidi-prime> <530A931D.9030308@iki.fi> <1651798.4YaLXnucpJ@geidi-prime>
+In-Reply-To: <1651798.4YaLXnucpJ@geidi-prime>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 2:04 AM, tip-bot for Mike Galbraith
-<tipbot@zytor.com> wrote:
-> Commit-ID:  d987fc7f3228bf94cb6b21313ebab1d64ee637ad
-> Gitweb:     http://git.kernel.org/tip/d987fc7f3228bf94cb6b21313ebab1d64ee637ad
-> Author:     Mike Galbraith <mgalbraith@suse.de>
-> AuthorDate: Mon, 5 Dec 2011 10:01:47 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Sat, 22 Feb 2014 18:17:22 +0100
->
-> sched, nohz: Exclude isolated cores from load balancing
->
-> The user explicitly disabled load balancing, else this core would not be
-> disconnected.  Don't add these to nohz.idle_cpus_mask.
->
-> Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Lei Wen <leiwen@marvell.com>
-> Link: http://lkml.kernel.org/n/tip-vmme4f49psirp966pklm5l9j@git.kernel.org
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  kernel/sched/fair.c | 25 ++++++++++++++++++-------
->  1 file changed, 18 insertions(+), 7 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 7982faf..a3a41c61 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6788,6 +6788,11 @@ out_unlock:
->         return 0;
->  }
->
-> +static inline int on_null_domain(struct rq *rq)
-> +{
-> +       return unlikely(!rcu_dereference_sched(rq->sd));
-> +}
-> +
->  #ifdef CONFIG_NO_HZ_COMMON
->  /*
->   * idle load balancing details
-> @@ -6842,8 +6847,13 @@ static void nohz_balancer_kick(void)
->  static inline void nohz_balance_exit_idle(int cpu)
->  {
->         if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
-> -               cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-> -               atomic_dec(&nohz.nr_cpus);
-> +               /*
-> +                * Completely isolated CPUs don't ever set, so we must test.
-> +                */
-> +               if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
-> +                       cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+24.02.2014 03:54, Michal Malý kirjoitti:
+> I forgot to comment on this:
+>> Stopped effects should still be able to be updated.
+> Fair enough. I could not find a definitive answer to what is expected behavior 
+> in this case. As far as I can tell, there are following cases:
+> - Effects with no duration and delay: they shall be updated right away.
+> - Effects with delay: updated parameters shall be sent to the device at the 
+> correct time.
+> - "Expired" effects with finite duration - ??? I assumed that effects with 
+> finite duration that have already finished playing cannot be updated because 
+> it does not seem to make much sense to do so.
 
-How about use the API as cpumask_test_and_clear_cpu?
-Then below one line is enough.
+"Expired" effects can always be played back again later - if that
+happens, the updated parameters will be in effect.
 
- +               if (likely(cpumask_test_and_clear_cpu(cpu,
-nohz.idle_cpus_mask))) {
+> Shall such an effect be 
+> restarted when it is updated?
 
-And I am not pretty sure whether we need such test here.
-Since if one cpu is set to NULL domain, it would not set NOHZ_TICK_STOPPED.
-And it would not enter into this logic.
-Unless that cpu is set to NULL domain when it already run after
-nohz_balance_enter_idle.
-Not sure what status would it be, and whether it could be set NULL
-domain then...
+No.
 
-> +                       atomic_dec(&nohz.nr_cpus);
+> Is there any guideline I should stick to I am 
+> not aware of?
 
-> +               }
->                 clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
->         }
->  }
-> @@ -6897,6 +6907,12 @@ void nohz_balance_enter_idle(int cpu)
->         if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
->                 return;
->
-> +       /*
-> +        * If we're a completely isolated CPU, we don't play.
-> +        */
-> +       if (on_null_domain(cpu_rq(cpu)))
-> +               return;
-> +
+Only "3.7 Dynamic update of an effect" of input/ff.txt.
 
-Great! it is much better than my previous patch.
-
->         cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
->         atomic_inc(&nohz.nr_cpus);
->         set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
-> @@ -7159,11 +7175,6 @@ static void run_rebalance_domains(struct softirq_action *h)
->         nohz_idle_balance(this_rq, idle);
->  }
->
-> -static inline int on_null_domain(struct rq *rq)
-> -{
-> -       return !rcu_dereference_sched(rq->sd);
-> -}
-> -
->  /*
->   * Trigger the SCHED_SOFTIRQ if it is time to do periodic load balancing.
->   */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Anssi Hannula
