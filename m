@@ -1,102 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaBXKNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:13:12 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:47748 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaBXKNH (ORCPT
+	id S1752815AbaBXKNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:13:46 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:57239 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543AbaBXKLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:13:07 -0500
-Message-ID: <530B1B25.5090601@monstr.eu>
-Date: Mon, 24 Feb 2014 11:12:53 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        devicetree@vger.kernel.org, Wolfgang Denk <wd@denx.de>
-Subject: Re: SPDX-License-Identifier
-References: <20140220182257.GF23217@saruman.home> <5306F458.9010706@monstr.eu> <20140221160442.GA17506@kroah.com> <5307790A.4050806@monstr.eu> <20140221161246.GM31902@saruman.home> <53077C5F.9000407@monstr.eu> <20140221162045.GN31902@saruman.home> <20140221165633.GA5465@kroah.com> <53078C30.7060703@monstr.eu> <20140221175720.GA21660@kroah.com> <20140221190125.GL31047@thunk.org>
-In-Reply-To: <20140221190125.GL31047@thunk.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="6kCPkRWvEhKH4Md15meI4LeV38MOB8m0i"
+	Mon, 24 Feb 2014 05:11:23 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-f4-530b1ac7740b
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH v4 11/16] charger: max14577: Add support for MAX77836 charger
+Date: Mon, 24 Feb 2014 11:10:36 +0100
+Message-id: <1393236641-14977-12-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
+References: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xy7rHpbiDDZ7vkbY4uFXTYuOM9awW
+	Ux8+YbO4/uU5q8WkJ++ZLSaunMxs8fqFocXZpjfsFve/HmW02PT4GqvF5V1z2CzWHrnLbnG6
+	m9Vi/YzXLA58HhP6PzF67Jx1l91j8wotj02rOtk87lzbw+Yx72Sgx+Yl9R59W1YxenzeJBfA
+	GcVlk5Kak1mWWqRvl8CV8WcLb8Hl7IqjjUdYGhh3x3QxcnJICJhIzJl8nwXCFpO4cG89Wxcj
+	F4eQwFJGicaFp5ghnD4miY5H39hBqtgEjCU2L18CViUisIVJovfDF0YQh1mgl0ni2ql1jCBV
+	wgK+EjNbHrGB2CwCqhJTN05gBrF5BTwkFnzcAhTnANqnIDFnkg1ImBMofLflASuILSTgLvFt
+	3nWWCYy8CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBO7XHYxLj1kdYhTgYFTi4ZWo
+	5goWYk0sK67MPcQowcGsJMJrxssdLMSbklhZlVqUH19UmpNafIiRiYNTqoHRqqI+s1us3X3n
+	nz7fjc/317x+HH/i0N+gFwp/gvOzOVRXSIQsdHeR/qaydzez/ufCZLWrT2YvPXzA22eusp9l
+	Ra1lX/njWzk/0y74s31sCNgaZhIqduTdATkRZ+bl2dOqLh9+7JRz4M35C7JnPe+6hvU1ntHn
+	mGvl/bgp1zytIym+WHm7sLASS3FGoqEWc1FxIgB1yZxkOgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---6kCPkRWvEhKH4Md15meI4LeV38MOB8m0i
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Add support for MAX77836 charger to the max14577 driver. The MAX77836
+charger is almost the same as 14577 model except:
+ - No dead-battery detection;
+ - Support for special charger (like in max77693);
+ - Support for DX over-voltage protection (like in max77693);
+ - Lower values of charging current (two times lower current for
+   slow/fast charge, much lower EOC current);
+ - Slightly different values in ChgTyp field of STATUS2 register. On
+   MAX14577 0x6 is reserved and 0x7 dead battery. On the MAX77836 the
+   0x6 means special charger and 0x7 is reserved. Regardless of these
+   differences the driver maps them to one enum maxim_muic_charger_type.
 
-On 02/21/2014 08:01 PM, Theodore Ts'o wrote:
-> On Fri, Feb 21, 2014 at 09:57:20AM -0800, Greg Kroah-Hartman wrote:
->>> But shouldn't we at least write somewhere
->>> that it has connection to spdx.org where you can find out that licens=
-es.
->>
->> Why?  Are these licenses so unknown that no one knows what they are?
->> And, as part of the kernel-as-a-whole-work, they all resolve to GPLv2
->> anyway, and we have that license in the source tree, so nothing else
->> should be needed.
->=20
-> Note that not all lawyers are in agreement about this, so if this is a
-> driver being developed by a company, you may want to ask your
-> corporate counsel if they have an opinion about this.  I've received
-> advice of the form that it's not obvious that regardless of whether or
-> not us *engineers* understand what all of the licensing terms mean,
-> what's important is whether someone who is accused of "borrowing"
-> GPL'ed code and dropping it in a driver for some other OS can convince
-> a judge whether or not it's considered "obvious" from a legal
-> perspective what an SPDX header means, and what is implied by an SPDX
-> license identifer.
->=20
-> Also note that with the advent of web sites that allow people to do
-> web searches and turn up a singleton file via some gitweb interface,
-> the fact that the full license text is distributed alongside the
-> tarball might or might have as much legal significance as it once had.
->=20
-> But of course, I'm not a lawyer, and if your company has is paying for
-> the development of the driver, the Golden Rule applies (he who has the
-> Gold, makes the Rules), and each of our respective corporate lawyers
-> may have different opinions about what might happen if the question
-> was ever to be adjudicated in court.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/extcon/extcon-max14577.c     |    2 +-
+ drivers/power/max14577_charger.c     |   81 +++++++++++++++++++++++++++-------
+ include/linux/mfd/max14577-private.h |   57 +++++++++++++++++-------
+ 3 files changed, 106 insertions(+), 34 deletions(-)
 
-Thanks Ted.
-Aren't all these points already answered by SPDX project?
-I believe that they should know how this should be handled properly.
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 82ac6b0fb1bc..182af5216a2f 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -498,7 +498,7 @@ static int max14577_muic_chg_handler(struct max14577_muic_info *info)
+ 		extcon_set_cable_state(info->edev, "Fast-charger", attached);
+ 		break;
+ 	case MAXIM_CHARGER_TYPE_NONE:
+-	case MAXIM_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
+ 		break;
+ 	default:
+ 		dev_err(info->dev,
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
+index 58cddc3b15d6..405f4d736337 100644
+--- a/drivers/power/max14577_charger.c
++++ b/drivers/power/max14577_charger.c
+@@ -1,7 +1,7 @@
+ /*
+- * Battery charger driver for the Maxim 14577
++ * max14577_charger.c - Battery charger driver for the Maxim 14577/77836
+  *
+- * Copyright (C) 2013 Samsung Electronics
++ * Copyright (C) 2013,2014 Samsung Electronics
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -25,10 +25,35 @@ struct max14577_charger {
+ 	struct maxim_core	*maxim_core;
+ 	struct power_supply	charger;
+ 
+-	unsigned int	charging_state;
+-	unsigned int	battery_state;
++	unsigned int		charging_state;
++	unsigned int		battery_state;
+ };
+ 
++/*
++ * Helper function for mapping values of STATUS2/CHGTYP register on max14577
++ * and max77836 chipsets to enum maxim_muic_charger_type.
++ */
++static enum maxim_muic_charger_type maxim_get_charger_type(
++		enum maxim_device_type dev_type, u8 val) {
++	switch (val) {
++	case MAXIM_CHARGER_TYPE_NONE:
++	case MAXIM_CHARGER_TYPE_USB:
++	case MAXIM_CHARGER_TYPE_DOWNSTREAM_PORT:
++	case MAXIM_CHARGER_TYPE_DEDICATED_CHG:
++	case MAXIM_CHARGER_TYPE_SPECIAL_500MA:
++	case MAXIM_CHARGER_TYPE_SPECIAL_1A:
++		return val;
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX14577_CHARGER_TYPE_RESERVED:
++		if (dev_type == MAXIM_DEVICE_TYPE_MAX77836)
++			val |= 0x8;
++		return val;
++	default:
++		WARN_ONCE(1, "max14577: Unsupported chgtyp register value 0x%02x", val);
++		return val;
++	}
++}
++
+ static int max14577_get_charger_state(struct max14577_charger *chg)
+ {
+ 	struct regmap *rmap = chg->maxim_core->regmap_muic;
+@@ -89,20 +114,24 @@ static int max14577_get_online(struct max14577_charger *chg)
+ {
+ 	struct regmap *rmap = chg->maxim_core->regmap_muic;
+ 	u8 reg_data;
++	enum maxim_muic_charger_type chg_type;
+ 
+ 	max14577_read_reg(rmap, MAXIM_MUIC_REG_STATUS2, &reg_data);
+ 	reg_data = reg_data & MAXIM_STATUS2_CHGTYP_MASK;
+ 	reg_data >>= MAXIM_STATUS2_CHGTYP_SHIFT;
+-	switch (reg_data) {
++	chg_type = maxim_get_charger_type(chg->maxim_core->dev_type, reg_data);
++	switch (chg_type) {
+ 	case MAXIM_CHARGER_TYPE_USB:
+ 	case MAXIM_CHARGER_TYPE_DEDICATED_CHG:
+ 	case MAXIM_CHARGER_TYPE_SPECIAL_500MA:
+ 	case MAXIM_CHARGER_TYPE_SPECIAL_1A:
+-	case MAXIM_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX77836_CHARGER_TYPE_SPECIAL_BIAS:
+ 		return 1;
+ 	case MAXIM_CHARGER_TYPE_NONE:
+ 	case MAXIM_CHARGER_TYPE_DOWNSTREAM_PORT:
+-	case MAXIM_CHARGER_TYPE_RESERVED:
++	case MAX14577_CHARGER_TYPE_RESERVED:
++	case MAX77836_CHARGER_TYPE_RESERVED:
+ 	default:
+ 		return 0;
+ 	}
+@@ -119,11 +148,13 @@ static int max14577_get_battery_health(struct max14577_charger *chg)
+ 	struct regmap *rmap = chg->maxim_core->regmap_muic;
+ 	int state = POWER_SUPPLY_HEALTH_GOOD;
+ 	u8 reg_data;
++	enum maxim_muic_charger_type chg_type;
+ 
+ 	max14577_read_reg(rmap, MAXIM_MUIC_REG_STATUS2, &reg_data);
+ 	reg_data = reg_data & MAXIM_STATUS2_CHGTYP_MASK;
+ 	reg_data >>= MAXIM_STATUS2_CHGTYP_SHIFT;
+-	if (reg_data == MAXIM_CHARGER_TYPE_DEAD_BATTERY) {
++	chg_type = maxim_get_charger_type(chg->maxim_core->dev_type, reg_data);
++	if (chg_type == MAX14577_CHARGER_TYPE_DEAD_BATTERY) {
+ 		state = POWER_SUPPLY_HEALTH_DEAD;
+ 		goto state_set;
+ 	}
+@@ -170,7 +201,7 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 				MAXIM_CDETCTRL1_CHGTYPMAN_MASK,
+ 			reg_data);
+ 
+-	/* Battery Fast-Charge Timer, from SM-V700: 6hrs */
++	/* Battery Fast-Charge Timer, set to: 6hrs */
+ 	reg_data = 0x3 << MAXIM_CHGCTRL1_TCHW_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL1, reg_data);
+ 
+@@ -182,19 +213,22 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 	reg_data |= 0x1 << MAXIM_CHGCTRL2_MBCHOSTEN_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL2, reg_data);
+ 
+-	/* Battery-Charger Constant Voltage (CV) Mode, from SM-V700: 4.35V */
++	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
+ 	reg_data = 0xf << MAXIM_CHGCTRL3_MBCCVWRC_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL3, reg_data);
+ 
+ 	/*
+-	 * Fast Battery-Charge Current Low, default 200-950mA
+-	 * Fast Battery-Charge Current High, from SM-V700: 450mA
++	 * Fast Battery-Charge Current Low,
++	 * default 200-950mA (max14577) / 100-475mA (max77836)
++	 *
++	 * Fast Battery-Charge Current High,
++	 * set to 450mA (max14577) / 225mA (max77836)
+ 	 */
+ 	reg_data = 0x1 << MAXIM_CHGCTRL4_MBCICHWRCL_SHIFT;
+ 	reg_data |= 0x5 << MAXIM_CHGCTRL4_MBCICHWRCH_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL4, reg_data);
+ 
+-	/* End-of-Charge Current, from SM-V700: 50mA */
++	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
+ 	reg_data = 0x0 << MAXIM_CHGCTRL5_EOCS_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL5, reg_data);
+ 
+@@ -202,7 +236,7 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 	reg_data = 0x0 << MAXIM_CHGCTRL6_AUTOSTOP_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL6, reg_data);
+ 
+-	/* Overvoltage-Protection Threshold, from SM-V700: 6.5V */
++	/* Overvoltage-Protection Threshold, set to 6.5V */
+ 	reg_data = 0x2 << MAXIM_CHGCTRL7_OTPCGHCVS_SHIFT;
+ 	max14577_write_reg(rmap, MAXIM_CHG_REG_CHGCTRL7, reg_data);
+ }
+@@ -218,7 +252,11 @@ static enum power_supply_property max14577_charger_props[] = {
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+ };
+ 
+-static const char *model_name = "MAX14577";
++static const char * const model_names[] = {
++	[MAXIM_DEVICE_TYPE_UNKNOWN]	= "MAX14577-like",
++	[MAXIM_DEVICE_TYPE_MAX14577]	= "MAX14577",
++	[MAXIM_DEVICE_TYPE_MAX77836]	= "MAX77836",
++};
+ static const char *manufacturer = "Maxim Integrated";
+ 
+ static int max14577_charger_get_property(struct power_supply *psy,
+@@ -247,7 +285,8 @@ static int max14577_charger_get_property(struct power_supply *psy,
+ 		val->intval = max14577_get_online(chg);
+ 		break;
+ 	case POWER_SUPPLY_PROP_MODEL_NAME:
+-		val->strval = model_name;
++		BUILD_BUG_ON(ARRAY_SIZE(model_names) != MAXIM_DEVICE_TYPE_NUM);
++		val->strval = model_names[chg->maxim_core->dev_type];
+ 		break;
+ 	case POWER_SUPPLY_PROP_MANUFACTURER:
+ 		val->strval = manufacturer;
+@@ -299,6 +338,13 @@ static int max14577_charger_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct platform_device_id max14577_charger_id[] = {
++	{ "max14577-charger", MAXIM_DEVICE_TYPE_MAX14577, },
++	{ "max77836-charger", MAXIM_DEVICE_TYPE_MAX77836, },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, max14577_regulator_id);
++
+ static struct platform_driver max14577_charger_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+@@ -306,9 +352,10 @@ static struct platform_driver max14577_charger_driver = {
+ 	},
+ 	.probe		= max14577_charger_probe,
+ 	.remove		= max14577_charger_remove,
++	.id_table	= max14577_charger_id,
+ };
+ module_platform_driver(max14577_charger_driver);
+ 
+ MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+-MODULE_DESCRIPTION("MAXIM 14577 charger driver");
++MODULE_DESCRIPTION("Maxim 14577/77836 charger driver");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+index 3da322dc7d25..21c6dd785563 100644
+--- a/include/linux/mfd/max14577-private.h
++++ b/include/linux/mfd/max14577-private.h
+@@ -62,15 +62,32 @@ enum maxim_muic_reg {
+ 	MAXIM_MUIC_REG_END,
+ };
+ 
++/*
++ * Combined charger types for max14577 and max77836.
++ *
++ * On max14577 three lower bits map to STATUS2/CHGTYP field.
++ * On max77836 two values of this field are bitwise OR-ed with 0x8 to indicate
++ * the difference.
++ */
+ enum maxim_muic_charger_type {
+-	MAXIM_CHARGER_TYPE_NONE			= 0,
+-	MAXIM_CHARGER_TYPE_USB,
+-	MAXIM_CHARGER_TYPE_DOWNSTREAM_PORT,
+-	MAXIM_CHARGER_TYPE_DEDICATED_CHG,
+-	MAXIM_CHARGER_TYPE_SPECIAL_500MA,
+-	MAXIM_CHARGER_TYPE_SPECIAL_1A,
+-	MAXIM_CHARGER_TYPE_RESERVED,
+-	MAXIM_CHARGER_TYPE_DEAD_BATTERY		= 7,
++	MAXIM_CHARGER_TYPE_NONE			= 0x0,
++	MAXIM_CHARGER_TYPE_USB			= 0x1,
++	MAXIM_CHARGER_TYPE_DOWNSTREAM_PORT	= 0x2,
++	MAXIM_CHARGER_TYPE_DEDICATED_CHG	= 0x3,
++	MAXIM_CHARGER_TYPE_SPECIAL_500MA	= 0x4,
++	/* Special 1A or 2A charger */
++	MAXIM_CHARGER_TYPE_SPECIAL_1A		= 0x5,
++	/* max14577: reserved, used on max77836 */
++	MAX14577_CHARGER_TYPE_RESERVED		= 0x6,
++	/* max14577: dead-battery charing with maximum current 100mA */
++	MAX14577_CHARGER_TYPE_DEAD_BATTERY	= 0x7,
++	/*
++	 * max77836: special charger (bias on D+/D-),
++	 * register value 0x6 | 0x8 (4th bit set)
++	 */
++	MAX77836_CHARGER_TYPE_SPECIAL_BIAS	= 0xe,
++	/* max77836: reserved, register value 0x7 | 0x8 (4th bit set) */
++	MAX77836_CHARGER_TYPE_RESERVED		= 0xf,
+ };
+ 
+ /* MAX14577 interrupts */
+@@ -111,13 +128,15 @@ enum maxim_muic_charger_type {
+ #define MAXIM_STATUS2_CHGTYP_SHIFT	0
+ #define MAXIM_STATUS2_CHGDETRUN_SHIFT	3
+ #define MAXIM_STATUS2_DCDTMR_SHIFT	4
+-#define MAXIM_STATUS2_DBCHG_SHIFT	5
++#define MAX14577_STATUS2_DBCHG_SHIFT	5
++#define MAX77836_STATUS2_DXOVP_SHIFT	5
+ #define MAXIM_STATUS2_VBVOLT_SHIFT	6
+ #define MAX77836_STATUS2_VIDRM_SHIFT	7
+ #define MAXIM_STATUS2_CHGTYP_MASK	(0x7 << MAXIM_STATUS2_CHGTYP_SHIFT)
+ #define MAXIM_STATUS2_CHGDETRUN_MASK	BIT(MAXIM_STATUS2_CHGDETRUN_SHIFT)
+ #define MAXIM_STATUS2_DCDTMR_MASK	BIT(MAXIM_STATUS2_DCDTMR_SHIFT)
+-#define MAXIM_STATUS2_DBCHG_MASK	BIT(MAXIM_STATUS2_DBCHG_SHIFT)
++#define MAX14577_STATUS2_DBCHG_MASK	BIT(MAX14577_STATUS2_DBCHG_SHIFT)
++#define MAX77836_STATUS2_DXOVP_MASK	BIT(MAX77836_STATUS2_DXOVP_SHIFT)
+ #define MAXIM_STATUS2_VBVOLT_MASK	BIT(MAXIM_STATUS2_VBVOLT_SHIFT)
+ #define MAX77836_STATUS2_VIDRM_MASK	BIT(MAX77836_STATUS2_VIDRM_SHIFT)
+ 
+@@ -178,26 +197,32 @@ enum maxim_muic_charger_type {
+ #define MAXIM_CONTROL3_JIGSET_SHIFT	0
+ #define MAXIM_CONTROL3_BOOTSET_SHIFT	2
+ #define MAXIM_CONTROL3_ADCDBSET_SHIFT	4
++#define MAX14577_CONTROL3_WBTH_SHIFT	6
+ #define MAXIM_CONTROL3_JIGSET_MASK	(0x3 << MAXIM_CONTROL3_JIGSET_SHIFT)
+ #define MAXIM_CONTROL3_BOOTSET_MASK	(0x3 << MAXIM_CONTROL3_BOOTSET_SHIFT)
+ #define MAXIM_CONTROL3_ADCDBSET_MASK	(0x3 << MAXIM_CONTROL3_ADCDBSET_SHIFT)
++#define MAX14577_CONTROL3_WBTH_MASK	(0x3 << MAX14577_CONTROL3_WBTH_SHIFT)
+ 
+ /* MAX14577 CDETCTRL1 register */
+ #define MAXIM_CDETCTRL1_CHGDETEN_SHIFT	0
+ #define MAXIM_CDETCTRL1_CHGTYPMAN_SHIFT	1
+ #define MAXIM_CDETCTRL1_DCDEN_SHIFT	2
+ #define MAXIM_CDETCTRL1_DCD2SCT_SHIFT	3
+-#define MAXIM_CDETCTRL1_DCHKTM_SHIFT	4
+-#define MAXIM_CDETCTRL1_DBEXIT_SHIFT	5
+-#define MAXIM_CDETCTRL1_DBIDLE_SHIFT	6
++#define MAX14577_CDETCTRL1_DCHKTM_SHIFT	4
++#define MAX77836_CDETCTRL1_CDLY_SHIFT	4
++#define MAX14577_CDETCTRL1_DBEXIT_SHIFT	5
++#define MAX77836_CDETCTRL1_DCDCPL_SHIFT	5
++#define MAX14577_CDETCTRL1_DBIDLE_SHIFT	6
+ #define MAXIM_CDETCTRL1_CDPDET_SHIFT	7
+ #define MAXIM_CDETCTRL1_CHGDETEN_MASK	BIT(MAXIM_CDETCTRL1_CHGDETEN_SHIFT)
+ #define MAXIM_CDETCTRL1_CHGTYPMAN_MASK	BIT(MAXIM_CDETCTRL1_CHGTYPMAN_SHIFT)
+ #define MAXIM_CDETCTRL1_DCDEN_MASK	BIT(MAXIM_CDETCTRL1_DCDEN_SHIFT)
+ #define MAXIM_CDETCTRL1_DCD2SCT_MASK	BIT(MAXIM_CDETCTRL1_DCD2SCT_SHIFT)
+-#define MAXIM_CDETCTRL1_DCHKTM_MASK	BIT(MAXIM_CDETCTRL1_DCHKTM_SHIFT)
+-#define MAXIM_CDETCTRL1_DBEXIT_MASK	BIT(MAXIM_CDETCTRL1_DBEXIT_SHIFT)
+-#define MAXIM_CDETCTRL1_DBIDLE_MASK	BIT(MAXIM_CDETCTRL1_DBIDLE_SHIFT)
++#define MAX14577_CDETCTRL1_DCHKTM_MASK	BIT(MAX14577_CDETCTRL1_DCHKTM_SHIFT)
++#define MAX77836_CDETCTRL1_CDDLY_MASK	BIT(MAX77836_CDETCTRL1_CDDLY_SHIFT)
++#define MAX14577_CDETCTRL1_DBEXIT_MASK	BIT(MAX14577_CDETCTRL1_DBEXIT_SHIFT)
++#define MAX77836_CDETCTRL1_DCDCPL_MASK	BIT(MAX77836_CDETCTRL1_DCDCPL_SHIFT)
++#define MAX14577_CDETCTRL1_DBIDLE_MASK	BIT(MAX14577_CDETCTRL1_DBIDLE_SHIFT)
+ #define MAXIM_CDETCTRL1_CDPDET_MASK	BIT(MAXIM_CDETCTRL1_CDPDET_SHIFT)
+ 
+ /* MAX14577 MAXIM_CHGCTRL1 register */
+-- 
+1.7.9.5
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---6kCPkRWvEhKH4Md15meI4LeV38MOB8m0i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMLGyUACgkQykllyylKDCFZbwCfXdMV+R4jytSBF70ufER8bYU8
-lasAnjqJTcpYVxQImAKrRvq17xntlI4n
-=sXfG
------END PGP SIGNATURE-----
-
---6kCPkRWvEhKH4Md15meI4LeV38MOB8m0i--
