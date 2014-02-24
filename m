@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaBXRLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:11:08 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45071 "EHLO
+	id S1752922AbaBXRLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:11:05 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45062 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaBXRLD (ORCPT
+	with ESMTP id S1752452AbaBXRLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Feb 2014 12:11:03 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-pm@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] usb: phy: msm: use ASSIGN_*_PM_OPS variants
-Date: Mon, 24 Feb 2014 11:08:27 -0600
-Message-Id: <1393261707-30565-4-git-send-email-joshc@codeaurora.org>
+To: linux-usb@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] introduce assign_if() macros in attempt to reduce ifdeffery
+Date: Mon, 24 Feb 2014 11:08:24 -0600
+Message-Id: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
-References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ASSIGN_SYSTEM_SLEEP_PM_OPS and ASSIGN_RUNTIME_PM_OPS in the
-initializer for msm_otg_dev_pm_ops.  Doing so allows us to eliminate
-preprocessor conditionals around the specified callbacks.
+Based on the observation that given the following:
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
+	static void my_callback(void)
+	{
+	}
+	void (*callback)(void) = 0 ? my_callback : NULL;
+
+GCC will,
+
+	1.) Not emit 'defined but unused' warnings for 'my_callback'
+	2.) Typecheck my_callback against typeof(*callback)
+	3.) Eliminate my_callback as dead code (assuming it's unused elsewhere)
+
+this patchset explores where/how this might be used to reduce the amount of
+ifdeffed code in device drivers.
+
+Patch 1 in this series introduces two friendly-named helper macros:
+
+	assign_if(const_expr, fn):   A friendlier form of (const_expr ? fn : NULL)
+	assign_if_enabled(conf, fn): Composition of assign_if() and IS_ENABLED().
+
+In order to show a good target usecase for these macros, patch 2 introduces a
+new set of PM-related macros, similar to SET_*_PM_OPS, using
+assign_if_enabled() under the hood.
+
+In particular, this is aimed at reducing code like the following:
+
+	#ifdef CONFIG_PM_SLEEP
+	static int foo_suspend(struct device *dev)
+	{
+		/* ... */
+	}
+	#else
+	#define foo_suspend NULL
+	#endif
+
+	static const struct dev_pm_ops foo_pm_ops = {
+		SET_SYSTEM_SLEEP_PM_OPS(foo_suspend, NULL)
+	};
+
+With the ifdefless:
+
+	static int foo_suspend(struct device *dev)
+	{
+		/* ... */
+	}
+
+	static const struct dev_pm_ops foo_pm_ops = {
+		ASSIGN_SYSTEM_SLEEP_PM_OPS(foo_suspend, NULL),
+	};
+
+For patch 3, an existing consumer of SET_*_PM_OPS(), the MSM USB phy driver[1]
+is modified to use the newly introduced ASSIGN_*_PM_OPS() macros to show in a
+real case what simplifications could be gained.
+
+For testing that GCC is actually eliminating the PM-related callbacks when it
+can, the MSM USB phy driver was built before and after patch 3, in 4 different
+configurations, and object sizes compared[2]:
+
+   text	   data	    bss	    dec	    hex	filename
+  11008	    488	     20	  11516	   2cfc	phy_objects_before/phy-msm-usb.nopm.o
+  11008	    488	     20	  11516	   2cfc	phy_objects_after/phy-msm-usb.nopm.o
+
+  13528	    584	     20	  14132	   3734	phy_objects_before/phy-msm-usb.runtime.o
+  13528	    584	     20	  14132	   3734	phy_objects_after/phy-msm-usb.runtime.o
+
+  13828	    632	     20	  14480	   3890	phy_objects_before/phy-msm-usb.runtime+sleep.o
+  13828	    632	     20	  14480	   3890	phy_objects_after/phy-msm-usb.runtime+sleep.o
+
+  13072	    560	     20	  13652	   3554	phy_objects_before/phy-msm-usb.sleep.o
+  13072	    560	     20	  13652	   3554	phy_objects_after/phy-msm-usb.sleep.o
+
+[1]: Chosen because it has recently broken randconfig builds due to improper
+     #ifdeffery using CONFIG_PM* defines
+[2]:
+	$ ${CROSS_COMPILE}gcc --version
+	arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2013.07-1 - Linaro GCC 2013.07) 4.8.2 20130624 (prerelease)
+	Copyright (C) 2013 Free Software Foundation, Inc.
+	This is free software; see the source for copying conditions.  There is NO
+	warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Josh Cartwright (3):
+  typecheck: introduce assign_if() and assign_if_enabled()
+  PM: define new ASSIGN_*_PM_OPS macros based on assign_if
+  usb: phy: msm: use ASSIGN_*_PM_OPS variants
+
  drivers/usb/phy/phy-msm-usb.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ include/linux/pm.h            | 39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/typecheck.h     | 18 ++++++++++++++++++
+ 3 files changed, 60 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 5b37b81..c04f2e3 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -414,8 +414,6 @@ static int msm_otg_reset(struct usb_phy *phy)
- #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
- #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
- 
--#ifdef CONFIG_PM
--
- #define USB_PHY_SUSP_DIG_VOL  500000
- static int msm_hsusb_config_vddcx(int high)
- {
-@@ -609,7 +607,6 @@ skip_phy_resume:
- 
- 	return 0;
- }
--#endif
- 
- static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
- {
-@@ -1664,7 +1661,6 @@ static int msm_otg_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_RUNTIME
- static int msm_otg_runtime_idle(struct device *dev)
- {
- 	struct msm_otg *motg = dev_get_drvdata(dev);
-@@ -1699,9 +1695,7 @@ static int msm_otg_runtime_resume(struct device *dev)
- 	dev_dbg(dev, "OTG runtime resume\n");
- 	return msm_otg_resume(motg);
- }
--#endif
- 
--#ifdef CONFIG_PM_SLEEP
- static int msm_otg_pm_suspend(struct device *dev)
- {
- 	struct msm_otg *motg = dev_get_drvdata(dev);
-@@ -1731,12 +1725,11 @@ static int msm_otg_pm_resume(struct device *dev)
- 
- 	return 0;
- }
--#endif
- 
- static const struct dev_pm_ops msm_otg_dev_pm_ops = {
--	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
--	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
--				msm_otg_runtime_idle)
-+	ASSIGN_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
-+	ASSIGN_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
-+			      msm_otg_runtime_idle)
- };
- 
- static struct platform_driver msm_otg_driver = {
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
