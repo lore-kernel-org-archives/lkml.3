@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaBXKtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:49:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:41854 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391AbaBXKtH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:49:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,534,1389772800"; 
-   d="scan'208";a="488682798"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "'Paolo Bonzini'" <pbonzini@redhat.com>
-CC: "'gleb@redhat.com'" <gleb@redhat.com>, "'hpa@zytor.com'" <hpa@zytor.com>,
-        "'kvm@vger.kernel.org'" <kvm@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'qemu-devel@nongnu.org'" <qemu-devel@nongnu.org>
-Subject: RE: [PATCH v4 3/3] KVM: x86: Enable Intel MPX for guest
-Thread-Topic: [PATCH v4 3/3] KVM: x86: Enable Intel MPX for guest
-Thread-Index: AQHPLy/Hffa0mA48RJ+9cL55JkIR25rDxXfwgAB3FaA=
-Date: Mon, 24 Feb 2014 10:48:53 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350150E384@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233501509C2B@SHSMSX101.ccr.corp.intel.com>
- <530795E0.7080602@redhat.com>
- <DE8DF0795D48FD4CA783C40EC82923350150D2A4@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350150D2A4@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
+	id S1752101AbaBXKxQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:53:16 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45624 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaBXKxP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 24 Feb 2014 05:53:15 -0500
+Message-Id: <530B32A4020000780011EACB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 24 Feb 2014 10:53:08 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Borkmann" <dborkman@redhat.com>
+Cc: <davem@davemloft.net>, <mingo@elte.hu>, <tglx@linutronix.de>,
+        <ffusco@redhat.com>, <tgraf@redhat.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH 2/3] x86/hash: swap parameters of crc32_u32()
+References: <53073986020000780011E2E1@nat28.tlf.novell.com>
+ <5308938A.8070506@redhat.com>
+ <530B0AF2020000780011E97B@nat28.tlf.novell.com>
+ <530B1D60.8010602@redhat.com>
+In-Reply-To: <530B1D60.8010602@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liu, Jinsong wrote:
-> Paolo Bonzini wrote:
->> Il 21/02/2014 18:57, Liu, Jinsong ha scritto:
->>> -		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(RDSEED) |
->>> +		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(MPX) | F(RDSEED) |
->>>  		F(ADX);
->> 
->> MPX also needs to be conditional on mpx_supported here, like it is
->> done with f_rdtscp for example.
->> 
->> Paolo
+>>> On 24.02.14 at 11:22, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 02/24/2014 09:03 AM, Jan Beulich wrote:
+>>>>> On 22.02.14 at 13:09, Daniel Borkmann <dborkman@redhat.com> wrote:
+>>> On 02/21/2014 11:33 AM, Jan Beulich wrote:
+>>>> ... to match its two callers (i.e. the alternative would have been to
+>>>> swap the arguments at the call sites).
+>>>>
+>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>>> Cc: Francesco Fusco <ffusco@redhat.com>
+>>>> Cc: Daniel Borkmann <dborkman@redhat.com>
+>>>> Cc: Thomas Graf <tgraf@redhat.com>
+>>>> Cc: David S. Miller <davem@davemloft.net>
+>>>> ---
+>>>>    arch/x86/lib/hash.c |    2 +-
+>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>
+>>>> --- 3.14-rc3-x86-hash-crc32.orig/arch/x86/lib/hash.c
+>>>> +++ 3.14-rc3-x86-hash-crc32/arch/x86/lib/hash.c
+>>>> @@ -37,7 +37,7 @@
+>>>>    #include <asm/cpufeature.h>
+>>>>    #include <asm/hash.h>
+>>>>
+>>>> -static inline u32 crc32_u32(u32 crc, u32 val)
+>>>> +static inline u32 crc32_u32(u32 val, u32 crc)
+>>>>    {
+>>>>    #ifdef CONFIG_AS_CRC32
+>>>>    	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
+>>>
+>>> Can you elaborate?
+>>>
+>>> Sorry, I need to ask here (even if it's a stupid question ;)) if this
+>>> change is safe to do; are referring to a cleanup or fixing a concrete
+>>> bug? The code is a modified version of the DPDK hash which you can find
+>>> in [1]. Arguments of the caller are in the correct order, afaik.
+>>>
+>>>     [1] http://dpdk.org/browse/dpdk/tree/lib/librte_hash/rte_hash_crc.h 
+>>
+>> Yes, that file appears to be correct:
+>>
+>> rte_hash_crc_4byte(uint32_t data, uint32_t init_val)
+>>
+>> as opposed to
+>>
+>> static inline u32 crc32_u32(u32 crc, u32 val)
+>>
+>> (quite obviously data <-> val and crc <-> init_val, supported
+>> by the second argument in each caller being named "seed").
 > 
-> Yes, has updated and sent out.
-> 
-> Thanks,
-> Jinsong
+> If you want a more descriptive name, feel free to rename these vars,
+> but check it yourself, it's not a bug as you claim; results are the
+> same:
 
-Seems some issues when I send via git send-email.
-Re-send it under Windows, please ignore if you receive PATCH v5 twice.
+Even if the results are the same (operands being symmetric?), check
+the generated code for your version and the fixed up one: The crc32
+instruction allows one of its operands to be in memory for a reason.
 
-Thanks,
-Jinsong
+Jan
+
