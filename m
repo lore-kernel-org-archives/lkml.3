@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaBXINK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:13:10 -0500
-Received: from mx.mmd.net ([80.83.0.3]:55413 "EHLO mx.mmd.net"
+	id S1753379AbaBXINI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:13:08 -0500
+Received: from mx.mmd.net ([80.83.0.3]:55415 "EHLO mx.mmd.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846AbaBXIND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752864AbaBXIND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Feb 2014 03:13:03 -0500
 From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
 To: linux-pm@vger.kernel.org, rjw@rjwysocki.net
 Cc: daniel.lezcano@linaro.org, tuukka.tikkanen@linaro.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] Cpuidle: Ensure menu coefficients stay within domain
-Date: Mon, 24 Feb 2014 08:29:33 +0200
-Message-Id: <1393223377-5744-4-git-send-email-tuukka.tikkanen@linaro.org>
+Subject: [PATCH 0/7] Cpuidle: Minor fixes
+Date: Mon, 24 Feb 2014 08:29:30 +0200
+Message-Id: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
-References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The menu governor uses coefficients as one method of actual idle
-period length estimation. The coefficients are, as detailed below,
-multipliers giving expected idle period length from time until next
-timer expiry. The multipliers are supposed to have domain of (0..1].
+This set of patches makes some minor changes to menu governor and the poll
+idle state.
 
-The coefficients are fractions where only the numerators are stored
-and denominators are a shared constant RESOLUTION*DECAY. Since the
-value of the coefficient should always be greater than 0 and less
-than or equal to 1, the numerator must have a value greater than
-0 and less than or equal to RESOLUTION*DECAY.
+Patch 1 is simply a rename of a variable to make the name better represent
+the contained information.
 
-If the coefficients are updated with measured idle durations exceeding
-timer length, the multiplier may reach values exceeding unity (i.e.
-the stored numerator exceeds RESOLUTION*DECAY). This patch ensures that
-the multipliers are updated with durations capped to timer length.
+Patch 2 fixes calculating actual residency in cases where the entered state
+is different from the state decided by the menu governor.
 
-Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
----
- drivers/cpuidle/governors/menu.c |    3 +++
- 1 file changed, 3 insertions(+)
+Patch 3 makes sure the menu governor timer coefficients are not updated
+with values that might cause a coefficient to reach a value greater than
+unity.
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 115386a..f0995dd 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -410,6 +410,9 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	if (measured_us > target->exit_latency)
- 		measured_us -= target->exit_latency;
- 
-+	/* Make sure our coefficients do not exceed unity */
-+	if (measured_us > data->next_timer_us)
-+		measured_us = data->next_timer_us;
- 
- 	/* Update our correction ratio */
- 	new_factor = data->correction_factor[data->bucket];
+Patch 4 fixes calculation actual residency in cases where the entered state
+does not support measuring residency. In such cases the residency time
+is taken from time remaining until next timer expiry. The timer is expected
+to go off at the start of exit latency, not after it. Therefore the exit
+latency must not be substracted from the assumed value.
+
+Patch 5 moves the performance multiplier based comparison out of the state
+selection loop by changing it into a latency requirement. This allows
+using a generic state selection function accepting only (duration, latency)
+tuple as input. The change is possible by noting that performance multiplier
+is used only to check for a minimum predicted idle duration to exit latency
+ratio. As predicted idle duration is a constant for the loop, the maximum
+allowed latency can be calculated outside of the loop.
+
+Patch 6 prevents using negative values from tick_nohz_get_sleep_length()
+in the menu governor. If unchecked, the negative values are used as huge
+unsigned values. Negative values occur fairly often (e.g. on x86_64 I've
+seen this happen several times per minute) on a busy system, allowing
+the deepest state to win the selection while the shallowest should be picked.
+
+Patch 7 adds CPUIDLE_FLAG_TIME_VALID to poll_idle. I do not know of any
+platfrom where cpu_relax() would break ktime_get() and in fact poll_idle
+uses ktime_get itself.
+(Note: poll_idle updates dev->last_residency for some reason. Does it ever
+get called without going through cpuidle_enter_state, which will overwrite
+the value? Even if some state redirects to this state, the call will
+eventually return to the framework. The redundant time measurement could
+be removed, unless there is some obscure way of getting called on some
+platform that I am unable to figure out.)
+
+Tuukka Tikkanen (7):
+  Cpuidle: rename expected_us to next_timer_us in menu governor
+  Cpuidle: Use actual state latency in menu governor
+  Cpuidle: Ensure menu coefficients stay within domain
+  Cpuidle: Do not substract exit latency from assumed sleep length
+  Cpuidle: Move perf multiplier calculation out of the selection loop
+  Cpuidle: Deal with timer expiring in the past
+  Cpuidle: poll state can measure residency
+
+ drivers/cpuidle/driver.c         |    2 +-
+ drivers/cpuidle/governors/menu.c |   85 ++++++++++++++++++++++++--------------
+ 2 files changed, 54 insertions(+), 33 deletions(-)
+
 -- 
 1.7.9.5
 
