@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaBXN5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:57:23 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35471 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565AbaBXN5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:57:21 -0500
-Message-ID: <530B4F9C.2050302@ti.com>
-Date: Mon, 24 Feb 2014 19:26:44 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752825AbaBXN7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:59:14 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:65379 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513AbaBXN7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 08:59:13 -0500
+Date: Mon, 24 Feb 2014 13:59:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "arm@kernel.org" <arm@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH] mfd: dbx500/abx500: root out hardcoded IRQ assignments
+Message-ID: <20140224135903.GA15847@lee--X1>
+References: <1392114599-481-1-git-send-email-linus.walleij@linaro.org>
+ <20140213131720.GC3403@lee--X1>
+ <CACRpkdaoqwiy0n-oN0gKqgX_enGXw+BggRQy9yz8eQNyJ3MvsA@mail.gmail.com>
+ <201402141754.02159.arnd@arndb.de>
+ <CACRpkdYTd+x=tEviRxXv6HANscJjWqfeVOhDtpefFmxiuCsVDw@mail.gmail.com>
 MIME-Version: 1.0
-To: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, <kgene.kim@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>
-Subject: Re: [PATCH V8 1/2] PHY: Exynos: Add Exynos5250 SATA PHY driver
-References: <1393248775-3283-1-git-send-email-yuvaraj.cd@samsung.com> <1393248775-3283-2-git-send-email-yuvaraj.cd@samsung.com>
-In-Reply-To: <1393248775-3283-2-git-send-email-yuvaraj.cd@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYTd+x=tEviRxXv6HANscJjWqfeVOhDtpefFmxiuCsVDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 24 Feb 2014, Linus Walleij wrote:
 
-On Monday 24 February 2014 07:02 PM, Yuvaraj Kumar C D wrote:
-> This patch adds the SATA PHY driver for Exynos5250.Exynos5250 SATA
-> PHY comprises of CMU and TRSV blocks which are of I2C register Map.
-> So this patch also adds a i2c client driver, which is used configure
-
-We no longer have i2c client driver here.
-> the CMU and TRSV block of exynos5250 SATA PHY.
+> On Fri, Feb 14, 2014 at 5:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 14 February 2014, Linus Walleij wrote:
 > 
-> This patch incorporates the generic PHY framework to deal with SATA
-> PHY.
-
-It should be rephrased to have *uses* generic PHY framework. However I feel we
-can do away with this line.
+> >> > I'm happy to do either, but the latter will require an ARM-SoC Ack.
+> >>
+> >> OK Olof/Arnd/Kevin: can you ACK this patch for queueing
+> >> through MFD? It only hits arch/arm/mach-ux500/*
+> >
+> > Sounds good. Great job at cleaning up that stuff!
 > 
-> This patch depends on the below patch for the sata functionality
-> 	[1].ata: ahci_platform: Manage SATA PHY
-> 		by Roger Quadros <rogerq@ti.com>
+> Lee this sounds like an ACK :-)
+> 
+> Please queue this patch, I will probably avoid doing more
+> of this stuff for the next merge window so I think it won't
+> collide with anything.
 
-hasn't this patch merged yet?
+Applied, thanks.
 
-Thanks
-Kishon
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
