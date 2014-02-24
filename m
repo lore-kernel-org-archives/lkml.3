@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaBXQAl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:00:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38584 "EHLO mga09.intel.com"
+	id S1753345AbaBXQAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:00:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48286 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172AbaBXQAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:00:37 -0500
+	id S1753304AbaBXQAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:00:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
-   d="scan'208";a="488859879"
+   d="scan'208";a="461217899"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>
@@ -17,9 +17,9 @@ Cc: Alexandre Courbot <gnurou@gmail.com>, Lan Tianyu <tianyu.lan@intel.com>,
         Mathias Nyman <mathias.nyman@linux.intel.com>,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 2/6] gpio / ACPI: Allocate ACPI specific data directly in acpi_gpiochip_add()
-Date: Mon, 24 Feb 2014 18:00:07 +0200
-Message-Id: <1393257611-18031-3-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 6/6] gpio / ACPI: Add support for ACPI GPIO operation regions
+Date: Mon, 24 Feb 2014 18:00:11 +0200
+Message-Id: <1393257611-18031-7-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.9.0.rc3
 In-Reply-To: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -27,177 +27,268 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to add more ACPI specific data to accompany GPIO chip so
-instead of allocating it per each use-case we allocate it once when
-acpi_gpiochip_add() is called and release it when acpi_gpiochip_remove() is
-called.
+GPIO operation regions is a new feature introduced in ACPI 5.0
+specification. This feature adds a way for platform ASL code to call back
+to OS GPIO driver and toggle GPIO pins.
 
-Doing this allows us to add more ACPI specific data by merely adding new
-fields to struct acpi_gpio_chip.
+An example ASL code from Lenovo Miix 2 tablet with only relevant part
+listed:
+
+ Device (\_SB.GPO0)
+ {
+     Name (AVBL, Zero)
+     Method (_REG, 2, NotSerialized)
+     {
+         If (LEqual (Arg0, 0x08))
+         {
+             // Marks the region available
+             Store (Arg1, AVBL)
+         }
+     }
+
+     OperationRegion (GPOP, GeneralPurposeIo, Zero, 0x0C)
+     Field (GPOP, ByteAcc, NoLock, Preserve)
+     {
+         Connection (
+             GpioIo (Exclusive, PullDefault, 0, 0, IoRestrictionOutputOnly,
+                     "\\_SB.GPO0", 0x00, ResourceConsumer,,)
+             {
+                 0x003B
+             }
+         ),
+         SHD3,   1,
+     }
+ }
+
+ Device (SHUB)
+ {
+     Method (_PS0, 0, Serialized)
+     {
+         If (LEqual (\_SB.GPO0.AVBL, One))
+         {
+             Store (One, \_SB.GPO0.SHD3)
+             Sleep (0x32)
+         }
+     }
+     Method (_PS3, 0, Serialized)
+     {
+         If (LEqual (\_SB.GPO0.AVBL, One))
+         {
+             Store (Zero, \_SB.GPO0.SHD3)
+         }
+     }
+ }
+
+The sensor hub (SHUB) device uses GPIO connection SHD3 to power the device
+whenever the GPIO operation region is available.
+
+Implement the support by registering GPIO operation region handlers for all
+GPIO devices that have an ACPI handle. First time the GPIO is used by the
+ASL code we make sure that the GPIO stays requested until the GPIO chip
+driver itself is unloaded. If we find out that the GPIO is already
+requested we just toggle it according to the value got from ASL code.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/gpio/gpiolib-acpi.c | 83 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 59 insertions(+), 24 deletions(-)
+ drivers/gpio/gpiolib-acpi.c | 156 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 156 insertions(+)
 
 diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index b7db098ba060..5f5f107c2099 100644
+index 275735f390af..0133d38c447f 100644
 --- a/drivers/gpio/gpiolib-acpi.c
 +++ b/drivers/gpio/gpiolib-acpi.c
-@@ -26,6 +26,11 @@ struct acpi_gpio_evt_pin {
+@@ -16,6 +16,7 @@
+ #include <linux/export.h>
+ #include <linux/acpi.h>
+ #include <linux/interrupt.h>
++#include <linux/mutex.h>
+ 
+ #include "gpiolib.h"
+ 
+@@ -26,7 +27,20 @@ struct acpi_gpio_event {
  	unsigned int irq;
  };
  
-+struct acpi_gpio_chip {
-+	struct gpio_chip *chip;
-+	struct list_head *evt_pins;
++struct acpi_gpio_connection {
++	struct list_head node;
++	struct gpio_desc *desc;
 +};
 +
- static int acpi_gpiochip_find(struct gpio_chip *gc, void *data)
- {
- 	if (!gc->dev)
-@@ -81,14 +86,14 @@ static irqreturn_t acpi_gpio_irq_handler_evt(int irq, void *data)
- 	return IRQ_HANDLED;
+ struct acpi_gpio_chip {
++	/*
++	 * ACPICA requires that the first field of the context parameter
++	 * passed to acpi_install_address_space_handler() is large enough
++	 * to hold struct acpi_connection_info.
++	 */
++	struct acpi_connection_info conn_info;
++	struct list_head conns;
++	struct mutex conn_lock;
+ 	struct gpio_chip *chip;
+ 	struct list_head events;
+ };
+@@ -334,6 +348,146 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
+ 	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
  }
  
--static void acpi_gpio_evt_dh(acpi_handle handle, void *data)
-+static void acpi_gpio_chip_dh(acpi_handle handle, void *data)
- {
- 	/* The address of this function is used as a key. */
- }
- 
- /**
-  * acpi_gpiochip_request_interrupts() - Register isr for gpio chip ACPI events
-- * @chip:      gpio chip
-+ * @achip:      ACPI GPIO chip
-  *
-  * ACPI5 platforms can use GPIO signaled ACPI events. These GPIO interrupts are
-  * handled by ACPI event methods which need to be called from the GPIO
-@@ -96,9 +101,10 @@ static void acpi_gpio_evt_dh(acpi_handle handle, void *data)
-  * gpio pins have acpi event methods and assigns interrupt handlers that calls
-  * the acpi event methods for those pins.
-  */
--static void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
-+static void acpi_gpiochip_request_interrupts(struct acpi_gpio_chip *achip)
- {
- 	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
++static acpi_status
++acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
++			    u32 bits, u64 *value, void *handler_context,
++			    void *region_context)
++{
++	struct acpi_gpio_chip *achip = region_context;
 +	struct gpio_chip *chip = achip->chip;
- 	struct acpi_resource *res;
- 	acpi_handle handle, evt_handle;
- 	struct list_head *evt_pins = NULL;
-@@ -123,12 +129,7 @@ static void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
- 		evt_pins = kzalloc(sizeof(*evt_pins), GFP_KERNEL);
- 		if (evt_pins) {
- 			INIT_LIST_HEAD(evt_pins);
--			status = acpi_attach_data(handle, acpi_gpio_evt_dh,
--						  evt_pins);
--			if (ACPI_FAILURE(status)) {
--				kfree(evt_pins);
--				evt_pins = NULL;
--			}
-+			achip->evt_pins = evt_pins;
- 		}
- 	}
- 
-@@ -197,30 +198,24 @@ static void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
- 
- /**
-  * acpi_gpiochip_free_interrupts() - Free GPIO _EVT ACPI event interrupts.
-- * @chip:      gpio chip
-+ * @achip:      ACPI GPIO chip
-  *
-  * Free interrupts associated with the _EVT method for the given GPIO chip.
-  *
-  * The remaining ACPI event interrupts associated with the chip are freed
-  * automatically.
-  */
--static void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
-+static void acpi_gpiochip_free_interrupts(struct acpi_gpio_chip *achip)
- {
--	acpi_handle handle;
--	acpi_status status;
- 	struct list_head *evt_pins;
- 	struct acpi_gpio_evt_pin *evt_pin, *ep;
++	struct acpi_resource_gpio *agpio;
++	struct acpi_resource *ares;
++	acpi_status status;
++	bool pull;
++	int i;
++
++	status = acpi_buffer_to_resource(achip->conn_info.connection,
++					 achip->conn_info.length, &ares);
++	if (ACPI_FAILURE(status))
++		return status;
++
++	if (WARN_ON(ares->type != ACPI_RESOURCE_TYPE_GPIO)) {
++		ACPI_FREE(ares);
++		return AE_BAD_PARAMETER;
++	}
++
++	agpio = &ares->data.gpio;
++	pull = agpio->pin_config == ACPI_PIN_CONFIG_PULLUP;
++
++	if (WARN_ON(agpio->io_restriction == ACPI_IO_RESTRICT_INPUT &&
++	    function == ACPI_WRITE)) {
++		ACPI_FREE(ares);
++		return AE_BAD_PARAMETER;
++	}
++
++	for (i = 0; i < agpio->pin_table_length; i++) {
++		unsigned pin = agpio->pin_table[i];
++		struct acpi_gpio_connection *conn;
++		struct gpio_desc *desc;
++		bool found;
++
++		desc = gpiochip_get_desc(chip, pin);
++		if (IS_ERR(desc)) {
++			status = AE_ERROR;
++			goto out;
++		}
++
++		mutex_lock(&achip->conn_lock);
++
++		found = false;
++		list_for_each_entry(conn, &achip->conns, node) {
++			if (conn->desc == desc) {
++				found = true;
++				break;
++			}
++		}
++		if (!found) {
++			int ret;
++
++			ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
++			if (ret) {
++				status = AE_ERROR;
++				mutex_unlock(&achip->conn_lock);
++				goto out;
++			}
++
++			switch (agpio->io_restriction) {
++			case ACPI_IO_RESTRICT_INPUT:
++				gpiod_direction_input(desc);
++				break;
++			case ACPI_IO_RESTRICT_OUTPUT:
++				gpiod_direction_output(desc, pull);
++				break;
++			default:
++				/*
++				 * Assume that the BIOS has configured the
++				 * direction and pull accordingly.
++				 */
++				break;
++			}
++
++			conn = kzalloc(sizeof(*conn), GFP_KERNEL);
++			if (!conn) {
++				status = AE_NO_MEMORY;
++				mutex_unlock(&achip->conn_lock);
++				goto out;
++			}
++
++			conn->desc = desc;
++
++			list_add_tail(&conn->node, &achip->conns);
++		}
++
++		mutex_unlock(&achip->conn_lock);
++
++
++		if (function == ACPI_WRITE)
++			gpiod_set_raw_value(desc, !!((1 << i) & *value));
++		else
++			*value |= gpiod_get_raw_value(desc) << i;
++	}
++
++out:
++	ACPI_FREE(ares);
++	return status;
++}
++
++static void acpi_gpiochip_request_regions(struct acpi_gpio_chip *achip)
++{
 +	struct gpio_chip *chip = achip->chip;
- 
--	if (!chip->dev || !chip->to_irq)
--		return;
--
--	handle = ACPI_HANDLE(chip->dev);
--	if (!handle)
-+	if (!chip->dev || !chip->to_irq || !achip->evt_pins)
- 		return;
- 
--	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
--	if (ACPI_FAILURE(status))
--		return;
-+	evt_pins = achip->evt_pins;
-+	achip->evt_pins = NULL;
- 
- 	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
- 		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
-@@ -228,7 +223,6 @@ static void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
- 		kfree(evt_pin);
- 	}
- 
--	acpi_detach_data(handle, acpi_gpio_evt_dh);
- 	kfree(evt_pins);
- }
- 
-@@ -312,10 +306,51 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
- 
- void acpi_gpiochip_add(struct gpio_chip *chip)
- {
--	acpi_gpiochip_request_interrupts(chip);
-+	struct acpi_gpio_chip *achip;
-+	acpi_handle handle;
++	acpi_handle handle = ACPI_HANDLE(chip->dev);
 +	acpi_status status;
 +
-+	handle = ACPI_HANDLE(chip->dev);
-+	if (!handle)
-+		return;
++	INIT_LIST_HEAD(&achip->conns);
++	mutex_init(&achip->conn_lock);
++	status = acpi_install_address_space_handler(handle, ACPI_ADR_SPACE_GPIO,
++						    acpi_gpio_adr_space_handler,
++						    NULL, achip);
++	if (ACPI_FAILURE(status))
++		dev_err(chip->dev, "Failed to install GPIO OpRegion handler\n");
++}
 +
-+	achip = kzalloc(sizeof(*achip), GFP_KERNEL);
-+	if (!achip) {
-+		dev_err(chip->dev,
-+			"Failed to allocate memory for ACPI GPIO chip\n");
-+		return;
-+	}
++static void acpi_gpiochip_free_regions(struct acpi_gpio_chip *achip)
++{
++	struct gpio_chip *chip = achip->chip;
++	acpi_handle handle = ACPI_HANDLE(chip->dev);
++	struct acpi_gpio_connection *conn, *tmp;
++	acpi_status status;
 +
-+	achip->chip = chip;
-+
-+	status = acpi_attach_data(handle, acpi_gpio_chip_dh, achip);
++	status = acpi_remove_address_space_handler(handle, ACPI_ADR_SPACE_GPIO,
++						   acpi_gpio_adr_space_handler);
 +	if (ACPI_FAILURE(status)) {
-+		dev_err(chip->dev, "Failed to attach ACPI GPIO chip\n");
-+		kfree(achip);
++		dev_err(chip->dev, "Failed to remove GPIO OpRegion handler\n");
 +		return;
 +	}
 +
-+	acpi_gpiochip_request_interrupts(achip);
++	list_for_each_entry_safe_reverse(conn, tmp, &achip->conns, node) {
++		gpiochip_free_own_desc(conn->desc);
++		list_del(&conn->node);
++		kfree(conn);
++	}
++}
++
+ void acpi_gpiochip_add(struct gpio_chip *chip)
+ {
+ 	struct acpi_gpio_chip *achip;
+@@ -361,6 +515,7 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+ 	}
+ 
+ 	acpi_gpiochip_request_interrupts(achip);
++	acpi_gpiochip_request_regions(achip);
  }
  
  void acpi_gpiochip_remove(struct gpio_chip *chip)
- {
--	acpi_gpiochip_free_interrupts(chip);
-+	struct acpi_gpio_chip *achip;
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	handle = ACPI_HANDLE(chip->dev);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_get_data(handle, acpi_gpio_chip_dh, (void **)&achip);
-+	if (ACPI_FAILURE(status)) {
-+		dev_warn(chip->dev, "Failed to retrieve ACPI GPIO chip\n");
-+		return;
-+	}
-+
-+	acpi_gpiochip_free_interrupts(achip);
-+
-+	acpi_detach_data(handle, acpi_gpio_chip_dh);
-+	kfree(achip);
- }
+@@ -379,6 +534,7 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
+ 		return;
+ 	}
+ 
++	acpi_gpiochip_free_regions(achip);
+ 	acpi_gpiochip_free_interrupts(achip);
+ 
+ 	acpi_detach_data(handle, acpi_gpio_chip_dh);
 -- 
 1.9.0.rc3
 
