@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaBXNRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:17:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34639 "EHLO mail.zytor.com"
+	id S1752715AbaBXNRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:17:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52639 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301AbaBXNRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:17:04 -0500
-Message-ID: <530B462E.9070009@zytor.com>
-Date: Mon, 24 Feb 2014 05:16:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Daniel Borkmann <borkmann@iogearbox.net>
-CC: Jan Beulich <JBeulich@suse.com>, Daniel Borkmann <dborkman@redhat.com>,
-        davem@davemloft.net, mingo@elte.hu, tglx@linutronix.de,
-        ffusco@redhat.com, tgraf@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86/hash: swap parameters of crc32_u32()
-References: <53073986020000780011E2E1@nat28.tlf.novell.com> <5308938A.8070506@redhat.com> <530B0AF2020000780011E97B@nat28.tlf.novell.com> <530B1D60.8010602@redhat.com> <530B32A4020000780011EACB@nat28.tlf.novell.com> <530B3102.4050102@redhat.com> <530B3BDB.3010908@zytor.com> <530B4C0C020000780011EC0D@nat28.tlf.novell.com> <530B4058.80705@zytor.com> <530B429C.2090507@zytor.com> <530B449C.8030205@iogearbox.net>
-In-Reply-To: <530B449C.8030205@iogearbox.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752163AbaBXNRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 08:17:37 -0500
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kys@microsoft.com, abgupta@microsoft.com, haiyangz@microsoft.com,
+        jasowang@redhat.com, tomi.valkeinen@ti.com,
+        devel@linuxdriverproject.org, Gerd Hoffmann <kraxel@redhat.com>
+Subject: [PATCH v3 2/4] vmbus: use resource for hyperv mmio region
+Date: Mon, 24 Feb 2014 14:17:09 +0100
+Message-Id: <1393247831-5271-3-git-send-email-kraxel@redhat.com>
+In-Reply-To: <1393247831-5271-1-git-send-email-kraxel@redhat.com>
+References: <1393247831-5271-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a totally different note, it would probably be a good idea to use 
-intrinsics more in the kernel where possible.  Intrinsics do allow the 
-compiler to generate better scheduling.
+Use a resource for the hyperv mmio region instead of start/size
+variables.  Register the region properly so it shows up in
+/proc/iomem.
 
-The trick of course is that we'd want to have machinery that can fall 
-back to inline assembly if the compiler doesn't support the intrinsics, 
-and perhaps even to .bytes if needed.  This pretty much involves a bunch 
-of compiler and assembler-probing machinery and then wrapping things in 
-neat little inline functions.
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+---
+ drivers/hv/vmbus_drv.c | 16 ++++++++++------
+ include/linux/hyperv.h |  3 +--
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-	-hpa
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index 2352ae48..a14f603 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -43,10 +43,12 @@ static struct acpi_device  *hv_acpi_dev;
+ static struct tasklet_struct msg_dpc;
+ static struct completion probe_event;
+ static int irq;
+-u64 hyperv_mmio_start;
+-EXPORT_SYMBOL_GPL(hyperv_mmio_start);
+-u64 hyperv_mmio_size;
+-EXPORT_SYMBOL_GPL(hyperv_mmio_size);
++
++struct resource hyperv_mmio = {
++	.name  = "hyperv mmio",
++	.flags = IORESOURCE_MEM,
++};
++EXPORT_SYMBOL_GPL(hyperv_mmio);
+ 
+ static int vmbus_exists(void)
+ {
+@@ -902,8 +904,8 @@ static acpi_status vmbus_walk_resources(struct acpi_resource *res, void *ctx)
+ 		break;
+ 
+ 	case ACPI_RESOURCE_TYPE_ADDRESS64:
+-		hyperv_mmio_start = res->data.address64.minimum;
+-		hyperv_mmio_size = res->data.address64.address_length;
++		hyperv_mmio.start = res->data.address64.minimum;
++		hyperv_mmio.end = res->data.address64.maximum;
+ 		break;
+ 	}
+ 
+@@ -933,6 +935,8 @@ static int vmbus_acpi_add(struct acpi_device *device)
+ 
+ 		if (ACPI_FAILURE(result))
+ 			goto acpi_walk_err;
++		if (hyperv_mmio.start && hyperv_mmio.end)
++			request_resource(&iomem_resource, &hyperv_mmio);
+ 	}
+ 	ret_val = 0;
+ 
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index be3028f..c93e342 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -1459,8 +1459,7 @@ int hv_vss_init(struct hv_util_service *);
+ void hv_vss_deinit(void);
+ void hv_vss_onchannelcallback(void *);
+ 
+-extern u64 hyperv_mmio_start;
+-extern u64 hyperv_mmio_size;
++extern struct resource hyperv_mmio;
+ 
+ /*
+  * Negotiated version with the Host.
+-- 
+1.8.3.1
 
