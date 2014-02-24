@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863AbaBXFyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:54:31 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50622 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbaBXFy0 (ORCPT
+	id S1752472AbaBXF4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:56:19 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:63668 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaBXFya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:54:26 -0500
-Date: Mon, 24 Feb 2014 14:54:16 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jason Cooper <jason@lakedaemon.net>,
-        andrew@lunn.ch, gregory.clement@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Message-ID: <20140224055416.GB25940@sirena.org.uk>
-References: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gQmjQz8lQ7hwrZL9"
-Content-Disposition: inline
-In-Reply-To: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the mvebu
- tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 24 Feb 2014 00:54:30 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Sagi Grimberg <sagig@dev.mellanox.co.il>
+Subject: [RFC 6/6] virtio-scsi: Enable DIF/DIX modes in SCSI host LLD
+Date: Mon, 24 Feb 2014 05:32:30 +0000
+Message-Id: <1393219950-18613-7-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1393219950-18613-1-git-send-email-nab@daterainc.com>
+References: <1393219950-18613-1-git-send-email-nab@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
---gQmjQz8lQ7hwrZL9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch updates virtscsi_probe() to setup all necessary Scsi_Host
+level protection resources necessary to enable DIF on virtio-scsi
+<-> vhost-scsi LUNs.  Currently hardcoded to 1.
 
-On Mon, Feb 24, 2014 at 01:37:52PM +1100, Stephen Rothwell wrote:
+It changes virtscsi_add_cmd() so that outgoing / incoming protection
+SGLs are attached after each data payload, and is currently using the
+unused virtio_scsi_cmd_req->prio bits to signal the total number of
+prot_sgl_count for vhost/scsi to expect.
 
-> I fixed it up (Probably incorrectly - see below) and can carry the fix as
-> necessary (no action is required).
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/virtio_scsi.c |   33 ++++++++++++++++++++++++++++-----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
 
-That looks right (or at least like it won't do any harm or cause
-bisection problems), thanks.
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 16bfd50..294466d 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -440,7 +440,7 @@ static int virtscsi_add_cmd(struct virtqueue *vq,
+ 			    size_t req_size, size_t resp_size, gfp_t gfp)
+ {
+ 	struct scsi_cmnd *sc = cmd->sc;
+-	struct scatterlist *sgs[4], req, resp;
++	struct scatterlist *sgs[6], req, resp;
+ 	struct sg_table *out, *in;
+ 	unsigned out_num = 0, in_num = 0;
+ 
+@@ -458,16 +458,22 @@ static int virtscsi_add_cmd(struct virtqueue *vq,
+ 	sgs[out_num++] = &req;
+ 
+ 	/* Data-out buffer.  */
+-	if (out)
++	if (out) {
+ 		sgs[out_num++] = out->sgl;
++		if (scsi_prot_sg_count(sc))
++			sgs[out_num++] = scsi_prot_sglist(sc);
++	}
+ 
+ 	/* Response header.  */
+ 	sg_init_one(&resp, &cmd->resp, resp_size);
+ 	sgs[out_num + in_num++] = &resp;
+ 
+ 	/* Data-in buffer */
+-	if (in)
++	if (in) {
+ 		sgs[out_num + in_num++] = in->sgl;
++		if (scsi_prot_sg_count(sc))
++			sgs[out_num + in_num++] = scsi_prot_sglist(sc);
++	}
+ 
+ 	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, gfp);
+ }
+@@ -498,6 +504,7 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ {
+ 	struct virtio_scsi_cmd *cmd;
+ 	int ret;
++	u8 prio = 0;
+ 
+ 	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+ 	BUG_ON(scsi_sg_count(sc) > shost->sg_tablesize);
+@@ -515,6 +522,10 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 
+ 	memset(cmd, 0, sizeof(*cmd));
+ 	cmd->sc = sc;
++
++	if (scsi_prot_sg_count(sc))
++		prio = (u8)scsi_prot_sg_count(sc);
++
+ 	cmd->req.cmd = (struct virtio_scsi_cmd_req){
+ 		.lun[0] = 1,
+ 		.lun[1] = sc->device->id,
+@@ -522,7 +533,7 @@ static int virtscsi_queuecommand(struct virtio_scsi *vscsi,
+ 		.lun[3] = sc->device->lun & 0xff,
+ 		.tag = (unsigned long)sc,
+ 		.task_attr = VIRTIO_SCSI_S_SIMPLE,
+-		.prio = 0,
++		.prio = prio,
+ 		.crn = 0,
+ 	};
+ 
+@@ -871,7 +882,7 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ {
+ 	struct Scsi_Host *shost;
+ 	struct virtio_scsi *vscsi;
+-	int err;
++	int err, host_prot;
+ 	u32 sg_elems, num_targets;
+ 	u32 cmd_per_lun;
+ 	u32 num_queues;
+@@ -921,6 +932,17 @@ static int virtscsi_probe(struct virtio_device *vdev)
+ 	shost->max_id = num_targets;
+ 	shost->max_channel = 0;
+ 	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
++
++	/* FIXME: Figure out why this is broken.. */
++	if (1 || virtio_has_feature(vdev, VIRTIO_SCSI_F_T10_PI)) {
++		host_prot = SHOST_DIF_TYPE1_PROTECTION | SHOST_DIF_TYPE2_PROTECTION |
++			    SHOST_DIF_TYPE3_PROTECTION | SHOST_DIX_TYPE1_PROTECTION |
++			    SHOST_DIX_TYPE2_PROTECTION | SHOST_DIX_TYPE3_PROTECTION;
++
++		scsi_host_set_prot(shost, host_prot);
++		scsi_host_set_guard(shost, SHOST_DIX_GUARD_CRC);
++	}
++
+ 	err = scsi_add_host(shost, &vdev->dev);
+ 	if (err)
+ 		goto scsi_add_host_failed;
+@@ -990,6 +1012,7 @@ static struct virtio_device_id id_table[] = {
+ static unsigned int features[] = {
+ 	VIRTIO_SCSI_F_HOTPLUG,
+ 	VIRTIO_SCSI_F_CHANGE,
++	VIRTIO_SCSI_F_T10_PI,
+ };
+ 
+ static struct virtio_driver virtio_scsi_driver = {
+-- 
+1.7.10.4
 
---gQmjQz8lQ7hwrZL9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCt6FAAoJELSic+t+oim9VCcP/37OSHXG5z0AVYA2zAEmSRWx
-rx/PBQ/xdnFW+cN3IGPbB9VNeaI5NKAlhLH3XPOCn9IbTuK7M9HsmWDamkLrQD9g
-Sma0RjnIjRDA5FpbG3e3k+lavMHPR9Gl2eLZQNP7pJtrvvPatfZxZ4sY5tO3/msf
-NOqja2oAq5DrEgdiErZP5Y0Mfo2HqBawMyVokgUZ+ZpH4d4bvl5E2tvuzp8mWmt8
-RsBadPX2z2sw32G+MaBqFzZrI+U6l9mUHyG52Y+65i02aQRbaUYNPdjniV8BWqz1
-UfPWYyqoQRHZkqYju4gdZuFZSeBZ0MQVPg0XREJ3rEQ6fBGmK6c/pkKqRkv7ng+q
-D46rXzLXVo6GWYV9qP/9vrrzLKlLSkROZsFXwJGH00hCaNjxUin6eA/PcavxOV5J
-MvMxYwRgC9g4m/BPeH05lIBEtJNSUlSVYEbR3XP8CuiLCXQFI3r9k4AgEIJ5nxm+
-v9Lr3jsWmlQoCLE8YmIoyDxv+BraNn+iIlT44HHfMiXLTbc7oKvbMsJYm23678kg
-kArOe88FRdap5Sb2JJsPpPjm1hUGtHb0mwypgOqknMBza6iTJw+eUBko6dTvp0Bz
-Wp7bP5VKHt7dwjSe1g7ZFGKlIn+AYZ2Z74nq4uCkSBy7uBfIyEoW3xE1DeHQFLFS
-QmHoKEbS0bUQb2QumPRu
-=o3SL
------END PGP SIGNATURE-----
-
---gQmjQz8lQ7hwrZL9--
