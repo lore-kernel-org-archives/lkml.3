@@ -1,118 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656AbaBXOip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:38:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35303 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaBXOik (ORCPT
+	id S1752693AbaBXOmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:42:08 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:40979
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752473AbaBXOmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:38:40 -0500
-Message-ID: <530B594F.2030500@ti.com>
-Date: Mon, 24 Feb 2014 08:38:07 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 24 Feb 2014 09:42:05 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchzz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh1155h)
+X-WSS-ID: 0N1I8TV-08-O72-02
+X-M-MSG: 
+Subject: [PATCH 0/3] crypto: ccp - minor code fixes
+To: <linux-crypto@vger.kernel.org>, <herbert@gondor.apana.org.au>,
+        <davem@davemloft.net>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Feb 2014 08:41:56 -0600
+Message-ID: <20140224144156.16181.81272.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain
- driver support
-References: <1392755543-28335-1-git-send-email-nm@ti.com> <1392755543-28335-4-git-send-email-nm@ti.com> <20140224015826.GU25940@sirena.org.uk>
-In-Reply-To: <20140224015826.GU25940@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2014 07:58 PM, Mark Brown wrote:
-> On Tue, Feb 18, 2014 at 02:32:20PM -0600, Nishanth Menon wrote:
-> 
->> The current regulator model provides the basic building blocks for the
->> transitions, however SoC drivers specific to each of these devices, be
->> it cpufreq/devfreq have to replicate the logic for functionality.
-> 
->> To simply the logic, we can hence introduce a layer that takes care
->> of the mundane transition logic, registration mechanisms to provide
->> the "user drivers" such as cpufreq/devfreq a generic interface, whose
->> details are abstracted by the device tree description for the SoC on
->> which the driver operates on.
-> 
-> This doesn't really provide a picture of what the generic interface
-> that's being offered is and...
-I should have probably picked up part of the cover letter[1] and
-elaborated further in the commit message here.
+The following series implements some fixes to some code paths executed
+during crypto API request processing.  These fixes address processing of
+requests when the CCP driver returns -EBUSY and freeing memory in error
+paths.
 
-Intent here is to allow drivers such as cpufreq-cpu0 to be reused on
-platforms such as TI's OMAP derivatives, and other SoCs which differ
-only by the sequence involved in voltage scale operations. So, this
-patch provides a framework for registering the underlying
-implementation of the SoC specific voltage change methodology.
+This patch series is based on the cryptodev-2.6 kernel tree.
 
-Overall the sequence takes place after this patch is as follows:
-a) voltage domain drivers such as those of TI or others register with
-voltage domain with devm_voltdm_register.
-b) cpufreq-cpu0/devfreq drivers:
-of_pm_voltdm_notifier_register(introduced as part of patch #1) to
-register notifiers around clk of interest. This request is linked to
-the specific voltage domain using phandle in device tree.
-c) when cpufreq-cpu0/devfreq does a clk_set_rate, the common clock
-framework triggers notifiers in voltage domain core which in turn,
-invokes the corresponding handlers for the voltage domain driver
-ensuring the right dvfs sequence specific to the SoC is triggered.
+---
 
-With this patch, the logic for a SoC specific voltage domain
-intricacies can now be abstracted out to the voltage domain layer.
-This allows reuse of the logic by multiple drivers such as
-devfreq/cpufreq and allows these to remain consistent with very
-minimal SoC(if any at all) specific implementations in them.
-
-Among the other obvious alternatives to this approach are:
-a) To duplicate the logic multiple times for various drivers such as
-devfreq/cpufreq and try to ensure the logic sequences are proper.
-basically, create cpufreq-abb-omap, cpufreq-avs-omap,
-devfreq-abb-omap, devfreq-avs-omap etc..
-b) introduce a specific API for voltage change (something like
-pm_dev_scale_opp_frequency or the equivalent).
+Tom Lendacky (3):
+      crypto: ccp - Prevent a possible lost CCP command request
+      crypto: ccp - Invoke context callback when there is a backlog error
+      crypto: ccp - Account for CCP backlog processing
 
 
-> 
->>  drivers/power/voltdm/Kconfig                  |    5 +
->>  drivers/power/voltdm/Makefile                 |    3 +
->>  drivers/power/voltdm/core.c                   |  347 +++++++++++++++++++++++--
->>  drivers/power/voltdm/voltage_domain_private.h |   86 ++++++
->>  4 files changed, 424 insertions(+), 17 deletions(-)
-> 
-> ...the diffstat doesn't make it obvious what the external interface is
-> either.  It would be much easier to review this with a clearer picture
-> of what it's aiming to implement.
+ drivers/crypto/ccp/ccp-crypto-main.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-The drivers such as cpufreq/devfreq has the same interface introduced
-by patch #1 in this series of_pm_voltdm_notifier_register/unregister
-which is exposed by include/linux/pm_voltage_domain.h
-
-Underlying implementation of the SoC specific voltage change
-methodology can now be isolated by voltage domain driver using
-voltage_domain_private.h and services provided by core.c
-
-> 
->> +	voltdm_np = of_parse_phandle(np, prop_name, 0);
->> +	if (voltdm_np) {
->> +		ret = of_parse_phandle_with_args(np, prop_name, "#voltdm-cells",
->> +						 0, args);
->> +		if (ret)
->> +			return ERR_PTR(ret);
-> 
-> There seems to be some DT stuff going on here, is the interface DT only?
-> 
-yes. i will make that clear in the documentation.
-
-[1] http://marc.info/?l=linux-kernel&m=139275560531711&w=2
 -- 
-Regards,
-Nishanth Menon
+Tom Lendacky
+
