@@ -1,76 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaBXTZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:25:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48426 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaBXTZI (ORCPT
+	id S1753301AbaBXTZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:25:24 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:59306 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752850AbaBXTZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:25:08 -0500
-Date: Mon, 24 Feb 2014 20:25:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: mingo@kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
-        nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 4/5] idle: Move idle conditions in cpuidle_idle main
- function
-Message-ID: <20140224192501.GO6835@laptop.programming.kicks-ass.net>
-References: <1393250151-6982-1-git-send-email-daniel.lezcano@linaro.org>
- <1393250151-6982-4-git-send-email-daniel.lezcano@linaro.org>
- <20140224145912.GW27965@twins.programming.kicks-ass.net>
- <530B679C.6070204@linaro.org>
- <20140224160543.GZ9987@twins.programming.kicks-ass.net>
- <530B7B4E.50306@linaro.org>
- <20140224172207.GC9987@twins.programming.kicks-ass.net>
- <530B97B9.8020502@linaro.org>
-MIME-Version: 1.0
+	Mon, 24 Feb 2014 14:25:18 -0500
+Date: Mon, 24 Feb 2014 20:25:07 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
+Message-ID: <20140224192507.GO1484@spo001.leaseweb.com>
+References: <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net> <53097091.50204@udio.cujae.edu.cu> <530950A1.40302@roeck-us.net> <530991AA.9040201@udio.cujae.edu.cu> <53096E8D.50202@roeck-us.net> <530A20ED.3070505@udio.cujae.edu.cu> <530A0909.50101@roeck-us.net> <530A453E.4070608@udio.cujae.edu.cu> <530B085C.7090401@monstr.eu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <530B97B9.8020502@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <530B085C.7090401@monstr.eu>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 08:04:25PM +0100, Daniel Lezcano wrote:
-> >+		/*
-> >+		 * Since we fell out of the loop above, we know
-> >+		 * TIF_NEED_RESCHED must be set, propagate it into
-> >+		 * PREEMPT_NEED_RESCHED.
-> >+		 *
-> >+		 * This is required because for polling idle loops we will
-> >+		 * not have had an IPI to fold the state for us.
-> >+		 */
-> >+		preempt_set_need_resched();
-> >  		tick_nohz_idle_exit();
-> >  		schedule_preempt_disabled();
-> 
-> So IIUC, the mainloop has two states: one where it is blocked on a HLT/WFI
-> instruction (or about to enter/ exit this state) and another one outside of
-> this blocking section.
+Hi Michal,
 
-Almost; on x86 we have an monitor/mwait construct that blocks waiting
-for a cacheline write. We point it at the thread_info->flags line. So
-the TIF_NEED_RESCHED write from the other CPU wakes us up.
-
-So no need to send an IPI after we write that flag.
-
-> When the idle task is blocked on HLT/WFI, it needs the IPI-reschedule in
-> order to be woken up and rescheduled. But if it is outside this section, the
-> idle task is not waiting for an interrupt and an expensive IPI can be saved
-> by just setting the TS_POLLING flag, the scheduler will check this flag and
-> won't send the IPI.
+> On 02/23/2014 08:00 PM, Alejandro Cabrera wrote:
+> > On 23/2/2014 6:43 AM, Guenter Roeck wrote:
+> >> On 02/23/2014 08:25 AM, Alejandro Cabrera wrote:
+> >>> On 22/2/2014 7:44 PM, Guenter Roeck wrote:
+> >>>> On 02/22/2014 10:14 PM, Alejandro Cabrera wrote:
+> >>>>> On 22/2/2014 5:36 PM, Guenter Roeck wrote:
+> >>>>>> On 02/22/2014 07:52 PM, Alejandro Cabrera wrote:
+> >>>>>>> On 22/2/2014 3:18 PM, Guenter Roeck wrote:
+> >>>>>>>> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
+> >>>>>>>>> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
+> >>>>>>>>>> Hi All,
+> >>>>>>>>>>
+> >>>>>>>>>>> Hi Michal,
+> >>>>>>>>>>>
+> >>>>>>>>>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrote:
+> >>>>>>>>>>>> Use of_property_read_u32 functions to clean probe function.
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
+> >>>>>>>>>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
+> >>>>>>>>>>>> ---
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> Changes in v3:
+> >>>>>>>>>>>> - Remove one if checking and use variable directly
+> >>>>>>>>>>>>
+> >>>>>>>>>>> Looks good.
+> >>>>>>>>>>>
+> >>>>>>>>>>> Another comment/remark.
+> >>>>>>>>>>>
+> >>>>>>>>>>>> -    pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+> >>>>>>>>>>>> -                    "clock-frequency", NULL);
+> >>>>>>>>>>>> -
+> >>>>>>>>>>>> -    if (pfreq == NULL) {
+> >>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency",&pfreq);
+> >>>>>>>>>>>> +    if (rc) {
+> >>>>>>>>>>>>           dev_warn(&pdev->dev,
+> >>>>>>>>>>>>                "The watchdog clock frequency cannot be obtained\n");
+> >>>>>>>>>>>>           no_timeout = true;
+> >>>>>>>>>>>>       }
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+> >>>>>>>>>>>> -                    "xlnx,wdt-interval", NULL);
+> >>>>>>>>>>>> -    if (tmptr == NULL) {
+> >>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
+> >>>>>>>>>>>> + &xdev->wdt_interval);
+> >>>>>>>>>>>> +    if (rc) {
+> >>>>>>>>>>>>           dev_warn(&pdev->dev,
+> >>>>>>>>>>>>                "Parameter \"xlnx,wdt-interval\" not found\n");
+> >>>>>>>>>>>>           no_timeout = true;
+> >>>>>>>>>>>> -    } else {
+> >>>>>>>>>>>> -        xdev->wdt_interval = *tmptr;
+> >>>>>>>>>>>>       }
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> -    tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+> >>>>>>>>>>>> -                    "xlnx,wdt-enable-once", NULL);
+> >>>>>>>>>>>> -    if (tmptr == NULL) {
+> >>>>>>>>>>>> +    rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
+> >>>>>>>>>>>> + &enable_once);
+> >>>>>>>>>>>> +    if (rc)
+> >>>>>>>>>>>>           dev_warn(&pdev->dev,
+> >>>>>>>>>>>>                "Parameter \"xlnx,wdt-enable-once\" not found\n");
+> >>>>>>>>>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
+> >>>>>>>>>>>> -    }
+> >>>>>>>>>>> All the above properties are optional. Is a warning really
+> >>>>>>>>>>> warranted in this case ? I usually associate a warning with
+> >>>>>>>>>>> something that is wrong, which is not the case here.
+> >>>>>>>>>>>
+> >>>>>>>>>>> I would encourage you to drop those warnings, but that should be
+> >>>>>>>>>>> a separate patch.
+> >>>>>>>>>> I agree with Guenter: these are not really warnings. Seperate patch is thus welcome.
+> >>>>>>>>> Hi
+> >>>>>>>>>
+> >>>>>>>>> I support Michal intention, I think it is a warning because device tree blob must have the "xlnx,wdt-enable-once" property specified in order to allow the system to be sure of the real value of this property. In addition to, this warning can be helpful to detect a wrong device tree specification.
+> >>>>>>>>>
+> >>>>>>>>
+> >>>>>>>> The dt documentation states that the properties are optional.
+> >>>>>>>>
+> >>>>>>>> Optional properties:
+> >>>>>>>> - clock-frequency       : Frequency of clock in Hz
+> >>>>>>>> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
+> >>>>>>>>                           1 - Watchdog can be enabled just once
+> >>>>>>>> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val> clock cycles,
+> >>>>>>>> <val> is integer from 8 to 31.
+> >>>>>>>>
+> >>>>>>>> This clearly conflicts with your statement. An optional property
+> >>>>>>>> is just that, optional. If it warrants a warning, it must
+> >>>>>>>> not be optional. If you claim that not providing the properties
+> >>>>>>>> would be "wrong", why are they defined as optional ?
+> >>>>>>> Hi Guenter
+> >>>>>>>
+> >>>>>>> I didn't know that these properties was classified as optional...
+> >>>>>>> I think that they should not be, because all xilinx watchog devices (at least for microblaze processor)
+> >>>>>>> have these properties defined in theirs MPD files and theirs values can be obtained during the
+> >>>>>>> hardware specification to device tree conversion.
+> >>>>>>>> What is your definition of "wrong" and "must have" ?
+> >>>>>>> what I mean for "must have" is: if these properties can be obtained
+> >>>>>>> for all xilinx watchdog devices they must be present in the device tree because they allows
+> >>>>>>> the system (linux/user) to know exactly how a watchdog device is configured.
+> >>>>>>> Because these properties always can be obtained from hardware design there is no
+> >>>>>>> reason to leave them out from the device tree. This is why I consider that a device tree without
+> >>>>>>> these properties should be considered as "wrong" device tree.
+> >>>>>>>> How do you expect anyone to know that omitting those
+> >>>>>>>> "optional" properties is by some definition "wrong" ?
+> >>>>>>> I'm agree with you.
+> >>>>>>> Maybe these properties shouldn't be optional.
+> >>>>>>> For example suppose that "xlnx,wdt-enable-once" is missing in the device tree,
+> >>>>>>> when a watchdog daemon ask for this property what is the obtained value ?
+> >>>>>>> Independently of this value, why do not warn the user about this missing property
+> >>>>>>> when it can always be in the device tree ?
+> >>>>>>>
+> >>>>>>
+> >>>>>> Really, this line of argument doesn't make any sense to me.
+> >>>>>> "xlnx,wdt-enable-once", for example, is a boolean and means
+> >>>>>> that the watchdog, when enabled, can not be stopped. It defaults
+> >>>>>> to false, and thus is inherently optional. Making it mandatory
+> >>>>>> doesn't really add any value.
+> >>>>>>
+> >>>>>
+> >>>>> If the device has been configured with wdt-enable-once=true
+> >>>>> and the device tree doesn't have this property then a watchdog daemon
+> >>>>> would see it as "false" because it is the default making the system to misbehave...
+> >>>>> A warning during driver loading could help user to identify the problem.
+> >>>>>
+> >>>>
+> >>>> All this would give you is a false sense of safety. The property could
+> >>>> just as well be there and be wrong (eg be configured as = <0> when it
+> >>>> should be 1, or with a wrong frequency.
+> >>> These issues "cannot" be detected but the missing properties yes.
+> >>>> Following your logic, every driver
+> >>>> would need to warn about everything, just to be sure.
+> >>> Every driver should warn about anything that it considers weird and let the user to decide if it matters or not.
+> >>> I think that an example of weird could be the lack of an expected property.
+> >>>
+> >>
+> >> I don't think it makes sense to continue this discussion.
+> >> We have fundamental differences in opinion which we won't
+> >> resolve by repeating our arguments over and over.
+> >>
+> >> Wim, I'll let you decide how to handle this. My recommendation
+> >> is to request the author to decide if the properties are optional
+> >> or not before accepting this patch set. Either the properties
+> >> are optional, and there should be no warnings, or they are
+> >> mandatory and the driver should bail out if they are missing.
+> >>
+> > I'm totally agreed with you :)
+> >
 > 
-> But 'set_preempt_need_resched' is called from the IPI handler. So if no IPI
-> is sent because the idle task is in polling state, we have to set it
-> ourself.
+> You have reached to completely different discussion.
+> We should talk just about the code I have sent.
+> I have checked what I have done and the intention was just to have better driver.
+> I even didn't change any logic about DT and probe. DT binding just describes
+> what it is written in the driver, nothing more nothing else.
 > 
-> Now, the difference between the old code with 'tif_need_resched()' is
-> because we don't need to check it because it is always true.
+> Please keep this in your mind.
 > 
-> Am I right ?
+> The driver with this binding is in the kernel for a while and if binding is wrong
+> let's change it but it should be in separate patch which can fix binding
+> warn/error messages.
+> 
+> Wim: If you agree, I have no problem to send this follow up patch
+> which can be applied on the top of this series.
+> We can make xlnx,wdt-enable-once and xlnx,wdt-interval as required properties
+> and clock-frequence can go away and we can use CCF.
 
-Yah, also it closes a very narrow window where TIF_NEED_RESCHED wasn't
-set at the end of the while (!need_resched()) but is at the top.
+As said: a follow up patch would be welcome. So yes I agree.
+And I also think that the discussion was interesting because it pointed out that a review of the bindings could also be usefull (what is required versus what os optional).
+
+Kind regards,
+Wim.
 
