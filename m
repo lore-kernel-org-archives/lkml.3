@@ -1,235 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaBXMSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 07:18:03 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:36262 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaBXMSB (ORCPT
+	id S1752453AbaBXMTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 07:19:19 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:11138 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaBXMTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 07:18:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <52E062D8.1060206@gmail.com>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
-	<1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
-	<20140123001802.GF13785@codeaurora.org>
-	<52E062D8.1060206@gmail.com>
-Date: Mon, 24 Feb 2014 13:11:00 +0100
-Message-ID: <CAPDyKFrvewrPKuhW8BTxcqH=SOxc8oWfrUuN-aZYnP2Kv+We7A@mail.gmail.com>
-Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain look-up
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
+	Mon, 24 Feb 2014 07:19:18 -0500
+X-IronPort-AV: E=Sophos;i="4.97,534,1389744000"; 
+   d="scan'208";a="103507957"
+Date: Mon, 24 Feb 2014 12:19:11 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <xen-devel@lists.xenproject.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Pavel Machek <pavel@ucw.cz>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
+ protected by an IOMMU
+In-Reply-To: <1392914159.32657.18.camel@kazak.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com>
+References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org> <1392914159.32657.18.camel@kazak.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2014 01:31, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Hi Stephen,
->
->
-> On 23.01.2014 01:18, Stephen Boyd wrote:
->>
->> On 01/11, Tomasz Figa wrote:
->>>
->>> +
->>> +/**
->>> + * of_genpd_lock() - Lock access to of_genpd_providers list
->>> + */
->>> +static void of_genpd_lock(void)
->>> +{
->>> +       mutex_lock(&of_genpd_mutex);
->>> +}
->>> +
->>> +/**
->>> + * of_genpd_unlock() - Unlock access to of_genpd_providers list
->>> + */
->>> +static void of_genpd_unlock(void)
->>> +{
->>> +       mutex_unlock(&of_genpd_mutex);
->>> +}
->>
->>
->> Why do we need these functions? Can't we just call
->> mutex_lock/unlock directly?
->
->
-> That would be fine as well, I guess. Just duplicated the pattern used in
-> CCF, but can remove them in next version if it's found to be better.
->
->
->>
->>> +
->>> +/**
->>> + * of_genpd_add_provider() - Register a domain provider for a node
->>> + * @np: Device node pointer associated with domain provider
->>> + * @genpd_src_get: callback for decoding domain
->>> + * @data: context pointer for @genpd_src_get callback.
->>
->>
->> These look a little outdated.
->
->
-> Oops, missed this.
->
->
->>
->>> + */
->>> +int of_genpd_add_provider(struct device_node *np, genpd_xlate_t xlate,
->>> +                         void *data)
->>> +{
->>> +       struct of_genpd_provider *cp;
->>> +
->>> +       cp = kzalloc(sizeof(struct of_genpd_provider), GFP_KERNEL);
->>
->>
->> Please use sizeof(*cp) instead.
->
->
-> Right.
->
->
->>
->>> +       if (!cp)
->>> +               return -ENOMEM;
->>> +
->>> +       cp->node = of_node_get(np);
->>> +       cp->data = data;
->>> +       cp->xlate = xlate;
->>> +
->>> +       of_genpd_lock();
->>> +       list_add(&cp->link, &of_genpd_providers);
->>> +       of_genpd_unlock();
->>> +       pr_debug("Added domain provider from %s\n", np->full_name);
->>> +
->>> +       return 0;
->>> +}
->>> +EXPORT_SYMBOL_GPL(of_genpd_add_provider);
->>> +
->>
->> [...]
->>>
->>> +
->>> +/* See of_genpd_get_from_provider(). */
->>> +static struct generic_pm_domain *__of_genpd_get_from_provider(
->>> +                                       struct of_phandle_args
->>> *genpdspec)
->>> +{
->>> +       struct of_genpd_provider *provider;
->>> +       struct generic_pm_domain *genpd = ERR_PTR(-ENOENT);
->>
->>
->> Can this be -EPROBE_DEFER so that we can defer probe until a
->> later time if the power domain provider hasn't registered yet?
->
->
-> Yes, this could be useful. Makes me wonder why clock code (on which I based
-> this code) doesn't have it done this way.
->
->
->>
->>> +
->>> +       /* Check if we have such a provider in our array */
->>> +       list_for_each_entry(provider, &of_genpd_providers, link) {
->>> +               if (provider->node == genpdspec->np)
->>> +                       genpd = provider->xlate(genpdspec,
->>> provider->data);
->>> +               if (!IS_ERR(genpd))
->>> +                       break;
->>> +       }
->>> +
->>> +       return genpd;
->>> +}
->>> +
->>
->> [...]
->>>
->>> +static int of_genpd_notifier_call(struct notifier_block *nb,
->>> +                                 unsigned long event, void *data)
->>> +{
->>> +       struct device *dev = data;
->>> +       int ret;
->>> +
->>> +       if (!dev->of_node)
->>> +               return NOTIFY_DONE;
->>> +
->>> +       switch (event) {
->>> +       case BUS_NOTIFY_BIND_DRIVER:
->>> +               ret = of_genpd_add_to_domain(dev);
->>> +               break;
->>> +
->>> +       case BUS_NOTIFY_UNBOUND_DRIVER:
->>> +               ret = of_genpd_del_from_domain(dev);
->>> +               break;
->>> +
->>> +       default:
->>> +               return NOTIFY_DONE;
->>> +       }
->>> +
->>> +       return notifier_from_errno(ret);
->>> +}
->>> +
->>> +static struct notifier_block of_genpd_notifier_block = {
->>> +       .notifier_call = of_genpd_notifier_call,
->>> +};
->>> +
->>> +static int of_genpd_init(void)
->>> +{
->>> +       return bus_register_notifier(&platform_bus_type,
->>> +                                       &of_genpd_notifier_block);
->>> +}
->>> +core_initcall(of_genpd_init);
->>
->>
->> Would it be possible to call the of_genpd_add_to_domain() and
->> of_genpd_del_from_domain() functions directly in the driver core,
->> similar to how the pinctrl framework has a hook in there? That
->> way we're not relying on any initcall ordering for this.
->
->
-> Hmm, the initcall here just registers a notifier, which needs to be done
-> just before any driver registers. So, IMHO, current variant is safe, given
-> an early enough initcall level is used.
->
-> However, doing it the pinctrl way might still have an advantage of not
-> relying on specific bus type, so this is worth consideration indeed. I'd
-> like to hear Rafael's and Kevin's opinions on this (and other comments above
-> too).
+CC'ing Greg.
 
-As you say; certainly there will be other bus types that we need to
-support as well. For example the amba bus (drivers/amba/bus.c).
+On Thu, 20 Feb 2014, Ian Campbell wrote:
+> On Thu, 2014-02-20 at 16:21 +0000, Julien Grall wrote:
+> > Only Xen is able to know if a device can safely avoid to use xen-swiotlb.
+> > This patch introduce a new property "protected-devices" for the hypervisor
+> > node which list device which the IOMMU are been correctly programmed by Xen.
+> > 
+> > During Linux boot, Xen specific code will create an hash table which
+> > contains all these devices. The hash table will be used in need_xen_dma_ops
+> > to check if the Xen DMA ops needs to be used for the current device.
+> 
+> Is it out of the question to find a field within struct device itself to
+> store this e.g. in struct device_dma_parameters perhaps and avoid the
+> need for a hashtable lookup.
+> 
+> device->iommu_group might be another option, if we can create our own
+> group?
 
-Additionally I believe similar reasons, why we added the pinctrl
-handling to driver core, applies to generic power domains. So I think
-we should give it a try!
-
-Kind regards
-Ulf Hansson
-
->
-> Best regards,
-> Tomasz
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I agree that a field in struct device would be ideal.
+Greg, get_maintainer.pl points at you as main maintainer of device.h, do
+you have an opinion on this?
