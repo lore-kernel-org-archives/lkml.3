@@ -1,122 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaBXR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:59:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54330 "EHLO mx1.redhat.com"
+	id S1753082AbaBXSAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:00:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456AbaBXR7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:59:22 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] ARM: Delete asm/system.h
-From: David Howells <dhowells@redhat.com>
-To: linux@arm.linux.org.uk
-Cc: akpm@linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 24 Feb 2014 15:48:26 +0000
-Message-ID: <20140224154826.15682.825.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1752693AbaBXSAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 13:00:30 -0500
+Date: Mon, 24 Feb 2014 11:41:31 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz
+Subject: Re: [PATCH 06/11] kexec: A new system call, kexec_file_load, for in
+ kernel kexec
+Message-ID: <20140224164131.GJ4631@redhat.com>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <1390849071-21989-7-git-send-email-vgoyal@redhat.com>
+ <20140221145910.GE11531@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221145910.GE11531@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete ARM's asm/system.h.  It's the last holdout and should be got rid of.
+On Fri, Feb 21, 2014 at 03:59:10PM +0100, Borislav Petkov wrote:
 
-This builds for defconfig, lpc32xx_defconfig, exynos_defconfig + XEN, the
-previous changed to a Gemini system and an omap3 config with TI_DAVINCI_EMAC.
+[..]
+> You might want to run it through checkpatch - some of them are actually,
+> to my surprise, legitimate :)
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-cc: Russell King <linux@arm.linux.org.uk>
-cc: linux-arm-kernel@lists.infradead.org
----
+Thanks for having a look at the patches. I will run patches through
+checkpatch before next posting.
 
- arch/arm/include/asm/jump_label.h  |    1 -
- arch/arm/include/asm/sync_bitops.h |    1 -
- arch/arm/include/asm/system.h      |    7 -------
- arch/arm/mach-gemini/idle.c        |    2 +-
- arch/arm/mach-omap2/am35xx-emac.c  |    1 -
- drivers/usb/gadget/lpc32xx_udc.c   |    1 -
- 6 files changed, 1 insertion(+), 12 deletions(-)
- delete mode 100644 arch/arm/include/asm/system.h
+[..]
+> > +struct kexec_buf {
+> > +	struct kimage *image;
+> > +	char *buffer;
+> > +	unsigned long bufsz;
+> > +	unsigned long memsz;
+> > +	unsigned long buf_align;
+> > +	unsigned long buf_min;
+> > +	unsigned long buf_max;
+> > +	int top_down;		/* allocate from top of memory hole */
+> 
+> Looks like this wants to be a bool.
 
-diff --git a/arch/arm/include/asm/jump_label.h b/arch/arm/include/asm/jump_label.h
-index 863c892..70f9b9b 100644
---- a/arch/arm/include/asm/jump_label.h
-+++ b/arch/arm/include/asm/jump_label.h
-@@ -4,7 +4,6 @@
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
--#include <asm/system.h>
- 
- #define JUMP_LABEL_NOP_SIZE 4
- 
-diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-index 63479ee..9732b8e 100644
---- a/arch/arm/include/asm/sync_bitops.h
-+++ b/arch/arm/include/asm/sync_bitops.h
-@@ -2,7 +2,6 @@
- #define __ASM_SYNC_BITOPS_H__
- 
- #include <asm/bitops.h>
--#include <asm/system.h>
- 
- /* sync_bitops functions are equivalent to the SMP implementation of the
-  * original functions, independently from CONFIG_SMP being defined.
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-deleted file mode 100644
-index 368165e..0000000
---- a/arch/arm/include/asm/system.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
--#include <asm/barrier.h>
--#include <asm/compiler.h>
--#include <asm/cmpxchg.h>
--#include <asm/switch_to.h>
--#include <asm/system_info.h>
--#include <asm/system_misc.h>
-diff --git a/arch/arm/mach-gemini/idle.c b/arch/arm/mach-gemini/idle.c
-index 87dff4f..ddf8ec9 100644
---- a/arch/arm/mach-gemini/idle.c
-+++ b/arch/arm/mach-gemini/idle.c
-@@ -3,7 +3,7 @@
-  */
- 
- #include <linux/init.h>
--#include <asm/system.h>
-+#include <asm/system_misc.h>
- #include <asm/proc-fns.h>
- 
- static void gemini_idle(void)
-diff --git a/arch/arm/mach-omap2/am35xx-emac.c b/arch/arm/mach-omap2/am35xx-emac.c
-index 25b79a2..6a6935c 100644
---- a/arch/arm/mach-omap2/am35xx-emac.c
-+++ b/arch/arm/mach-omap2/am35xx-emac.c
-@@ -17,7 +17,6 @@
- 
- #include <linux/err.h>
- #include <linux/davinci_emac.h>
--#include <asm/system.h>
- #include "omap_device.h"
- #include "am35xx.h"
- #include "control.h"
-diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
-index 049ebab..a94bb10 100644
---- a/drivers/usb/gadget/lpc32xx_udc.c
-+++ b/drivers/usb/gadget/lpc32xx_udc.c
-@@ -55,7 +55,6 @@
- #include <mach/hardware.h>
- #include <linux/io.h>
- #include <asm/irq.h>
--#include <asm/system.h>
- 
- #include <mach/platform.h>
- #include <mach/irqs.h>
+Will change.
 
+> 
+> ...
+> 
+> > diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
+> > index d6629d4..5fddb1b 100644
+> > --- a/include/uapi/linux/kexec.h
+> > +++ b/include/uapi/linux/kexec.h
+> > @@ -13,6 +13,10 @@
+> >  #define KEXEC_PRESERVE_CONTEXT	0x00000002
+> >  #define KEXEC_ARCH_MASK		0xffff0000
+> >  
+> > +/* Kexec file load interface flags */
+> > +#define KEXEC_FILE_UNLOAD	0x00000001
+> > +#define KEXEC_FILE_ON_CRASH	0x00000002
+> 
+> BIT()
+
+What's that?
+
+> 
+> > +
+> >  /* These values match the ELF architecture values.
+> >   * Unless there is a good reason that should continue to be the case.
+> >   */
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index c0944b2..b28578a 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -123,6 +123,11 @@ static struct page *kimage_alloc_page(struct kimage *image,
+> >  				       gfp_t gfp_mask,
+> >  				       unsigned long dest);
+> >  
+> > +void kimage_set_start_addr(struct kimage *image, unsigned long start)
+> > +{
+> > +	image->start = start;
+> > +}
+> 
+> Why a separate function? It is used only once in the next patch.
+
+Right now there is only one user. But once other image loader support
+comes along or other arches support file based kexec, they can make
+use of same function.
+
+This is a pretty important modification as it decides what's the starting
+point of next kernel image. I wanted to make it a function callable by
+users who wanted to modify it instead of of letting them directly 
+modify image->start.
+
+[..]
+> > +	/* Call arch image load handlers */
+> > +	ldata = arch_kexec_kernel_image_load(image,
+> > +			image->kernel_buf, image->kernel_buf_len,
+> > +			image->initrd_buf, image->initrd_buf_len,
+> > +			image->cmdline_buf, image->cmdline_buf_len);
+> > +
+> > +	if (IS_ERR(ldata)) {
+> > +		ret = PTR_ERR(ldata);
+> > +		goto out;
+> > +	}
+> > +
+> > +	image->image_loader_data = ldata;
+> > +out:
+> > +	return ret;
+> 
+> You probably want to drop this "out:" label and simply return the error
+> value directly in each error path above for simplicity.
+> 
+
+Ok, will do. I don't seem to be doing anything in "out" except return ret.
+So will get rid of this label and return early in error path.
+
+> > +static int kimage_file_normal_alloc(struct kimage **rimage, int kernel_fd,
+> > +		int initrd_fd, const char __user *cmdline_ptr,
+> > +		unsigned long cmdline_len)
+> > +{
+> > +	int result;
+> > +	struct kimage *image;
+> > +
+> > +	/* Allocate and initialize a controlling structure */
+> > +	image = do_kimage_alloc_init();
+> > +	if (!image)
+> > +		return -ENOMEM;
+> > +
+> > +	image->file_mode = 1;
+> > +	image->file_handler_idx = -1;
+> > +
+> > +	result = kimage_file_prepare_segments(image, kernel_fd, initrd_fd,
+> > +			cmdline_ptr, cmdline_len);
+> > +	if (result)
+> > +		goto out_free_image;
+> > +
+> > +	result = sanity_check_segment_list(image);
+> > +	if (result)
+> > +		goto out_free_post_load_bufs;
+> 
+> Dunno, it could probably be a larger restructuring effort but if you
+> do load a segment and sanity-check it right after loading, instead of
+> loading all of them first and then iterating over them, you could save
+> yourself some work in the error case when a segment fails the check.
+> 
+
+Could be. I am trying to reuse exisitng code. In current code, user space
+passes a list of segments and then kernel calls this function to make sure
+all the segments passed in make sense.
+
+Here also arch dependent part of kernel is preparing a list of segments
+wanted and then generic code is reusing the existing function to make
+sure segment list is sane. I like code reuse part of it.
+
+Also, segment loading has not taken place yet. They are loaded later
+in kimage_load_segment().
+
+[..]
+> > +	/* Walk the RAM ranges and allocate a suitable range for the buffer */
+> > +	walk_system_ram_res(0, -1, kbuf, walk_ram_range_callback);
+> > +
+> > +	kbuf->image = NULL;
+> > +	kfree(kbuf);
+> 
+> This is freed after kzalloc'ing it a bit earlier, why not make it a
+> stack variable for simplicity? struct kexec_buf doesn't seem that
+> large...
+
+Ya, I was not sure whether to make it stack variable or allocate
+dynamically. It seems to be roughly 60bytes in size on 64bit. I guess
+I will convert it into a stack variable.
+
+Thanks
+Vivek
