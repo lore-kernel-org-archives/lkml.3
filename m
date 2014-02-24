@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaBXQ4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:56:15 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:41716 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748AbaBXQ4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:56:10 -0500
-X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
-   d="scan'208";a="105252587"
-Message-ID: <530B79A5.7010600@citrix.com>
-Date: Mon, 24 Feb 2014 16:56:05 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752960AbaBXQ5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:57:18 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:50899 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240AbaBXQ5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:57:17 -0500
+Date: Mon, 24 Feb 2014 11:57:14 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+cc: linux-pm@vger.kernel.org, rjw@rjwysocki.net, daniel.lezcano@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] Cpuidle: Ensure menu coefficients stay within
+ domain
+In-Reply-To: <1393223377-5744-4-git-send-email-tuukka.tikkanen@linaro.org>
+Message-ID: <alpine.LFD.2.11.1402241156440.17677@knanqh.ubzr>
+References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org> <1393223377-5744-4-git-send-email-tuukka.tikkanen@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@schaman.hu>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v5 2/9] xen-netback: Change TX path from grant
- copy to mapping
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>	 <1390253069-25507-3-git-send-email-zoltan.kiss@citrix.com> <1392745235.23084.60.camel@kazak.uk.xensource.com> <530925D5.4010800@schaman.hu>
-In-Reply-To: <530925D5.4010800@schaman.hu>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.68.14.50]
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/02/14 22:33, Zoltan Kiss wrote:
-> On 18/02/14 17:40, Ian Campbell wrote:
->> +     */
->>> +    skb->pfmemalloc    = false;
->>>   }
->>>
->>>   static int xenvif_get_extras(struct xenvif *vif,
->>> @@ -1372,7 +1341,7 @@ static bool tx_credit_exceeded(struct xenvif 
->>> *vif, unsigned size)
->>
->>> @@ -1581,7 +1535,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
->>>           else if (txp->flags & XEN_NETTXF_data_validated)
->>>               skb->ip_summed = CHECKSUM_UNNECESSARY;
->>>
->>> -        xenvif_fill_frags(vif, skb);
->>> +        xenvif_fill_frags(vif,
->>> +                  skb,
->>> +                  skb_shinfo(skb)->destructor_arg ?
->>> +                  pending_idx :
->>> +                  INVALID_PENDING_IDX
->>
->> Couldn't xenvif_fill_frags calculate the 3rd argument itself given that
->> it has skb in hand.
-> We still have to pass pending_idx, as it is no longer in skb->data. I 
-> have plans (I've already prototyped it, actually) to move that 
-> pending_idx from skb->data to skb->cb, if that happens, this won't be 
-> necessary.
-> On the other hand, it makes more sense just to just pass pending_idx, 
-> and in fill_frags we can decide based on destructor_arg whether do we 
-> need it or not.
-Actually, I've just moved the skb->cb patch to the beginning of this 
-series, so we can completely omit that new parameter from fill_frags.
+On Mon, 24 Feb 2014, Tuukka Tikkanen wrote:
 
-Zoli
+> The menu governor uses coefficients as one method of actual idle
+> period length estimation. The coefficients are, as detailed below,
+> multipliers giving expected idle period length from time until next
+> timer expiry. The multipliers are supposed to have domain of (0..1].
+> 
+> The coefficients are fractions where only the numerators are stored
+> and denominators are a shared constant RESOLUTION*DECAY. Since the
+> value of the coefficient should always be greater than 0 and less
+> than or equal to 1, the numerator must have a value greater than
+> 0 and less than or equal to RESOLUTION*DECAY.
+> 
+> If the coefficients are updated with measured idle durations exceeding
+> timer length, the multiplier may reach values exceeding unity (i.e.
+> the stored numerator exceeds RESOLUTION*DECAY). This patch ensures that
+> the multipliers are updated with durations capped to timer length.
+> 
+> Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+
+> ---
+>  drivers/cpuidle/governors/menu.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index 115386a..f0995dd 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -410,6 +410,9 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  	if (measured_us > target->exit_latency)
+>  		measured_us -= target->exit_latency;
+>  
+> +	/* Make sure our coefficients do not exceed unity */
+> +	if (measured_us > data->next_timer_us)
+> +		measured_us = data->next_timer_us;
+>  
+>  	/* Update our correction ratio */
+>  	new_factor = data->correction_factor[data->bucket];
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
