@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaBXCiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:38:00 -0500
-Received: from ozlabs.org ([203.10.76.45]:54936 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaBXCh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:37:58 -0500
-Date: Mon, 24 Feb 2014 13:37:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: linux-next: manual merge of the sound-asoc tree with the mvebu tree
-Message-Id: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY"
+	id S1752160AbaBXCjR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:39:17 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:54634 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaBXCjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 21:39:16 -0500
+Message-ID: <530AB0CD.6090602@hitachi.com>
+Date: Mon, 24 Feb 2014 11:39:09 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org, fche@redhat.com,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH -tip  0/2] kprobes/x86: Fix bugs for NMI handling
+References: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Ingo,
 
-Hi all,
+Should I resend this series to your kernel.org address?
 
-Today's linux-next merge of the sound-asoc tree got a conflict in
-sound/soc/kirkwood/Kconfig between commit cd34edc2eab2 ("drivers: Enable
-building of Kirkwood drivers for mach-mvebu") from the  tree and commit
-9a0d5113ac0e ("ASoC: kirkwood: enable Kirkwood driver for mvebu
-platforms") from the sound-asoc tree.
+Thank you,
 
-I fixed it up (Probably incorrectly - see below) and can carry the fix as
-necessary (no action is required).
+(2014/02/20 12:39), Masami Hiramatsu wrote:
+> The following series fixes bugs hidden in the ancient code.
+> 
+> The bugs suddenly appeared when I enabled over 6,000 kprobes
+> and ran perf-top with --call-graph. The bugs are hidden in
+> the old code and it have woken up by real stress testing.
+> 
+> Actually, current kprobes doesn't expect an NMI handler
+> hits in single-stepping state (including preparation and
+> do_debug() handling). Moreover, the NMI handler causing
+> a page fault by trying to access user pages, is out of
+> imagination! :) But perf does it.
+> 
+> Thus the previous code optimistically check the current
+> running kprobe state, and if it is in the singlestep state,
+> it changes the IP address to probed address and return,
+> because it expects the page fault happened on the single
+> stepped code.
+> However, in fact, the perf's NMI can interrupt the
+> do_debug or somewhere around that and it may cause a
+> page fault. In this case, putting the IP address to
+> probed address is simply wrong. It causes unexpected
+> kernel crash.
+> To handle this correctly, this patch fixes it to ensure
+> the page-fault address is actually same to the single-
+> stepping address, and only if so, set the IP address
+> to the probed address.
+> 
+> I also found another small mistake which gives up the
+> recovery from reentered kprobes in single-stepping state,
+> but it also assumes that there is no NMI handler interrupts
+> in that state. It should gives up only when the nested
+> reentering happens.
+> 
+> Thanks to Ingo and Frank for encouraging me to start
+> stress testing with massive multiple kprobes. :)
+> 
+> Thank you,
+> 
+> ---
+> 
+> Masami Hiramatsu (2):
+>       [BUGFIX]kprobes/x86: Fix page-fault handling logic
+>       kprobes/x86: Allow to handle reentered kprobe on singlestepping
+> 
+> 
+>  arch/x86/kernel/kprobes/core.c |   16 ++++++----------
+>  1 file changed, 6 insertions(+), 10 deletions(-)
+> 
+> --
+> Signature
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc sound/soc/kirkwood/Kconfig
-index 106e2e22fed2,2dc3ecf34801..000000000000
---- a/sound/soc/kirkwood/Kconfig
-+++ b/sound/soc/kirkwood/Kconfig
-@@@ -1,6 -1,6 +1,6 @@@
-  config SND_KIRKWOOD_SOC
-  	tristate "SoC Audio for the Marvell Kirkwood and Dove chips"
-- 	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || COMPILE_TEST
- -	depends on ARCH_KIRKWOOD || ARCH_DOVE || ARCH_MVEBU || COMPILE_TEST
-++	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || ARCH_MVEBU || =
-COMPILE_TEST
-  	help
-  	  Say Y or M if you want to add support for codecs attached to
-  	  the Kirkwood I2S interface. You will also need to select the
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTCrCEAAoJEMDTa8Ir7ZwVNeoP/2kCkdU88NiqZ9rT5SNH0rgP
-HOn45Zr77xwqfLEIZSHVSSgSOCQ5k86wpwuNdIQ0DdZkmEMxlAUHMrhEw7C1Bz6t
-Nna/e+BEQj75ASxqJG3HkT0eetvedYoodLXV4iXLlOslIGlVeQIWuH2+rRr93OiF
-iea8PyF/hMsKuCH6VfpiVegGGeR0cqWy4HV/qob1ZyPfvDbGifwQnkPJ9TqaBt8G
-oT+oD7xJ3KcILNbX9YdT5iP9daQ/a1+z11Y322Ox8uRV9Vjto8QO25gw9myHD5bZ
-Xaq5dvfdAc/tSuPZt3JW5o5hhvlUQRt1M0nkIZWT6fjvvWQEm9NZp6w76jFER21g
-P3V9ghRZOcZsT3G+vZBtna/YOSkCy/KSDzgBMAh03olqMpcI3eKK6iEtxuRQY08D
-JXSqIBFPdGxHfHOVfuDfBDFZuaZaTNTmeTUAhVgKONW9ajobmk2X2tCVHfThjQ4U
-0gVnLunpkybgmlO2//wXjt5rCiQXRujZ7DhN68iCx9SnAOC6+DxJElHxpYov1wjO
-e9LCaUoYIFuu96q1tBtlZX5TfuxGjoWrZftsA52YnYjq5Av9rkZPxAWGhxBFFg8T
-q9vNoI2PMS0/Z5sXYaMYKKyrqvwEg1zhoHAQLKVgJxsEN2is9YCDV9IWGw6M5TYS
-/R4kSl9UPOB3XGsH7J41
-=vQxk
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY--
