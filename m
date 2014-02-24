@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaBXCpG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:45:06 -0500
-Received: from www.prifuk.cz ([31.31.77.241]:41785 "EHLO prifuk.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310AbaBXCpF convert rfc822-to-8bit (ORCPT
+	id S1752227AbaBXCp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:45:26 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:58994 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaBXCpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:45:05 -0500
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
-        simon@mungewell.org
-Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
-Date: Mon, 24 Feb 2014 03:45:01 +0100
-Message-ID: <2308366.HeZmROk36g@geidi-prime>
-User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <530AAA38.3090700@iki.fi>
-References: <1516865.M993BQAYe4@geidi-prime> <1651798.4YaLXnucpJ@geidi-prime> <530AAA38.3090700@iki.fi>
+	Sun, 23 Feb 2014 21:45:22 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
+References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
+	<1392907389-21798-8-git-send-email-geert@linux-m68k.org>
+	<CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
+	<CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
+Date: Mon, 24 Feb 2014 11:45:19 +0900
+Message-ID: <CANqRtoSJTROkkbGxV_p+B2S7b7jZ7jgHQ+q4_WG54m+Pxgfcpw@mail.gmail.com>
+Subject: Re: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 of February 2014 04:11:04 Anssi Hannula wrote:
-> 24.02.2014 03:54, Michal Malý kirjoitti:
-> > I forgot to comment on this:
-> >> Stopped effects should still be able to be updated.
-> > 
-> > Fair enough. I could not find a definitive answer to what is expected
-> > behavior in this case. As far as I can tell, there are following cases:
-> > - Effects with no duration and delay: they shall be updated right away.
-> > - Effects with delay: updated parameters shall be sent to the device at
-> > the
-> > correct time.
-> > - "Expired" effects with finite duration - ??? I assumed that effects with
-> > finite duration that have already finished playing cannot be updated
-> > because it does not seem to make much sense to do so.
-> 
-> "Expired" effects can always be played back again later - if that
-> happens, the updated parameters will be in effect.
-Okay, let me make this clear. When an effect "expires", update of its 
-parameters shall not trigger a restart, therefore it will not play. However, 
-when its parameters are updated and the effect is started again at some point, 
-the updated parameters shall be used. I will double-check this just to be on 
-the safe side, but MLNX always stores the updated parameters no matter what 
-the status of the effect is, so it should behave exactly as you suggest. 
-Perhaps it was just me misinterpreting the semantics of "update"?
+Hi Geert,
 
-To bring this to a conclusion:
-- Do you think that this work is worth mainlining?
-- If it is, what do you suggest I change?
+On Fri, Feb 21, 2014 at 1:13 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Thu, Feb 20, 2014 at 4:41 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> On thing stuck out a bit with the bindings. I can see that you specify
+>> both fifo size and use the SoC suffix for the r8a7790 and r8a7791
+>> bindings. Isn't that a bit of redundant information there, if we know
+>> that the SoC is r8a7790 or r8a7791 then can't we simply put that
+>> information in r8a779x_data above and perhaps keep the binding
+>> simpler? Perhaps same thing applies to other properties as well?
+>
+> "renesas,tx-fifo-size" and "renesas,rx-fifo-size" are part of the existing
+> bindings, so I'm a bit reluctant to change these.
+> Hmm, since the original bindings didn't specify the default values,
+> I could make them chip-specific, though.
 
-Thanks a lot for your input.
+Thanks, yes I think treating the "renesas,tx-fifo-size" and
+"renesas,rx-fifo-size" bindings as optional and allow us to rely on
+chip-specific default values makes sense.
 
-Michal M.
+> The only other property is "num-cs", which can have any value if you
+> start using the generic "cs-gpios".
+
+I see. It looks to me that such a setting is board-specific, so what
+is a sane default in the SoC DTSI? You seem to have it set to "1"
+today, but if the board is supposed to override it anyway then do we
+need to set it?
+
+Anyway, "num-cs" is a minor detail so no need to bother about that too much!
+
+Cheers,
+
+/ magnus
