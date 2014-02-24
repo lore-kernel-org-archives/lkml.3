@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383AbaBXTkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:40:33 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:34519 "EHLO vps0.lunn.ch"
+	id S1753407AbaBXTkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:40:41 -0500
+Received: from void.printf.net ([89.145.121.20]:46596 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752850AbaBXTkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:40:31 -0500
-Date: Mon, 24 Feb 2014 20:39:39 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: phy: add suspend_halted module param
-Message-ID: <20140224193939.GD29288@lunn.ch>
-References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224191554.GC29288@lunn.ch>
- <CAGVrzcaOSMQWJ69KHJ7TH0_BN9D-O4uoL=fLWDoE=xFdV4RJ4w@mail.gmail.com>
+	id S1752794AbaBXTki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 14:40:38 -0500
+From: Chris Ball <chris@printf.net>
+To: Matt Porter <mporter@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Axel Lin <axel.lin@ingics.com>,
+        Alex Elder <elder@linaro.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v4 5/8] mmc: sdhci-bcm-kona: Add basic use of clocks
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-6-git-send-email-tim.kryger@linaro.org>
+	<CAEPRUYrPXf7QNzput0bz_UPfytRy1eYgyOJYnH5v2v4DCEKSNA@mail.gmail.com>
+	<CAAYSxhoCrveHd5Wkc7Z0qzpGr41qG6-neYSSsuHQuC7AcuJmZQ@mail.gmail.com>
+	<CAAYSxhrBSv8_Z1SfB-b3iGgq218Gttny4FEgYJnLtSFhJd2UFg@mail.gmail.com>
+	<20140224193301.GW5038@beef>
+Date: Mon, 24 Feb 2014 19:40:35 +0000
+In-Reply-To: <20140224193301.GW5038@beef> (Matt Porter's message of "Mon, 24
+	Feb 2014 14:33:01 -0500")
+Message-ID: <86ha7os3ik.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGVrzcaOSMQWJ69KHJ7TH0_BN9D-O4uoL=fLWDoE=xFdV4RJ4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 11:37:15AM -0800, Florian Fainelli wrote:
-> 2014-02-24 11:15 GMT-08:00 Andrew Lunn <andrew@lunn.ch>:
-> > On Sun, Feb 23, 2014 at 05:58:39PM +0100, Sebastian Hesselbarth wrote:
-> >> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
-> >>   ("net: phy: resume/suspend PHYs on attach/detach")
-> >> introduced a feature to suspend PHYs when entering halted state.
-> >>
-> >> Unfortunately, not all bootloaders properly power-up PHYs on reset
-> >> and fail to access ethernet because the PHY is still powered down.
-> >>
-> >> Therefore, we add a boolean module parameter suspend_halted with
-> >> default value of true. Disabling that parameter prevents PHYs from
-> >> being suspended when entering halted state.
-> >
-> > Hi Sebastian
-> >
-> > Am i doing something silly here?
-> 
-> Could the PHY be already suspended during your initial boot?
+Hi,
 
-No. I tftpboot.
+On Mon, Feb 24 2014, Matt Porter wrote:
+> Chris: we no longer need this to be taken through arm-soc since removing
+> the dependency. Could you please take this patch through your tree for
+> 3.15?
 
-> If that
-> is the case, the first time we all phy_suspend() the flag is true, we
-> suspend it, and we never wake it again despite changing
-> suspend_halted. Does it work better if you specify this module
-> parameter on the initial kernel boot command-line?
+Thanks, pushed to mmc-next for 3.15.
 
-I tried that as well, after i emailed. Makes no difference, no working
-Ethernet.
-
-	Andrew
+- Chris.
+-- 
+Chris Ball   <chris@printf.net>   <http://printf.net/>
