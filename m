@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBXHkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 02:40:36 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:25114 "EHLO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752265AbaBXHkd (ORCPT
+	id S1751722AbaBXHm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 02:42:28 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64274 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786AbaBXHm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 02:40:33 -0500
-Message-ID: <530AF761.2020107@gaisler.com>
-Date: Mon, 24 Feb 2014 08:40:17 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 02:42:26 -0500
+Message-ID: <530AF7DF.1000004@cogentembedded.com>
+Date: Mon, 24 Feb 2014 11:42:23 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH 1/6] usb: gadget: gr_udc: Make struct platform_device
- variable name clearer
-References: <1389264858-32664-1-git-send-email-andreas@gaisler.com> <1389264858-32664-2-git-send-email-andreas@gaisler.com> <20140218155253.GC9878@saruman.home>
-In-Reply-To: <20140218155253.GC9878@saruman.home>
+To: Magnus Damm <magnus.damm@gmail.com>
+CC: SH-Linux <linux-sh@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH] gpio: gpio-rcar: init at postcore level
+References: <1393173467-12240-1-git-send-email-vladimir.barinov@cogentembedded.com> <CANqRtoSu7HMCkqeefBFdMgEPvVZNDEK8k7=1OHp1wf5GRizBvA@mail.gmail.com>
+In-Reply-To: <CANqRtoSu7HMCkqeefBFdMgEPvVZNDEK8k7=1OHp1wf5GRizBvA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-18 16:52, Felipe Balbi wrote:
-> On Thu, Jan 09, 2014 at 11:54:13AM +0100, Andreas Larsson wrote:
->> Rename struct platform_device pointers from ofdev to pdev for clarity.
->> Suggested by Mark Rutland.
+Hi Magnus,
+
+On 02/24/2014 06:57 AM, Magnus Damm wrote:
+> Hi Vladimir,
+>
+> On Mon, Feb 24, 2014 at 1:37 AM,<vladimir.barinov@cogentembedded.com>  wrote:
+>> From: Vladimir Barinov<vladimir.barinov@cogentembedded.com>
 >>
->> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+>> This adds ability to use gpio API at board init_machine level.
+>>
+>> F.e. it can be used in the following situation.
+>> Many reference hardware has onboard switches that selects which periferals
+>> to connect to the system. The gpio input state from switches can be used
+>> in choosing platform devices runtime in board code instead of ifdefs/defconfig
+>> changes.
+>>
+>> Signed-off-by:<vladimir.barinov@cogentembedded.com>
+>>
 >> ---
->>   drivers/usb/gadget/gr_udc.c |   18 +++++++++---------
->>   1 file changed, 9 insertions(+), 9 deletions(-)
+>>   drivers/gpio/gpio-rcar.c |   12 +++++++++++-
+>>   1 file changed, 11 insertions(+), 1 deletion(-)
 >>
->> diff --git a/drivers/usb/gadget/gr_udc.c b/drivers/usb/gadget/gr_udc.c
->> index 914cbd8..e66dcf0 100644
->> --- a/drivers/usb/gadget/gr_udc.c
->> +++ b/drivers/usb/gadget/gr_udc.c
->> @@ -2071,9 +2071,9 @@ static int gr_udc_init(struct gr_udc *dev)
->>   	return 0;
->>   }
+>> Index: build/drivers/gpio/gpio-rcar.c
+>> ===================================================================
+>> --- build.orig/drivers/gpio/gpio-rcar.c 2014-02-22 23:21:51.456229152 +0400
+>> +++ build/drivers/gpio/gpio-rcar.c      2014-02-22 23:21:52.320229133 +0400
+>> @@ -485,7 +485,17 @@
+>>          }
+>>   };
 >>
->> -static int gr_remove(struct platform_device *ofdev)
->> +static int gr_remove(struct platform_device *pdev)
->>   {
->> -	struct gr_udc *dev = dev_get_drvdata(&ofdev->dev);
->> +	struct gr_udc *dev = dev_get_drvdata(&pdev->dev);
+>> -module_platform_driver(gpio_rcar_device_driver);
+>> +static int __init gpio_rcar_init(void)
+>> +{
+>> +       return platform_driver_register(&gpio_rcar_device_driver);
+>> +}
+>> +postcore_initcall(gpio_rcar_init);
+>> +
+>> +static void __exit gpio_rcar_exit(void)
+>> +{
+>> +       platform_driver_unregister(&gpio_rcar_device_driver);
+>> +}
+>> +module_exit(gpio_rcar_exit);
+>>
+>>   MODULE_AUTHOR("Magnus Damm");
+>>   MODULE_DESCRIPTION("Renesas R-Car GPIO Driver");
+> Hi Vladimir,
 >
-> you can use platform_get_drvdata()
+> Thanks for your help. Good to see that you are working on enabling the
+> dual role USB port on Koelsch.
 >
->> @@ -2083,7 +2083,7 @@ static int gr_remove(struct platform_device *ofdev)
->>   	gr_dfs_delete(dev);
->>   	if (dev->desc_pool)
->>   		dma_pool_destroy(dev->desc_pool);
->> -	dev_set_drvdata(&ofdev->dev, NULL);
->> +	dev_set_drvdata(&pdev->dev, NULL);
+> Your current board code is checking some DIP switch value during boot,
+> and that kind of early use of GPIO would require a change in the probe
+> order like this patch implements. I do however believe that we should
+> not implement checking during boot like this.
 >
-> and platform_set_drvdata()
+> If you for instance check the legacy Lager USBHS DIP switch code that
+> runs during driver probe() then that can run can use GPIO without the
+> need for a change like this. So your GPIO user code needs to be
+> adjusted.
+Yes, this is true for USBHS that has platform callbacks like 
+hardware_init/exit.
+But this is not acceptable for other devices like EHCI PCI/PHY and others.
+So we wouldn't be able to do such fixup for other cases.
 >
+> So this patch will receive a NAK from me I'm afraid.
+>
+>
+Thank you for review.
 
-Yes, but wouldn't that be better handled in a separate patch?
-
-Best regards,
-Andreas Larsson
+Regards,
+Vladimir
