@@ -1,72 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaBXIFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:05:02 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:27347 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752415AbaBXID0 (ORCPT
+	id S1753130AbaBXIFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:05:32 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:46634 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaBXIF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:03:26 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH 3/6] usb: gadget: mv_udc: clear corresponding interrupt when flush fifo
-Date: Mon, 24 Feb 2014 16:03:13 +0800
-Message-ID: <1393228996-14787-4-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
-References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+	Mon, 24 Feb 2014 03:05:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-23_03:2014-02-21,2014-02-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402230265
+In-Reply-To: <530AF5F1.5030209@cogentembedded.com>
+References: <1393178459-14637-1-git-send-email-vladimir.barinov@cogentembedded.com>
+	<1393178459-14637-4-git-send-email-vladimir.barinov@cogentembedded.com>
+	<CANqRtoSKckgZBSaHDYYjfbTECJfB1Nn57suYspT0FR97P8SZFg@mail.gmail.com>
+	<530AF5F1.5030209@cogentembedded.com>
+Date: Mon, 24 Feb 2014 17:05:26 +0900
+Message-ID: <CANqRtoQjFMezrw0oEYCE97+sWu2mNZnHz0nher8oKxzx7FH5_w@mail.gmail.com>
+Subject: Re: [PATCH V4 3/4] ARM: shmobile: koelsch: Add USBHS and internal PCI
+ USB support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+Cc: SH-Linux <linux-sh@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The interruts are useless when this endpoint is going to be flushed.
-Especially in the enumeration phase, let's take get device description
-for example.
-1. Device doesn't ACK the status package from host in time due to irq is
-disabled by some module.
-2. Host find no ACK in time, and send another request.
-3. Device gets the chance to handle the interrupt, the sequence is as
-following.
-	a. Flush pending requests in ep0.
-	b. Queue a request in ep0 according to host's request and change
-	   the ep0 state to DATA_STATE_XMIT.
-	c. Handle the pending interrupt for the last status package. But
-	   actually it will check the new added request instead of the status
-	   package and because of wront ep0 state, device will request an
-	   unexpected status package from host.
-	d. The ep0 state is going mad.
+Hi Vladimir,
 
-The solution is that we need clear the pending corresponding interrupt
-as well as flush
-endpoint.
+On Mon, Feb 24, 2014 at 4:34 PM, Vladimir Barinov
+<vladimir.barinov@cogentembedded.com> wrote:
+> Hello Magnus,
+>
+> Thank you for the quick response.
+>
+>
+> On 02/24/2014 07:52 AM, Magnus Damm wrote:
+>>
+>> +static int usbhs_hardware_init(struct platform_device *pdev)
+>> +{
+>> +       struct usbhs_private *priv = usbhs_get_priv(pdev);
+>> +       struct usb_phy *phy;
+>> +
+>> +       phy = usb_get_phy_dev(&pdev->dev, 0);
+>> +       if (IS_ERR(phy))
+>> +               return PTR_ERR(phy);
+>> +
+>> +       priv->phy = phy;
+>> +       return 0;
+>> +}
+>> +
+>> +static int usbhs_hardware_exit(struct platform_device *pdev)
+>> +{
+>> +       struct usbhs_private *priv = usbhs_get_priv(pdev);
+>> +
+>> +       if (!priv->phy)
+>> +               return 0;
+>> +
+>> +       usb_put_phy(priv->phy);
+>> +       priv->phy = NULL;
+>> +       return 0;
+>> +}
+>> +
+>> +static int usbhs_get_id(struct platform_device *pdev)
+>> +{
+>> +       return USBHS_GADGET;
+>> +}
+>> Uhm, I sort of expected this place to be where you read out the ID pin
+>> state from the MAX device.
+>
+> Yes, I've seen your work for lager board.
+> I did differently then you beacause of problem in USBHS Host driver, hence
+> the need of setup PHY at initial stage to PCI USB and not to USBHS.
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- drivers/usb/gadget/mv_udc_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+Yeah, I understand. But with the current patches I wonder, isn't there
+risk for short circuit ? Say that a USB host cable is connected during
+boot and the PCI USB host controller is hooked up, what is stopping us
+from switching the cable and driving VBUS from two sides using a USB
+function cable? So the current patches seem a bit unsafe to me.
 
-diff --git a/drivers/usb/gadget/mv_udc_core.c b/drivers/usb/gadget/mv_udc_core.c
-index 657ac5c..d5a9bdf 100644
---- a/drivers/usb/gadget/mv_udc_core.c
-+++ b/drivers/usb/gadget/mv_udc_core.c
-@@ -692,6 +692,8 @@ static void mv_ep_fifo_flush(struct usb_ep *_ep)
- 		}
- 		loops--;
- 	} while (readl(&udc->op_regs->epstatus) & bit_pos);
-+
-+	writel(bit_pos, &udc->op_regs->epcomplete);
- }
- 
- /* queues (submits) an I/O request to an endpoint */
--- 
-1.7.9.5
+>>> +static u32 koelsch_usbhs_pipe_type[] = {
+>>> +
+>>> +/* Add all available USB devices */
+>>> +static void __init koelsch_add_usb_devices(void)
+>>> +{
+>>> +       /* MAX3355E ID pin */
+>>> +       gpio_request_one(RCAR_GP_PIN(5, 31), GPIOF_IN, NULL);
+>>> +       if (!gpio_get_value(RCAR_GP_PIN(5, 31))) {
+>>> +               usbhs_phy_pdata.chan0_pci = 1; /* Channel 0 is PCI USB
+>>> host */
+>>> +               koelsch_add_usb0_host();
+>>> +       } else {
+>>> +               usbhs_phy_pdata.chan0_pci = 0; /* Channel 0 is USBHS */
+>>> +               koelsch_add_usb0_gadget();
+>>> +       }
+>>
+>> I don't think we should perform this kind of check at boot-up. This
+>> goes without saying, but normal USB supports hot-plug so we should
+>> check the cable type when the cable insertion event happens. Please
+>> see my comment above for USBHS-specific location.
+>>
+>> I do however understand that according to your investigation you
+>> cannot use USBHS in host mode. I believe further investigation is
+>> needed in that area to determine what is the best way forward.
+>> Regarding VBUS control, I believe it should be possible to drive the
+>> USB0_VBUS as GPIO and manually control the power.
+>
+> I see.
 
+To control USB0_VBUS as GPIO you may need to adjust the PFC tables for
+pinctrl. At some point, would it be possible for you to cook up some
+prototype code to try to control the USB0_VBUS signal via GPIO? This
+may be pointless if the USBHS hardware cannot operate in Host mode
+though.
+
+>> Would it be possible for you to break out USB PCI support for USB1 and
+>> resend that so we can begin by merging that?
+>
+> Wouldn't you like me also add USBHS in gadget mode for USB0 with the similar
+> check like you did on lager (with ID pin),
+> since it does not need the gpio-rcar changes too.
+
+Thanks for your offer. Yes, that would be nice. May I suggest doing it
+on two levels:
+1) Gadget-only support (is it possible to perform runtime check of ID
+pin value at insert event and give error in case of Host?)
+2) Incremental USBHS host patch
+
+Using two incremental patches like above we can begin by merging 1)
+and keep on working on 2).
+
+> Also if you'd like I can add the USBHS in Host mode with the ID pin check
+> like you suggested, but the usb0 host will not be stable.
+> Probably this could speed up the USBHS Host development/fixing.
+
+Please add it as a separate incremental patch if possible. I'd like to
+have some kind of stable level of support without any funky
+dependencies as a first goal, then keep on trying to get USBHS
+working.
+
+I think PCI USB for the micro USB port can simply be dropped now and
+only use USBHS.
+
+Thank you!
+
+/ magnus
