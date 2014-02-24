@@ -1,76 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaBXXeo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:34:44 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:55263 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaBXXen (ORCPT
+	id S1752635AbaBXXfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:35:09 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:54573 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752997AbaBXXfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:34:43 -0500
-Message-ID: <530BD70E.3000206@gmail.com>
-Date: Tue, 25 Feb 2014 00:34:38 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: David Miller <davem@davemloft.net>, f.fainelli@gmail.com
-CC: andrew@lunn.ch, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: phy: add suspend_halted module param
-References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com> <CAGVrzcadYTYQEvPxqdMf2f741y5sAgnOYm3EC=f7SOkr8SK2WQ@mail.gmail.com> <20140224.180510.103916219115440711.davem@davemloft.net>
-In-Reply-To: <20140224.180510.103916219115440711.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Feb 2014 18:35:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140224223701.GC8264@linux.vnet.ibm.com>
+References: <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
+	<20140223003933.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	<20140223063426.GT4250@linux.vnet.ibm.com>
+	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+	<20140224172110.GO8264@linux.vnet.ibm.com>
+	<CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+	<20140224185341.GU8264@linux.vnet.ibm.com>
+	<CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	<20140224223701.GC8264@linux.vnet.ibm.com>
+Date: Mon, 24 Feb 2014 15:35:04 -0800
+X-Google-Sender-Auth: oW9UchbKKSFu-wr6LJFNa0ZOte0
+Message-ID: <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 12:05 AM, David Miller wrote:
-> From: Florian Fainelli <f.fainelli@gmail.com>
-> Date: Mon, 24 Feb 2014 10:20:10 -0800
->
->> Hi Sebastian,
+On Mon, Feb 24, 2014 at 2:37 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
 >>
->> 2014-02-23 8:58 GMT-08:00 Sebastian Hesselbarth
->> <sebastian.hesselbarth@gmail.com>:
->>> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
->>>    ("net: phy: resume/suspend PHYs on attach/detach")
->>> introduced a feature to suspend PHYs when entering halted state.
->>>
->>> Unfortunately, not all bootloaders properly power-up PHYs on reset
->>> and fail to access ethernet because the PHY is still powered down.
->>>
->>> Therefore, we add a boolean module parameter suspend_halted with
->>> default value of true. Disabling that parameter prevents PHYs from
->>> being suspended when entering halted state.
->>>
->>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>> Reported-by: Andrew Lunn <andrew@lunn.ch>
->>> ---
->>> Andrew, can you please re-test if disabling the feature does work on
->>> your board? I tried a bunch of mine, but none failed to power-up the
->>> PHY in u-boot.
+>> What if the "nothing modifies 'p'" part looks like this:
 >>
->> Would be good to get Andrew's testing on this just to make sure it
->> solves his problem. Otherwise:
+>>     if (p != &myvariable)
+>>         return;
 >>
->> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+>> and now any sane compiler will happily optimize "q = *p" into "q =
+>> myvariable", and we're all done - nothing invalid was ever
 >
-> I disagree with using a module parameter for this.
->
-> Figure out the devices that cannot do this properly, and add
-> an internal flag that this driver sets.
+> Yes, the compiler could do that.  But it would still be required to
+> carry a dependency from the memory_order_consume read to the "*p",
 
-Hmm, as it seems to be a bootloader issue, it will be quite
-impossible to determine if a board is affected or not.
+But that's *BS*. You didn't actually listen to the main issue.
 
-I am still trying to get any of my boards to mis-behave the same
-way to figure out what is really causing it.
+Paul, why do you insist on this carries-a-dependency crap?
 
-We do still have 2-3 weeks to find a proper fix, don't we?
+It's broken. If you don't believe me, then believe the compiler person
+who already piped up and told you so.
 
-> Module parameters are terrible.
+The "carries a dependency" model is broken. Get over it.
 
-Maybe. If you prefer, I can remove the module param and leave
-the sysfs entry?
+No sane compiler will ever distinguish two different registers that
+have the same value from each other. No sane compiler will ever say
+"ok, register r1 has the exact same value as register r2, but r2
+carries the dependency, so I need to make sure to pass r2 to that
+function or use it as a base pointer".
 
-Sebastian
+And nobody sane should *expect* a compiler to distinguish two
+registers with the same value that way.
 
+So the whole model is broken.
+
+I gave an alternate model (the "restrict"), and you didn't seem to
+understand the really fundamental difference. It's not a language
+difference, it's a conceptual difference.
+
+In the broken "carries a dependency" model, you have fight all those
+aliases that can have the same value, and it is not a fight you can
+win. We've had the "p-p" examples, we've had the "p&0" examples, but
+the fact is, that "p==&myvariable" example IS EXACTLY THE SAME THING.
+
+All three of those things: "p-p", "p&0", and "p==&myvariable" mean
+that any compiler worth its salt now know that "p" carries no
+information, and will optimize it away.
+
+So please stop arguing against that. Whenever you argue against that
+simple fact, you are arguing against sane compilers.
+
+So *accept* the fact that some operations (and I guarantee that there
+are more of those than you can think of, and you can create them with
+various tricks using pretty much *any* feature in the C language)
+essentially take the data information away. And just accept the fact
+that then the ordering goes away too.
+
+So give up on "carries a dependency". Because there will be cases
+where that dependency *isn't* carried.
+
+The language of the standard needs to get *away* from the broken
+model, because otherwise the standard is broken.
+
+I suggest we instead talk about "litmus tests" and why certain code
+sequences are ordered, and others are not.
+
+So the code sequence I already mentioned is *not* ordered:
+
+Litmus test 1:
+
+    p = atomic_read(pp, consume);
+    if (p == &variable)
+        return p->val;
+
+   is *NOT* ordered, because the compiler can trivially turn this into
+"return variable.val", and break the data dependency.
+
+   This is true *regardless* of any "carries a dependency" language,
+because that language is insane, and doesn't work when the different
+pieces here may be in different compilation units.
+
+BUT:
+
+Litmus test 2:
+
+    p = atomic_read(pp, consume);
+    if (p != &variable)
+        return p->val;
+
+  *IS* ordered, because while it looks syntactically a lot like
+"Litmus test 1", there is no sane way a compiler can use the knowledge
+that "p is not a pointer to a particular location" to break the data
+dependency.
+
+There is no way in hell that any sane "carries a dependency" model can
+get the simple tests above right.
+
+So give up on it already. "Carries a dependency" cannot work. It's a
+bad model. You're trying to describe the problem using the wrong
+tools.
+
+Note that my "restrict+pointer to object" language actually got this
+*right*. The "restrict" part made Litmus test 1 not ordered, because
+that "p == &variable" success case means that the pointer wasn't
+restricted, so the pre-requisite for ordering didn't exist.
+
+See? The "carries a dependency" is a broken model for this, but there
+are _other_ models that can work.
+
+You tried to rewrite my model into "carries a dependency". That
+*CANNOT* work. It's like trying to rewrite quantum physics into the
+Greek model of the four elements. They are not compatible models, and
+one of them can be shown to not work.
+
+              Linus
