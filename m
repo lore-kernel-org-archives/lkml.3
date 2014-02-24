@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159AbaBXPMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:12:05 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61050 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaBXPMD (ORCPT
+	id S1753178AbaBXPMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:12:12 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:51856 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579AbaBXPMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:12:03 -0500
+	Mon, 24 Feb 2014 10:12:08 -0500
+Message-ID: <530B6147.6010301@linaro.org>
+Date: Mon, 24 Feb 2014 16:12:07 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Originating-IP: [93.172.86.48]
-In-Reply-To: <1380825415-20481-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1380825415-20481-1-git-send-email-david.a.cohen@linux.intel.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 24 Feb 2014 17:11:41 +0200
-Message-ID: <CAK=WgbYauDdtdWJ1SnGM5UD9-ECFZBGOWpru-geY+=xz=xgkCw@mail.gmail.com>
-Subject: Re: [PATCH] rpmsg: reduce rpmsg_virtio verbosity
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jocelyn Falempe <jocelyn.falempe@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
+        nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/5] idle/cpuidle: Split cpuidle_idle_call main function
+ into smaller functions
+References: <1393250151-6982-1-git-send-email-daniel.lezcano@linaro.org> <20140224150004.GX27965@twins.programming.kicks-ass.net>
+In-Reply-To: <20140224150004.GX27965@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-Sorry for the late response.
-
-On Thu, Oct 3, 2013 at 9:36 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> From: Jocelyn Falempe <jocelyn.falempe@intel.com>
+On 02/24/2014 04:00 PM, Peter Zijlstra wrote:
 >
-> rpmsg_virtio TX/RX messages are very verbose, overflowing kernel printk
-> buffer. This patch makes the guilty print_hex_dump()'s to act as
-> dev_dbg() and do nothing in case neither DEBUG nor CONFIG_DYNAMIC_DEBUG
-> are defined.
 >
-> Signed-off-by: Jocelyn Falempe <jocelyn.falempe@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> None of this actually applies :/ I'm having major conflicts in
+> driveres/cpuidle/cpuidle.c.
 
-This sounds like a good thing to do, but I wonder if it should be
-implemented in a more generic way, so other users of
-print_hex_dump_debug can benefit from this as well?
+Ok, except if I am missing something, the patchset is based on top of 
+tip/sched/core (commit 6990566).
 
-Thanks,
-Ohad.
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
