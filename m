@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaBXQl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:41:27 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:50706 "EHLO mail.mev.co.uk"
+	id S1753156AbaBXQlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:41:05 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:50700 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752815AbaBXQl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:41:26 -0500
-Message-ID: <530B7631.4030903@mev.co.uk>
-Date: Mon, 24 Feb 2014 16:41:21 +0000
+	id S1753097AbaBXQlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:41:03 -0500
+Message-ID: <530B7619.8090502@mev.co.uk>
+Date: Mon, 24 Feb 2014 16:40:57 +0000
 From: Ian Abbott <abbotti@mev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
@@ -17,26 +17,25 @@ CC: Ian Abbott <ian.abbott@mev.co.uk>,
         "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
         "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3 v2] Staging: comedi: addi-data: fix a couple of lines
- that are too long
-References: <1393039316-7274-1-git-send-email-chase.southwood@yahoo.com> <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
+Subject: Re: [PATCH 2/3 v2] Staging: comedi: addi-data: cleanup conditional
+ blocks in hwdrv_apci035.c
+References: <1393039279-7229-1-git-send-email-chase.southwood@yahoo.com> <1393259653-18467-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1393259653-18467-1-git-send-email-chase.southwood@yahoo.com>
 Content-Type: text/plain; charset="us-ascii"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-24 16:35, Chase Southwood wrote:
-> There are a couple of cases where a comment being on the same line as a
-> statement is causing the line to be over 80 characters long.  This is an
-> easy fix, move these comments to the previous line.
+On 2014-02-24 16:34, Chase Southwood wrote:
+> There were some conditional blocks that had an unnecessary level of
+> indentation in them.  We can remove this to improve code clarity.
 >
 > Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 > ---
-> 2: Some changes to PATCH 2/3 v2 occurred in the immediate context of
-> changes in this patch.  I've redone this patch after updating PATCH 2/3
-> so that it still applies cleanly.
+> 2: Moved "else if" up to the same line as closing brace of "if".  Left
+> braces on single line "else if" matched to an "if" requiring braces, per
+> CodingStyle.
 
 Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
