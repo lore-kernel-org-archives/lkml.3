@@ -1,112 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaBXCKG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:10:06 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:34575 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaBXCJw (ORCPT
+	id S1752101AbaBXCKD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:10:03 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:43453 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaBXCJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:09:52 -0500
+	Sun, 23 Feb 2014 21:09:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
-	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
-	<CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
-Date: Mon, 24 Feb 2014 11:09:50 +0900
-Message-ID: <CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+In-Reply-To: <CA+mB=1KqP=KgNZ_hYGbhin5TqokA+nCRPAA4Qa2R_2OWwv4yVw@mail.gmail.com>
+References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com>
+	<1392465619-27614-2-git-send-email-sthokal@xilinx.com>
+	<CAJe_Zhc_GNNSDWNFuk+cMHEqxfSCJB_ey=Bf+SwJK-nS=u9ceg@mail.gmail.com>
+	<CA+mB=1KdZZpTmpA0Xp_c4mhgFbjRZ6urYrCwdvoTCmcugQMDUA@mail.gmail.com>
+	<CAJe_ZhdOmu3k9gbPdQzPteyzwsMA8OzWHdhHnXudbF=X7JMhVQ@mail.gmail.com>
+	<CA+mB=1K43MDZj0Rx3q=ETQMaFsG1j7TXsH6v-7a26JdtqTJkbw@mail.gmail.com>
+	<CAJe_ZhfedP7Paf3Zq9chL0WUeLJrsy_DJL05sSbfqnfTtji=HQ@mail.gmail.com>
+	<CA+mB=1LK+aVbvh741+PMnpj_mwZRvJZzR5Fh=hf72UWQvxUiVQ@mail.gmail.com>
+	<CAJe_ZheGP-9f659tOdCHEMrbh73MDi7VjoieFhdQbvjVwiEbJQ@mail.gmail.com>
+	<CA+mB=1KqP=KgNZ_hYGbhin5TqokA+nCRPAA4Qa2R_2OWwv4yVw@mail.gmail.com>
+Date: Mon, 24 Feb 2014 11:09:44 +0900
+Message-ID: <CAJe_ZhfSknzwMUo3nu14Hz5sr_hA6KojB=u4BvyT3byh5ViwXA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] dma: Support multiple interleaved frames with
+ non-contiguous memory
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        Levente Kurusa <levex@linux.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        lkml <linux-kernel@vger.kernel.org>, dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Fri, Feb 21, 2014 at 1:18 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Magnus,
+On 21 February 2014 23:37, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> On Thu, Feb 20, 2014 at 3:23 PM, Jassi Brar <jaswinder.singh@linaro.org>
+> wrote:
+>> On 20 February 2014 14:54, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>>> On Wed, Feb 19, 2014 at 12:33 AM, Jassi Brar <jaswinder.singh@linaro.org>
+>>> wrote:
+>>>> On 18 February 2014 23:16, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>>>>> On Tue, Feb 18, 2014 at 10:20 PM, Jassi Brar
+>>>>> <jaswinder.singh@linaro.org> wrote:
+>>>>>> On 18 February 2014 16:58, Srikanth Thokala <sthokal@xilinx.com>
+>>>>>> wrote:
+>>>>>>> On Mon, Feb 17, 2014 at 3:27 PM, Jassi Brar
+>>>>>>> <jaswinder.singh@linaro.org> wrote:
+>>>>>>>> On 15 February 2014 17:30, Srikanth Thokala <sthokal@xilinx.com>
+>>>>>>>> wrote:
+>>>>>>>>> The current implementation of interleaved DMA API support multiple
+>>>>>>>>> frames only when the memory is contiguous by incrementing
+>>>>>>>>> src_start/
+>>>>>>>>> dst_start members of interleaved template.
+>>>>>>>>>
+>>>>>>>>> But, when the memory is non-contiguous it will restrict slave
+>>>>>>>>> device
+>>>>>>>>> to not submit multiple frames in a batch.  This patch handles this
+>>>>>>>>> issue by allowing the slave device to send array of interleaved dma
+>>>>>>>>> templates each having a different memory location.
+>>>>>>>>>
+>>>>>>>> How fragmented could be memory in your case? Is it inefficient to
+>>>>>>>> submit separate transfers for each segment/frame?
+>>>>>>>> It will help if you could give a typical example (chunk size and gap
+>>>>>>>> in bytes) of what you worry about.
+>>>>>>>
+>>>>>>> With scatter-gather engine feature in the hardware, submitting
+>>>>>>> separate
+>>>>>>> transfers for each frame look inefficient. As an example, our DMA
+>>>>>>> engine
+>>>>>>> supports up to 16 video frames, with each frame (a typical video
+>>>>>>> frame
+>>>>>>> size) being contiguous in memory but frames are scattered into
+>>>>>>> different
+>>>>>>> locations. We could not definitely submit frame by frame as it would
+>>>>>>> be
+>>>>>>> software overhead (HW interrupting for each frame) resulting in video
+>>>>>>> lags.
+>>>>>>>
+>>>>>> IIUIC, it is 30fps and one dma interrupt per frame ... it doesn't seem
+>>>>>> inefficient at all. Even poor-latency audio would generate a higher
+>>>>>> interrupt-rate. So the "inefficiency concern" doesn't seem valid to
+>>>>>> me.
+>>>>>>
+>>>>>> Not to mean we shouldn't strive to reduce the interrupt-rate further.
+>>>>>> Another option is to emulate the ring-buffer scheme of ALSA.... which
+>>>>>> should be possible since for a session of video playback the frame
+>>>>>> buffers' locations wouldn't change.
+>>>>>>
+>>>>>> Yet another option is to use the full potential of the
+>>>>>> interleaved-xfer api as such. It seems you confuse a 'video frame'
+>>>>>> with the interleaved-xfer api's 'frame'. They are different.
+>>>>>>
+>>>>>> Assuming your one video frame is F bytes long and Gk is the gap in
+>>>>>> bytes between end of frame [k] and start of frame [k+1] and  Gi != Gj
+>>>>>> for i!=j
+>>>>>> In the context of interleaved-xfer api, you have just 1 Frame of 16
+>>>>>> chunks. Each chunk is Fbytes and the inter-chunk-gap(ICG) is Gk  where
+>>>>>> 0<=k<15
+>>>>>> So for your use-case .....
+>>>>>>   dma_interleaved_template.numf = 1   /* just 1 frame */
+>>>>>>   dma_interleaved_template.frame_size = 16  /* containing 16 chunks */
+>>>>>>    ...... //other parameters
+>>>>>>
+>>>>>> You have 3 options to choose from and all should work just as fine.
+>>>>>> Otherwise please state your problem in real numbers (video-frames'
+>>>>>> size, count & gap in bytes).
+>>>>>
+>>>>> Initially I interpreted interleaved template the same.  But, Lars
+>>>>> corrected me
+>>>>> in the subsequent discussion and let me put it here briefly,
+>>>>>
+>>>>> In the interleaved template, each frame represents a line of size
+>>>>> denoted by
+>>>>> chunk.size and the stride by icg.  'numf' represent number of frames
+>>>>> i.e.
+>>>>> number of lines.
+>>>>>
+>>>>> In video frame context,
+>>>>> chunk.size -> hsize
+>>>>> chunk.icg -> stride
+>>>>> numf -> vsize
+>>>>> and frame_size is always 1 as it will have only one chunk in a line.
+>>>>>
+>>>> But you said in your last post
+>>>>   "with each frame (a typical video frame size) being contiguous in
+>>>> memory"
+>>>>  ... which is not true from what you write above. Anyways, my first 2
+>>>> suggestions still hold.
+>>>
+>>> Yes, each video frame is contiguous and they can be scattered.
+>>>
+>> I assume by contiguous frame you mean as in framebuffer?  Which is an
+>> array of bytes.
+>> If yes, then you should do as I suggest first,  frame_size=16  and numf=1.
 >
-> On Thu, Feb 20, 2014 at 4:48 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>> +/* MSIOF */
->>> +static const struct resource sh_msiof0_resources[] __initconst = {
->>> +       DEFINE_RES_MEM(0xe6e20000, 0x0064),
->>> +       DEFINE_RES_IRQ(gic_spi(156)),
->>> +};
->>> +
->>> +static const struct resource sh_msiof1_resources[] __initconst = {
->>> +       DEFINE_RES_MEM(0xe6e10000, 0x0064),
->>> +       DEFINE_RES_IRQ(gic_spi(157)),
->>> +};
->>> +
->>> +static const struct resource sh_msiof2_resources[] __initconst = {
->>> +       DEFINE_RES_MEM(0xe6e00000, 0x0064),
->>> +       DEFINE_RES_IRQ(gic_spi(158)),
->>> +};
->>> +
->>> +static const struct resource sh_msiof3_resources[] __initconst = {
->>> +       DEFINE_RES_MEM(0xe6c90000, 0x0064),
->>> +       DEFINE_RES_IRQ(gic_spi(159)),
->>> +};
->>> +
->>> +static const struct sh_msiof_spi_info sh_msiof_info __initconst = {
->>> +       .rx_fifo_override       = 256,
->>> +       .num_chipselect         = 1,
->>> +};
->>> +
->>> +#define r8a7790_register_msiof(idx)                                    \
->>> +       platform_device_register_resndata(&platform_bus,                \
->>> +                               "spi_r8a7790_msiof",                    \
->>> +                               (idx+1), sh_msiof##idx##_resources,     \
->>> +                               ARRAY_SIZE(sh_msiof##idx##_resources),  \
->>> +                               &sh_msiof_info,                         \
->>> +                               sizeof(struct sh_msiof_spi_info))
->>
->> That for your efforts - it's good to see the MSIOF being integrated as
->> well! I have one comment on this legacy board integration code.
->>
->> Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
->> best to omit the unused resources from above? In case of DT I think it
->> makes sense to define all channels in the SoC.dtsi and let the
->> SoC-board.dts just enable the channels that are used. But in this case
->> with legacy code  I think we should keep thing simple and small and
->> just enable the bits that are used on the particular board.
->>
->> The same obviously applies to the Koelsch legacy code as well. =)
+> I think am confusing you.  I would like to explain with an example.  Lets
+> say
+> each video frame is 4k size starting at address 0x10004000 (-0x10005000) and
+> other frame at 0x20002000 (-0x20003000), and so on.
 >
-> Note that while all resources are present, only MSIOF1 is registered on
-> Lager (MSIOF0 on Koelsch). This is similar to i2c on Koelsch, which also
-> has all resources, but only registers active devices.
+As I said plz dont confuse video frame with DMA frame.... in video
+frame the stride is constant(zero or not) whereas in DMA context the
+stride must be zero for the frame to be called contiguous.
 
-Ok, I understand. Thanks for brining this to my attention.
+> So, the frames are
+> scattered in memory and as the template doesnt allow multiple src_start/
+> dst_start we could not use single template to fill the HW descriptors (of
+> frames).  So, I feel your suggestion might not work if the frames are
+> scattered.
+> Also, how could we get 'vsize' value in your approach?
+>
+The client driver(video driver) should know the frame parameters.
+Practically you'll have to populate 16 transfer templates (frame
+attributes and locations won't change for a session) and submit to be
+transferred _cyclically_.
 
-I'd like to avoid having unused resources so I'll cook up a patch to
-rework that myself.
+>  More importantly,
+> we are overriding the semantics of interleaved template members.
+>
+Not at all. Interleaved-dma isn't meant for only constant stride/icg
+transfers. Rather it's for identical frames with random strides.
 
-> It's your preference, though, so I can adapt if you want.
+>
+>>
+>> If no, then it seems you are already doing the right thing.... the
+>> ring-buffer scheme. Please share some stats how the current api is
+>> causing you overhead because that is a very common case (many
+>> controllers support LLI) and you have 467ms (@30fps with 16-frames
+>> ring-buffer) to queue in before you see any frame drop.
+>
+> As I mentioned earlier in the thread, our hardware has a SG engine where by
+> we could send multiple frames in a batch.  Using the original implementation
+> of interleaved API, we have three options to transfer.
+>
+> One is to send frame by frame to the hardware.  We get a async_tx desc for
+> each frame and then we submit it to hardware triggering it to transfer this
+> BD.
+> We queue the next descriptor on the pending queue and whenever there is
+> a completion interrupt we submit the next BD on this queue to hardware. In
+> this implementation we are not efficiently using the SG engine in the
+> hardware
+> as we transferring frame by frame even HW allows us to transfer multiple
+> frames.
+>
+Sending one frame at a time will likely cause jitters. That shouldn't be done.
 
-Thanks.
+> The second option is to queue all the BDs until the maximum frames that HW
+> is
+> capable to transfer in a batch and then submit to SG engine in the HW.  With
+> this approach I feel there will be additional software overhead to track the
+> number
+> of maximum transfers and few additional cycles to release the cookie of each
+> desc.
+> Here, each desc represents a frame.
+>
+APIs are written for the gcd of h/w. We should optimize only for
+majority and here isn't even anything gained after changing the api.
+What you want to 'optimize' has been there since ever. Nobody
+considers that overhead. BTW you don't even want to spend a few 'extra
+cycles' but what about every other platform that doesn't support this
+and will have to scan for such transfer requests?
 
-Please rework this patch to only register a single MSIOF channel. I
-think it makes sense to only enable hardware that is being used.
+> The last option is the current implementation of the driver along with this
+> change in
+> API.  It will allow us to send array of interleaved templates wherein we
+> could allocate
+> a single async desc which will handle multiple frames (or segments) and just
+> submit
+> this desc to HW.  Then we program the current to first frame, tail to last
+> frame and
+> HW will complete this transfer.  Here, each desc represents multiple frames.
+>
+> My point here is the driver should use hardware resources efficiently and I
+> feel the
+> driver will be inefficient if we dont use them.
+>
+I am afraid you are getting carried away by the 'awesomeness' of your
+hardware. RingBuffers/Cyclic transfers  are meant for cases just like
+yours.
+Consider the following ... if you queue 16 frames and don't care to
+track before all are transmitted, you'll have very high latency. Video
+seeks will take unacceptably long and give the impression of a slow
+system. Whereas if you get callbacks for each frame rendered, you
+could updates frames from the next one thereby having very quick
+response time.
 
-Another question: How about "bus_num" and the platform device id
-mapping? I'd like them to be the same if possible, but you are having
-this "(idx+1)" bit in your code which I assume is to add offset for
-the QSPI bus.
+Anyways there are already ways to achieve what you want (however a bad
+idea that might be). So I am not convinced the change to api is any
+useful (your hardware won't run any more efficiently with the change).
 
-Regarding the PFC configuration, can you please double check that the
-PIN_MAP_MUX_GROUP_DEFAULT() is in sync with the platform device id? Is
-it the "bus_num" or the platform device id that is being used in case
-of SPI?
-
-Thanks!
-
-/ magnus
+Regards,
+Jassi
