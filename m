@@ -1,126 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaBXPlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:41:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22319 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871AbaBXPks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:40:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
-   d="scan'208";a="488849418"
-From: sagar.a.kamble@intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: Sagar Kamble <sagar.a.kamble@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, "G, Pallavi" <pallavi.g@intel.com>
-Subject: [PATCH v2 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB Cursor Support
-Date: Mon, 24 Feb 2014 21:11:43 +0530
-Message-Id: <1393256503-32274-1-git-send-email-sagar.a.kamble@intel.com>
-X-Mailer: git-send-email 1.8.5
-In-Reply-To: <20140218131333.GR3852@intel.com>
-References: <20140218131333.GR3852@intel.com>
+	id S1753182AbaBXPkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:40:24 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53323 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111AbaBXPkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 10:40:18 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jens Axboe <axboe@fb.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 06/11] smp: Teach __smp_call_function_single() to check for offline cpus
+Date: Mon, 24 Feb 2014 16:39:57 +0100
+Message-Id: <1393256402-16907-7-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1393256402-16907-1-git-send-email-fweisbec@gmail.com>
+References: <1393256402-16907-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagar Kamble <sagar.a.kamble@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-With this patch we allow larger cursor planes of sizes 128x128
-and 256x256.
+Align __smp_call_function_single() with smp_call_function_single() so
+that it also checks whether requested cpu is still online.
 
-v2: Added more precise check on size while setting cursor plane.
-
-Testcase: igt/kms_cursor_crc
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jens Axboe <axboe@fb.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- drivers/gpu/drm/i915/i915_reg.h      |  4 ++++
- drivers/gpu/drm/i915/intel_display.c | 28 +++++++++++++++++++++++-----
- 2 files changed, 27 insertions(+), 5 deletions(-)
+ include/linux/smp.h |  3 +--
+ kernel/smp.c        | 11 +++++++----
+ kernel/up.c         |  5 +++--
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 2f564ce..2fee3a2 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3522,7 +3522,11 @@
- /* New style CUR*CNTR flags */
- #define   CURSOR_MODE		0x27
- #define   CURSOR_MODE_DISABLE   0x00
-+#define   CURSOR_MODE_128_32B_AX 0x02
-+#define   CURSOR_MODE_256_32B_AX 0x03
- #define   CURSOR_MODE_64_32B_AX 0x07
-+#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
-+#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
- #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
- #define   MCURSOR_PIPE_SELECT	(1 << 28)
- #define   MCURSOR_PIPE_A	0x00
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index f19e6ea..d036b41 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7411,10 +7411,18 @@ static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
- 	bool visible = base != 0;
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 4991c6b..c39074c 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -50,8 +50,7 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+ 		smp_call_func_t func, void *info, bool wait,
+ 		gfp_t gfp_flags);
  
- 	if (intel_crtc->cursor_visible != visible) {
-+		int16_t width = intel_crtc->cursor_width;
- 		uint32_t cntl = I915_READ(CURCNTR(pipe));
- 		if (base) {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
--			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
-+			if (width == 64)
-+				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 128)
-+				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 256)
-+				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
- 			cntl |= pipe << 28; /* Connect to correct pipe */
- 		} else {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-@@ -7439,10 +7447,17 @@ static void ivb_update_cursor(struct drm_crtc *crtc, u32 base)
- 	bool visible = base != 0;
+-void __smp_call_function_single(int cpuid, struct call_single_data *data,
+-				int wait);
++int __smp_call_function_single(int cpu, struct call_single_data *csd, int wait);
  
- 	if (intel_crtc->cursor_visible != visible) {
-+		int16_t width = intel_crtc->cursor_width;
- 		uint32_t cntl = I915_READ(CURCNTR_IVB(pipe));
- 		if (base) {
- 			cntl &= ~CURSOR_MODE;
--			cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+
-+			if (width == 64)
-+				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 128)
-+				cntl |= CURSOR_MODE_128_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-+			else if (width == 256)
-+				cntl |= CURSOR_MODE_256_ARGB_AX | MCURSOR_GAMMA_ENABLE;
- 		} else {
- 			cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
- 			cntl |= CURSOR_MODE_DISABLE;
-@@ -7538,9 +7553,12 @@ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
- 		goto finish;
+ #ifdef CONFIG_SMP
+ 
+diff --git a/kernel/smp.c b/kernel/smp.c
+index e3852de..5ff14e3 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -276,18 +276,18 @@ EXPORT_SYMBOL_GPL(smp_call_function_any);
+ /**
+  * __smp_call_function_single(): Run a function on a specific CPU
+  * @cpu: The CPU to run on.
+- * @data: Pre-allocated and setup data structure
++ * @csd: Pre-allocated and setup data structure
+  * @wait: If true, wait until function has completed on specified CPU.
+  *
+  * Like smp_call_function_single(), but allow caller to pass in a
+  * pre-allocated data structure. Useful for embedding @data inside
+  * other structures, for instance.
+  */
+-void __smp_call_function_single(int cpu, struct call_single_data *csd,
+-				int wait)
++int __smp_call_function_single(int cpu, struct call_single_data *csd, int wait)
+ {
+ 	unsigned int this_cpu;
+ 	unsigned long flags;
++	int err = 0;
+ 
+ 	this_cpu = get_cpu();
+ 	/*
+@@ -303,11 +303,14 @@ void __smp_call_function_single(int cpu, struct call_single_data *csd,
+ 		local_irq_save(flags);
+ 		csd->func(csd->info);
+ 		local_irq_restore(flags);
+-	} else {
++	} else if ((unsigned)cpu < nr_cpu_ids && cpu_online(cpu)) {
+ 		csd_lock(csd);
+ 		generic_exec_single(cpu, csd, wait);
++	} else {
++		err = -ENXIO;	/* CPU not online */
  	}
+ 	put_cpu();
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(__smp_call_function_single);
  
--	/* Currently we only support 64x64 cursors */
--	if (width != 64 || height != 64) {
--		DRM_ERROR("we currently only support 64x64 cursors\n");
-+	/* Check for which cursor types we support */
-+	if ((!(width == 64 && height == 64) && IS_GEN2(dev)) ||
-+	    (!(width == 64 && height == 64)
-+	     && !(width == 128 && height == 128)
-+	     && !(width == 256 && height == 256))) {
-+		DRM_ERROR("Cursor dimension is not supported\n");
- 		return -EINVAL;
- 	}
+diff --git a/kernel/up.c b/kernel/up.c
+index 509403e..cdf03d1 100644
+--- a/kernel/up.c
++++ b/kernel/up.c
+@@ -22,14 +22,15 @@ int smp_call_function_single(int cpu, void (*func) (void *info), void *info,
+ }
+ EXPORT_SYMBOL(smp_call_function_single);
+ 
+-void __smp_call_function_single(int cpu, struct call_single_data *csd,
+-				int wait)
++int __smp_call_function_single(int cpu, struct call_single_data *csd,
++			       int wait)
+ {
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+ 	csd->func(csd->info);
+ 	local_irq_restore(flags);
++	return 0;
+ }
+ EXPORT_SYMBOL(__smp_call_function_single);
  
 -- 
-1.8.5
+1.8.3.1
 
