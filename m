@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaBXKQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:16:33 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53234 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaBXKLW (ORCPT
+	id S1752959AbaBXKQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:16:53 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:57218 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301AbaBXKLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:11:22 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-62-530b1ac8ab50
+	Mon, 24 Feb 2014 05:11:17 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-d6-530b1ac0ee05
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Chanwoo Choi <cw00.choi@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
@@ -18,54 +18,79 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: [PATCH v4 12/16] power: max17040: Add ID for max77836 Fuel Gauge block
-Date: Mon, 24 Feb 2014 11:10:37 +0100
-Message-id: <1393236641-14977-13-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v4 01/16] extcon: max14577: Change extcon name instead of
+ static name according to device type
+Date: Mon, 24 Feb 2014 11:10:26 +0100
+Message-id: <1393236641-14977-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
 References: <1393236641-14977-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xy7onpLiDDZbdFbc4uFXTYuOM9awW
-	Ux8+YbO4/uU5q8WkJ++ZLSaunMxs8fqFocXZpjfsFve/HmW02PT4GqvF5V1z2CzWHrnLbnG6
-	m9Vi/YzXLA58HhP6PzF67Jx1l91j8wotj02rOtk87lzbw+Yx72Sgx+Yl9R59W1YxenzeJBfA
-	GcVlk5Kak1mWWqRvl8CV0Xirm7ngHXvF7s6jbA2Md9i6GDk5JARMJFrftzND2GISF+6tB4pz
-	cQgJLGWU+Nh3kh3C6WOS6Jl+hh2kik3AWGLz8iVgVSICW5gkej98YQRxmAV6mSSunVrHCFIl
-	LOAvcXkLRAeLgKrEit+rwHbwCnhIvLh2GsjmANqnIDFnkg1ImBMofLflASuILSTgLvFt3nWW
-	CYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEhO6XHYyLj1kdYhTgYFTi4ZWo5goW
-	Yk0sK67MPcQowcGsJMJrxssdLMSbklhZlVqUH19UmpNafIiRiYNTqoFR1XfVaSv3yR9zhfZn
-	z2f7KqF0ceP5mfN+mgrVF4Re07ubY9y5tKjMYWOaYXxst3X7Uz/fXrW4mB+f2ht+xJR7ddo1
-	8SlNrc97vFek+NRlQ9Pbr/X6xWIYLbbpOn+Xc877k1j74f+iXg2PBw8cN+xX35jI1H3/0U7H
-	//F7Qz7//HUieOkGQyYlluKMREMt5qLiRACHTWmxOwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xy7oHpLiDDZa/YbfYOGM9q8XUh0/Y
+	LK5/ec5qMenJe2aLiSsnM1u8fmFocbYJqOL+16OMFpseX2O1uLxrDpvF2iN32S1Od7NarJ/x
+	msWB12PnrLvsHptXaHlsWtXJ5nHn2h42j3knAz02L6n36NuyitHj8ya5AI4oLpuU1JzMstQi
+	fbsErox/a6+wFBzmrfj+4gZTA+M27i5GTg4JAROJ21uvsEPYYhIX7q1n62Lk4hASWMoosef9
+	LWYIp49J4trTFmaQKjYBY4nNy5eAVYkIbGGS6P3whRHEYRZ4zijxcdFMsFnCAgUS+7Z+ZQGx
+	WQRUJTr2vwSL8wq4Szy/1craxcgBtE9BYs4kG5Awp4CHxN2WB6wgthBQybd511kmMPIuYGRY
+	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESqF93MC49ZnWIUYCDUYmHV6KaK1iINbGsuDL3
+	EKMEB7OSCK8ZL3ewEG9KYmVValF+fFFpTmrxIUYmDk6pBkbnOz+yov87yi3aMbOBNfv8mTnf
+	HuvyTJgWtPjB+wuGPpJrytyvysxp6Tza3zPVnSFOQ2I3s41y5JeLU4XWXyvjXNPF2d3AdP9a
+	7wfD9vDeguV8e16/d5436YfAOvVnE9IbKnRuJFmxeq9suZx656NygfyRamWWrbcv7dCeJzn1
+	2+niRRp1Vx4psRRnJBpqMRcVJwIAAD251TICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX77836 has the same Fuel Gauge as MAX17040. The max17040 driver can be
-safely re-used. The patch adds MAX77836 ID to array with i2c_device_id.
+From: Chanwoo Choi <cw00.choi@samsung.com>
 
+This patch use device name to make sysfs path according to device type:
+
+max14577-muic
+- /sys/class/extcon/max14577-muic/
+max77836-muic
+- /sys/class/extcon/max77836-muic/
+
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/power/max17040_battery.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/extcon/extcon-max14577.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
-index 0fbac861080d..165ffe381803 100644
---- a/drivers/power/max17040_battery.c
-+++ b/drivers/power/max17040_battery.c
-@@ -278,6 +278,7 @@ static SIMPLE_DEV_PM_OPS(max17040_pm_ops, max17040_suspend, max17040_resume);
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 3846941801b8..59f084fee4f3 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -24,7 +24,6 @@
+ #include <linux/mfd/max14577-private.h>
+ #include <linux/extcon.h>
  
- static const struct i2c_device_id max17040_id[] = {
- 	{ "max17040", 0 },
-+	{ "max77836-battery", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, max17040_id);
+-#define	DEV_NAME			"max14577-muic"
+ #define	DELAY_MS_DEFAULT		17000		/* unit: millisecond */
+ 
+ enum max14577_muic_adc_debounce_time {
+@@ -673,7 +672,8 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
+ 		return -ENOMEM;
+ 	}
+-	info->edev->name = DEV_NAME;
++
++	info->edev->name = dev_name(&pdev->dev);
+ 	info->edev->supported_cable = max14577_extcon_cable;
+ 	ret = extcon_dev_register(info->edev);
+ 	if (ret) {
+@@ -737,7 +737,7 @@ static int max14577_muic_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver max14577_muic_driver = {
+ 	.driver		= {
+-		.name	= DEV_NAME,
++		.name	= "max14577-muic",
+ 		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= max14577_muic_probe,
 -- 
 1.7.9.5
 
