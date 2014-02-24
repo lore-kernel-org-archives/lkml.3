@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaBXTQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:16:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40050 "EHLO mail.zytor.com"
+	id S1753261AbaBXTQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:16:48 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:34501 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539AbaBXTQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:16:22 -0500
-Message-ID: <530B9A54.5060502@zytor.com>
-Date: Mon, 24 Feb 2014 11:15:32 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753008AbaBXTQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 14:16:46 -0500
+Date: Mon, 24 Feb 2014 20:15:54 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: phy: add suspend_halted module param
+Message-ID: <20140224191554.GC29288@lunn.ch>
+References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-References: <53084317.4090304@zytor.com>	<alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>	<e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com>	<alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu>	<530AD71E.50800@zytor.com>	<alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>	<18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com>	<alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu>	<20140224172536.GD9987@twins.programming.kicks-ass.net>	<alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu>	<530B841F.5050803@zytor.com>	<alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>	<530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home>
-In-Reply-To: <20140224141329.1cd3bb52@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 11:13 AM, Steven Rostedt wrote:
->>
->> Either way, it really seems like we have a case of CR2 leakage out of
->> the NMI context.
+On Sun, Feb 23, 2014 at 05:58:39PM +0100, Sebastian Hesselbarth wrote:
+> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
+>   ("net: phy: resume/suspend PHYs on attach/detach")
+> introduced a feature to suspend PHYs when entering halted state.
 > 
-> Ah, and x86_64 saves off the cr2 register when entering NMI and restores
-> it before returning. But it seems to be missing from the i386 code.
+> Unfortunately, not all bootloaders properly power-up PHYs on reset
+> and fail to access ethernet because the PHY is still powered down.
 > 
+> Therefore, we add a boolean module parameter suspend_halted with
+> default value of true. Disabling that parameter prevents PHYs from
+> being suspended when entering halted state.
 
-OK, that might be a problem, but this is the 64-bit kernel.
+Hi Sebastian
 
-	-hpa
+Am i doing something silly here?
 
+root@qnap:/sys/module/libphy/parameters# cat suspend_halted 
+Y
+root@qnap:/sys/module/libphy/parameters# echo N > suspend_halted 
+root@qnap:/sys/module/libphy/parameters# cat suspend_halted 
+N
+root@qnap:/sys/module/libphy/parameters# reboot
+...
+...
 
+Net:   egiga0 [PRIME]
+Hit any key to stop autoboot:  0 
+Send Cmd : 0x68 to UART1
+egiga0 no link
+Using egiga0 device
+TFTP from server 10.0.0.1; our IP address is 10.0.0.2
+Filename 'uImage-qnap'.
+Load address: 0x800000
+Loading: T T 
+
+Does not seem to work.
+
+     Andrew
