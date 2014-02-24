@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaBXWbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:31:42 -0500
-Received: from smtprelay0112.hostedemail.com ([216.40.44.112]:53590 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752664AbaBXWbl (ORCPT
+	id S1752875AbaBXWd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:33:57 -0500
+Received: from smtp104.biz.mail.ne1.yahoo.com ([98.138.207.11]:28063 "HELO
+	smtp104.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752327AbaBXWd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:31:41 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4384:5007:6119:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: voice89_e791e4da2700
-X-Filterd-Recvd-Size: 2470
-Message-ID: <1393281098.11020.82.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-From: Joe Perches <joe@perches.com>
-To: Tom Rini <trini@ti.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 24 Feb 2014 14:31:38 -0800
-In-Reply-To: <530BC5A4.4060803@ti.com>
-References: <1393274296-26179-1-git-send-email-trini@ti.com>
-	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
-	 <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>
-	 <1393279377.11020.66.camel@joe-AO722> <530BC209.2000708@ti.com>
-	 <1393279691.11020.69.camel@joe-AO722> <530BC5A4.4060803@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 24 Feb 2014 17:33:56 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: c7hCkDoVM1l2QyZra1fUdIrTI1a2.n_RSYBCWkOtr4qLWO0
+ Qku8mxNmtM3_itH3eNYuVQcK_iupyVN5yR.Vf1Bt5dV2kM_OEjlrEySPZFQM
+ 561ttdEtdB7jQNhA_L7hvxofe0_sWSv9zQ0EvHiPVvImzyK9ouHCw2k6RErj
+ Yt7XcSLA5dHLXY.xaQCLIHlv4dBANOVxbJcYGHK.wa6iPWVv8gT_Ko1KNdKH
+ Bimb9r2HgamSC6rfP1biQiReB0XpXtX3h_VrA9uzPN8a7mFgqzhruT.zns4i
+ wUXrtmhF68RxTImEV30U4KtcvtuKZjVLOsoGJ3eV88NbkZTfHxQrCiKo0wHt
+ V4H_0GJyfuF92OIrhXT_RcFi3kRbhtQmSdznnwZ98Cv2noJpQJD5WGua4B3M
+ Enat_L4ac_9Xg6bBXjsqiqePSovPiCCoNlVPHXxgsSau0rr0WXCPri5lGTNE
+ GsZWtCvQJR8Jx4opXgT79x4TCGh_KQZF3aOKyljyXn75qUmmAzuEjGWLAT73
+ 5LeSJpzFGFIs5vcCZH8ZPP8ad1uLd0pDSK6rBtlkL5m8K
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
+        by smtp104.biz.mail.ne1.yahoo.com with SMTP; 24 Feb 2014 14:33:55 -0800 PST
+Message-ID: <530BC8D2.9050503@schaufler-ca.com>
+Date: Mon, 24 Feb 2014 14:33:54 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
+References: <cover.1393279025.git.joe@perches.com>	 <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>	 <530BC4BF.2000904@schaufler-ca.com> <1393280598.11020.77.camel@joe-AO722>
+In-Reply-To: <1393280598.11020.77.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 17:20 -0500, Tom Rini wrote:
-> On 02/24/2014 05:08 PM, Joe Perches wrote:
-> > On Mon, 2014-02-24 at 17:04 -0500, Tom Rini wrote:
-> >> I've got this modified to a CHK and only for non-file usage.  Anything
-> >> else we want to talk about before I repost?
-> > 
-> > Probably not, but I'm still not convinced it's useful.
-> > 
-> > Have you found a case where it's currently specified
-> > but not useful?
-> 
-> Well, U-Boot and the kernel both share the dubious to incorrect __packed
-> horror of cros_ec things (see include/linux/mfd/cros_ec_commands.h).
+On 2/24/2014 2:23 PM, Joe Perches wrote:
+> On Mon, 2014-02-24 at 14:16 -0800, Casey Schaufler wrote:
+>> On 2/24/2014 1:59 PM, Joe Perches wrote:
+>>> Convert printks to pr_<level>
+>>> Add pr_fmt.
+>>> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> []
+>>> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>>> +
+>> What is pr_fmt() for?
+> Prefixing "smack: " to the pr_<level> uses.
 
-Are the __packed entries in cros_ec dubious?
+OK. I didn't see where it was used. I understand now. I'll go
+back and ACK the changes.
 
-Maybe the ones that don't seem to need them
-because the are naturally 32 bit aligned, but
-the others that are u16 aligned probably _do_
-need __packed.
-
-> If this is really not seen as useful for the kernel, that's fine, I'll
-> drop it.  I mainly did this for U-Boot where we do want a bit more loud
-> screaming going on when people add __packed to make sure it's for a good
-> reason.  Wanted to be a good neighbor so to speak and see if upstream
-> wants it too.
-
-I don't mind keeping checkpatch compatible with U-Boot
-requirements, but probably not on by default.
-
-Maybe there would be some "UBOOT-<foo>" type specific entries
-that could be default off but enabled with some wildcard or
-a .checkpatch.conf specific file for U-Boot.
-
+>
+>>> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
+>>>  		if (sock->sk->sk_family == PF_INET) {
+>>>  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
+>>>  			if (rc != 0)
+>>> -				printk(KERN_WARNING
+>>> -					"Smack: \"%s\" netlbl error %d.\n",
+>>> +				pr_warn("\"%s\" netlbl error %d\n",
+>>>  					__func__, -rc);
+> This will be now be emitted as
+>
+> <4>smack: "smack_inode_setsecurity" netlbl error -<d>
+>
+> instead of
+>
+> <4>Smack: "smack_inode_setsecurity" netlbl error -<d>
+>
+> Though it'd be a lot more common to use:
+>
+> 					pr_warn("%s: netlbl error: %d\n",
+> 						__func__, -rc);
+>
+> so the output would be:
+>
+> <4>smack: smack_inode_setsecurity: netlbl error: -<d>
+>
+>
+>
 
