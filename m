@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaBXOUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:20:19 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:42670 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaBXOUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:20:18 -0500
-X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
-   d="scan'208";a="105195234"
-Message-ID: <530B551F.2060202@citrix.com>
-Date: Mon, 24 Feb 2014 14:20:15 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752719AbaBXOWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:22:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38743 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbaBXOWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 09:22:43 -0500
+Date: Mon, 24 Feb 2014 15:22:32 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH Resend] trace: Replace hardcoding of 19 with MAX_NICE.
+Message-ID: <20140224142232.GU27965@twins.programming.kicks-ass.net>
+References: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
+ <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Xen <xen-devel@lists.xenproject.org>, Ingo Molnar <mingo@elte.hu>,
-        x86 <x86@kernel.org>
-Subject: Re: [Xen-devel] [patch 15/26] x86: xen: Use the core irq stats function
-References: <20140223212703.511977310@linutronix.de> <20140223212737.869264085@linutronix.de>
-In-Reply-To: <20140223212737.869264085@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/02/14 21:40, Thomas Gleixner wrote:
-> Let the core do the irq_desc resolution.
-> 
-> No functional change.
+On Mon, Feb 24, 2014 at 10:12:01PM +0800, Dongsheng Yang wrote:
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+"Use MAX_NICE instead of the value 19 for ring_buffer_benchmark."
 
-David
+> cc: Steven Rostedt <rostedt@goodmis.org>
+> cc: Frederic Weisbecker <fweisbec@gmail.com>
+> cc: Ingo Molnar <mingo@redhat.com>
+> cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+
+Thanks.
