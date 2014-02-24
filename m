@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaBXFoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:44:12 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:40263 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaBXFoK (ORCPT
+	id S1751936AbaBXFqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:46:38 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:63875 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaBXFqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:44:10 -0500
+	Mon, 24 Feb 2014 00:46:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140224053232.GB7056@dcvr.yhbt.net>
-References: <1393206162-18151-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-	<1393206162-18151-3-git-send-email-n1ght.4nd.d4y@gmail.com>
-	<20140224053232.GB7056@dcvr.yhbt.net>
-Date: Sun, 23 Feb 2014 21:44:09 -0800
-Message-ID: <CAJ3m7BrjXvCOD_JpBHO7-ZuHFycr=GCrBiW2S1gfN4Ms-9h-Hw@mail.gmail.com>
-Subject: Re: [RFC PATCH for-next 2/4] epoll: epoll() syscall declaration
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Date: Sun, 23 Feb 2014 21:46:34 -0800
+Message-ID: <CACpDSGYoQQJ_GStZr3YbMuYow6hzwG4DkgxiSbGi8_jWoXEuKA@mail.gmail.com>
+Subject: xxx.refs.info is updated with kernels released last week
+From: John Smith <xrefs.info@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 9:32 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
->> +asmlinkage long sys_epoll(int ep, struct epoll __user *in,
->> +                       unsigned int inc, struct epoll __user *out,
->> +                       unsigned int outc, int timeout);
->
-> I can understand using the new struct for 'in', but 'out' could just be
-> "struct epoll_event *" like sys_epoll_wait, right?
->
->>  asmlinkage long sys_epoll_wait(int epfd, struct epoll_event __user *events,
+Hi, the following kernel cross references are added into www.xrefs.info
+linux-3.13.5
+linux-3.13.4
+linux-3.10.32
+linux-3.10.31
+linux-3.10.30
+linux-3.4.82
+linux-3.4.81
+linux-3.4.80
+linux-3.2.55
+linux-3.2.54
+linux-2.6.34.15
+linux-2.6.34.14
+linux-2.6.34.13
+linux-2.6.34.12
+linux-2.6.34.11
+linux-2.6.34.10
+linux-2.6.34.9
+linux-2.6.34.8
+~ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FYI...
 
-Yeah and I went back and forth on that, it just seemed to me that the
-inconsistency could be confusing to others... maybe instead of defining a new
-struct to begin with it might make me sense to just have an 'infd' array of file
-descriptors in addition to an 'in' array of epoll_event struct
-(obviously the length
-of these would be identical).
+http://www.xrefs.info is made for open source community in
+the hope of making open source developers more productive.
+The site hosts many open source code projects' cross references based
+on OpenGrok, which is a very fast cross reference tool, and easy to use.
+
+To access, you can go to http://www.xrefs.info, select a project, pick
+a version.
+If you want to search the definition of a function,
+simply type it in the definition box; If you want to do a full search,
+type your text in the first box; If you want to search a file, simply
+type file name in file path box. Hit search button, That's it!
+
+The site covers following:
+ - Linux kernel cross reference: from verion 0.01 - latest release,
+plus nightly linus' tree latest.
+ - Linux boot loaders cross reference: u-boot, lilo, grub,
+syslinux,plus nightly latest.
+ - Linux user space core packages cross reference
+ - Android various releases cross reference, plus nightly latest.
+ - Cloud computing other projects:
+    - xen hypervisor cross reference
+    - VirtualBox cross reference;
+    - OpenStack cross reference
+    - cloudStack cross reference.
+    - Puppet cross reference
+    - Salt cross reference
+    - Cloud Foundary cross reference
+    - OpenShift cross reference
+    - Chef cross reference
+    - Juju cross reference
+ - Big data project Hadoop cross reference
+ - BSD: FreeBSD cross reference, NetBSD cross reference, DragonflyBSD
+cross reference
+ - Database: MySQL cross reference, MariaDB cross reference, mongoDB
+cross reference, redis, neo4j, hbase, cassandra
+ - Languages: OpenJDK cross reference, Perl cross reference, Python
+cross reference, PHP cross reference.
+
+If you have any questions, comments or suggestions for the site,
+please let me know.
+
+Thanks.
+xrefs.info@gmail.com
