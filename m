@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaBXQYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:24:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34172 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256AbaBXQYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:24:48 -0500
-Date: Mon, 24 Feb 2014 17:24:44 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: benjamin.tissoires@gmail.com, dh.herrmann@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] HID: low level transport cleanup, series 3
-In-Reply-To: <1392927890-2389-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1402241724270.1192@pobox.suse.cz>
-References: <1392927890-2389-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753439AbaBXQZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:25:12 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:54491 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752578AbaBXQZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:25:09 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 3/5] clk: sun6i: Protect SDRAM gating bit
+Date: Mon, 24 Feb 2014 17:22:45 +0100
+Message-Id: <1393258967-4843-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Feb 2014, Benjamin Tissoires wrote:
+Prevent the SDRAM controller from being gated by force-enabling it in the clock
+driver.
 
-> Hi guys,
-> 
-> this is a new round in the low level HID transport cleanup.
-> These are the formely 7/14 an 12/14 only.
-> I add in between a patch which makes .raw_request mandatory, to cleanup
-> the old 12/14 (so 3/3 here).
-> 
-> There is only two patches 2 merge after these 3... We are approaching the end!
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clk/sunxi/clk-sunxi.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Good stuff, thanks Benjamin. Queued for 3.15.
-
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 6cfcd23..d9b4a41 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -1302,6 +1302,13 @@ static void __init sunxi_clock_protect(void)
+ 		clk_put(clk);
+ 	}
+ 
++	/* DDR Gating clock - sun6i */
++	clk = clk_get(NULL, "ahb1_sdram");
++	if (!IS_ERR(clk)) {
++		clk_prepare_enable(clk);
++		clk_put(clk);
++	}
++
+ 	/* CPU clocks - sun6i */
+ 	clk = clk_get(NULL, "cpu");
+ 	if (!IS_ERR(clk)) {
 -- 
-Jiri Kosina
-SUSE Labs
+1.9.0
+
