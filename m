@@ -1,330 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaBXBBU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:01:20 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:57112 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaBXBBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:01:18 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-55-530a99dbc1f0
-Date: Mon, 24 Feb 2014 10:01:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 2/6] zram: use zcomp compressing backends
-Message-ID: <20140224010140.GE16240@bbox>
-References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392983443-9807-3-git-send-email-sergey.senozhatsky@gmail.com>
+	id S1751508AbaBXBI1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:08:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63986 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237AbaBXBI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 20:08:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,531,1389772800"; 
+   d="scan'208";a="480442906"
+Message-ID: <530A9B67.1050403@intel.com>
+Date: Mon, 24 Feb 2014 09:07:51 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392983443-9807-3-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBSuQoedYqe7EZ567vD4eTfxbzsLJhGJoGUh0d0GPJ=O0A@mail.gmail.com>
+In-Reply-To: <CABPqkBSuQoedYqe7EZ567vD4eTfxbzsLJhGJoGUh0d0GPJ=O0A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:50:39PM +0300, Sergey Senozhatsky wrote:
-> Do not perform direct LZO compress/decompress calls, initialise
-> and use zcomp LZO backend (single compression stream) instead.
+On 02/24/2014 03:47 AM, Stephane Eranian wrote:
+> Could you add the Reviewed-by: on the patches I already
+> reviewed? So I focus on the changes you made and continue
+> testing on my HSW system.
 > 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> ---
->  drivers/block/zram/Makefile   |  2 +-
->  drivers/block/zram/zram_drv.c | 62 +++++++++++++++++++------------------------
->  drivers/block/zram/zram_drv.h |  8 +++---
->  3 files changed, 32 insertions(+), 40 deletions(-)
+Hi,
+
+I got your Reviewed-by for patch 1,5,6,8. Patch 6 was changed in this series.
+So only patch 1,6,8 were left (they all are simple change). I will add your
+Reviewed-by in next version.
+
+Regards
+Yan, Zheng
+
+> Thanks.
 > 
-> diff --git a/drivers/block/zram/Makefile b/drivers/block/zram/Makefile
-> index cb0f9ce..757c6a5 100644
-> --- a/drivers/block/zram/Makefile
-> +++ b/drivers/block/zram/Makefile
-> @@ -1,3 +1,3 @@
-> -zram-y	:=	zram_drv.o
-> +zram-y	:=	zcomp_lzo.o zcomp.o zram_drv.o
->  
->  obj-$(CONFIG_ZRAM)	+=	zram.o
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 9baac5b..200c12a 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -29,15 +29,14 @@
->  #include <linux/genhd.h>
->  #include <linux/highmem.h>
->  #include <linux/slab.h>
-> -#include <linux/lzo.h>
->  #include <linux/string.h>
-> -#include <linux/vmalloc.h>
+> On Tue, Feb 18, 2014 at 7:07 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> For many profiling tasks we need the callgraph. For example we often
+>> need to see the caller of a lock or the caller of a memcpy or other
+>> library function to actually tune the program. Frame pointer unwinding
+>> is efficient and works well. But frame pointers are off by default on
+>> 64bit code (and on modern 32bit gccs), so there are many binaries around
+>> that do not use frame pointers. Profiling unchanged production code is
+>> very useful in practice. On some CPUs frame pointer also has a high
+>> cost. Dwarf2 unwinding also does not always work and is extremely slow
+>> (upto 20% overhead).
+>>
+>> Haswell has a new feature that utilizes the existing Last Branch Record
+>> facility to record call chains. When the feature is enabled, function
+>> call will be collected as normal, but as return instructions are
+>> executed the last captured branch record is popped from the on-chip LBR
+>> registers. The LBR call stack facility provides an alternative to get
+>> callgraph. It has some limitations too, but should work in most cases
+>> and is significantly faster than dwarf. Frame pointer unwinding is still
+>> the best default, but LBR call stack is a good alternative when nothing
+>> else works.
+>>
+>> This patch series adds LBR call stack support. User can enabled/disable
+>> this through an sysfs attribute file in the CPU PMU directory:
+>>  echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack
+>>
+>> When profiling bc(1) on Fedora 19:
+>>  echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
+>>
+>> If this feature is enabled, perf report output looks like:
+>>     50.36%       bc  bc                 [.] bc_divide
+>>                  |
+>>                  --- bc_divide
+>>                      execute
+>>                      run_code
+>>                      yyparse
+>>                      main
+>>                      __libc_start_main
+>>                      _start
+>>
+>>     33.66%       bc  bc                 [.] _one_mult
+>>                  |
+>>                  --- _one_mult
+>>                      bc_divide
+>>                      execute
+>>                      run_code
+>>                      yyparse
+>>                      main
+>>                      __libc_start_main
+>>                      _start
+>>
+>>      7.62%       bc  bc                 [.] _bc_do_add
+>>                  |
+>>                  --- _bc_do_add
+>>                     |
+>>                     |--99.89%-- 0x2000186a8
+>>                      --0.11%-- [...]
+>>
+>>      6.83%       bc  bc                 [.] _bc_do_sub
+>>                  |
+>>                  --- _bc_do_sub
+>>                     |
+>>                     |--99.94%-- bc_add
+>>                     |          execute
+>>                     |          run_code
+>>                     |          yyparse
+>>                     |          main
+>>                     |          __libc_start_main
+>>                     |          _start
+>>                      --0.06%-- [...]
+>>
+>>      0.46%       bc  libc-2.17.so       [.] __memset_sse2
+>>                  |
+>>                  --- __memset_sse2
+>>                     |
+>>                     |--54.13%-- bc_new_num
+>>                     |          |
+>>                     |          |--51.00%-- bc_divide
+>>                     |          |          execute
+>>                     |          |          run_code
+>>                     |          |          yyparse
+>>                     |          |          main
+>>                     |          |          __libc_start_main
+>>                     |          |          _start
+>>                     |          |
+>>                     |          |--30.46%-- _bc_do_sub
+>>                     |          |          bc_add
+>>                     |          |          execute
+>>                     |          |          run_code
+>>                     |          |          yyparse
+>>                     |          |          main
+>>                     |          |          __libc_start_main
+>>                     |          |          _start
+>>                     |          |
+>>                     |           --18.55%-- _bc_do_add
+>>                     |                     bc_add
+>>                     |                     execute
+>>                     |                     run_code
+>>                     |                     yyparse
+>>                     |                     main
+>>                     |                     __libc_start_main
+>>                     |                     _start
+>>                     |
+>>                      --45.87%-- bc_divide
+>>                                execute
+>>                                run_code
+>>                                yyparse
+>>                                main
+>>                                __libc_start_main
+>>                                _start
+>>
+>> If this feature is disabled, perf report output looks like:
+>>     50.49%       bc  bc                 [.] bc_divide
+>>                  |
+>>                  --- bc_divide
+>>
+>>     33.57%       bc  bc                 [.] _one_mult
+>>                  |
+>>                  --- _one_mult
+>>
+>>      7.61%       bc  bc                 [.] _bc_do_add
+>>                  |
+>>                  --- _bc_do_add
+>>                      0x2000186a8
+>>
+>>      6.88%       bc  bc                 [.] _bc_do_sub
+>>                  |
+>>                  --- _bc_do_sub
+>>
+>>      0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+>>                  |
+>>                  --- __memcpy_ssse3_back
+>>
+>> The LBR call stack has following known limitations
+>>  - Zero length calls are not filtered out by hardware
+>>  - Exception handing such as setjmp/longjmp will have calls/returns not
+>>    match
+>>  - Pushing different return address onto the stack will have calls/returns
+>>    not match
+>>  - If callstack is deeper than the LBR, only the last entries are captured
+>>
+>> Changes since v1
+>>  - split change into more patches
+>>  - introduce context switch callback and use it to flush LBR
+>>  - use the context switch callback to save/restore LBR
+>>  - dynamic allocate memory area for storing LBR stack, always switch the
+>>    memory area during context switch
+>>  - disable this feature by default
+>>  - more description in change logs
+>>
+>> Changes since v2
+>>  - don't use xchg to switch PMU specific data
+>>  - remove nr_branch_stack from struct perf_event_context
+>>  - simplify the save/restore LBR stack logical
+>>  - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+>>    conversion
+>>  - more description in change logs
+>>
+>>
 
-In ARM,
-
-drivers/block/zram/zram_drv.c:161:2: error: implicit declaration of function 'vfree' 
-drivers/block/zram/zram_drv.c:173:2: error: implicit declaration of function 'vzalloc' 
-
-
->  
->  #include "zram_drv.h"
->  
->  /* Globals */
->  static int zram_major;
->  static struct zram *zram_devices;
-> +static const char *default_compressor = "lzo";
->  
->  /* Module params (documentation at end) */
->  static unsigned int num_devices = 1;
-> @@ -160,8 +159,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
->  static void zram_meta_free(struct zram_meta *meta)
->  {
->  	zs_destroy_pool(meta->mem_pool);
-> -	kfree(meta->compress_workmem);
-> -	free_pages((unsigned long)meta->compress_buffer, 1);
->  	vfree(meta->table);
->  	kfree(meta);
->  }
-> @@ -173,22 +170,11 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
->  	if (!meta)
->  		goto out;
->  
-> -	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> -	if (!meta->compress_workmem)
-> -		goto free_meta;
-> -
-> -	meta->compress_buffer =
-> -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-> -	if (!meta->compress_buffer) {
-> -		pr_err("Error allocating compressor buffer space\n");
-> -		goto free_workmem;
-> -	}
-> -
->  	num_pages = disksize >> PAGE_SHIFT;
->  	meta->table = vzalloc(num_pages * sizeof(*meta->table));
->  	if (!meta->table) {
->  		pr_err("Error allocating zram address table\n");
-> -		goto free_buffer;
-> +		goto free_meta;
->  	}
->  
->  	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-> @@ -198,15 +184,10 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
->  	}
->  
->  	rwlock_init(&meta->tb_lock);
-> -	mutex_init(&meta->buffer_lock);
->  	return meta;
->  
->  free_table:
->  	vfree(meta->table);
-> -free_buffer:
-> -	free_pages((unsigned long)meta->compress_buffer, 1);
-> -free_workmem:
-> -	kfree(meta->compress_workmem);
->  free_meta:
->  	kfree(meta);
->  	meta = NULL;
-> @@ -280,8 +261,7 @@ static void zram_free_page(struct zram *zram, size_t index)
->  
->  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
->  {
-> -	int ret = LZO_E_OK;
-> -	size_t clen = PAGE_SIZE;
-> +	int ret = 0;
->  	unsigned char *cmem;
->  	struct zram_meta *meta = zram->meta;
->  	unsigned long handle;
-> @@ -301,12 +281,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
->  	if (size == PAGE_SIZE)
->  		copy_page(mem, cmem);
->  	else
-> -		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
-> +		ret = zcomp_decompress(zram->comp, cmem, size, mem);
->  	zs_unmap_object(meta->mem_pool, handle);
->  	read_unlock(&meta->tb_lock);
->  
->  	/* Should NEVER happen. Return bio error if it does. */
-> -	if (unlikely(ret != LZO_E_OK)) {
-> +	if (unlikely(ret)) {
->  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
->  		atomic64_inc(&zram->stats.failed_reads);
->  		return ret;
-> @@ -349,7 +329,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->  
->  	ret = zram_decompress_page(zram, uncmem, index);
->  	/* Should NEVER happen. Return bio error if it does. */
-> -	if (unlikely(ret != LZO_E_OK))
-> +	if (unlikely(ret))
->  		goto out_cleanup;
->  
->  	if (is_partial_io(bvec))
-> @@ -374,11 +354,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	struct page *page;
->  	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
->  	struct zram_meta *meta = zram->meta;
-> +	struct zcomp_strm *zstrm;
->  	bool locked = false;
->  
->  	page = bvec->bv_page;
-> -	src = meta->compress_buffer;
-> -
->  	if (is_partial_io(bvec)) {
->  		/*
->  		 * This is a partial IO. We need to read the full page
-> @@ -394,7 +373,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  			goto out;
->  	}
->  
-> -	mutex_lock(&meta->buffer_lock);
-> +	zstrm = zcomp_strm_get(zram->comp);
->  	locked = true;
->  	user_mem = kmap_atomic(page);
->  
-> @@ -420,19 +399,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		goto out;
->  	}
->  
-> -	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
-> -			       meta->compress_workmem);
-> +	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
->  	if (!is_partial_io(bvec)) {
->  		kunmap_atomic(user_mem);
->  		user_mem = NULL;
->  		uncmem = NULL;
->  	}
->  
-> -	if (unlikely(ret != LZO_E_OK)) {
-> +	if (unlikely(ret)) {
->  		pr_err("Compression failed! err=%d\n", ret);
->  		goto out;
->  	}
-> -
-> +	src = zstrm->buffer;
->  	if (unlikely(clen > max_zpage_size)) {
->  		clen = PAGE_SIZE;
->  		src = NULL;
-
-Do we need this line? src = NULL?
-
-> @@ -457,6 +435,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		memcpy(cmem, src, clen);
->  	}
->  
-> +	zcomp_strm_put(zram->comp, zstrm);
-> +	locked = false;
->  	zs_unmap_object(meta->mem_pool, handle);
->  
->  	/*
-> @@ -475,10 +455,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	atomic64_inc(&zram->stats.pages_stored);
->  out:
->  	if (locked)
-> -		mutex_unlock(&meta->buffer_lock);
-> +		zcomp_strm_put(zram->comp, zstrm);
->  	if (is_partial_io(bvec))
->  		kfree(uncmem);
-> -
-
-Unnecessary new line
-
->  	if (ret)
->  		atomic64_inc(&zram->stats.failed_writes);
->  	return ret;
-> @@ -522,6 +501,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  		zs_free(meta->mem_pool, handle);
->  	}
->  
-> +	zcomp_destroy(zram->comp);
-> +	zram->comp = NULL;
-
-Just a nitpick:
-Do we need to reset zram->comp to NULL?
-
-> +
->  	zram_meta_free(zram->meta);
->  	zram->meta = NULL;
->  	/* Reset stats */
-> @@ -550,9 +532,18 @@ static ssize_t disksize_store(struct device *dev,
->  		return -EBUSY;
->  	}
->  
-> +	zram->comp = zcomp_create(default_compressor);
-> +	if (!zram->comp) {
-> +		up_write(&zram->init_lock);
-> +		pr_info("Cannot initialise compressing backend\n");
-
-Pz, add compressor name in info.
-
-Okay, Now we have only lzo so anyone doesn't confuse but I'm afraid
-that we forget to fix this when we add new compressor. :(
-
-> +		return -EINVAL;
-> +	}
-> +
->  	disksize = PAGE_ALIGN(disksize);
->  	zram->meta = zram_meta_alloc(disksize);
->  	if (!zram->meta) {
-> +		zcomp_destroy(zram->comp);
-> +		zram->comp = NULL;
-
-I'd like to know why we need to reset zram->comp to NULL.
-Do you have in a mind?
-
->  		up_write(&zram->init_lock);
->  		return -ENOMEM;
->  	}
-> @@ -790,6 +781,7 @@ static int create_device(struct zram *zram, int device_id)
->  	}
->  
->  	zram->meta = NULL;
-> +	zram->comp = NULL;
-
-Ditto.
-
->  	return 0;
->  
->  out_free_disk:
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 1d5b1f5..45e04f7 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -16,9 +16,10 @@
->  #define _ZRAM_DRV_H_
->  
->  #include <linux/spinlock.h>
-> -#include <linux/mutex.h>
->  #include <linux/zsmalloc.h>
->  
-> +#include "zcomp.h"
-> +
->  /*
->   * Some arbitrary value. This is just to catch
->   * invalid value for num_devices module parameter.
-> @@ -81,17 +82,16 @@ struct zram_stats {
->  
->  struct zram_meta {
->  	rwlock_t tb_lock;	/* protect table */
-> -	void *compress_workmem;
-> -	void *compress_buffer;
->  	struct table *table;
->  	struct zs_pool *mem_pool;
-> -	struct mutex buffer_lock; /* protect compress buffers */
->  };
->  
->  struct zram {
->  	struct zram_meta *meta;
->  	struct request_queue *queue;
->  	struct gendisk *disk;
-> +	struct zcomp *comp;
-> +
->  	/* Prevent concurrent execution of device init, reset and R/W request */
->  	struct rw_semaphore init_lock;
->  	/*
-> -- 
-
-Other than that,
-Acked-by: Minchan Kim <minchan@kernel.org>
-
--- 
-Kind regards,
-Minchan Kim
