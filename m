@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908AbaBXO2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:28:09 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:47180 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaBXO2F (ORCPT
+	id S1752491AbaBXO3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:29:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:57603 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752240AbaBXO3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:28:05 -0500
+	Mon, 24 Feb 2014 09:29:37 -0500
+Date: Mon, 24 Feb 2014 09:29:34 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH Resend] trace: Replace hardcoding of 19 with MAX_NICE.
+Message-ID: <20140224092934.1ec35898@gandalf.local.home>
+In-Reply-To: <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
+	<1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbkcuByEh_pasBoAQpXwa479iTuWLPPQW1TLRapbqjE7Q@mail.gmail.com>
-References: <1391724370-30589-1-git-send-email-delicious.quinoa@gmail.com>
-	<CACRpkdYiC=nzVG4_nQuRVSNP9TB4W=3VL9QhBQjmqvLvmP6McA@mail.gmail.com>
-	<CANk1AXTnnhSnt_ayJYwDHRth44CWAwmxVA5kkbvnjqW39ssLQg@mail.gmail.com>
-	<CACRpkdbkcuByEh_pasBoAQpXwa479iTuWLPPQW1TLRapbqjE7Q@mail.gmail.com>
-Date: Mon, 24 Feb 2014 08:20:53 -0600
-Message-ID: <CANk1AXR+JhJ9Q=yqpAJA4efLkaJ28jBMqsrLiYBrE+xV0f1G0g@mail.gmail.com>
-Subject: Re: [PATCH v11] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 6:20 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Feb 12, 2014 at 5:17 PM, delicious quinoa
-> <delicious.quinoa@gmail.com> wrote:
->
->> I am wondering about the change in usage of
->> irq_find_mapping/irq_create_mapping.  It seems like all the GPIO
->> drivers that use irq domains do it the way I was doing it
->
-> It is a well known problems that the kernel contain many bad
-> examples. When in doubt ask for a good example to be provided.
->
-> In gpio-omap.c you will find that this is done in the probe()
-> path.
->
->> (that's
->> where I got the idea in the first place): irq_create_mapping is used
->> in the to_irq() function.  I guess this is a general direction all the
->> other drivers will be encouraged to go in also?
->
-> Yes. The reason is that it should be possible to reques an IRQ
-> from an irqchip no matter whether the gpio_to_irq() function
-> was called first, as the APIs are orthogonal.
->
-> Yours,
-> Linus Walleij
+On Mon, 24 Feb 2014 22:12:01 +0800
+Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
 
-Hi Linus,
+> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> cc: Steven Rostedt <rostedt@goodmis.org>
+> cc: Frederic Weisbecker <fweisbec@gmail.com>
+> cc: Ingo Molnar <mingo@redhat.com>
+> cc: Peter Zijlstra <peterz@infradead.org>
 
-Thanks, I made these changes and can see them working for me.
+Peter,
 
-The thing that is currently holding me up is that the DesignWare IP
-can be configured to have one irq exiting for the many gpios on port A
-or one gpio exiting for each gpio.  I am trying to figure out how to
-support both cases with the simplest code.  Currently support works
-for the one irq case.
+If you want to take this, you can add my Acked-by.
 
-Alan
+-- Steve
+
+> ---
+>  kernel/trace/ring_buffer_benchmark.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
+> index a5457d5..0434ff1 100644
+> --- a/kernel/trace/ring_buffer_benchmark.c
+> +++ b/kernel/trace/ring_buffer_benchmark.c
+> @@ -40,8 +40,8 @@ static int write_iteration = 50;
+>  module_param(write_iteration, uint, 0644);
+>  MODULE_PARM_DESC(write_iteration, "# of writes between timestamp readings");
+>  
+> -static int producer_nice = 19;
+> -static int consumer_nice = 19;
+> +static int producer_nice = MAX_NICE;
+> +static int consumer_nice = MAX_NICE;
+>  
+>  static int producer_fifo = -1;
+>  static int consumer_fifo = -1;
+> @@ -308,7 +308,7 @@ static void ring_buffer_producer(void)
+>  
+>  	/* Let the user know that the test is running at low priority */
+>  	if (producer_fifo < 0 && consumer_fifo < 0 &&
+> -	    producer_nice == 19 && consumer_nice == 19)
+> +	    producer_nice == MAX_NICE && consumer_nice == MAX_NICE)
+>  		trace_printk("WARNING!!! This test is running at lowest priority.\n");
+>  
+>  	trace_printk("Time:     %lld (usecs)\n", time);
+
