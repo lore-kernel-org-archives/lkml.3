@@ -1,140 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaBXIof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:44:35 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:54297 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBXIod (ORCPT
+	id S1752882AbaBXIos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:44:48 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35425 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXIoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:44:33 -0500
+	Mon, 24 Feb 2014 03:44:46 -0500
+X-Originating-IP: 50.43.14.201
+Date: Mon, 24 Feb 2014 00:44:37 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and
+ family
+Message-ID: <20140224084437.GG20680@thin>
+References: <20140222192325.GA12587@thin>
+ <201402240902.35977.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
-	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
-	<CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
-	<CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
-	<CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
-Date: Mon, 24 Feb 2014 17:44:31 +0900
-Message-ID: <CANqRtoQ9ZuAhqmaKU5NLsJBNc0iN7uNdQMS6uCrp0enkFUzrqQ@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201402240902.35977.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert!
+On Mon, Feb 24, 2014 at 09:02:35AM +0100, Arnd Bergmann wrote:
+> On Saturday 22 February 2014, Josh Triplett wrote:
+> > When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
+> > condition argument; however, WARN_ON_ONCE and family still have
+> > conditions and a boolean to detect one-time invocation, even though the
+> > warning they'd emit doesn't exist.  Make the existing definitions
+> > conditional on CONFIG_BUG, and map them all to the passthrough WARN_ON
+> > when !CONFIG_BUG.
+> > 
+> > This saves 4.4k on a minimized configuration (smaller than
+> > allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
+> 
+> This looks good, but it reminds me of a patch that I did a while ago
+> and that got lost while I was on leave:
+> 
+> > +#else /* !CONFIG_BUG */
+> > +#ifndef HAVE_ARCH_BUG
+> > +#define BUG() do {} while(0)
+> > +#endif
+> > +
+> > +#ifndef HAVE_ARCH_BUG_ON
+> > +#define BUG_ON(condition) do { if (condition) ; } while(0)
+> > +#endif
+> 
+> I've done some analysis of this before[1] and came to the conclusion that
+> this definition (which I realize you are not changing) is bad.
+> 
+> For one thing, it will cause lots of gcc warnings about code that
+> should have been unreachable being compiled. It also causes
+> misoptimizations for code that should be detected as unused or
+> (worse) lets us run into undefined behavior if we ever get into
+> the BUG() case.
+> 
+> This means we actually want BUG() to end with __builtin_unreachable()
+> as in the CONFIG_BUG=y case, and also ensure it actually is
+> unreachable. As I have shown in [1], the there is a small overhead
+> of doing this in terms of code size.
 
-On Mon, Feb 24, 2014 at 5:25 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Magnus,
->
-> On Mon, Feb 24, 2014 at 3:09 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> On Fri, Feb 21, 2014 at 1:18 AM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> On Thu, Feb 20, 2014 at 4:48 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>>> Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
->>>> best to omit the unused resources from above? In case of DT I think it
->>>> makes sense to define all channels in the SoC.dtsi and let the
->>>> SoC-board.dts just enable the channels that are used. But in this case
->>>> with legacy code  I think we should keep thing simple and small and
->>>> just enable the bits that are used on the particular board.
->>>>
->>>> The same obviously applies to the Koelsch legacy code as well. =)
->>>
->>> Note that while all resources are present, only MSIOF1 is registered on
->>> Lager (MSIOF0 on Koelsch). This is similar to i2c on Koelsch, which also
->>> has all resources, but only registers active devices.
->>
->> Ok, I understand. Thanks for brining this to my attention.
->>
->> I'd like to avoid having unused resources so I'll cook up a patch to
->> rework that myself.
->>
->>> It's your preference, though, so I can adapt if you want.
->>
->> Thanks.
->>
->> Please rework this patch to only register a single MSIOF channel. I
->> think it makes sense to only enable hardware that is being used.
->
-> Ehrm, I already register a single MSIOF channel only.
-> Perhaps you mean't "remove the unused resources"?
+I agree that allowing BUG() to become a no-op seems suboptimal, if only
+because of the resulting warnings and mis-optimizations.  However, I
+think the overhead could be cut down massively, such that BUG() just
+compiles down to a one-byte undefined instruction.  (__builtin_trap()
+might do the right thing here; worth checking.)
 
-Yes, exactly. My apologies for the unclear reply.
+That said, I think there's still a reasonable argument to be made for
+allowing it to be cut down to just __builtin_unreachable() without a
+trap, for much the same reason that noreturn doesn't generate code
+expecting the function to return.  A one-byte undefined instruction
+isn't that bad, but that also means BUG_ON has to generate the
+conditional and the conditional jump around that instruction.
 
->> Another question: How about "bus_num" and the platform device id
->> mapping? I'd like them to be the same if possible, but you are having
->> this "(idx+1)" bit in your code which I assume is to add offset for
->> the QSPI bus.
->
-> "bus_num" is the SPI-specific numbering of SPI masters, which is filled
-> in by spi-sh-msiof.c based on platform_device.id (i.e. the numeric suffix
-> of e.g. "spi_r8a7790_msiof.1").
-> It's used for matching SPI slaves in spi_board_info with SPI masters.
-> As QSPI ("qspi.0") has SPI bus_num 0, the MSIOF SPI masters use
-> bus_num 1 to 4, hence the "idx+1", and the platform device names
-> "spi_r8a7790_msiof.1" to "spi_r8a7790_msiof.4".
->
-> (Can't spi-sh-msiof.c use "bus_num = pdev->id + 1", so we can have
->  MSIOF0 as "spi_r8a7790_msiof.0"? No, as that would impact numbering
->  on all SoCs with MSIOF.)
+(Consider the reasoning behind CONFIG_DOUBLEFAULT, and its Kconfig help
+text.)
 
-Yeah, the bus number that is commonly used for SPI and I2C behaves
-like that so I agree with what you're saying. I guess historically we
-usually only have one I2C master and one SPI master which makes it
-easy to use direct mapping between bus num and pdev->id.
+On the other hand, it's also a good argument for converting far more
+BUGs to WARNs and BUG_ONs to WARN_ONs.
 
-Now on Lager we have multiple SPI masters (both QSPI and MSIOF unless
-I'm mistaken), so the question is how to allocate the ranges of
-bus_num for each SPI master. I believe your current allocation works
-well but I'm a bit confused by it I must confess.
+In any case, while I agree that the change you're proposing seems
+reasonable, I don't think it should occur as part of this patch.  Do you
+think this patch seems reasonable, and that further patches could occur
+on top of it for the behavior you describe?
 
-I'm used to one of the two schemes:
-1) single master with pdev->id equals bus_num
-2) compact board specific bus allocation
+> > +#ifndef HAVE_ARCH_WARN_ON
+> > +#define WARN_ON(condition) ({						\
+> > +	int __ret_warn_on = !!(condition);				\
+> > +	unlikely(__ret_warn_on);					\
+> > +})
+> > +#endif
+> > +
+> > +#ifndef WARN
+> > +#define WARN(condition, format...) ({					\
+> > +	int __ret_warn_on = !!(condition);				\
+> > +	unlikely(__ret_warn_on);					\
+> > +})
+> > +#endif
+> 
+> FWIW, there is an easy extension to this to get rid of some "unused variable"
+> warnings, but using the format string in an unreachable part of the macro,
+> as I did in my patch (but didn't explain there):
+> 
+> @@ -125,6 +126,8 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  #ifndef WARN
+>  #define WARN(condition, format...) ({					\
+>  	int __ret_warn_on = !!(condition);				\
+> +	if (0 && (__ret_warn_on))					\
+> +		printk(format);						\
+>  	unlikely(__ret_warn_on);					\
+>  })
+>  #endif
 
-I believe you introduce something similar to 1) but for two SPI
-masters which is totally fine! For some unknown reason I expected 2)
-with bus_num 0 for QSPI and bus_num 1 for MSIOF1, but I think your
-allocation scheme is reusable across multiple boards with the same SoC
-so I think your current code is better when I think about it a bit
-more.
+This seems better done via no_printk, but yes, that seems sensible.
+The arguments should be used too.
 
-> With DT, all of this doesn't matter, and life is easier, as the SPI slaves
-> are child nodes of the SPI masters and thus don't need numerical bus
-> references. So MSIOF0 can be called "msiof0" there.
-> We still have the offsets in the "spi%u" aliases, though.
+(But again, I'm not actually changing these in this patch; diff just
+thinks I'm moving them.)
 
-Right all this goes away with DT which is nice.
-
->> Regarding the PFC configuration, can you please double check that the
->> PIN_MAP_MUX_GROUP_DEFAULT() is in sync with the platform device id? Is
->> it the "bus_num" or the platform device id that is being used in case
->> of SPI?
->
-> "bus_num" is SPI-specific. Pinctrl uses the actual device's name:
->
-> /**
->  * struct pinctrl_map - boards/machines shall provide this map for devices
->  * @dev_name: the name of the device using this specific mapping, the name
->  *      must be the same as in your struct device*. If this name is set to the
->  *      same name as the pin controllers own dev_name(), the map entry will be
->  *      hogged by the driver itself upon registration
-
-Right. I was just confused seeing the pdev->id set to 2 on MSIOF1, but
-I now understand that it is your intentional design to have bus_num 0
-as QSPI, bus_num1 as unused MSIOF0 and bus_num 2 as MSIOF1.
-
-It just takes some time for me to grasp. =)
-
-Cheers,
-
-/ magnus
+- Josh Triplett
