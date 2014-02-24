@@ -1,112 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaBXIZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:25:13 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:50844 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBXIZK (ORCPT
+	id S1752316AbaBXIZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:25:42 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62677 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536AbaBXIZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:25:10 -0500
+	Mon, 24 Feb 2014 03:25:36 -0500
+Message-ID: <530B01F5.8020109@gmail.com>
+Date: Mon, 24 Feb 2014 16:25:25 +0800
+From: wyang <w90p710@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
-References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
-	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
-	<CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
-	<CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
-Date: Mon, 24 Feb 2014 09:25:08 +0100
-X-Google-Sender-Auth: DLCCo5VZ-p8yImwauC1KflD3IdM
-Message-ID: <CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
-Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org
+Subject: INFO: rcu_preempt self-detected stall on CPU with 3.10 kernel
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Hi Paul,
 
-On Mon, Feb 24, 2014 at 3:09 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> On Fri, Feb 21, 2014 at 1:18 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Thu, Feb 20, 2014 at 4:48 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>> Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
->>> best to omit the unused resources from above? In case of DT I think it
->>> makes sense to define all channels in the SoC.dtsi and let the
->>> SoC-board.dts just enable the channels that are used. But in this case
->>> with legacy code  I think we should keep thing simple and small and
->>> just enable the bits that are used on the particular board.
->>>
->>> The same obviously applies to the Koelsch legacy code as well. =)
->>
->> Note that while all resources are present, only MSIOF1 is registered on
->> Lager (MSIOF0 on Koelsch). This is similar to i2c on Koelsch, which also
->> has all resources, but only registers active devices.
->
-> Ok, I understand. Thanks for brining this to my attention.
->
-> I'd like to avoid having unused resources so I'll cook up a patch to
-> rework that myself.
->
->> It's your preference, though, so I can adapt if you want.
->
-> Thanks.
->
-> Please rework this patch to only register a single MSIOF channel. I
-> think it makes sense to only enable hardware that is being used.
+I ran into a cpu stall warning in a MIPS board with 3.10 kernel, I noted 
+you push a patch(c896054f) to reduce default RCU CPU stall warning 
+timeout to 21s.
+why is it 21s? what decide this time?  seems this time is too short for 
+MIPS, can I retore it to 60s? Do you give me any suggestion on this issue?
 
-Ehrm, I already register a single MSIOF channel only.
-Perhaps you mean't "remove the unused resources"?
+Thanks
+Wei
+[   34.480000] [sched_delayed] sched: RT throttling activated
+[   54.230000] INFO: rcu_preempt self-detected stall on CPU
+[   54.230000] INFO: rcu_preempt self-detected stall on CPU
 
-> Another question: How about "bus_num" and the platform device id
-> mapping? I'd like them to be the same if possible, but you are having
-> this "(idx+1)" bit in your code which I assume is to add offset for
-> the QSPI bus.
+[   54.230000]     5: (2099 ticks this GP) idle=cf7/140000000000001/0 
+softirq=63/70
+[   54.230000]
+[   54.230000]  (t=2100 jiffies g=18446744073709551451 
+c=18446744073709551450 q=682)
+[   54.230000] CPU: 5 PID: 133 Comm: udevd Not tainted 
+3.10.19-WR6.0.0.0_cgl #5
+[   54.230000] Stack : c0000000f5fcf170 ffffffffc1b2dfb0 
+c0000000f5fcf180 ffffffffc10abd8c
+  ffffffffc1b30000 0000000000000004 c0000000f5fcf1a0 ffffffffc10776fc
+  ffffffffc1eb0000  0000000000000000  c0000000f5fcf1c0 ffffffffc1b30000
+  c0000000f5fcf1d0  ffffffffc10785b4  0000000000000000 0000000000000000
+  0000000000000000  ffffffffc1e90000  ffffffffc1e912c8 ffffffffc1e90000
+  ffffffffc19bb388  ffffffffc1b1d277  ffffffffc1e912c8 c0000000f5d04c68
+  0000000000000085 0000000000000005  ffffffffc1b10000 ffffffffc1b10000
+  c0000000f5fcf250  c0000000f5fcf160  c0000000f5fcf278 ffffffffc111bbb0
+  c0000000f5fcf2b0  ffffffffc107a058  c0000000f5d048d8 ffffffffc19bb388
+  0000000000000005  ffffffffc1048e38  0000000000000000 0000000000000000
 
-"bus_num" is the SPI-specific numbering of SPI masters, which is filled
-in by spi-sh-msiof.c based on platform_device.id (i.e. the numeric suffix
-of e.g. "spi_r8a7790_msiof.1").
-It's used for matching SPI slaves in spi_board_info with SPI masters.
-As QSPI ("qspi.0") has SPI bus_num 0, the MSIOF SPI masters use
-bus_num 1 to 4, hence the "idx+1", and the platform device names
-"spi_r8a7790_msiof.1" to "spi_r8a7790_msiof.4".
 
-(Can't spi-sh-msiof.c use "bus_num = pdev->id + 1", so we can have
- MSIOF0 as "spi_r8a7790_msiof.0"? No, as that would impact numbering
- on all SoCs with MSIOF.)
+[   54.230000] Call Trace:
+[   54.230000] [<ffffffffc1048e38>] show_stack+0xd8/0xf8
+[   54.230000] [<ffffffffc111bbb0>] rcu_check_callbacks+0x400/0xa80
+[   54.230000] [<ffffffffc108ae00>] update_process_times+0x60/0xa8
+[   54.230000] [<ffffffffc10d7d3c>] tick_sched_timer+0x54/0x90
+[   54.230000] [<ffffffffc10a91f4>] __run_hrtimer+0xa4/0x298
+[   54.230000] [<ffffffffc10a9fb8>] hrtimer_interrupt+0x148/0x2e0
+[   54.230000] [<ffffffffc104d238>] c0_compare_interrupt+0x98/0xe8
+[   54.230000] [<ffffffffc1110b1c>] handle_irq_event_percpu+0x84/0x368
+[   54.230000] [<ffffffffc11158f0>] handle_percpu_irq+0xa0/0xe8
+[   54.230000] [<ffffffffc110feec>] generic_handle_irq+0x4c/0x80
+[   54.230000] [<ffffffffc189f90c>] do_IRQ+0x2c/0x40
+[   54.230000] [<ffffffffc1034650>] plat_irq_dispatch+0x380/0x3d0
+[   54.230000] [<ffffffffc1042500>] ret_from_irq+0x0/0x4
+[   54.230000] [<ffffffffc1898844>] __schedule+0x4dc/0xa48
+[   54.230000] [<ffffffffc18991dc>] preempt_schedule+0x54/0x78
+[   54.230000] [<ffffffffc1716e70>] sock_def_readable+0x50/0x88
+[   54.230000] [<ffffffffc176888c>] netlink_sendskb+0x44/0xb8
+[   54.230000] [<ffffffffc1768b88>] netlink_unicast+0x288/0x2e0
+[   54.230000] [<ffffffffc1769010>] netlink_sendmsg+0x2e0/0x3d8
+[   54.230000] [<ffffffffc1710a38>] sock_sendmsg+0xe8/0x128
+[   54.230000] [<ffffffffc1711cc0>] ___sys_sendmsg+0x378/0x388
+[   54.230000] [<ffffffffc1713b54>] __sys_sendmsg+0x5c/0xc0
+[   54.230000] [<ffffffffc104fce4>] handle_sys64+0x44/0x68
+[   54.410000]     1: (2099 ticks this GP) idle=d7d/140000000000001/0 
+softirq=131/134
+[   54.420000]      (t=2119 jiffies g=18446744073709551451 
+c=18446744073709551450 q=682)
+[   54.430000] CPU: 1 PID: 70 Comm: irq/23-eth%d Not tainted 
+3.10.19-WR6.0.0.0_cgl #5
+[   54.430000] Stack : c0000000f4d7f4c0 ffffffffc107809c 
+0000000000000001 0000000000000285
+       ffffffffc1b30000 0000000000000004 0000000000000001 0000000000000000
+       c0000000f4d7f500 ffffffffc1077e9c 0000000000000046 ffffffffc1b30000
+       c0000000f4d7f520 ffffffffc107850c 0000000000000000 0000000000000000
+       0000000000000000 ffffffffc1e90000 ffffffffc1e912c8 ffffffffc1e90000
+       ffffffffc19bb388 ffffffffc1b1d277 ffffffffc1e912c8 c0000000f8c35c98
+       0000000000000046 0000000000000001 ffffffffc1b10000 ffffffffc1b10000
+       c0000000f4d7f5a0 c0000000f4d7f4b0 c0000000f4d7f5c8 ffffffffc111bbb0
+       c0000000f4d7f600 ffffffffc107a058 c0000000f8c35908 ffffffffc19bb388
+       0000000000000001 ffffffffc1048e38 0000000000000000 0000000000000000
+       ...
+[   54.500000] Call Trace:
+[   54.500000] [<ffffffffc1048e38>] show_stack+0xd8/0xf8
+[   54.500000] [<ffffffffc111bbb0>] rcu_check_callbacks+0x400/0xa80
+[   54.510000] [<ffffffffc108ae00>] update_process_times+0x60/0xa8
+[   54.510000] [<ffffffffc10d7d3c>] tick_sched_timer+0x54/0x90
+[   54.510000] [<ffffffffc10a91f4>] __run_hrtimer+0xa4/0x298
+[   54.520000] [<ffffffffc10a9fb8>] hrtimer_interrupt+0x148/0x2e0
+[   54.520000] [<ffffffffc104d238>] c0_compare_interrupt+0x98/0xe8
+[   54.530000] [<ffffffffc1110b1c>] handle_irq_event_percpu+0x84/0x368
+[   54.530000] [<ffffffffc11158f0>] handle_percpu_irq+0xa0/0xe8
+[   54.540000] [<ffffffffc110feec>] generic_handle_irq+0x4c/0x80
+[   54.540000] [<ffffffffc189f90c>] do_IRQ+0x2c/0x40
+[   54.540000] [<ffffffffc1034650>] plat_irq_dispatch+0x380/0x3d0
+[   54.550000] [<ffffffffc1042500>] ret_from_irq+0x0/0x4
+[   54.550000] [<ffffffffc1774614>] ip_rcv_finish+0x2b4/0x3c8
+[   54.560000] [<ffffffffc172f710>] __netif_receive_skb_core+0x370/0x9d0
+[   54.560000] [<ffffffffc172fe6c>] netif_receive_skb+0x4c/0xf0
+[   54.570000] [<ffffffffc161b974>] smsc911x_poll+0x11c/0x2b0
+[   54.570000] [<ffffffffc1731754>] net_rx_action+0x1ac/0x320
+[   54.570000] [<ffffffffc107f910>] __do_softirq+0x150/0x340
+[   54.580000] [<ffffffffc107fc60>] do_softirq+0xb8/0xc0
+[   54.580000] [<ffffffffc107fe6c>] local_bh_enable+0xfc/0x108
+[   54.590000] [<ffffffffc1111d38>] irq_forced_thread_fn+0x68/0x90
+[   54.590000] [<ffffffffc1112190>] irq_thread+0x160/0x1f8
+[   54.600000] [<ffffffffc10a47d4>] kthread+0xcc/0xd8
+[   54.600000] [<ffffffffc104258c>] ret_from_kernel_thread+0x14/0x1c
 
-With DT, all of this doesn't matter, and life is easier, as the SPI slaves
-are child nodes of the SPI masters and thus don't need numerical bus
-references. So MSIOF0 can be called "msiof0" there.
-We still have the offsets in the "spi%u" aliases, though.
+[  117.260000] INFO: rcu_preempt self-detected stall on CPU
+[  117.260000]     7: (8402 ticks this GP) idle=c6f/140000000000001/0 
+softirq=379/383
+[  117.270000]      (t=8404 jiffies g=18446744073709551451 
+c=18446744073709551450 q=690)
+[  117.280000] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  117.280000]     7: (8402 ticks this GP) idle=c6f/140000000000001/0 
+softirq=379/383
+[  117.280000]     (detected by 0, t=8405 jiffies, 
+g=18446744073709551451, c=18446744073709551450, q=690)
+[  117.280000] Task dump for CPU 7:
+[  117.280000] ksoftirqd/7     R  running task        0    36      2 
+0x00100004
+[  117.280000] Stack : 0000000080e0b38a 80e0a5140b010000 
+80e0a51480e0a514 c0000000f873fac0
+       000002fe00000000 c0000000f5a306c0 c0000000f8ac1710 ffffffff80e0b38a
+       000000000000000b 0000000000000001 c0000000f873fbb8 ffffffffc189a15c
+       c0000000f5a34380 ffffffffc1b7aa80 c0000000f5a18300 ffffffffc1775e50
+       c0000000f5a34380 ffffffffc1b90000 c0000000f5a34388 0000000000000007
+       c0000000f873fc08 ffffffffc1775ff0 c0000000f5a342c0 c0000000f8598000
+       c0000000f5a34388 0000000000000100 c0000000f873fc38 ffffffffc10898d0
+       c0000000f5a327c8 c0000000f8598000 0000000000000000 ffffffffc1775e50
+       c0000000f5a34380 0000000000200200 c0000000f873fc78 ffffffffc1089d08
+       c0000000f873fc78 c0000000f873fc78 c0000000f8599028 c0000000f8599428
+       ...
+[  117.280000] Call Trace:
+[  117.280000] [<ffffffffc1898814>] __schedule+0x4ac/0xa48
+[  117.280000] [<ffffffffc10afc30>] smpboot_thread_fn+0x280/0x320
+[  117.280000] [<ffffffffc10a47d4>] kthread+0xcc/0xd8
+[  117.280000] [<ffffffffc104258c>] ret_from_kernel_thread+0x14/0x1c
 
-> Regarding the PFC configuration, can you please double check that the
-> PIN_MAP_MUX_GROUP_DEFAULT() is in sync with the platform device id? Is
-> it the "bus_num" or the platform device id that is being used in case
-> of SPI?
-
-"bus_num" is SPI-specific. Pinctrl uses the actual device's name:
-
-/**
- * struct pinctrl_map - boards/machines shall provide this map for devices
- * @dev_name: the name of the device using this specific mapping, the name
- *      must be the same as in your struct device*. If this name is set to the
- *      same name as the pin controllers own dev_name(), the map entry will be
- *      hogged by the driver itself upon registration
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+[  117.380000] CPU: 7 PID: 36 Comm: ksoftirqd/7 Not tainted 
+3.10.19-WR6.0.0.0_cgl #5
+[  117.390000] Stack : c0000000f873f3e0 ffffffffc107809c 
+0000000000000001 00000000000002b1
+       ffffffffc1b30000 0000000000000004 0000000000000001 0000000000000000
+       c0000000f873f420 ffffffffc1077e9c 0000000000000045 ffffffffc1b30000
+       c0000000f873f440 ffffffffc107850c 0000000000000000 0000000000000000
+       0000000000000000 ffffffffc1e90000 ffffffffc1e912c8 ffffffffc1e90000
+       ffffffffc19bb388 ffffffffc1b1d277 ffffffffc1e912c8 c0000000f84c5c98
+       0000000000000024 0000000000000007 ffffffffc1b10000 ffffffffc1b10000
+       c0000000f873f4c0 c0000000f873f3d0 c0000000f873f4e8 ffffffffc111bbb0
+       c0000000f873f520 ffffffffc107a058 c0000000f84c5908 ffffffffc19bb388
+       0000000000000007 ffffffffc1048e38 0000000000000000 0000000000000000
+       ...
+[  117.450000] Call Trace:
+[  117.450000] [<ffffffffc1048e38>] show_stack+0xd8/0xf8
+[  117.460000] [<ffffffffc111bbb0>] rcu_check_callbacks+0x400/0xa80
+[  117.460000] [<ffffffffc108ae00>] update_process_times+0x60/0xa8
+[  117.470000] [<ffffffffc10d7d3c>] tick_sched_timer+0x54/0x90
+[  117.470000] [<ffffffffc10a91f4>] __run_hrtimer+0xa4/0x298
+[  117.470000] [<ffffffffc10a9fb8>] hrtimer_interrupt+0x148/0x2e0
+[  117.480000] [<ffffffffc104d238>] c0_compare_interrupt+0x98/0xe8
+[  117.480000] [<ffffffffc1110b1c>] handle_irq_event_percpu+0x84/0x368
+[  117.490000] [<ffffffffc11158f0>] handle_percpu_irq+0xa0/0xe8
+[  117.490000] [<ffffffffc110feec>] generic_handle_irq+0x4c/0x80
+[  117.500000] [<ffffffffc189f90c>] do_IRQ+0x2c/0x40
+[  117.500000] [<ffffffffc1034650>] plat_irq_dispatch+0x380/0x3d0
+[  117.510000] [<ffffffffc1042500>] ret_from_irq+0x0/0x4
+[  117.510000] [<ffffffffc17dfdd4>] xfrm_lookup+0x284/0x5d8
+[  117.510000] [<ffffffffc17af814>] icmp_send+0x5d4/0x680
+[  117.520000] [<ffffffffc1775ff0>] ip_expire+0x1a0/0x1e0
+[  117.520000] [<ffffffffc10898d0>] call_timer_fn+0x58/0x1a0
+[  117.530000] [<ffffffffc1089d08>] run_timer_softirq+0x1f8/0x2d0
+[  117.530000] [<ffffffffc107f910>] __do_softirq+0x150/0x340
+[  117.530000] [<ffffffffc107fb80>] run_ksoftirqd+0x80/0xa8
+[  117.540000] [<ffffffffc10afc30>] smpboot_thread_fn+0x280/0x320
+[  117.540000] [<ffffffffc10a47d4>] kthread+0xcc/0xd8
+[  117.550000] [<ffffffffc104258c>] ret_from_kernel_thread+0x14/0x1c
