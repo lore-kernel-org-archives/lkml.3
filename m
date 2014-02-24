@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaBXOqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:46:19 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:36767 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaBXOqR convert rfc822-to-8bit (ORCPT
+	id S1752807AbaBXOtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:49:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39530 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461AbaBXOs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:46:17 -0500
+	Mon, 24 Feb 2014 09:48:58 -0500
+Date: Mon, 24 Feb 2014 15:48:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH Resend] trace: Replace hardcoding of 19 with MAX_NICE.
+Message-ID: <20140224144850.GV27965@twins.programming.kicks-ass.net>
+References: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
+ <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+ <20140224092934.1ec35898@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <530247FC.90606@infradead.org>
-References: <20140217172329.2c61499f57842ec2ed177bc5@canb.auug.org.au>
-	<530247FC.90606@infradead.org>
-Date: Mon, 24 Feb 2014 15:46:17 +0100
-Message-ID: <CACRpkdamW1-CxZV65at3PaPhY5nANRDd=SY=FsNPVnrPxyD81w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 17 (pinctrl-msm)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224092934.1ec35898@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 17, 2014 at 6:33 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 02/16/2014 10:23 PM, Stephen Rothwell wrote:
->> Hi all,
->>
->> If you see failures in building this tree due to missing declarations of
->> k..alloc/free, then it may be caused by commit 2bd59d48ebfb ("cgroup:
->> convert to kernfs").  Please send Tejun Heo <tj@kernel.org> a patch
->> adding an inclusion of linux/slab.h to the appropriate file(s).
->>
->> This tree fails (more than usual) the powerpc allyesconfig build.
->>
->> Changes since 20140214:
->>
->
-> on i386:
->
-> ERROR: "handle_bad_irq" [drivers/pinctrl/pinctrl-msm.ko] undefined!
+On Mon, Feb 24, 2014 at 09:29:34AM -0500, Steven Rostedt wrote:
+> On Mon, 24 Feb 2014 22:12:01 +0800
+> Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
+> 
+> > Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+> > cc: Steven Rostedt <rostedt@goodmis.org>
+> > cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > cc: Ingo Molnar <mingo@redhat.com>
+> > cc: Peter Zijlstra <peterz@infradead.org>
+> 
+> Peter,
+> 
+> If you want to take this, you can add my Acked-by.
 
-Weird, Björn do you know what may be causing this?
-
-Yours,
-Linus Walleij
+Done, thanks!
