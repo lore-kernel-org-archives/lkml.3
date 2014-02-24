@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaBXLck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:32:40 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56589 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836AbaBXLcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:32:39 -0500
-Date: Mon, 24 Feb 2014 12:32:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [patch 03/26] powerpc: eeh: Kill another abuse of irq_desc
-In-Reply-To: <20140224075607.GA20727@shangw.(null)>
-Message-ID: <alpine.DEB.2.02.1402241232030.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212736.562906212@linutronix.de> <20140224075607.GA20727@shangw.(null)>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752163AbaBXLjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:39:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56233 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751480AbaBXLjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 06:39:23 -0500
+Date: Mon, 24 Feb 2014 12:39:20 +0100
+From: Jan Kara <jack@suse.cz>
+To: Guillaume Morin <guillaume@morinfr.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Khalid Aziz <khalid.aziz@oracle.com>
+Subject: Re: BUG: Bad page state in process with linux 3.4.76
+Message-ID: <20140224113920.GA25547@quack.suse.cz>
+References: <20140114203434.GA22994@bender.morinfr.org>
+ <20140114221040.GA27903@bender.morinfr.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114221040.GA27903@bender.morinfr.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014, Gavin Shan wrote:
-> On Sun, Feb 23, 2014 at 09:40:09PM -0000, Thomas Gleixner wrote:
-> >commit 91150af3a (powerpc/eeh: Fix unbalanced enable for IRQ) is
-> >another brilliant example of trainwreck engineering.
-> >
-> >The patch "fixes" the issue of an unbalanced call to irq_enable()
-> >which causes a prominent warning by checking the disabled state of the
-> >interrupt line and call conditionally into the core code.
-> >
-> >This is wrong in two aspects:
-> >
-> >1) The warning is there to tell users, that they need to fix their
-> >   asymetric enable/disable patterns by finding the root cause and
-> >   solving it there.
-> >
-> >   It's definitely not meant to work around it by conditionally
-> >   calling into the core code depending on the random state of the irq
-> >   line.
-> >
-> >   Asymetric irq_disable/enable calls are a clear sign of wrong usage
-> >   of the interfaces which have to be cured at the root and not by
-> >   somehow hacking around it.
-> >
-> >2) The abuse of core internal data structure instead of using the
-> >   proper interfaces for retrieving the information for the 'hack
-> >   around'
-> >
-> >   irq_desc is core internal and it's clear enough stated.
-> >
-> >Replace at least the irq_desc abuse with the proper functions and add
-> >a big fat comment why this is absurd and completely wrong.
-> >
+On Tue 14-01-14 23:10:40, Guillaume Morin wrote:
+> Greg,
 > 
-> Thanks for pointing it out. I think we might have this patch for now
-> and I'll look into individual drivers to fix the unbalanced function
-> calls later one by one.
+> I am going to do more testing but it seems that reverting this patch
+> from 3.4.69 fixes the BUG
+> commit b07ef016454ff46f98e633b5a6247ca7e343fb67
+> Author: Khalid Aziz <khalid.aziz@oracle.com>
+> 
+> I also verified that I cannot reproduce this problem with 3.13-rc8
+  I'm going through some old emails... Did this get resolved with later 3.4
+stable kernels? If not, I guess you should ping Greg / Khalid to either
+revert that commit (I guess preferable given the nature of the change) or
+merge some additional fixup...
 
-Fine with me. You wont escape my scan scripts :)
+								Honza
 
-Thanks,
-
-	tglx
+> On 14 Jan 21:34, Guillaume Morin wrote:
+> >
+> > Hi,
+> > 
+> > I wrote this simple program (attached) to play around with kernel AIO.
+> > It simply does kernel AIO with O_DIRECT on a small temp file stored on
+> > an ext4 filesystem.
+> > 
+> > When I run it with "HUGETLB_MORECORE=yes LD_PRELOAD=libhugetlbfs.so", it
+> > triggers the kernel bug on exit every time.
+> > 
+> > Removing HUGETLB_MORECORE from the command line fixes the problem.  Note
+> > that my kernel does not use THP, it is NOT compiled with
+> > CONFIG_TRANSPARENT_HUGEPAGE.
+> > 
+> > I've tried it only with this 3.4.76 but I've been able to reproduce it without
+> > any issue on multiple machines running the same kernel.
+> > 
+> > BUG: Bad page state in process aio_test  pfn:1b7a01
+> > page:ffffea0006de8040 count:0 mapcount:1 mapping:          (null) index:0x0
+> > page flags: 0x20000000008000(tail)
+> > Modules linked in: nfsd exportfs nfs nfs_acl auth_rpcgss fscache lockd sunrpc
+> > rdma_ucm rdma_cm ib_addr iw_cm ib_uverbs ib_cm ib_sa ib_mad ib_core ipmi_si
+> > ipmi_devintf coretemp pcspkr microcode serio_raw i2c_i801 ioatdma i2c_core dca
+> > dm_mod sg sr_mod cdrom crc32c_intel ahci libahci [last unloaded: scsi_wait_scan]
+> > Pid: 4441, comm: aio_test Not tainted 3.4.76bug #1
+> > Call Trace:
+> > [<ffffffff810f3300>] ? is_free_buddy_page+0xa0/0xd0
+> > [<ffffffff814c0791>] bad_page+0xe6/0xfc
+> > [<ffffffff810f3dbc>] free_pages_prepare+0xfc/0x110
+> > [<ffffffff810f3dff>] __free_pages_ok+0x2f/0xd0
+> > [<ffffffff810f4080>] __free_pages+0x20/0x40
+> > [<ffffffff81124737>] update_and_free_page+0x77/0x80
+> > [<ffffffff8112633e>] free_huge_page+0x16e/0x180
+> > [<ffffffff810f8030>] __put_compound_page+0x20/0x50
+> > [<ffffffff810f8108>] put_compound_page+0x78/0x140
+> > [<ffffffff810f8546>] put_page+0x36/0x40
+> > [<ffffffff81126ede>] __unmap_hugepage_range+0x1ce/0x230
+> > [<ffffffff81127331>] unmap_hugepage_range+0x51/0x90
+> > [<ffffffff8110e880>] unmap_single_vma+0x730/0x740
+> > [<ffffffff8110f05f>] unmap_vmas+0x5f/0x80
+> > [<ffffffff8111672c>] exit_mmap+0xbc/0x130
+> > [<ffffffff8112e170>] ? kmem_cache_free+0x20/0xe0
+> > [<ffffffff81035155>] mmput+0x35/0xf0
+> > [<ffffffff8103a58d>] exit_mm+0xfd/0x120
+> > [<ffffffff8103bb6c>] do_exit+0x16c/0x8b0
+> > [<ffffffff811540c4>] ? mntput+0x24/0x40
+> > [<ffffffff81138962>] ? fput+0x192/0x250
+> > [<ffffffff8103c5ff>] do_group_exit+0x3f/0xa0
+> > [<ffffffff8103c677>] sys_exit_group+0x17/0x20
+> > [<ffffffff814d03d2>] system_call_fastpath+0x16/0x1b
+> > 
+> 
+> 
+> -- 
+> Guillaume Morin <guillaume@morinfr.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
