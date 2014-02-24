@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaBXJvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:51:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53186 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291AbaBXJvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:51:43 -0500
-Message-ID: <530B162D.40203@suse.de>
-Date: Mon, 24 Feb 2014 10:51:41 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>, Ray Strode <halfline@gmail.com>
-CC: Josh Boyer <jwboyer@fedoraproject.org>,
+	id S1751936AbaBXJyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:54:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36186 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaBXJyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 04:54:17 -0500
+Date: Mon, 24 Feb 2014 09:54:10 +0000
+From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, Ray Strode <halfline@gmail.com>,
         "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Werner Fink <werner@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lennart Poettering <lennart@poettering.net>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH 3.13 35/99] tty: Set correct tty name in active sysfs
+        Ubuntu kernel team <kernel-team@lists.ubuntu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.11 085/121] tty: Set correct tty name in 'active' sysfs
  attribute
-References: <20140220235118.191692546@linuxfoundation.org>	<20140220235119.236520201@linuxfoundation.org>	<CA+5PVA55O2GwUE8oMHShgKgQPA89z5RTbn6yCvOPBMGsf70kBw@mail.gmail.com>	<20140221202127.GA28780@kroah.com>	<CAA_UwzLWGUpQghswiAjo2Ppw0tr3voNPPhekGoHiLTX9MDV3fw@mail.gmail.com>	<5308BF5A.3040706@suse.de>	<CANq1E4Q=9un+ZSy7uUEJPHgqCRKbLOw+PXR+jWxPSKrDLz7N=g@mail.gmail.com>	<CAA_UwzKrqBw3o3z4LGkYfQ3H11ERKQCscdHNSjkVgHs9F117ow@mail.gmail.com> <CANq1E4Ts4fMFqd-YZE1Vqbju3MATsY_Vrs+Ye4i=P=QsDrdYtw@mail.gmail.com>
-In-Reply-To: <CANq1E4Ts4fMFqd-YZE1Vqbju3MATsY_Vrs+Ye4i=P=QsDrdYtw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20140224095410.GA4043@hercules>
+References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
+ <1392986945-9693-86-git-send-email-luis.henriques@canonical.com>
+ <CAA_Uwz+DZJ0f6ow3YSsSK9HDt639P7Up4_5ienoJO5VW4ZhF2Q@mail.gmail.com>
+ <CA+5PVA72=8KvdOgTLc7NZfMq_bFob6-rEhTktNJJ0qBRgr4iiQ@mail.gmail.com>
+ <CANq1E4Q4h5rF1MY+hp5DS9M7Jo43Op_gRZgBJtiTHswX0EAEDA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4Q4h5rF1MY+hp5DS9M7Jo43Op_gRZgBJtiTHswX0EAEDA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2014 04:05 PM, David Herrmann wrote:
+On Fri, Feb 21, 2014 at 09:09:22PM +0100, David Herrmann wrote:
 > Hi
 > 
-> On Sun, Feb 23, 2014 at 1:20 AM, Ray Strode <halfline@gmail.com> wrote:
->> Hi,
->>
->>
->> On Feb 22, 2014 9:27 AM, "David Herrmann" <dh.herrmann@gmail.com> wrote:
->>> How about this:
->>>
->>> +               driver = cs[i]->device(cs[i], &index);
->>> +                /* special case for tty0 which must not be resolved */
->>> +               if (driver && (index > 0 || cs[i]->major != TTY_MAJOR)) {
->>> +                       count += tty_line_name(driver, index, buf +
->>> count);
->>> +                       count += sprintf(buf + count, "%c", i ? ' ':'\n');
->>> +               } else
->>> +                       count += sprintf(buf + count, "%s%d%c",
->>> +                                        name, index, i ? ' ':'\n');
->>
->> Assuming I'm reading the code correctly, I don't think that will work.
->> Index will be rewritten from 0 to fg_console (which I suppose is going to be
->> 1) after the device vfunc is called.
+> On Fri, Feb 21, 2014 at 3:46 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > On Fri, Feb 21, 2014 at 9:37 AM, Ray Strode <halfline@gmail.com> wrote:
+> >> Hi,
+> >>
+> >> This broke plymouth, i think.  Plymouth used the herustic:
+> >> "/sys/class/tty/console/active contains something other than tty0" to
+> >> mean "probably has serial consoles, force verbose messages instead of
+> >> a splash screen".  Now on a normal system it contains tty1.
+> >>
+> >> I pushed a commit to plymouth that gets it working again, but it could
+> >> cause compatiblity concerns if new kernels are pushed to old releases.
+> >
+> > Hm.  Breaking userspace is probably a bad thing here.
+> >
+> > Greg, you have this queued for 3.13.5 at the moment.  Maybe we should
+> > hold off on this one until this discussion is sorted out?
 > 
-> Oh, nice catch. We have to use cs[i]->index of course. I only
-> hand-edited the patch, I didn't even compile-test. But I guess you get
-> the idea of special-casing tty0.
+> Looks like a broken patch, not a broken idea. So you should probably
+> hold off on this one till we figure it out. See Kay's comment on
+> Greg's series for more.
 > 
-Okay, that's a good idea.
+> Thanks
+> David
 
-I'll be redoing the patch.
+I'll just drop this patch from the 3.11 kernel.  Thank you all!
 
 Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+--
+Luís
