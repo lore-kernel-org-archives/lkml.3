@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaBXH22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 02:28:28 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:52464 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaBXH21 (ORCPT
+	id S1752091AbaBXHeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 02:34:15 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64075 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXHeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 02:28:27 -0500
-Date: Mon, 24 Feb 2014 08:28:20 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        kbuild-all@01.org, daniel.lezcano@linaro.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH] avr32: remove cpu_data macro to fix compiles
-Message-ID: <20140224072820.GA9069@samfundet.no>
-References: <53060d5d.XcmAdOiLt1MCo6Y5%fengguang.wu@intel.com>
- <1393057709-17925-1-git-send-email-wsa@the-dreams.de>
+	Mon, 24 Feb 2014 02:34:13 -0500
+Message-ID: <530AF5F1.5030209@cogentembedded.com>
+Date: Mon, 24 Feb 2014 11:34:09 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393057709-17925-1-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Magnus Damm <magnus.damm@gmail.com>
+CC: SH-Linux <linux-sh@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>
+Subject: Re: [PATCH V4 3/4] ARM: shmobile: koelsch: Add USBHS and internal
+ PCI USB support
+References: <1393178459-14637-1-git-send-email-vladimir.barinov@cogentembedded.com> <1393178459-14637-4-git-send-email-vladimir.barinov@cogentembedded.com> <CANqRtoSKckgZBSaHDYYjfbTECJfB1Nn57suYspT0FR97P8SZFg@mail.gmail.com>
+In-Reply-To: <CANqRtoSKckgZBSaHDYYjfbTECJfB1Nn57suYspT0FR97P8SZFg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Sat 22 Feb 2014 09:28:27 +0100 or thereabout, Wolfram Sang wrote:
-> Having cpu_data as a parameterless macro can easily cause build failures
-> because it can be a variable name like in linux/pm_domain.h [1]. So,
-> remove the macro and convert its only user. Because this architecture
-> cannot do SMP, remove the whole SMP block, too. Only compile tested due
-> to no hardware.
+Hello Magnus,
 
-Looks sane, AVR32 doesn't support SMP, so this change should be fine.
+Thank you for the quick response.
 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> 
-
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
-> [1] https://lists.01.org/pipermail/kbuild-all/2014-February/003252.html
+On 02/24/2014 07:52 AM, Magnus Damm wrote:
+> +static int usbhs_hardware_init(struct platform_device *pdev)
+> +{
+> +       struct usbhs_private *priv = usbhs_get_priv(pdev);
+> +       struct usb_phy *phy;
+> +
+> +       phy = usb_get_phy_dev(&pdev->dev, 0);
+> +       if (IS_ERR(phy))
+> +               return PTR_ERR(phy);
+> +
+> +       priv->phy = phy;
+> +       return 0;
+> +}
+> +
+> +static int usbhs_hardware_exit(struct platform_device *pdev)
+> +{
+> +       struct usbhs_private *priv = usbhs_get_priv(pdev);
+> +
+> +       if (!priv->phy)
+> +               return 0;
+> +
+> +       usb_put_phy(priv->phy);
+> +       priv->phy = NULL;
+> +       return 0;
+> +}
+> +
+> +static int usbhs_get_id(struct platform_device *pdev)
+> +{
+> +       return USBHS_GADGET;
+> +}
+> Uhm, I sort of expected this place to be where you read out the ID pin
+> state from the MAX device.
+Yes, I've seen your work for lager board.
+I did differently then you beacause of problem in USBHS Host driver, 
+hence the need of setup PHY at initial stage to PCI USB and not to USBHS.
 >
+>> +static u32 koelsch_usbhs_pipe_type[] = {
+>> +
+>> +/* Add all available USB devices */
+>> +static void __init koelsch_add_usb_devices(void)
+>> +{
+>> +       /* MAX3355E ID pin */
+>> +       gpio_request_one(RCAR_GP_PIN(5, 31), GPIOF_IN, NULL);
+>> +       if (!gpio_get_value(RCAR_GP_PIN(5, 31))) {
+>> +               usbhs_phy_pdata.chan0_pci = 1; /* Channel 0 is PCI USB host */
+>> +               koelsch_add_usb0_host();
+>> +       } else {
+>> +               usbhs_phy_pdata.chan0_pci = 0; /* Channel 0 is USBHS */
+>> +               koelsch_add_usb0_gadget();
+>> +       }
+> I don't think we should perform this kind of check at boot-up. This
+> goes without saying, but normal USB supports hot-plug so we should
+> check the cable type when the cable insertion event happens. Please
+> see my comment above for USBHS-specific location.
+>
+> I do however understand that according to your investigation you
+> cannot use USBHS in host mode. I believe further investigation is
+> needed in that area to determine what is the best way forward.
+> Regarding VBUS control, I believe it should be possible to drive the
+> USB0_VBUS as GPIO and manually control the power.
+I see.
+>
+> Would it be possible for you to break out USB PCI support for USB1 and
+> resend that so we can begin by merging that?
+Wouldn't you like me also add USBHS in gadget mode for USB0 with the 
+similar check like you did on lager (with ID pin),
+since it does not need the gpio-rcar changes too.
 
-clockevents/3.15 branch, mens what you have queued up for 3.15?
+Also if you'd like I can add the USBHS in Host mode with the ID pin 
+check like you suggested, but the usb0 host will not be stable.
+Probably this could speed up the USBHS Host development/fixing.
 
-I can queue this in my linux-next, and send Linus an early pull request the
-moment 3.14 is released.
-
-> ---
-> 
->  arch/avr32/include/asm/bugs.h      | 2 +-
->  arch/avr32/include/asm/processor.h | 7 +------
->  2 files changed, 2 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/avr32/include/asm/bugs.h b/arch/avr32/include/asm/bugs.h
-> index 7635e77..278661b 100644
-> --- a/arch/avr32/include/asm/bugs.h
-> +++ b/arch/avr32/include/asm/bugs.h
-> @@ -9,7 +9,7 @@
->  
->  static void __init check_bugs(void)
->  {
-> -	cpu_data->loops_per_jiffy = loops_per_jiffy;
-> +	boot_cpu_data.loops_per_jiffy = loops_per_jiffy;
->  }
->  
->  #endif /* __ASM_AVR32_BUGS_H */
-> diff --git a/arch/avr32/include/asm/processor.h b/arch/avr32/include/asm/processor.h
-> index 48d71c5..972adcc 100644
-> --- a/arch/avr32/include/asm/processor.h
-> +++ b/arch/avr32/include/asm/processor.h
-> @@ -83,13 +83,8 @@ static inline unsigned int avr32_get_chip_revision(struct avr32_cpuinfo *cpu)
->  
->  extern struct avr32_cpuinfo boot_cpu_data;
->  
-> -#ifdef CONFIG_SMP
-> -extern struct avr32_cpuinfo cpu_data[];
-> -#define current_cpu_data cpu_data[smp_processor_id()]
-> -#else
-> -#define cpu_data (&boot_cpu_data)
-> +/* No SMP support so far */
->  #define current_cpu_data boot_cpu_data
-> -#endif
->  
->  /* This decides where the kernel will search for a free chunk of vm
->   * space during mmap's
--- 
-mvh
-Hans-Christian Egtvedt
+Regards,
+Vladimir
