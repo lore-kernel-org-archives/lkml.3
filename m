@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaBXIBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:01:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaBXIBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:01:20 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 22/23] qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Mon, 24 Feb 2014 09:02:22 +0100
-Message-Id: <ed9a994c24845cccfc96282fc2b0fd800c9c6ea9.1393191330.git.agordeev@redhat.com>
-In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
-References: <cover.1393191330.git.agordeev@redhat.com>
+	id S1752873AbaBXID1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:03:27 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:45666 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751836AbaBXIDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:03:24 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Date: Mon, 24 Feb 2014 16:03:12 +0800
+Message-ID: <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-23_03:2014-02-21,2014-02-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402230265
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+Hardware zlt will try to send the zero length packet automatically
+when the data transferd is multiple times of max packet, this will
+cause issues on Windows.
+So let's disable HW zlt by default.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Cc: iscsi-driver@qlogic.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- drivers/scsi/qla4xxx/ql4_nx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/gadget/mv_udc_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
-index d001202..2cfcfbf 100644
---- a/drivers/scsi/qla4xxx/ql4_nx.c
-+++ b/drivers/scsi/qla4xxx/ql4_nx.c
-@@ -3805,7 +3805,7 @@ qla4_8xxx_enable_msix(struct scsi_qla_host *ha)
- 	for (i = 0; i < QLA_MSIX_ENTRIES; i++)
- 		entries[i].entry = qla4_8xxx_msix_entries[i].entry;
+diff --git a/drivers/usb/gadget/mv_udc_core.c b/drivers/usb/gadget/mv_udc_core.c
+index ebc0dfd..657ac5c 100644
+--- a/drivers/usb/gadget/mv_udc_core.c
++++ b/drivers/usb/gadget/mv_udc_core.c
+@@ -89,7 +89,7 @@ static void ep0_reset(struct mv_udc *udc)
+ 		/* configure ep0 endpoint capabilities in dQH */
+ 		ep->dqh->max_packet_length =
+ 			(EP0_MAX_PKT_SIZE << EP_QUEUE_HEAD_MAX_PKT_LEN_POS)
+-			| EP_QUEUE_HEAD_IOS;
++			| EP_QUEUE_HEAD_IOS | EP_QUEUE_HEAD_ZLT_SEL;
  
--	ret = pci_enable_msix(ha->pdev, entries, ARRAY_SIZE(entries));
-+	ret = pci_enable_msix_exact(ha->pdev, entries, ARRAY_SIZE(entries));
- 	if (ret) {
- 		ql4_printk(KERN_WARNING, ha,
- 		    "MSI-X: Failed to enable support -- %d/%d\n",
+ 		ep->dqh->next_dtd_ptr = EP_QUEUE_HEAD_NEXT_TERMINATE;
+ 
 -- 
-1.7.7.6
+1.7.9.5
 
