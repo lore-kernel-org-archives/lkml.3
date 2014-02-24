@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaBXK1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:27:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091AbaBXKZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:25:45 -0500
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kys@microsoft.com, abgupta@microsoft.com, haiyangz@microsoft.com,
-        jasowang@redhat.com, tomi.valkeinen@ti.com,
-        Gerd Hoffmann <kraxel@redhat.com>
-Subject: [PATCH v2 0/5] hyperv-fb: add support for generation 2 virtual machines.
-Date: Mon, 24 Feb 2014 11:25:11 +0100
-Message-Id: <1393237516-28545-1-git-send-email-kraxel@redhat.com>
+	id S1752623AbaBXK1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:27:52 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:55314 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752091AbaBXK1u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 05:27:50 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Joe Perches'" <joe@perches.com>,
+        Thomas Winischhofer <thomas@winischhofer.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: sisusb: Use static const, fix typo
+Thread-Topic: sisusb: Use static const, fix typo
+Thread-Index: AQHPL3HCyEctK09QYUO12nIH2aQdjprENdvA
+Date: Mon, 24 Feb 2014 10:26:53 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6C9771@AcuExch.aculab.com>
+References: <1393034412.3627.11.camel@joe-AO722>
+In-Reply-To: <1393034412.3627.11.camel@joe-AO722>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+From: Joe Perches
+> Reduce text a bit by using static const.
 
-This patch series adds support for uefi-based gen2 virtual machines to
-the hyperv-fb driver.
+If you want to save a few bytes remove the pointers.
+(and the fixed RAM text to get below 7 chars).
+eg:
 
-Patch #1 is included just for completeness.  Greg picked it up
-already and it is in -next, but it isn't in master yet.
+> -	const char *ramtypetext2[] = {	"SDR SDRAM", "SDR SGRAM",
+> -					"DDR SDRAM", "DDR SGRAM" };
 
-Patch #2 is a bugfix for the first patch.
+	static const char ramtypetext2[8][] = {
+		"SDR SD", "SDR SG", "DDR SD", "DDR SG"
 
-Patch #3 changes vmbus to properly hook the hyperv mmio area into
-the linux resource management.
+...
+> -	dev_info(&sisusb->sisusb_dev->dev, "%dMB %s %s, bus width %d\n", (sisusb->vramsize >> 20),
+> ramtypetext1,
+> -			ramtypetext2[ramtype], bw);
 
-Patch #4 actually implements gen2 vm support for hyperv-fb, building
-on the hyperv mmio support added by the other patches.
+	dev_info(&sisusb->sisusb_dev->dev, "%dMB %s %sRAM, bus width %d\n",
+		 sisusb->vramsize >> 20, ramtypetext1, ramtypetext2[ramtype],
+		 bw);
 
-Patch #5 unregisters efifb early to make sure the framebuffer isn't used
-any more while hyperv-fb initialization is in progress.  This patch is
-new in v2 and it fixes the hang listed as "known issue" in v1 of this
-patch series.
+	David
 
-please apply,
-  Gerd
 
-Gerd Hoffmann (4):
-  vmbus: add missing breaks
-  vmbus: use resource for hyperv mmio region
-  hyperv-fb: add support for generation 2 virtual machines.
-  hyperv-fb: kick off efifb early
-
-K. Y. Srinivasan (1):
-  Drivers: hv: vmbus: Extract the mmio information from DSDT
-
- drivers/hv/vmbus_drv.c    | 51 ++++++++++++++++++++-------
- drivers/video/hyperv_fb.c | 87 +++++++++++++++++++++++++++++++++--------------
- include/linux/hyperv.h    |  2 ++
- 3 files changed, 101 insertions(+), 39 deletions(-)
-
--- 
-1.8.3.1
 
