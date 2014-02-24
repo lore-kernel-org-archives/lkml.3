@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaBXPNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:13:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaBXPNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:13:47 -0500
-Date: Mon, 24 Feb 2014 07:16:36 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Julien Grall <julien.grall@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, xen-devel@lists.xenproject.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
- protected by an IOMMU
-Message-ID: <20140224151636.GA13489@kroah.com>
-References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org>
- <1392914159.32657.18.camel@kazak.uk.xensource.com>
- <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com>
+	id S1752850AbaBXPQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:16:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752442AbaBXPQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 10:16:26 -0500
+Message-ID: <530B621E.9010309@redhat.com>
+Date: Mon, 24 Feb 2014 16:15:42 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Joonsoo Kim <js1304@gmail.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH] zram: support REQ_DISCARD
+References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com> <530B4AFB.5060006@redhat.com> <CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
+In-Reply-To: <CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 12:19:11PM +0000, Stefano Stabellini wrote:
-> CC'ing Greg.
+On 02/24/2014 04:02 PM, Joonsoo Kim wrote:
+> 2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
+>> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
+>>> zram is ram based block device and can be used by backend of filesystem.
+>>> When filesystem deletes a file, it normally doesn't do anything on data
+>>> block of that file. It just marks on metadata of that file. This behavior
+>>> has no problem on disk based block device, but has problems on ram based
+>>> block device, since we can't free memory used for data block. To overcome
+>>> this disadvantage, there is REQ_DISCARD functionality. If block device
+>>> support REQ_DISCARD and filesystem is mounted with discard option,
+>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
+>>> discarded. All we have to do is to handle this request.
+>>>
+>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+>>> used.
+>>>
+>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> ---
+>>> This patch is based on master branch of linux-next tree.
+>>>
+>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>>> index 5ec61be..cff2c0e 100644
+>>> --- a/drivers/block/zram/zram_drv.c
+>>> +++ b/drivers/block/zram/zram_drv.c
+>>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>>       return ret;
+>>>  }
+>>>
+>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
+>>> +{
+>>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>>
+>> Hi Joonsoo,
+>>
+>> If bi_sector is not aligned on a page size, we might end up discarding
+>> a page that still contain valid data.
+>>
+>>
 > 
-> On Thu, 20 Feb 2014, Ian Campbell wrote:
-> > On Thu, 2014-02-20 at 16:21 +0000, Julien Grall wrote:
-> > > Only Xen is able to know if a device can safely avoid to use xen-swiotlb.
-> > > This patch introduce a new property "protected-devices" for the hypervisor
-> > > node which list device which the IOMMU are been correctly programmed by Xen.
-> > > 
-> > > During Linux boot, Xen specific code will create an hash table which
-> > > contains all these devices. The hash table will be used in need_xen_dma_ops
-> > > to check if the Xen DMA ops needs to be used for the current device.
-> > 
-> > Is it out of the question to find a field within struct device itself to
-> > store this e.g. in struct device_dma_parameters perhaps and avoid the
-> > need for a hashtable lookup.
-> > 
-> > device->iommu_group might be another option, if we can create our own
-> > group?
+> Hello, Jerome.
 > 
-> I agree that a field in struct device would be ideal.
-> Greg, get_maintainer.pl points at you as main maintainer of device.h, do
-> you have an opinion on this?
+> Is it possible that request isn't aligned on a page size if
+> logical/physical block size
+> is PAGE_SIZE?
 
-I need a whole lot more context here please.  With a patch would be even
-better so that I know exactly what you are referring to...
+Yes, zram has an logical block size of 4k (ZRAM_LOGICAL_BLOCK_SIZE),
+while its physical block size, which is a page size, can be bigger.
+
+> When I tested it, I didn't find any invalid io.
+> If we meet any misaligned request, it would be filtered by
+> valid_io_request(). :)
+
+zram accepts request aligned on logical blocks. So valid_io_request()
+wouldn't filter misaligned requests out as long as they are aligned
+on logical blocks.
+If your system use 4k pages, your tests would never trigger the issue,
+but on a system which uses 64k pages, it could.
+
+Jerome
+
+> 
+> Thanks.
+> 
+
