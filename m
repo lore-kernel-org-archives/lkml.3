@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaBXTAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:00:49 -0500
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59746 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643AbaBXTAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:00:08 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: rostedt@goodmis.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v2 2/6] ftrace: Inline the code from ftrace_dyn_table_alloc
-Date: Mon, 24 Feb 2014 19:59:57 +0100
-Message-Id: <1393268401-24379-2-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1393268401-24379-1-git-send-email-jslaby@suse.cz>
-References: <1393268401-24379-1-git-send-email-jslaby@suse.cz>
+	id S1753006AbaBXTEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:04:09 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37527 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaBXTEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 14:04:07 -0500
+Message-ID: <530B9784.5060904@ti.com>
+Date: Mon, 24 Feb 2014 13:03:32 -0600
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-rt-users@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Ideas/suggestions to avoid repeated locking and reducing too many
+ lists with dmaengine?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function used to do allocations some time ago. This no longer
-happens and it only checks the count and prints some info. This patch
-inlines the body to the only caller. There are two reasons:
-* the name of the function was misleading
-* it's clear what is going on in ftrace_init now
+Hi folks,
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/ftrace.c | 25 ++++++-------------------
- 1 file changed, 6 insertions(+), 19 deletions(-)
+Just wanted your thoughts/suggestions on how we can avoid overhead in the EDMA
+dmaengine driver. I am seeing a lots of performance drop specially for small
+transfers with EDMA versus before raw EDMA was moved to DMAEngine framework
+(atleast 25%).
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 3f95bbeb8e8d..76b6ed29d856 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2465,22 +2465,6 @@ ftrace_allocate_pages(unsigned long num_to_init)
- 	return NULL;
- }
- 
--static int __init ftrace_dyn_table_alloc(unsigned long num_to_init)
--{
--	int cnt;
--
--	if (!num_to_init) {
--		pr_info("ftrace: No functions to be traced?\n");
--		return -1;
--	}
--
--	cnt = num_to_init / ENTRIES_PER_PAGE;
--	pr_info("ftrace: allocating %ld entries in %d pages\n",
--		num_to_init, cnt + 1);
--
--	return 0;
--}
--
- #define FTRACE_BUFF_MAX (KSYM_SYMBOL_LEN+4) /* room for wildcards */
- 
- struct ftrace_iterator {
-@@ -4403,10 +4387,13 @@ void __init ftrace_init(void)
- 		goto failed;
- 
- 	count = __stop_mcount_loc - __start_mcount_loc;
--
--	ret = ftrace_dyn_table_alloc(count);
--	if (ret)
-+	if (!count) {
-+		pr_info("ftrace: No functions to be traced?\n");
- 		goto failed;
-+	}
-+
-+	pr_info("ftrace: allocating %ld entries in %ld pages\n",
-+		count, count / ENTRIES_PER_PAGE + 1);
- 
- 	last_ftrace_enabled = ftrace_enabled = 1;
- 
--- 
-1.8.5.2
+One of the things I am thinking about is the repeated (spin) locking/unlocking
+of the virt_dma_chan->lock or vc->lock. In many cases, there's only 1 user or
+thread requiring to do a DMA, so I feel the locking is unnecessary and potential
+overhead. If there's a sane way to detect this an avoid locking altogether, that
+would be great.
 
+ Also with respect to virt_dma (which is used by edma to manage all the
+descriptors and lists) there are too many lists: submitted, issued, completed
+etc and the descriptor moves from one to the other. I am thinking if there is a
+way we can avoid using so many lists and just have 2 lists and move the desc
+from one list to the other, That could avoid using the intermediate list
+altogether and classify dma requests as "done" or "not done".
+
+Since this involves discussing concurrency primitives, copying linux-rt-users as
+well.
+
+Thanks,
+-Joel
