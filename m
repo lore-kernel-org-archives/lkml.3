@@ -1,126 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaBXIos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:44:48 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35425 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBXIoq (ORCPT
+	id S1752929AbaBXIpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:45:18 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:41653 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982AbaBXInZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:44:46 -0500
-X-Originating-IP: 50.43.14.201
-Date: Mon, 24 Feb 2014 00:44:37 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+	Mon, 24 Feb 2014 03:43:25 -0500
+Date: Mon, 24 Feb 2014 11:39:50 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and
- family
-Message-ID: <20140224084437.GG20680@thin>
-References: <20140222192325.GA12587@thin>
- <201402240902.35977.arnd@arndb.de>
+Subject: Re: [PATCHv6 2/6] zram: use zcomp compressing backends
+Message-ID: <20140224083950.GB2384@swordfish.minsk.epam.com>
+References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392983443-9807-3-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140224010140.GE16240@bbox>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201402240902.35977.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140224010140.GE16240@bbox>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 09:02:35AM +0100, Arnd Bergmann wrote:
-> On Saturday 22 February 2014, Josh Triplett wrote:
-> > When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
-> > condition argument; however, WARN_ON_ONCE and family still have
-> > conditions and a boolean to detect one-time invocation, even though the
-> > warning they'd emit doesn't exist.  Make the existing definitions
-> > conditional on CONFIG_BUG, and map them all to the passthrough WARN_ON
-> > when !CONFIG_BUG.
+On (02/24/14 10:01), Minchan Kim wrote:
+> On Fri, Feb 21, 2014 at 02:50:39PM +0300, Sergey Senozhatsky wrote:
+> > Do not perform direct LZO compress/decompress calls, initialise
+> > and use zcomp LZO backend (single compression stream) instead.
 > > 
-> > This saves 4.4k on a minimized configuration (smaller than
-> > allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > ---
+> >  drivers/block/zram/Makefile   |  2 +-
+> >  drivers/block/zram/zram_drv.c | 62 +++++++++++++++++++------------------------
+> >  drivers/block/zram/zram_drv.h |  8 +++---
+> >  3 files changed, 32 insertions(+), 40 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/Makefile b/drivers/block/zram/Makefile
+> > index cb0f9ce..757c6a5 100644
+> > --- a/drivers/block/zram/Makefile
+> > +++ b/drivers/block/zram/Makefile
+> > @@ -1,3 +1,3 @@
+> > -zram-y	:=	zram_drv.o
+> > +zram-y	:=	zcomp_lzo.o zcomp.o zram_drv.o
+> >  
+> >  obj-$(CONFIG_ZRAM)	+=	zram.o
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 9baac5b..200c12a 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -29,15 +29,14 @@
+> >  #include <linux/genhd.h>
+> >  #include <linux/highmem.h>
+> >  #include <linux/slab.h>
+> > -#include <linux/lzo.h>
+> >  #include <linux/string.h>
+> > -#include <linux/vmalloc.h>
 > 
-> This looks good, but it reminds me of a patch that I did a while ago
-> and that got lost while I was on leave:
+> In ARM,
 > 
-> > +#else /* !CONFIG_BUG */
-> > +#ifndef HAVE_ARCH_BUG
-> > +#define BUG() do {} while(0)
-> > +#endif
+> drivers/block/zram/zram_drv.c:161:2: error: implicit declaration of function 'vfree' 
+> drivers/block/zram/zram_drv.c:173:2: error: implicit declaration of function 'vzalloc' 
+> 
+
+will address, thanks.
+
+> >  
+> >  #include "zram_drv.h"
+> >  
+> >  /* Globals */
+> >  static int zram_major;
+> >  static struct zram *zram_devices;
+> > +static const char *default_compressor = "lzo";
+> >  
+> >  /* Module params (documentation at end) */
+> >  static unsigned int num_devices = 1;
+> > @@ -160,8 +159,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
+> >  static void zram_meta_free(struct zram_meta *meta)
+> >  {
+> >  	zs_destroy_pool(meta->mem_pool);
+> > -	kfree(meta->compress_workmem);
+> > -	free_pages((unsigned long)meta->compress_buffer, 1);
+> >  	vfree(meta->table);
+> >  	kfree(meta);
+> >  }
+> > @@ -173,22 +170,11 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+> >  	if (!meta)
+> >  		goto out;
+> >  
+> > -	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+> > -	if (!meta->compress_workmem)
+> > -		goto free_meta;
+> > -
+> > -	meta->compress_buffer =
+> > -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+> > -	if (!meta->compress_buffer) {
+> > -		pr_err("Error allocating compressor buffer space\n");
+> > -		goto free_workmem;
+> > -	}
+> > -
+> >  	num_pages = disksize >> PAGE_SHIFT;
+> >  	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+> >  	if (!meta->table) {
+> >  		pr_err("Error allocating zram address table\n");
+> > -		goto free_buffer;
+> > +		goto free_meta;
+> >  	}
+> >  
+> >  	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
+> > @@ -198,15 +184,10 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+> >  	}
+> >  
+> >  	rwlock_init(&meta->tb_lock);
+> > -	mutex_init(&meta->buffer_lock);
+> >  	return meta;
+> >  
+> >  free_table:
+> >  	vfree(meta->table);
+> > -free_buffer:
+> > -	free_pages((unsigned long)meta->compress_buffer, 1);
+> > -free_workmem:
+> > -	kfree(meta->compress_workmem);
+> >  free_meta:
+> >  	kfree(meta);
+> >  	meta = NULL;
+> > @@ -280,8 +261,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+> >  
+> >  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> >  {
+> > -	int ret = LZO_E_OK;
+> > -	size_t clen = PAGE_SIZE;
+> > +	int ret = 0;
+> >  	unsigned char *cmem;
+> >  	struct zram_meta *meta = zram->meta;
+> >  	unsigned long handle;
+> > @@ -301,12 +281,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> >  	if (size == PAGE_SIZE)
+> >  		copy_page(mem, cmem);
+> >  	else
+> > -		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
+> > +		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+> >  	zs_unmap_object(meta->mem_pool, handle);
+> >  	read_unlock(&meta->tb_lock);
+> >  
+> >  	/* Should NEVER happen. Return bio error if it does. */
+> > -	if (unlikely(ret != LZO_E_OK)) {
+> > +	if (unlikely(ret)) {
+> >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+> >  		atomic64_inc(&zram->stats.failed_reads);
+> >  		return ret;
+> > @@ -349,7 +329,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+> >  
+> >  	ret = zram_decompress_page(zram, uncmem, index);
+> >  	/* Should NEVER happen. Return bio error if it does. */
+> > -	if (unlikely(ret != LZO_E_OK))
+> > +	if (unlikely(ret))
+> >  		goto out_cleanup;
+> >  
+> >  	if (is_partial_io(bvec))
+> > @@ -374,11 +354,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  	struct page *page;
+> >  	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+> >  	struct zram_meta *meta = zram->meta;
+> > +	struct zcomp_strm *zstrm;
+> >  	bool locked = false;
+> >  
+> >  	page = bvec->bv_page;
+> > -	src = meta->compress_buffer;
+> > -
+> >  	if (is_partial_io(bvec)) {
+> >  		/*
+> >  		 * This is a partial IO. We need to read the full page
+> > @@ -394,7 +373,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  			goto out;
+> >  	}
+> >  
+> > -	mutex_lock(&meta->buffer_lock);
+> > +	zstrm = zcomp_strm_get(zram->comp);
+> >  	locked = true;
+> >  	user_mem = kmap_atomic(page);
+> >  
+> > @@ -420,19 +399,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  		goto out;
+> >  	}
+> >  
+> > -	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+> > -			       meta->compress_workmem);
+> > +	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
+> >  	if (!is_partial_io(bvec)) {
+> >  		kunmap_atomic(user_mem);
+> >  		user_mem = NULL;
+> >  		uncmem = NULL;
+> >  	}
+> >  
+> > -	if (unlikely(ret != LZO_E_OK)) {
+> > +	if (unlikely(ret)) {
+> >  		pr_err("Compression failed! err=%d\n", ret);
+> >  		goto out;
+> >  	}
+> > -
+> > +	src = zstrm->buffer;
+> >  	if (unlikely(clen > max_zpage_size)) {
+> >  		clen = PAGE_SIZE;
+> >  		src = NULL;
+> 
+> Do we need this line? src = NULL?
+
+not really.
+
+> > @@ -457,6 +435,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  		memcpy(cmem, src, clen);
+> >  	}
+> >  
+> > +	zcomp_strm_put(zram->comp, zstrm);
+> > +	locked = false;
+> >  	zs_unmap_object(meta->mem_pool, handle);
+> >  
+> >  	/*
+> > @@ -475,10 +455,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  	atomic64_inc(&zram->stats.pages_stored);
+> >  out:
+> >  	if (locked)
+> > -		mutex_unlock(&meta->buffer_lock);
+> > +		zcomp_strm_put(zram->comp, zstrm);
+> >  	if (is_partial_io(bvec))
+> >  		kfree(uncmem);
+> > -
+> 
+> Unnecessary new line
+> 
+
+ok.
+
+> >  	if (ret)
+> >  		atomic64_inc(&zram->stats.failed_writes);
+> >  	return ret;
+> > @@ -522,6 +501,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  		zs_free(meta->mem_pool, handle);
+> >  	}
+> >  
+> > +	zcomp_destroy(zram->comp);
+> > +	zram->comp = NULL;
+> 
+> Just a nitpick:
+> Do we need to reset zram->comp to NULL?
+> 
+
+well. not at this time, makes sense with when multi backend support.
+initialise zcomp to default compressor if it still un-initialised via
+compressor device attribute.
+
 > > +
-> > +#ifndef HAVE_ARCH_BUG_ON
-> > +#define BUG_ON(condition) do { if (condition) ; } while(0)
-> > +#endif
+> >  	zram_meta_free(zram->meta);
+> >  	zram->meta = NULL;
+> >  	/* Reset stats */
+> > @@ -550,9 +532,18 @@ static ssize_t disksize_store(struct device *dev,
+> >  		return -EBUSY;
+> >  	}
+> >  
+> > +	zram->comp = zcomp_create(default_compressor);
+> > +	if (!zram->comp) {
+> > +		up_write(&zram->init_lock);
+> > +		pr_info("Cannot initialise compressing backend\n");
 > 
-> I've done some analysis of this before[1] and came to the conclusion that
-> this definition (which I realize you are not changing) is bad.
+> Pz, add compressor name in info.
 > 
-> For one thing, it will cause lots of gcc warnings about code that
-> should have been unreachable being compiled. It also causes
-> misoptimizations for code that should be detected as unused or
-> (worse) lets us run into undefined behavior if we ever get into
-> the BUG() case.
+> Okay, Now we have only lzo so anyone doesn't confuse but I'm afraid
+> that we forget to fix this when we add new compressor. :(
 > 
-> This means we actually want BUG() to end with __builtin_unreachable()
-> as in the CONFIG_BUG=y case, and also ensure it actually is
-> unreachable. As I have shown in [1], the there is a small overhead
-> of doing this in terms of code size.
 
-I agree that allowing BUG() to become a no-op seems suboptimal, if only
-because of the resulting warnings and mis-optimizations.  However, I
-think the overhead could be cut down massively, such that BUG() just
-compiles down to a one-byte undefined instruction.  (__builtin_trap()
-might do the right thing here; worth checking.)
+ok.
 
-That said, I think there's still a reasonable argument to be made for
-allowing it to be cut down to just __builtin_unreachable() without a
-trap, for much the same reason that noreturn doesn't generate code
-expecting the function to return.  A one-byte undefined instruction
-isn't that bad, but that also means BUG_ON has to generate the
-conditional and the conditional jump around that instruction.
-
-(Consider the reasoning behind CONFIG_DOUBLEFAULT, and its Kconfig help
-text.)
-
-On the other hand, it's also a good argument for converting far more
-BUGs to WARNs and BUG_ONs to WARN_ONs.
-
-In any case, while I agree that the change you're proposing seems
-reasonable, I don't think it should occur as part of this patch.  Do you
-think this patch seems reasonable, and that further patches could occur
-on top of it for the behavior you describe?
-
-> > +#ifndef HAVE_ARCH_WARN_ON
-> > +#define WARN_ON(condition) ({						\
-> > +	int __ret_warn_on = !!(condition);				\
-> > +	unlikely(__ret_warn_on);					\
-> > +})
-> > +#endif
+> > +		return -EINVAL;
+> > +	}
 > > +
-> > +#ifndef WARN
-> > +#define WARN(condition, format...) ({					\
-> > +	int __ret_warn_on = !!(condition);				\
-> > +	unlikely(__ret_warn_on);					\
-> > +})
-> > +#endif
+> >  	disksize = PAGE_ALIGN(disksize);
+> >  	zram->meta = zram_meta_alloc(disksize);
+> >  	if (!zram->meta) {
+> > +		zcomp_destroy(zram->comp);
+> > +		zram->comp = NULL;
 > 
-> FWIW, there is an easy extension to this to get rid of some "unused variable"
-> warnings, but using the format string in an unreachable part of the macro,
-> as I did in my patch (but didn't explain there):
+> I'd like to know why we need to reset zram->comp to NULL.
+> Do you have in a mind?
 > 
-> @@ -125,6 +126,8 @@ extern void warn_slowpath_null(const char *file, const int line);
->  #ifndef WARN
->  #define WARN(condition, format...) ({					\
->  	int __ret_warn_on = !!(condition);				\
-> +	if (0 && (__ret_warn_on))					\
-> +		printk(format);						\
->  	unlikely(__ret_warn_on);					\
->  })
->  #endif
 
-This seems better done via no_printk, but yes, that seems sensible.
-The arguments should be used too.
+same as above. makes sense with multi backend support.
 
-(But again, I'm not actually changing these in this patch; diff just
-thinks I'm moving them.)
-
-- Josh Triplett
+> >  		up_write(&zram->init_lock);
+> >  		return -ENOMEM;
+> >  	}
+> > @@ -790,6 +781,7 @@ static int create_device(struct zram *zram, int device_id)
+> >  	}
+> >  
+> >  	zram->meta = NULL;
+> > +	zram->comp = NULL;
+> 
+> Ditto.
+> 
+> >  	return 0;
+> >  
+> >  out_free_disk:
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index 1d5b1f5..45e04f7 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -16,9 +16,10 @@
+> >  #define _ZRAM_DRV_H_
+> >  
+> >  #include <linux/spinlock.h>
+> > -#include <linux/mutex.h>
+> >  #include <linux/zsmalloc.h>
+> >  
+> > +#include "zcomp.h"
+> > +
+> >  /*
+> >   * Some arbitrary value. This is just to catch
+> >   * invalid value for num_devices module parameter.
+> > @@ -81,17 +82,16 @@ struct zram_stats {
+> >  
+> >  struct zram_meta {
+> >  	rwlock_t tb_lock;	/* protect table */
+> > -	void *compress_workmem;
+> > -	void *compress_buffer;
+> >  	struct table *table;
+> >  	struct zs_pool *mem_pool;
+> > -	struct mutex buffer_lock; /* protect compress buffers */
+> >  };
+> >  
+> >  struct zram {
+> >  	struct zram_meta *meta;
+> >  	struct request_queue *queue;
+> >  	struct gendisk *disk;
+> > +	struct zcomp *comp;
+> > +
+> >  	/* Prevent concurrent execution of device init, reset and R/W request */
+> >  	struct rw_semaphore init_lock;
+> >  	/*
+> > -- 
+> 
+> Other than that,
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
