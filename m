@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaBXXyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:54:43 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:51971 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaBXXym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:54:42 -0500
-Date: Tue, 25 Feb 2014 08:54:38 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Cc: Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Magnus <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESENT] sh: sh7757lcr: fixup SDHI register size
-Message-ID: <20140224235435.GB15664@verge.net.au>
-References: <87a9dlqptu.wl%kuninori.morimoto.gx@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9dlqptu.wl%kuninori.morimoto.gx@gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753168AbaBXX40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:56:26 -0500
+Received: from home.keithp.com ([63.227.221.253]:55203 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581AbaBXX4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 18:56:25 -0500
+From: Keith Packard <keithp@keithp.com>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: Keith Packard <keithp@keithp.com>, Kyle McMartin <kyle@infradead.org>
+Subject: [PATCH] net/usb: Add Lenovo ThinkPad OneLink GigaLAN USB ID to ax88179 driver
+Date: Mon, 24 Feb 2014 15:56:16 -0800
+Message-Id: <1393286176-32076-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140224234247.GB14970@merlin.infradead.org>
+References: <20140224234247.GB14970@merlin.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 04:20:17PM -0800, Kuninori Morimoto wrote:
-> sh7757lcr SDHI register size is 0x100
-> 
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> ---
-> >> Simon, Geert, Andrew
-> 
-> Now, no-one is maintenance SH patch.
-> Who can apply this patch ??
+The Lenovo OneLink dock includes a USB ethernet adapter using the
+AX88179 chip, but with a different USB ID. Add this new USB id to the
+driver so that it will autodetect the adapter correctly.
 
-It seems that Andrew has picked it up.
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Tested-by: Carl Worth <cworth@cworth.org>
+---
+
+Kyle McMartin says:
+
+>  &lenovo_info, surely.
+
+Yeah, Daniel Stone caught the same bug. Not a big deal; the only
+difference between any of these elements is the string produced by the
+kernel. And that's odd because when we tested it, we saw the expected
+name...
+
+ drivers/net/usb/ax88179_178a.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 8e8d0fc..7707b4e 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -1418,6 +1418,19 @@ static const struct driver_info samsung_info = {
+ 	.tx_fixup = ax88179_tx_fixup,
+ };
+ 
++static const struct driver_info lenovo_info = {
++	.description = "ThinkPad OneLink Dock USB GigaLAN",
++	.bind = ax88179_bind,
++	.unbind = ax88179_unbind,
++	.status = ax88179_status,
++	.link_reset = ax88179_link_reset,
++	.reset = ax88179_reset,
++	.stop = ax88179_stop,
++	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
++	.rx_fixup = ax88179_rx_fixup,
++	.tx_fixup = ax88179_tx_fixup,
++};
++
+ static const struct usb_device_id products[] = {
+ {
+ 	/* ASIX AX88179 10/100/1000 */
+@@ -1435,6 +1448,10 @@ static const struct usb_device_id products[] = {
+ 	/* Samsung USB Ethernet Adapter */
+ 	USB_DEVICE(0x04e8, 0xa100),
+ 	.driver_info = (unsigned long)&samsung_info,
++}, {
++	/* Lenovo ThinkPad OneLink GigaLAN */
++	USB_DEVICE(0x17ef, 0x304b),
++	.driver_info = (unsigned long)&lenovo_info,
+ },
+ 	{ },
+ };
+-- 
+1.9.0
+
