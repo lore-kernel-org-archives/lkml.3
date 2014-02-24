@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaBXMUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 07:20:09 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35664 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBXMUG (ORCPT
+	id S1752256AbaBXM2T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 07:28:19 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59818 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751509AbaBXM2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 07:20:06 -0500
+	Mon, 24 Feb 2014 07:28:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: minyard@acm.org
+Cc: OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/3] ipmi: Cleanups for allowing IPMI support to always be "y"
+Date: Mon, 24 Feb 2014 13:43:14 +0100
+Message-ID: <3293311.NLXg2udD5E@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393208616-16500-1-git-send-email-minyard@acm.org>
+References: <1393208616-16500-1-git-send-email-minyard@acm.org>
 MIME-Version: 1.0
-In-Reply-To: <CANk1AXTnnhSnt_ayJYwDHRth44CWAwmxVA5kkbvnjqW39ssLQg@mail.gmail.com>
-References: <1391724370-30589-1-git-send-email-delicious.quinoa@gmail.com>
-	<CACRpkdYiC=nzVG4_nQuRVSNP9TB4W=3VL9QhBQjmqvLvmP6McA@mail.gmail.com>
-	<CANk1AXTnnhSnt_ayJYwDHRth44CWAwmxVA5kkbvnjqW39ssLQg@mail.gmail.com>
-Date: Mon, 24 Feb 2014 13:20:05 +0100
-Message-ID: <CACRpkdbkcuByEh_pasBoAQpXwa479iTuWLPPQW1TLRapbqjE7Q@mail.gmail.com>
-Subject: Re: [PATCH v11] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: Linus Walleij <linus.walleij@linaro.org>
-To: delicious quinoa <delicious.quinoa@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 5:17 PM, delicious quinoa
-<delicious.quinoa@gmail.com> wrote:
+On Sunday, February 23, 2014 08:23:33 PM minyard@acm.org wrote:
+> Three patches to remove issues with probing interface default, to make
+> sure the driver is completely idle if nothing is happening on it, and to
+> compile the IPMI driver into the kernel if ACPI is enabled.
+> 
+> The ACPI spec really requires that the IPMI driver be built into the
+> kernel because ACPI uses IPMI for some operations.  But some people
+> do not want the driver even using the mimimal amount of CPU it uses
+> when idle.  And the default probing, even though sort of implied to
+> be required by the spec, is really a bad idea and can result in hangs
+> on systems with other hardware at those location.
+> 
+> Hopefully these patches make everyone happy.
 
-> I am wondering about the change in usage of
-> irq_find_mapping/irq_create_mapping.  It seems like all the GPIO
-> drivers that use irq domains do it the way I was doing it
+No objections from my side.
 
-It is a well known problems that the kernel contain many bad
-examples. When in doubt ask for a good example to be provided.
+I'll drop the Matthew's patch ([3/3] in this series) from my tree, then, so
+please carry it along will any followups if needed.
 
-In gpio-omap.c you will find that this is done in the probe()
-path.
+Thanks,
+Rafael
 
-> (that's
-> where I got the idea in the first place): irq_create_mapping is used
-> in the to_irq() function.  I guess this is a general direction all the
-> other drivers will be encouraged to go in also?
-
-Yes. The reason is that it should be possible to reques an IRQ
-from an irqchip no matter whether the gpio_to_irq() function
-was called first, as the APIs are orthogonal.
-
-Yours,
-Linus Walleij
