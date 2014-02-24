@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaBXWAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:00:18 -0500
-Received: from smtprelay0173.hostedemail.com ([216.40.44.173]:50466 "EHLO
+	id S1753323AbaBXWDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:03:04 -0500
+Received: from smtprelay0109.hostedemail.com ([216.40.44.109]:42414 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752160AbaBXWAQ (ORCPT
+	by vger.kernel.org with ESMTP id S1751844AbaBXWDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:00:16 -0500
+	Mon, 24 Feb 2014 17:03:02 -0500
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:973:988:989:1260:1345:1437:1534:1543:1711:1730:1747:1777:1792:1801:2393:2559:2562:2894:2910:3138:3139:3140:3141:3142:3353:3866:4605:5007:6114:6261:6642:8557:10004:10026:10848:11658:11914:12043:12517:12519:12679:12683,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: milk05_1f3e6b20d5a33
-X-Filterd-Recvd-Size: 3660
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3871:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: horse81_375196c161015
+X-Filterd-Recvd-Size: 1294
+Message-ID: <1393279377.11020.66.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        selinux@tycho.nsa.gov
-Subject: [PATCH 0/8] security: Use a more current logging style
-Date: Mon, 24 Feb 2014 13:59:53 -0800
-Message-Id: <cover.1393279025.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+To: Tom Rini <trini@ti.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 24 Feb 2014 14:02:57 -0800
+In-Reply-To: <530BBF10.6050601@ti.com>
+References: <1393274296-26179-1-git-send-email-trini@ti.com>
+	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
+	 <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly trivial cleanups of security modules
+On Mon, 2014-02-24 at 16:52 -0500, Tom Rini wrote:
+> I've been lead to
+> believe that most cases now people should be using regmap instead, which
+> just leaves the case of having to match on-disk formats or similar cases
+> I believe as the things that must stay __packed.
 
-Joe Perches (8):
-  security: Use a more current logging style
-  security: apparmor: Use a more current logging style
-  security: integrity: Use a more current logging style
-  security: keys: Use a more current logging style
-  security: selinux: Use a more current logging style
-  security: smack: Use a more current logging style
-  security: tomoyo: Use a more current logging style
-  security: yama: Use a more current logging style
+__packed is also necessary for on-wire networking protocols.
 
- security/apparmor/apparmorfs.c           |   2 +
- security/apparmor/crypto.c               |   2 +
- security/apparmor/include/apparmor.h     |   2 +-
- security/apparmor/lib.c                  |   4 +-
- security/apparmor/lsm.c                  |   2 +
- security/apparmor/match.c                |   5 +-
- security/apparmor/policy.c               |   2 +
- security/apparmor/procattr.c             |   2 +
- security/capability.c                    |  16 ++--
- security/commoncap.c                     |  15 ++--
- security/integrity/evm/evm_crypto.c      |   4 +-
- security/integrity/evm/evm_main.c        |   6 +-
- security/integrity/evm/evm_secfs.c       |   6 +-
- security/integrity/ima/ima_crypto.c      |   4 +-
- security/integrity/ima/ima_init.c        |   5 +-
- security/integrity/ima/ima_queue.c       |   8 +-
- security/integrity/ima/ima_template.c    |   5 +-
- security/keys/encrypted-keys/encrypted.c |  70 ++++++++---------
- security/keys/encrypted-keys/encrypted.h |   2 +-
- security/keys/key.c                      |   2 +
- security/keys/trusted.c                  |  42 +++++-----
- security/keys/trusted.h                  |  20 ++---
- security/security.c                      |   4 +-
- security/selinux/avc.c                   |   7 +-
- security/selinux/hooks.c                 | 130 +++++++++++++------------------
- security/selinux/netif.c                 |  14 ++--
- security/selinux/netlink.c               |   5 +-
- security/selinux/netnode.c               |   6 +-
- security/selinux/netport.c               |   7 +-
- security/selinux/selinuxfs.c             |  19 ++---
- security/selinux/ss/avtab.c              |  39 +++++-----
- security/selinux/ss/conditional.c        |  18 +++--
- security/selinux/ss/ebitmap.c            |  21 +++--
- security/selinux/ss/policydb.c           | 109 ++++++++++++--------------
- security/selinux/ss/services.c           | 101 ++++++++++--------------
- security/selinux/ss/sidtab.c             |   8 +-
- security/smack/smack_lsm.c               |   7 +-
- security/smack/smackfs.c                 |  25 +++---
- security/tomoyo/common.c                 |  23 +++---
- security/tomoyo/domain.c                 |   8 +-
- security/tomoyo/load_policy.c            |   9 ++-
- security/tomoyo/memory.c                 |   7 +-
- security/tomoyo/tomoyo.c                 |   4 +-
- security/tomoyo/util.c                   |   7 +-
- security/yama/yama_lsm.c                 |  18 ++---
- 45 files changed, 404 insertions(+), 418 deletions(-)
-
--- 
-1.8.1.2.459.gbcd45b4.dirty
 
