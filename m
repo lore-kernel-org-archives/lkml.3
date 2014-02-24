@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaBXFTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:19:24 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42779 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaBXFTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:19:23 -0500
-Message-ID: <530AD653.3000808@linux.vnet.ibm.com>
-Date: Mon, 24 Feb 2014 13:19:15 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
+	id S1751711AbaBXFXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:23:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58429 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739AbaBXFXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 00:23:22 -0500
+Message-ID: <530AD71E.50800@zytor.com>
+Date: Sun, 23 Feb 2014 21:22:38 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com>
-In-Reply-To: <530ABB44.5000601@oracle.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+References: <alpine.DEB.2.10.1402211521040.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211701380.6395@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402211732290.11615@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402212342090.17416@vincent-weaver-1.um.maine.edu> <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu> <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com> <alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022405-8878-0000-0000-00000B038F69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 11:23 AM, Sasha Levin wrote:
-[snip]
->>>
->>> Could I get a link to the patch please? It's a pain testing other things
->>> with this issue reproducing every time.
+On 02/23/2014 07:02 PM, Vince Weaver wrote:
+> On Sun, 23 Feb 2014, Vince Weaver wrote:
 >>
->> Please take a try on the latest tip tree, patches has been merged as I
->> saw :)
+>> and as far as I can tell nothing touches rbp again until the segfault.
+>> Nothing in _memset_sse2 does as far as I can tell.
 > 
-> Nope, still see it with latest -tip.
+> I only know enough about ftrace to be dangerous, but here is what I think 
+> is the trace of the problem:
 > 
-> I ran tip's master branch, should I have tried a different one?
+>      perf_fuzzer-11492 [000] 197077.488420: function:                perf_output_put_handle
+>      perf_fuzzer-11492 [000] 197077.488421: function:             __do_page_fault
 
-Hmm... I don't see the changes we expected on master either...
+So we do a write to the buffer rather immediately before this happens,
+and in particular that will update the head:
 
-Peter, do we accidentally missed this commit?
+	rb->user_page->data_head = head;
 
-http://git.kernel.org/tip/477af336ba06ef4c32e97892bb0d2027ce30f466
+However, that doesn't explain what is going on and in particular the
+write to whatever address was in %rbp.  The rest pretty much seems to be
+the page fault logic.
 
-Regards,
-Michael Wang
+Incidentally, I doubt that this is x32-related in any way; there seems
+to be absolutely no difference between x86-64 perf and x32 perf; more
+likely it just makes the error more reproducible because the address
+space is so much smaller.
 
-> 
-> 
-> Thanks,
-> sasha
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+	-hpa
+
 
