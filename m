@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaBXVMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 16:12:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60587 "EHLO
+	id S1753076AbaBXVN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 16:13:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60604 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaBXVMY (ORCPT
+	with ESMTP id S1751879AbaBXVN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 16:12:24 -0500
-Date: Mon, 24 Feb 2014 22:12:30 +0100 (CET)
+	Mon, 24 Feb 2014 16:13:26 -0500
+Date: Mon, 24 Feb 2014 22:13:35 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: David Vrabel <david.vrabel@citrix.com>
 cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Xen <xen-devel@lists.xenproject.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [Xen-devel] [patch 21/26] xen: Get rid of the last irq_desc
- abuse
-In-Reply-To: <530B5856.7080900@citrix.com>
-Message-ID: <alpine.DEB.2.02.1402242210470.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212738.579581220@linutronix.de> <530B5856.7080900@citrix.com>
+Subject: Re: [Xen-devel] [patch 18/26] xen: Use the proper irq functions
+In-Reply-To: <530B5624.8080309@citrix.com>
+Message-ID: <alpine.DEB.2.02.1402242213030.21251@ionos.tec.linutronix.de>
+References: <20140223212703.511977310@linutronix.de> <20140223212738.222412125@linutronix.de> <530B5624.8080309@citrix.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,61 +27,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 24 Feb 2014, David Vrabel wrote:
+
 > On 23/02/14 21:40, Thomas Gleixner wrote:
-> > I'd prefer to drop that completely but there seems to be some mystic
-> > value to the error printout and the allocation check.
+> > I really can't understand why people keep adding irq_desc abuse. We
+> > have enough proper interfaces. Delete another 14 lines of hackery.
 > 
->     Warn if any PIRQ cannot be bound to an event channel.  Remove an
->     unnecessary test for !desc in xen_destroy_irq() since the only caller
->     will only do so if the irq was previously allocated.
+>     generic_handler_irq() already tests for !desc so use this instead
+>     of generic_handle_irq_desc().  Use irq_get_irq_data() instead of
+>     desc->irq_data.
+
+Fair enough. I was not really in the mood to come up with proper
+changelogs :)
+
+> Otherwise,
 > 
-> > --- tip.orig/drivers/xen/events/events_base.c
-> > +++ tip/drivers/xen/events/events_base.c
-> [...]
-> > @@ -535,7 +528,7 @@ static unsigned int __startup_pirq(unsig
-> >  					BIND_PIRQ__WILL_SHARE : 0;
-> >  	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
-> >  	if (rc != 0) {
-> > -		if (!probing_irq(irq))
-> > +		if (!data || irqd_irq_has_action(data))
-> >  			pr_info("Failed to obtain physical IRQ %d\n", irq);
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 > 
-> Remove this if and change the pr_info() to a pr_warn().
+> David
 > 
-> This hypercall never fails in practice, but it's still useful to have the
-> message in case on some systems it does.
-
-Sure, I understood the value of the printk, but I failed to see the
-reason for probing_irq(). Will change it.
- 
-> >  		return 0;
-> >  	}
-> > @@ -769,15 +762,13 @@ error_irq:
-> >  
-> >  int xen_destroy_irq(int irq)
-> >  {
-> > -	struct irq_desc *desc;
-> >  	struct physdev_unmap_pirq unmap_irq;
-> >  	struct irq_info *info = info_for_irq(irq);
-> >  	int rc = -ENOENT;
-> >  
-> >  	mutex_lock(&irq_mapping_update_lock);
-> >  
-> > -	desc = irq_to_desc(irq);
-> > -	if (!desc)
-> > +	if (!irq_is_allocated(irq))
-> >  		goto out;
-> 
-> Remove this test.  The only caller of xen_destroy_irq() will only do
-> so if the irq was previously fully setup.
-
-I was not sure about that, but thanks for confirming.
- 
-> I think this means you don't need to introduce the irqd_irq_has_action()
-> and irq_is_allocated() helpers.
-
-I just invented them in case xen really needs those tests.
-
-Thanks,
-
-	tglx
