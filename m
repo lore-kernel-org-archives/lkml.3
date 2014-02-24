@@ -1,79 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaBXXjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:39:11 -0500
-Received: from yotta.elopez.com.ar ([31.220.24.173]:45796 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaBXXjJ (ORCPT
+	id S1753115AbaBXXms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:42:48 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55633 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaBXXmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:39:09 -0500
-Message-ID: <530BD804.5090806@elopez.com.ar>
-Date: Mon, 24 Feb 2014 20:38:44 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 18:42:47 -0500
+X-Original-SENDERIP: 10.177.220.194
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 25 Feb 2014 08:43:13 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 4/6] zram: add multi stream functionality
+Message-ID: <20140224234313.GC24325@bbox>
+References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392983443-9807-5-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] clk: sun6i: Protect CPU clock
-References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com> <1393258967-4843-2-git-send-email-maxime.ripard@free-electrons.com> <20140224163034.GN21483@n2100.arm.linux.org.uk>
-In-Reply-To: <20140224163034.GN21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392983443-9807-5-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Russell,
+On Fri, Feb 21, 2014 at 02:50:41PM +0300, Sergey Senozhatsky wrote:
+> This patch implements multi stream compression support.
+> 
+> Introduce struct zcomp_strm_multi and a set of functions to manage
+> zcomp_strm stream access. zcomp_strm_multi has a list of idle zcomp_strm
+> structs, spinlock to protect idle list and wait queue, making it possible
+> to perform parallel compressions.
+> 
+> The following set of functions added:
+> - zcomp_strm_multi_get()/zcomp_strm_multi_put()
+>   get and put compression stream, implement required locking
+> - zcomp_strm_multi_create()/zcomp_strm_multi_destroy()
+>   create and destroy zcomp_strm_multi
+> 
+> zcomp ->strm_get() and ->strm_put() callbacks are set during initialisation
+> to zcomp_strm_multi_get()/zcomp_strm_multi_put() correspondingly.
+> 
+> Each time zcomp issues a zcomp_strm_multi_get() call, the following set of
+> operations performed:
+> - spin lock strm_lock
+> - if idle list is not empty, remove zcomp_strm from idle list, spin
+>   unlock and return zcomp stream pointer to caller
+> - if idle list is empty, current adds itself to wait queue. it will be
+>   awaken by zcomp_strm_multi_put() caller.
+> 
+> zcomp_strm_multi_put():
+> - spin lock strm_lock
+> - add zcomp stream to idle list
+> - spin unlock, wake up sleeper
+> 
+> Minchan Kim reported that spinlock-based locking scheme has demonstrated a
+> severe perfomance regression for single compression stream case, comparing
+> to mutex-based (https://lkml.org/lkml/2014/2/18/16)
+> 
+> base                      spinlock                    mutex
+> 
+> ==Initial write           ==Initial write             ==Initial  write
+> records:  5               records:  5                 records:   5
+> avg:      1642424.35      avg:      699610.40         avg:       1655583.71
+> std:      39890.95(2.43%) std:      232014.19(33.16%) std:       52293.96
+> max:      1690170.94      max:      1163473.45        max:       1697164.75
+> min:      1568669.52      min:      573429.88         min:       1553410.23
+> ==Rewrite                 ==Rewrite                   ==Rewrite
+> records:  5               records:  5                 records:   5
+> avg:      1611775.39      avg:      501406.64         avg:       1684419.11
+> std:      17144.58(1.06%) std:      15354.41(3.06%)   std:       18367.42
+> max:      1641800.95      max:      531356.78         max:       1706445.84
+> min:      1593515.27      min:      488817.78         min:       1655335.73
+> ==Random  write           ==Random  write             ==Random   write
+> records:  5               records:  5                 records:   5
+> avg:      1626318.29      avg:      497250.78         avg:       1695582.06
+> std:      38550.23(2.37%) std:      1405.42(0.28%)    std:       9211.98
+> max:      1665839.62      max:      498585.88         max:       1703808.22
+> min:      1562141.21      min:      494526.45         min:       1677664.94
+> ==Pwrite                  ==Pwrite                    ==Pwrite
+> records:  5               records:  5                 records:   5
+> avg:      1654641.25      avg:      581709.22         avg:       1641452.34
+> std:      47202.59(2.85%) std:      9670.46(1.66%)    std:       38963.62
+> max:      1740682.36      max:      591300.09         max:       1687387.69
+> min:      1611436.34      min:      564324.38         min:       1570496.11
+> 
+> When only one compression stream available, mutex with spin on owner tends
+> to perform much better than frequent wait_event()/wake_up(). This is why
+> single stream implemented as a special case with mutex locking.
 
-El 24/02/14 13:30, Russell King - ARM Linux escribió:
-> On Mon, Feb 24, 2014 at 05:22:43PM +0100, Maxime Ripard wrote:
->> Right now, AHB is an indirect child clock of the CPU clock. If that happens to
->> change, since the CPU clock has no other consumers declared in Linux, it would
->> be shut down, which is not really a good idea.
->>
->> Prevent this by forcing it enabled.
->>
->> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->> ---
->>   drivers/clk/sunxi/clk-sunxi.c | 8 ++++++++
->>   1 file changed, 8 insertions(+)
->>
->> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
->> index 23baad9..cedaf4b 100644
->> --- a/drivers/clk/sunxi/clk-sunxi.c
->> +++ b/drivers/clk/sunxi/clk-sunxi.c
->> @@ -1301,6 +1301,14 @@ static void __init sunxi_clock_protect(void)
->>   		clk_prepare_enable(clk);
->>   		clk_put(clk);
->>   	}
->> +
->> +	/* CPU clocks - sun6i */
->> +	clk = clk_get(NULL, "cpu");
->> +	if (!IS_ERR(clk)) {
->> +		clk_prepare_enable(clk);
->> +		clk_put(clk);
->> +	}
->
-> This is broken.  I'm not sure what's difficult to grasp about the concept
-> of "while a clock is in use, you should keep a reference to that clock".
->
-> That implies that if you get a clock, and then enable it, you don't
-> put the clock until you've disabled it.
+Side note:
 
-Why is this so? Can't a clock be left enabled while nobody has a 
-reference to it? I have looked around in Documentation/ (rather quickly 
-I must say) and have not found any explicit mention that it is required 
-to keep a reference to the clock while it's enabled. I'd appreciate it 
-if you could explain this a bit more verbosely or point me to the 
-relevant documents.
+It's true for x86 but it could be changed in embedded system like ARM
+which is lower power compared to x86 and it also could depend on
+compression algorithm speed so I am thinking we need adaptive locking
+which sometime work with mutex sometime work with spinlock dynamically.
+Anyway, it is further work and I should investigate more.
 
-For what it's worth, I've seen this same pattern on 
-enable/disable_clock() on drivers/base/power/clock_ops.c as well.
+Most important thing is that this patchset wouldn't make any regression
+if we use mutex for single stream as default so I'm okay now.
 
-Cheers,
+> 
+> In order to compile this functionality ZRAM_MULTI_STREAM config option
+> required to be set, which will be introduced later.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/zcomp.c | 101 ++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 100 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> index 9661226..41325ed 100644
+> --- a/drivers/block/zram/zcomp.c
+> +++ b/drivers/block/zram/zcomp.c
+> @@ -12,9 +12,14 @@
+>  #include <linux/slab.h>
+>  #include <linux/wait.h>
+>  #include <linux/sched.h>
+> +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> +#include <linux/spinlock.h>
+> +#endif
 
-Emilio
+Do we really need to include spinlock.h?
+
+>  
+>  #include "zcomp.h"
+>  
+> +extern struct zcomp_backend zcomp_lzo;
+> +
+>  /*
+>   * single zcomp_strm backend private part
+>   */
+> @@ -23,7 +28,18 @@ struct zcomp_strm_single {
+>  	struct zcomp_strm *zstrm;
+>  };
+>  
+> -extern struct zcomp_backend zcomp_lzo;
+> +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> +/*
+> + * multi zcomp_strm backend private part
+> + */
+> +struct zcomp_strm_multi {
+> +	/* protect strm list */
+> +	spinlock_t strm_lock;
+> +	/* list of available strms */
+> +	struct list_head idle_strm;
+> +	wait_queue_head_t strm_wait;
+> +};
+> +#endif
+>  
+>  static struct zcomp_backend *find_backend(const char *compress)
+>  {
+> @@ -63,6 +79,89 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
+>  	return zstrm;
+>  }
+>  
+> +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> +/*
+> + * get existing idle zcomp_strm or wait until other process release
+> + * (zcomp_strm_put()) one for us
+> + */
+> +static struct zcomp_strm *zcomp_strm_multi_get(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm_multi *zp = comp->private;
+
+How about comp->stream instead of private?
+
+Other than that, Looks good to me.
+
+> +	struct zcomp_strm *zstrm;
+> +
+> +	while (1) {
+> +		spin_lock(&zp->strm_lock);
+> +		if (list_empty(&zp->idle_strm)) {
+> +			spin_unlock(&zp->strm_lock);
+> +			wait_event(zp->strm_wait,
+> +					!list_empty(&zp->idle_strm));
+> +			continue;
+> +		}
+> +
+> +		zstrm = list_entry(zp->idle_strm.next,
+> +				struct zcomp_strm, list);
+> +		list_del(&zstrm->list);
+> +		spin_unlock(&zp->strm_lock);
+> +		break;
+> +	}
+> +	return zstrm;
+> +}
+> +
+> +/* add zcomp_strm back to idle list and wake up waiter */
+> +static void zcomp_strm_multi_put(struct zcomp *comp, struct zcomp_strm *zstrm)
+> +{
+> +	struct zcomp_strm_multi *zp = comp->private;
+> +
+> +	spin_lock(&zp->strm_lock);
+> +	list_add(&zstrm->list, &zp->idle_strm);
+> +	spin_unlock(&zp->strm_lock);
+> +
+> +	wake_up(&zp->strm_wait);
+> +}
+> +
+> +static void zcomp_strm_multi_destroy(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm_multi *zp = comp->private;
+> +	struct zcomp_strm *zstrm;
+> +	while (!list_empty(&zp->idle_strm)) {
+> +		zstrm = list_entry(zp->idle_strm.next,
+> +				struct zcomp_strm, list);
+> +		list_del(&zstrm->list);
+> +		zcomp_strm_free(comp, zstrm);
+> +	}
+> +	kfree(zp);
+> +}
+> +
+> +static int zcomp_strm_multi_create(struct zcomp *comp, int num_strm)
+> +{
+> +	int i;
+> +	struct zcomp_strm *zstrm;
+> +	struct zcomp_strm_multi *zp;
+> +
+> +	comp->destroy = zcomp_strm_multi_destroy;
+> +	comp->strm_get = zcomp_strm_multi_get;
+> +	comp->strm_put = zcomp_strm_multi_put;
+> +	zp = kmalloc(sizeof(struct zcomp_strm_multi), GFP_KERNEL);
+> +	comp->private = zp;
+> +	if (!zp)
+> +		return -ENOMEM;
+> +
+> +	spin_lock_init(&zp->strm_lock);
+> +	INIT_LIST_HEAD(&zp->idle_strm);
+> +	init_waitqueue_head(&zp->strm_wait);
+> +
+> +	for (i = 0; i < num_strm; i++) {
+> +		zstrm = zcomp_strm_alloc(comp);
+> +		if (!zstrm) {
+> +			zcomp_strm_multi_destroy(comp);
+> +			return -ENOMEM;
+> +		}
+> +		list_add(&zstrm->list, &zp->idle_strm);
+> +	}
+> +	return 0;
+> +}
+> +#endif
+> +
+>  static struct zcomp_strm *zcomp_strm_single_get(struct zcomp *comp)
+>  {
+>  	struct zcomp_strm_single *zp = comp->private;
+> -- 
+> 1.9.0.291.g027825b
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
