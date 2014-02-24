@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaBXN3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:29:45 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39369 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaBXN3n (ORCPT
+	id S1752713AbaBXNda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:33:30 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:41947 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaBXNd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:29:43 -0500
-Date: Mon, 24 Feb 2014 13:29:16 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "David E. Box" <david.e.box@linux.intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        srinivas.pandruvada@linux.intel.com, jacob.jun.pan@intel.com
-Subject: Re: [PATCH RESEND] x86: iosf_mbi: Provide dummy functions if
- CONFIG_IOSF_MBI not set
-Message-ID: <20140224132916.69b95bf5@alan.etchedpixels.co.uk>
-In-Reply-To: <530B4767.9010109@zytor.com>
-References: <1392248063-16389-1-git-send-email-david.e.box@linux.intel.com>
-	<1393117352-23717-1-git-send-email-david.e.box@linux.intel.com>
-	<20140224131902.30983051@alan.etchedpixels.co.uk>
-	<530B4767.9010109@zytor.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Feb 2014 08:33:28 -0500
+From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: grant.likely@linaro.org, rob.herring@calxeda.com, swarren@wwwdotorg.org,
+        mark.rutland@arm.com, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V8 0/2] Exynos5250 SATA Support
+Date: Mon, 24 Feb 2014 19:02:53 +0530
+Message-Id: <1393248775-3283-1-git-send-email-yuvaraj.cd@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 05:21:43 -0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+This patch series enable the SATA support on Exynos5250 based boards.
+It incorporates the generic phy framework to deal with sata phy.
 
-> On 02/24/2014 05:19 AM, One Thousand Gnomes wrote:
-> >
-> > Other than _available I would have expected all the others to resolve to
-> > returning an error or doing a WARN() in the not compiled in case.
-> >
-> 
-> WARN() or BUG()?
+Yuvaraj Kumar C D (2):
+  PHY: Exynos: Add Exynos5250 SATA PHY driver
+  ARM: dts: Enable ahci sata and sata phy
 
-WARN I think. The usage cases I am aware of don't end up in catastrophic
-failure if you get this wrong, but would be annoying to debug if missed.
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   14 --
+ .../devicetree/bindings/ata/exynos-sata.txt        |   25 +-
+ .../devicetree/bindings/phy/samsung-phy.txt        |   36 +++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |   11 +
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   17 +-
+ drivers/phy/Kconfig                                |   15 ++
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-exynos5250-sata.c                  |  251 ++++++++++++++++++++
+ 9 files changed, 345 insertions(+), 33 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+ create mode 100644 drivers/phy/phy-exynos5250-sata.c
 
-Alan
+-- 
+1.7.10.4
+
