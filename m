@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388AbaBXICQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:02:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38241 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978AbaBXICN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:02:13 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 09/23] hpsa: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Mon, 24 Feb 2014 09:02:09 +0100
-Message-Id: <e490be11a3b734f9c024e8542274ccc495ac3bd2.1393191330.git.agordeev@redhat.com>
-In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
-References: <cover.1393191330.git.agordeev@redhat.com>
+	id S1752839AbaBXICp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:02:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51023 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814AbaBXICn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:02:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
+Date: Mon, 24 Feb 2014 09:02:35 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20140222192325.GA12587@thin>
+In-Reply-To: <20140222192325.GA12587@thin>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402240902.35977.arnd@arndb.de>
+X-Provags-ID: V02:K0:vsHYuAPsnmd+59Jvzynqaa/4MO7yP2+F7nGZMCmIcZL
+ skT5HYmKWByluBQYHgrRep2n2nBbpH+X7qaHKBw/L59uLzRYCO
+ h365WiqpC3ePXRqI+QtkKI0D4DGK+YczCBodIIknxe5QYyhZ+5
+ bmVCyWMHAgMPRHfasUdhR6f9kkpWpzeG1+dBLO2QwOT+b2Ev/U
+ 5qP7yWnbRO0HOamTT7ruxgfkZo9INvqw22Kf4JDuZJXfE7Vov7
+ FBepVfSEUGIJeFLwYDSjU81eOnvjmxjK7/ngvmjI7QB1GSlQBv
+ 8T6storBolFXjr41pQQgTBJl+peIvZ4FvjszD7CZfGiHaREUAf
+ eN3/A7QGkB7RoN9Qq3Sc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On Saturday 22 February 2014, Josh Triplett wrote:
+> When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
+> condition argument; however, WARN_ON_ONCE and family still have
+> conditions and a boolean to detect one-time invocation, even though the
+> warning they'd emit doesn't exist.  Make the existing definitions
+> conditional on CONFIG_BUG, and map them all to the passthrough WARN_ON
+> when !CONFIG_BUG.
+> 
+> This saves 4.4k on a minimized configuration (smaller than
+> allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: iss_storagedev@hp.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/hpsa.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+This looks good, but it reminds me of a patch that I did a while ago
+and that got lost while I was on leave:
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 52cfd19..523a60e 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -4169,7 +4169,7 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
- 		goto default_int_mode;
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
- 		dev_info(&h->pdev->dev, "MSIX\n");
--		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
-+		err = pci_enable_msix_exact(h->pdev, hpsa_msix_entries,
- 						MAX_REPLY_QUEUES);
- 		if (!err) {
- 			for (i = 0; i < MAX_REPLY_QUEUES; i++)
-@@ -4177,13 +4177,7 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
- 			h->msix_vector = 1;
- 			return;
- 		}
--		if (err > 0) {
--			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
--			       "available\n", err);
--		} else {
--			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
--			       err);
--		}
-+		dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
- 	}
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
- 		dev_info(&h->pdev->dev, "MSI\n");
--- 
-1.7.7.6
+> +#else /* !CONFIG_BUG */
+> +#ifndef HAVE_ARCH_BUG
+> +#define BUG() do {} while(0)
+> +#endif
+> +
+> +#ifndef HAVE_ARCH_BUG_ON
+> +#define BUG_ON(condition) do { if (condition) ; } while(0)
+> +#endif
 
+I've done some analysis of this before[1] and came to the conclusion that
+this definition (which I realize you are not changing) is bad.
+
+For one thing, it will cause lots of gcc warnings about code that
+should have been unreachable being compiled. It also causes
+misoptimizations for code that should be detected as unused or
+(worse) lets us run into undefined behavior if we ever get into
+the BUG() case.
+
+This means we actually want BUG() to end with __builtin_unreachable()
+as in the CONFIG_BUG=y case, and also ensure it actually is
+unreachable. As I have shown in [1], the there is a small overhead
+of doing this in terms of code size.
+
+> +#ifndef HAVE_ARCH_WARN_ON
+> +#define WARN_ON(condition) ({						\
+> +	int __ret_warn_on = !!(condition);				\
+> +	unlikely(__ret_warn_on);					\
+> +})
+> +#endif
+> +
+> +#ifndef WARN
+> +#define WARN(condition, format...) ({					\
+> +	int __ret_warn_on = !!(condition);				\
+> +	unlikely(__ret_warn_on);					\
+> +})
+> +#endif
+
+
+FWIW, there is an easy extension to this to get rid of some "unused variable"
+warnings, but using the format string in an unreachable part of the macro,
+as I did in my patch (but didn't explain there):
+
+@@ -125,6 +126,8 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #ifndef WARN
+ #define WARN(condition, format...) ({					\
+ 	int __ret_warn_on = !!(condition);				\
++	if (0 && (__ret_warn_on))					\
++		printk(format);						\
+ 	unlikely(__ret_warn_on);					\
+ })
+ #endif
+
+
+	Arnd
+
+[1] http://lkml.org/lkml/2013/7/12/121
