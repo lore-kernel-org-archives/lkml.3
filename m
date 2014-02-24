@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaBXNKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:10:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36898 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaBXNKa (ORCPT
+	id S1752586AbaBXNQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:16:28 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39333 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaBXNQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:10:30 -0500
-Date: Mon, 24 Feb 2014 14:10:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-Message-ID: <20140224131025.GG3104@twins.programming.kicks-ass.net>
-References: <5304F32A.4040907@oracle.com>
- <5305856F.3000109@linux.vnet.ibm.com>
- <53078241.3060201@oracle.com>
- <53080122.609@linux.vnet.ibm.com>
- <530ABB44.5000601@oracle.com>
- <530AD653.3000808@linux.vnet.ibm.com>
- <20140224071028.GW9987@twins.programming.kicks-ass.net>
- <530B1B80.4000307@linux.vnet.ibm.com>
- <20140224121218.GR15586@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140224121218.GR15586@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 24 Feb 2014 08:16:26 -0500
+Date: Mon, 24 Feb 2014 13:16:05 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: David Howells <dhowells@redhat.com>, Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and
+ family
+Message-ID: <20140224131605.3bd7febc@alan.etchedpixels.co.uk>
+In-Reply-To: <1747419.6FxgzfPen0@wuerfel>
+References: <20140224084437.GG20680@thin>
+	<201402240902.35977.arnd@arndb.de>
+	<10646.1393243751@warthog.procyon.org.uk>
+	<1747419.6FxgzfPen0@wuerfel>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 01:12:18PM +0100, Peter Zijlstra wrote:
-> +		if (p) {
-> +			if (unlikely(p == RETRY_TASK))
-> +				goto again;
+> BUG() normally causes a fault and we print helpful messages before killing
+> the task, and gcc knows we never continue because of the
+> __builtin_unreachable() annotation.
+> 
+> If BUG() is defined as 'do { } while (0)' in the example above, we get
+> a warning because the function may end without returning a number.
+> If we define it to 'do { unreachable(); } while (0)', we don't get a
+> warning, but we can get undefined behavior in the case we ever get to
+> the end of the function.
 
-We could even make that: unlikely(p & 1), I think most CPUs can encode
-that far better than the full pointer immediate.
+That warning is the right thing though. In a lot of cases BUG(); is
+followed by code that can lead to serious corruption and potentially
+things like disk corruption following or security compromise.
+
+We *should* be warning if you are stupid enough to build a kernel where
+BUG() does not terminate.
+
+While I agree defining it as do {} while(1); would be a lot smarter,
+simply making it required that a platform provides an implementation of
+BUG() would be even better. 
+
+Alan
