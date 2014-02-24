@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174AbaBXIJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:09:20 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:38366 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaBXIJR (ORCPT
+	id S1753273AbaBXIJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:09:41 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45658 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaBXIJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:09:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdV1iDHz4ewFAG-QTba_wUF76Ei-VQpP+MRoNGV2mfHrpw@mail.gmail.com>
-References: <1392907389-21798-1-git-send-email-geert@linux-m68k.org>
-	<1392907389-21798-8-git-send-email-geert@linux-m68k.org>
-	<CANqRtoQVJzEgo_AdVxrPSRUY6ocyPaQ=RKQJyxoExDrfYxiJ3w@mail.gmail.com>
-	<CAMuHMdUByWPcYM8M_m5NVM4QP5cQE_tOLGQg=2fTNF7gqkUhig@mail.gmail.com>
-	<CANqRtoSJTROkkbGxV_p+B2S7b7jZ7jgHQ+q4_WG54m+Pxgfcpw@mail.gmail.com>
-	<CAMuHMdV1iDHz4ewFAG-QTba_wUF76Ei-VQpP+MRoNGV2mfHrpw@mail.gmail.com>
-Date: Mon, 24 Feb 2014 17:09:15 +0900
-Message-ID: <CANqRtoT6G6mxce=cN05mNNtYCcyCvMPzpHQ7RyzPE8XfkFjMyQ@mail.gmail.com>
-Subject: Re: [PATCH 07/10] spi: sh-msiof: Add support for R-Car H2 and M2
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Feb 2014 03:09:32 -0500
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCHSET 0/8] perf tools: Update on filtered entries' percentage output (v5)
+Date: Mon, 24 Feb 2014 17:09:20 +0900
+Message-Id: <1393229368-31412-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+Hello,
 
-On Mon, Feb 24, 2014 at 4:39 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Magnus,
->
-> On Mon, Feb 24, 2014 at 3:45 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> On Fri, Feb 21, 2014 at 1:13 AM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> On Thu, Feb 20, 2014 at 4:41 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->>>> On thing stuck out a bit with the bindings. I can see that you specify
->>>> both fifo size and use the SoC suffix for the r8a7790 and r8a7791
->>>> bindings. Isn't that a bit of redundant information there, if we know
->>>> that the SoC is r8a7790 or r8a7791 then can't we simply put that
->>>> information in r8a779x_data above and perhaps keep the binding
->>>> simpler? Perhaps same thing applies to other properties as well?
->>>
->>> "renesas,tx-fifo-size" and "renesas,rx-fifo-size" are part of the existing
->>> bindings, so I'm a bit reluctant to change these.
->>> Hmm, since the original bindings didn't specify the default values,
->>> I could make them chip-specific, though.
->>
->> Thanks, yes I think treating the "renesas,tx-fifo-size" and
->> "renesas,rx-fifo-size" bindings as optional and allow us to rely on
->> chip-specific default values makes sense.
->>
->>> The only other property is "num-cs", which can have any value if you
->>> start using the generic "cs-gpios".
->>
->> I see. It looks to me that such a setting is board-specific, so what
->> is a sane default in the SoC DTSI? You seem to have it set to "1"
->> today, but if the board is supposed to override it anyway then do we
->> need to set it?
->>
->> Anyway, "num-cs" is a minor detail so no need to bother about that too much!
->
-> In v2, I'll drop the "num-cs" from the dtsi, so it will default to the driver's
-> default (which is 1, for the simple case of using hardware controlled CS).
+I added --percentage option to perf report to control display of
+percentage of filtered entries.
 
-Sounds good, thanks for your help!
+ usage: perf report [<options>]
 
-/ magnus
+        --percentage <relative|absolute>
+                          how to display percentage of filtered entries
+
+"relative" means it's relative to filtered entries only so that the
+sum of shown entries will be always 100%.  "absolute" means it retains
+original value before and after the filter applied.  In patch 8/8, I
+made the "absolute" as default since it makes more sense IMHO.
+    
+      $ perf report -s comm
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+           6.11%            as
+           4.35%            sh
+           4.14%          make
+           1.13%        fixdep
+      ...
+    
+      $ perf report -s comm -c cc1,gcc --percentage absolute
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+    
+      $ perf report -s comm -c cc1,gcc --percentage relative
+      # Overhead       Command
+      # ........  ............
+      #
+          90.69%           cc1
+           9.31%           gcc
+    
+Note that it has zero effect if no filter was applied.
+
+ * changes in v5:
+  - fix 0 samples in relative percent output (Jiri)
+  - factor hists__total_period function (Jiri)
+  - share config parsing code with option parser (Jiri)
+
+ * changes in v4:
+  - support perf top and perf diff also  (Jiri)
+  - add HIST_FILTER__HOST/GUEST  (Jiri)
+  - retain both of filtered and total stats  (Arnaldo)
+  - add 'F' hotkey on TUI  (Jiri)
+  - rename config variable to have "hist." prefix
+
+
+You can get this on the 'perf/percentage-v5' branch in my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Namhyung Kim (8):
+  perf tools: Count periods of filtered entries separately
+  perf hists: Add support for showing relative percentage
+  perf report: Add --percentage option
+  perf top: Add --percentage option
+  perf diff: Add --percentage option
+  perf tools: Add hist.percentage config option
+  perf ui/tui: Add 'F' hotkey to toggle percentage output
+  perf tools: Show absolute percentage by default
+
+ tools/perf/Documentation/perf-diff.txt   | 21 +++++++++--
+ tools/perf/Documentation/perf-report.txt | 24 +++++++++---
+ tools/perf/Documentation/perf-top.txt    | 18 +++++++--
+ tools/perf/builtin-diff.c                | 35 ++++++++++++++---
+ tools/perf/builtin-report.c              | 24 ++++++++++--
+ tools/perf/builtin-top.c                 |  2 +
+ tools/perf/ui/browsers/hists.c           | 47 +++++++++++++++++------
+ tools/perf/ui/gtk/hists.c                | 19 +++++-----
+ tools/perf/ui/hist.c                     |  8 ++--
+ tools/perf/util/config.c                 |  4 ++
+ tools/perf/util/event.c                  | 22 +++++------
+ tools/perf/util/hist.c                   | 65 +++++++++++++++++++++-----------
+ tools/perf/util/hist.h                   | 19 ++++++++++
+ tools/perf/util/symbol.h                 |  5 ++-
+ 14 files changed, 233 insertions(+), 80 deletions(-)
+
+-- 
+1.7.11.7
+
