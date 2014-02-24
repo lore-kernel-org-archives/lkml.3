@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaBXSec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:34:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:51902 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaBXSea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:34:30 -0500
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 13:34:30 EST
-Message-ID: <1393266333.5560.15.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-From: Mike Galbraith <bitbucket@online.de>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: paulmck@linux.vnet.ibm.com, Tejun Heo <tj@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Date: Mon, 24 Feb 2014 19:25:33 +0100
-In-Reply-To: <7hppmc2y63.fsf@paris.lan>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
-	 <52F8A51F.4090909@cn.fujitsu.com>
-	 <20140210184729.GL4250@linux.vnet.ibm.com>
-	 <20140212182336.GD5496@localhost.localdomain>
-	 <20140212190241.GD4250@linux.vnet.ibm.com>
-	 <20140212192354.GC26809@htj.dyndns.org> <7hk3cx46rw.fsf@paris.lan>
-	 <1392449804.5517.45.camel@marge.simpson.net>
-	 <20140216164106.GD4250@linux.vnet.ibm.com>
-	 <1392612613.5565.78.camel@marge.simpson.net> <7hppmc2y63.fsf@paris.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1752871AbaBXSe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:34:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39665 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604AbaBXSe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 13:34:57 -0500
+Message-ID: <530B90A5.3090302@zytor.com>
+Date: Mon, 24 Feb 2014 10:34:13 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+References: <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu> <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com> <alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu> <530AD71E.50800@zytor.com> <alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com> <alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu> <20140224172536.GD9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu> <530B841F.5050803@zytor.com> <alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:IFtAA3nTySg2LmFDsiez8hB+BpVpyl0IqyjWSfoSez7
- ttUZmxu6aNiQx8nfV/2CxxTOkH7fCtHj9Qd5PiwnbH0tC2AdMU
- NYZ0B1k4+xVU/xqS7gLr4H0Zo1eA196V1lBxVS5EmjSd4Q3mJ6
- tZR5T173sW0GUG+nm4Q8AIab3RPynj3AdiIPVKpsbHq76PfDG9
- JOD0ZyzJBMnWpAoijUXy6aViEeQN0eP/66JD8LS9ZdOmwdGDUv
- vbx+FkybhdELeIQf8dkTWe9V/4wiDSGSp4Vsol88QbsR6lHIGc
- 89B1/fgyO838vpn4zrR0Q+d+lCM+84pBRhTK4STOWqN+FveC/P
- JuqPTgPpPgk8p9kNSD+EcTZkNxcGglXjAIGrYOTuQCxZzV2Tr8
- NAnMJqtpPaKUg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 09:55 -0800, Kevin Hilman wrote:
-
-> Yeah, my patch only addresses the nohz_full case, but since there
-> doesn't seem to be any general agreemenet about the generic case, it
-> seems that exposing all unbound workqueues via WQ_SYSFS is the way to
-> go.  
+On 02/24/2014 10:07 AM, Vince Weaver wrote:
+>>
+>> Anyway I've attached the full tail end of the trace if you want to see 
+>> everything that happens.
 > 
-> Mike, looks like you may have started on that.  Did it get any further?
+> and then I note there are *two* kernel page faults.
+> 
+>      perf_fuzzer-2979  [000]   161.475924: page_fault_kernel:    address=irq_stack_union ip=copy_user_generic_string error_code=0x0
+> address=0x1 ip=0xffffffff812a7d9c error_code=0x0
+>      perf_fuzzer-2979  [000]   161.475924: function:                __do_page_fault
+>      perf_fuzzer-2979  [000]   161.475924: function:                   bad_area_nosemaphore
+>      perf_fuzzer-2979  [000]   161.475925: function:                      __bad_area_nosemaphore
+>      perf_fuzzer-2979  [000]   161.475925: function:                         no_context
+>      perf_fuzzer-2979  [000]   161.475925: function:                            fixup_exception
+>      perf_fuzzer-2979  [000]   161.475926: function:                               search_exception_tables
+>      perf_fuzzer-2979  [000]   161.475926: function:                                  search_extable
+>      perf_fuzzer-2979  [000]   161.475927: function:             copy_user_handle_tail
+>      perf_fuzzer-2979  [000]   161.475927: function:             trace_do_page_fault
+>      perf_fuzzer-2979  [000]   161.475928: page_fault_kernel:    address=irq_stack_union ip=copy_user_handle_tail error_code=0x0
+> address=0x1 ip=0xffffffff812a92bb error_code=0x0
+>      perf_fuzzer-2979  [000]   161.475928: function:                __do_page_fault
+>      perf_fuzzer-2979  [000]   161.475928: function:                   bad_area_nosemaphore
+>      perf_fuzzer-2979  [000]   161.475929: function:                      __bad_area_nosemaphore
+>      perf_fuzzer-2979  [000]   161.475929: function:                         no_context
+>      perf_fuzzer-2979  [000]   161.475929: function:                            fixup_exception
+>      perf_fuzzer-2979  [000]   161.475929: function:                               search_exception_tables
+>      perf_fuzzer-2979  [000]   161.475930: function:                                  search_extable
+>      perf_fuzzer-2979  [000]   161.475931: function:             perf_output_begin
+>      perf_fuzzer-2979  [000]   161.475931: function:             perf_output_copy
+> 
+> That second one is in copy_user_handle_tail()
+> 
 
-No, work gets in the way of tinker time.  Not sure which way I want to
-explore anyway.  On the one hand, auto-quiesce thingy tied to domain
-construction/destruction sounds good, but on the other, just handing
-control to the user is highly attractive.. likely lots simpler too.
+Either way, it really seems like we have a case of CR2 leakage out of
+the NMI context.
 
--Mike
+	-hpa
 
