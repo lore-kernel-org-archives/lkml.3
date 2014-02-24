@@ -1,193 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaBXL26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:28:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34586 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaBXL25 (ORCPT
+	id S1752376AbaBXLad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:30:33 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50930 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaBXLab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:28:57 -0500
-Date: Mon, 24 Feb 2014 12:28:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: x86_pmu_start WARN_ON.
-Message-ID: <20140224112839.GQ15586@twins.programming.kicks-ass.net>
-References: <20140217152859.GF15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu>
- <20140219101949.GG15586@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu>
- <20140220100830.GN6835@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu>
- <20140220182300.GN9987@twins.programming.kicks-ass.net>
- <20140221150312.GF3104@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1402211514560.6395@vincent-weaver-1.um.maine.edu>
+	Mon, 24 Feb 2014 06:30:31 -0500
+Date: Mon, 24 Feb 2014 20:30:11 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: brian.austin@cirrus.com, Paul.Handrigan@cirrus.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        lgirdwood@gmail.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Message-ID: <20140224113011.GE25940@sirena.org.uk>
+References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="myda8z5PGMklj5Rc"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1402211514560.6395@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 121.174.50.227
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 03:18:38PM -0500, Vince Weaver wrote:
-> I've applied the patch and have been unable to trigger the warning with 
-> either my testcase or a few hours of fuzzing.
 
-Yay.
+--myda8z5PGMklj5Rc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> My only comment on the patch is it could always use some comments.
-> 
-> The perf_event code is really hard to follow as is, without adding
-> more uncommented special cases.
+On Mon, Feb 24, 2014 at 02:55:29PM +0800, Nicolin Chen wrote:
+> This patch adds support for the Cirrus Logic CS42888 Audio CODEC that
+> has four 24-bit A/D and eight 24-bit D/A converters.
 
-Does the below help a bit? Or is there anywhere in particular you want
-more comments?
+Looks generally good, some fairly small nits below.
 
----
-Subject: perf, x86: Add a few more comments
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Mon Feb 24 12:26:21 CET 2014
+> [ CS42888 supports both I2C and SPI control ports. As initial patch,
+>   this patch only adds the support for I2C. ]
 
-Add a few comments on the ->add(), ->del() and ->*_txn()
-implementation.
+>  5 files changed, 795 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/cs42888.txt
+>  create mode 100644 sound/soc/codecs/cs42888.c
+>  create mode 100644 sound/soc/codecs/cs42888.h
 
-Requested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/cpu/perf_event.c |   49 +++++++++++++++++++++++++++------------
- arch/x86/kernel/cpu/perf_event.h |    8 +++---
- 2 files changed, 39 insertions(+), 18 deletions(-)
+Given that we're starting to split out separate bus drivers for the I2C
+and SPI CODECs (look at the recent submissions from Lars-Peter) it'd be
+good to start this off with a separate bus driver for I2C even if the
+SPI one is still to be done - that way the Kconfig stuff for machine
+drivers is all in place and doesn't need updating.
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -892,7 +892,6 @@ static void x86_pmu_enable(struct pmu *p
- 		 * hw_perf_group_sched_in() or x86_pmu_enable()
- 		 *
- 		 * step1: save events moving to new counters
--		 * step2: reprogram moved events into new counters
- 		 */
- 		for (i = 0; i < n_running; i++) {
- 			event = cpuc->event_list[i];
-@@ -918,6 +917,9 @@ static void x86_pmu_enable(struct pmu *p
- 			x86_pmu_stop(event, PERF_EF_UPDATE);
- 		}
- 
-+		/*
-+		 * step2: reprogram moved events into new counters
-+		 */
- 		for (i = 0; i < cpuc->n_events; i++) {
- 			event = cpuc->event_list[i];
- 			hwc = &event->hw;
-@@ -1043,7 +1045,7 @@ static int x86_pmu_add(struct perf_event
- 	/*
- 	 * If group events scheduling transaction was started,
- 	 * skip the schedulability test here, it will be performed
--	 * at commit time (->commit_txn) as a whole
-+	 * at commit time (->commit_txn) as a whole.
- 	 */
- 	if (cpuc->group_flag & PERF_EVENT_TXN)
- 		goto done_collect;
-@@ -1058,6 +1060,10 @@ static int x86_pmu_add(struct perf_event
- 	memcpy(cpuc->assign, assign, n*sizeof(int));
- 
- done_collect:
-+	/*
-+	 * Commit the collect_events() state. See x86_pmu_del() and
-+	 * x86_pmu_*_txn().
-+	 */
- 	cpuc->n_events = n;
- 	cpuc->n_added += n - n0;
- 	cpuc->n_txn += n - n0;
-@@ -1183,28 +1189,38 @@ static void x86_pmu_del(struct perf_even
- 	 * If we're called during a txn, we don't need to do anything.
- 	 * The events never got scheduled and ->cancel_txn will truncate
- 	 * the event_list.
-+	 *
-+	 * XXX assumes any ->del() called during a TXN will only be on
-+	 * an event added during that same TXN.
- 	 */
- 	if (cpuc->group_flag & PERF_EVENT_TXN)
- 		return;
- 
-+	/*
-+	 * Not a TXN, therefore cleanup properly.
-+	 */
- 	x86_pmu_stop(event, PERF_EF_UPDATE);
- 
- 	for (i = 0; i < cpuc->n_events; i++) {
--		if (event == cpuc->event_list[i]) {
--
--			if (i >= cpuc->n_events - cpuc->n_added)
--				--cpuc->n_added;
-+		if (event == cpuc->event_list[i])
-+			break;
-+	}
- 
--			if (x86_pmu.put_event_constraints)
--				x86_pmu.put_event_constraints(cpuc, event);
-+	if (WARN_ON_ONCE(i == cpuc->n_events)) /* called ->del() without ->add() ? */
-+		return;
- 
--			while (++i < cpuc->n_events)
--				cpuc->event_list[i-1] = cpuc->event_list[i];
-+	/* If we have a newly added event; make sure to decrease n_added. */
-+	if (i >= cpuc->n_events - cpuc->n_added)
-+		--cpuc->n_added;
-+
-+	if (x86_pmu.put_event_constraints)
-+		x86_pmu.put_event_constraints(cpuc, event);
-+
-+	/* Delete the array entry. */
-+	while (++i < cpuc->n_events)
-+		cpuc->event_list[i-1] = cpuc->event_list[i];
-+	--cpuc->n_events;
- 
--			--cpuc->n_events;
--			break;
--		}
--	}
- 	perf_event_update_userpage(event);
- }
- 
-@@ -1598,7 +1614,8 @@ static void x86_pmu_cancel_txn(struct pm
- {
- 	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
- 	/*
--	 * Truncate the collected events.
-+	 * Truncate collected array by the number of events added in this
-+	 * transaction. See x86_pmu_add() and x86_pmu_*_txn().
- 	 */
- 	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
- 	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
-@@ -1609,6 +1626,8 @@ static void x86_pmu_cancel_txn(struct pm
-  * Commit group events scheduling transaction
-  * Perform the group schedulability test as a whole
-  * Return 0 if success
-+ *
-+ * Does not cancel the transaction on failure; expects the caller to do this.
-  */
- static int x86_pmu_commit_txn(struct pmu *pmu)
- {
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -130,9 +130,11 @@ struct cpu_hw_events {
- 	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	int			enabled;
- 
--	int			n_events;
--	int			n_added;
--	int			n_txn;
-+	int			n_events; /* the # of events in the below arrays */
-+	int			n_added;  /* the # last events in the below arrays;
-+					     they've never been enabled yet */
-+	int			n_txn;    /* the # last events in the below arrays;
-+					     added in the current transaction */
- 	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
- 	u64			tags[X86_PMC_IDX_MAX];
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+> +  - clocks : phandle to the clock source for MCLK
+> +
+> +  - clock-names : must contain "mclk".
+
+These should really be lists though there's only one documented element
+so it's purely a documentation update.
+
+> +	/* Disable auto-mute */
+> +	regmap_update_bits(cs42888->regmap, CS42888_TXCTL,
+> +			   CS42888_TXCTL_AMUTE | CS42888_TXCTL_DAC_SZC_MASK,
+> +			   CS42888_TXCTL_DAC_SZC_SR);
+
+Does this interfere with the manual mute controls or is it a separate
+thing?  If it plays nicely with the manual controls it's probably better
+to leave it enabled since it improves performance in some benchmarks
+(that's why hardware tends to have the feature).
+
+> +	/*
+> +	 * We haven't marked the chip revision as volatile due to
+> +	 * sharing a register with the right input volume; explicitly
+> +	 * bypass the cache to read it.
+> +	 */
+> +	regcache_cache_bypass(cs42888->regmap, true);
+
+The other option here is to just not provide a default so that the first
+time it's read it goes to hardware.  It doesn't make much difference
+either way though.
+
+> +static int cs42888_i2c_remove(struct i2c_client *i2c_client)
+> +{
+> +	snd_soc_unregister_codec(&i2c_client->dev);
+> +	return 0;
+> +}
+
+The driver ought to disable runtime PM, the clock and the regulators here.
+
+> +	/*
+> +	 * In case the device was put to hard reset during sleep,
+> +	 * we need to wait 500ns here before any I2C communication
+> +	 */
+> +	mdelay(5);
+
+Do we need 500ns or 5ms? =20
+
+> +	regcache_sync(cs42888->regmap);
+
+Should really check the return value here.
+
+> +	if (!IS_ERR(cs42888->clk))
+> +		clk_disable_unprepare(cs42888->clk);
+
+Does the device work without MCLK?
+
+--myda8z5PGMklj5Rc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCy06AAoJELSic+t+oim9NacQAJVraT2HLnDfUAFCMZHgAWvo
+oe2rWCWlkqDqn/tKbsTHCDv3vEJ1HOw8rDFy7CvnS8jrK/TwzwLAi6VrctROFnvw
+coBs3ZHIWw0mFuu6qlNqVqL9ZKNeemESyKdkisJ3FDxaWt/W1nPYWdn8q0y4+6dW
+7TwnXAfWG9r2KNSPp7u7CeRxc+MLe5Z8NyKUPOfz0RfI153E8MHt7lqI1cgM8S2e
+UPM5xb0Tuvdv6bhcHd8sLwOkdVeSvyFdC1aGJfRWC6wPA6o8rdjsYpfKhBHATEwk
+ot1jn7vSTlLJlvTEkkoaWWDy001Xv8GI1CQkLJkFIF+6jbsl+CUoL+xq8bi9+yui
+T7sYceGbY6H5CYGg2OdFPM462FcYLN4PkUR4KfqjKIqCsT7dVuWUBqHKKMkiQQeg
+mf0O40K/DDcGVPzOe+NmeYCj5JS5jbPAtD3pxiYpqFfmheTsaHoiaY/sVHGuK87p
+liYFuk5Je13+krdYyfPg6jAKbqw03m3RO4hcsY4ioegP50fhzkMSU1FGLpmSQOW7
+oOrwNAyAJs4Qm/vSpBJT7RacuOsW0L7hlFO71Q4wPa2JAL17KSQ5NhtAWryc9G+v
+bZzPwzBm/AgBS36r2lkw/TXeZqtN761eK7P+rctPIpvbH2WOYuXOEr4dWd4I9F7+
+LdQ4GWixLlzjIzRoZ0Xp
+=VON1
+-----END PGP SIGNATURE-----
+
+--myda8z5PGMklj5Rc--
