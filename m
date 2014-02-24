@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaBXQHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:07:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52522 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489AbaBXQHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:07:23 -0500
-Message-ID: <530B6E1F.1090608@redhat.com>
-Date: Mon, 24 Feb 2014 17:06:55 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753266AbaBXQH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:07:59 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41925 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836AbaBXQH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:07:58 -0500
+Date: Mon, 24 Feb 2014 16:07:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Michael Brunner <mibru@gmx.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Kevin Strasser <strassek@engr.orst.edu>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Michael Brunner <Michael.Brunner@kontron.com>,
+        Chris Healy <chealy@imsco-us.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Christian Rauch <christian.rauch@kontron.com>
+Subject: Re: [PATCH] mfd: Add support for COMe-mBT10, COMe-cBT6 and COMe-cHL6
+ to Kontron PLD driver
+Message-ID: <20140224160751.GE15847@lee--X1>
+References: <20140224085346.4959ff7f@hyperion>
 MIME-Version: 1.0
-To: Joonsoo Kim <js1304@gmail.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH] zram: support REQ_DISCARD
-References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com> <530B4AFB.5060006@redhat.com> <CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com> <530B621E.9010309@redhat.com> <CAAmzW4MkXg+ZEYCxkrYNns8T9MKr=ZTGxCRXoXYs133n7c9PvQ@mail.gmail.com>
-In-Reply-To: <CAAmzW4MkXg+ZEYCxkrYNns8T9MKr=ZTGxCRXoXYs133n7c9PvQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140224085346.4959ff7f@hyperion>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 04:56 PM, Joonsoo Kim wrote:
-> 2014-02-25 0:15 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
->> On 02/24/2014 04:02 PM, Joonsoo Kim wrote:
->>> 2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
->>>> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
->>>>> zram is ram based block device and can be used by backend of filesystem.
->>>>> When filesystem deletes a file, it normally doesn't do anything on data
->>>>> block of that file. It just marks on metadata of that file. This behavior
->>>>> has no problem on disk based block device, but has problems on ram based
->>>>> block device, since we can't free memory used for data block. To overcome
->>>>> this disadvantage, there is REQ_DISCARD functionality. If block device
->>>>> support REQ_DISCARD and filesystem is mounted with discard option,
->>>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
->>>>> discarded. All we have to do is to handle this request.
->>>>>
->>>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
->>>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
->>>>> used.
->>>>>
->>>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>> ---
->>>>> This patch is based on master branch of linux-next tree.
->>>>>
->>>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->>>>> index 5ec61be..cff2c0e 100644
->>>>> --- a/drivers/block/zram/zram_drv.c
->>>>> +++ b/drivers/block/zram/zram_drv.c
->>>>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>>>>       return ret;
->>>>>  }
->>>>>
->>>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
->>>>> +{
->>>>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>>>
->>>> Hi Joonsoo,
->>>>
->>>> If bi_sector is not aligned on a page size, we might end up discarding
->>>> a page that still contain valid data.
->>>>
->>>>
->>>
->>> Hello, Jerome.
->>>
->>> Is it possible that request isn't aligned on a page size if
->>> logical/physical block size
->>> is PAGE_SIZE?
->>
->> Yes, zram has an logical block size of 4k (ZRAM_LOGICAL_BLOCK_SIZE),
->> while its physical block size, which is a page size, can be bigger.
->>
->>> When I tested it, I didn't find any invalid io.
->>> If we meet any misaligned request, it would be filtered by
->>> valid_io_request(). :)
->>
->> zram accepts request aligned on logical blocks. So valid_io_request()
->> wouldn't filter misaligned requests out as long as they are aligned
->> on logical blocks.
->> If your system use 4k pages, your tests would never trigger the issue,
->> but on a system which uses 64k pages, it could.
+> This patch adds DMI system IDs for the Kontron modules COMe-mBT10, COMe-cBT6
+> and COMe-cHL6 to the Kontron PLD driver. The list of supported products in
+> the module description is also updated.
 > 
-> Okay. I got it.
-> So, how about using PAGE_SIZE as ZRAM_LOGICAL_BLOCK_SIZE?
-> Is there any reason to set 4096 to ZRAM_LOGICAL_BLOCK_SIZE,
-> instead of setting PAGE_SIZE to ZRAM_LOGICAL_BLOCK_SIZE?
-> 
+> Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+> Acked-by: Christian Rauch <christian.rauch@kontron.com>
+> ---
+>  drivers/mfd/Kconfig       |  5 +++++
+>  drivers/mfd/kempld-core.c | 24 ++++++++++++++++++++++++
+>  2 files changed, 29 insertions(+)
 
-ZRAM_LOGICAL_BLOCK_SIZE was introduced in commit 7b19b8d because the
-block layer couldn't handle 64k logical block. Also, some filesytems
-(including FAT IRC), can't cope with 64k block either.
+Applied, thanks.
 
-
-> Thanks.
-> 
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
