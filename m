@@ -1,108 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaBXQLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:11:33 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:41817 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbaBXQLb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:11:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <530B6E1F.1090608@redhat.com>
-References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<530B4AFB.5060006@redhat.com>
-	<CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
-	<530B621E.9010309@redhat.com>
-	<CAAmzW4MkXg+ZEYCxkrYNns8T9MKr=ZTGxCRXoXYs133n7c9PvQ@mail.gmail.com>
-	<530B6E1F.1090608@redhat.com>
-Date: Tue, 25 Feb 2014 01:11:30 +0900
-Message-ID: <CAAmzW4NcQnAyPs2nvA+-a1faYXF8=K-Vv1oQaKU5WdFmwZcr9Q@mail.gmail.com>
-Subject: Re: [PATCH] zram: support REQ_DISCARD
-From: Joonsoo Kim <js1304@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753063AbaBXQMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:12:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33830 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752560AbaBXQM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:12:28 -0500
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH v2 0/3] ftrace/x86: Recovery code fixes and improvements
+Date: Mon, 24 Feb 2014 17:12:19 +0100
+Message-Id: <1393258342-29978-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-25 1:06 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
-> On 02/24/2014 04:56 PM, Joonsoo Kim wrote:
->> 2014-02-25 0:15 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
->>> On 02/24/2014 04:02 PM, Joonsoo Kim wrote:
->>>> 2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
->>>>> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
->>>>>> zram is ram based block device and can be used by backend of filesystem.
->>>>>> When filesystem deletes a file, it normally doesn't do anything on data
->>>>>> block of that file. It just marks on metadata of that file. This behavior
->>>>>> has no problem on disk based block device, but has problems on ram based
->>>>>> block device, since we can't free memory used for data block. To overcome
->>>>>> this disadvantage, there is REQ_DISCARD functionality. If block device
->>>>>> support REQ_DISCARD and filesystem is mounted with discard option,
->>>>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
->>>>>> discarded. All we have to do is to handle this request.
->>>>>>
->>>>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
->>>>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
->>>>>> used.
->>>>>>
->>>>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>>> ---
->>>>>> This patch is based on master branch of linux-next tree.
->>>>>>
->>>>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->>>>>> index 5ec61be..cff2c0e 100644
->>>>>> --- a/drivers/block/zram/zram_drv.c
->>>>>> +++ b/drivers/block/zram/zram_drv.c
->>>>>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>>>>>       return ret;
->>>>>>  }
->>>>>>
->>>>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
->>>>>> +{
->>>>>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>>>>
->>>>> Hi Joonsoo,
->>>>>
->>>>> If bi_sector is not aligned on a page size, we might end up discarding
->>>>> a page that still contain valid data.
->>>>>
->>>>>
->>>>
->>>> Hello, Jerome.
->>>>
->>>> Is it possible that request isn't aligned on a page size if
->>>> logical/physical block size
->>>> is PAGE_SIZE?
->>>
->>> Yes, zram has an logical block size of 4k (ZRAM_LOGICAL_BLOCK_SIZE),
->>> while its physical block size, which is a page size, can be bigger.
->>>
->>>> When I tested it, I didn't find any invalid io.
->>>> If we meet any misaligned request, it would be filtered by
->>>> valid_io_request(). :)
->>>
->>> zram accepts request aligned on logical blocks. So valid_io_request()
->>> wouldn't filter misaligned requests out as long as they are aligned
->>> on logical blocks.
->>> If your system use 4k pages, your tests would never trigger the issue,
->>> but on a system which uses 64k pages, it could.
->>
->> Okay. I got it.
->> So, how about using PAGE_SIZE as ZRAM_LOGICAL_BLOCK_SIZE?
->> Is there any reason to set 4096 to ZRAM_LOGICAL_BLOCK_SIZE,
->> instead of setting PAGE_SIZE to ZRAM_LOGICAL_BLOCK_SIZE?
->>
->
-> ZRAM_LOGICAL_BLOCK_SIZE was introduced in commit 7b19b8d because the
-> block layer couldn't handle 64k logical block. Also, some filesytems
-> (including FAT IRC), can't cope with 64k block either.
->
+This is folowup from the discussion (Re: [PATCH 0/4] x86: Fix ftrace recovery
+when code modification failed), see https://lkml.org/lkml/2014/2/21/748
 
-Okay. I will check it more.
+I split the fixes into three patches:
 
-Thanks for nice comment!!
+1st patch adds the missing sync call. I guess that Steven would want to
+squash this into the commit f06492158f4b0cdb (ftrace/x86: Run a sync
+after fixup on failure) in the ftrace/urgent branch.
+
+2nd patch adds the missing warnigns about ftrace modification failure
+into the generic code as suggested by Steven[*]. I used "err" instead
+of the suggested "ret" variable. The value is handled but it is not
+returned. Also I left ftrace_replace_code() calls as is. It handles
+the error, prints more details, and does not return the error value.
+
+3rd patch adds the BUG calls. Steven did not comment on it, so I rather
+put this into a separate patch, so it does not block the other things.
+
+[*] I feel shame that I was not brave enough to do modify the generic code
+when I sent the patch on Friday.
+
+Petr Mladek (3):
+  ftrace/x86: One more missing sync after fixup of function modification
+    failure
+  ftrace: Warn on error when modifying ftrace function
+  ftrace/x86: BUG when ftrace recovery fails
+
+ arch/x86/kernel/ftrace.c | 24 ++++++++++++++++--------
+ kernel/trace/ftrace.c    | 17 ++++++++++++-----
+ 2 files changed, 28 insertions(+), 13 deletions(-)
+
+-- 
+1.8.4
+
