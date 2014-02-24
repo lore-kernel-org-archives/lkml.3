@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaBXRtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:49:50 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:33044 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722AbaBXRts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:49:48 -0500
+	id S1752934AbaBXRvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:51:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39209 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617AbaBXRvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 12:51:46 -0500
+Message-ID: <530B86A5.6060100@zytor.com>
+Date: Mon, 24 Feb 2014 09:51:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
-	<19258.1392306854@warthog.procyon.org.uk>
-	<20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
-	<20106.1392309770@warthog.procyon.org.uk>
-	<CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
-	<CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
-	<16729.1392318161@warthog.procyon.org.uk>
-	<CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
-	<CAJfpegsDG-NoqvYog5PWqR=XOQgT0dSOTsjDwhd8v11T0kiEVA@mail.gmail.com>
-	<20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-Date: Mon, 24 Feb 2014 09:49:47 -0800
-X-Google-Sender-Auth: 9zZsoqEcf18t36odHRpY3sz2SbA
-Message-ID: <CA+55aFzCA4eE0+dnXHcOVpMKwxx425XzwBf-4pbcHF6JST321w@mail.gmail.com>
-Subject: Re: [PATCH 00/13] cross rename v4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/3] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+References: <1393162071-23995-1-git-send-email-qiaowei.ren@intel.com> <1393162071-23995-3-git-send-email-qiaowei.ren@intel.com> <530B8112.5080400@intel.com>
+In-Reply-To: <530B8112.5080400@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 9:12 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> This patch uses the 0/0 device number, but the actual number doesn't matter
-> as long as it doesn't conflict with a real device.
+On 02/24/2014 09:27 AM, Dave Hansen wrote:
+> 
+> Can you talk a little bit about what the design is here?  Why does the
+> kernel have to do the allocation of the virtual address space?  Does it
+> really need to MAP_POPULATE?  bt_size looks like 4MB, and that's an
+> awful lot of memory to eat up at once.  Shouldn't we just let the kernel
+> demand-fault this like everything else?
+> 
 
-Side note: I think 0/0 is the right choice, for a very specific
-reason: it is already documented as being special. No other
-combination has that.
+MAP_POPULATE definitely seems like the wrong thing.
 
-We've had "major number 0" documented as being for unnamed devices,
-and minor 0 is "reserved as null device number", which is just bad
-documentation (it's *not* /dev/null, it doesn't exist). You cannot
-register a character device with mijor/minor 0 in Linux, for example.
+	-hpa
 
-(The block layer similarly considers MKDEV(0,0) to be an unallocated device)
-
-            Linus
