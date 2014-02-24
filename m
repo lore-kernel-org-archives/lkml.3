@@ -1,56 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaBXRRq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:17:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34952 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbaBXRRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753039AbaBXRRo (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Feb 2014 12:17:44 -0500
-Message-ID: <530B7EAF.9060502@wwwdotorg.org>
-Date: Mon, 24 Feb 2014 10:17:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:47318 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752040AbaBXRRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 12:17:42 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-3.tower-194.messagelabs.com!1393262259!12128532!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 24 Feb 2014 18:17:39 +0100
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: [PATCH 2/3] mcb: Add PCI carrier for MEN Chameleon Bus
+Date: Mon, 24 Feb 2014 18:17:32 +0100
+Message-ID: <1393262252-19857-1-git-send-email-johannes.thumshirn@men.de>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
+References: <1392737654-22682-3-git-send-email-johannes.thumshirn@men.de>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Kgene Kim <kgene.kim@samsung.com>,
-        "jinchoi@broadcom.com" <jinchoi@broadcom.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V5 0/7] cpufreq: suspend early/resume late: dpm_{suspend|resume}()
-References: <cover.1392273722.git.viresh.kumar@linaro.org>	<52FE71BD.3020103@wwwdotorg.org>	<2869027.iYHxWOSS2C@vostro.rjw.lan>	<52FEAECA.5080905@wwwdotorg.org>	<CAKohpomhvuQQ0JN3wgLBnrSpFUjC9J9QwWZpD9nA6AFYw+paKA@mail.gmail.com>	<5303C018.1020707@wwwdotorg.org>	<CAKohponF7ag-tfv77JK0pDVukS6v3QeSY+G_br3FJGskMDCvVw@mail.gmail.com>	<5304E93C.9000104@wwwdotorg.org>	<90EA67AE-7F57-4F43-8967-642903AD72AC@linaro.org>	<BEC64F5C-76E8-40C3-81BE-59096C3838F3@linaro.org>	<53063E01.5030808@wwwdotorg.org> <CAKohpok3Y9H96rSFkUL=v3pMwRd9=YyVDfuY7SSSq6FevF1Snw@mail.gmail.com>
-In-Reply-To: <CAKohpok3Y9H96rSFkUL=v3pMwRd9=YyVDfuY7SSSq6FevF1Snw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/23/2014 11:43 PM, Viresh Kumar wrote:
-> On 20 February 2014 23:10, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> Well, except that still leaves a bunch of errors in the kernel log, and
->> I have to remember to ignore them:-/
-> 
-> Just for few releases, before this patchset goes in.
-> 
->> It'd be nice if the cpufreq core didn't keep changing its behaviour and
->> adding new error prints. It really should be up to the cpufreq drivers
->> to log the errors if they experience any.
-> 
-> Hmm... not sure.. Its better to do error prints at a single place, i.e. cpufreq
-> core on behalf of all drivers. If there is a error being returned from some
-> routine, we better print a message for that. Rather than living in the illusion
-> that everything is fine :)
+Add support for MCB over PCI devices. Both PCI attached on-board Chameleon FPGAs
+as well as CompactPCI based MCB carrier cards are supported with this driver.
 
-As a general rule, I think it's better to report the error right where
-it happened. That's the only place where the code knows exactly what the
-error was. Further up the call stack, we have to guess why there was an
-error from the return code, which isn't very much information.
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/mcb/Kconfig        |  14 ++++++
+ drivers/mcb/Makefile       |   2 +
+ drivers/mcb/mcb-internal.h |   2 +
+ drivers/mcb/mcb-pci.c      | 114 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 132 insertions(+)
+ create mode 100644 drivers/mcb/mcb-pci.c
+
+diff --git a/drivers/mcb/Kconfig b/drivers/mcb/Kconfig
+index 44c82d6..b8f5d46 100644
+--- a/drivers/mcb/Kconfig
++++ b/drivers/mcb/Kconfig
+@@ -13,3 +13,17 @@ menuconfig MCB
+ 	   for these devices.
+ 
+ 	   If build as a module, the module is called mcb.ko
++
++if MCB
++config MCB_PCI
++	   tristate "PCI based MCB carrier"
++	   default m
++	   help
++
++	   This is a MCB carrier on a PCI device. Both PCI attached on-board
++	   FPGAs as well as CompactPCI attached MCB FPGAs are supported with
++	   this driver.
++
++	   If build as a module, the module is called mcb-pci.ko
++
++endif # MCB
+diff --git a/drivers/mcb/Makefile b/drivers/mcb/Makefile
+index 2d9a751..1ae1413 100644
+--- a/drivers/mcb/Makefile
++++ b/drivers/mcb/Makefile
+@@ -3,3 +3,5 @@ obj-$(CONFIG_MCB) += mcb.o
+ 
+ mcb-y += mcb-core.o
+ mcb-y += mcb-parse.o
++
++obj-$(CONFIG_MCB_PCI) += mcb-pci.o
+diff --git a/drivers/mcb/mcb-internal.h b/drivers/mcb/mcb-internal.h
+index db22777..f956ef2 100644
+--- a/drivers/mcb/mcb-internal.h
++++ b/drivers/mcb/mcb-internal.h
+@@ -3,6 +3,8 @@
+ 
+ #include <linux/types.h>
+ 
++#define PCI_VENDOR_ID_MEN		0x1a88
++#define PCI_DEVICE_ID_MEN_CHAMELEON	0x4d45
+ #define CHAMELEON_FILENAME_LEN		12
+ #define CHAMELEONV2_MAGIC		0xabce
+ 
+diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
+new file mode 100644
+index 0000000..99c742c
+--- /dev/null
++++ b/drivers/mcb/mcb-pci.c
+@@ -0,0 +1,114 @@
++/*
++ * MEN Chameleon Bus.
++ *
++ * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
++ * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; version 2 of the License.
++ */
++
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/mcb.h>
++
++#include "mcb-internal.h"
++
++struct priv {
++	struct mcb_bus *bus;
++	void __iomem *base;
++};
++
++static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	struct priv *priv;
++	phys_addr_t mapbase;
++	int ret;
++	int num_cells;
++	unsigned long flags;
++
++	priv = devm_kzalloc(&pdev->dev, sizeof(struct priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to enable PCI device\n");
++		return -ENODEV;
++	}
++
++	mapbase = pci_resource_start(pdev, 0);
++	if (!mapbase) {
++		dev_err(&pdev->dev, "No PCI resource\n");
++		goto err_start;
++	}
++
++	ret = pci_request_region(pdev, 0, KBUILD_MODNAME);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request PCI BARs\n");
++		goto err_start;
++	}
++
++	priv->base = pci_iomap(pdev, 0, 0);
++	if (!priv->base) {
++		dev_err(&pdev->dev, "Cannot ioremap\n");
++		ret = -ENOMEM;
++		goto err_ioremap;
++	}
++
++	flags = pci_resource_flags(pdev, 0);
++	if (flags & IORESOURCE_IO) {
++		ret = -ENOTSUPP;
++		dev_err(&pdev->dev,
++			"IO mapped PCI devices are not supported\n");
++		goto err_ioremap;
++	}
++
++	pci_set_drvdata(pdev, priv);
++
++	priv->bus = mcb_alloc_bus();
++
++	ret = chameleon_parse_cells(priv->bus, mapbase, priv->base);
++	if (ret < 0)
++		goto err_drvdata;
++	num_cells = ret;
++
++	dev_dbg(&pdev->dev, "Found %d cells\n", num_cells);
++
++	mcb_bus_add_devices(priv->bus);
++
++err_drvdata:
++	pci_iounmap(pdev, priv->base);
++err_ioremap:
++	pci_release_region(pdev, 0);
++err_start:
++	pci_disable_device(pdev);
++	return ret;
++}
++
++static void mcb_pci_remove(struct pci_dev *pdev)
++{
++	struct priv *priv = pci_get_drvdata(pdev);
++
++	mcb_release_bus(priv->bus);
++}
++
++static const struct pci_device_id mcb_pci_tbl[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_MEN, PCI_DEVICE_ID_MEN_CHAMELEON) },
++	{ 0 },
++};
++MODULE_DEVICE_TABLE(pci, mcb_pci_tbl);
++
++static struct pci_driver mcb_pci_driver = {
++	.name = "mcb-pci",
++	.id_table = mcb_pci_tbl,
++	.probe = mcb_pci_probe,
++	.remove = mcb_pci_remove,
++};
++
++module_pci_driver(mcb_pci_driver);
++
++MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("MCB over PCI support");
+-- 
+1.8.5.3
 
