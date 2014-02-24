@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaBXIn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:43:28 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:55288 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaBXInM (ORCPT
+	id S1752712AbaBXIn0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:43:26 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:49175 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922AbaBXInN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:43:12 -0500
+	Mon, 24 Feb 2014 03:43:13 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -14,97 +14,24 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from Dove pinctrl
-Date: Mon, 24 Feb 2014 09:42:52 +0100
-Message-Id: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 02/10] devicetree: bindings: update MVEBU pinctrl binding documentation
+Date: Mon, 24 Feb 2014 09:42:54 +0100
+Message-Id: <1393231382-11078-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patches separated from one sent earlier [1] with just the
-removal of any hard-coded reg addresses from Dove pinctrl stub. This
-is a required step for Dove to leave mach-dove, hop into mach-mvebu,
-and become part of multi_v7.
+Dove pinctrl binding now requires three different reg properties. This
+updates corresponding binding and example accordingly. While at it, also
+document reg property as required for the other MVEBU SoC pinctrl nodes.
 
-In the meantime, support for new Armada 375/38x was added that also
-contain patches for pinctrl [2]. The cleanup patches [3] split off from
-the original patch set take care of pinctrl-related changes for Armada
-375/38x. Since this patch set now already depends on Armada 375/38x
-pinctrl through those cleanup patches, we take care of Armada 375/38x
-binding updates here, too.
-
-For Dove, this patch set removes all hardcoded addresses from
-pinctrl-dove by either requesting additional resources or a syscon
-provided regmap for global config registers. As this changes existing
-driver to DT binding relationship, all additional resources are probed
-in a backward compatible way. If the corresponding resource cannot be
-found, we derive it from the existing pinctrl resource and warn about
-the old DTB firmware.
-
-Patches 1-2 add or update binding documentation for dove, global config
-syscon, and pinctrl-dove. Patch 2 also documents missing reg property
-requirement for other mvebu pinctrl nodes, including new Armada 375/38x.
-
-Patch 3 and 4 add the new pinctrl reg property values and global config
-register syscon to exisiting dove.dtsi.
-
-Patches 5-6 request either additional reg ranges or the syscon regmap
-in a DT-backward compatible way. If any resource cannot be derived from
-DT node, we warn about an old DTB firmware.
-
-Patches 7-10 finally remove any hardcoded addresses from Dove SoC
-pinctrl driver and use the iomap/regmap resources instead.
-
-DT and binding related patches have also been sent to DT maintainers
-and corresponding lists, additional pinctrl related patches have been
-sent to pinctrl/mvebu maintainers and LAKML only.
-
-This patch set is based on v3.14-rc1 and depends on some cleanup patches
-that will go into v3.15. We have a lot of stuff for v3.15 already in
-mvebu, so I am okay with postponing this and/or the following dove-to-
-mvebu patches for v3.16. As Jason prepares mvebu pinctrl PRs for LinusW,
-it is up to him when to take it with LinusW's Acked-by.
-
-Nevertheless, there is an *unstable* branch based on v3.14-rc1, with
-mvebu/pinctrl-3xx and mvebu/pinctrl merged in at (still named -for-3.15)
-
-https://github.com/shesselba/linux-dove.git unstable/dove-pinctrl-for-3.15_v1
-
-[1] http://www.spinics.net/lists/arm-kernel/msg303496.html
-[2] http://www.spinics.net/lists/arm-kernel/msg306409.html
-[3] http://lkml.org/lkml/2014/2/23/43
-
-Sebastian Hesselbarth (10):
-  devicetree: bindings: add missing Marvell Dove SoC documentation
-  devicetree: bindings: update MVEBU pinctrl binding documentation
-  ARM: dove: add additional pinctrl registers
-  ARM: dove: add global-config register node
-  pinctrl: mvebu: dove: request additional resources
-  pinctrl: mvebu: dove: request syscon regmap for global registers
-  pinctrl: mvebu: dove: use remapped mpp base registers
-  pinctrl: mvebu: dove: use remapped mpp4 register
-  pinctrl: mvebu: dove: use remapped pmu_mpp registers
-  pinctrl: mvebu: dove: use global register regmap
-
- .../devicetree/bindings/arm/marvell,dove.txt       |  22 ++
- .../pinctrl/marvell,armada-370-pinctrl.txt         |   1 +
- .../pinctrl/marvell,armada-375-pinctrl.txt         |   1 +
- .../pinctrl/marvell,armada-38x-pinctrl.txt         |   1 +
- .../bindings/pinctrl/marvell,armada-xp-pinctrl.txt |   1 +
- .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   1 +
- .../bindings/pinctrl/marvell,kirkwood-pinctrl.txt  |   1 +
- .../bindings/pinctrl/marvell,mvebu-pinctrl.txt     |   2 +-
- arch/arm/boot/dts/dove.dtsi                        |  10 +-
- drivers/pinctrl/mvebu/Kconfig                      |   1 +
- drivers/pinctrl/mvebu/pinctrl-dove.c               | 286 +++++++++++++--------
- 11 files changed, 213 insertions(+), 114 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/marvell,dove.txt
-
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Rob Herring <robh+dt@kernel.org>
 Cc: Pawel Moll <pawel.moll@arm.com>
@@ -113,7 +40,6 @@ Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
 Cc: Kumar Gala <galak@codeaurora.org>
 Cc: Rob Landley <rob@landley.net>
 Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
@@ -121,6 +47,101 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
+---
+ .../devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt          | 1 +
+ .../devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt          | 1 +
+ .../devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt          | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt      | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt  | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt     | 2 +-
+ 7 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+index 01ef408e205f..adda2a8d1d52 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+@@ -5,6 +5,7 @@ part and usage.
+ 
+ Required properties:
+ - compatible: "marvell,88f6710-pinctrl"
++- reg: register specifier of MPP registers
+ 
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
+index 2ede59dffe1b..7de0cda4a379 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
+@@ -5,6 +5,7 @@ part and usage.
+ 
+ Required properties:
+ - compatible: "marvell,88f6720-pinctrl"
++- reg: register specifier of MPP registers
+ 
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
+index 1d45f9d62346..b17c96849fc9 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
+@@ -7,6 +7,7 @@ Required properties:
+ - compatible: "marvell,88f6810-pinctrl", "marvell,88f6820-pinctrl" or
+   "marvell,88f6828-pinctrl" depending on the specific variant of the
+   SoC being used.
++- reg: register specifier of MPP registers
+ 
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+index bfa0a2e5e0cb..373dbccd7ab0 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+@@ -6,6 +6,7 @@ part and usage.
+ Required properties:
+ - compatible: "marvell,mv78230-pinctrl", "marvell,mv78260-pinctrl",
+               "marvell,mv78460-pinctrl"
++- reg: register specifier of MPP registers
+ 
+ This driver supports all Armada XP variants, i.e. mv78230, mv78260, and mv78460.
+ 
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+index 50ec3512a292..cf52477cc7ee 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+@@ -6,6 +6,7 @@ part and usage.
+ Required properties:
+ - compatible: "marvell,dove-pinctrl"
+ - clocks: (optional) phandle of pdma clock
++- reg: register specifiers of MPP, MPP4, and PMU MPP registers
+ 
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+index 95daf6335c37..730444a9a4de 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+@@ -8,6 +8,7 @@ Required properties:
+               "marvell,88f6190-pinctrl", "marvell,88f6192-pinctrl",
+               "marvell,88f6281-pinctrl", "marvell,88f6282-pinctrl"
+               "marvell,98dx4122-pinctrl"
++- reg: register specifier of MPP registers
+ 
+ This driver supports all kirkwood variants, i.e. 88f6180, 88f619x, and 88f628x.
+ It also support the 88f6281-based variant in the 98dx412x Bobcat SoCs.
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+index 0a26c3aa4e6d..0c09f4eb2af0 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+@@ -37,7 +37,7 @@ uart1: serial@12100 {
+ 
+ pinctrl: pinctrl@d0200 {
+ 	compatible = "marvell,dove-pinctrl";
+-	reg = <0xd0200 0x20>;
++	reg = <0xd0200 0x14>, <0xd0440 0x04>, <0xd802c 0x08>;
+ 
+ 	pmx_uart1_sw: pmx-uart1-sw {
+ 		marvell,pins = "mpp_uart1";
 -- 
 1.8.5.3
 
