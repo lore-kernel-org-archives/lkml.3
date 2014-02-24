@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaBXRnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:43:01 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48589 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604AbaBXRm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:42:58 -0500
-Date: Mon, 24 Feb 2014 11:40:21 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, linux-i2c@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Andy Gross <agross@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/2] i2c: New bus driver for the Qualcomm QUP I2C
- controller
-Message-ID: <20140224174021.GA18563@joshc.qualcomm.com>
-References: <1392943090-30556-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1392943090-30556-3-git-send-email-bjorn.andersson@sonymobile.com>
- <92B0AE30-5CDF-43FC-8588-EEF0C5F86266@codeaurora.org>
- <1393237990.6481.15.camel@iivanov-dev>
+	id S1753134AbaBXRna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:43:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39122 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376AbaBXRn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 12:43:29 -0500
+Message-ID: <530B8492.2050403@zytor.com>
+Date: Mon, 24 Feb 2014 09:42:42 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393237990.6481.15.camel@iivanov-dev>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+References: <53084317.4090304@zytor.com> <alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu> <e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com> <alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu> <530AD71E.50800@zytor.com> <alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com> <alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu> <20140224172536.GD9987@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241239450.20170@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <alpine.DEB.2.10.1402241239450.20170@vincent-weaver-1.um.maine.edu>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 12:33:10PM +0200, Ivan T. Ivanov wrote:
-> On Fri, 2014-02-21 at 09:35 -0600, Kumar Gala wrote: 
-> > On Feb 20, 2014, at 6:38 PM, Bjorn Andersson <bjorn.andersson@sonymobile.com> wrote:
-> > 
-> > > This bus driver supports the QUP i2c hardware controller in the Qualcomm SOCs.
-> > > The Qualcomm Universal Peripheral Engine (QUP) is a general purpose data path
-> > > engine with input/output FIFOs and an embedded i2c mini-core. The driver
-> > > supports FIFO mode (for low bandwidth applications) and block mode (interrupt
-> > > generated for each block-size data transfer).
-> > > 
-> > > Cc: Andy Gross <agross@codeaurora.org>
-> > > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> > > ---
-> > > +config I2C_QUP
-> > > +	tristate "Qualcomm QUP based I2C controller"
-> > > +	depends on ARCH_MSM
-> > 
-> > ARCH_QCOM
+On 02/24/2014 09:41 AM, Vince Weaver wrote:
+> On Mon, 24 Feb 2014, Vince Weaver wrote:
 > 
-> There is no such symbol, still.
+>> I do note that 
+>> 	perf_callchain_user();
+>>
+>> Does
+>> 	fp = (void __user *)regs->bp;
+>> 	
+>> 	...
+>>
+>> 	bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
+>>
+>>
+>> And in my particular executable RBP has nothing to do with a frame 
+>> pointer, but is instead being used as a general purpose register.
+> 
+> and as a reminder, I'm seeing this on an x32 executable, so 
+> perf_callchain_user32() is probably coming into play.
+> 
+> So maybe it is an x32 issue after all.
+> 
 
-For what it's worth, the rename/split is in linux-next, and will land in
-3.15 (as part of arm-soc cleanups).
+No.
 
-Is the (short-term) problem of the lack of the symbol a problem?  Worse
-case, this driver lands before the ARCH_QCOM rename lands, and the
-driver is just not selectable.  Only when both are in place can the
-driver be selected.
+	if (!test_thread_flag(TIF_IA32))
+		return 0;
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+TIF_IA32 is clear for an x32 process.
+
+	-hpa
+
