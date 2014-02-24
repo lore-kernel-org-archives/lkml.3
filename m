@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaBXG6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 01:58:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56410 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaBXG6C (ORCPT
+	id S1752073AbaBXHAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 02:00:42 -0500
+Received: from atl4mhfb03.myregisteredsite.com ([209.17.115.61]:48467 "EHLO
+	atl4mhfb03.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175AbaBXHAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 01:58:02 -0500
-From: Saravana Kannan <skannan@codeaurora.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Saravana Kannan" <skannan@codeaurora.org>
-Subject: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug online work is done
-Date: Sun, 23 Feb 2014 22:57:52 -0800
-Message-Id: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 24 Feb 2014 02:00:41 -0500
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: linux-mmc@vger.kernel.org, anton@enomsg.org
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, cjb@laptop.org,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] sdhci: Add a quirk to disable write-protect
+Date: Mon, 24 Feb 2014 07:59:48 +0100
+Message-Id: <1393225188-18000-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing code sets the per CPU policy to a non-NULL value before all
-the steps performed during the hotplug online path is done. Specifically,
-this is done before the policy min/max, governors, etc are initialized for
-the policy.  This in turn means that calls to cpufreq_cpu_get() return a
-non-NULL policy before the policy/CPU is ready to be used.
+When a board does not have the WP line wired at all, the card
+may be detected as read-only. Add a quirk and a device property
+to disable WP detection.
 
-To fix this, move the update of per CPU policy to a valid value after all
-the initialization steps for the policy are completed.
-
-Example kernel panic without this fix:
-[  512.146185] Unable to handle kernel NULL pointer dereference at virtual address 00000020
-[  512.146195] pgd = c0003000
-[  512.146213] [00000020] *pgd=80000000004003, *pmd=00000000
-[  512.146228] Internal error: Oops: 206 [#1] PREEMPT SMP ARM
-<snip>
-[  512.146297] PC is at __cpufreq_governor+0x10/0x1ac
-[  512.146312] LR is at cpufreq_update_policy+0x114/0x150
-<snip>
-[  512.149740] ---[ end trace f23a8defea6cd706 ]---
-[  512.149761] Kernel panic - not syncing: Fatal exception
-[  513.152016] CPU0: stopping
-[  513.154710] CPU: 0 PID: 7136 Comm: mpdecision Tainted: G      D W    3.10.0-gd727407-00074-g979ede8 #396
-<snip>
-[  513.317224] [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
-[  513.327809] [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58) from [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
-[  513.339182] [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c) from [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8)
-[  513.349594] [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8) from [<c0803e7c>] (cpufreq_init_policy+0x30/0x98)
-[  513.359231] [<c0803e7c>] (cpufreq_init_policy+0x30/0x98) from [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4)
-[  513.369560] [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4) from [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84)
-[  513.379978] [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84) from [<c0afe180>] (notifier_call_chain+0x40/0x68)
-[  513.389704] [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02812dc>] (__cpu_notify+0x28/0x44)
-[  513.398728] [<c02812dc>] (__cpu_notify+0x28/0x44) from [<c0aeed90>] (_cpu_up+0xf4/0x1dc)
-[  513.406797] [<c0aeed90>] (_cpu_up+0xf4/0x1dc) from [<c0aeeed4>] (cpu_up+0x5c/0x78)
-[  513.414357] [<c0aeeed4>] (cpu_up+0x5c/0x78) from [<c0aec808>] (store_online+0x44/0x74)
-[  513.422253] [<c0aec808>] (store_online+0x44/0x74) from [<c03a40f4>] (sysfs_write_file+0x108/0x14c)
-[  513.431195] [<c03a40f4>] (sysfs_write_file+0x108/0x14c) from [<c03517d4>] (vfs_write+0xd0/0x180)
-[  513.439958] [<c03517d4>] (vfs_write+0xd0/0x180) from [<c0351ca8>] (SyS_write+0x38/0x68)
-[  513.447947] [<c0351ca8>] (SyS_write+0x38/0x68) from [<c0205de0>] (ret_fast_syscall+0x0/0x30)
-
-In this specific case, CPU0 set's CPU1's policy->governor in
-cpufreq_init_policy() to NULL while CPU1 is using the policy->governor in
-__cpufreq_governor().
-
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 ---
- drivers/cpufreq/cpufreq.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/mmc/host/sdhci-pltfm.c |    3 +++
+ drivers/mmc/host/sdhci.c       |    3 ++-
+ include/linux/mmc/sdhci.h      |    2 ++
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index cb003a6..d5ceb43 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1109,11 +1109,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		goto err_set_policy_cpu;
- 	}
+diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
+index e2065a4..9e83ada 100644
+--- a/drivers/mmc/host/sdhci-pltfm.c
++++ b/drivers/mmc/host/sdhci-pltfm.c
+@@ -83,6 +83,9 @@ void sdhci_get_of_property(struct platform_device *pdev)
+ 		if (sdhci_of_wp_inverted(np))
+ 			host->quirks |= SDHCI_QUIRK_INVERTED_WRITE_PROTECT;
  
--	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
--		per_cpu(cpufreq_cpu_data, j) = policy;
--	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
--
- 	if (cpufreq_driver->get) {
- 		policy->cur = cpufreq_driver->get(policy->cpu);
- 		if (!policy->cur) {
-@@ -1207,6 +1202,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		policy->user_policy.governor = policy->governor;
- 	}
- 
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+	for_each_cpu(j, policy->cpus)
-+		per_cpu(cpufreq_cpu_data, j) = policy;
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++		if (of_get_property(np, "disable-wp", NULL))
++			host->quirks2 |= SDHCI_QUIRK2_DISABLE_WP;
 +
- 	kobject_uevent(&policy->kobj, KOBJ_ADD);
- 	up_read(&cpufreq_rwsem);
+ 		if (of_get_property(np, "broken-cd", NULL))
+ 			host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
  
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 7a7fb4f..68f47fc 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1635,7 +1635,8 @@ static int sdhci_check_ro(struct sdhci_host *host)
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+-	if (host->flags & SDHCI_DEVICE_DEAD)
++	if ((host->flags & SDHCI_DEVICE_DEAD) ||
++		(host->quirks2 & SDHCI_QUIRK2_DISABLE_WP))
+ 		is_readonly = 0;
+ 	else if (host->ops->get_ro)
+ 		is_readonly = host->ops->get_ro(host);
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 3e781b8..967dba0 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -98,6 +98,8 @@ struct sdhci_host {
+ #define SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON		(1<<4)
+ /* Controller has a non-standard host control register */
+ #define SDHCI_QUIRK2_BROKEN_HOST_CONTROL		(1<<5)
++/* Controller lacks write protect detection */
++#define SDHCI_QUIRK2_DISABLE_WP			(1<<6)
+ 
+ 	int irq;		/* Device IRQ */
+ 	void __iomem *ioaddr;	/* Mapped address */
 -- 
-1.8.2.1
+1.7.9.5
 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
