@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBXOJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:09:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55379 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439AbaBXOJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:09:34 -0500
-Date: Mon, 24 Feb 2014 15:09:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        dougthompson@xmission.com, bhelgaas@google.com, JBeulich@suse.com,
-        dan.carpenter@oracle.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-pci@vger.kernel.org,
-        Arindam.Nath@amd.com
-Subject: Re: [PATCH] amd64_edac: Add support for newer F16h models
-Message-ID: <20140224140931.GA16457@pd.tnic>
-References: <1392913726-16961-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20140221142749.GC11531@pd.tnic>
- <5307BF6F.8040303@amd.com>
+	id S1752827AbaBXOJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:09:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:43905 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439AbaBXOJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 09:09:47 -0500
+X-IronPort-AV: E=Sophos;i="4.97,535,1389715200"; 
+   d="scan'208";a="9593904"
+Message-ID: <530B5249.5020505@cn.fujitsu.com>
+Date: Mon, 24 Feb 2014 22:08:09 +0800
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5307BF6F.8040303@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 9/9] trace: Replace hardcoding of 19 with MAX_NICE.
+References: <cover.1392103744.git.yangds.fnst@cn.fujitsu.com> <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com> <53086860.2010209@cn.fujitsu.com> <20140224104658.GY9987@twins.programming.kicks-ass.net>
+In-Reply-To: <20140224104658.GY9987@twins.programming.kicks-ass.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/24 22:07:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/24 22:07:25,
+	Serialize complete at 2014/02/24 22:07:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 03:04:47PM -0600, Aravind Gopalakrishnan wrote:
-> F{3,4} are used by hwmon/k10temp.c and hwmon/fam15h_power.c and they
-> will need definitions to be places here in pci_ids.h But I'm not sure
-> if the hwmon drivers need to carry support for this model yet (will
-> verify that)
+On 02/24/2014 06:46 PM, Peter Zijlstra wrote:
+> On Sat, Feb 22, 2014 at 05:05:36PM +0800, Dongsheng Yang wrote:
+>> Hi Peter.
+>>      It seems the all other patches in this set were all applied to tip
+>> except this one.
+>> What is the problem with the [9/9]? Is there any thing I can do?
+> The problem is that it never actually made it to my inbox; could you
+> verify that I was indeed on the recipient list? And if not resend it.
+
+Oh, yes. Sorry for that. I will resend it soon with ccing you.
 >
-> If not, I'll remove them and resend.
+> In case I was actually on the recipient list I need to go figure out
+> where it went.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Yes, please check that and let me know.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
