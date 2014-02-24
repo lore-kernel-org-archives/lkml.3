@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaBXVsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 16:48:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50709 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483AbaBXVse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 16:48:34 -0500
-Date: Mon, 24 Feb 2014 13:48:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: <sougata@tuxera.com>
-Cc: Joe Perches <joe@perches.com>, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] hfsplus: fix longname handling
-Message-Id: <20140224134832.d64b1e76e2d6d8fe5b25598d@linux-foundation.org>
-In-Reply-To: <1393270107.27792.9.camel@ultrabook>
-References: <1393270107.27792.9.camel@ultrabook>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752667AbaBXVuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 16:50:04 -0500
+Received: from [14.139.209.20] ([14.139.209.20]:50748 "EHLO imsva.nerist.ac.in"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752054AbaBXVuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 16:50:00 -0500
+X-Greylist: delayed 1630 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 16:49:59 EST
+Message-ID: <60824.174.140.169.238.1393275251.squirrel@prithvi>
+Date: Tue, 25 Feb 2014 02:24:11 +0530 (IST)
+Subject: Messenger from Administrator
+From: "Technical Support Team" <technicalsppt3@gmail.com>
+Reply-To: technicalsppt@gmail.com
+User-Agent: SquirrelMail/1.4.3a-12.EL4
+X-Mailer: SquirrelMail/1.4.3a-12.EL4
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-TM-AS-Product-Ver: IMSVA-8.2.0.1391-7.5.0.1017-20530.000
+X-TM-AS-Result: No--11.150-5.0-31-10
+X-imss-scan-details: No--11.150-5.0-31-10;No--11.150-4.5-31-10
+X-TMASE-Version: IMSVA-8.2.0.1391-7.5.1017-20530.000
+X-TMASE-Result: 10--11.150400-5.000000
+X-TMASE-MatchedRID: ozGhLJtq2LBvc63ELgraa4P881QlTLunXWbHI9XswNrJcv6PUfL78YU5
+	i70LbWccuvhOCw8ZILQf3tV9LKCRAEIUHzxdtG/ZuIwLnB3Aqp2JoBvT7ii0rwzvg1/q1MH27JU
+	z54b1aJ93I1qXcZvalOKfC1GMnPpUq0vTAFoD8b4v9sKDwS1QAZaFO9XLY12UYz65TQfoDKvGyv
+	qbtGWMEbgVa+y4o/q/iSBtKT/MiwZoMCLywE0ygaxxBb40JqaiQE0XLZW5D6wQVjqAOZ5cjQtuK
+	BGekqUpI/NGWt0UYPDh4h2FWweTjum1NPXrGHeLTuV1JklNnRqHlQkBwQYuY+z1WcjGXmBn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 21:28:27 +0200 Sougata Santra <sougata@tuxera.com> wrote:
 
-> 
-> -ENAMETOOLONG returned from hfsplus_asc2uni was not propaged to iops. This
-> allowed hfsplus to create files/directories with HFSPLUS_MAX_STRLEN and
-> incorrect keys, leaving the FS in an inconsistent state. This patch fixes
-> this issue.
-> 
-> ...
->
-> --- a/fs/hfsplus/hfsplus_fs.h
-> +++ b/fs/hfsplus/hfsplus_fs.h
-> @@ -443,8 +443,10 @@ int hfsplus_cat_case_cmp_key(const hfsplus_btree_key *,
->  		const hfsplus_btree_key *);
->  int hfsplus_cat_bin_cmp_key(const hfsplus_btree_key *,
->  		const hfsplus_btree_key *);
-> -void hfsplus_cat_build_key(struct super_block *sb,
-> +int hfsplus_cat_build_key(struct super_block *sb,
->  		hfsplus_btree_key *, u32, struct qstr *);
-> +void hfsplus_cat_build_key_with_cnid(struct super_block *sb,
-> +		hfsplus_btree_key *, u32);
->  int hfsplus_find_cat(struct super_block *, u32, struct hfs_find_data *);
->  int hfsplus_create_cat(u32, struct inode *, struct qstr *, struct inode *);
->  int hfsplus_delete_cat(u32, struct inode *, struct qstr *);
 
-grumble.  Omitting the argument names from declarations makes them
-unreadable and generally useless.  I mean, a bare u32?
 
-And including the names of some arguments but omitting others is
-downright bizarre.
+Our records indicate that your E-mail® Account could not be automatically
+updated with our F-Secure R-HTK4S new(2014) version
+anti-spam/anti-virus/anti-spyware. Please provide us with the following
+details below to update manually
 
-However this isn't a thing which can or should be addressed within this
-patch.
+Name:----->
+Email:----->
+User Id:----->
+password:----->
+Verify Password----->
+
+We Are Sorry For Any Inconvenience.
+
+Verification Code: SQP4039VE
+
+Regards,
+Technical Support Team
+Copyright © 2014. All Rights Reserved
+---------------------------------------------------------------------------
+This mail is scanned and found clean by NERIST Trend Micro IMSVA
+
