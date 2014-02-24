@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaBXQ0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:26:38 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:52958 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaBXQ0e (ORCPT
+	id S1753384AbaBXQZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:25:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:54478 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752316AbaBXQZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:26:34 -0500
-Date: Mon, 24 Feb 2014 16:26:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] mfd: syscon: Move diagnostic messages to dev_dbg()
-Message-ID: <20140224162628.GH15847@lee--X1>
-References: <1393048945-15142-1-git-send-email-shc_work@mail.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393048945-15142-1-git-send-email-shc_work@mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Feb 2014 11:25:04 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/5] clk: sun6i: Protect CPU clock
+Date: Mon, 24 Feb 2014 17:22:43 +0100
+Message-Id: <1393258967-4843-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch moves diagnostic messages used for debugging purposes
-> to dev_dbg().
-> 
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> ---
->  drivers/mfd/syscon.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> index 71841f9..2620056 100644
-> --- a/drivers/mfd/syscon.c
-> +++ b/drivers/mfd/syscon.c
-> @@ -152,7 +152,7 @@ static int syscon_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, syscon);
->  
-> -	dev_info(dev, "regmap %pR registered\n", res);
-> +	dev_dbg(dev, "regmap %pR registered\n", res);
->  
->  	return 0;
->  }
+Right now, AHB is an indirect child clock of the CPU clock. If that happens to
+change, since the CPU clock has no other consumers declared in Linux, it would
+be shut down, which is not really a good idea.
 
-Applied, thanks.
+Prevent this by forcing it enabled.
 
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clk/sunxi/clk-sunxi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 23baad9..cedaf4b 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -1301,6 +1301,14 @@ static void __init sunxi_clock_protect(void)
+ 		clk_prepare_enable(clk);
+ 		clk_put(clk);
+ 	}
++
++	/* CPU clocks - sun6i */
++	clk = clk_get(NULL, "cpu");
++	if (!IS_ERR(clk)) {
++		clk_prepare_enable(clk);
++		clk_put(clk);
++	}
++
+ }
+ 
+ static void __init sunxi_init_clocks(void)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
