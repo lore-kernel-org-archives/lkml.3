@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaBXEtM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 23:49:12 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:58333 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaBXEtK (ORCPT
+	id S1752126AbaBXFAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:00:02 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49014 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaBXE77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 23:49:10 -0500
-X-Original-SENDERIP: 10.177.220.200
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 24 Feb 2014 13:49:18 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] slab: remove a useless lockdep annotation
-Message-ID: <20140224044918.GA14814@lge.com>
-References: <1392361043-22420-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1392361043-22420-10-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.DEB.2.10.1402141248560.12887@nuc>
- <20140217061201.GA3468@lge.com>
- <alpine.DEB.2.10.1402181019550.28591@nuc>
+	Sun, 23 Feb 2014 23:59:59 -0500
+Date: Sun, 23 Feb 2014 20:59:51 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140224045951.GH8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1392922421.28840.36.camel@triegel.csb>
+ <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+ <1393095223.28840.4914.camel@triegel.csb>
+ <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
+ <20140223003933.GQ4250@linux.vnet.ibm.com>
+ <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+ <20140223063426.GT4250@linux.vnet.ibm.com>
+ <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+ <20140224011651.GC8264@linux.vnet.ibm.com>
+ <CA+55aFx06UTTeypXOGUiwwbzJyqpVNR90zBDLPmxFzBkz=VwgQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1402181019550.28591@nuc>
+In-Reply-To: <CA+55aFx06UTTeypXOGUiwwbzJyqpVNR90zBDLPmxFzBkz=VwgQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022404-6688-0000-0000-000006EB2CBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 10:21:10AM -0600, Christoph Lameter wrote:
-> On Mon, 17 Feb 2014, Joonsoo Kim wrote:
-> 
-> > > Why change the BAD_ALIEN_MAGIC?
+On Sun, Feb 23, 2014 at 05:35:28PM -0800, Linus Torvalds wrote:
+> On Sun, Feb 23, 2014 at 5:16 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >>
+> >>  (a) we've said 'q' is restricted, so there is no aliasing between q
+> >> and the pointers b/c. So the compiler is free to move those accesses
+> >> around the "q = p->next" access.
 > >
-> > Hello, Christoph.
+> > Ah, if I understand you, very good!
 > >
-> > BAD_ALIEN_MAGIC is only checked by slab_set_lock_classes(). We remove this
-> > function in this patch, so returning BAD_ALIEN_MAGIC is useless.
+> > My example intentionally left "q" -not- restricted.
 > 
-> Its not useless. The point is if there is a pointer deref then we will see
-> this as a pointer value and know that it is realted to alien cache
-> processing.
+> No, I 100% agree with that. "q" is *not* restricted. But "p" is, since
+> it came from that consuming load.
 > 
-> > And, in fact, BAD_ALIEN_MAGIC is already useless, because alloc_alien_cache()
-> > can't be called on !CONFIG_NUMA. This function is called if use_alien_caches
-> > is positive, but on !CONFIG_NUMA, use_alien_caches is always 0. So we don't
-> > have any chance to meet this BAD_ALIEN_MAGIC in runtime.
+> But "q = p->next" is ordered by how something can alias "p->next", not by 'q'!
 > 
-> Maybe it no longer serves a point. But note that caches may not be
-> populated because processors/nodes are not up yet.
+> There is no need to restrict anything but 'p' for all of this to work.
 
-Hello,
+I cannot say I understand this last sentence right new from the viewpoint
+of the standard, but suspending disbelief for the moment...
 
-Let me clarify about alloc_alien_cache().
+(And yes, given current compilers and CPUs, I agree that this should
+all work in practice.  My concern is the legality, not the reality.)
 
-alloc_alien_cache() has two definitions, one for !CONFIG_NUMA, and the other for
-CONFIG_NUMA. BAD_ALIEN_MAGIC is only assigned on !CONFIG_NUMA definition. On
-CONFIG_NUMA, alloc_alien_cache() doesn't use BAD_ALIEN_MAGIC. So it is sufficient
-to consider just !CONFIG_NUMA case.
+> Btw, it's also worth pointing out that I do *not* in any way expect
+> people to actually write the "restrict" keyword anywhere. So no need
+> to change source code.
 
-As I mentioned before, this function isn't called if use_alien_caches is zero
-and use_alien_caches is always zero on !CONFIG_NUMA. Therefore we cannot see
-BAD_ALIEN_MAGIC on any configuration. I don't know why BAD_ALIEN_MAGIC is
-introduced, however, it no longer serves a point, so it is better to remove it.
+Understood -- in this variant, you are taking the marking from the
+fact that there was an assignment from a memory_order_consume load
+rather than from a keyword on the assigned-to variable's declaration.
 
-There are lots of code to check whether processor/nodes are up or not and these
-doesn't use BAD_ALIEN_MAGIC. Instead, it checks NULL on alien_cache of specific node.
-So removing BAD_ALIEN_MAGIC doesn't harm anything here.
+> What you have is a situation where the pointer coming out of the
+> memory_order_consume is restricted. But if you assign it to a
+> non-restricted pointer, that's *fine*. That's perfectly normal C
+> behavior. The "restrict" concept is not something that the programmer
+> needs to worry about or ever even notice, it's basically just a
+> promise to the compiler that "if somebody has another pointer lying
+> around, accesses though that other pointer do not require ordering".
+> 
+> So it sounds like you believe that the programmer would mark things
+> "restrict", and I did not mean that at all.
 
-Thanks.
+Indeed I did believe that.
+
+I must confess that I was looking for an easy way to express in
+standardese -exactly- where the ordering guarantee did and did
+not propagate.
+
+The thing is that the vast majority of the Linux-kernel RCU code is more
+than happy with the guarantee only applying to fetches via the pointer
+returned from the memory_order_consume load.  There are relatively few
+places where groups of structures are made visible to RCU readers via
+a single rcu_assign_pointer().  I guess I need to actually count them.
+
+							Thanx, Paul
+
