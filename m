@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaBXLut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:50:49 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:44217 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaBXLur (ORCPT
+	id S1752483AbaBXLxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:53:06 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:53898 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaBXLxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:50:47 -0500
+	Mon, 24 Feb 2014 06:53:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <530B1CF4.2060208@gmail.com>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<CACRpkdZ1JR82m46YV5m=b6e3E3OYcNCka_8EiT2VcSPU=ZVLdQ@mail.gmail.com>
-	<530B1CF4.2060208@gmail.com>
-Date: Mon, 24 Feb 2014 12:50:46 +0100
-Message-ID: <CACRpkdYptvexfwASCA3Y84oSpidGF6n9WLTEL2GtRQL9fLYsUg@mail.gmail.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
+In-Reply-To: <201402241117.48617.arnd@arndb.de>
+References: <CACRpkdYeaMqTNUTqBSg6vNa9=VucjpFFkx3diHJJNgZTg+iq1w@mail.gmail.com>
+	<201402241117.48617.arnd@arndb.de>
+Date: Mon, 24 Feb 2014 12:53:03 +0100
+Message-ID: <CACRpkdbtv2ZQbt0=7QhBZSRRAdONgKeKCO9yj=UwWRAU2WOWwA@mail.gmail.com>
+Subject: Re: [GIT PULL] integrator base patches for v3.15
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "arm@kernel.org" <arm@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 11:20 AM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+On Mon, Feb 24, 2014 at 11:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 13 February 2014, Linus Walleij wrote:
+>>       irqchip: vic: update the base IRQ member correctly
+>>       irqchip: support cascaded VICs
+>>       ARM: integrator: register the IM-PD1 VIC
+>
+> I got a randconfig build error for CONFIG_IMPD1=m. Ok to apply this
+> fix on top?
 
-> Although, I guess instead of applying them separately, it would have
-> been better to pull them from Jason's stable topic branch. But that is
-> also up to you and Jason may give valuable hints on how to proceed in
-> the future.
+Sure sorry for missing this ...
 
-Yeah I concluded that I should take a branch pull instead, so I'm
-just waiting for an indication of which branch to pull in.
+> 8<---
+>
+> irqchip: VIC: export vic_init_cascaded
+>
+> vic_init_cascaded is called by integrator impd1 code that can
+> be a loadable module, so the function has to be exported.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Can either of you pls apply this directly to the ARM SoC tree?
 
 Yours,
 Linus Walleij
