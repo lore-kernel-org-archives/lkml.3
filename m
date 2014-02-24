@@ -1,150 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaBXO4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:56:13 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:34894 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaBXO4M (ORCPT
+	id S1752813AbaBXO6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:58:12 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:59434 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313AbaBXO6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:56:12 -0500
-Date: Mon, 24 Feb 2014 15:56:05 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	Mon, 24 Feb 2014 09:58:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393253450-12217-1-git-send-email-hare@suse.de>
+References: <1393253450-12217-1-git-send-email-hare@suse.de>
+Date: Mon, 24 Feb 2014 15:58:09 +0100
+Message-ID: <CANq1E4Tt4bomRh9i1CL6LDYFi4afX1pPABJSczRSGsMJZsiqqg@mail.gmail.com>
+Subject: Re: [PATCHv3] tty: Set correct tty name in 'active' sysfs attribute
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Hannes Reinecke <hare@suse.de>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 bug fixes for the 3.14-rc5
-Message-ID: <20140224155605.48300e29@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022414-2966-0000-0000-00000A6282FB
+        Ray Strode <halfline@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Werner Fink <werner@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi
 
-please pull from the 'for-linus' branch of
+On Mon, Feb 24, 2014 at 3:50 PM, Hannes Reinecke <hare@suse.de> wrote:
+> The 'active' sysfs attribute should refer to the currently
+> active tty devices the console is running on, not the currently
+> active console.
+> The console structure doesn't refer to any device in sysfs,
+> only the tty the console is running on has.
+> So we need to print out the tty names in 'active', not
+> the console names.
+> But we need to take care for the virtual console to always display
+> 'tty0' so as not to break existing programs.
+>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Werner Fink <werner@suse.de>
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> ---
+>  drivers/tty/tty_io.c | 24 ++++++++++++++++++------
+>  1 file changed, 18 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index c74a00a..96eb462 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+>   *
+>   *     Locking: None
+>   */
+> -static void tty_line_name(struct tty_driver *driver, int index, char *p)
+> +static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+>  {
+>         if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+> -               strcpy(p, driver->name);
+> +               return sprintf(p, "%s", driver->name);
+>         else
+> -               sprintf(p, "%s%d", driver->name, index + driver->name_base);
+> +               return sprintf(p, "%s%d", driver->name,
+> +                              index + driver->name_base);
+>  }
+>
+>  /**
+> @@ -3545,9 +3546,20 @@ static ssize_t show_cons_active(struct device *dev,
+>                 if (i >= ARRAY_SIZE(cs))
+>                         break;
+>         }
+> -       while (i--)
+> -               count += sprintf(buf + count, "%s%d%c",
+> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
+> +       while (i--) {
+> +               struct tty_driver *driver;
+> +               const char *name = cs[i]->name;
+> +               int index = cs[i]->index;
+> +
+> +               driver = cs[i]->device(cs[i], &index);
+> +               /* Some programs rely on 'tty0' for console */
+> +               if (driver && (index > 0 || driver->major != TTY_MAJOR)) {
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+As Ray mentioned in the previous discussion, this has to be
+cs[i]->index instead of "index" as ->device() changes the parameter.
+See drivers/tty/vt/vt.c vt_console_device().
 
-to receive the following updates:
-A couple of s390 bug fixes. The PCI segment boundary issue is a nasty
-one as it can lead to data corruption.
+Thanks
+David
 
-Gerald Schaefer (1):
-      s390/pci/dma: use correct segment boundary size
-
-Heiko Carstens (1):
-      s390/compat: fix sys_sched_getattr compat wrapper
-
-Ingo Tuchscherer (1):
-      s390/zcrypt: additional check to avoid overflow in msg-type 6 requests
-
-Peter Oberparleiter (1):
-      s390/cio: Fix missing subchannels after CHPID configure on
-
- arch/s390/kernel/compat_wrapper.S     |    2 +-
- arch/s390/pci/pci_dma.c               |    8 +++++---
- drivers/s390/cio/chsc.c               |    1 +
- drivers/s390/crypto/zcrypt_msgtype6.c |   24 +++++++++++++++++++++++-
- 4 files changed, 30 insertions(+), 5 deletions(-)
-
-diff --git a/arch/s390/kernel/compat_wrapper.S b/arch/s390/kernel/compat_wrapper.S
-index 59c8efc..0248949 100644
---- a/arch/s390/kernel/compat_wrapper.S
-+++ b/arch/s390/kernel/compat_wrapper.S
-@@ -1421,5 +1421,5 @@ ENTRY(sys_sched_setattr_wrapper)
- ENTRY(sys_sched_getattr_wrapper)
- 	lgfr	%r2,%r2			# pid_t
- 	llgtr	%r3,%r3			# const char __user *
--	llgfr	%r3,%r3			# unsigned int
-+	llgfr	%r4,%r4			# unsigned int
- 	jg	sys_sched_getattr
-diff --git a/arch/s390/pci/pci_dma.c b/arch/s390/pci/pci_dma.c
-index 60c11a6..f91c031 100644
---- a/arch/s390/pci/pci_dma.c
-+++ b/arch/s390/pci/pci_dma.c
-@@ -206,11 +206,13 @@ static void dma_cleanup_tables(struct zpci_dev *zdev)
- 	zdev->dma_table = NULL;
- }
- 
--static unsigned long __dma_alloc_iommu(struct zpci_dev *zdev, unsigned long start,
--				   int size)
-+static unsigned long __dma_alloc_iommu(struct zpci_dev *zdev,
-+				       unsigned long start, int size)
- {
--	unsigned long boundary_size = 0x1000000;
-+	unsigned long boundary_size;
- 
-+	boundary_size = ALIGN(dma_get_seg_boundary(&zdev->pdev->dev) + 1,
-+			      PAGE_SIZE) >> PAGE_SHIFT;
- 	return iommu_area_alloc(zdev->iommu_bitmap, zdev->iommu_pages,
- 				start, size, 0, boundary_size, 0);
- }
-diff --git a/drivers/s390/cio/chsc.c b/drivers/s390/cio/chsc.c
-index f6b9188..9f0ea6c 100644
---- a/drivers/s390/cio/chsc.c
-+++ b/drivers/s390/cio/chsc.c
-@@ -610,6 +610,7 @@ void chsc_chp_online(struct chp_id chpid)
- 		css_wait_for_slow_path();
- 		for_each_subchannel_staged(__s390_process_res_acc, NULL,
- 					   &link);
-+		css_schedule_reprobe();
- 	}
- }
- 
-diff --git a/drivers/s390/crypto/zcrypt_msgtype6.c b/drivers/s390/crypto/zcrypt_msgtype6.c
-index dc542e0..0bc91e4 100644
---- a/drivers/s390/crypto/zcrypt_msgtype6.c
-+++ b/drivers/s390/crypto/zcrypt_msgtype6.c
-@@ -311,7 +311,7 @@ static int XCRB_msg_to_type6CPRB_msgX(struct zcrypt_device *zdev,
- 	} __packed * msg = ap_msg->message;
- 
- 	int rcblen = CEIL4(xcRB->request_control_blk_length);
--	int replylen;
-+	int replylen, req_sumlen, resp_sumlen;
- 	char *req_data = ap_msg->message + sizeof(struct type6_hdr) + rcblen;
- 	char *function_code;
- 
-@@ -321,12 +321,34 @@ static int XCRB_msg_to_type6CPRB_msgX(struct zcrypt_device *zdev,
- 		xcRB->request_data_length;
- 	if (ap_msg->length > MSGTYPE06_MAX_MSG_SIZE)
- 		return -EINVAL;
-+
-+	/* Overflow check
-+	   sum must be greater (or equal) than the largest operand */
-+	req_sumlen = CEIL4(xcRB->request_control_blk_length) +
-+			xcRB->request_data_length;
-+	if ((CEIL4(xcRB->request_control_blk_length) <=
-+						xcRB->request_data_length) ?
-+		(req_sumlen < xcRB->request_data_length) :
-+		(req_sumlen < CEIL4(xcRB->request_control_blk_length))) {
-+		return -EINVAL;
-+	}
-+
- 	replylen = sizeof(struct type86_fmt2_msg) +
- 		CEIL4(xcRB->reply_control_blk_length) +
- 		xcRB->reply_data_length;
- 	if (replylen > MSGTYPE06_MAX_MSG_SIZE)
- 		return -EINVAL;
- 
-+	/* Overflow check
-+	   sum must be greater (or equal) than the largest operand */
-+	resp_sumlen = CEIL4(xcRB->reply_control_blk_length) +
-+			xcRB->reply_data_length;
-+	if ((CEIL4(xcRB->reply_control_blk_length) <= xcRB->reply_data_length) ?
-+		(resp_sumlen < xcRB->reply_data_length) :
-+		(resp_sumlen < CEIL4(xcRB->reply_control_blk_length))) {
-+		return -EINVAL;
-+	}
-+
- 	/* prepare type6 header */
- 	msg->hdr = static_type6_hdrX;
- 	memcpy(msg->hdr.agent_id , &(xcRB->agent_ID), sizeof(xcRB->agent_ID));
-
+> +                       count += tty_line_name(driver, index, buf + count);
+> +                       count += sprintf(buf + count, "%c", i ? ' ':'\n');
+> +               } else
+> +                       count += sprintf(buf + count, "%s%d%c",
+> +                                        name, cs[i]->index, i ? ' ':'\n');
+> +       }
+>         console_unlock();
+>
+>         return count;
+> --
+> 1.7.12.4
+>
