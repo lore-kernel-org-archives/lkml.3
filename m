@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaBXKBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:01:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36229 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaBXKBD (ORCPT
+	id S1751922AbaBXKEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:04:25 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50538 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXKEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:01:03 -0500
-Date: Mon, 24 Feb 2014 10:01:00 +0000
-From: =?iso-8859-1?Q?Lu=EDs?= Henriques <luis.henriques@canonical.com>
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3.11 032/121] pinctrl: do not init debugfs entries for
- unimplemented functionalities
-Message-ID: <20140224100100.GA9531@hercules>
-References: <1392986945-9693-1-git-send-email-luis.henriques@canonical.com>
- <1392986945-9693-33-git-send-email-luis.henriques@canonical.com>
- <53074DC6.8070801@epfl.ch>
+	Mon, 24 Feb 2014 05:04:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53074DC6.8070801@epfl.ch>
+In-Reply-To: <1393165274-32492-2-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1393165274-32492-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1393165274-32492-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 24 Feb 2014 11:04:23 +0100
+Message-ID: <CACRpkdZAZL3_DEgEHmN+cCwbQaM3OU+xfDU35HiMuyc7zyky_Q@mail.gmail.com>
+Subject: Re: [PATCH v4 01/16] pinctrl: mvebu: count unnamed controls and
+ allocate name buffer
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 01:59:50PM +0100, Florian Vaussard wrote:
-> Hi,
-> 
-> On 02/21/2014 01:47 PM, Luis Henriques wrote:
-> > 3.11.10.5 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> 
-> This was nack'ed by Greg KH a few days ago. Please see [1].
-> 
+On Sun, Feb 23, 2014 at 3:20 PM, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
 
-Ok, thank you for bringing this to my attention.  I'll drop this patch
-from 3.5 and 3.11 kernels queues.
+> pinctrl-mvebu allows SoCs to pass unnamed controls that will get an
+> auto-generated name of "mpp<PIN#>". Currently, we are allocating name
+> buffers on a per-control basis while looping over passed controls.
+> This counts the total number of unnamed controls and allocates a
+> global name buffer instead. The new buffer is then used while assigning
+> controls to pinctrl groups later.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Tested-by: Andrew Lunn <andrew@lunn.ch>
+> Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-Cheers,
---
-Luís
+This v4 version applied.
 
-> Regards,
-> Florian
-> 
-> [1] http://www.spinics.net/lists/stable/msg35959.html
-> 
-> > ------------------
-> > 
-> > From: Florian Vaussard <florian.vaussard@epfl.ch>
-> > 
-> > commit e7f2a444891cb39f11d5429467d0fd7e011fe7fe upstream.
-> > 
-> > Commit c420619 "pinctrl: pinconf: remove checks on ops->pin_config_get"
-> > removed the check on (ops != NULL) when performing pinconf_pins_show() or
-> > pinconf_groups_show(). As these entries are always enabled, even if
-> > pinconf is not supported, reading will result in an oops due to NULL
-> > ops.
-> > 
-> > Instead of checking for ops, remove the corresponding debugfs entries if
-> > pinconf and/or pinmux are not implemented.
-> > 
-> > Tested on OMAP3 (pinctrl-single).
-> > 
-> > Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-> > Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> > ---
-> >  drivers/pinctrl/core.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> > index dbcf284..dec5787 100644
-> > --- a/drivers/pinctrl/core.c
-> > +++ b/drivers/pinctrl/core.c
-> > @@ -1621,8 +1621,10 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
-> >  			    device_root, pctldev, &pinctrl_groups_ops);
-> >  	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
-> >  			    device_root, pctldev, &pinctrl_gpioranges_ops);
-> > -	pinmux_init_device_debugfs(device_root, pctldev);
-> > -	pinconf_init_device_debugfs(device_root, pctldev);
-> > +	if (pctldev->desc->pmxops)
-> > +		pinmux_init_device_debugfs(device_root, pctldev);
-> > +	if (pctldev->desc->confops)
-> > +		pinconf_init_device_debugfs(device_root, pctldev);
-> >  }
-> >  
-> >  static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
-> > 
+Yours,
+Linus Walleij
