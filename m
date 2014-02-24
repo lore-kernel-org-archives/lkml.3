@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559AbaBXFkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:40:16 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50601 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaBXFkO (ORCPT
+	id S1751851AbaBXFmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:42:52 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:45857 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786AbaBXFmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:40:14 -0500
-Date: Mon, 24 Feb 2014 14:40:10 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140224054010.GY25940@sirena.org.uk>
-References: <1392969970-28037-1-git-send-email-nhcao@marvell.com>
- <20140222025204.GM25940@sirena.org.uk>
- <530AB6EA.7090807@marvell.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O5SrAdi84GtkM3Hw"
-Content-Disposition: inline
-In-Reply-To: <530AB6EA.7090807@marvell.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] asoc: soc-core: fix coccinelle warnings
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 24 Feb 2014 00:42:50 -0500
+Date: Mon, 24 Feb 2014 13:42:41 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: joro <joro@8bytes.org>, tglx <tglx@linutronix.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [TRIVIAL][PATCH] x86/ioapic: Using printk  in func print_entries avoiding print incomplete infos
+X-Priority: 3
+X-GUID: CE11DB2D-205A-43A6-B02D-3396E4D548B7
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.93[cn]
+Mime-Version: 1.0
+Message-ID: <201402241342361562172@gmail.com>
+Content-Type: text/plain;
+	charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1O5gvPX011645
 
+Commit(afcc8a40a090f): Introduce x86_io_apic_ops.print_entries for
+debugging. Using kernel parameter apci=debug/verbose, kernel print
+the incomplete infomation if we don't enable CONFIG_DYNAMIC_DEBUG.
+So using printk to replace.
 
---O5SrAdi84GtkM3Hw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-On Mon, Feb 24, 2014 at 11:05:14AM +0800, Nenghua Cao wrote:
-> On 02/22/2014 10:52 AM, Mark Brown wrote:
-
-> > type changes.  What coccinelle was suggesting here was to replace with a
-> > simple assingment statement rather than change the argument within the
-> > memcpy(), I think this stops the warning showing because of that issue
-
->       I am not familiar with coccinelle. But it isn't reasonable and
-> convenient to use simple assignment instead of memcpy() here. So let's
-> retain it. I will submit another patch to fix "Assignment of bool to
-> 0/1" issue. How do you think about it?
-
-Well, the two should be separate patches anyway but it's totally
-reasonable to do an assigment - what it's telling you is that with
-modern C "a = b" is valid even if a and b are structs.
-
---O5SrAdi84GtkM3Hw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTCtswAAoJELSic+t+oim9IpkP/0VmKYMVce1HFd6t2d6BZucR
-CvhOgeHEjvj1NEt21RZ7i5VvfKDw0V2CYmp+spL3G7CPNQkVyjY7IM1iKAI+PDr8
-j8lRqvX7T71njwGowJW3WboiWgirD4T45DfKNEYWku6PtoTJBLrQtJETs1Ery8HW
-qy7XfcDolnOAroMsbj6BQnDrzLSES/xyGoKJnkbCOBf1ubY+SV4n6Pzbxmhn9uAJ
-umL5I2J2aAQF9SDKNv52usYIRz3v8YmDwfqaZ2Y9CVUtoKlE50YIBMZmJZCp0dGe
-6zGQRlhEcXytCiUcyufqjtfSn+joKnAIrwTvVjC1faIaprqI4IeKJQThTczkY/iO
-K8jR+RZwkvkpWATmBfpoo5QqPA4dkgu0F/P+ec+ijxifjtYioAtG9xUA6H03yWXi
-mDxSv1XF5BsU0by3HBjgizK0lSWPjGao3yd3sLYV32h8M4PQvfv0Mq97A536r9Ad
-BelUYZRlbGLNaWATsOk4VxVigy5rxJmlj3AMOqFTKnkXXTzTcb9TuTNnw6BE04gg
-eQWhdO/dwNFIzn55hMMHTLKrYQdLh08R0iOTUy7AmY59hPQeXpqmWfFHIybLDwd1
-wZZSu5XXCeRk2RnuGg875mXqueiHYYHfapO2bn4c8YrLPpDymcCqvM0J7yYicgUA
-bP2mdzFJk4OTKrRHvX4n
-=1gVo
------END PGP SIGNATURE-----
-
---O5SrAdi84GtkM3Hw--
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 6ad4658..26996fc 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1480,14 +1480,14 @@ void native_io_apic_print_entries(unsigned int apic, unsigned int nr_entries)
+ {
+ 	int i;
+ 
+-	pr_debug(" NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:\n");
++	printk(KERN_DEBUG" NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:\n");
+ 
+ 	for (i = 0; i <= nr_entries; i++) {
+ 		struct IO_APIC_route_entry entry;
+ 
+ 		entry = ioapic_read_entry(apic, i);
+ 
+-		pr_debug(" %02x %02X  ", i, entry.dest);
++		printk(KERN_DEBUG" %02x %02X  ", i, entry.dest);
+ 		pr_cont("%1d    %1d    %1d   %1d   %1d    "
+ 			"%1d    %1d    %02X\n",
+ 			entry.mask,
+@@ -1506,7 +1506,7 @@ void intel_ir_io_apic_print_entries(unsigned int apic,
+ {
+ 	int i;
+ 
+-	pr_debug(" NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:\n");
++	printk(KERN_DEBUG" NR Indx Fmt Mask Trig IRR Pol Stat Indx2 Zero Vect:\n");
+ 
+ 	for (i = 0; i <= nr_entries; i++) {
+ 		struct IR_IO_APIC_route_entry *ir_entry;
+@@ -1516,7 +1516,7 @@ void intel_ir_io_apic_print_entries(unsigned int apic,
+ 
+ 		ir_entry = (struct IR_IO_APIC_route_entry *)&entry;
+ 
+-		pr_debug(" %02x %04X ", i, ir_entry->index);
++		printk(KERN_DEBUG " %02x %04X ", i, ir_entry->index);
+ 		pr_cont("%1d   %1d    %1d    %1d   %1d   "
+ 			"%1d    %1d     %X    %02X\n",
+ 			ir_entry->format,
+-- 
+1.7.10.4
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
