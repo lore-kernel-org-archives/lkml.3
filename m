@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaBXG5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 01:57:14 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37977 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBXG5M (ORCPT
+	id S1752163AbaBXG6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 01:58:05 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:56410 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaBXG6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 01:57:12 -0500
-Message-ID: <530AED41.4060407@linaro.org>
-Date: Mon, 24 Feb 2014 14:57:05 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lan Tianyu <tianyu.lan@intel.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>
-Subject: Re: [PATCH v5 2/5] ACPI / processor_core: Rework _PDC related stuff
- to make it more arch-independent
-References: <1392740638-2479-1-git-send-email-hanjun.guo@linaro.org> <3459962.GkY99aHQbc@vostro.rjw.lan> <20140221182424.GA5751@arm.com> <1408521.4TEdKhuRp5@vostro.rjw.lan> <F980FA86-6705-4A71-956C-EA2DBD787199@arm.com>
-In-Reply-To: <F980FA86-6705-4A71-956C-EA2DBD787199@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Mon, 24 Feb 2014 01:58:02 -0500
+From: Saravana Kannan <skannan@codeaurora.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "Saravana Kannan" <skannan@codeaurora.org>
+Subject: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug online work is done
+Date: Sun, 23 Feb 2014 22:57:52 -0800
+Message-Id: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-2-22 18:33, Catalin Marinas wrote:
-> On 21 Feb 2014, at 23:35, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> On Friday, February 21, 2014 06:24:24 PM Catalin Marinas wrote:
->>> On Wed, Feb 19, 2014 at 01:50:22AM +0100, Rafael J. Wysocki wrote:
->>>> On Wednesday, February 19, 2014 12:23:55 AM Hanjun Guo wrote:
->>>>> _PDC related stuff in processor_core.c is little bit X86/IA64 dependent,
->>>>> rework the code to make it more arch-independent, no functional change
->>>>> in this patch.
->>>>>
->>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
->>>>
->>>> I've queued up patches [1,3-5/5] from this series for 3.15 (modulo changelog
->>>> modifications), but this one should be CCed to the x86 and ia64 maintainers.
->>>
->>> Thanks for taking these patches. I would however hold onto patch 3/5 as
->>> this is still under discussion. Basically for patches specific to ARM
->>> ACPI I would really like to see more acks before being merged as that's
->>> a new thing for us.
->>
->> OK, I'll drop [3/5] for now, then.
-> 
-> Thanks (it’s only temporary ;)).
-> 
->> I'm wondering, though, whose ACKs I should be waiting for before applying those
->> patches?
-> 
-> Good question ;). In this particular case, there is an ongoing
-> discussion between Hanjun and Sudeep. While there isn’t anything
-> major, I would like to see some agreement and potentially an Ack from
-> the other party involved in the discussion (Sudeep).
-> 
-> There are other patches that are not specific to ARM, so it’s
-> really your decision. As for the general ARM(64) ACPI case, I don’t
-> think we have anyone in charge with deciding what’s correct or not
-> (BTW, who are the people active both in the _ARM_ Linux kernel community
-> and the ACPI standardisation forum?).
+The existing code sets the per CPU policy to a non-NULL value before all
+the steps performed during the hotplug online path is done. Specifically,
+this is done before the policy min/max, governors, etc are initialized for
+the policy.  This in turn means that calls to cpufreq_cpu_get() return a
+non-NULL policy before the policy/CPU is ready to be used.
 
-I'm in ASWG (ACPI spec working group) under UEFI, and Al Stone and Charles
-(+cc Charles) are also in this forum.
+To fix this, move the update of per CPU policy to a valid value after all
+the initialization steps for the policy are completed.
 
-Thanks
-Hanjun
+Example kernel panic without this fix:
+[  512.146185] Unable to handle kernel NULL pointer dereference at virtual address 00000020
+[  512.146195] pgd = c0003000
+[  512.146213] [00000020] *pgd=80000000004003, *pmd=00000000
+[  512.146228] Internal error: Oops: 206 [#1] PREEMPT SMP ARM
+<snip>
+[  512.146297] PC is at __cpufreq_governor+0x10/0x1ac
+[  512.146312] LR is at cpufreq_update_policy+0x114/0x150
+<snip>
+[  512.149740] ---[ end trace f23a8defea6cd706 ]---
+[  512.149761] Kernel panic - not syncing: Fatal exception
+[  513.152016] CPU0: stopping
+[  513.154710] CPU: 0 PID: 7136 Comm: mpdecision Tainted: G      D W    3.10.0-gd727407-00074-g979ede8 #396
+<snip>
+[  513.317224] [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
+[  513.327809] [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58) from [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
+[  513.339182] [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c) from [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8)
+[  513.349594] [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8) from [<c0803e7c>] (cpufreq_init_policy+0x30/0x98)
+[  513.359231] [<c0803e7c>] (cpufreq_init_policy+0x30/0x98) from [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4)
+[  513.369560] [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4) from [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84)
+[  513.379978] [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84) from [<c0afe180>] (notifier_call_chain+0x40/0x68)
+[  513.389704] [<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02812dc>] (__cpu_notify+0x28/0x44)
+[  513.398728] [<c02812dc>] (__cpu_notify+0x28/0x44) from [<c0aeed90>] (_cpu_up+0xf4/0x1dc)
+[  513.406797] [<c0aeed90>] (_cpu_up+0xf4/0x1dc) from [<c0aeeed4>] (cpu_up+0x5c/0x78)
+[  513.414357] [<c0aeeed4>] (cpu_up+0x5c/0x78) from [<c0aec808>] (store_online+0x44/0x74)
+[  513.422253] [<c0aec808>] (store_online+0x44/0x74) from [<c03a40f4>] (sysfs_write_file+0x108/0x14c)
+[  513.431195] [<c03a40f4>] (sysfs_write_file+0x108/0x14c) from [<c03517d4>] (vfs_write+0xd0/0x180)
+[  513.439958] [<c03517d4>] (vfs_write+0xd0/0x180) from [<c0351ca8>] (SyS_write+0x38/0x68)
+[  513.447947] [<c0351ca8>] (SyS_write+0x38/0x68) from [<c0205de0>] (ret_fast_syscall+0x0/0x30)
+
+In this specific case, CPU0 set's CPU1's policy->governor in
+cpufreq_init_policy() to NULL while CPU1 is using the policy->governor in
+__cpufreq_governor().
+
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+---
+ drivers/cpufreq/cpufreq.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index cb003a6..d5ceb43 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1109,11 +1109,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		goto err_set_policy_cpu;
+ 	}
+ 
+-	write_lock_irqsave(&cpufreq_driver_lock, flags);
+-	for_each_cpu(j, policy->cpus)
+-		per_cpu(cpufreq_cpu_data, j) = policy;
+-	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-
+ 	if (cpufreq_driver->get) {
+ 		policy->cur = cpufreq_driver->get(policy->cpu);
+ 		if (!policy->cur) {
+@@ -1207,6 +1202,11 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		policy->user_policy.governor = policy->governor;
+ 	}
+ 
++	write_lock_irqsave(&cpufreq_driver_lock, flags);
++	for_each_cpu(j, policy->cpus)
++		per_cpu(cpufreq_cpu_data, j) = policy;
++	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++
+ 	kobject_uevent(&policy->kobj, KOBJ_ADD);
+ 	up_read(&cpufreq_rwsem);
+ 
+-- 
+1.8.2.1
+
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
