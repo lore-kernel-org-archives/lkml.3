@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaBXSks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:40:48 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:40274 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaBXSkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:40:47 -0500
-Date: Mon, 24 Feb 2014 14:39:39 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Paul Bolle <pebolle@tiscali.nl>, phcoder@gmail.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        xen-devel@lists.xenproject.org, Thomas Gleixner <tglx@linutronix.de>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen: remove XEN_PRIVILEGED_GUEST
-Message-ID: <20140224183939.GA26794@andromeda.dapyr.net>
-References: <201402171223.s1HCNG0S023567@userz7022.oracle.com> <1392642197.13000.20.camel@x220> <20140217144307.GB28658@localhost.localdomain> <1392718467.30073.12.camel@x220>
-Mime-Version: 1.0
+	id S1752903AbaBXSlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:41:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675AbaBXSlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 13:41:09 -0500
+Date: Mon, 24 Feb 2014 19:40:13 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, eparis@redhat.com,
+        sgrubb@redhat.com, akpm@linux-foundation.org, peterz@infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 4/7] pid: modify task_tgid_nr to work without
+	task->tgid.
+Message-ID: <20140224184013.GB21474@redhat.com>
+References: <cover.1390495874.git.rgb@redhat.com> <4c2bd4df9a53965a50c83e7ea38e0d39601a4326.1390495874.git.rgb@redhat.com> <20140220183518.GA23993@redhat.com> <20140221204752.GF16640@madcap2.tricolour.ca>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392718467.30073.12.camel@x220>
-User-Agent: Mutt/1.5.9i
+In-Reply-To: <20140221204752.GF16640@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 11:14:27AM +0100, Paul Bolle wrote:
-> On Mon, 2014-02-17 at 09:43 -0500, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Feb 17, 2014 at 02:03:17PM +0100, Paul Bolle wrote:
-> > > On Mon, 2014-02-17 at 07:23 -0500, Konrad Rzeszutek Wilk wrote:
-> > > > On Feb 16, 2014 3:07 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > > > Please look in the grub git tree. They have fixed their code to not do
-> > > > this anymore. This should be reflected in the patch description.
-> > > 
-> > > Thanks, I didn't know that. That turned out to be grub commit
-> > > ec824e0f2a399ce2ab3a2e3353d372a236595059 ("Implement grub_file tool and
-> > > use it to implement generating of config"), see
-> > > http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=ec824e0f2a399ce2ab3a2e3353d372a236595059
-> 
-> And that commit was reverted a week later in grub commit
-> faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 ("Revert grub-file usage in
-> grub-mkconfig."), see
-> http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 .
-> 
-> That commit has no explanation (other than its one line summary). So
-> we're left guessing why this was done. Luckily, it doesn't matter here,
-> because the test for CONFIG_XEN_PRIVILEGED_GUEST is superfluous.
+On 02/21, Richard Guy Briggs wrote:
+>
+> On 14/02/20, Oleg Nesterov wrote:
+> > On 01/23, Richard Guy Briggs wrote:
+> > >
+> > > task->tgid is an error prone construct and results in duplicate maintenance.
+> > > Start it's demise by modifying task_tgid_nr to not use it.
+> >
+> > Well, I disagree.
+> >
+> > Yes I agree that ->tgid should probably die. But this change itself doesn't
+> > help, it only makes task_tgid_nr() slower. We need to convert other users
+> > first, then consider this change along with ->tgid removal.
+>
+> I thought I recently saw a statistic that there were only 7 instances of
+> ->tgid, but a quick search comes up with >50 outside of audit!
 
-How about we ask Vladimir?
+Yes, so I don't think it makes sense to start from task_tgid_nr().
 
-Vladimir - could you shed some light on it? Thanks!
+> > > -	return tsk->tgid;
+> > > +	return pid_nr(task_tgid(tsk));
+> > >  }
+> >
+> > And what protect task_tgid? This is racy.
+> >
+> > The race is very unlikely, pid_nr() will likely hit pid == NULL if tsk
+> > exits. But still it can use the freed/unmapped/reused memory.
+>
+> So at the very least, I'd need
+>
+> static inline pid_t task_tgid_nr(struct task_struct *tsk)
+> {
+> 	return pid_nr(is_alive(tsk) ? task_tgid(tsk) : NULL);
+> }
+>
+> And it sounds like I might even need this since the status of is_alive
+> could change between the time I call it and the time I call task_tgid:
+>
+> static inline pid_t task_tgid_nr(struct task_struct *tsk)
+> {
+> 	pid_t pid;
+>
+> 	task_lock(&tsk);
+> 	pid = pid_nr(is_alive(tsk) ? task_tgid(tsk) : NULL);
+> 	task_unlock(&tsk);
+> 	return pid;
+> }
+>
+> Is task_lock() sufficient, or do I need the heavier
+> read_lock(&tasklist_lock)?
 
-> 
-> Anyhow, I hope to submit a second version of this patch later this day.
-> 
-> 
-> Paul Bolle
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+You need rcu_read_lock(), I think. In any case task_lock() has nothing to
+do with pids.
+
+> > And even if we add rcu_read_lock() the patch will add the semantics change,
+> > task_tgid_nr() can return 0 if tsk has already exited. At least this should
+> > be documented, but you also need to audit the users.
+>
+> Basically check for an inline error return of 0 signalling a failure
+> rather than the idle task.
+
+Perhaps...
+
+Oleg.
+
