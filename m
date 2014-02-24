@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaBXWfm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:35:42 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:44794 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaBXWfk (ORCPT
+	id S1753188AbaBXWgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:36:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51181 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154AbaBXWgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:35:40 -0500
-Message-ID: <530BC93C.4090907@linaro.org>
-Date: Mon, 24 Feb 2014 23:35:40 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 24 Feb 2014 17:36:13 -0500
+Date: Mon, 24 Feb 2014 14:37:45 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Commit fcb6a15c2e7e (intel_pstate: Take core C0 time into
+ account for core busy calculation) sucks rocks
+Message-ID: <20140224223745.GA26619@kroah.com>
+References: <20140219224752.GA370@kroah.com>
+ <5305465C.7060806@gmail.com>
+ <20140220003537.GA4671@kroah.com>
+ <20140220005148.GA15760@kroah.com>
+ <53061798.6010703@gmail.com>
+ <20140220181046.GA860@kroah.com>
 MIME-Version: 1.0
-To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>, linux-pm@vger.kernel.org,
-        rjw@rjwysocki.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] Cpuidle: Use actual state latency in menu governor
-References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org> <1393223377-5744-3-git-send-email-tuukka.tikkanen@linaro.org>
-In-Reply-To: <1393223377-5744-3-git-send-email-tuukka.tikkanen@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140220181046.GA860@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 07:29 AM, Tuukka Tikkanen wrote:
-> Currently menu governor records the exit latency of the state it has
-> chosen for the idle period. The stored latency value is then later
-> used to calculate the actual length of the idle period. This value
-> may however be incorrect, as the entered state may not be the one
-> chosen by the governor. The entered state information is available,
-> so we can use that to obtain the real exit latency.
->
-> Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+On Thu, Feb 20, 2014 at 10:10:46AM -0800, Greg KH wrote:
+> On Thu, Feb 20, 2014 at 06:56:24AM -0800, Dirk Brandewie wrote:
+> > On 02/19/2014 04:51 PM, Greg KH wrote:
+> > >On Wed, Feb 19, 2014 at 04:35:37PM -0800, Greg KH wrote:
+> > >>On Wed, Feb 19, 2014 at 04:03:40PM -0800, Dirk Brandewie wrote:
+> > >>>On 02/19/2014 02:47 PM, Greg KH wrote:
+> > >>>>Hi Dirk,
+> > >>>>
+> > >>>>I've been having some huge slowdowns on my box building kernels, and I
+> > >>>>took the time to bisect it down to commit
+> > >>>>fcb6a15c2e7e76d493e6f91ea889ab40e1c643a4 (intel_pstate: Take core C0
+> > >>>>time into account for core busy calculation).  With that patch reverted
+> > >>>>on Linus's current tree, my build speeds are back up to the normal rate.
+> > >>>>
+> > >>>>The difference is huge, 2 minutes to do a kernel build with that patch
+> > >>>>reverted, 8-10 minutes with it applied!  With all of the stable kernel
+> > >>>>builds and other trees, this is a huge problem for my workload (all I do
+> > >>>>is kernel builds it seems...)
+> > >>>>
+> > >>>>I see some patches you marked as "fixes" that you sent to Rafael, do you
+> > >>>>want me to test any of those?  How am I the only one seeing this
+> > >>>>problem, do you need my cpu information or anything else?
+> > >>>
+> > >>>Can you give me a description of you build system?  CPU, number of sockets,
+> > >>
+> > >>The last processor in /proc/cpuinfo:
+> > >>
+> > >>processor       : 7
+> > >>vendor_id       : GenuineIntel
+> > >>cpu family      : 6
+> > >>model           : 60
+> > >>model name      : Intel(R) Core(TM) i7-4770K CPU @ 3.50GHz
+> > >>stepping        : 3
+> > >>microcode       : 0x9
+> > >>cpu MHz         : 3556.464
+> > >>cache size      : 8192 KB
+> > >>physical id     : 0
+> > >>siblings        : 8
+> > >>core id         : 3
+> > >>cpu cores       : 4
+> > >>apicid          : 7
+> > >>initial apicid  : 7
+> > >>fpu             : yes
+> > >>fpu_exception   : yes
+> > >>cpuid level     : 13
+> > >>wp              : yes
+> > >>flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 fma cx16 xtpr pdcm pcid sse4_1 sse4_2 movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid
+> > >>bogomips        : 7000.78
+> > >>clflush size    : 64
+> > >>cache_alignment : 64
+> > >>address sizes   : 39 bits physical, 48 bits virtual
+> > >>
+> > >>>building from/to local media.  Any special setup I should use here for my test?
+> > >>
+> > >>I build on a SSD-like disk (flash media on PCI Express slot), so I
+> > >>should have almost no i/o time.
+> > >>
+> > >>I build with 'make -j16'
+> > >>
+> > >>>If you have time having the output of turbostat for a build with and
+> > >>>without would be very useful.
+> > >>
+> > >>  $ ./turbostat
+> > >>  turbostat: no /dev/cpu/0/msr
+> > >>  Try "# modprobe msr": No such file or directory
+> > >>
+> > >>Bah, I'll rebuild with msr and get you that info...
+> > >
+> > >Attached is two files, "fast_build.txt" is when your patch is reverted,
+> > >and building a kernel takes only 2 minutes.  "slow_build.txt" is when
+> > >the patch is not reverted, using Linus's latest tree, and I stopped it
+> > >after a while because I got bored :)
+> > >
+> > >I think the numbers in these two files shows the real problem that is
+> > >happening...
+> > 
+> > For some reason intel_pstate is deciding you have no load and no increasing
+> > the P state :-(
+> > >
+> > >If there's anything else you need me to test, please let me know.
+> > 
+> > I are running on Linus's tree could you run the following script with the patch
+> > applied and send the output of "perf script".
+> > 
+> > #! /bin/sh
+> > 
+> > sudo perf record -C 5  -c 1 -e power:pstate_sample&
+> > sleep .5
+> > foo=$!
+> > taskset -c 5 cat /dev/zero > /dev/null&
+> > bar=$!
+> > sleep 1
+> > kill $bar
+> > sleep .5
+> > sudo kill $foo
+> 
+> The output of this is attached below as "bad.perf", and for comparison,
+> I ran this with the patch reverted, which is the result in the
+> "good.perf" file below.
+> 
+> Anything else I can test?
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Any progress on this?
 
-> ---
->   drivers/cpuidle/governors/menu.c |    7 ++-----
->   1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index e9a2a27..115386a 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -124,7 +124,6 @@ struct menu_device {
->
->   	unsigned int	next_timer_us;
->   	unsigned int	predicted_us;
-> -	unsigned int	exit_us;
->   	unsigned int	bucket;
->   	unsigned int	correction_factor[BUCKETS];
->   	unsigned int	intervals[INTERVALS];
-> @@ -298,7 +297,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->   	}
->
->   	data->last_state_idx = 0;
-> -	data->exit_us = 0;
->
->   	/* Special case when user has set very strict latency requirement */
->   	if (unlikely(latency_req == 0))
-> @@ -359,7 +357,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->   			continue;
->
->   		data->last_state_idx = i;
-> -		data->exit_us = s->exit_latency;
->   	}
->
->   	return data->last_state_idx;
-> @@ -410,8 +407,8 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->   	 * We correct for the exit latency; we are assuming here that the
->   	 * exit latency happens after the event that we're interested in.
->   	 */
-> -	if (measured_us > data->exit_us)
-> -		measured_us -= data->exit_us;
-> +	if (measured_us > target->exit_latency)
-> +		measured_us -= target->exit_latency;
->
->
->   	/* Update our correction ratio */
->
+thanks,
 
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+greg k-h
