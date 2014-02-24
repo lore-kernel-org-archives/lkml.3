@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaBXRot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:44:49 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42594 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752314AbaBXRos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:44:48 -0500
-Date: Mon, 24 Feb 2014 12:44:46 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-cc: linux-usb@vger.kernel.org, <sarah.a.sharp@linux.intel.com>,
-        <david.a.cohen@linux.intel.com>, <jianqiang.tang@intel.com>,
-        <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2] xhci: Prevent runtime pm from autosuspending
- during initialization
-In-Reply-To: <1393259343-825-1-git-send-email-mathias.nyman@linux.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1402241243230.1427-100000@iolanthe.rowland.org>
+	id S1753035AbaBXRqy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:46:54 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18683 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752456AbaBXRqx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 12:46:53 -0500
+Date: Mon, 24 Feb 2014 09:46:47 -0800
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: linux-next: Tree for Feb 17 (pinctrl-msm)
+Message-ID: <20140224174646.GA32621@sonymobile.com>
+References: <20140217172329.2c61499f57842ec2ed177bc5@canb.auug.org.au>
+ <530247FC.90606@infradead.org>
+ <CACRpkdamW1-CxZV65at3PaPhY5nANRDd=SY=FsNPVnrPxyD81w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdamW1-CxZV65at3PaPhY5nANRDd=SY=FsNPVnrPxyD81w@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014, Mathias Nyman wrote:
+On Mon 24 Feb 06:46 PST 2014, Linus Walleij wrote:
 
-> xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-> to register its usb-2 bus, and then continue to manually register the
-> usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-> might thus trigger a runtime suspend before the usb-3 bus is ready.
+> On Mon, Feb 17, 2014 at 6:33 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > On 02/16/2014 10:23 PM, Stephen Rothwell wrote:
+> >> Hi all,
+> >>
+> >> If you see failures in building this tree due to missing declarations of
+> >> k..alloc/free, then it may be caused by commit 2bd59d48ebfb ("cgroup:
+> >> convert to kernfs").  Please send Tejun Heo <tj@kernel.org> a patch
+> >> adding an inclusion of linux/slab.h to the appropriate file(s).
+> >>
+> >> This tree fails (more than usual) the powerpc allyesconfig build.
+> >>
+> >> Changes since 20140214:
+> >>
+> >
+> > on i386:
+> >
+> > ERROR: "handle_bad_irq" [drivers/pinctrl/pinctrl-msm.ko] undefined!
 > 
-> Prevent the runtime suspend by increasing the usage count in the
-> beginning of xhci_pci_probe, and decrease it once the usb-3Â bus is
-> ready.
+> Weird, Björn do you know what may be causing this?
+
+I include linux/irq.h to get hold of handle_bad_irq() and as far as I can see
+there are no changes related to that in linux-next.
+
+Do we know if the build still fails? Or if something changed?
+
+
+Please let me know if I should pull down the -next tree and try to reproduce
+this.
+
 > 
-> xhci-platform driver is not using usb_hcd_pci_probe to set up
-> busses and should not need to have it's usage count increased during probe.
-> 
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-pci.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-> index 04f986d..ea7158b 100644
-> --- a/drivers/usb/host/xhci-pci.c
-> +++ b/drivers/usb/host/xhci-pci.c
-> @@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  	struct usb_hcd *hcd;
->  
->  	driver = (struct hc_driver *)id->driver_data;
-> +
-> +	/* Prevent USB-2 roothub runtime suspend until USB-3 is initialized. */
-> +	pm_runtime_get_noresume(&dev->dev);
+> Yours,
+> Linus Walleij
 
-Strictly speaking, this prevents the _controller_ from going into
-runtime suspend -- not the root hub.
-
-> +
->  	/* Register the USB 2.0 roothub.
->  	 * FIXME: USB core must know to register the USB 2.0 roothub first.
->  	 * This is sort of silly, because we could just set the HCD driver flags
-> @@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  	retval = usb_hcd_pci_probe(dev, id);
->  
->  	if (retval)
-> -		return retval;
-> +		goto put_runtime_pm;
->  
->  	/* USB 2.0 roothub is stored in the PCI device now. */
->  	hcd = dev_get_drvdata(&dev->dev);
-> @@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  	if (xhci->quirks & XHCI_LPM_SUPPORT)
->  		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
->  
-> +	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-> +	pm_runtime_put_noidle(&dev->dev);
-> +
->  	return 0;
->  
->  put_usb3_hcd:
->  	usb_put_hcd(xhci->shared_hcd);
->  dealloc_usb2_hcd:
->  	usb_hcd_pci_remove(dev);
-> +put_runtime_pm:
-> +	pm_runtime_put_noidle(&dev->dev);
->  	return retval;
->  }
-
-Apart from nit about the comment,
-
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
+Regards,
+Bjorn
