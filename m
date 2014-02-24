@@ -1,93 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaBXXWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:22:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53931 "EHLO mail.skyhub.de"
+	id S1752907AbaBXX2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:28:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40385 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260AbaBXXWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:22:15 -0500
-Date: Tue, 25 Feb 2014 00:22:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Realtek linux nic maintainers <nic_swsd@realtek.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: r8169: INFO: trying to register non-static key.
-Message-ID: <20140224232212.GB18598@pd.tnic>
-References: <20140224231748.GA18598@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140224231748.GA18598@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752260AbaBXX2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 18:28:10 -0500
+From: Alexander Graf <agraf@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH] ksm: Expose configuration via sysctl
+Date: Tue, 25 Feb 2014 00:28:04 +0100
+Message-Id: <1393284484-27637-1-git-send-email-agraf@suse.de>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh boy, there's more of the trace which appears much further down in
-dmesg and the printk timestamps are all messed up!?! See below.
+Configuration of tunables and Linux virtual memory settings has traditionally
+happened via sysctl. Thanks to that there are well established ways to make
+sysctl configuration bits persistent (sysctl.conf).
 
-On Tue, Feb 25, 2014 at 12:17:48AM +0100, Borislav Petkov wrote:
-> I get this on latest -rc4 + tip/master:
-> 
-> [    9.172287] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
-> [    9.178461] r8169 0000:02:00.0: can't disable ASPM; OS doesn't have ASPM control
-> [    9.186137] r8169 0000:02:00.0: irq 45 for MSI/MSI-X
-> [    9.195943] INFO: trying to register non-static key.
-> [    9.196031] the code is fine but needs lockdep annotation.
-> [    9.196031] turning off the locking correctness validator.
-> [    9.196031] CPU: 1 PID: 933 Comm: modprobe Not tainted 3.14.0-rc4+ #1
-> [    9.196031] Hardware name: Acer AOA150/        , BIOS v0.3309 10/06/2008
-> [    9.196031]  00000000 00000000 f5e49a48 c15aa25c c1c68b58 f5e49ac0 c10913fc c174bc50
-> [    9.196031]  0001488a 79da0cc3 00000000 00000006 f5efa6d0 c1a34240 00000001 f6eab240
-> [    9.196031]  f5e49aa8 c107a4e6 00000000 f6eab250 f5d43658 00000002 000d48ae 00000000
-> [    9.196031] Call Trace:
-> [    9.196031]  [<c15aa25c>] dump_stack+0x4b/0x75
-> [    9.196031]  [<c10913fc>] __lock_acquire+0x1a0c/0x1b70
-> [    9.196031]  [<c107a4e6>] ? sched_clock_local+0x46/0x150
-> [    9.196031]  [<c107a8a8>] ? sched_clock_cpu+0xc8/0x140
-> [    9.196031]  [<c1091bdb>] lock_acquire+0x8b/0x1b0
-> [    9.196031]  [<c14fab4b>] ? dev_get_stats+0x5b/0x100
-> [    9.196031]  [<f81f1db6>] rtl8169_get_stats64+0x66/0x240 [r8169]
-> [    9.196031]  [<c14fab4b>] ? dev_get_stats+0x5b/0x100
-> [    9.196031]  [<c14fab4b>] dev_get_stats+0x5b/0x100
-> [    9.196031]  [<c151163f>] rtnl_fill_ifinfo+0x4cf/0xb30
-> [    9.196031]  [<c1134c43>] ? ksize+0x13/0xa0
-> [    9.196031]  [<c14f1827>] ? __alloc_skb+0x77/0x250
-> [    9.196031]  [<c1511d12>] rtmsg_ifinfo+0x72/0xf0
-> [    9.196031]  [<c150531e>] register_netdevice+0x45e/0x4c0
-> [    9.196031]  [<c150539b>] register_netdev+0x1b/0x30
-> [    9.196031]  [<f81f3e8b>] rtl_init_one+0x69b/0xbd0 [r8169]
-> [    9.337799] uhci_hcd: USB Universal Host Controller Interface driver
+KSM introduced a sysfs based configuration path which is not covered by user
+space persistent configuration frameworks.
 
-[    9.196031]  [<c10759c7>] ? preempt_count_sub+0x67/0xf0
-[    9.196031]  [<c12aca87>] pci_device_probe+0x67/0xc0
-[    9.196031]  [<c11a2815>] ? sysfs_create_link+0x25/0x40
-[    9.196031]  [<c13e1107>] really_probe+0x57/0x1d0
-[    9.196031]  [<c12ac552>] ? pci_match_device+0xb2/0xc0
-[    9.196031]  [<c13e136f>] __driver_attach+0x8f/0xa0
-[    9.196031]  [<c13e12e0>] ? __device_attach+0x60/0x60
-[    9.196031]  [<c13df7bf>] bus_for_each_dev+0x4f/0x80
-[    9.196031]  [<c13e0cce>] driver_attach+0x1e/0x20
-[    9.196031]  [<c13e12e0>] ? __device_attach+0x60/0x60
-[    9.196031]  [<c13e0987>] bus_add_driver+0x147/0x200
-[    9.196031]  [<c13e1929>] driver_register+0x59/0xe0
-[    9.196031]  [<f82a7000>] ? 0xf82a6fff
-[    9.196031]  [<c12ac67a>] __pci_register_driver+0x4a/0x50
-[    9.671150] usb 3-5: new high-speed USB device number 2 using ehci-pci
-[    9.196031]  [<f82a7017>] rtl8169_pci_driver_init+0x17/0x19 [r8169]
-[    9.196031]  [<c10004a2>] do_one_initcall+0xf2/0x140
-[    9.196031]  [<c108a38b>] ? up_read+0x1b/0x30
-[    9.196031]  [<c106be82>] ? __blocking_notifier_call_chain+0x62/0xa0
-[    9.196031]  [<c10c0d43>] load_module+0x1ae3/0x2290
-[    9.196031]  [<c10c1576>] SyS_init_module+0x86/0xc0
-[    9.196031]  [<c15b2505>] sysenter_do_call+0x12/0x36
-[    9.705200] r8169 0000:02:00.0 eth0: RTL8102e at 0xf82e2000, 00:1e:68:fe:2f:2b, XID 04a00000 IRQ 45
+In order to make life easy for sysadmins, this patch adds all access to all
+KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
+giving us a streamlined way to make KSM configuration persistent.
 
-Breakage all over the place :-(
+Reported-by: Sasche Peilicke <speilicke@suse.com>
+Signed-off-by: Alexander Graf <agraf@suse.de>
+---
+ kernel/sysctl.c |   10 +++++++
+ mm/ksm.c        |   78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 332cefc..2169a00 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -217,6 +217,9 @@ extern struct ctl_table random_table[];
+ #ifdef CONFIG_EPOLL
+ extern struct ctl_table epoll_table[];
+ #endif
++#ifdef CONFIG_KSM
++extern struct ctl_table ksm_table[];
++#endif
+ 
+ #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+ int sysctl_legacy_va_layout;
+@@ -1279,6 +1282,13 @@ static struct ctl_table vm_table[] = {
+ 	},
+ 
+ #endif /* CONFIG_COMPACTION */
++#ifdef CONFIG_KSM
++	{
++		.procname	= "ksm",
++		.mode		= 0555,
++		.child		= ksm_table,
++	},
++#endif
+ 	{
+ 		.procname	= "min_free_kbytes",
+ 		.data		= &min_free_kbytes,
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 3df141e..df93989 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -2306,6 +2306,84 @@ static struct attribute_group ksm_attr_group = {
+ };
+ #endif /* CONFIG_SYSFS */
+ 
++#ifdef CONFIG_SYSCTL
++static int fill_from_user(char *buf, char __user *ubuf, size_t len)
++{
++	if (len > 15)
++		return -EINVAL;
++
++	if (copy_from_user(buf, ubuf, len))
++		return -EFAULT;
++
++	buf[len] = 0;
++	return 0;
++}
++
++static int sysctl_ksm(struct ctl_table *ctl, int write, void __user *buffer,
++		      size_t *lenp, loff_t *fpos)
++{
++	int r;
++	char buf[16];
++
++	if (!write)
++		return proc_dointvec(ctl, write, buffer, lenp, fpos);
++
++	r = fill_from_user(buf, buffer, *lenp);
++	if (r)
++		return r;
++
++	if (ctl->data == &ksm_run)
++		r = run_store(NULL, NULL, buf, *lenp);
++	else if (ctl->data == &ksm_thread_sleep_millisecs)
++		r = sleep_millisecs_store(NULL, NULL, buf, *lenp);
++	else if (ctl->data == &ksm_thread_pages_to_scan)
++		r = pages_to_scan_store(NULL, NULL, buf, *lenp);
++#ifdef CONFIG_NUMA
++	else if (ctl->data == &ksm_merge_across_nodes)
++		r = merge_across_nodes_store(NULL, NULL, buf, *lenp);
++#endif
++	else
++		r = -EINVAL;
++
++	return r;
++}
++
++struct ctl_table ksm_table[] =
++{
++	{
++		.procname	= "run",
++		.data		= &ksm_run,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= sysctl_ksm,
++	},
++	{
++		.procname	= "sleep_millisecs",
++		.data		= &ksm_thread_sleep_millisecs,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= sysctl_ksm,
++	},
++	{
++		.procname	= "pages_to_scan",
++		.data		= &ksm_thread_pages_to_scan,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= sysctl_ksm,
++	},
++#ifdef CONFIG_NUMA
++	{
++		.procname	= "merge_across_nodes",
++		.data		= &ksm_merge_across_nodes,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= sysctl_ksm,
++	},
++#endif /* CONFIG_NUMA */
++	{ }
++};
++#endif /* CONFIG_SYSCTL */
++
+ static int __init ksm_init(void)
+ {
+ 	struct task_struct *ksm_thread;
 -- 
-Regards/Gruss,
-    Boris.
+1.6.0.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
