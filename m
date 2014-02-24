@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaBXFyh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:54:37 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:48252 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaBXFyY (ORCPT
+	id S1752210AbaBXFyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 00:54:35 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:50957 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaBXFy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:54:24 -0500
+	Mon, 24 Feb 2014 00:54:28 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         Sagi Grimberg <sagig@dev.mellanox.co.il>
-Subject: [RFC 3/6] vhost/scsi: Add T10 PI IOV -> SGL memory mapping logic
-Date: Mon, 24 Feb 2014 05:32:27 +0000
-Message-Id: <1393219950-18613-4-git-send-email-nab@daterainc.com>
+Subject: [RFC 5/6] vhost/scsi: Add new VIRTIO_SCSI_F_T10_PI feature bit
+Date: Mon, 24 Feb 2014 05:32:29 +0000
+Message-Id: <1393219950-18613-6-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1393219950-18613-1-git-send-email-nab@daterainc.com>
 References: <1393219950-18613-1-git-send-email-nab@daterainc.com>
@@ -30,58 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds vhost_scsi_map_iov_to_prot() to perform the mapping of
-T10 data integrity memory between virtio iov + struct scatterlist using
-get_user_pages_fast() following existing code.
+This patch adds a VIRTIO_SCSI_F_T10_PI feature bit for signaling
+host support of accepting T10 protection information SGLs from
+virtio-scsi guest.
 
-As with vhost_scsi_map_iov_to_sgl(), this does sanity checks against the
-total prot_sgl_count vs. pre-allocated SGLs, and loops across protection
-iovs using vhost_scsi_map_to_sgl() to perform the actual memory mapping.
-
-Also update tcm_vhost_release_cmd() to release associated tvc_prot_sgl[]
-struct page.
-
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
 Cc: Hannes Reinecke <hare@suse.de>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/vhost/scsi.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/vhost/scsi.c        |    3 ++-
+ include/linux/virtio_scsi.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index 314cbd4..0cf5948 100644
+index 3bdb625..734a76c 100644
 --- a/drivers/vhost/scsi.c
 +++ b/drivers/vhost/scsi.c
-@@ -80,6 +80,7 @@ struct tcm_vhost_cmd {
- 	u64 tvc_tag;
- 	/* The number of scatterlists associated with this cmd */
- 	u32 tvc_sgl_count;
-+	u32 tvc_prot_sgl_count;
- 	/* Saved unpacked SCSI LUN for tcm_vhost_submission_work() */
- 	u32 tvc_lun;
- 	/* Pointer to the SGL formatted memory from virtio-scsi */
-@@ -458,12 +459,16 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
- 	struct tcm_vhost_cmd *tv_cmd = container_of(se_cmd,
- 				struct tcm_vhost_cmd, tvc_se_cmd);
- 	struct se_session *se_sess = se_cmd->se_sess;
-+	int i;
+@@ -169,7 +169,8 @@ enum {
+ };
  
- 	if (tv_cmd->tvc_sgl_count) {
--		u32 i;
- 		for (i = 0; i < tv_cmd->tvc_sgl_count; i++)
- 			put_page(sg_page(&tv_cmd->tvc_sgl[i]));
- 	}
-+	if (tv_cmd->tvc_prot_sgl_count) {
-+		for (i = 0; i < tv_cmd->tvc_prot_sgl_count; i++)
-+			put_page(sg_page(&tv_cmd->tvc_prot_sgl[i]));
-+	}
+ enum {
+-	VHOST_SCSI_FEATURES = VHOST_FEATURES | (1ULL << VIRTIO_SCSI_F_HOTPLUG)
++	VHOST_SCSI_FEATURES = VHOST_FEATURES | (1ULL << VIRTIO_SCSI_F_HOTPLUG) |
++					       (1ULL << VIRTIO_SCSI_F_T10_PI)
+ };
  
- 	tcm_vhost_put_inflight(tv_cmd->inflight);
- 	percpu_ida_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
+ #define VHOST_SCSI_MAX_TARGET	256
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index 4195b97..dc3764b 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -97,6 +97,7 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_F_INOUT                    0
+ #define VIRTIO_SCSI_F_HOTPLUG                  1
+ #define VIRTIO_SCSI_F_CHANGE                   2
++#define VIRTIO_SCSI_F_T10_PI                   3
+ 
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
 -- 
 1.7.10.4
 
