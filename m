@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaBXBge (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:36:34 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46362 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaBXBgd (ORCPT
+	id S1751603AbaBXBkv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:40:51 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39588 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaBXBku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:36:33 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 24 Feb 2014 01:32:54 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        Chris Boot <bootc@bootc.net>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org
-Subject: Re: memory-barriers.txt again (was Re: [PATCH 4/9] firewire: don't
- use PREPARE_DELAYED_WORK)
-Message-ID: <20140224013254.5004c4fb@stein>
-In-Reply-To: <20140223235012.GB8264@linux.vnet.ibm.com>
-References: <5307849A.9050209@hurleysoftware.com>
-	<20140221165730.GA10929@htj.dyndns.org>
-	<5307DAC9.2020103@hurleysoftware.com>
-	<1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
-	<5308F0E2.3030804@hurleysoftware.com>
-	<1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
-	<5308F48C.8080609@hurleysoftware.com>
-	<20140223022303.3240093c@stein>
-	<20140223163743.GU4250@linux.vnet.ibm.com>
-	<530A5B93.7010304@hurleysoftware.com>
-	<20140223235012.GB8264@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Feb 2014 20:40:50 -0500
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH for-next 0/4] epoll: combined control/wait syscall
+Date: Sun, 23 Feb 2014 17:40:30 -0800
+Message-Id: <1393206034-18080-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 23 Paul E. McKenney wrote:
->>> Please see below for a patch against the current version of
->>> Documentation/memory-barriers.txt.  Does this update help?
+Hi Everyone,
 
-Thank you, this clarifies it.
+Being a new feature, this is obviously targeted for the next release
+cycle. There's been some interest in a kevent()-like interface to
+eventpoll, which this patch set aims to fulfill by adding an epoll()
+system call (couldn't think of a more descriptive name, suggestions
+welcome). The current struct epoll_event as used by epoll_{ctl,wait}()
+to pass eventpoll entries to/from userspace is insufficient for this,
+since eventpoll needs to know which file descriptor to associate with
+each new entry. Thus, struct epoll is added, holding the event mask,
+a user identifier, and the file descriptor. The internal eventpoll
+mechanism has been made structure-agnostic to keep things neat and
+orderly (this is where the majority of changes happened). This isn't
+ready to be applied just yet; system call table entries still need to
+be added (is there a standard way of doing this?), and documentation
+will of course be necessary
 
-[...]
-A new nit:
-> +The operations will always occur in one of the following orders:
->  
-> -	STORE *A, RELEASE, ACQUIRE, STORE *B
-> -	STORE *A, ACQUIRE, RELEASE, STORE *B
-> +	STORE *A, RELEASE, ACQUIRE, smp_mb__after_unlock_lock(), STORE *B
-> +	STORE *A, ACQUIRE, RELEASE, smp_mb__after_unlock_lock(), STORE *B
-> +	ACQUIRE, STORE *A, RELEASE, smp_mb__after_unlock_lock(), STORE *B
->  
-> -If the RELEASE and ACQUIRE were instead both operating on the same lock
-> -variable, only the first of these two alternatives can occur.
-> +If the RELEASE and ACQUIRE were instead both operating on the
-> +same lock variable, only the first of these two alternatives can
-> +occur.
-                                               ^^^
-...these {,three} alternatives...
--- 
-Stefan Richter
--=====-====- --=- ==---
-http://arcgraph.de/sr/
+A quick note about terminology: I use the term 'eventpoll entry' to refer
+to a combination of an event mask, userspace identifier, and a file
+descriptor. This in contrast to the past where an epoll event could mean
+either an event mask or an item in the eventpoll itself. Hopefully this
+will help avoid any confusion :)
+
+Nate Yazdani
+ fs/eventpoll.c                 | 508 +++++++++++++++++++++++++----------------
+ include/linux/syscalls.h       |   4 +
+ include/uapi/linux/eventpoll.h |   6 +
+ 3 files changed, 320 insertions(+), 198 deletions(-)
