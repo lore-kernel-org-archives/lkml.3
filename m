@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaBXP4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:56:22 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:56403 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBXP4V (ORCPT
+	id S1753133AbaBXP53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:57:29 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:62051 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaBXP50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:56:21 -0500
+	Mon, 24 Feb 2014 10:57:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <530B621E.9010309@redhat.com>
-References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<530B4AFB.5060006@redhat.com>
-	<CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
-	<530B621E.9010309@redhat.com>
-Date: Tue, 25 Feb 2014 00:56:20 +0900
-Message-ID: <CAAmzW4MkXg+ZEYCxkrYNns8T9MKr=ZTGxCRXoXYs133n7c9PvQ@mail.gmail.com>
-Subject: Re: [PATCH] zram: support REQ_DISCARD
-From: Joonsoo Kim <js1304@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+References: <20140220083032.GN4250@linux.vnet.ibm.com>
+	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	<20140220181116.GT4250@linux.vnet.ibm.com>
+	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+	<1392922421.28840.36.camel@triegel.csb>
+	<CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
+	<1393095223.28840.4914.camel@triegel.csb>
+	<CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
+	<20140223003933.GQ4250@linux.vnet.ibm.com>
+	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	<20140223063426.GT4250@linux.vnet.ibm.com>
+	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+Date: Mon, 24 Feb 2014 07:57:24 -0800
+X-Google-Sender-Auth: _JflJg7mWN1Lzz84hbJKe-O5E5c
+Message-ID: <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-25 0:15 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
-> On 02/24/2014 04:02 PM, Joonsoo Kim wrote:
->> 2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
->>> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
->>>> zram is ram based block device and can be used by backend of filesystem.
->>>> When filesystem deletes a file, it normally doesn't do anything on data
->>>> block of that file. It just marks on metadata of that file. This behavior
->>>> has no problem on disk based block device, but has problems on ram based
->>>> block device, since we can't free memory used for data block. To overcome
->>>> this disadvantage, there is REQ_DISCARD functionality. If block device
->>>> support REQ_DISCARD and filesystem is mounted with discard option,
->>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
->>>> discarded. All we have to do is to handle this request.
->>>>
->>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
->>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
->>>> used.
->>>>
->>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>> ---
->>>> This patch is based on master branch of linux-next tree.
->>>>
->>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->>>> index 5ec61be..cff2c0e 100644
->>>> --- a/drivers/block/zram/zram_drv.c
->>>> +++ b/drivers/block/zram/zram_drv.c
->>>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>>>       return ret;
->>>>  }
->>>>
->>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
->>>> +{
->>>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>>
->>> Hi Joonsoo,
->>>
->>> If bi_sector is not aligned on a page size, we might end up discarding
->>> a page that still contain valid data.
->>>
->>>
->>
->> Hello, Jerome.
->>
->> Is it possible that request isn't aligned on a page size if
->> logical/physical block size
->> is PAGE_SIZE?
+On Sun, Feb 23, 2014 at 11:31 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Yes, zram has an logical block size of 4k (ZRAM_LOGICAL_BLOCK_SIZE),
-> while its physical block size, which is a page size, can be bigger.
+> Let me think about it some more, but my gut feel is that just tweaking
+> the definition of what "ordered" means is sufficient.
 >
->> When I tested it, I didn't find any invalid io.
->> If we meet any misaligned request, it would be filtered by
->> valid_io_request(). :)
+> So to go back to the suggested ordering rules (ignoring the "restrict"
+> part, which is just to clarify that ordering through other means to
+> get to the object doesn't matter), I suggested:
 >
-> zram accepts request aligned on logical blocks. So valid_io_request()
-> wouldn't filter misaligned requests out as long as they are aligned
-> on logical blocks.
-> If your system use 4k pages, your tests would never trigger the issue,
-> but on a system which uses 64k pages, it could.
+>  "the consume ordering guarantees the ordering between that
+>   atomic read and the accesses to the object that the pointer
+>   points to"
+>
+> and I think the solution is to just say that this ordering acts as a
+> fence. It doesn't say exactly *where* the fence is, but it says that
+> there is *some* fence between the load of the pointer and any/all
+> accesses to the object through that pointer.
 
-Okay. I got it.
-So, how about using PAGE_SIZE as ZRAM_LOGICAL_BLOCK_SIZE?
-Is there any reason to set 4096 to ZRAM_LOGICAL_BLOCK_SIZE,
-instead of setting PAGE_SIZE to ZRAM_LOGICAL_BLOCK_SIZE?
+I'm wrong. That doesn't work. At all. There is no ordering except
+through the pointer chain.
 
-Thanks.
+So I think saying just that, and nothing else (no magic fences, no
+nothing) is the right thing:
+
+ "the consume ordering guarantees the ordering between that
+  atomic read and the accesses to the object that the pointer
+  points to directly or indirectly through a chain of pointers"
+
+The thing is, anything but a chain of pointers (and maybe relaxing it
+to "indexes in tables" in addition to pointers) doesn't really work.
+
+The current standard tries to break it at "obvious" points that can
+lose the data dependency (either by turning it into a control
+dependency, or by just dropping the value, like the left-hand side of
+a comma-expression), but the fact is, it's broken.
+
+It's broken not just because the value can be lost other ways (ie the
+"p-p" example), it's broken because the value can be turned into a
+control dependency so many other ways too.
+
+Compilers regularly turn arithmetic ops with logical comparisons into
+branches. So an expression like "a = !!ptr" carries a dependency in
+the current C standard, but it's entirely possible that a compiler
+ends up turning it into a compare-and-branch rather than a
+compare-and-set-conditional, depending on just exactly how "a" ends up
+being used. That's true even on an architecture like ARM that has a
+lot of conditional instructions (there are way less if you compile for
+Thumb, for example, but compilers also do things like "if there are
+more than N predicated instructions I'll just turn it into a
+branch-over instead").
+
+So I think the C standard needs to just explicitly say that you can
+walk a chain of pointers (with that possible "indexes in arrays"
+extension), and nothing more.
+
+                    Linus
