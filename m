@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaBXVwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 16:52:37 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54995 "EHLO arroyo.ext.ti.com"
+	id S1752570AbaBXV4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 16:56:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489AbaBXVwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 16:52:36 -0500
-Message-ID: <530BBF10.6050601@ti.com>
-Date: Mon, 24 Feb 2014 16:52:16 -0500
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752457AbaBXV4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 16:56:38 -0500
+Date: Mon, 24 Feb 2014 18:15:24 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, pbonzini@redhat.com
+Subject: Re: [PATCH] x86: kvm: fix unstable_tsc boot
+Message-ID: <20140224211524.GC22025@amt.cnet>
+References: <1393256549-7743-1-git-send-email-drjones@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Josh Triplett <josh@joshtriplett.org>
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-References: <1393274296-26179-1-git-send-email-trini@ti.com>  <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com> <1393277304.11020.64.camel@joe-AO722>
-In-Reply-To: <1393277304.11020.64.camel@joe-AO722>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393256549-7743-1-git-send-email-drjones@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 04:28 PM, Joe Perches wrote:
-> On Mon, 2014-02-24 at 16:11 -0500, Tom Rini wrote:
->> On 02/24/2014 04:00 PM, Joe Perches wrote:
->>> On Mon, 2014-02-24 at 15:38 -0500, Tom Rini wrote:
->>>> While there are valid reasons to use __packed, often the answer is that
->>>> you should be doing something else here instead.
-> []
->>> How often is this actually a problem?
->>
->> I think the first line answers the second one, honestly.  If one wants
->> to get pedantic about things and really investigate there's probably
->> some unneeded usages scattered about, and that's generally the type of
->> thing one wants to address when checking whole files, right?
+On Mon, Feb 24, 2014 at 04:42:29PM +0100, Andrew Jones wrote:
+> When the tsc is marked unstable on the host it causes global clock
+> updates to be requested each time a vcpu is loaded, nearly halting
+> all progress on guests with a large number of vcpus.
 > 
-> Maybe not.
+> Fix this by only requesting a local clock update unless the vcpu
+> is migrating to another cpu.
 > 
-> That entirely depends on the correct and necessary uses of
-> packed vs the incorrect usage rates.
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 > 
-> I think almost all packed uses are correct and there might
-> be a lot of patches submitted to remove them by over-zealous
-> advocates of checkpatch -f.
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 6530019116b0d..ea716a162b4a3 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2781,15 +2781,18 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  						vcpu->arch.last_guest_tsc);
+>  			kvm_x86_ops->write_tsc_offset(vcpu, offset);
+>  			vcpu->arch.tsc_catchup = 1;
+> +			set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+>  		}
+> +	}
+> +
+> +	if (unlikely(vcpu->cpu != cpu)) {
+>  		/*
+>  		 * On a host with synchronized TSC, there is no need to update
+>  		 * kvmclock on vcpu->cpu migration
+>  		 */
+>  		if (!vcpu->kvm->arch.use_master_clock || vcpu->cpu == -1)
+>  			kvm_make_request(KVM_REQ_GLOBAL_CLOCK_UPDATE, vcpu);
+> -		if (vcpu->cpu != cpu)
+> -			kvm_migrate_timers(vcpu);
+> +		kvm_migrate_timers(vcpu);
+>  		vcpu->cpu = cpu;
+>  	}
+>  
+> -- 
+> 1.8.1.4
 
-To try and also answer Josh's feedback as well, I've been lead to
-believe that most cases now people should be using regmap instead, which
-just leaves the case of having to match on-disk formats or similar cases
-I believe as the things that must stay __packed.
+Consider VCPU1 not doing kvm_arch_vcpu_load (guest not executing HLT,
+not switching VCPUs, no exits to QEMU).
 
->>> This may be better as
->>> 	"Using 'packed' can impact performance\n"
->>> and only tested when not in --file mode.
->>
->> I can also make this change, sure, just point me off-list for an example
->> to crib from and test?
-> 
-> Look at the FSF mailing address test as an example:
-> 
-> 			my $msg_type = \&ERROR;
-> 			$msg_type = \&CHK if ($file);
-> 			&{$msg_type}("FSF_MAILING_ADDRESS",
+VCPU0 doing kvm_arch_vcpu_load (guest executing HLT, say).
 
-OK, thanks, I'll make something happen, and drop it to a CHK too.
+The updates on VCPU0 must generate updates on VCPU1 as well, otherwise
+NTP correction applies to VCPU0 but not VCPU1.
 
--- 
-Tom
