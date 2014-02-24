@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaBXLNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:13:39 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:46351 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaBXLNi (ORCPT
+	id S1752028AbaBXLUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:20:23 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44466 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaBXLUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:13:38 -0500
-X-IronPort-AV: E=Sophos;i="4.97,534,1389744000"; 
-   d="scan'208";a="103496490"
-Message-ID: <1393240415.16570.46.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
- definitions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Date: Mon, 24 Feb 2014 11:13:35 +0000
-In-Reply-To: <5306A993.5010504@citrix.com>
-References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
-				 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
-			 <1392743214.23084.38.camel@kazak.uk.xensource.com>
-			 <5303C44D.4070500@citrix.com>
-		 <1392804319.23084.109.camel@kazak.uk.xensource.com>
-		 <53050BF5.1060009@citrix.com>
-	 <1392888808.22494.21.camel@kazak.uk.xensource.com>
-	 <5306A993.5010504@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Mon, 24 Feb 2014 06:20:22 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] dcache: replace obsolete simple_strtoul() with kstrtoul()
+Date: Mon, 24 Feb 2014 20:20:16 +0900
+Message-ID: <1700307.8D3KhEYTno@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-21 at 01:19 +0000, Zoltan Kiss wrote:
-> I don't know if the guest expects that slots for the same packet 
-> comes back at the same time. 
 
-I don't think the guest is allowed to assume that. In particular they
-aren't allowed to assume the the slots will be freed in the order they
-were presented on the ring. There used to be a debug patch to
-deliberately permute the responses, perhaps it was in the old
-netchannel2 tree.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ fs/dcache.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Ian.
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 265e0ce..f360620 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3345,10 +3345,9 @@ EXPORT_SYMBOL(d_tmpfile);
+ static __initdata unsigned long dhash_entries;
+ static int __init set_dhash_entries(char *str)
+ {
+-	if (!str)
+-		return 0;
+-	dhash_entries = simple_strtoul(str, &str, 0);
+-	return 1;
++	if (str && !kstrtoul(str, 0, &dhash_entries))
++		return 1;
++	return 0;
+ }
+ __setup("dhash_entries=", set_dhash_entries);
+ 
+-- 
+1.7.9.5
 
+---
