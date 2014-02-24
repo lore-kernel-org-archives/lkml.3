@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaBXPCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:02:03 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:40003 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181AbaBXPCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:02:01 -0500
-Message-ID: <530B5EE3.8050200@linux.vnet.ibm.com>
-Date: Mon, 24 Feb 2014 10:01:55 -0500
-From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Reply-To: jjherne@linux.vnet.ibm.com
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752947AbaBXPCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:02:20 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:57370 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723AbaBXPCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 10:02:18 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Subject: Warning in workqueue.c
-References: <20140207165113.GD3304@htj.dyndns.org> <52F51E10.8050208@linux.vnet.ibm.com> <20140207193604.GA8833@htj.dyndns.org> <52F8F0FB.3080206@linux.vnet.ibm.com> <20140210231742.GK25350@mtj.dyndns.org> <52FB90C6.4010701@linux.vnet.ibm.com> <52FC3C83.8020303@cn.fujitsu.com> <52FD07B2.5080402@linux.vnet.ibm.com> <20140213204102.GC17608@htj.dyndns.org> <20140214160923.GK27965@twins.programming.kicks-ass.net> <20140214162556.GF31544@htj.dyndns.org>
-In-Reply-To: <20140214162556.GF31544@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022415-0320-0000-0000-00000288A1A0
+In-Reply-To: <530B4AFB.5060006@redhat.com>
+References: <1393221070-21674-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<530B4AFB.5060006@redhat.com>
+Date: Tue, 25 Feb 2014 00:02:15 +0900
+Message-ID: <CAAmzW4OYqVtLOyvMpS7258OXyr07MHzBCTtyurwrZ+fbxNK=bw@mail.gmail.com>
+Subject: Re: [PATCH] zram: support REQ_DISCARD
+From: Joonsoo Kim <js1304@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 11:25 AM, Tejun Heo wrote:
-> ...
-> Hmmm... weird, p's rq shouldn't have changed without its cpus_allowed
-> busted.  Anyways, let's wait for Jason's test results and see whether
-> this is a regression at all.
+2014-02-24 22:36 GMT+09:00 Jerome Marchand <jmarchan@redhat.com>:
+> On 02/24/2014 06:51 AM, Joonsoo Kim wrote:
+>> zram is ram based block device and can be used by backend of filesystem.
+>> When filesystem deletes a file, it normally doesn't do anything on data
+>> block of that file. It just marks on metadata of that file. This behavior
+>> has no problem on disk based block device, but has problems on ram based
+>> block device, since we can't free memory used for data block. To overcome
+>> this disadvantage, there is REQ_DISCARD functionality. If block device
+>> support REQ_DISCARD and filesystem is mounted with discard option,
+>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
+>> discarded. All we have to do is to handle this request.
+>>
+>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+>> used.
+>>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> ---
+>> This patch is based on master branch of linux-next tree.
+>>
+>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>> index 5ec61be..cff2c0e 100644
+>> --- a/drivers/block/zram/zram_drv.c
+>> +++ b/drivers/block/zram/zram_drv.c
+>> @@ -501,6 +501,20 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>       return ret;
+>>  }
+>>
+>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
+>> +{
+>> +     u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>
+> Hi Joonsoo,
+>
+> If bi_sector is not aligned on a page size, we might end up discarding
+> a page that still contain valid data.
+>
+>
 
-I was unable to determine exactly when this behavior was introduced. The 
-reason for this is because I keep hitting other bugs that prevent the 
-test case from running, the most notable of which causes an immediate 
-system hang. I also hit other warnings and bug messages and I'm not sure 
-if they are related or if they will influence the probability of hitting 
-the problem we are trying to solve here.  What I did find is the following:
+Hello, Jerome.
 
-We hit this problem as far back as v3.10.
-The warning was introduced after v3.5 but before v3.6.
+Is it possible that request isn't aligned on a page size if
+logical/physical block size
+is PAGE_SIZE? When I tested it, I didn't find any invalid io.
+If we meet any misaligned request, it would be filtered by
+valid_io_request(). :)
 
--- 
--- Jason J. Herne (jjherne@linux.vnet.ibm.com)
-
+Thanks.
