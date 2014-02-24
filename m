@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaBXK6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:58:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:10836 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaBXK6M convert rfc822-to-8bit (ORCPT
+	id S1752192AbaBXLA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:00:59 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54445 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaBXLA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:58:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,534,1389772800"; 
-   d="scan'208,223";a="486976452"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "'Paolo Bonzini'" <pbonzini@redhat.com>,
-        "'kvm@vger.kernel.org'" <kvm@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'qemu-devel@nongnu.org'" <qemu-devel@nongnu.org>
-CC: "'gleb@redhat.com'" <gleb@redhat.com>, "'hpa@zytor.com'" <hpa@zytor.com>
-Subject: [PATCH v5 3/3] KVM: x86: Enable Intel MPX for guest
-Thread-Topic: [PATCH v5 3/3] KVM: x86: Enable Intel MPX for guest
-Thread-Index: Ac8xT04AW8dynEC7TZelS5RsgdKoeQ==
-Date: Mon, 24 Feb 2014 10:58:09 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350150E43C@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Feb 2014 06:00:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Magnus Damm <damm@opensource.se>, linux-pci@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: DMABOUNCE in pci-rcar
+Date: Mon, 24 Feb 2014 12:00:21 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402241200.21944.arnd@arndb.de>
+X-Provags-ID: V02:K0:IHNPIB3JMggk6YkdEVxLQKMnJkMCSitsphB4nv3K1Nt
+ rM352K/oX+oCUBivHBg46krR2ixBVNJFZVE5iL5/sX0CoR11sb
+ DkZqd5Rmhq0gNxzYX883W7eoRxUoVnamRAalLyBqgnNWdUQ1Xt
+ wIQtx6LZNOixsjiJJguLmnfKCAA3akfYzS4nq8FeLmo4f3LLzi
+ 6TB5dB2yCfzN/hJq3Gych7DihksjBE+Wh8khuvfMgIQFUzSFOt
+ 4ii/eL1dW/MApxshKzoQnfmNLlquR7c1SUzzHUZatmsseimZHx
+ w73Tvfh5zTmlk528ByNbgAknlToljW8CkEN7pCHVFlZNPogCdx
+ XSLEbTPk9+RarUHt2Bpk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 44c2abca2c2eadc6f2f752b66de4acc8131880c4 Mon Sep 17 00:00:00 2001
-From: Liu Jinsong <jinsong.liu@intel.com>
-Date: Mon, 24 Feb 2014 18:12:31 +0800
-Subject: [PATCH v5 3/3] KVM: x86: Enable Intel MPX for guest
+Hi Magnus,
 
-This patch enable Intel MPX feature to guest.
+I noticed during randconfig testing that you enabled DMABOUNCE for the
+pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
 
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- arch/x86/kvm/cpuid.c |    4 +++-
- arch/x86/kvm/x86.c   |    6 ++++++
- arch/x86/kvm/x86.h   |    3 ++-
- 3 files changed, 11 insertions(+), 2 deletions(-)
+I didn't see the original post unfortunately, but I fear we have to
+revert it and come up with a better solution, as your approach seems
+wrong on a number of levels:
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index b241325..ddc8a7e 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -256,6 +256,8 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- #endif
- 	unsigned f_rdtscp = kvm_x86_ops->rdtscp_supported() ? F(RDTSCP) : 0;
- 	unsigned f_invpcid = kvm_x86_ops->invpcid_supported() ? F(INVPCID) : 0;
-+	unsigned f_mpx = kvm_x86_ops->mpx_supported ?
-+			 (kvm_x86_ops->mpx_supported() ? F(MPX) : 0) : 0;
- 
- 	/* cpuid 1.edx */
- 	const u32 kvm_supported_word0_x86_features =
-@@ -303,7 +305,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	/* cpuid 7.0.ebx */
- 	const u32 kvm_supported_word9_x86_features =
- 		F(FSGSBASE) | F(BMI1) | F(HLE) | F(AVX2) | F(SMEP) |
--		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | F(RDSEED) |
-+		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | f_mpx | F(RDSEED) |
- 		F(ADX);
- 
- 	/* all calls to cpuid_count() should be made on the same cpu */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 89e4e27..3570e71 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- 	u64 old_xcr0 = vcpu->arch.xcr0;
- 	u64 valid_bits;
- 
-+	if (!kvm_x86_ops->mpx_supported || !kvm_x86_ops->mpx_supported())
-+		xcr0 &= ~(XSTATE_BNDREGS | XSTATE_BNDCSR);
-+
- 	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
-@@ -616,6 +619,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- 	if (xcr0 & ~valid_bits)
- 		return 1;
- 
-+	if ((!(xcr0 & XSTATE_BNDREGS)) != (!(xcr0 & XSTATE_BNDCSR)))
-+		return 1;
-+
- 	kvm_put_guest_xcr0(vcpu);
- 	vcpu->arch.xcr0 = xcr0;
- 
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index 8da5823..392ecbf 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -122,7 +122,8 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
- 	gva_t addr, void *val, unsigned int bytes,
- 	struct x86_exception *exception);
- 
--#define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define KVM_SUPPORTED_XCR0     (XSTATE_FP | XSTATE_SSE | XSTATE_YMM \
-+				| XSTATE_BNDREGS | XSTATE_BNDCSR)
- extern u64 host_xcr0;
- 
- extern unsigned int min_timer_period_us;
--- 
-1.7.1
+* We really don't want any new users of DMABOUNCE on ARM but instead leave
+  it to the PXA/IXP/SA1100 based platforms using it today.
+
+* If your SoCs have an IOMMU, you should really use it, as that would
+  give you much better performance than bounce buffers anyway
+
+* If the hardware is so screwed up that you have to use bounce buffers,
+  use the SWIOTLB code that is reasonably modern.
+
+* The window base and size in the driver should not be hardcoded, as
+  this is likely not a device specific property but rather an artifact of
+  how it's connected. Use the standard "dma-ranges" property.
+
+* You should not need your own dma_map_ops in the driver. What you
+  do there isn't really specific to your host but should live in some
+  place where it can be shared with other drivers.
+
+* The implementation of the dma_map_ops is wrong: at the very least,
+  you cannot use the dma_mask of the pci host when translating
+  calls from the device, since each pci device can have a different
+  dma mask that is set by the driver if it needs larger or smaller
+  than 32-bit DMA space.
+
+* The block bounce code can't be enabled if CONFIG_BLOCK is disabled,
+  this is how I noticed your changes.
+
+* The block layer assumes that it will bounce any highmem pages,
+  but that isn't necessarily what you want here: if you have 2GB
+  of lowmem space (CONFIG_VMSPLIT_2G) or more, you will also have
+  lowmem pages that need bouncing.
+
+* (completely unrelated, I noticed you set up a bogus I/O space
+  window. Don't do that, you will get get a panic if a device happens
+  to use it. Not providing an resource should work fine though)
+
+On the bright side, your other changes in the same series all look
+good. Thanks especially for sorting out the probe() function, I was
+already wondering if we could change that the way you did.
+
+	Arnd
