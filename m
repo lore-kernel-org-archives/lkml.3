@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaBXH4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 02:56:46 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33480 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbaBXH4p convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 24 Feb 2014 02:56:45 -0500
-Message-Id: <530B0948020000780011E968@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 24 Feb 2014 07:56:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <davem@davemloft.net>, "Ingo Molnar" <mingo@kernel.org>,
-        <tglx@linutronix.de>, <dborkman@redhat.com>, <ffusco@redhat.com>,
-        <tgraf@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] x86/hash: fix build failure with older
- binutils
-References: <53073962020000780011E2DE@nat28.tlf.novell.com>
- <68ae560f-8cf7-4083-816f-3fa78aed9a87@email.android.com>
- <53076DBC020000780011E552@nat28.tlf.novell.com>
- <5307A651.5030604@zytor.com>
-In-Reply-To: <5307A651.5030604@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752468AbaBXIAx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:00:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbaBXIAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:00:49 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Anil Gurumurthy <agurumur@brocade.com>,
+        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 03/23] bfa: Cleanup bfad_setup_intr() function
+Date: Mon, 24 Feb 2014 09:02:03 +0100
+Message-Id: <c3fb3d552113a7c180741cf9f577081fc690366f.1393191330.git.agordeev@redhat.com>
+In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
+References: <cover.1393191330.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.02.14 at 20:17, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> On 02/21/2014 06:16 AM, Jan Beulich wrote:
->>>>> On 21.02.14 at 13:51, "H. Peter Anvin" <hpa@zytor.com> wrote:
->>> How old?
->> 
->> 2.16.91.0.5 (SLE10)
->> 
-> 
-> I would *love* to kill off binutils 2.16.  It was a horribly buggy
-> version, and it has been hard to deal with keeping things alive with it.
->  How important is this?
-> 
-> Since this is the first I've heard of this being broken, I am kind of
-> encouraged that maybe we can move on?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Anil Gurumurthy <agurumur@brocade.com>
+Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/scsi/bfa/bfad.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-2.17 doesn't have support for it either, yet has support for fxsaveq
-(which you can see in the patch context we check for too). Apart
-from that Documentation/Changes continues to state binutils 2.12
-to be the minimum requirement...
-
-Jan
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index 972ff8d..e7e4774 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1219,7 +1219,7 @@ bfad_install_msix_handler(struct bfad_s *bfad)
+ int
+ bfad_setup_intr(struct bfad_s *bfad)
+ {
+-	int error = 0;
++	int error;
+ 	u32 mask = 0, i, num_bit = 0, max_bit = 0;
+ 	struct msix_entry msix_entries[MAX_MSIX_ENTRY];
+ 	struct pci_dev *pdev = bfad->pcidev;
+@@ -1279,20 +1279,18 @@ bfad_setup_intr(struct bfad_s *bfad)
+ 
+ 		bfad->bfad_flags |= BFAD_MSIX_ON;
+ 
+-		return error;
++		return 0;
+ 	}
+ 
+ line_based:
+-	error = 0;
+-	if (request_irq
+-	    (bfad->pcidev->irq, (irq_handler_t) bfad_intx, BFAD_IRQ_FLAGS,
+-	     BFAD_DRIVER_NAME, bfad) != 0) {
+-		/* Enable interrupt handler failed */
+-		return 1;
+-	}
++	error = request_irq(bfad->pcidev->irq, (irq_handler_t)bfad_intx,
++			    BFAD_IRQ_FLAGS, BFAD_DRIVER_NAME, bfad);
++	if (error)
++		return error;
++
+ 	bfad->bfad_flags |= BFAD_INTX_ON;
+ 
+-	return error;
++	return 0;
+ }
+ 
+ void
+-- 
+1.7.7.6
 
