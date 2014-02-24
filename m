@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaBXPjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 10:39:10 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:46817 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaBXPjI (ORCPT
+	id S1753142AbaBXPkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 10:40:16 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57379 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111AbaBXPkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 10:39:08 -0500
-Message-ID: <530B679C.6070204@linaro.org>
-Date: Mon, 24 Feb 2014 16:39:08 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@kernel.org, tglx@linutronix.de, rjw@rjwysocki.net,
-        nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 4/5] idle: Move idle conditions in cpuidle_idle main
- function
-References: <1393250151-6982-1-git-send-email-daniel.lezcano@linaro.org> <1393250151-6982-4-git-send-email-daniel.lezcano@linaro.org> <20140224145912.GW27965@twins.programming.kicks-ass.net>
-In-Reply-To: <20140224145912.GW27965@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 24 Feb 2014 10:40:13 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jens Axboe <axboe@fb.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 03/11] block: Stop abusing rq->csd.list in blk-softirq
+Date: Mon, 24 Feb 2014 16:39:54 +0100
+Message-Id: <1393256402-16907-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1393256402-16907-1-git-send-email-fweisbec@gmail.com>
+References: <1393256402-16907-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 03:59 PM, Peter Zijlstra wrote:
-> On Mon, Feb 24, 2014 at 02:55:50PM +0100, Daniel Lezcano wrote:
->> @@ -136,25 +155,8 @@ static void cpu_idle_loop(void)
->>   			local_irq_disable();
->>   			arch_cpu_idle_enter();
->>
->> -			/*
->> -			 * In poll mode we reenable interrupts and spin.
->> -			 *
->> -			 * Also if we detected in the wakeup from idle
->> -			 * path that the tick broadcast device expired
->> -			 * for us, we don't want to go deep idle as we
->> -			 * know that the IPI is going to arrive right
->> -			 * away
->> -			 */
->> -			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
->> -				cpu_idle_poll();
->> -			} else {
->> -				if (!current_clr_polling_and_test()) {
->> -					cpuidle_idle_call();
->> -				} else {
->> -					local_irq_enable();
->> -				}
->> -				__current_set_polling();
->> -			}
->> +			cpuidle_idle_call();
->> +
->
-> Yeah, not liking that much; you can make it look like:
->
-> 	if (cpu_idle_force_poll || tick_check_broadcast_expired())
-> 		cpu_idle_poll();
-> 	else
-> 		cpu_idle_call();
->
-> Though. That keeps the polling case separate from the actual idle
-> function.
+From: Jan Kara <jack@suse.cz>
 
-Yes, you are right, it looks better.
+Abusing rq->csd.list for a list of requests to complete is rather ugly.
+We use rq->queuelist instead which is much cleaner. It is safe because
+queuelist is used by the block layer only for requests waiting to be
+submitted to a device. Thus it is unused when irq reports the request IO
+is finished.
 
-> And when you do that; you can also push down the
-> current_clr_polling_and_test() muck so it doesn't cover the actual
-> cpuidle policy code.
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jens Axboe <axboe@fb.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ block/blk-softirq.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-I am not getting it. Where do you suggest to move it ?
-
+diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+index 57790c1..b5c37d9 100644
+--- a/block/blk-softirq.c
++++ b/block/blk-softirq.c
+@@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
+ 	while (!list_empty(&local_list)) {
+ 		struct request *rq;
+ 
+-		rq = list_entry(local_list.next, struct request, csd.list);
+-		list_del_init(&rq->csd.list);
++		rq = list_entry(local_list.next, struct request, queuelist);
++		list_del_init(&rq->queuelist);
+ 		rq->q->softirq_done_fn(rq);
+ 	}
+ }
+@@ -45,9 +45,14 @@ static void trigger_softirq(void *data)
+ 
+ 	local_irq_save(flags);
+ 	list = this_cpu_ptr(&blk_cpu_done);
+-	list_add_tail(&rq->csd.list, list);
++	/*
++	 * We reuse queuelist for a list of requests to process. Since the
++	 * queuelist is used by the block layer only for requests waiting to be
++	 * submitted to the device it is unused now.
++	 */
++	list_add_tail(&rq->queuelist, list);
+ 
+-	if (list->next == &rq->csd.list)
++	if (list->next == &rq->queuelist)
+ 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
+ 
+ 	local_irq_restore(flags);
+@@ -136,7 +141,7 @@ void __blk_complete_request(struct request *req)
+ 		struct list_head *list;
+ do_local:
+ 		list = this_cpu_ptr(&blk_cpu_done);
+-		list_add_tail(&req->csd.list, list);
++		list_add_tail(&req->queuelist, list);
+ 
+ 		/*
+ 		 * if the list only contains our just added request,
+@@ -144,7 +149,7 @@ do_local:
+ 		 * entries there, someone already raised the irq but it
+ 		 * hasn't run yet.
+ 		 */
+-		if (list->next == &req->csd.list)
++		if (list->next == &req->queuelist)
+ 			raise_softirq_irqoff(BLOCK_SOFTIRQ);
+ 	} else if (raise_blk_irq(ccpu, req))
+ 		goto do_local;
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.3.1
 
