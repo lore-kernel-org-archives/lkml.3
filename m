@@ -1,127 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaBXInb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:43:31 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:41071 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaBXInP (ORCPT
+	id S1752777AbaBXIn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:43:29 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:60592 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600AbaBXInM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:43:15 -0500
+	Mon, 24 Feb 2014 03:43:12 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] pinctrl: mvebu: dove: request additional resources
-Date: Mon, 24 Feb 2014 09:42:57 +0100
-Message-Id: <1393231382-11078-6-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 01/10] devicetree: bindings: add missing Marvell Dove SoC documentation
+Date: Mon, 24 Feb 2014 09:42:53 +0100
+Message-Id: <1393231382-11078-2-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dove pinctrl also requires additional registers to control all pins.
-This patch requests resources for mpp4 and pmu-mpp register ranges.
-As this changes DT to driver requirements, fallback to hardcoded
-resources, if the corresponding DT regs have not been set.
-Also, WARN about old DT binding usage to encourage users to update
-their DTBs.
+Marvell Dove SoC binding was not documented, yet. Add the documentation
+and also describe Global Configuration register node in it.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Rob Landley <rob@landley.net>
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pinctrl/mvebu/pinctrl-dove.c | 45 +++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
+ .../devicetree/bindings/arm/marvell,dove.txt       | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/marvell,dove.txt
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index da9ca26360fd..8d57d4bc1f0c 100644
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -22,6 +22,11 @@
- 
- #include "pinctrl-mvebu.h"
- 
-+/* Internal registers can be configured at any 1 MiB aligned address */
-+#define INT_REGS_MASK		~(SZ_1M - 1)
-+#define MPP4_REGS_OFFS		0xd0440
-+#define PMU_REGS_OFFS		0xd802c
+diff --git a/Documentation/devicetree/bindings/arm/marvell,dove.txt b/Documentation/devicetree/bindings/arm/marvell,dove.txt
+new file mode 100644
+index 000000000000..aaaf64c56e44
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/marvell,dove.txt
+@@ -0,0 +1,22 @@
++Marvell Dove Platforms Device Tree Bindings
++-----------------------------------------------
 +
- #define DOVE_SB_REGS_VIRT_BASE		IOMEM(0xfde00000)
- #define DOVE_MPP_VIRT_BASE		(DOVE_SB_REGS_VIRT_BASE + 0xd0200)
- #define DOVE_PMU_MPP_GENERAL_CTRL	(DOVE_MPP_VIRT_BASE + 0x10)
-@@ -52,6 +57,8 @@
- #define CONFIG_PMU	BIT(4)
- 
- static void __iomem *mpp_base;
-+static void __iomem *mpp4_base;
-+static void __iomem *pmu_base;
- 
- static int dove_mpp_ctrl_get(unsigned pid, unsigned long *config)
- {
-@@ -751,7 +758,8 @@ static struct of_device_id dove_pinctrl_of_match[] = {
- 
- static int dove_pinctrl_probe(struct platform_device *pdev)
- {
--	struct resource *res;
-+	struct resource *res, *mpp_res;
-+	struct resource fb_res;
- 	const struct of_device_id *match =
- 		of_match_device(dove_pinctrl_of_match, &pdev->dev);
- 	pdev->dev.platform_data = (void *)match->data;
-@@ -767,11 +775,42 @@ static int dove_pinctrl_probe(struct platform_device *pdev)
- 	}
- 	clk_prepare_enable(clk);
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	mpp_base = devm_ioremap_resource(&pdev->dev, res);
-+	mpp_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	mpp_base = devm_ioremap_resource(&pdev->dev, mpp_res);
- 	if (IS_ERR(mpp_base))
- 		return PTR_ERR(mpp_base);
- 
-+	/* prepare fallback resource */
-+	memcpy(&fb_res, mpp_res, sizeof(struct resource));
-+	fb_res.start = 0;
++Boards with a Marvell Dove SoC shall have the following properties:
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res) {
-+		dev_warn(&pdev->dev, "falling back to hardcoded MPP4 resource\n");
-+		adjust_resource(&fb_res,
-+			(mpp_res->start & INT_REGS_MASK) + MPP4_REGS_OFFS, 0x4);
-+		res = &fb_res;
-+	}
++Required root node property:
++- compatible: must contain "marvell,dove";
 +
-+	mpp4_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(mpp4_base))
-+		return PTR_ERR(mpp4_base);
++* Global Configuration registers
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-+	if (!res) {
-+		dev_warn(&pdev->dev, "falling back to hardcoded PMU resource\n");
-+		adjust_resource(&fb_res,
-+			(mpp_res->start & INT_REGS_MASK) + PMU_REGS_OFFS, 0x8);
-+		res = &fb_res;
-+	}
++Global Configuration registers of Dove SoC are shared by a syscon node.
 +
-+	pmu_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(pmu_base))
-+		return PTR_ERR(pmu_base);
++Required properties:
++- compatible: must contain "marvell,dove-global-config" and "syscon".
++- reg: base address and size of the Global Configuration registers.
 +
-+	/* Warn on any missing DT resource */
-+	WARN(fb_res.start, FW_BUG "Missing pinctrl regs in DTB. Please update your firmware.\n");
++Example:
 +
- 	return mvebu_pinctrl_probe(pdev);
- }
- 
++gconf: global-config@e802c {
++	compatible = "marvell,dove-global-config", "syscon";
++	reg = <0xe802c 0x14>;
++};
 -- 
 1.8.5.3
 
