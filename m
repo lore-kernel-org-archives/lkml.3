@@ -1,62 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBXR3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:29:04 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38510 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752240AbaBXR3B (ORCPT
+	id S1753400AbaBXRaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:30:06 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:55516 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364AbaBXRaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:29:01 -0500
-Date: Mon, 24 Feb 2014 17:28:50 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: srikanth TS <srikantht.shivanand@gmail.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ts.srikanth@samsung.com" <ts.srikanth@samsung.com>,
-        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>
-Subject: Re: your mail
-Message-ID: <20140224172850.GG2553@mudshark.cambridge.arm.com>
-References: <CAM0G4zvu1BHcOrSgBuobvb-+fVsNWXjXdzZdV51T70B9_ZC4XQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM0G4zvu1BHcOrSgBuobvb-+fVsNWXjXdzZdV51T70B9_ZC4XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Feb 2014 12:30:03 -0500
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: [RFC PATCH 2/2] mtd: nand: add hynix specific initializer
+Date: Mon, 24 Feb 2014 18:29:53 +0100
+Message-Id: <1393262993-22040-3-git-send-email-b.brezillon.dev@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393262993-22040-1-git-send-email-b.brezillon.dev@gmail.com>
+References: <1393262993-22040-1-git-send-email-b.brezillon.dev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 03:12:21PM +0000, srikanth TS wrote:
-> Hi Will Deacon,
+Add an hynix initializer to manage read retries on h27uxgt8t2a chips.
 
-Hello,
+Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+---
+ drivers/mtd/nand/Makefile     |    2 +-
+ drivers/mtd/nand/nand_hynix.c |  151 +++++++++++++++++++++++++++++++++++++++++
+ drivers/mtd/nand/nand_ids.c   |    3 +-
+ include/linux/mtd/nand.h      |    2 +
+ 4 files changed, 156 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/mtd/nand/nand_hynix.c
 
-> Currently SMMU driver expecting all stream ID used by respective master
-> should be defined in the DT.
-> 
-> We want to know how to handle in the case of virtual functions dynamically
-> created and destroyed.
-> 
-> Is PCI driver responsible for creating stream ID respective BDand
-> requesting SMMU to add to the mapping table[stream Id to context mapping
-> table]?
-> 
-> Or is there any right way of doing it?
+diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+index 542b568..c970ce7 100644
+--- a/drivers/mtd/nand/Makefile
++++ b/drivers/mtd/nand/Makefile
+@@ -5,7 +5,7 @@
+ obj-$(CONFIG_MTD_NAND)			+= nand.o
+ obj-$(CONFIG_MTD_NAND_ECC)		+= nand_ecc.o
+ obj-$(CONFIG_MTD_NAND_BCH)		+= nand_bch.o
+-obj-$(CONFIG_MTD_NAND_IDS)		+= nand_ids.o
++obj-$(CONFIG_MTD_NAND_IDS)		+= nand_ids.o nand_hynix.o
+ obj-$(CONFIG_MTD_SM_COMMON) 		+= sm_common.o
+ 
+ obj-$(CONFIG_MTD_NAND_CAFE)		+= cafe_nand.o
+diff --git a/drivers/mtd/nand/nand_hynix.c b/drivers/mtd/nand/nand_hynix.c
+new file mode 100644
+index 0000000..c1d0017
+--- /dev/null
++++ b/drivers/mtd/nand/nand_hynix.c
+@@ -0,0 +1,151 @@
++/*
++ * Copyright (C) 2014 Boris BREZILLON <b.brezillon.dev@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/mtd/nand.h>
++#include <linux/slab.h>
++
++static u8 h27ucg8t2a_read_retry_regs[] = {
++	0xcc, 0xbf, 0xaa, 0xab, 0xcd, 0xad, 0xae, 0xaf
++};
++
++struct hynix_read_retry {
++	u8 *regs;
++	u8 values[64];
++};
++
++struct hynix_nand {
++	struct hynix_read_retry read_retry;
++};
++
++int nand_setup_read_retry_hynix(struct mtd_info *mtd, int retry_mode)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct hynix_nand *hynix = chip->manuf_priv;
++	int offset = retry_mode * 8;
++	int status;
++	int i;
++
++	chip->cmdfunc(mtd, 0x36, -1, -1);
++	for (i = 0; i < 8; i++) {
++		int column = hynix->read_retry.regs[i];
++		column |= column << 8;
++		chip->cmdfunc(mtd, NAND_CMD_NONE, column, -1);
++		chip->write_byte(mtd, hynix->read_retry.values[offset + i]);
++	}
++	chip->cmdfunc(mtd, 0x16, -1, -1);
++
++	status = chip->waitfunc(mtd, chip);
++	if (status & NAND_STATUS_FAIL)
++		return -EIO;
++
++	return 0;
++}
++
++static void h27ucg8t2a_cleanup(struct mtd_info *mtd)
++{
++	struct nand_chip *chip = mtd->priv;
++	kfree(chip->manuf_priv);
++}
++
++static int h27ucg8t2a_init(struct mtd_info *mtd, const uint8_t *id)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct hynix_nand *hynix;
++	u8 buf[1024];
++	int i, j;
++	int ret;
++
++	chip->select_chip(mtd, 0);
++	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
++	chip->cmdfunc(mtd, 0x36, 0xff, -1);
++	chip->write_byte(mtd, 0x40);
++	chip->cmdfunc(mtd, NAND_CMD_NONE, 0xcc, -1);
++	chip->write_byte(mtd, 0x4d);
++	chip->cmdfunc(mtd, 0x16, -1, -1);
++	chip->cmdfunc(mtd, 0x17, -1, -1);
++	chip->cmdfunc(mtd, 0x04, -1, -1);
++	chip->cmdfunc(mtd, 0x19, -1, -1);
++	chip->cmdfunc(mtd, NAND_CMD_READ0, 0x0, 0x200);
++
++	chip->read_buf(mtd, buf, 2);
++	if (buf[0] != 0x8 || buf[1] != 0x8)
++		return -EINVAL;
++	chip->read_buf(mtd, buf, 1024);
++
++	ret = 0;
++	for (j = 0; j < 8; j++) {
++		for (i = 0; i < 64; i++) {
++			u8 *tmp = buf + (128 * j);
++			if ((tmp[i] | tmp[i + 64]) != 0xff) {
++				ret = -EINVAL;
++				break;
++			}
++		}
++
++		if (ret)
++			break;
++	}
++
++	chip->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
++	chip->cmdfunc(mtd, 0x38, -1, -1);
++	chip->select_chip(mtd, -1);
++
++	if (!ret) {
++		hynix = kzalloc(sizeof(*hynix), GFP_KERNEL);
++		if (!hynix)
++			return -ENOMEM;
++
++		hynix->read_retry.regs = h27ucg8t2a_read_retry_regs;
++		memcpy(hynix->read_retry.values, buf, 64);
++		chip->manuf_priv = hynix;
++		chip->setup_read_retry = nand_setup_read_retry_hynix;
++		chip->read_retries = 8;
++		chip->manuf_cleanup = h27ucg8t2a_cleanup;
++	}
++
++	return ret;
++}
++
++struct hynix_nand_initializer {
++	u8 id[6];
++	int (*init)(struct mtd_info *mtd, const uint8_t *id);
++};
++
++struct hynix_nand_initializer initializers[] = {
++	{
++		.id = {NAND_MFR_HYNIX, 0xde, 0x94, 0xda, 0x74, 0xc4},
++		.init = h27ucg8t2a_init,
++	},
++};
++
++int hynix_nand_init(struct mtd_info *mtd, const uint8_t *id)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(initializers); i++) {
++		struct hynix_nand_initializer *initializer = &initializers[i];
++		if (memcmp(id, initializer->id, sizeof(initializer->id)))
++			continue;
++
++		return initializer->init(mtd, id);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(hynix_nand_init);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Boris BREZILLON <b.brezillon.dev@gmail.com>");
++MODULE_DESCRIPTION("Hynix NAND specific code");
+diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
+index daa2faa..8d373af 100644
+--- a/drivers/mtd/nand/nand_ids.c
++++ b/drivers/mtd/nand/nand_ids.c
+@@ -156,6 +156,7 @@ struct nand_flash_dev nand_flash_ids[] = {
+ 	{NULL}
+ };
+ 
++
+ /* Manufacturer IDs */
+ struct nand_manufacturers nand_manuf_ids[] = {
+ 	{NAND_MFR_TOSHIBA, "Toshiba"},
+@@ -164,7 +165,7 @@ struct nand_manufacturers nand_manuf_ids[] = {
+ 	{NAND_MFR_NATIONAL, "National"},
+ 	{NAND_MFR_RENESAS, "Renesas"},
+ 	{NAND_MFR_STMICRO, "ST Micro"},
+-	{NAND_MFR_HYNIX, "Hynix"},
++	{NAND_MFR_HYNIX, "Hynix", hynix_nand_init},
+ 	{NAND_MFR_MICRON, "Micron"},
+ 	{NAND_MFR_AMD, "AMD/Spansion"},
+ 	{NAND_MFR_MACRONIX, "Macronix"},
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 6189312..389b3c5 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -729,6 +729,8 @@ struct nand_manufacturers {
+ extern struct nand_flash_dev nand_flash_ids[];
+ extern struct nand_manufacturers nand_manuf_ids[];
+ 
++int hynix_nand_init(struct mtd_info *mtd, const uint8_t *id);
++
+ extern int nand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd);
+ extern int nand_default_bbt(struct mtd_info *mtd);
+ extern int nand_markbad_bbt(struct mtd_info *mtd, loff_t offs);
+-- 
+1.7.9.5
 
-Correct, the driver currently doesn't support dynamic mappings (mainly
-because I didn't want to try and invent something that I couldn't test).
-
-There are a couple of ways to solve this:
-
-  (1) Add a way for a PCI RC to dynamically allocate StreamIDs on an SMMU
-      within a fixed range. That would probably need some code in the bus
-      layer, so that a bus notifier can kick and call back to the relevant
-      SMMU.
-
-  (2) Describe the RID -> SID mapping in the device-tree. We probably want
-      to avoid an enormous table, so this would only work for simple `SID =
-      RID + offset' or 'SID = RID & mask' cases.
-
-How do your IDs map to each other?
-
-Will
