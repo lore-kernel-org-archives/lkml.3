@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBXIGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:06:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21017 "EHLO mx1.redhat.com"
+	id S1752635AbaBXIBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:01:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59633 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752650AbaBXIBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:01:19 -0500
+	id S1752558AbaBXIBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 03:01:06 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, qla2xxx-upstream@qlogic.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v2 21/23] qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 24 Feb 2014 09:02:21 +0100
-Message-Id: <09a448376c6da694f2d865a063f0eb75efa2e408.1393191330.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 11/23] lpfc: Remove superfluous call to pci_disable_msix()
+Date: Mon, 24 Feb 2014 09:02:11 +0100
+Message-Id: <d6eb995129c133a2453f5c7bf5253e6a2ce51ed6.1393191330.git.agordeev@redhat.com>
 In-Reply-To: <cover.1393191330.git.agordeev@redhat.com>
 References: <cover.1393191330.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
-
-Log message code 0x00c6 preserved, although it is reported
-after successful call to pci_enable_msix_range(), not before
-possibly unsuccessful call to pci_enable_msix(). Consumers
-of the error code should not notice the difference.
+There is no need to call pci_disable_msix() in case
+the previous call to pci_enable_msix() failed
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: qla2xxx-upstream@qlogic.com
+Cc: James Smart <james.smart@emulex.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
+Acked-by: James Smart  <james.smart@emulex.com>
 ---
- drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
- 1 files changed, 11 insertions(+), 16 deletions(-)
+ drivers/scsi/lpfc/lpfc_init.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index 9bc86b9..b2dcfa4 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -2896,27 +2896,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
- 	for (i = 0; i < ha->msix_count; i++)
- 		entries[i].entry = i;
- 
--	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--	if (ret) {
--		if (ret < MIN_MSIX_COUNT)
--			goto msix_failed;
--
-+	ret = pci_enable_msix_range(ha->pdev,
-+				    entries, MIN_MSIX_COUNT, ha->msix_count);
-+	if (ret < 0) {
-+		ql_log(ql_log_fatal, vha, 0x00c7,
-+		    "MSI-X: Failed to enable support, "
-+		    "giving   up -- %d/%d.\n",
-+		    ha->msix_count, ret);
-+		goto msix_out;
-+	} else if (ret < ha->msix_count) {
- 		ql_log(ql_log_warn, vha, 0x00c6,
- 		    "MSI-X: Failed to enable support "
- 		    "-- %d/%d\n Retry with %d vectors.\n",
- 		    ha->msix_count, ret, ret);
--		ha->msix_count = ret;
--		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
--		if (ret) {
--msix_failed:
--			ql_log(ql_log_fatal, vha, 0x00c7,
--			    "MSI-X: Failed to enable support, "
--			    "giving   up -- %d/%d.\n",
--			    ha->msix_count, ret);
--			goto msix_out;
--		}
--		ha->max_rsp_queues = ha->msix_count - 1;
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 68c94cc..a9df97a 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -8078,7 +8078,7 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
+ 	if (rc) {
+ 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+ 				"0420 PCI enable MSI-X failed (%d)\n", rc);
+-		goto msi_fail_out;
++		goto vec_fail_out;
  	}
-+	ha->msix_count = ret;
-+	ha->max_rsp_queues = ha->msix_count - 1;
- 	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
- 				ha->msix_count, GFP_KERNEL);
- 	if (!ha->msix_entries) {
+ 	for (i = 0; i < LPFC_MSIX_VECTORS; i++)
+ 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+@@ -8156,6 +8156,8 @@ irq_fail_out:
+ msi_fail_out:
+ 	/* Unconfigure MSI-X capability structure */
+ 	pci_disable_msix(phba->pcidev);
++
++vec_fail_out:
+ 	return rc;
+ }
+ 
+@@ -8644,7 +8646,7 @@ enable_msix_vectors:
+ 	} else if (rc) {
+ 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+ 				"0484 PCI enable MSI-X failed (%d)\n", rc);
+-		goto msi_fail_out;
++		goto vec_fail_out;
+ 	}
+ 
+ 	/* Log MSI-X vector assignment */
+@@ -8696,9 +8698,10 @@ cfg_fail_out:
+ 			 &phba->sli4_hba.fcp_eq_hdl[index]);
+ 	}
+ 
+-msi_fail_out:
+ 	/* Unconfigure MSI-X capability structure */
+ 	pci_disable_msix(phba->pcidev);
++
++vec_fail_out:
+ 	return rc;
+ }
+ 
 -- 
 1.7.7.6
 
