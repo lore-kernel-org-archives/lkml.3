@@ -1,206 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152AbaBXBS0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:18:26 -0500
-Received: from prifuk.spider.cz ([31.31.77.241]:41660 "EHLO prifuk.cz"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaBXBSY convert rfc822-to-8bit (ORCPT
+	id S1751527AbaBXBaF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:30:05 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:39060 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXBaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:18:24 -0500
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
-        simon@mungewell.org
-Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
-Date: Mon, 24 Feb 2014 02:18:21 +0100
-Message-ID: <3296661.ZtKKWyXPzF@geidi-prime>
-User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <530A931D.9030308@iki.fi>
-References: <1516865.M993BQAYe4@geidi-prime> <3364546.xScl1m6sdc@geidi-prime> <530A931D.9030308@iki.fi>
+	Sun, 23 Feb 2014 20:30:00 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <20140222170930.GE26637@thunk.org>
+References: <1392908861-3563-1-git-send-email-linkinjeon@gmail.com>
+	<20140222170930.GE26637@thunk.org>
+Date: Mon, 24 Feb 2014 10:22:10 +0900
+Message-ID: <CAKYAXd9vTbjTnJOQ1Y=pi4QJSYj41fWsQgRD3Fkufskez2W-YA@mail.gmail.com>
+Subject: Re: [PATCH v6] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, bpm@sgi.com, adilger.kernel@dilger.ca,
+        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 of February 2014 02:32:29 Anssi Hannula wrote:
-> 24.02.2014 01:29, Michal Malý kirjoitti:
-> > Introduce ff-memless-next module as a possible future replacement of
-> > ff-memless.
-> > 
-> > Tested-by: Elias Vanderstuyft <elias.vds@gmail.com>
-> > Signed-off-by: Michal Malý <madcatxster@prifuk.cz>
-> 
-> Some comments below.
-> 
-> > ---
-> > 
-> >  v2:
-> >   Handle upload and removal of uncombinable effects correctly
-> >   Remove redundant information from the documentation file
-> >   Invert direction of force along Y axis to conform to common conventions
-> >   Set FF_GAIN bit
-> >  
-> >  Documentation/input/ff-memless-next.txt | 141 ++++++
-> >  drivers/input/Kconfig                   |  11 +
-> >  drivers/input/Makefile                  |   1 +
-> >  drivers/input/ff-memless-next.c         | 789
-> >  ++++++++++++++++++++++++++++++++ include/linux/input/ff-memless-next.h  
-> >  |  32 ++
-> >  5 files changed, 974 insertions(+)
-> >  create mode 100644 Documentation/input/ff-memless-next.txt
-> >  create mode 100644 drivers/input/ff-memless-next.c
-> >  create mode 100644 include/linux/input/ff-memless-next.h
-> > 
-> > diff --git a/Documentation/input/ff-memless-next.txt
-> > b/Documentation/input/ff-memless-next.txt new file mode 100644
-> > index 0000000..1b550dc
-> > --- /dev/null
-> > +++ b/Documentation/input/ff-memless-next.txt
-> > @@ -0,0 +1,141 @@
-> 
-> [...]
-> 
-> > +3. API provided by "ff-memless-next"
-> > +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > +"ff-memless-next" provides an API for developers of hardware-specific
-> > +drivers. In order to use the API, the hardware-specific driver should
-> > +include <linux/input/ff-memless-next.h>
-> 
-> > +Functions and structs defined by this API are:
-> [...]
-> 
-> This kind of basic API documentation belongs in the headers (kernel-doc
-> format).
-> 
-> [...]
-> 
-> > +	MLNX_UPLOAD_UNCOMB - Check if the device can accept and play
-> > +			     "uncombinable" effect and upload the effect into
-> > +			     the device's internal memory.
-> > +			     Hardware-specific driver should return 0
-> > +			     on success.
-> > +	MLNX_ERASE_UNCOMB - Remove "uncombinable" effect from device's
-> > +			    internal memory.
-> > +			    Hardware-specific driver should return 0
-> > +			    on success.
-> > +	MLNX_START_UNCOMB - Start playback of "uncombinable" effect.
-> > +	MLNX_STOP_UNCOMB - Stop playback of "uncombinable" effect.
-> 
-> These seem to be unused by any drivers?
-> 
-> I don't think they should be added to the kernel before there is an
-> implementation using them (it also makes reviewing them more difficult).
+2014-02-23 2:09 GMT+09:00, Theodore Ts'o <tytso@mit.edu>:
+> On Fri, Feb 21, 2014 at 12:07:41AM +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
+>>
+>> The semantics of this flag are following:
+>> 1) It collapses the range lying between offset and length by removing any
+>> data
+>>    blocks which are present in this range and than updates all the
+>> logical
+>>    offsets of extents beyond "offset + len" to nullify the hole created
+>> by
+>>    removing blocks. In short, it does not leave a hole.
+>> 2) It should be used exclusively. No other fallocate flag in combination.
+>> 3) Offset and length supplied to fallocate should be fs block size
+>> aligned
+>>    in case of xfs and ext4.
+>> 4) Collaspe range does not work beyond i_size.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+>> Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
+>
+> In terms of how to get this upstream, it looks like if we do something
+> like this, we can let this patch go via the ext4 tree and we don't
+> need to worry about whether the vfs level changes have gone in our
+> not.
+Okay, Dave already answered.
+>
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index ad13359..d7a78ed 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -46,6 +46,10 @@
+>
+>  #include <trace/events/ext4.h>
+>
+> +#ifndef FALLOC_FL_COLLAPSE_RANGE
+> +#define FALLOC_FL_COLLAPSE_RANGE	0x08
+> +#endif
+> +
+>  /*
+>   * used by extent splitting.
+>   */
+>
+>
+>> +	ret = ext4_es_remove_extent(inode, punch_start,
+>> +				    EXT_MAX_BLOCKS - punch_start - 1);
+>> +	if (ret) {
+>> +		up_write(&EXT4_I(inode)->i_data_sem);
+>> +		goto out_stop;
+>> +	}
+>
+> Doing this at first is probably a bad idea; you should do this at the
+> end, and then completely invalidate the es cache for that inode.  That
+> way, the right thing happens if you get an error in the middle
+> releasing the boxes and shifting the extents:
+Okay, I see.
 
-They are used by my dummy driver (link to the source is in the documentation). 
-Handling uncombinable effects in lg4ff would be a bit more involved so I 
-decided to add support for these in a separate patch series.
-
-> [...]
-> 
-> > +4. Specifics of "ff-memless-next" for userspace developers
-> > +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > +None of the persons involved in development or testing of
-> > "ff-memless-next" +is aware of any reference force feedback
-> > specifications. "ff-memless-next" +tries to adhere to Microsoft's
-> > DirectInput specifications because we +believe that is what most
-> > developers have experience with.
-> > +
-> > +- Waveforms of periodic effects do not start at the origin, but as
-> > follows: +	SAW_UP: At minimum
-> > +	SAW_DOWN: At maximum
-> > +	SQUARE: At maximum
-> > +	TRIANGLE: At maximum
-> > +	SINE: At origin
-> > +
-> > +- Updating periodic effects:
-> > +	- All periodic effects are restarted when their parameters are 
-updated.
-> > +
-> > +- Updating effects of finite duration:
-> > +	- Once an effect of finite length finishes playing, it is considered
-> > +	  stopped. Only effects that are playing can be updated on the fly.
-> > +	  Therefore effects of finite duration can be updated only until
-> > +	  they finish playing.
-> 
-> Stopped effects should still be able to be updated.
-> 
-> Anyway, if you want to target userspace developers with this
-> information, you should put it in generic documentation ("it is not
-> guaranteed that X", etc.). If not, don't say "for userspace developers".
-> 
-> [...]
-> 
-> > diff --git a/drivers/input/ff-memless-next.c
-> > b/drivers/input/ff-memless-next.c new file mode 100644
-> > index 0000000..843a223
-> > --- /dev/null
-> > +++ b/drivers/input/ff-memless-next.c
-> > @@ -0,0 +1,789 @@
-> > +/*
-> > + * Force feedback support for memoryless devices
-> > + *
-> > + * This module is based on "ff-memless" orignally written by Anssi
-> > Hannula. + * It is extended to support all force feedback effects
-> > currently supported + * by the Linux input stack.
-> > + *
-> > + * Copyright(c) 2013 Michal Maly <madcatxster@prifuk.cz>
-> > + *
-> > + */
-> 
-> [...]
-> 
-> > +static int mlnx_upload(struct input_dev *dev, struct ff_effect *effect,
-> > +		       struct ff_effect *old)
-> > +{
-> 
-> [...]
-> 
-> > +		}
-> > +
-> > +		mlnx_schedule_playback(mlnxdev);
-> > +		spin_unlock_irq(&dev->event_lock);
-> > +		return 0;
-> 
-> The above two lines are unneeded.
-Oops...
-
-> > +	}
-> > +
-> > +	spin_unlock_irq(&dev->event_lock);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> 
-> [...]
-> 
-> > diff --git a/include/linux/input/ff-memless-next.h
-> > b/include/linux/input/ff-memless-next.h new file mode 100644
-> > index 0000000..ba89ba1
-> > --- /dev/null
-> > +++ b/include/linux/input/ff-memless-next.h
-> > @@ -0,0 +1,32 @@
-> 
-> [...]
-> 
-> > +int input_ff_create_mlnx(struct input_dev *dev, void *data,
-> > +			 int(*control_effect)(struct input_dev *, void *, const 
-struct
-> > mlnx_effect_command *), +			 const u16 update_rate);
-> 
-> Why is update_rate now driver-selectable?
-Because it is my intention to replace ff-memless with MLNX, I want to account 
-for (very old?) devices that might have a limit on how many commands they can 
-accept within a given timeframe. Update interval in ff-memless is 50 msecs 
-whereas Logitech wheels can go as low as 8 msecs. The lower the update 
-interval - the better the quality of periodic, ramp and envelope effects. 
-Allowing the driver to choose how fast will MLNX generate updates seemed like 
-the best way to go.
-
-
-Your feedback is very much appreciated...
-
-Michal M.
+>
+>> +
+>> +	ret = ext4_ext_remove_space(inode, punch_start, punch_stop - 1);
+>> +	if (ret) {
+>> +		up_write(&EXT4_I(inode)->i_data_sem);
+>> +		goto out_stop;
+>> +	}
+>> +
+>> +	ret = ext4_ext_shift_extents(inode, handle, punch_stop,
+>> +				     punch_stop - punch_start);
+>> +	if (ret) {
+>> +		up_write(&EXT4_I(inode)->i_data_sem);
+>> +		goto out_stop;
+>> +	}
+>
+Hi Ted.
+> The fact that you are doing these two as two separate steps is
+> dangerous; what if you've already released the blocks in
+> ext4_ext_remove_space(), and ext4_ext_shift_extents() fails in the
+> middle of the processing?  That will leave the file system
+> inconsistent, which would be bad.
+If there is error in the middle of extent shifting, the hole will
+present between the last shifted extent and the extent at which error
+happen so this will be consistent state.
+IMHO even if there is error in between the shift, filesystem will be
+in consistent state.
+Am I missing something?
+>
+> Making sure that the right happens if there is a failure in the middle
+> of the operation is Really Important....
+>
+> 					- Ted
+>
