@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaBXT6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:58:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49154 "EHLO
+	id S1753588AbaBXT7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:59:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49146 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaBXT4x (ORCPT
+	with ESMTP id S1753233AbaBXT4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:56:53 -0500
+	Mon, 24 Feb 2014 14:56:52 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/12] perf symbols: Check return value of filename__read_debuglink()
-Date: Mon, 24 Feb 2014 16:56:39 -0300
-Message-Id: <1393271800-17505-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/12] perf tools: Factor features display code
+Date: Mon, 24 Feb 2014 16:56:32 -0300
+Message-Id: <1393271800-17505-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1393271800-17505-1-git-send-email-acme@infradead.org>
 References: <1393271800-17505-1-git-send-email-acme@infradead.org>
@@ -27,57 +29,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-When dso__read_binary_type_filename() called, it doesn't check the
-return value of filename__read_debuglink() so that it'll try to open the
-debuglink file even if it doesn't exist.
+Currently the we display all detected features/libraries by following
+rules:
 
-Also fix return value of the filename__read_debuglink() as it always
-return -1 regardless of the result.
+ - if one of the features is missing
+ - if it's build from clean tree
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+This patch changes changes this behavior in several ways.
+
+- We no longer display all detected features, only detected libraries
+  are displayed by default:
+
+  $ make
+    BUILD:   Doing 'make -j4' parallel build
+
+  Auto-detecting system features:
+  ...                         dwarf: [ on  ]
+  ...                         glibc: [ on  ]
+  ...                          gtk2: [ on  ]
+  ...                      libaudit: [ on  ]
+  ...                        libbfd: [ on  ]
+  ...                        libelf: [ on  ]
+  ...                       libnuma: [ on  ]
+  ...                       libperl: [ on  ]
+  ...                     libpython: [ on  ]
+  ...                      libslang: [ on  ]
+  ...                     libunwind: [ on  ]
+
+  The assumption is, that above libraries are the most interesting part
+of the detection, while we don't care much about detection of on-exit
+support.
+
+- If all above libraries are detected, the default is not shown on
+  subsequent builds.
+
+- If one of the above libraries is missing, the detection output is
+  forced.
+
+- The features status is stored in PERF-FEATURES file and the detection
+  output is forced in case the there's difference between the file
+  contents and currently detected features.
+
+- If you want to see all detected features, you can use VF=1 make
+  variable, that forces the detected features output.
+
+  $ make VF=1
+    BUILD:   Doing 'make -j4' parallel build
+
+  Auto-detecting system features:
+  ...                         dwarf: [ on  ]
+  ...                         glibc: [ on  ]
+  ...                          gtk2: [ on  ]
+  ...                      libaudit: [ on  ]
+  ...                        libbfd: [ on  ]
+  ...                        libelf: [ on  ]
+  ...                       libnuma: [ on  ]
+  ...                       libperl: [ on  ]
+  ...                     libpython: [ on  ]
+  ...                      libslang: [ on  ]
+  ...                     libunwind: [ on  ]
+  ...                     backtrace: [ on  ]
+  ...                fortify-source: [ on  ]
+  ...                  gtk2-infobar: [ on  ]
+  ...             libelf-getphdrnum: [ on  ]
+  ...                   libelf-mmap: [ on  ]
+  ...             libpython-version: [ on  ]
+  ...                       on-exit: [ on  ]
+  ...            stackprotector-all: [ on  ]
+  ...                       timerfd: [ on  ]
+  ...         libunwind-debug-frame: [ OFF ]
+  ...                        bionic: [ OFF ]
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1392859976-32760-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1392825179-5228-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c        | 4 ++--
- tools/perf/util/symbol-elf.c | 2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/Makefile.perf   |   4 +-
+ tools/perf/config/Makefile | 123 ++++++++++++++++++++++++++++++---------------
+ 2 files changed, 85 insertions(+), 42 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 4045d086d9d9..64453d63b971 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -45,8 +45,8 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 			debuglink--;
- 		if (*debuglink == '/')
- 			debuglink++;
--		filename__read_debuglink(dso->long_name, debuglink,
--					 size - (debuglink - filename));
-+		ret = filename__read_debuglink(dso->long_name, debuglink,
-+					       size - (debuglink - filename));
- 		}
- 		break;
- 	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 3e9f336740fa..8ac4a4fe2abd 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -506,6 +506,8 @@ int filename__read_debuglink(const char *filename, char *debuglink,
- 	/* the start of this section is a zero-terminated string */
- 	strncpy(debuglink, data->d_buf, size);
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 5fedd6946f32..bde91f8307ff 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -7,6 +7,8 @@ include config/utilities.mak
  
-+	err = 0;
+ # Define V to have a more verbose compile.
+ #
++# Define VF to have a more verbose feature check output.
++#
+ # Define O to save output files in a separate directory.
+ #
+ # Define ARCH as name of target architecture if you want cross-builds.
+@@ -897,7 +899,7 @@ config-clean:
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+ 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
+-	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
++	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+ 	$(python-clean)
+ 
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 1686583ff7fc..39e6e6cca8ed 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -149,6 +149,32 @@ CORE_FEATURE_TESTS =			\
+ 	stackprotector-all		\
+ 	timerfd
+ 
++LIB_FEATURE_TESTS =			\
++	dwarf				\
++	glibc				\
++	gtk2				\
++	libaudit			\
++	libbfd				\
++	libelf				\
++	libnuma				\
++	libperl				\
++	libpython			\
++	libslang			\
++	libunwind
 +
- out_elf_end:
- 	elf_end(elf);
- out_close:
++VF_FEATURE_TESTS =			\
++	backtrace			\
++	fortify-source			\
++	gtk2-infobar			\
++	libelf-getphdrnum		\
++	libelf-mmap			\
++	libpython-version		\
++	on-exit				\
++	stackprotector-all		\
++	timerfd				\
++	libunwind-debug-frame		\
++	bionic
++
+ # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
+ # If in the future we need per-feature checks/flags for features not
+ # mentioned in this list we need to refactor this ;-).
+@@ -161,17 +187,6 @@ endef
+ $(foreach feat,$(CORE_FEATURE_TESTS),$(call set_test_all_flags,$(feat)))
+ 
+ #
+-# So here we detect whether test-all was rebuilt, to be able
+-# to skip the print-out of the long features list if the file
+-# existed before and after it was built:
+-#
+-ifeq ($(wildcard $(OUTPUT)config/feature-checks/test-all.bin),)
+-  test-all-failed := 1
+-else
+-  test-all-failed := 0
+-endif
+-
+-#
+ # Special fast-path for the 'all features are available' case:
+ #
+ $(call feature_check,all,$(MSG))
+@@ -180,15 +195,6 @@ $(call feature_check,all,$(MSG))
+ # Just in case the build freshly failed, make sure we print the
+ # feature matrix:
+ #
+-ifeq ($(feature-all), 0)
+-  test-all-failed := 1
+-endif
+-
+-ifeq ($(test-all-failed),1)
+-  $(info )
+-  $(info Auto-detecting system features:)
+-endif
+-
+ ifeq ($(feature-all), 1)
+   #
+   # test-all.c passed - just set all the core feature flags to 1:
+@@ -199,27 +205,6 @@ else
+   $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+ endif
+ 
+-#
+-# Print the result of the feature test:
+-#
+-feature_print = $(eval $(feature_print_code)) $(info $(MSG))
+-
+-define feature_print_code
+-  ifeq ($(feature-$(1)), 1)
+-    MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
+-  else
+-    MSG = $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
+-  endif
+-endef
+-
+-#
+-# Only print out our features if we rebuilt the testcases or if a test failed:
+-#
+-ifeq ($(test-all-failed), 1)
+-  $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_print,$(feat)))
+-  $(info )
+-endif
+-
+ ifeq ($(feature-stackprotector-all), 1)
+   CFLAGS += -fstack-protector-all
+ endif
+@@ -602,3 +587,59 @@ ifdef DESTDIR
+ plugindir=$(libdir)/traceevent/plugins
+ plugindir_SQ= $(subst ','\'',$(plugindir))
+ endif
++
++#
++# Print the result of the feature test:
++#
++feature_print = $(eval $(feature_print_code)) $(info $(MSG))
++
++define feature_print_code
++  ifeq ($(feature-$(1)), 1)
++    MSG = $(shell printf '...%30s: [ \033[32mon\033[m  ]' $(1))
++  else
++    MSG = $(shell printf '...%30s: [ \033[31mOFF\033[m ]' $(1))
++  endif
++endef
++
++PERF_FEATURES := $(foreach feat,$(LIB_FEATURE_TESTS),feature-$(feat)($(feature-$(feat))))
++PERF_FEATURES_FILE := $(shell touch $(OUTPUT)PERF-FEATURES; cat $(OUTPUT)PERF-FEATURES)
++
++# The $(display_lib) controls the default detection message
++# output. It's set if:
++# - detected features differes from stored features from
++#   last build (in PERF-FEATURES file)
++# - one of the $(LIB_FEATURE_TESTS) is not detected
++# - VF is enabled
++
++ifneq ("$(PERF_FEATURES)","$(PERF_FEATURES_FILE)")
++  $(shell echo "$(PERF_FEATURES)" > $(OUTPUT)PERF-FEATURES)
++  display_lib := 1
++endif
++
++feature_check = $(eval $(feature_check_code))
++define feature_check_code
++  ifneq ($(feature-$(1)), 1)
++    display_lib := 1
++  endif
++endef
++
++$(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_check,$(feat)))
++
++ifeq ($(VF),1)
++  display_lib := 1
++  display_vf := 1
++endif
++
++ifeq ($(display_lib),1)
++  $(info )
++  $(info Auto-detecting system features:)
++  $(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_print,$(feat),))
++endif
++
++ifeq ($(display_vf),1)
++  $(foreach feat,$(VF_FEATURE_TESTS),$(call feature_print,$(feat),))
++endif
++
++ifeq ($(display_lib),1)
++  $(info )
++endif
 -- 
 1.8.1.4
 
