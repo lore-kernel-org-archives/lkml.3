@@ -1,225 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbaBXCbh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:31:37 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:57014 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaBXCbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:31:35 -0500
-X-AuditID: 9c93017d-b7c89ae000006ae1-3e-530aaf04face
-Date: Mon, 24 Feb 2014 11:31:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 3/6] zram: factor out single stream compression
-Message-ID: <20140224023157.GF16240@bbox>
-References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392983443-9807-4-git-send-email-sergey.senozhatsky@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392983443-9807-4-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1751948AbaBXCiA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:38:00 -0500
+Received: from ozlabs.org ([203.10.76.45]:54936 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaBXCh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 21:37:58 -0500
+Date: Mon, 24 Feb 2014 13:37:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
+        <gregory.clement@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: linux-next: manual merge of the sound-asoc tree with the mvebu tree
+Message-Id: <20140224133752.bc1ffffa4e81edb76a76e555@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
+--Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Feb 21, 2014 at 02:50:40PM +0300, Sergey Senozhatsky wrote:
-> This is preparation patch to add multi stream support to zcomp.
-> 
-> Introduce struct zcomp_strm_single and a set of functions to manage zcomp_strm
-> stream access. zcomp_strm_single implements single compession stream, same way
-> as current zcomp implementation. This moves zcomp_strm stream control and
-> locking from zcomp, so compressing backend zcomp is not aware of required
-> locking (single and multi streams require different locking schemes).
-> 
-> The following set of functions added:
-> - zcomp_strm_single_get()/zcomp_strm_single_put()
->   get and put compression stream, implement required locking
-> - zcomp_strm_single_create()/zcomp_strm_single_destroy()
->   create and destroy zcomp_strm_single
-> 
-> New ->strm_get() and ->strm_put() callbacks added to zcomp, which are set to
-> zcomp_strm_single_get() and zcomp_strm_single_put() during initialisation.
-> Instead of direct locking and zcomp_strm access from zcomp_strm_get() and
-> zcomp_strm_put(), zcomp now calls ->strm_get() and ->strm_put()
-> correspondingly.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Hi all,
 
-It's actually not what I expect.
-What I want was to separate implementation to different files
-whether it enalbles CONFIG_ZRAM_ZCOMP_MULTI or not so that
-popular users who want to use zram as only swap with small
-memory system have little side effect about performance and
-code size.
+Today's linux-next merge of the sound-asoc tree got a conflict in
+sound/soc/kirkwood/Kconfig between commit cd34edc2eab2 ("drivers: Enable
+building of Kirkwood drivers for mach-mvebu") from the  tree and commit
+9a0d5113ac0e ("ASoC: kirkwood: enable Kirkwood driver for mvebu
+platforms") from the sound-asoc tree.
 
-> ---
->  drivers/block/zram/zcomp.c | 63 ++++++++++++++++++++++++++++++++++++++++------
->  drivers/block/zram/zcomp.h |  7 ++++--
->  2 files changed, 60 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-> index db72f3d..9661226 100644
-> --- a/drivers/block/zram/zcomp.c
-> +++ b/drivers/block/zram/zcomp.c
-> @@ -15,6 +15,14 @@
->  
->  #include "zcomp.h"
->  
-> +/*
-> + * single zcomp_strm backend private part
-> + */
-> +struct zcomp_strm_single {
-> +	struct mutex strm_lock;
-> +	struct zcomp_strm *zstrm;
-> +};
-> +
->  extern struct zcomp_backend zcomp_lzo;
->  
->  static struct zcomp_backend *find_backend(const char *compress)
-> @@ -55,17 +63,58 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
->  	return zstrm;
->  }
->  
-> +static struct zcomp_strm *zcomp_strm_single_get(struct zcomp *comp)
-> +{
-> +	struct zcomp_strm_single *zp = comp->private;
-> +	mutex_lock(&zp->strm_lock);
-> +	return zp->zstrm;
-> +}
-> +
-> +static void zcomp_strm_single_put(struct zcomp *comp, struct zcomp_strm *zstrm)
-> +{
-> +	struct zcomp_strm_single *zp = comp->private;
-> +	mutex_unlock(&zp->strm_lock);
-> +}
-> +
-> +static void zcomp_strm_single_destroy(struct zcomp *comp)
-> +{
-> +	struct zcomp_strm_single *zp = comp->private;
-> +	zcomp_strm_free(comp, zp->zstrm);
-> +	kfree(zp);
-> +}
-> +
-> +static int zcomp_strm_single_create(struct zcomp *comp)
-> +{
-> +	struct zcomp_strm_single *zp;
-> +
-> +	comp->destroy = zcomp_strm_single_destroy;
-> +	comp->strm_get = zcomp_strm_single_get;
-> +	comp->strm_put = zcomp_strm_single_put;
-> +	zp = kmalloc(sizeof(struct zcomp_strm_single), GFP_KERNEL);
-> +	comp->private = zp;
-> +	if (!zp)
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&zp->strm_lock);
-> +	zp->zstrm = zcomp_strm_alloc(comp);
-> +	if (!zp->zstrm) {
-> +		zcomp_strm_single_destroy(comp);
-> +		return -ENOMEM;
-> +	}
-> +	return 0;
-> +}
-> +
->  struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
->  {
-> -	mutex_lock(&comp->strm_lock);
-> -	return comp->zstrm;
-> +	return comp->strm_get(comp);
->  }
->  
->  void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
->  {
-> -	mutex_unlock(&comp->strm_lock);
-> +	comp->strm_put(comp, zstrm);
->  }
->  
-> +/* compress page */
->  int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
->  		const unsigned char *src, size_t *dst_len)
->  {
-> @@ -73,6 +122,7 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
->  			zstrm->private);
->  }
->  
-> +/* decompress page */
->  int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
->  		size_t src_len, unsigned char *dst)
->  {
-> @@ -81,7 +131,7 @@ int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
->  
->  void zcomp_destroy(struct zcomp *comp)
->  {
-> -	zcomp_strm_free(comp, comp->zstrm);
-> +	comp->destroy(comp);
->  	kfree(comp);
->  }
->  
-> @@ -105,10 +155,7 @@ struct zcomp *zcomp_create(const char *compress)
->  		return NULL;
->  
->  	comp->backend = backend;
-> -	mutex_init(&comp->strm_lock);
-> -
-> -	comp->zstrm = zcomp_strm_alloc(comp);
-> -	if (!comp->zstrm) {
-> +	if (zcomp_strm_single_create(comp) != 0) {
->  		zcomp_destroy(comp);
->  		return NULL;
->  	}
-> diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-> index 5106f8e..8dc1d7f 100644
-> --- a/drivers/block/zram/zcomp.h
-> +++ b/drivers/block/zram/zcomp.h
-> @@ -34,9 +34,12 @@ struct zcomp_backend {
->  
->  /* dynamic per-device compression frontend */
->  struct zcomp {
-> -	struct mutex strm_lock;
-> -	struct zcomp_strm *zstrm;
-> +	void *private;
->  	struct zcomp_backend *backend;
-> +
-> +	struct zcomp_strm *(*strm_get)(struct zcomp *comp);
-> +	void (*strm_put)(struct zcomp *comp, struct zcomp_strm *zstrm);
-> +	void (*destroy)(struct zcomp *comp);
+I fixed it up (Probably incorrectly - see below) and can carry the fix as
+necessary (no action is required).
 
-I don't think we need indirection for get/put/destroy.
-zram_drv.c just calls zcomp_strm_get and zcomp.c could implement it
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-zcomp_strm_get()
-{
-        mutex_lock
-        return strm;
-}
+diff --cc sound/soc/kirkwood/Kconfig
+index 106e2e22fed2,2dc3ecf34801..000000000000
+--- a/sound/soc/kirkwood/Kconfig
++++ b/sound/soc/kirkwood/Kconfig
+@@@ -1,6 -1,6 +1,6 @@@
+  config SND_KIRKWOOD_SOC
+  	tristate "SoC Audio for the Marvell Kirkwood and Dove chips"
+- 	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || COMPILE_TEST
+ -	depends on ARCH_KIRKWOOD || ARCH_DOVE || ARCH_MVEBU || COMPILE_TEST
+++	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_KIRKWOOD || ARCH_MVEBU || =
+COMPILE_TEST
+  	help
+  	  Say Y or M if you want to add support for codecs attached to
+  	  the Kirkwood I2S interface. You will also need to select the
 
-and zcomp_multi.c can do it
+--Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY
+Content-Type: application/pgp-signature
 
-zcomp_strm_get()
-{
-        spin_lock
-        spin_unlock
-        wait_event
-        return strm;
-}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-It seems that you live in my opposite country(ie, you start to dump patches
-when I am about leaving office so ping-pong gap of patch is at least
-one day round. It makes us collaboration very hard so eaieist method I can
-think is just I can implement my thought by myself but I don't want it.
-You thought this idea firstly and I want that you have all credit although
-it waste our time)
+iQIcBAEBCAAGBQJTCrCEAAoJEMDTa8Ir7ZwVNeoP/2kCkdU88NiqZ9rT5SNH0rgP
+HOn45Zr77xwqfLEIZSHVSSgSOCQ5k86wpwuNdIQ0DdZkmEMxlAUHMrhEw7C1Bz6t
+Nna/e+BEQj75ASxqJG3HkT0eetvedYoodLXV4iXLlOslIGlVeQIWuH2+rRr93OiF
+iea8PyF/hMsKuCH6VfpiVegGGeR0cqWy4HV/qob1ZyPfvDbGifwQnkPJ9TqaBt8G
+oT+oD7xJ3KcILNbX9YdT5iP9daQ/a1+z11Y322Ox8uRV9Vjto8QO25gw9myHD5bZ
+Xaq5dvfdAc/tSuPZt3JW5o5hhvlUQRt1M0nkIZWT6fjvvWQEm9NZp6w76jFER21g
+P3V9ghRZOcZsT3G+vZBtna/YOSkCy/KSDzgBMAh03olqMpcI3eKK6iEtxuRQY08D
+JXSqIBFPdGxHfHOVfuDfBDFZuaZaTNTmeTUAhVgKONW9ajobmk2X2tCVHfThjQ4U
+0gVnLunpkybgmlO2//wXjt5rCiQXRujZ7DhN68iCx9SnAOC6+DxJElHxpYov1wjO
+e9LCaUoYIFuu96q1tBtlZX5TfuxGjoWrZftsA52YnYjq5Av9rkZPxAWGhxBFFg8T
+q9vNoI2PMS0/Z5sXYaMYKKyrqvwEg1zhoHAQLKVgJxsEN2is9YCDV9IWGw6M5TYS
+/R4kSl9UPOB3XGsH7J41
+=vQxk
+-----END PGP SIGNATURE-----
 
-If I made you annoying, I'm really sorry to you.
-Again, thanks for looking at this, Sergey!
-
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Mon__24_Feb_2014_13_37_52_+1100_nRDEJPUBe6s2wajY--
