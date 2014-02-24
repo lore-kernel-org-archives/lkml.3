@@ -1,274 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaBXXwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:52:15 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61112 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028AbaBXXwO (ORCPT
+	id S1753318AbaBXXwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:52:51 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:43997 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955AbaBXXwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:52:14 -0500
-Date: Tue, 25 Feb 2014 02:48:42 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
+	Mon, 24 Feb 2014 18:52:49 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-f7-530bdb4fda1e
+Date: Tue, 25 Feb 2014 08:53:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 4/6] zram: add multi stream functionality
-Message-ID: <20140224234842.GB2293@swordfish>
+Subject: Re: [PATCHv6 5/6] zram: enalbe multi stream compression support in
+ zram
+Message-ID: <20140224235315.GE24325@bbox>
 References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392983443-9807-5-git-send-email-sergey.senozhatsky@gmail.com>
- <20140224234313.GC24325@bbox>
+ <1392983443-9807-6-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140224234313.GC24325@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1392983443-9807-6-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (02/25/14 08:43), Minchan Kim wrote:
-> On Fri, Feb 21, 2014 at 02:50:41PM +0300, Sergey Senozhatsky wrote:
-> > This patch implements multi stream compression support.
-> > 
-> > Introduce struct zcomp_strm_multi and a set of functions to manage
-> > zcomp_strm stream access. zcomp_strm_multi has a list of idle zcomp_strm
-> > structs, spinlock to protect idle list and wait queue, making it possible
-> > to perform parallel compressions.
-> > 
-> > The following set of functions added:
-> > - zcomp_strm_multi_get()/zcomp_strm_multi_put()
-> >   get and put compression stream, implement required locking
-> > - zcomp_strm_multi_create()/zcomp_strm_multi_destroy()
-> >   create and destroy zcomp_strm_multi
-> > 
-> > zcomp ->strm_get() and ->strm_put() callbacks are set during initialisation
-> > to zcomp_strm_multi_get()/zcomp_strm_multi_put() correspondingly.
-> > 
-> > Each time zcomp issues a zcomp_strm_multi_get() call, the following set of
-> > operations performed:
-> > - spin lock strm_lock
-> > - if idle list is not empty, remove zcomp_strm from idle list, spin
-> >   unlock and return zcomp stream pointer to caller
-> > - if idle list is empty, current adds itself to wait queue. it will be
-> >   awaken by zcomp_strm_multi_put() caller.
-> > 
-> > zcomp_strm_multi_put():
-> > - spin lock strm_lock
-> > - add zcomp stream to idle list
-> > - spin unlock, wake up sleeper
-> > 
-> > Minchan Kim reported that spinlock-based locking scheme has demonstrated a
-> > severe perfomance regression for single compression stream case, comparing
-> > to mutex-based (https://lkml.org/lkml/2014/2/18/16)
-> > 
-> > base                      spinlock                    mutex
-> > 
-> > ==Initial write           ==Initial write             ==Initial  write
-> > records:  5               records:  5                 records:   5
-> > avg:      1642424.35      avg:      699610.40         avg:       1655583.71
-> > std:      39890.95(2.43%) std:      232014.19(33.16%) std:       52293.96
-> > max:      1690170.94      max:      1163473.45        max:       1697164.75
-> > min:      1568669.52      min:      573429.88         min:       1553410.23
-> > ==Rewrite                 ==Rewrite                   ==Rewrite
-> > records:  5               records:  5                 records:   5
-> > avg:      1611775.39      avg:      501406.64         avg:       1684419.11
-> > std:      17144.58(1.06%) std:      15354.41(3.06%)   std:       18367.42
-> > max:      1641800.95      max:      531356.78         max:       1706445.84
-> > min:      1593515.27      min:      488817.78         min:       1655335.73
-> > ==Random  write           ==Random  write             ==Random   write
-> > records:  5               records:  5                 records:   5
-> > avg:      1626318.29      avg:      497250.78         avg:       1695582.06
-> > std:      38550.23(2.37%) std:      1405.42(0.28%)    std:       9211.98
-> > max:      1665839.62      max:      498585.88         max:       1703808.22
-> > min:      1562141.21      min:      494526.45         min:       1677664.94
-> > ==Pwrite                  ==Pwrite                    ==Pwrite
-> > records:  5               records:  5                 records:   5
-> > avg:      1654641.25      avg:      581709.22         avg:       1641452.34
-> > std:      47202.59(2.85%) std:      9670.46(1.66%)    std:       38963.62
-> > max:      1740682.36      max:      591300.09         max:       1687387.69
-> > min:      1611436.34      min:      564324.38         min:       1570496.11
-> > 
-> > When only one compression stream available, mutex with spin on owner tends
-> > to perform much better than frequent wait_event()/wake_up(). This is why
-> > single stream implemented as a special case with mutex locking.
+On Fri, Feb 21, 2014 at 02:50:42PM +0300, Sergey Senozhatsky wrote:
+> 1) Add ZRAM_MULTI_STREAM configuration option and make multi stream
+> zcomp support available.
 > 
-> Side note:
+> 2) Introduce zram device attribute max_comp_streams to show and store
+> current zcomp's max number of zcomp streams (num_strm).
 > 
-> It's true for x86 but it could be changed in embedded system like ARM
-> which is lower power compared to x86 and it also could depend on
-> compression algorithm speed so I am thinking we need adaptive locking
-> which sometime work with mutex sometime work with spinlock dynamically.
-> Anyway, it is further work and I should investigate more.
+> 3) Extend zcomp zcomp_create() with `num_strm' parameter. `num_strm'
+> limits the number of zcomp_strm structs in compression backend's idle
+> list (max_comp_streams).
 > 
-> Most important thing is that this patchset wouldn't make any regression
-> if we use mutex for single stream as default so I'm okay now.
+> If ZRAM_MULTI_STREAM option selected:
+> -- user can change max number of compression streams (max_comp_streams),
+>    otherwise, attempt to change its default value (1) will be ignored.
+> -- passing to zcomp_create() num_strm equals to 1 will initialise zcomp
+>    using single compression stream zcomp_strm_single (mutex-based locking)
+> -- passing to zcomp_create() num_strm greater than 1 will initialise zcomp
+>    using multi compression stream zcomp_strm_multi (spinlock-based locking)
 > 
->
+> If ZRAM_MULTI_STREAM has not been selected, only single compression stream
+> support available.
+> 
+> iozone -t 3 -R -r 16K -s 60M -I +Z
+> 
+>        test           base       1 strm (mutex)     3 strm (spinlock)
+> -----------------------------------------------------------------------
+>  Initial write      589286.78       583518.39          718011.05
+>        Rewrite      604837.97       596776.38         1515125.72
+>   Random write      584120.11       595714.58         1388850.25
+>         Pwrite      535731.17       541117.38          739295.27
+>         Fwrite     1418083.88      1478612.72         1484927.06
+> 
+> Usage example:
+> set max_comp_streams to 4
+>         echo 4 > /sys/block/zram0/max_comp_streams
+> 
+> show current max_comp_streams (default value is 1).
+>         cat /sys/block/zram0/max_comp_streams
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/Kconfig    | 10 ++++++++++
+>  drivers/block/zram/zcomp.c    | 13 +++++++++++--
+>  drivers/block/zram/zcomp.h    |  2 +-
+>  drivers/block/zram/zram_drv.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/block/zram/zram_drv.h |  2 +-
+>  5 files changed, 65 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+> index 3450be8..a2ba9a9 100644
+> --- a/drivers/block/zram/Kconfig
+> +++ b/drivers/block/zram/Kconfig
+> @@ -15,6 +15,16 @@ config ZRAM
+>  
+>  	  See zram.txt for more information.
+>  
+> +config ZRAM_MULTI_STREAM
+> +	bool "Multi stream compression support"
+> +	depends on ZRAM
+> +	default n
+> +	help
+> +	  This option adds additional functionality to ZRAM, that enables
+> +	  multi compression stream support and provides ability to control
+> +	  maximum number of parallel compressions using max_comp_streams
+> +	  device attribute.
+> +
+>  config ZRAM_DEBUG
+>  	bool "Compressed RAM block device debug support"
+>  	depends on ZRAM
+> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> index 41325ed..7faa6bd 100644
+> --- a/drivers/block/zram/zcomp.c
+> +++ b/drivers/block/zram/zcomp.c
+> @@ -240,8 +240,9 @@ void zcomp_destroy(struct zcomp *comp)
+>   * if requested algorithm is not supported or in case
+>   * of init error
+>   */
+> -struct zcomp *zcomp_create(const char *compress)
+> +struct zcomp *zcomp_create(const char *compress, int num_strm)
+>  {
+> +	int ret;
+>  	struct zcomp *comp;
+>  	struct zcomp_backend *backend;
+>  
+> @@ -254,7 +255,15 @@ struct zcomp *zcomp_create(const char *compress)
+>  		return NULL;
+>  
+>  	comp->backend = backend;
+> -	if (zcomp_strm_single_create(comp) != 0) {
+> +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> +	if (num_strm > 1)
+> +		ret = zcomp_strm_multi_create(comp, num_strm);
+> +	else
+> +		ret = zcomp_strm_single_create(comp);
+> +#else
+> +	ret = zcomp_strm_single_create(comp);
+> +#endif
+> +	if (ret != 0) {
+>  		zcomp_destroy(comp);
+>  		return NULL;
+>  	}
+> diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> index 8dc1d7f..d7e1229 100644
+> --- a/drivers/block/zram/zcomp.h
+> +++ b/drivers/block/zram/zcomp.h
+> @@ -42,7 +42,7 @@ struct zcomp {
+>  	void (*destroy)(struct zcomp *comp);
+>  };
+>  
+> -struct zcomp *zcomp_create(const char *comp);
+> +struct zcomp *zcomp_create(const char *comp, int num_strm);
+>  void zcomp_destroy(struct zcomp *comp);
+>  
+>  struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 200c12a..c147e6f 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -107,6 +107,42 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  	return sprintf(buf, "%llu\n", val);
+>  }
+>  
+> +static ssize_t max_comp_streams_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	long val;
 
-good note.
+Why 'long'?
 
-> > 
-> > In order to compile this functionality ZRAM_MULTI_STREAM config option
-> > required to be set, which will be introduced later.
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  drivers/block/zram/zcomp.c | 101 ++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 100 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-> > index 9661226..41325ed 100644
-> > --- a/drivers/block/zram/zcomp.c
-> > +++ b/drivers/block/zram/zcomp.c
-> > @@ -12,9 +12,14 @@
-> >  #include <linux/slab.h>
-> >  #include <linux/wait.h>
-> >  #include <linux/sched.h>
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +#include <linux/spinlock.h>
-> > +#endif
-> 
-> Do we really need to include spinlock.h?
+> +	struct zram *zram = dev_to_zram(dev);
+> +
+> +	down_read(&zram->init_lock);
+> +	val = zram->max_comp_streams;
+> +	up_read(&zram->init_lock);
+> +
+> +	return sprintf(buf, "%ld\n", val);
+> +}
+> +
+> +static ssize_t max_comp_streams_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t len)
+> +{
+> +#ifdef CONFIG_ZRAM_MULTI_STREAM
+> +	long num;
+> +	struct zram *zram = dev_to_zram(dev);
+> +
+> +	if (kstrtol(buf, 0, &num))
+> +		return -EINVAL;
+> +	if (num < 1)
+> +		return -EINVAL;
+> +	down_write(&zram->init_lock);
+> +	if (init_done(zram)) {
+> +		up_write(&zram->init_lock);
+> +		pr_info("Can't set max_comp_streams for initialized device\n");
+> +		return -EBUSY;
+> +	}
+> +	zram->max_comp_streams = num;
+> +	up_write(&zram->init_lock);
 
-not really. and I'm also droping CONFIG_ZRAM_MULTI_STREAM
-ifdefs.
+If user decrease max stream in runtime, who care of freeing streams?
 
-> >  
-> >  #include "zcomp.h"
-> >  
-> > +extern struct zcomp_backend zcomp_lzo;
-> > +
-> >  /*
-> >   * single zcomp_strm backend private part
-> >   */
-> > @@ -23,7 +28,18 @@ struct zcomp_strm_single {
-> >  	struct zcomp_strm *zstrm;
-> >  };
-> >  
-> > -extern struct zcomp_backend zcomp_lzo;
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +/*
-> > + * multi zcomp_strm backend private part
-> > + */
-> > +struct zcomp_strm_multi {
-> > +	/* protect strm list */
-> > +	spinlock_t strm_lock;
-> > +	/* list of available strms */
-> > +	struct list_head idle_strm;
-> > +	wait_queue_head_t strm_wait;
-> > +};
-> > +#endif
-> >  
-> >  static struct zcomp_backend *find_backend(const char *compress)
-> >  {
-> > @@ -63,6 +79,89 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
-> >  	return zstrm;
-> >  }
-> >  
-> > +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> > +/*
-> > + * get existing idle zcomp_strm or wait until other process release
-> > + * (zcomp_strm_put()) one for us
-> > + */
-> > +static struct zcomp_strm *zcomp_strm_multi_get(struct zcomp *comp)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
-> 
-> How about comp->stream instead of private?
-
-ok. so I'll rename zcomp private in this and previous (factor out single
-stream) patch
-
-> Other than that, Looks good to me.
-> 
-> > +	struct zcomp_strm *zstrm;
-> > +
-> > +	while (1) {
-> > +		spin_lock(&zp->strm_lock);
-> > +		if (list_empty(&zp->idle_strm)) {
-> > +			spin_unlock(&zp->strm_lock);
-> > +			wait_event(zp->strm_wait,
-> > +					!list_empty(&zp->idle_strm));
-> > +			continue;
-> > +		}
-> > +
-> > +		zstrm = list_entry(zp->idle_strm.next,
-> > +				struct zcomp_strm, list);
-> > +		list_del(&zstrm->list);
-> > +		spin_unlock(&zp->strm_lock);
-> > +		break;
-> > +	}
-> > +	return zstrm;
-> > +}
-> > +
-> > +/* add zcomp_strm back to idle list and wake up waiter */
-> > +static void zcomp_strm_multi_put(struct zcomp *comp, struct zcomp_strm *zstrm)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
-> > +
-> > +	spin_lock(&zp->strm_lock);
-> > +	list_add(&zstrm->list, &zp->idle_strm);
-> > +	spin_unlock(&zp->strm_lock);
-> > +
-> > +	wake_up(&zp->strm_wait);
-> > +}
-> > +
-> > +static void zcomp_strm_multi_destroy(struct zcomp *comp)
-> > +{
-> > +	struct zcomp_strm_multi *zp = comp->private;
-> > +	struct zcomp_strm *zstrm;
-> > +	while (!list_empty(&zp->idle_strm)) {
-> > +		zstrm = list_entry(zp->idle_strm.next,
-> > +				struct zcomp_strm, list);
-> > +		list_del(&zstrm->list);
-> > +		zcomp_strm_free(comp, zstrm);
-> > +	}
-> > +	kfree(zp);
-> > +}
-> > +
-> > +static int zcomp_strm_multi_create(struct zcomp *comp, int num_strm)
-> > +{
-> > +	int i;
-> > +	struct zcomp_strm *zstrm;
-> > +	struct zcomp_strm_multi *zp;
-> > +
-> > +	comp->destroy = zcomp_strm_multi_destroy;
-> > +	comp->strm_get = zcomp_strm_multi_get;
-> > +	comp->strm_put = zcomp_strm_multi_put;
-> > +	zp = kmalloc(sizeof(struct zcomp_strm_multi), GFP_KERNEL);
-> > +	comp->private = zp;
-> > +	if (!zp)
-> > +		return -ENOMEM;
-> > +
-> > +	spin_lock_init(&zp->strm_lock);
-> > +	INIT_LIST_HEAD(&zp->idle_strm);
-> > +	init_waitqueue_head(&zp->strm_wait);
-> > +
-> > +	for (i = 0; i < num_strm; i++) {
-> > +		zstrm = zcomp_strm_alloc(comp);
-> > +		if (!zstrm) {
-> > +			zcomp_strm_multi_destroy(comp);
-> > +			return -ENOMEM;
-> > +		}
-> > +		list_add(&zstrm->list, &zp->idle_strm);
-> > +	}
-> > +	return 0;
-> > +}
-> > +#endif
-> > +
-> >  static struct zcomp_strm *zcomp_strm_single_get(struct zcomp *comp)
-> >  {
-> >  	struct zcomp_strm_single *zp = comp->private;
-> > -- 
-> > 1.9.0.291.g027825b
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> +#endif
+> +	return len;
+> +}
+> +
+>  /* flag operations needs meta->tb_lock */
+>  static int zram_test_flag(struct zram_meta *meta, u32 index,
+>  			enum zram_pageflags flag)
+> @@ -503,6 +539,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  
+>  	zcomp_destroy(zram->comp);
+>  	zram->comp = NULL;
+> +	zram->max_comp_streams = 1;
+>  
+>  	zram_meta_free(zram->meta);
+>  	zram->meta = NULL;
+> @@ -532,7 +569,7 @@ static ssize_t disksize_store(struct device *dev,
+>  		return -EBUSY;
+>  	}
+>  
+> -	zram->comp = zcomp_create(default_compressor);
+> +	zram->comp = zcomp_create(default_compressor, zram->max_comp_streams);
+>  	if (!zram->comp) {
+>  		up_write(&zram->init_lock);
+>  		pr_info("Cannot initialise compressing backend\n");
+> @@ -695,6 +732,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+> +		max_comp_streams_show, max_comp_streams_store);
+>  
+>  ZRAM_ATTR_RO(num_reads);
+>  ZRAM_ATTR_RO(num_writes);
+> @@ -719,6 +758,7 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_orig_data_size.attr,
+>  	&dev_attr_compr_data_size.attr,
+>  	&dev_attr_mem_used_total.attr,
+> +	&dev_attr_max_comp_streams.attr,
+>  	NULL,
+>  };
+>  
+> @@ -782,6 +822,7 @@ static int create_device(struct zram *zram, int device_id)
+>  
+>  	zram->meta = NULL;
+>  	zram->comp = NULL;
+> +	zram->max_comp_streams = 1;
+>  	return 0;
+>  
+>  out_free_disk:
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 45e04f7..8dccb22 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -99,7 +99,7 @@ struct zram {
+>  	 * we can store in a disk.
+>  	 */
+>  	u64 disksize;	/* bytes */
+> -
+> +	long max_comp_streams;
+>  	struct zram_stats stats;
+>  };
+>  #endif
 > -- 
-> Kind regards,
-> Minchan Kim
+> 1.9.0.291.g027825b
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
