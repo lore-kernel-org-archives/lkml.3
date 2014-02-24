@@ -1,147 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaBXIn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:43:26 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:49175 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaBXInN (ORCPT
+	id S1752847AbaBXIof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:44:35 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:54297 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBXIod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:43:13 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] devicetree: bindings: update MVEBU pinctrl binding documentation
-Date: Mon, 24 Feb 2014 09:42:54 +0100
-Message-Id: <1393231382-11078-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 24 Feb 2014 03:44:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
+References: <1392907779-22053-1-git-send-email-geert@linux-m68k.org>
+	<1392907779-22053-5-git-send-email-geert@linux-m68k.org>
+	<CANqRtoQQ9cn55Ct7pva2Bo7461WbZG0=Y5f9zLwfKhyU2=QFZw@mail.gmail.com>
+	<CAMuHMdWMJFpV_uvi4mNZYc9R8qVWqQf3QGRhdPyc+hj=6XMoJw@mail.gmail.com>
+	<CANqRtoRLcac3x55N+VHK+n6RvcgT0v9==9mt1rhVda-zwCYTCg@mail.gmail.com>
+	<CAMuHMdWDtDqmarg-p+LFv4ZtzF7Rv=KzLQA3rnSa_dS2PkVmfA@mail.gmail.com>
+Date: Mon, 24 Feb 2014 17:44:31 +0900
+Message-ID: <CANqRtoQ9ZuAhqmaKU5NLsJBNc0iN7uNdQMS6uCrp0enkFUzrqQ@mail.gmail.com>
+Subject: Re: [PATCH 04/11] ARM: shmobile: lager legacy: Add MSIOF support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, SH-Linux <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dove pinctrl binding now requires three different reg properties. This
-updates corresponding binding and example accordingly. While at it, also
-document reg property as required for the other MVEBU SoC pinctrl nodes.
+Hi Geert!
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- .../devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt          | 1 +
- .../devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt          | 1 +
- .../devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt          | 1 +
- Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt | 1 +
- Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt      | 1 +
- Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt  | 1 +
- Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt     | 2 +-
- 7 files changed, 7 insertions(+), 1 deletion(-)
+On Mon, Feb 24, 2014 at 5:25 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Magnus,
+>
+> On Mon, Feb 24, 2014 at 3:09 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> On Fri, Feb 21, 2014 at 1:18 AM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> On Thu, Feb 20, 2014 at 4:48 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>>>> Since only MSIOF1 is used on Lager (correct me if i'm wrong), isn't it
+>>>> best to omit the unused resources from above? In case of DT I think it
+>>>> makes sense to define all channels in the SoC.dtsi and let the
+>>>> SoC-board.dts just enable the channels that are used. But in this case
+>>>> with legacy code  I think we should keep thing simple and small and
+>>>> just enable the bits that are used on the particular board.
+>>>>
+>>>> The same obviously applies to the Koelsch legacy code as well. =)
+>>>
+>>> Note that while all resources are present, only MSIOF1 is registered on
+>>> Lager (MSIOF0 on Koelsch). This is similar to i2c on Koelsch, which also
+>>> has all resources, but only registers active devices.
+>>
+>> Ok, I understand. Thanks for brining this to my attention.
+>>
+>> I'd like to avoid having unused resources so I'll cook up a patch to
+>> rework that myself.
+>>
+>>> It's your preference, though, so I can adapt if you want.
+>>
+>> Thanks.
+>>
+>> Please rework this patch to only register a single MSIOF channel. I
+>> think it makes sense to only enable hardware that is being used.
+>
+> Ehrm, I already register a single MSIOF channel only.
+> Perhaps you mean't "remove the unused resources"?
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
-index 01ef408e205f..adda2a8d1d52 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
-@@ -5,6 +5,7 @@ part and usage.
- 
- Required properties:
- - compatible: "marvell,88f6710-pinctrl"
-+- reg: register specifier of MPP registers
- 
- Available mpp pins/groups and functions:
- Note: brackets (x) are not part of the mpp name for marvell,function and given
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
-index 2ede59dffe1b..7de0cda4a379 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-375-pinctrl.txt
-@@ -5,6 +5,7 @@ part and usage.
- 
- Required properties:
- - compatible: "marvell,88f6720-pinctrl"
-+- reg: register specifier of MPP registers
- 
- Available mpp pins/groups and functions:
- Note: brackets (x) are not part of the mpp name for marvell,function and given
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
-index 1d45f9d62346..b17c96849fc9 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-38x-pinctrl.txt
-@@ -7,6 +7,7 @@ Required properties:
- - compatible: "marvell,88f6810-pinctrl", "marvell,88f6820-pinctrl" or
-   "marvell,88f6828-pinctrl" depending on the specific variant of the
-   SoC being used.
-+- reg: register specifier of MPP registers
- 
- Available mpp pins/groups and functions:
- Note: brackets (x) are not part of the mpp name for marvell,function and given
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
-index bfa0a2e5e0cb..373dbccd7ab0 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
-@@ -6,6 +6,7 @@ part and usage.
- Required properties:
- - compatible: "marvell,mv78230-pinctrl", "marvell,mv78260-pinctrl",
-               "marvell,mv78460-pinctrl"
-+- reg: register specifier of MPP registers
- 
- This driver supports all Armada XP variants, i.e. mv78230, mv78260, and mv78460.
- 
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-index 50ec3512a292..cf52477cc7ee 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
-@@ -6,6 +6,7 @@ part and usage.
- Required properties:
- - compatible: "marvell,dove-pinctrl"
- - clocks: (optional) phandle of pdma clock
-+- reg: register specifiers of MPP, MPP4, and PMU MPP registers
- 
- Available mpp pins/groups and functions:
- Note: brackets (x) are not part of the mpp name for marvell,function and given
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
-index 95daf6335c37..730444a9a4de 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
-@@ -8,6 +8,7 @@ Required properties:
-               "marvell,88f6190-pinctrl", "marvell,88f6192-pinctrl",
-               "marvell,88f6281-pinctrl", "marvell,88f6282-pinctrl"
-               "marvell,98dx4122-pinctrl"
-+- reg: register specifier of MPP registers
- 
- This driver supports all kirkwood variants, i.e. 88f6180, 88f619x, and 88f628x.
- It also support the 88f6281-based variant in the 98dx412x Bobcat SoCs.
-diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-index 0a26c3aa4e6d..0c09f4eb2af0 100644
---- a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
-@@ -37,7 +37,7 @@ uart1: serial@12100 {
- 
- pinctrl: pinctrl@d0200 {
- 	compatible = "marvell,dove-pinctrl";
--	reg = <0xd0200 0x20>;
-+	reg = <0xd0200 0x14>, <0xd0440 0x04>, <0xd802c 0x08>;
- 
- 	pmx_uart1_sw: pmx-uart1-sw {
- 		marvell,pins = "mpp_uart1";
--- 
-1.8.5.3
+Yes, exactly. My apologies for the unclear reply.
 
+>> Another question: How about "bus_num" and the platform device id
+>> mapping? I'd like them to be the same if possible, but you are having
+>> this "(idx+1)" bit in your code which I assume is to add offset for
+>> the QSPI bus.
+>
+> "bus_num" is the SPI-specific numbering of SPI masters, which is filled
+> in by spi-sh-msiof.c based on platform_device.id (i.e. the numeric suffix
+> of e.g. "spi_r8a7790_msiof.1").
+> It's used for matching SPI slaves in spi_board_info with SPI masters.
+> As QSPI ("qspi.0") has SPI bus_num 0, the MSIOF SPI masters use
+> bus_num 1 to 4, hence the "idx+1", and the platform device names
+> "spi_r8a7790_msiof.1" to "spi_r8a7790_msiof.4".
+>
+> (Can't spi-sh-msiof.c use "bus_num = pdev->id + 1", so we can have
+>  MSIOF0 as "spi_r8a7790_msiof.0"? No, as that would impact numbering
+>  on all SoCs with MSIOF.)
+
+Yeah, the bus number that is commonly used for SPI and I2C behaves
+like that so I agree with what you're saying. I guess historically we
+usually only have one I2C master and one SPI master which makes it
+easy to use direct mapping between bus num and pdev->id.
+
+Now on Lager we have multiple SPI masters (both QSPI and MSIOF unless
+I'm mistaken), so the question is how to allocate the ranges of
+bus_num for each SPI master. I believe your current allocation works
+well but I'm a bit confused by it I must confess.
+
+I'm used to one of the two schemes:
+1) single master with pdev->id equals bus_num
+2) compact board specific bus allocation
+
+I believe you introduce something similar to 1) but for two SPI
+masters which is totally fine! For some unknown reason I expected 2)
+with bus_num 0 for QSPI and bus_num 1 for MSIOF1, but I think your
+allocation scheme is reusable across multiple boards with the same SoC
+so I think your current code is better when I think about it a bit
+more.
+
+> With DT, all of this doesn't matter, and life is easier, as the SPI slaves
+> are child nodes of the SPI masters and thus don't need numerical bus
+> references. So MSIOF0 can be called "msiof0" there.
+> We still have the offsets in the "spi%u" aliases, though.
+
+Right all this goes away with DT which is nice.
+
+>> Regarding the PFC configuration, can you please double check that the
+>> PIN_MAP_MUX_GROUP_DEFAULT() is in sync with the platform device id? Is
+>> it the "bus_num" or the platform device id that is being used in case
+>> of SPI?
+>
+> "bus_num" is SPI-specific. Pinctrl uses the actual device's name:
+>
+> /**
+>  * struct pinctrl_map - boards/machines shall provide this map for devices
+>  * @dev_name: the name of the device using this specific mapping, the name
+>  *      must be the same as in your struct device*. If this name is set to the
+>  *      same name as the pin controllers own dev_name(), the map entry will be
+>  *      hogged by the driver itself upon registration
+
+Right. I was just confused seeing the pdev->id set to 2 on MSIOF1, but
+I now understand that it is your intentional design to have bus_num 0
+as QSPI, bus_num1 as unused MSIOF0 and bus_num 2 as MSIOF1.
+
+It just takes some time for me to grasp. =)
+
+Cheers,
+
+/ magnus
