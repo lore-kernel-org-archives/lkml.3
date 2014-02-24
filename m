@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaBXQxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:53:49 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33211 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbaBXQxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:53:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,7358"; a="16056767"
-X-IronPort-AV: E=Sophos;i="4.97,535,1389772800"; 
-   d="scan'208";a="689300749"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pavel Machek <pavel@ucw.cz>, Sebastian Reichel <sre@ring0.de>,
-        Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        <linville@tuxdriver.com>
-Subject: Re: [BISECTED] ssh - Received disconnect from x.x.x.x: 2: Bad packet length 3149594624
-References: <52FD08D1.3030405@gmail.com>
-	<20140213182105.GN13576@mudshark.cambridge.arm.com>
-	<52FD1243.9040706@gmail.com>
-	<20140213192909.GO13576@mudshark.cambridge.arm.com>
-	<52FE407C.3080002@gmail.com>
-	<20140214162458.GF21986@mudshark.cambridge.arm.com>
-Date: Mon, 24 Feb 2014 18:52:53 +0200
-In-Reply-To: <20140214162458.GF21986@mudshark.cambridge.arm.com> (Will
-	Deacon's message of "Fri, 14 Feb 2014 16:24:58 +0000")
-Message-ID: <877g8ktpui.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752923AbaBXQze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:55:34 -0500
+Received: from mail.efficios.com ([78.47.125.74]:60330 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752463AbaBXQzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:55:32 -0500
+Date: Mon, 24 Feb 2014 16:55:36 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <193756443.29489.1393260936319.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140224105454.3e1981ba@gandalf.local.home>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140211234534.6bc34e57@gandalf.local.home> <1583293363.24361.1392304214094.JavaMail.zimbra@efficios.com> <20140213102817.4bfd5eac@gandalf.local.home> <2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com> <20140213154507.4040fb06@gandalf.local.home> <1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com> <20140224105454.3e1981ba@gandalf.local.home>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [129.192.185.163]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+Thread-Index: iKqhasbKmUwgI/P1+PTom/ohXJgVxw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will Deacon <will.deacon@arm.com> writes:
-> Well, we probably need a bit more to go on, because I doubt that this code
-> is to blame. More likely, the issue is in the caller.
-> Looking at drivers/net/wireless/ti/wl1251/rx.c:182
->
->         /* The actual length doesn't include the target's alignment */
->         skb->len = desc->length  - PLCP_HEADER_LENGTH;
->
->         fc = (u16 *)skb->data;
->
->         if ((*fc & IEEE80211_FCTL_STYPE) == IEEE80211_STYPE_BEACON)
->                 beacon = 1;
->
->         wl1251_rx_status(wl, desc, &status, beacon);
->
->         wl1251_debug(DEBUG_RX, "rx skb 0x%p: %d B %s", skb, skb->len,
->                      beacon ? "beacon" : "");
->
->         memcpy(IEEE80211_SKB_RXCB(skb), &status, sizeof(status));
->         ieee80211_rx_ni(wl->hw, skb);
->
-> I wonder whether that first line (with the comment about alignment) is
-> assuming some behaviour from the mac80211 layer.
->
-> You could try putting back the UNALIGNED_ACCESS in net/mac80211/rx.c and
-> commenting out the skb->len = desc->length  - PLCP_HEADER_LENGTH;  line
-> above.
->
-> Adding the original author (I think) and John Linville, since I'm well out
-> of my depth in this code!
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Ingo Molnar" <mingo@kernel.org>, linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas
+> Gleixner" <tglx@linutronix.de>, "Rusty Russell" <rusty@rustcorp.com.au>, "David Howells" <dhowells@redhat.com>,
+> "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+> Sent: Monday, February 24, 2014 10:54:54 AM
+> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+> 
+[...]
 
-I haven't touched wl1251 for years. You should send questions to
-linux-wireless list and CC people who have worked on it recently.
+(keeping discussion for later, as I'm busy at a client site)
+ 
+> For now, I'm going to push this in, and also mark it for stable.
+
+Which patch or patches do you plan to pull, and which is marked for stable ?
+
+This thread is a RFC PATCH. I posted a separate more complete patch in
+a separate thread marked [PATCH].
+
+Thanks,
+
+Mathieu
 
 -- 
-Kalle Valo
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
