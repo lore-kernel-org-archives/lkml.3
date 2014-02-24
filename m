@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489AbaBXByS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:54:18 -0500
-Received: from www.prifuk.cz ([31.31.77.241]:41712 "EHLO prifuk.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaBXByQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:54:16 -0500
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
-To: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
-        simon@mungewell.org
-Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
-Date: Mon, 24 Feb 2014 02:54:11 +0100
-Message-ID: <1651798.4YaLXnucpJ@geidi-prime>
-User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <530A931D.9030308@iki.fi>
-References: <1516865.M993BQAYe4@geidi-prime> <3364546.xScl1m6sdc@geidi-prime> <530A931D.9030308@iki.fi>
+	id S1751749AbaBXCJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:09:26 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:58607 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751310AbaBXCJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 21:09:24 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApcDAP6oClOl5H4JgWdsb2JhbABZwXSDB4EkDgEBFiYogiUBAQQBJxM/EAsYCRUQDwFHBogQCMZOF45kB4Q4BKxKgVIo
+From: Alistair Popple <alistair@popple.id.au>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 2/7] IBM Akebono: Add support for a new PHY interface to the IBM emac driver
+Date: Mon, 24 Feb 2014 13:09:19 +1100
+Message-ID: <7545458.ltLKFumBkZ@mexican>
+User-Agent: KMail/4.9.5 (Linux/3.5.0-45-generic; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20140221111823.GA8783@e106331-lin.cambridge.arm.com>
+References: <1392964293-13687-1-git-send-email-alistair@popple.id.au> <1392964293-13687-3-git-send-email-alistair@popple.id.au> <20140221111823.GA8783@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -24,17 +29,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to comment on this:
-> Stopped effects should still be able to be updated.
-Fair enough. I could not find a definitive answer to what is expected behavior 
-in this case. As far as I can tell, there are following cases:
-- Effects with no duration and delay: they shall be updated right away.
-- Effects with delay: updated parameters shall be sent to the device at the 
-correct time.
-- "Expired" effects with finite duration - ??? I assumed that effects with 
-finite duration that have already finished playing cannot be updated because 
-it does not seem to make much sense to do so. Shall such an effect be 
-restarted when it is updated? Is there any guideline I should stick to I am 
-not aware of?
+On Fri, 21 Feb 2014 11:18:23 Mark Rutland wrote:
+> On Fri, Feb 21, 2014 at 06:31:28AM +0000, Alistair Popple wrote:
 
-Michal M.
+[...]
+
+> 
+> > +       /* Check for RGMII flags */
+> > +       if (of_get_property(ofdev->dev.of_node, "has-mdio", NULL))
+> > +               dev->flags |= EMAC_RGMII_FLAG_HAS_MDIO;
+> 
+> You can use of_property_read_bool here.
+
+Thanks. I will update it.
+
+Regards,
+
+Alistair
+
+> 
+> Cheers,
+> Mark.
