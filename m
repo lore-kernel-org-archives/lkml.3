@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaBXSQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:16:29 -0500
-Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:53795 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752579AbaBXSQ2 (ORCPT
+	id S1752831AbaBXSUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:20:55 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41123 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314AbaBXSUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:16:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:965:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2196:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:4321:4385:4390:4395:4605:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tooth24_726e53e312c0e
-X-Filterd-Recvd-Size: 2064
-Message-ID: <1393265785.11020.40.camel@joe-AO722>
-Subject: Re: [PATCH] pinctrl: Avoid kasprintf/kfree
-From: Joe Perches <joe@perches.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Mark Brown <broonie@linaro.org>
-Date: Mon, 24 Feb 2014 10:16:25 -0800
-In-Reply-To: <CACRpkdYxDu-vZLpc3Ef-2q1B3wpHqnuJofRwhA332Qw4pw39vg@mail.gmail.com>
-References: <1391108240-16161-1-git-send-email-broonie@kernel.org>
-	 <1391108694.2422.59.camel@joe-AO722> <1391114256.2422.71.camel@joe-AO722>
-	 <CACRpkdYxDu-vZLpc3Ef-2q1B3wpHqnuJofRwhA332Qw4pw39vg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Feb 2014 13:20:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Mon, 24 Feb 2014 10:20:10 -0800
+Message-ID: <CAGVrzcadYTYQEvPxqdMf2f741y5sAgnOYm3EC=f7SOkr8SK2WQ@mail.gmail.com>
+Subject: Re: [PATCH] net: phy: add suspend_halted module param
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Andrew Lunn <andrew@lunn.ch>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 10:49 +0100, Linus Walleij wrote:
-> On Thu, Jan 30, 2014 at 9:37 PM, Joe Perches <joe@perches.com> wrote:
-> > Avoid an unnecessary allocation/free by using stack instead.
-> >
-> > Signed-off-by; Joe Perches <joe@perches.com>
-> 
-> Hm.
-> 
-> > +       char propname[9 + sizeof(int) * 2 + 4] = "pinctrl-";
-> 
-> If you absolutely want to do this you have to
-> 
-> #define PINCTRL_PREFIX "pinctrl-"
-> 
-> char propname[strlen(PINCTRL_PREFIX) + sizeof(int)*2 + 4] = PINCTRL_PREFIX;
-> 
-> Then add a comment above stating why you add 4.
+Hi Sebastian,
 
-No, I don't really.
+2014-02-23 8:58 GMT-08:00 Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com>:
+> commit 1211ce53077164e0d34641d0ca5fb4d4a7574498
+>   ("net: phy: resume/suspend PHYs on attach/detach")
+> introduced a feature to suspend PHYs when entering halted state.
+>
+> Unfortunately, not all bootloaders properly power-up PHYs on reset
+> and fail to access ethernet because the PHY is still powered down.
+>
+> Therefore, we add a boolean module parameter suspend_halted with
+> default value of true. Disabling that parameter prevents PHYs from
+> being suspended when entering halted state.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Reported-by: Andrew Lunn <andrew@lunn.ch>
+> ---
+> Andrew, can you please re-test if disabling the feature does work on
+> your board? I tried a bunch of mine, but none failed to power-up the
+> PHY in u-boot.
 
-> > This allocation seems unnecessary and the kasprintf isn't
-> > checked for non-null, so maybe this is better.
-> 
-> Another option would be to just add a NULL-check? This is
-> definately not on a performance-critical path.
+Would be good to get Andrew's testing on this just to make sure it
+solves his problem. Otherwise:
 
-It's a defect not to check the kasprintf return before
-writing through it.
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-I submitted what I think appropriate.
+>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Florian Fainelli <f.fainelli@gmail.com>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/phy/phy_device.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 4b03e63639b7..671eea0eb5db 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -40,6 +40,10 @@ MODULE_DESCRIPTION("PHY library");
+>  MODULE_AUTHOR("Andy Fleming");
+>  MODULE_LICENSE("GPL");
+>
+> +static bool suspend_halted = true;
+> +module_param(suspend_halted, bool, 0644);
+> +MODULE_PARM_DESC(suspend_halted, "Suspend PHYs when entering halted state.");
+> +
+>  void phy_device_free(struct phy_device *phydev)
+>  {
+>         put_device(&phydev->dev);
+> @@ -685,6 +689,12 @@ int phy_suspend(struct phy_device *phydev)
+>         struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
+>         struct ethtool_wolinfo wol;
+>
+> +       /* Some bootloaders do not power-up PHYs properly after reset,
+> +        * allow to disable the suspend halted PHYs feature.
+> +        */
+> +       if (!suspend_halted)
+> +               return -ENOSYS;
+> +
+>         /* If the device has WOL enabled, we cannot suspend the PHY */
+>         wol.cmd = ETHTOOL_GWOL;
+>         phy_ethtool_get_wol(phydev, &wol);
+> --
+> 1.8.5.3
+>
 
-Fix it as you choose.  Or not.
 
-cheers, Joe
 
+-- 
+Florian
