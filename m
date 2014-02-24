@@ -1,112 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831AbaBXOZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:25:08 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57723 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbaBXOZF (ORCPT
+	id S1752875AbaBXOZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 09:25:20 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34684 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbaBXOZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 09:25:05 -0500
-Date: Mon, 24 Feb 2014 15:24:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        metag <linux-metag@vger.kernel.org>
-Subject: Re: [patch 06/26] metag: Use irq_set_affinity instead of homebrewn
- code
-In-Reply-To: <530B47FD.80608@imgtec.com>
-Message-ID: <alpine.DEB.2.02.1402241432360.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212736.887575774@linutronix.de> <530B47FD.80608@imgtec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 24 Feb 2014 09:25:13 -0500
+Message-ID: <530B562C.2080108@ti.com>
+Date: Mon, 24 Feb 2014 19:54:44 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Roger Quadros <rogerq@ti.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>
+CC: <george.cherian@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
+ returns -ENODEV/-ENXIO
+References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1390299099-14764-1-git-send-email-kishon@ti.com> <20140121144725.GF30451@saruman.home> <20140127150855.GA17928@xps8300> <20140127160458.GF13268@saruman.home> <20140128153230.GA20991@xps8300> <20140128163036.GD28546@saruman.home> <20140129144659.GA22152@xps8300> <52FB42DE.4090203@ti.com> <5304A58C.2030306@ti.com> <5307459D.9080707@ti.com> <5307468E.6040304@ti.com> <530B1609.8030804@ti.com> <530B277A.3030900@ti.com>
+In-Reply-To: <530B277A.3030900@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014, James Hogan wrote:
+Hi,
 
-> Hi Thomas,
+On Monday 24 February 2014 04:35 PM, Roger Quadros wrote:
+> On 02/24/2014 11:51 AM, Kishon Vijay Abraham I wrote:
+>> Hi Roger,
+>>
+>> On Friday 21 February 2014 05:59 PM, Roger Quadros wrote:
+>>> On 02/21/2014 02:25 PM, Kishon Vijay Abraham I wrote:
+>>>> Hi Roger,
+>>>>
+>>>> On Wednesday 19 February 2014 06:07 PM, Roger Quadros wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On 02/12/2014 11:46 AM, Kishon Vijay Abraham I wrote:
+>>>>>> On Wednesday 29 January 2014 08:17 PM, Heikki Krogerus wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> On Tue, Jan 28, 2014 at 10:30:36AM -0600, Felipe Balbi wrote:
+>>>>>>>> On Tue, Jan 28, 2014 at 05:32:30PM +0200, Heikki Krogerus wrote:
+>>>>>>>>> On Mon, Jan 27, 2014 at 10:05:20AM -0600, Felipe Balbi wrote:
+>>>>>>>>> For the controller drivers the PHYs are just a resource like any
+>>>>>>>>> other. The controller drivers can't have any responsibility of
+>>>>>>>>> them. They should not care if PHY drivers are available for them or
+>>>>>>>>> not, or even if the PHY framework is available or not.
+>>>>>>>>
+>>>>>>>> huh? If memory isn't available you don't continue probing, right ? If
+>>>>>>>> your IORESOURCE_MEM is missing, you also don't continue probing, if your
+>>>>>>>> IRQ line is missing, you bail too. Those are also nothing but resources
+>>>>>>>> to the driver, what you're asking here is to treat PHY as a _different_
+>>>>>>>> resource; which might be fine, but we need to make sure we don't
+>>>>>>>> continue probing when a PHY is missing in a platform that certainly
+>>>>>>>> needs a PHY.
+>>>>>>>
+>>>>>>> Yes, true. In my head I was comparing the PHY only to resources like
+>>>>>>> gpios, clocks, dma channels, etc. that are often optional to the
+>>>>>>> drivers.
+>>>>>>>
+>>>>>>>>>>>> But I really want to see the argument against using no-op. As far as I
+>>>>>>>>>>>> could see, everybody needs a PHY driver one way or another, some
+>>>>>>>>>>>> platforms just haven't sent any PHY driver upstream and have their own
+>>>>>>>>>>>> hacked up solution to avoid using the PHY layer.
+>>>>>>>>>>>
+>>>>>>>>>>> Not true in our case. Platforms using Intel's SoCs and chip sets may
+>>>>>>>>>>> or may not have controllable USB PHY. Quite often they don't. The
+>>>>>>>>>>> Baytrails have usually ULPI PHY for USB2, but that does not mean they
+>>>>>>>>>>> provide any vendor specific functions or any need for a driver in any
+>>>>>>>>>>> case.
+>>>>>>>>>>
+>>>>>>>>>> that's different from what I heard.
+>>>>>>>>>
+>>>>>>>>> I don't know where you got that impression, but it's not true. The
+>>>>>>>>> Baytrail SoCs for example don't have internal USB PHYs, which means
+>>>>>>>>> the manufacturers using it can select what they want. So we have
+>>>>>>>>> boards where PHY driver(s) is needed and boards where it isn't.
+>>>>>>>>
+>>>>>>>> alright, that explains it ;-) So you have external USB2 and USB3 PHYs ?
+>>>>>>>> You have an external PIPE3 interface ? That's quite an achievement,
+>>>>>>>> kudos to your HW designers. Getting timing closure on PIPE3 is a
+>>>>>>>> difficult task.
+>>>>>>>
+>>>>>>> No, only the USB2 PHY is external. I'm giving you wrong information,
+>>>>>>> I'm sorry about that. Need to concentrate on what I'm writing.
+>>>>>>>
+>>>>>>> <snip>
+>>>>>>>
+>>>>>>>>> This is really good to get. We have some projects where we are dealing
+>>>>>>>>> with more embedded environments, like IVI, where the kernel should be
+>>>>>>>>> stripped of everything useless. Since the PHYs are autonomous, we
+>>>>>>>>> should be able to disable the PHY libraries/frameworks.
+>>>>>>>>
+>>>>>>>> hmmm, in that case it's a lot easier to treat. We can use
+>>>>>>>> ERR_PTR(-ENXIO) as an indication that the framework is disabled, or
+>>>>>>>> something like that.
+>>>>>>>>
+>>>>>>>> The difficult is really reliably supporting e.g. OMAP5 (which won't work
+>>>>>>>> without a PHY) and your BayTrail with autonomous PHYs. What can we use
+>>>>>>>> as an indication ?
+>>>>>>>
+>>>>>>> OMAP has it's own glue driver, so shouldn't it depend on the PHY
+>>>>>>> layer?
+>>>>>>
+>>>>>> right, but the PHY is connected to the dwc3 core and not to the glue.
+>>>>>>>
+>>>>>>>> I mean, I need to know that a particular platform depends on a PHY
+>>>>>>>> driver before I decide to return -EPROBE_DEFER or just assume the PHY
+>>>>>>>> isn't needed ;-)
+>>>>>>>
+>>>>>>> I don't think dwc3 (core) should care about that. The PHY layer needs
+>>>>>>> to tell us that. If the PHY driver that the platform depends is not
+>>>>>>> available yet, the PHY layer returns -EPROBE_DEFER and dwc3 ends up
+>>>>>>> returning -EPROBE_DEFER.
+>>>>>>
+>>>>>> I don't think the PHY layer can 'reliably' tell if PHY driver is available or
+>>>>>> not. Consider when the phy_provider_register fails, there is no way to know if
+>>>>>> PHY driver is available or not. There are a few cases where PHY layer returns
+>>>>>> -EPROBE_DEFER but none of them can tell for sure that PHY driver is either
+>>>>>> available and failed or not available at all. It would be best for us to leave
+>>>>>> that to the platforms if we want to be sure if the platform needs a PHY or not.
+>>>>>>
+>>>>>
+>>>>> Just to summarize this thread on what we need
+>>>>
+>>>> Thanks for summarizing.
+>>>>>
+>>>>> 1) dwc3 core shouldn't worry about platform specific stuff i.e. PHY needed or not.
+>>>>> It should be as generic as possible.
+>>>>>
+>>>>> 2) dwc3 core should continue probe even if PHY layer is not enabled, as not all platforms need it.
+>>>>>
+>>>>> 3) dwc3 core should continue probe if PHY device is not available. (-ENODEV?)
+>>>>>
+>>>>> 4) dwc3 core should error out on any error condition if PHY device is available and caused some error,
+>>>>> e.g. init error.
+>>>>>
+>>>>> 5) dwc3 core should return EPROBE_DEFER if PHY device is available but device driver is not yet loaded.
+>>>>>
+>>>>> 6) platform glue should do the necessary sanity checks for availability of all resources like PHY device, PHY layer, etc, before populating the dwc3 device. e.g. in OMAP5 case we could check if both usb2 and usb3 PHY
+>>>>> nodes are available in the DT and PHY layer is enabled, from dwc3-omap.c? In J6 case we could check that at least usb2 phy node is there for the High-Speed only controller, and so on.
+>>>>
+>>>> The PHY is connected to the dwc3 core. So I'm not sure if we should be doing
+>>>> checks for PHY in the glue layer.
+>>>
+>>> Sorry, I didn't get you. My reasoning was that since OMAP platform has this strict requirement of requiring
+>>> explicit PHY control in order to work, we must do the sanity checks in OMAP specific code and not in the dwc3 core code. It has nothing to do with how hardware is laid out.
+>>
+>> What kind of sanity check do you think can be done in OMAP code? We don't use
+>> any of the PHY API's in glue code. If we add the same PHY APIs in glue code it
+>> will be duplication of the same code without much value besides breaking the
+>> design guideline of the software to be modelled similar to hardware.
+>>
 > 
-> On 23/02/14 21:40, Thomas Gleixner wrote:
-> > There is no point in having an incomplete copy of irq_set_affinity()
-> > for the hotplug irq migration code.
-> 
-> That sounds reasonable, but when I gave it a try I started getting
-> warnings on the log after offlining one cpu then the other:
-> 
-> META213-Thread0 DSP [LogF] IRQ13 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ14 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ15 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ18 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ29 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ30 no longer affine to CPU1
-> META213-Thread0 DSP [LogF] IRQ31 no longer affine to CPU1
-> 
-> It appears that the irq affinities weren't getting modified previously,
-> whereas now irq_do_set_affinity() does do cpumask_copy(data->affinity,
-> mask). Once all CPUs have been offlined at least once you get those
-> spurious messages even though the IRQ affinities haven't been explicitly
-> limited by anything.
-> 
-> I wonder if the stored affinity should really be altered in this case?
+> I wasn't saying about using PHY APIs in glue code, but just doing the basic sanity checks like
+> presence of PHY layer, the required USB PHY DT nodes and the required drivers for the platform.
 
-Delta patch below.
+hmm.. instead of doing sanity checks we can just select them in Kconfig like
+what I suggested before no? We could check if there is a phandle on the child
+dwc3 node though.
 
-You need that irq-metag part in any case as the user space interface
-does not filter out stuff. Assume you offlined core 1 and user changes
-affinity from 0xf to 0xe. So your selector will pick core 1 which is
-offline....
-
-Btw, our handling of this is a bit awkward. Right now we let the user
-do
-
-      echo 0xf > /proc/irq/$N/smp_affinity
-
-and reading that back will give you 0xf though the kernel just selects
-a subset or even a single target cpu and one has to analyze
-/proc/interrupts to find out which one.
-
-We should add some mechanism to tell the user what's really going on.
-But that's a separate issue.
-
-Thanks,
-
-	tglx
-
-Index: tip/arch/metag/kernel/irq.c
-===================================================================
---- tip.orig/arch/metag/kernel/irq.c
-+++ tip/arch/metag/kernel/irq.c
-@@ -287,10 +287,8 @@ void migrate_irqs(void)
- 					    i, cpu);
- 
- 			cpumask_setall(data->affinity);
--			newcpu = cpumask_any_and(data->affinity,
--						 cpu_online_mask);
- 		}
--		irq_set_affinity(i, cpumask_of(newcpu));
-+		irq_set_affinity(i, data->affinity);
- 	}
- }
- #endif /* CONFIG_HOTPLUG_CPU */
-Index: tip/drivers/irqchip/irq-metag.c
-===================================================================
---- tip.orig/drivers/irqchip/irq-metag.c
-+++ tip/drivers/irqchip/irq-metag.c
-@@ -201,7 +201,7 @@ static int metag_internal_irq_set_affini
- 	 * one cpu (the interrupt code doesn't support it), so we just
- 	 * pick the first cpu we find in 'cpumask'.
- 	 */
--	cpu = cpumask_any(cpumask);
-+	cpu = cpumask_any_and(cpumask, cpu_online_mask);
- 	thread = cpu_2_hwthread_id[cpu];
- 
- 	metag_out32(TBI_TRIG_VEC(TBID_SIGNUM_TR1(thread)),
-
-
-    	  
+Thanks
+Kishon
