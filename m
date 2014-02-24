@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaBXTSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:18:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35627 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495AbaBXTSr (ORCPT
+	id S1753074AbaBXTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:22:09 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49242 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752836AbaBXTWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:18:47 -0500
-Date: Mon, 24 Feb 2014 14:18:31 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] xen-pciback: Use pci_enable_msix_exact() instead of
- pci_enable_msix()
-Message-ID: <20140224191831.GA7056@phenom.dumpdata.com>
-References: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
- <5304CC49.7020000@oracle.com>
- <5304D063.90000@oracle.com>
- <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
- <5304DABD.9000605@oracle.com>
- <20140221165235.GF17353@dhcp-26-207.brq.redhat.com>
- <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
+	Mon, 24 Feb 2014 14:22:07 -0500
+Date: Mon, 24 Feb 2014 19:21:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joel Fernandes <joelf@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-rt-users@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: Ideas/suggestions to avoid repeated locking and reducing too
+	many lists with dmaengine?
+Message-ID: <20140224192152.GV27282@n2100.arm.linux.org.uk>
+References: <530B9784.5060904@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <530B9784.5060904@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 05:53:40PM +0100, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+Wrapping... (I've had to manually edit this.)
 
-What is this based on? Thanks.
+On Mon, Feb 24, 2014 at 01:03:32PM -0600, Joel Fernandes wrote:
+> Just wanted your thoughts/suggestions on how we can avoid overhead in
+> the EDMA dmaengine driver. I am seeing a lots of performance drop
+> specially for small transfers with EDMA versus before raw EDMA was
+> moved to DMAEngine framework (atleast 25%).
+> 
+> One of the things I am thinking about is the repeated (spin)
+> locking/unlocking of the virt_dma_chan->lock or vc->lock. In many
+> cases, there's only 1 user or thread requiring to do a DMA, so I
+> feel the locking is unnecessary and potential overhead. If there's
+> a sane way to detect this an avoid locking altogether, that
+> would be great.
 
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/xen/xen-pciback/pciback_ops.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/xen-pciback/pciback_ops.c b/drivers/xen/xen-pciback/pciback_ops.c
-> index 64eb0cd..929dd46 100644
-> --- a/drivers/xen/xen-pciback/pciback_ops.c
-> +++ b/drivers/xen/xen-pciback/pciback_ops.c
-> @@ -213,8 +213,7 @@ int xen_pcibk_enable_msix(struct xen_pcibk_device *pdev,
->  		entries[i].vector = op->msix_entries[i].vector;
->  	}
->  
-> -	result = pci_enable_msix(dev, entries, op->value);
-> -
-> +	result = pci_enable_msix_exact(dev, entries, op->value);
->  	if (result == 0) {
->  		for (i = 0; i < op->value; i++) {
->  			op->msix_entries[i].entry = entries[i].entry;
-> -- 
-> 1.7.7.6
-> 
-> -- 
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
+For the case where there's no contention, spinlocks /should/ be light.
+What will make them more expensive is if you have things like lockdep
+enabled, which adds much more code into those paths to do state tracking.
+It's a known side effect of using that debug.
+
+So, if you're developing, then you should always have turned lockdep on.
+If you're testing for performance, you should have lockdep and spinlock
+debugging turned off.
+
+>  Also with respect to virt_dma (which is used by edma to manage all the
+> descriptors and lists) there are too many lists: submitted, issued,
+> completed etc and the descriptor moves from one to the other. I am
+> thinking if there is a way we can avoid using so many lists and just
+> have 2 lists and move the desc from one list to the other, That could
+> avoid using the intermediate list altogether and classify dma requests
+> as "done" or "not done".
+
+The reason I created separate submitted and issued lists is that it's
+much easier to manage than having everything on a single list.
+
+We could deal with the submitted vs issued list, and that's to have the
+channel store the cookie for the last issued descriptor - but I wonder
+if it's worth the effort.
+
+What I'd suggest is to try some profiling, and post some profiling
+results which show where the problems are, rather than pointing at
+bits of code you might not particularly like.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
