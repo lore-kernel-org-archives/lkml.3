@@ -1,75 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaBXCYc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:24:32 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:53151 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbaBXCY2 (ORCPT
+	id S1751595AbaBXCbh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:31:37 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:57014 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaBXCbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:24:28 -0500
-From: minyard@acm.org
-To: OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Russ Anderson <rja@sgi.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: [PATCH 3/3] Change ACPI IPMI support to "default y"
-Date: Sun, 23 Feb 2014 20:23:36 -0600
-Message-Id: <1393208616-16500-4-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1393208616-16500-1-git-send-email-minyard@acm.org>
-References: <1393208616-16500-1-git-send-email-minyard@acm.org>
+	Sun, 23 Feb 2014 21:31:35 -0500
+X-AuditID: 9c93017d-b7c89ae000006ae1-3e-530aaf04face
+Date: Mon, 24 Feb 2014 11:31:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 3/6] zram: factor out single stream compression
+Message-ID: <20140224023157.GF16240@bbox>
+References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1392983443-9807-4-git-send-email-sergey.senozhatsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392983443-9807-4-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Garrett <matthew.garrett@nebula.com>
+Hello Sergey,
 
-The ACPI IPMI driver implements IPMI operation region support for the ACPI
-core. Systems that declare ACPI operation regions may reference them at any
-time, including during kernel initialisation. These accesses will fail
-unless the ACPI IPMI driver is present, and undesirable system behaviour
-may result. Set the default to Y in order to encourage distributions and
-users to configure kernels to avoid awkward surprises.
+On Fri, Feb 21, 2014 at 02:50:40PM +0300, Sergey Senozhatsky wrote:
+> This is preparation patch to add multi stream support to zcomp.
+> 
+> Introduce struct zcomp_strm_single and a set of functions to manage zcomp_strm
+> stream access. zcomp_strm_single implements single compession stream, same way
+> as current zcomp implementation. This moves zcomp_strm stream control and
+> locking from zcomp, so compressing backend zcomp is not aware of required
+> locking (single and multi streams require different locking schemes).
+> 
+> The following set of functions added:
+> - zcomp_strm_single_get()/zcomp_strm_single_put()
+>   get and put compression stream, implement required locking
+> - zcomp_strm_single_create()/zcomp_strm_single_destroy()
+>   create and destroy zcomp_strm_single
+> 
+> New ->strm_get() and ->strm_put() callbacks added to zcomp, which are set to
+> zcomp_strm_single_get() and zcomp_strm_single_put() during initialisation.
+> Instead of direct locking and zcomp_strm access from zcomp_strm_get() and
+> zcomp_strm_put(), zcomp now calls ->strm_get() and ->strm_put()
+> correspondingly.
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- drivers/acpi/Kconfig      | 2 +-
- drivers/char/ipmi/Kconfig | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
+It's actually not what I expect.
+What I want was to separate implementation to different files
+whether it enalbles CONFIG_ZRAM_ZCOMP_MULTI or not so that
+popular users who want to use zram as only swap with small
+memory system have little side effect about performance and
+code size.
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 4770de5..0e6aab9 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -162,7 +162,7 @@ config ACPI_PROCESSOR
- config ACPI_IPMI
- 	tristate "IPMI"
- 	depends on IPMI_SI
--	default n
-+	default y
- 	help
- 	  This driver enables the ACPI to access the BMC controller. And it
- 	  uses the IPMI request/response message to communicate with BMC
-diff --git a/drivers/char/ipmi/Kconfig b/drivers/char/ipmi/Kconfig
-index 8e14360..5eb7e85 100644
---- a/drivers/char/ipmi/Kconfig
-+++ b/drivers/char/ipmi/Kconfig
-@@ -5,6 +5,7 @@
- menuconfig IPMI_HANDLER
-        tristate 'IPMI top-level message handler'
-        depends on HAS_IOMEM
-+       default y if ACPI
-        help
-          This enables the central IPMI message handler, required for IPMI
- 	 to work.
-@@ -45,6 +46,7 @@ config IPMI_DEVICE_INTERFACE
- 
- config IPMI_SI
-        tristate 'IPMI System Interface handler'
-+       default y if ACPI
-        help
-          Provides a driver for System Interfaces (KCS, SMIC, BT).
- 	 Currently, only KCS and SMIC are supported.  If
+> ---
+>  drivers/block/zram/zcomp.c | 63 ++++++++++++++++++++++++++++++++++++++++------
+>  drivers/block/zram/zcomp.h |  7 ++++--
+>  2 files changed, 60 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
+> index db72f3d..9661226 100644
+> --- a/drivers/block/zram/zcomp.c
+> +++ b/drivers/block/zram/zcomp.c
+> @@ -15,6 +15,14 @@
+>  
+>  #include "zcomp.h"
+>  
+> +/*
+> + * single zcomp_strm backend private part
+> + */
+> +struct zcomp_strm_single {
+> +	struct mutex strm_lock;
+> +	struct zcomp_strm *zstrm;
+> +};
+> +
+>  extern struct zcomp_backend zcomp_lzo;
+>  
+>  static struct zcomp_backend *find_backend(const char *compress)
+> @@ -55,17 +63,58 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
+>  	return zstrm;
+>  }
+>  
+> +static struct zcomp_strm *zcomp_strm_single_get(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm_single *zp = comp->private;
+> +	mutex_lock(&zp->strm_lock);
+> +	return zp->zstrm;
+> +}
+> +
+> +static void zcomp_strm_single_put(struct zcomp *comp, struct zcomp_strm *zstrm)
+> +{
+> +	struct zcomp_strm_single *zp = comp->private;
+> +	mutex_unlock(&zp->strm_lock);
+> +}
+> +
+> +static void zcomp_strm_single_destroy(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm_single *zp = comp->private;
+> +	zcomp_strm_free(comp, zp->zstrm);
+> +	kfree(zp);
+> +}
+> +
+> +static int zcomp_strm_single_create(struct zcomp *comp)
+> +{
+> +	struct zcomp_strm_single *zp;
+> +
+> +	comp->destroy = zcomp_strm_single_destroy;
+> +	comp->strm_get = zcomp_strm_single_get;
+> +	comp->strm_put = zcomp_strm_single_put;
+> +	zp = kmalloc(sizeof(struct zcomp_strm_single), GFP_KERNEL);
+> +	comp->private = zp;
+> +	if (!zp)
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&zp->strm_lock);
+> +	zp->zstrm = zcomp_strm_alloc(comp);
+> +	if (!zp->zstrm) {
+> +		zcomp_strm_single_destroy(comp);
+> +		return -ENOMEM;
+> +	}
+> +	return 0;
+> +}
+> +
+>  struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
+>  {
+> -	mutex_lock(&comp->strm_lock);
+> -	return comp->zstrm;
+> +	return comp->strm_get(comp);
+>  }
+>  
+>  void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
+>  {
+> -	mutex_unlock(&comp->strm_lock);
+> +	comp->strm_put(comp, zstrm);
+>  }
+>  
+> +/* compress page */
+>  int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+>  		const unsigned char *src, size_t *dst_len)
+>  {
+> @@ -73,6 +122,7 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+>  			zstrm->private);
+>  }
+>  
+> +/* decompress page */
+>  int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+>  		size_t src_len, unsigned char *dst)
+>  {
+> @@ -81,7 +131,7 @@ int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+>  
+>  void zcomp_destroy(struct zcomp *comp)
+>  {
+> -	zcomp_strm_free(comp, comp->zstrm);
+> +	comp->destroy(comp);
+>  	kfree(comp);
+>  }
+>  
+> @@ -105,10 +155,7 @@ struct zcomp *zcomp_create(const char *compress)
+>  		return NULL;
+>  
+>  	comp->backend = backend;
+> -	mutex_init(&comp->strm_lock);
+> -
+> -	comp->zstrm = zcomp_strm_alloc(comp);
+> -	if (!comp->zstrm) {
+> +	if (zcomp_strm_single_create(comp) != 0) {
+>  		zcomp_destroy(comp);
+>  		return NULL;
+>  	}
+> diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
+> index 5106f8e..8dc1d7f 100644
+> --- a/drivers/block/zram/zcomp.h
+> +++ b/drivers/block/zram/zcomp.h
+> @@ -34,9 +34,12 @@ struct zcomp_backend {
+>  
+>  /* dynamic per-device compression frontend */
+>  struct zcomp {
+> -	struct mutex strm_lock;
+> -	struct zcomp_strm *zstrm;
+> +	void *private;
+>  	struct zcomp_backend *backend;
+> +
+> +	struct zcomp_strm *(*strm_get)(struct zcomp *comp);
+> +	void (*strm_put)(struct zcomp *comp, struct zcomp_strm *zstrm);
+> +	void (*destroy)(struct zcomp *comp);
+
+I don't think we need indirection for get/put/destroy.
+zram_drv.c just calls zcomp_strm_get and zcomp.c could implement it
+
+zcomp_strm_get()
+{
+        mutex_lock
+        return strm;
+}
+
+and zcomp_multi.c can do it
+
+zcomp_strm_get()
+{
+        spin_lock
+        spin_unlock
+        wait_event
+        return strm;
+}
+
+It seems that you live in my opposite country(ie, you start to dump patches
+when I am about leaving office so ping-pong gap of patch is at least
+one day round. It makes us collaboration very hard so eaieist method I can
+think is just I can implement my thought by myself but I don't want it.
+You thought this idea firstly and I want that you have all credit although
+it waste our time)
+
+If I made you annoying, I'm really sorry to you.
+Again, thanks for looking at this, Sergey!
+
 -- 
-1.8.3.1
-
+Kind regards,
+Minchan Kim
