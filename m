@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaBXOtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 09:49:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39530 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461AbaBXOs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752749AbaBXOs6 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Feb 2014 09:48:58 -0500
-Date: Mon, 24 Feb 2014 15:48:50 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH Resend] trace: Replace hardcoding of 19 with MAX_NICE.
-Message-ID: <20140224144850.GV27965@twins.programming.kicks-ass.net>
-References: <eeb2a85d74c71e0d50c88789f99ad857a6b4b7b4.1392103744.git.yangds.fnst@cn.fujitsu.com>
- <1393251121-25534-1-git-send-email-yangds.fnst@cn.fujitsu.com>
- <20140224092934.1ec35898@gandalf.local.home>
+Received: from smtp02.citrix.com ([66.165.176.63]:8886 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461AbaBXOs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 09:48:57 -0500
+X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
+   d="scan'208";a="103549747"
+Message-ID: <530B5BD6.2000301@citrix.com>
+Date: Mon, 24 Feb 2014 14:48:54 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140224092934.1ec35898@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Xen <xen-devel@lists.xenproject.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Xen-devel] [patch 23/26] xen: Add proper irq accounting for
+ HYPERCALL vector
+References: <20140223212703.511977310@linutronix.de> <20140223212738.808648133@linutronix.de>
+In-Reply-To: <20140223212738.808648133@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 09:29:34AM -0500, Steven Rostedt wrote:
-> On Mon, 24 Feb 2014 22:12:01 +0800
-> Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
-> 
-> > Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> > cc: Steven Rostedt <rostedt@goodmis.org>
-> > cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > cc: Ingo Molnar <mingo@redhat.com>
-> > cc: Peter Zijlstra <peterz@infradead.org>
-> 
-> Peter,
-> 
-> If you want to take this, you can add my Acked-by.
+On 23/02/14 21:40, Thomas Gleixner wrote:
+> --- tip.orig/drivers/xen/events/events_base.c
+> +++ tip/drivers/xen/events/events_base.c
+> @@ -1239,6 +1239,7 @@ void xen_evtchn_do_upcall(struct pt_regs
+>  #ifdef CONFIG_X86
+>  	exit_idle();
+>  #endif
+> +	inc_irq_stat(irq_hv_callback_count);
+>  
+>  	__xen_evtchn_do_upcall();
 
-Done, thanks!
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+
+David
