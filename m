@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaBXKW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 05:22:56 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64853 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaBXKWw (ORCPT
+	id S1752675AbaBXKXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 05:23:30 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:60275 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161AbaBXKXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 05:22:52 -0500
+	Mon, 24 Feb 2014 05:23:24 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: ufimtseva@gmail.com, paul.gortmaker@windriver.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dan.carpenter@oracle.com
+Subject: [PATCH v2] staging: ced401: fix double unlock bug
+Date: Mon, 24 Feb 2014 19:23:15 +0900
+Message-ID: <6036697.Bsd6uoTeJ1@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20140223154053.GN7862@titan.lakedaemon.net>
-References: <1392220776-30851-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1393165274-32492-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20140223154053.GN7862@titan.lakedaemon.net>
-Date: Mon, 24 Feb 2014 11:22:51 +0100
-Message-ID: <CACRpkdZFwcFtZiDH792awhyrQ6wtEsJMMN9K_ypCbqLqZo9LLw@mail.gmail.com>
-Subject: Re: [PATCH v4 00/16] pinctrl: mvebu: restructure resource allocation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 4:40 PM, Jason Cooper <jason@lakedaemon.net> wrote:
 
-> I certainly don't want to assume we can take this, and you've been quiet
-> on the previous versions of this series.  We have a lot of moving pieces
-> for getting the Armada 375/380/385 support added to the kernel.  It's a
-> huge help to us if we can create a topic branch for you with the pinctrl
-> changes in it.
+After spin_lock() is called, all of if-else conditions in this brace
+should reach the end of else and spin_unlock() must be called.
+So It doesn't need to call spin_unlock() without a return statement
+for handling an error.
 
-I understand, sorry I was on a short vacation.
+Also sparse says:
+drivers/staging/ced1401/usb1401.c:1080:28: warning:
+ context imbalance in 'Handle1401Esc' - unexpected unlock
 
-I've applied Thomas' two new SoC drivers and started queueing
-Sebastians series but it's a bit messy. Right now I'm not finding
-patch 06/21 v4....
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/ced1401/usb1401.c |    1 -
+ 1 file changed, 1 deletion(-)
 
->> https://github.com/shesselba/linux-dove.git unstable/mvebu-pinctrl-v3.14_v4
+diff --git a/drivers/staging/ced1401/usb1401.c b/drivers/staging/ced1401/usb1401.c
+index efc310c..8195eb9 100644
+--- a/drivers/staging/ced1401/usb1401.c
++++ b/drivers/staging/ced1401/usb1401.c
+@@ -1053,7 +1053,6 @@ static int Handle1401Esc(DEVICE_EXTENSION *pdx, char *pCh,
+ 				/*  This can never happen, really */
+ 				dev_err(&pdx->interface->dev,
+ 					"ERROR: DMA setup while transfer still waiting");
+-				spin_unlock(&pdx->stagedLock);
+ 			} else {
+ 				if ((wTransType == TM_EXTTOHOST)
+ 				    || (wTransType == TM_EXTTO1401)) {
+-- 
+1.7.9.5
 
-Should I just pull this in instead, as it contains both Thomas' and Sebastians
-patches, and then you can send me more stuff on top of that?
-
-Yours,
-Linus Walleij
+---
