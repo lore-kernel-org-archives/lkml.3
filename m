@@ -1,176 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbaBXF5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 00:57:53 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:38577 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaBXFyV (ORCPT
+	id S1751874AbaBXGAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 01:00:12 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50626 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaBXGAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 00:54:21 -0500
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Sagi Grimberg <sagig@dev.mellanox.co.il>
-Subject: [RFC 1/6] vhost/scsi: Move sanity check into vhost_scsi_map_iov_to_sgl
-Date: Mon, 24 Feb 2014 05:32:25 +0000
-Message-Id: <1393219950-18613-2-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1393219950-18613-1-git-send-email-nab@daterainc.com>
-References: <1393219950-18613-1-git-send-email-nab@daterainc.com>
+	Mon, 24 Feb 2014 01:00:10 -0500
+Date: Mon, 24 Feb 2014 15:00:05 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@ingics.com>, "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Message-ID: <20140224060005.GC25940@sirena.org.uk>
+References: <20140224144529.1d3b9f3e974b6364298182cc@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0CHKT3anvf6u5QiQ"
+Content-Disposition: inline
+In-Reply-To: <20140224144529.1d3b9f3e974b6364298182cc@canb.auug.org.au>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 121.174.50.227
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: build failure after merge of the spi tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Move the overflow check for sgl_count > TCM_VHOST_PREALLOC_SGLS into
-vhost_scsi_map_iov_to_sgl() so that it's based on the total number
-of SGLs for all IOVs, instead of single IOVs.
+--0CHKT3anvf6u5QiQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also, rename TCM_VHOST_PREALLOC_PAGES -> TCM_VHOST_PREALLOC_UPAGES
-to better describe pointers to user-space pages.
+On Mon, Feb 24, 2014 at 02:45:29PM +1100, Stephen Rothwell wrote:
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/vhost/scsi.c |   59 +++++++++++++++++++++-----------------------------
- 1 file changed, 25 insertions(+), 34 deletions(-)
+> compilation with COMPILE_TEST").  Please at least test building on x86
+> before allowing a build with COMPILE_TEST.
 
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index 0a025b8..31feb47 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -57,7 +57,7 @@
- #define TCM_VHOST_MAX_CDB_SIZE 32
- #define TCM_VHOST_DEFAULT_TAGS 256
- #define TCM_VHOST_PREALLOC_SGLS 2048
--#define TCM_VHOST_PREALLOC_PAGES 2048
-+#define TCM_VHOST_PREALLOC_UPAGES 2048
- 
- struct vhost_scsi_inflight {
- 	/* Wait for the flush operation to finish */
-@@ -762,35 +762,28 @@ vhost_scsi_map_to_sgl(struct tcm_vhost_cmd *tv_cmd,
- 		      struct scatterlist *sgl,
- 		      unsigned int sgl_count,
- 		      struct iovec *iov,
--		      int write)
-+		      struct page **pages,
-+		      bool write)
- {
- 	unsigned int npages = 0, pages_nr, offset, nbytes;
- 	struct scatterlist *sg = sgl;
- 	void __user *ptr = iov->iov_base;
- 	size_t len = iov->iov_len;
--	struct page **pages;
- 	int ret, i;
- 
--	if (sgl_count > TCM_VHOST_PREALLOC_SGLS) {
--		pr_err("vhost_scsi_map_to_sgl() psgl_count: %u greater than"
--		       " preallocated TCM_VHOST_PREALLOC_SGLS: %u\n",
--			sgl_count, TCM_VHOST_PREALLOC_SGLS);
--		return -ENOBUFS;
--	}
--
- 	pages_nr = iov_num_pages(iov);
--	if (pages_nr > sgl_count)
-+	if (pages_nr > sgl_count) {
-+		pr_err("vhost_scsi_map_iov_to_sgl() pages_nr: %u greater than"
-+		       " sgl_count: %u\n", pages_nr, sgl_count);
- 		return -ENOBUFS;
--
--	if (pages_nr > TCM_VHOST_PREALLOC_PAGES) {
-+	}
-+	if (pages_nr > TCM_VHOST_PREALLOC_UPAGES) {
- 		pr_err("vhost_scsi_map_to_sgl() pages_nr: %u greater than"
--		       " preallocated TCM_VHOST_PREALLOC_PAGES: %u\n",
--			pages_nr, TCM_VHOST_PREALLOC_PAGES);
-+		       " preallocated TCM_VHOST_PREALLOC_UPAGES: %u\n",
-+			pages_nr, TCM_VHOST_PREALLOC_UPAGES);
- 		return -ENOBUFS;
- 	}
- 
--	pages = tv_cmd->tvc_upages;
--
- 	ret = get_user_pages_fast((unsigned long)ptr, pages_nr, write, pages);
- 	/* No pages were pinned */
- 	if (ret < 0)
-@@ -820,33 +813,32 @@ out:
- static int
- vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
- 			  struct iovec *iov,
--			  unsigned int niov,
--			  int write)
-+			  int niov,
-+			  bool write)
- {
--	int ret;
--	unsigned int i;
--	u32 sgl_count;
--	struct scatterlist *sg;
-+	struct scatterlist *sg = cmd->tvc_sgl;
-+	unsigned int sgl_count = 0;
-+	int ret, i;
- 
--	/*
--	 * Find out how long sglist needs to be
--	 */
--	sgl_count = 0;
- 	for (i = 0; i < niov; i++)
- 		sgl_count += iov_num_pages(&iov[i]);
- 
--	/* TODO overflow checking */
-+	if (sgl_count > TCM_VHOST_PREALLOC_SGLS) {
-+		pr_err("vhost_scsi_map_iov_to_sgl() sgl_count: %u greater than"
-+			" preallocated TCM_VHOST_PREALLOC_SGLS: %u\n",
-+			sgl_count, TCM_VHOST_PREALLOC_SGLS);
-+		return -ENOBUFS;
-+	}
- 
--	sg = cmd->tvc_sgl;
- 	pr_debug("%s sg %p sgl_count %u\n", __func__, sg, sgl_count);
- 	sg_init_table(sg, sgl_count);
--
- 	cmd->tvc_sgl_count = sgl_count;
- 
--	pr_debug("Mapping %u iovecs for %u pages\n", niov, sgl_count);
-+	pr_debug("Mapping iovec %p for %u pages\n", &iov[0], sgl_count);
-+
- 	for (i = 0; i < niov; i++) {
- 		ret = vhost_scsi_map_to_sgl(cmd, sg, sgl_count, &iov[i],
--					    write);
-+					    cmd->tvc_upages, write);
- 		if (ret < 0) {
- 			for (i = 0; i < cmd->tvc_sgl_count; i++)
- 				put_page(sg_page(&cmd->tvc_sgl[i]));
-@@ -854,7 +846,6 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vhost_cmd *cmd,
- 			cmd->tvc_sgl_count = 0;
- 			return ret;
- 		}
--
- 		sg += ret;
- 		sgl_count -= ret;
- 	}
-@@ -1753,7 +1744,7 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tpg,
- 		}
- 
- 		tv_cmd->tvc_upages = kzalloc(sizeof(struct page *) *
--					TCM_VHOST_PREALLOC_PAGES, GFP_KERNEL);
-+					TCM_VHOST_PREALLOC_UPAGES, GFP_KERNEL);
- 		if (!tv_cmd->tvc_upages) {
- 			mutex_unlock(&tpg->tv_tpg_mutex);
- 			pr_err("Unable to allocate tv_cmd->tvc_upages\n");
--- 
-1.7.10.4
+Yeah, I tend to rely on the zero day tester to get that when travelling
+since it's normally quicker to get a result from that than it is for me
+to build on my laptop.  That doesn't seem to have worked out though...
 
+Like I said in reply to Axel's patch it's not exactly sane that things
+like this are an issue in the first place.
+
+--0CHKT3anvf6u5QiQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCt/iAAoJELSic+t+oim91R8P/3ysnTjMUpQkJnEkzw4jfoJh
+tpUUF+3meY3nxVi2GWCsTwRipU8HiuBKE/30dHEeK0nKlUWYHghV56CR0rLRIpTu
+nOe7C2uJLclzzAHst4396TL72H2dn2qImmDMsJrHN3hPvYJWseMH81xJxM4P36nl
+61U+eeveZWLsMK32ezXhBMzl7yb8UcLVxHQSYMhPeRvehL9SIsl5ahk5VXiRdvxF
+NPeIagvZXL0C80pL5cqhTRmW/VVmwfJM8q02a3Z1Kgu+4NFPpDeab+HOCigqc9+A
+NKvYtj5+Nc+Gmp04QRILiIEEyjA/WE7lYlnD5ha52Qzmuv6vf+BWA9o+42GlK1RG
+7rrukYNkhzLueywWkz2p0H0SzN2ql2kZTHFNmApc7Gdw2eZ5ZOIpoRLwms4KboG9
+zN1msnsdERqeW3j/Z3YkfudMiP01IlWB+d4ukSw61lxyiMxibCLo3bdVuV+LzUix
+tqTswDYI33cRA9XmMR0A3wxeGpAtQZdaXcRgVsm/IjBuX3YqBvmO6y95W67KB2Uk
+cU/DJ7PuE9xFPJ9W3nebMqQei8s81M95SS2ztE7Ck2vaZAHS06ebmbhQdZR7zpLJ
+Bu73myWI5XPGeBOjCKQw5r+M003sQ5yNiDBCJTSZ/WNZrybdCqgh2fj2GofQALru
+rYWb1yaDe8h4L8qqArBF
+=t0v9
+-----END PGP SIGNATURE-----
+
+--0CHKT3anvf6u5QiQ--
