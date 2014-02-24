@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaBXCjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 21:39:17 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:54634 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaBXCjQ (ORCPT
+	id S1752043AbaBXCpG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 21:45:06 -0500
+Received: from www.prifuk.cz ([31.31.77.241]:41785 "EHLO prifuk.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310AbaBXCpF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 21:39:16 -0500
-Message-ID: <530AB0CD.6090602@hitachi.com>
-Date: Mon, 24 Feb 2014 11:39:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 23 Feb 2014 21:45:05 -0500
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@prifuk.cz>
+To: Anssi Hannula <anssi.hannula@iki.fi>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, elias.vds@gmail.com, jkosina@suse.cz,
+        simon@mungewell.org
+Subject: Re: [PATCH v2 1/4] Add ff-memless-next driver
+Date: Mon, 24 Feb 2014 03:45:01 +0100
+Message-ID: <2308366.HeZmROk36g@geidi-prime>
+User-Agent: KMail/4.12.2 (Linux/3.13.5-1-ARCHMOD; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <530AAA38.3090700@iki.fi>
+References: <1516865.M993BQAYe4@geidi-prime> <1651798.4YaLXnucpJ@geidi-prime> <530AAA38.3090700@iki.fi>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org, fche@redhat.com,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH -tip  0/2] kprobes/x86: Fix bugs for NMI handling
-References: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140220033924.12285.97230.stgit@ltc230.yrl.intra.hitachi.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Monday 24 of February 2014 04:11:04 Anssi Hannula wrote:
+> 24.02.2014 03:54, Michal Malý kirjoitti:
+> > I forgot to comment on this:
+> >> Stopped effects should still be able to be updated.
+> > 
+> > Fair enough. I could not find a definitive answer to what is expected
+> > behavior in this case. As far as I can tell, there are following cases:
+> > - Effects with no duration and delay: they shall be updated right away.
+> > - Effects with delay: updated parameters shall be sent to the device at
+> > the
+> > correct time.
+> > - "Expired" effects with finite duration - ??? I assumed that effects with
+> > finite duration that have already finished playing cannot be updated
+> > because it does not seem to make much sense to do so.
+> 
+> "Expired" effects can always be played back again later - if that
+> happens, the updated parameters will be in effect.
+Okay, let me make this clear. When an effect "expires", update of its 
+parameters shall not trigger a restart, therefore it will not play. However, 
+when its parameters are updated and the effect is started again at some point, 
+the updated parameters shall be used. I will double-check this just to be on 
+the safe side, but MLNX always stores the updated parameters no matter what 
+the status of the effect is, so it should behave exactly as you suggest. 
+Perhaps it was just me misinterpreting the semantics of "update"?
 
-Should I resend this series to your kernel.org address?
+To bring this to a conclusion:
+- Do you think that this work is worth mainlining?
+- If it is, what do you suggest I change?
 
-Thank you,
+Thanks a lot for your input.
 
-(2014/02/20 12:39), Masami Hiramatsu wrote:
-> The following series fixes bugs hidden in the ancient code.
-> 
-> The bugs suddenly appeared when I enabled over 6,000 kprobes
-> and ran perf-top with --call-graph. The bugs are hidden in
-> the old code and it have woken up by real stress testing.
-> 
-> Actually, current kprobes doesn't expect an NMI handler
-> hits in single-stepping state (including preparation and
-> do_debug() handling). Moreover, the NMI handler causing
-> a page fault by trying to access user pages, is out of
-> imagination! :) But perf does it.
-> 
-> Thus the previous code optimistically check the current
-> running kprobe state, and if it is in the singlestep state,
-> it changes the IP address to probed address and return,
-> because it expects the page fault happened on the single
-> stepped code.
-> However, in fact, the perf's NMI can interrupt the
-> do_debug or somewhere around that and it may cause a
-> page fault. In this case, putting the IP address to
-> probed address is simply wrong. It causes unexpected
-> kernel crash.
-> To handle this correctly, this patch fixes it to ensure
-> the page-fault address is actually same to the single-
-> stepping address, and only if so, set the IP address
-> to the probed address.
-> 
-> I also found another small mistake which gives up the
-> recovery from reentered kprobes in single-stepping state,
-> but it also assumes that there is no NMI handler interrupts
-> in that state. It should gives up only when the nested
-> reentering happens.
-> 
-> Thanks to Ingo and Frank for encouraging me to start
-> stress testing with massive multiple kprobes. :)
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (2):
->       [BUGFIX]kprobes/x86: Fix page-fault handling logic
->       kprobes/x86: Allow to handle reentered kprobe on singlestepping
-> 
-> 
->  arch/x86/kernel/kprobes/core.c |   16 ++++++----------
->  1 file changed, 6 insertions(+), 10 deletions(-)
-> 
-> --
-> Signature
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Michal M.
