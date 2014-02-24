@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaBXQz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:55:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34835 "EHLO mx2.suse.de"
+	id S1753058AbaBXQ4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:56:15 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:41716 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572AbaBXQzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:55:52 -0500
-Date: Mon, 24 Feb 2014 17:55:50 +0100 (CET)
-From: Michael Matz <matz@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Richard Biener <richard.guenther@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-In-Reply-To: <CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1402241745100.7694@wotan.suse.de>
-References: <20140220083032.GN4250@linux.vnet.ibm.com> <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com> <20140220181116.GT4250@linux.vnet.ibm.com> <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com> <1392922421.28840.36.camel@triegel.csb>
- <CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com> <1393095223.28840.4914.camel@triegel.csb> <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com> <20140223003933.GQ4250@linux.vnet.ibm.com>
- <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com> <20140223063426.GT4250@linux.vnet.ibm.com> <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com> <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
- <CAFiYyc08cusFTsydD2C4rEZB-k38NnorzEXzKvqab0m3R+qn8w@mail.gmail.com> <CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752748AbaBXQ4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 11:56:10 -0500
+X-IronPort-AV: E=Sophos;i="4.97,535,1389744000"; 
+   d="scan'208";a="105252587"
+Message-ID: <530B79A5.7010600@citrix.com>
+Date: Mon, 24 Feb 2014 16:56:05 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Zoltan Kiss <zoltan.kiss@schaman.hu>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 2/9] xen-netback: Change TX path from grant
+ copy to mapping
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>	 <1390253069-25507-3-git-send-email-zoltan.kiss@citrix.com> <1392745235.23084.60.camel@kazak.uk.xensource.com> <530925D5.4010800@schaman.hu>
+In-Reply-To: <530925D5.4010800@schaman.hu>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.68.14.50]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 22/02/14 22:33, Zoltan Kiss wrote:
+> On 18/02/14 17:40, Ian Campbell wrote:
+>> +     */
+>>> +    skb->pfmemalloc    = false;
+>>>   }
+>>>
+>>>   static int xenvif_get_extras(struct xenvif *vif,
+>>> @@ -1372,7 +1341,7 @@ static bool tx_credit_exceeded(struct xenvif 
+>>> *vif, unsigned size)
+>>
+>>> @@ -1581,7 +1535,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>>>           else if (txp->flags & XEN_NETTXF_data_validated)
+>>>               skb->ip_summed = CHECKSUM_UNNECESSARY;
+>>>
+>>> -        xenvif_fill_frags(vif, skb);
+>>> +        xenvif_fill_frags(vif,
+>>> +                  skb,
+>>> +                  skb_shinfo(skb)->destructor_arg ?
+>>> +                  pending_idx :
+>>> +                  INVALID_PENDING_IDX
+>>
+>> Couldn't xenvif_fill_frags calculate the 3rd argument itself given that
+>> it has skb in hand.
+> We still have to pass pending_idx, as it is no longer in skb->data. I 
+> have plans (I've already prototyped it, actually) to move that 
+> pending_idx from skb->data to skb->cb, if that happens, this won't be 
+> necessary.
+> On the other hand, it makes more sense just to just pass pending_idx, 
+> and in fill_frags we can decide based on destructor_arg whether do we 
+> need it or not.
+Actually, I've just moved the skb->cb patch to the beginning of this 
+series, so we can completely omit that new parameter from fill_frags.
 
-On Mon, 24 Feb 2014, Linus Torvalds wrote:
-
-> > To me that reads like
-> >
-> >   int i;
-> >   int *q = &i;
-> >   int **p = &q;
-> >
-> >   atomic_XXX (p, CONSUME);
-> >
-> > orders against accesses '*p', '**p', '*q' and 'i'.  Thus it seems they
-> > want to say that it orders against aliased storage - but then go further
-> > and include "indirectly through a chain of pointers"?!  Thus an
-> > atomic read of a int * orders against any 'int' memory operation but
-> > not against 'float' memory operations?
-> 
-> No, it's not about type at all, and the "chain of pointers" can be
-> much more complex than that, since the "int *" can point to within an
-> object that contains other things than just that "int" (the "int" can
-> be part of a structure that then has pointers to other structures
-> etc).
-
-So, let me try to poke holes into your definition or increase my 
-understanding :) .  You said "chain of pointers"(dereferences I assume), 
-e.g. if p is result of consume load, then access to 
-p->here->there->next->prev->stuff is supposed to be ordered with that load 
-(or only when that last load/store itself is also an atomic load or 
-store?).
-
-So, what happens if the pointer deref chain is partly hidden in some 
-functions:
-
-A * adjustptr (B *ptr) { return &ptr->here->there->next; }
-B * p = atomic_XXX (&somewhere, consume);
-adjustptr(p)->prev->stuff = bla;
-
-As far as I understood you, this whole ptrderef chain business would be 
-only an optimization opportunity, right?  So if the compiler can't be sure 
-how p is actually used (as in my function-using case, assume adjustptr is 
-defined in another unit), then the consume load would simply be 
-transformed into an acquire (or whatever, with some barrier I mean)?  Only 
-_if_ the compiler sees all obvious uses of p (indirectly through pointer 
-derefs) can it, yeah, do what with the consume load?
-
-
-Ciao,
-Michael.
+Zoli
