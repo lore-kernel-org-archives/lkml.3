@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206AbaBXRMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 12:12:25 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45083 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713AbaBXRLF (ORCPT
+	id S1752831AbaBXRQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 12:16:16 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:49692 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314AbaBXRQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 12:11:05 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-pm@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/3] typecheck: introduce assign_if() and assign_if_enabled()
-Date: Mon, 24 Feb 2014 11:08:25 -0600
-Message-Id: <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
-References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+	Mon, 24 Feb 2014 12:16:14 -0500
+Message-ID: <530B7E63.2070908@kernel.dk>
+Date: Mon, 24 Feb 2014 09:16:19 -0800
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, Mike Miller <mike.miller@hp.com>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Joshua Morris <josh.h.morris@us.ibm.com>,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, iss_storagedev@hp.com,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 0/9] block: Use pci_enable_msix_range() instead of pci_enable_msix()
+References: <cover.1392799751.git.agordeev@redhat.com> <20140221234613.GE29129@kernel.dk> <20140222093843.GB27897@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140222093843.GB27897@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The assign_if() and assign_if_enable() macros are intended to be used
-in static initializers for function pointers, where the pointer is
-expected to be NULL when a compile-time condition does not hold.
+On 2014-02-22 01:38, Alexander Gordeev wrote:
+> On Fri, Feb 21, 2014 at 03:46:13PM -0800, Jens Axboe wrote:
+>> On Wed, Feb 19 2014, Alexander Gordeev wrote:
+>>> As result of deprecation of MSI-X/MSI enablement functions
+>>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>>> using these two interfaces need to be updated to use the
+>>> new pci_enable_msi_range() and pci_enable_msix_range()
+>>> interfaces.
+>>
+>> Thanks. Applied 3-4, and 6-9 (didn't get the others).
+>
+> Oh, I just realized I posted outdated series, sorry for that :(
+> Out of applied patch 4 is not needed and patch 9 needs a rework.
+>
+> Should I repost the whole series?
 
-These macros allow for implementing this behavior, without requiring the
-functions be wrapped in #ifdef conditionals, and while providing
-typesafety regardless of the value of the conditional.
+Send a revised series against the previous, since they are already 
+committed.
 
-For example, the following pattern is common:
-
-	#ifdef CONFIG_FOO
-	static void foo_callback(void)
-	{
-	}
-	#else
-	#define foo_callback NULL
-	#endif
-
-	static struct foo_object foo_obj = {
-		.callback = foo_callback,
-	};
-
-Usage of assign_if_enabled() allows for achieving the same effect
-without the preprocessor conditional, and in addition, allowing the
-compiler to typecheck the function regardless of CONFIG_FOO.
-
-	static void foo_callback(void)
-	{
-	}
-
-	static struct foo_object foo_obj = {
-		.callback = assign_if_enabled(CONFIG_FOO, foo_callback),
-	};
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- include/linux/typecheck.h | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-diff --git a/include/linux/typecheck.h b/include/linux/typecheck.h
-index eb5b74a..04134c7 100644
---- a/include/linux/typecheck.h
-+++ b/include/linux/typecheck.h
-@@ -21,4 +21,22 @@
- 	(void)__tmp; \
- })
- 
-+/*
-+ * Intended for use in static object initializers,
-+ * assign_if(const_expr, function) evaluates to 'function' if 'const_expr',
-+ * otherwise NULL.
-+ *
-+ * The type of the assign_if() expression is typeof(function), and therefore
-+ * can provide typechecking regardless of 'const_expr'.
-+ *
-+ * gcc considers 'function' to be used and will not generate a 'defined but not
-+ * used' warning when not 'const_expr', however, gcc is smart enough to
-+ * eliminate 'function' if assign_if() is the only reference.
-+ */
-+#define assign_if(const_expr,function)	\
-+	((const_expr) ? function : NULL)
-+
-+#define assign_if_enabled(option,function)	\
-+	assign_if(IS_ENABLED(option), function)
-+
- #endif		/* TYPECHECK_H_INCLUDED */
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Jens Axboe
 
