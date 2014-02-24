@@ -1,338 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaBXTBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:01:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:53884 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439AbaBXTBT (ORCPT
+	id S1753131AbaBXTAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:00:50 -0500
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59743 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752586AbaBXTAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:01:19 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 14:01:19 EST
-From: Fabian Vogt <fabian@ritter-vogt.de>
-To: linux-gpio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org,
-        grant.likely@linaro.org, pawel.moll@arm.com, rob@landley.net,
-        Fabian Vogt <fabian@ritter-vogt.de>
-Subject: [PATCH V6] gpio: New driver for LSI ZEVIO SoCs
-Date: Mon, 24 Feb 2014 20:54:58 +0100
-Message-Id: <1393271698-15829-1-git-send-email-fabian@ritter-vogt.de>
-X-Mailer: git-send-email 1.8.1.4
-X-Provags-ID: V02:K0:BQWG2qLF5c1RUTb3DNki+y6Yjlud/6uEudcbGi2K/EI
- 5iAOdXj42PSjdPyOWcuf1+TGPr+a5XUmvnhVTCTes1RzZS7ps6
- GUSuAM2FkKIjLbh3n2wFTu7+LR8zqkjNI7k036sIuCuAVD5NcW
- XSdJvvux227gY1GdnXDv2quZvKq23/RziDmIE6kEIUzfWzQAIj
- I6MoKBRLq72AQAr8JMbkKES7CtRyFXpoJk4OaYue6q/5QQhf+H
- LB3B3LkaRO5nXZIHgwtDV1VJLmQhPWDnrSaZLaAwsG1BTNYzO8
- d0rcHvNc3xne+8ZH4pPoZ40VXXHvY3UqZaGc+XK2j+BIJEauXk
- w87xivsWNyQLjPGxQnh63b8NkEyOJ6Oc5IpUItu0NUJjX6BMkS
- LKDaarNK5Fo7UQOLVkPDPecR/jTCexHfqc=
+	Mon, 24 Feb 2014 14:00:08 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: rostedt@goodmis.org
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v2 1/6] ftrace: Cleanup of global variables
+Date: Mon, 24 Feb 2014 19:59:56 +0100
+Message-Id: <1393268401-24379-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports the GPIO controller found in LSI ZEVIO SoCs.
-It has been successfully tested on a TI nspire CX calculator.
+Some of them can be local to functions, so make them local and pass
+them as parameters where needed:
+* __start_mcount_loc+__stop_mcount_loc are local to ftrace_init
+* ftrace_new_pgs -> new_pgs/start_pg
+* ftrace_update_cnt -> local update_cnt in ftrace_update_code
 
-Signed-off-by: Fabian Vogt <fabian@ritter-vogt.de>
+[v2]
+- leave time stamps alone for now
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 ---
-It took a while for me to make this patch.
-School, other projects and some bugs which prevented testing
-were time consuming.
-This patch should resolve all issues, hopefully.
+ kernel/trace/ftrace.c | 25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-Changes to V5:
- -Rewrote documentation
- -Doesn't kfree devm_kzalloc'd memory
- -Fixed multiline comments
- -Got rid of unnecessary braces
- -Converted two too complex macros to static inline functions
-
- .../devicetree/bindings/gpio/gpio-zevio.txt        |  17 ++
- drivers/gpio/Kconfig                               |   6 +
- drivers/gpio/Makefile                              |   1 +
- drivers/gpio/gpio-zevio.c                          | 221 +++++++++++++++++++++
- 4 files changed, 245 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-zevio.txt
- create mode 100644 drivers/gpio/gpio-zevio.c
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
-new file mode 100644
-index 0000000..17bd9c8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
-@@ -0,0 +1,17 @@
-+Zevio GPIO controller
-+
-+Required properties:
-+- compatible: Should be "lsi,zevio-gpio"
-+- reg: Address and length of the register set for the device
-+- #gpio-cells: Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters (currently unused).
-+- gpio-controller: Marks the device node as a GPIO controller.
-+
-+Example:
-+	gpio: gpio@90000000 {
-+		compatible = "lsi,zevio-gpio";
-+		reg = <0x90000000 0x1000>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 903f24d..c69b9e3 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -145,6 +145,12 @@ config GPIO_EP93XX
- 	depends on ARCH_EP93XX
- 	select GPIO_GENERIC
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 5313c1100d30..3f95bbeb8e8d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1174,8 +1174,6 @@ struct ftrace_page {
+ 	int			size;
+ };
  
-+config GPIO_ZEVIO
-+	bool "LSI ZEVIO SoC memory mapped GPIOs"
-+	depends on OF
-+	help
-+	  Say yes here to support the GPIO controller in LSI ZEVIO SoCs.
-+
- config GPIO_MM_LANTIQ
- 	bool "Lantiq Memory mapped GPIOs"
- 	depends on LANTIQ && SOC_XWAY
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d50179..b845375 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -99,3 +99,4 @@ obj-$(CONFIG_GPIO_WM8350)	+= gpio-wm8350.o
- obj-$(CONFIG_GPIO_WM8994)	+= gpio-wm8994.o
- obj-$(CONFIG_GPIO_XILINX)	+= gpio-xilinx.o
- obj-$(CONFIG_GPIO_XTENSA)	+= gpio-xtensa.o
-+obj-$(CONFIG_GPIO_ZEVIO)	+= gpio-zevio.o
-diff --git a/drivers/gpio/gpio-zevio.c b/drivers/gpio/gpio-zevio.c
-new file mode 100644
-index 0000000..9354c8e
---- /dev/null
-+++ b/drivers/gpio/gpio-zevio.c
-@@ -0,0 +1,221 @@
-+/*
-+ * GPIO controller in LSI ZEVIO SoCs.
-+ *
-+ * Author: Fabian Vogt <fabian@ritter-vogt.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/bitops.h>
-+#include <linux/io.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/slab.h>
-+#include <linux/gpio.h>
-+
-+/*
-+ * Memory layout:
-+ * This chip has four gpio sections, each controls 8 GPIOs.
-+ * Bit 0 in section 0 is GPIO 0, bit 2 in section 1 is GPIO 10.
-+ * Disclaimer: Reverse engineered!
-+ * For more information refer to:
-+ * http://hackspire.unsads.com/wiki/index.php/Memory-mapped_I/O_ports#90000000_-_General_Purpose_I.2FO_.28GPIO.29
-+ *
-+ * 0x00-0x3F: Section 0
-+ *     +0x00: Masked interrupt status (read-only)
-+ *     +0x04: R: Interrupt status W: Reset interrupt status
-+ *     +0x08: R: Interrupt mask W: Mask interrupt
-+ *     +0x0C: W: Unmask interrupt (write-only)
-+ *     +0x10: Direction: I/O=1/0
-+ *     +0x14: Output
-+ *     +0x18: Input (read-only)
-+ *     +0x20: R: Level interrupt W: Set as level interrupt
-+ * 0x40-0x7F: Section 1
-+ * 0x80-0xBF: Section 2
-+ * 0xC0-0xFF: Section 3
-+ */
-+
-+#define ZEVIO_GPIO_SECTION_SIZE			0x40
-+
-+/* Offsets to various registers */
-+#define ZEVIO_GPIO_INT_MASKED_STATUS	0x00
-+#define ZEVIO_GPIO_INT_STATUS		0x04
-+#define ZEVIO_GPIO_INT_UNMASK		0x08
-+#define ZEVIO_GPIO_INT_MASK		0x0C
-+#define ZEVIO_GPIO_DIRECTION		0x10
-+#define ZEVIO_GPIO_OUTPUT		0x14
-+#define ZEVIO_GPIO_INPUT			0x18
-+#define ZEVIO_GPIO_INT_STICKY		0x20
-+
-+#define to_zevio_gpio(chip) container_of(to_of_mm_gpio_chip(chip), \
-+				struct zevio_gpio, chip)
-+
-+/* Bit number of GPIO in its section */
-+#define ZEVIO_GPIO_BIT(gpio) (gpio&7)
-+
-+struct zevio_gpio {
-+	spinlock_t		lock;
-+	struct of_mm_gpio_chip	chip;
-+};
-+
-+static inline u32 zevio_gpio_port_get(struct zevio_gpio *c, unsigned pin,
-+					unsigned port_offset)
-+{
-+	unsigned section_offset = ((pin >> 3) & 3)*ZEVIO_GPIO_SECTION_SIZE;
-+	return readl(IOMEM(c->chip.regs + section_offset + port_offset));
-+}
-+
-+static inline void zevio_gpio_port_set(struct zevio_gpio *c, unsigned pin,
-+					unsigned port_offset, u32 val)
-+{
-+	unsigned section_offset = ((pin >> 3) & 3)*ZEVIO_GPIO_SECTION_SIZE;
-+	writel(val, IOMEM(c->chip.regs + section_offset + port_offset));
-+}
-+
-+/* Functions for struct gpio_chip */
-+static int zevio_gpio_get(struct gpio_chip *chip, unsigned pin)
-+{
-+	struct zevio_gpio *controller = to_zevio_gpio(chip);
-+
-+	/* Only reading allowed, so no spinlock needed */
-+	u32 val = zevio_gpio_port_get(controller, pin, ZEVIO_GPIO_INPUT);
-+
-+	return (val >> ZEVIO_GPIO_BIT(pin)) & 0x1;
-+}
-+
-+static void zevio_gpio_set(struct gpio_chip *chip, unsigned pin, int value)
-+{
-+	struct zevio_gpio *controller = to_zevio_gpio(chip);
-+	u32 val;
-+
-+	spin_lock(&controller->lock);
-+	val = zevio_gpio_port_get(controller, pin, ZEVIO_GPIO_OUTPUT);
-+	if (value)
-+		val |= BIT(ZEVIO_GPIO_BIT(pin));
-+	else
-+		val &= ~BIT(ZEVIO_GPIO_BIT(pin));
-+
-+	zevio_gpio_port_set(controller, pin, ZEVIO_GPIO_OUTPUT, val);
-+	spin_unlock(&controller->lock);
-+}
-+
-+static int zevio_gpio_direction_input(struct gpio_chip *chip, unsigned pin)
-+{
-+	struct zevio_gpio *controller = to_zevio_gpio(chip);
-+	u32 val;
-+
-+	spin_lock(&controller->lock);
-+
-+	val = zevio_gpio_port_get(controller, pin, ZEVIO_GPIO_DIRECTION);
-+	val |= BIT(ZEVIO_GPIO_BIT(pin));
-+	zevio_gpio_port_set(controller, pin, ZEVIO_GPIO_DIRECTION, val);
-+
-+	spin_unlock(&controller->lock);
-+
-+	return 0;
-+}
-+
-+static int zevio_gpio_direction_output(struct gpio_chip *chip,
-+				       unsigned pin, int value)
-+{
-+	struct zevio_gpio *controller = to_zevio_gpio(chip);
-+	u32 val;
-+
-+	spin_lock(&controller->lock);
-+	val = zevio_gpio_port_get(controller, pin, ZEVIO_GPIO_OUTPUT);
-+	if (value)
-+		val |= BIT(ZEVIO_GPIO_BIT(pin));
-+	else
-+		val &= ~BIT(ZEVIO_GPIO_BIT(pin));
-+
-+	zevio_gpio_port_set(controller, pin, ZEVIO_GPIO_OUTPUT, val);
-+	val = zevio_gpio_port_get(controller, pin, ZEVIO_GPIO_DIRECTION);
-+	val &= ~BIT(ZEVIO_GPIO_BIT(pin));
-+	zevio_gpio_port_set(controller, pin, ZEVIO_GPIO_DIRECTION, val);
-+
-+	spin_unlock(&controller->lock);
-+
-+	return 0;
-+}
-+
-+static int zevio_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
-+{
-+	/*
-+	 * TODO: Implement IRQs.
-+	 * Not implemented yet due to weird lockups
-+	 */
-+
-+	return -ENXIO;
-+}
-+
-+static struct gpio_chip zevio_gpio_chip = {
-+	.direction_input	= zevio_gpio_direction_input,
-+	.direction_output	= zevio_gpio_direction_output,
-+	.set			= zevio_gpio_set,
-+	.get			= zevio_gpio_get,
-+	.to_irq			= zevio_gpio_to_irq,
-+	.base			= 0,
-+	.owner			= THIS_MODULE,
-+	.ngpio			= 32,
-+	.of_gpio_n_cells	= 2,
-+};
-+
-+/* Initialization */
-+static int zevio_gpio_probe(struct platform_device *pdev)
-+{
-+	struct zevio_gpio *controller;
-+	int status, i;
-+
-+	controller = devm_kzalloc(&pdev->dev, sizeof(*controller), GFP_KERNEL);
-+	if (!controller) {
-+		dev_err(&pdev->dev, "not enough free memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Copy our reference */
-+	controller->chip.gc = zevio_gpio_chip;
-+	controller->chip.gc.dev = &pdev->dev;
-+
-+	status = of_mm_gpiochip_add(pdev->dev.of_node, &(controller->chip));
-+	if (status) {
-+		dev_err(&pdev->dev, "failed to add gpiochip: %d\n", status);
-+		return status;
-+	}
-+
-+	spin_lock_init(&controller->lock);
-+
-+	/* Disable interrupts, they only cause errors */
-+	for (i = 0; i < controller->chip.gc.ngpio; i += 8)
-+		zevio_gpio_port_set(controller, i, ZEVIO_GPIO_INT_MASK, 0xFF);
-+
-+	dev_dbg(controller->chip.gc.dev, "ZEVIO GPIO controller set up!\n");
-+
-+	return 0;
-+}
-+
-+static struct of_device_id zevio_gpio_of_match[] = {
-+	{ .compatible = "lsi,zevio-gpio", },
-+	{ },
-+};
-+
-+MODULE_DEVICE_TABLE(of, zevio_gpio_of_match);
-+
-+static struct platform_driver zevio_gpio_driver = {
-+	.driver		= {
-+		.name	= "gpio-zevio",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(zevio_gpio_of_match),
-+	},
-+	.probe		= zevio_gpio_probe,
-+};
-+
-+module_platform_driver(zevio_gpio_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Fabian Vogt <fabian@ritter-vogt.de>");
-+MODULE_DESCRIPTION("LSI ZEVIO SoC GPIO driver");
+-static struct ftrace_page *ftrace_new_pgs;
+-
+ #define ENTRY_SIZE sizeof(struct dyn_ftrace)
+ #define ENTRIES_PER_PAGE (PAGE_SIZE / ENTRY_SIZE)
+ 
+@@ -2246,7 +2244,6 @@ static void ftrace_shutdown_sysctl(void)
+ }
+ 
+ static cycle_t		ftrace_update_time;
+-static unsigned long	ftrace_update_cnt;
+ unsigned long		ftrace_update_tot_cnt;
+ 
+ static inline int ops_traces_mod(struct ftrace_ops *ops)
+@@ -2302,11 +2299,12 @@ static int referenced_filters(struct dyn_ftrace *rec)
+ 	return cnt;
+ }
+ 
+-static int ftrace_update_code(struct module *mod)
++static int ftrace_update_code(struct module *mod, struct ftrace_page *new_pgs)
+ {
+ 	struct ftrace_page *pg;
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
++	unsigned long update_cnt = 0;
+ 	unsigned long ref = 0;
+ 	bool test = false;
+ 	int i;
+@@ -2332,9 +2330,8 @@ static int ftrace_update_code(struct module *mod)
+ 	}
+ 
+ 	start = ftrace_now(raw_smp_processor_id());
+-	ftrace_update_cnt = 0;
+ 
+-	for (pg = ftrace_new_pgs; pg; pg = pg->next) {
++	for (pg = new_pgs; pg; pg = pg->next) {
+ 
+ 		for (i = 0; i < pg->index; i++) {
+ 			int cnt = ref;
+@@ -2355,7 +2352,7 @@ static int ftrace_update_code(struct module *mod)
+ 			if (!ftrace_code_disable(mod, p))
+ 				break;
+ 
+-			ftrace_update_cnt++;
++			update_cnt++;
+ 
+ 			/*
+ 			 * If the tracing is enabled, go ahead and enable the record.
+@@ -2374,11 +2371,9 @@ static int ftrace_update_code(struct module *mod)
+ 		}
+ 	}
+ 
+-	ftrace_new_pgs = NULL;
+-
+ 	stop = ftrace_now(raw_smp_processor_id());
+ 	ftrace_update_time = stop - start;
+-	ftrace_update_tot_cnt += ftrace_update_cnt;
++	ftrace_update_tot_cnt += update_cnt;
+ 
+ 	return 0;
+ }
+@@ -4270,9 +4265,6 @@ static int ftrace_process_locs(struct module *mod,
+ 	/* Assign the last page to ftrace_pages */
+ 	ftrace_pages = pg;
+ 
+-	/* These new locations need to be initialized */
+-	ftrace_new_pgs = start_pg;
+-
+ 	/*
+ 	 * We only need to disable interrupts on start up
+ 	 * because we are modifying code that an interrupt
+@@ -4283,7 +4275,7 @@ static int ftrace_process_locs(struct module *mod,
+ 	 */
+ 	if (!mod)
+ 		local_irq_save(flags);
+-	ftrace_update_code(mod);
++	ftrace_update_code(mod, start_pg);
+ 	if (!mod)
+ 		local_irq_restore(flags);
+ 	ret = 0;
+@@ -4392,11 +4384,10 @@ struct notifier_block ftrace_module_exit_nb = {
+ 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+ };
+ 
+-extern unsigned long __start_mcount_loc[];
+-extern unsigned long __stop_mcount_loc[];
+-
+ void __init ftrace_init(void)
+ {
++	extern unsigned long __start_mcount_loc[];
++	extern unsigned long __stop_mcount_loc[];
+ 	unsigned long count, addr, flags;
+ 	int ret;
+ 
 -- 
-1.8.1.4
+1.8.5.2
 
