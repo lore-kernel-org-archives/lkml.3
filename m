@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaBXLjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:39:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56233 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480AbaBXLjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:39:23 -0500
-Date: Mon, 24 Feb 2014 12:39:20 +0100
-From: Jan Kara <jack@suse.cz>
-To: Guillaume Morin <guillaume@morinfr.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>
-Subject: Re: BUG: Bad page state in process with linux 3.4.76
-Message-ID: <20140224113920.GA25547@quack.suse.cz>
-References: <20140114203434.GA22994@bender.morinfr.org>
- <20140114221040.GA27903@bender.morinfr.org>
+	id S1752288AbaBXLkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:40:08 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:36792 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaBXLkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 06:40:06 -0500
+Date: Mon, 24 Feb 2014 11:39:56 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        angus.clark@st.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v4 00/36] mtd: st_spi_fsm: Add new driver
+Message-ID: <20140224113956.GA12186@lee--X1>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+ <20140108143316.GA14575@lee--X1>
+ <20140122125049.GA8586@lee--X1>
+ <20140123014613.GX8919@ld-irv-0074>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140114221040.GA27903@bender.morinfr.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140123014613.GX8919@ld-irv-0074>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-01-14 23:10:40, Guillaume Morin wrote:
-> Greg,
-> 
-> I am going to do more testing but it seems that reverting this patch
-> from 3.4.69 fixes the BUG
-> commit b07ef016454ff46f98e633b5a6247ca7e343fb67
-> Author: Khalid Aziz <khalid.aziz@oracle.com>
-> 
-> I also verified that I cannot reproduce this problem with 3.13-rc8
-  I'm going through some old emails... Did this get resolved with later 3.4
-stable kernels? If not, I guess you should ping Greg / Khalid to either
-revert that commit (I guess preferable given the nature of the change) or
-merge some additional fixup...
+Hi Brian,
 
-								Honza
+> > Can you confirm receipt of this set, or would you like me to resend?
+> 
+> Well, I personally have the patch set but haven't had a chance to review
+> it. Can you resend with MTD in the CC, since we haven't had any comments
+> anyway? I believe MTD people are much less likely to look at it if you
+> forget the CC :)
+> 
+> You can just title it [PATCH RESEND v4 X/Y], possibly with a LKML
+> link back to the original v4, if you want to help avoid confusion.
 
-> On 14 Jan 21:34, Guillaume Morin wrote:
-> >
-> > Hi,
-> > 
-> > I wrote this simple program (attached) to play around with kernel AIO.
-> > It simply does kernel AIO with O_DIRECT on a small temp file stored on
-> > an ext4 filesystem.
-> > 
-> > When I run it with "HUGETLB_MORECORE=yes LD_PRELOAD=libhugetlbfs.so", it
-> > triggers the kernel bug on exit every time.
-> > 
-> > Removing HUGETLB_MORECORE from the command line fixes the problem.  Note
-> > that my kernel does not use THP, it is NOT compiled with
-> > CONFIG_TRANSPARENT_HUGEPAGE.
-> > 
-> > I've tried it only with this 3.4.76 but I've been able to reproduce it without
-> > any issue on multiple machines running the same kernel.
-> > 
-> > BUG: Bad page state in process aio_test  pfn:1b7a01
-> > page:ffffea0006de8040 count:0 mapcount:1 mapping:          (null) index:0x0
-> > page flags: 0x20000000008000(tail)
-> > Modules linked in: nfsd exportfs nfs nfs_acl auth_rpcgss fscache lockd sunrpc
-> > rdma_ucm rdma_cm ib_addr iw_cm ib_uverbs ib_cm ib_sa ib_mad ib_core ipmi_si
-> > ipmi_devintf coretemp pcspkr microcode serio_raw i2c_i801 ioatdma i2c_core dca
-> > dm_mod sg sr_mod cdrom crc32c_intel ahci libahci [last unloaded: scsi_wait_scan]
-> > Pid: 4441, comm: aio_test Not tainted 3.4.76bug #1
-> > Call Trace:
-> > [<ffffffff810f3300>] ? is_free_buddy_page+0xa0/0xd0
-> > [<ffffffff814c0791>] bad_page+0xe6/0xfc
-> > [<ffffffff810f3dbc>] free_pages_prepare+0xfc/0x110
-> > [<ffffffff810f3dff>] __free_pages_ok+0x2f/0xd0
-> > [<ffffffff810f4080>] __free_pages+0x20/0x40
-> > [<ffffffff81124737>] update_and_free_page+0x77/0x80
-> > [<ffffffff8112633e>] free_huge_page+0x16e/0x180
-> > [<ffffffff810f8030>] __put_compound_page+0x20/0x50
-> > [<ffffffff810f8108>] put_compound_page+0x78/0x140
-> > [<ffffffff810f8546>] put_page+0x36/0x40
-> > [<ffffffff81126ede>] __unmap_hugepage_range+0x1ce/0x230
-> > [<ffffffff81127331>] unmap_hugepage_range+0x51/0x90
-> > [<ffffffff8110e880>] unmap_single_vma+0x730/0x740
-> > [<ffffffff8110f05f>] unmap_vmas+0x5f/0x80
-> > [<ffffffff8111672c>] exit_mmap+0xbc/0x130
-> > [<ffffffff8112e170>] ? kmem_cache_free+0x20/0xe0
-> > [<ffffffff81035155>] mmput+0x35/0xf0
-> > [<ffffffff8103a58d>] exit_mm+0xfd/0x120
-> > [<ffffffff8103bb6c>] do_exit+0x16c/0x8b0
-> > [<ffffffff811540c4>] ? mntput+0x24/0x40
-> > [<ffffffff81138962>] ? fput+0x192/0x250
-> > [<ffffffff8103c5ff>] do_group_exit+0x3f/0xa0
-> > [<ffffffff8103c677>] sys_exit_group+0x17/0x20
-> > [<ffffffff814d03d2>] system_call_fastpath+0x16/0x1b
-> > 
-> 
-> 
-> -- 
-> Guillaume Morin <guillaume@morinfr.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I did as you asked, received feedback and resent with all feedback
+tended to. v5 has been on the MLs for just under a week now. There
+doesn't seem to be any more concerns with the driver.
+
+Would you be kind enough to Ack the series. On receipt I can knock a
+pull-request together for you.
+
+Kind regards,
+Lee
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
