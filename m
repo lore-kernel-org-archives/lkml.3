@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaBXLNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 06:13:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32497 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545AbaBXLNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 06:13:20 -0500
-Message-ID: <530B2949.4030000@redhat.com>
-Date: Mon, 24 Feb 2014 12:13:13 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752552AbaBXLNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 06:13:39 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:46351 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaBXLNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 06:13:38 -0500
+X-IronPort-AV: E=Sophos;i="4.97,534,1389744000"; 
+   d="scan'208";a="103496490"
+Message-ID: <1393240415.16570.46.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next v5 1/9] xen-netback: Introduce TX grant map
+ definitions
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>
+Date: Mon, 24 Feb 2014 11:13:35 +0000
+In-Reply-To: <5306A993.5010504@citrix.com>
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
+				 <1390253069-25507-2-git-send-email-zoltan.kiss@citrix.com>
+			 <1392743214.23084.38.camel@kazak.uk.xensource.com>
+			 <5303C44D.4070500@citrix.com>
+		 <1392804319.23084.109.camel@kazak.uk.xensource.com>
+		 <53050BF5.1060009@citrix.com>
+	 <1392888808.22494.21.camel@kazak.uk.xensource.com>
+	 <5306A993.5010504@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: "Liu, Jinsong" <jinsong.liu@intel.com>,
-        "'kvm@vger.kernel.org'" <kvm@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'qemu-devel@nongnu.org'" <qemu-devel@nongnu.org>
-CC: "'gleb@redhat.com'" <gleb@redhat.com>, "'hpa@zytor.com'" <hpa@zytor.com>
-Subject: Re: [PATCH v5 3/3] KVM: x86: Enable Intel MPX for guest
-References: <DE8DF0795D48FD4CA783C40EC82923350150E43C@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350150E43C@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/02/2014 11:58, Liu, Jinsong ha scritto:
-> @@ -599,6 +599,9 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
->  	u64 old_xcr0 = vcpu->arch.xcr0;
->  	u64 valid_bits;
->
-> +	if (!kvm_x86_ops->mpx_supported || !kvm_x86_ops->mpx_supported())
-> +		xcr0 &= ~(XSTATE_BNDREGS | XSTATE_BNDCSR);
-> +
->  	/* Only support XCR_XFEATURE_ENABLED_MASK(xcr0) now  */
->  	if (index != XCR_XFEATURE_ENABLED_MASK)
->  		return 1;
+On Fri, 2014-02-21 at 01:19 +0000, Zoltan Kiss wrote:
+> I don't know if the guest expects that slots for the same packet 
+> comes back at the same time. 
 
-This hunk is incorrect, and I can simply drop it when applying.  If MPX 
-is not supported, it should not be in the 0Dh CPUID leaf and thus in 
-vcpu->arch.guest_supported_xcr0.
+I don't think the guest is allowed to assume that. In particular they
+aren't allowed to assume the the slots will be freed in the order they
+were presented on the ring. There used to be a debug patch to
+deliberately permute the responses, perhaps it was in the old
+netchannel2 tree.
 
-This however relies on userspace passing a "sensible" value of CPUID. 
-I'll send a patch to strengthen the computation of guest_supported_xcr0.
+Ian.
 
-Thanks!
-
-Paolo
