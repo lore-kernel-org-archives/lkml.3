@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaBXSfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 13:35:10 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:65432 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaBXSfF (ORCPT
+	id S1752999AbaBXShZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 13:37:25 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:65139 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaBXShY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 13:35:05 -0500
-Date: Mon, 24 Feb 2014 13:35:01 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: Subject: Warning in workqueue.c
-Message-ID: <20140224183501.GC2522@htj.dyndns.org>
-References: <20140207193604.GA8833@htj.dyndns.org>
- <52F8F0FB.3080206@linux.vnet.ibm.com>
- <20140210231742.GK25350@mtj.dyndns.org>
- <52FB90C6.4010701@linux.vnet.ibm.com>
- <52FC3C83.8020303@cn.fujitsu.com>
- <52FD07B2.5080402@linux.vnet.ibm.com>
- <20140213204102.GC17608@htj.dyndns.org>
- <20140214160923.GK27965@twins.programming.kicks-ass.net>
- <20140214162556.GF31544@htj.dyndns.org>
- <530B5EE3.8050200@linux.vnet.ibm.com>
+	Mon, 24 Feb 2014 13:37:24 -0500
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 13:37:24 EST
+Date: Mon, 24 Feb 2014 13:29:36 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sherman Yin <syin@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arm@kernel.org
+Subject: Re: [GIT PULL] bcm pinctrl rename
+Message-ID: <20140224182936.GU5038@beef>
+References: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
+ <20140221222947.GB13233@quad.lixom.net>
+ <CAEPRUYqnGwRCzGPP8ouEguj8gWrJKic7XyNHu+B_aJ=K0=MZYg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <530B5EE3.8050200@linux.vnet.ibm.com>
+In-Reply-To: <CAEPRUYqnGwRCzGPP8ouEguj8gWrJKic7XyNHu+B_aJ=K0=MZYg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:01:55AM -0500, Jason J. Herne wrote:
-> On 02/14/2014 11:25 AM, Tejun Heo wrote:
-> >...
-> >Hmmm... weird, p's rq shouldn't have changed without its cpus_allowed
-> >busted.  Anyways, let's wait for Jason's test results and see whether
-> >this is a regression at all.
+On Mon, Feb 24, 2014 at 09:32:47AM -0800, Christian Daudt wrote:
+> On Fri, Feb 21, 2014 at 2:29 PM, Olof Johansson <olof@lixom.net> wrote:
+> > On Wed, Feb 12, 2014 at 09:20:13AM -0800, Christian Daudt wrote:
+> >> The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+> >>
+> >>   Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+> >>
+> >> are available in the git repository at:
+> >>
+> >>   git://github.com/broadcom/bcm11351.git tags/bcm-for-3.14-pinctrl-rename
+> >>
+> >> for you to fetch changes up to f5310a1712b68c7f83539fce6ebbfb6f0f510f5b:
+> >>
+> >>   Update dtsi with new pinctrl compatible string (2014-02-12 09:06:53 -0800)
+> >>
+> >> ----------------------------------------------------------------
+> >> Renaming pinctrl code to keep in line with rest of bcm mobile
+> >>
+> >> Given that this driver has been in the works for a while, it
+> >> was written prior to the code standardizing on bcm-based naming.
+> >> this patchset brings it in line with the remainder of the code.
+> >>
+> >> ----------------------------------------------------------------
+> >> Sherman Yin (4):
+> >>       pinctrl: Rename Broadcom Capri pinctrl binding
+> >>       pinctrl: Rename Broadcom Capri pinctrl driver
+> >>       Update bcm_defconfig with new pinctrl CONFIG
+> >>       Update dtsi with new pinctrl compatible string
+> >
+> > Hi,
+> >
+> > (As per irc discussion). The rename isn't the right thing to do at this
+> > time in the release, but the binding needs to be tweaked before it ships
+> > in a full release, or we'll always need to live with it.
+> >
+> > So, I'll be happy to take the bindings piece and the dtsi piece (and the
+> > small edit to the driver to change the compatible string match table),
+> > but the file rename and Kconfig entry edit is 3.15 material.
+> >
+> > Please send new pull request with just that (or, if you prefer, just send the
+> > patches and we can apply them too).
+> >
+> >
+> > -Olof
 > 
-> I was unable to determine exactly when this behavior was introduced.
-> The reason for this is because I keep hitting other bugs that
-> prevent the test case from running, the most notable of which causes
-> an immediate system hang. I also hit other warnings and bug messages
-> and I'm not sure if they are related or if they will influence the
-> probability of hitting the problem we are trying to solve here.
-> What I did find is the following:
+> Ok, I have this ready to go, just need an ack for this patch (which
+> will replace "pinctrl: Rename Broadcom Capri pinctrl driver"):
+> Subject: [PATCH] pinctrl: refer to updated dt binding string.
 > 
-> We hit this problem as far back as v3.10.
-> The warning was introduced after v3.5 but before v3.6.
+> Bring the driver in line with the bcm-based dt name for pinctrl.
+> This is being done to keep consistency with other Broadcom mobile
+> SoC drivers.
+> 
+> Signed-off-by: Christian Daudt <bcm@fixthebug.org>
+> 
+> diff --git a/drivers/pinctrl/pinctrl-capri.c b/drivers/pinctrl/pinctrl-capri.c
+> index 4669c53..eb25002 100644
+> --- a/drivers/pinctrl/pinctrl-capri.c
+> +++ b/drivers/pinctrl/pinctrl-capri.c
+> @@ -1435,7 +1435,7 @@ int __init capri_pinctrl_probe(struct
+> platform_device *pdev)
+>  }
+> 
+>  static struct of_device_id capri_pinctrl_of_match[] = {
+> -       { .compatible = "brcm,capri-pinctrl", },
+> +       { .compatible = "brcm,bcm11351-pinctrl", },
+>         { },
+>  };
 
-That's a bummer but it at least isn't a very new regression.  Peter,
-any ideas on debugging this?  I can make workqueue to play block /
-unblock dance to try to work around the issue but that'd be very
-yucky.  It'd be great to root cause where the cpu selection anomaly is
-coming from.
 
-Thanks.
+Looks good. Does the binding rename patch stay as is?
 
--- 
-tejun
+Reviewed-by: Matt Porter <mporter@linaro.org>
