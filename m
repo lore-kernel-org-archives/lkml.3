@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaBXTNc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 14:13:32 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:25826 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752794AbaBXTNb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 14:13:31 -0500
-Date: Mon, 24 Feb 2014 14:13:29 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
+	id S1752994AbaBXTQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 14:16:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40050 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539AbaBXTQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 14:16:22 -0500
+Message-ID: <530B9A54.5060502@zytor.com>
+Date: Mon, 24 Feb 2014 11:15:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Vince Weaver <vincent.weaver@maine.edu>,
         Peter Zijlstra <peterz@infradead.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>
 Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140224141329.1cd3bb52@gandalf.local.home>
-In-Reply-To: <530B90A5.3090302@zytor.com>
-References: <53084317.4090304@zytor.com>
-	<alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>
-	<e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com>
-	<alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu>
-	<530AD71E.50800@zytor.com>
-	<alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
-	<18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com>
-	<alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu>
-	<20140224172536.GD9987@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu>
-	<530B841F.5050803@zytor.com>
-	<alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
-	<530B90A5.3090302@zytor.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+References: <53084317.4090304@zytor.com>	<alpine.DEB.2.10.1402230012260.18252@vincent-weaver-1.um.maine.edu>	<e0bf16ca-011f-400d-b938-94e4de2fb1a6@email.android.com>	<alpine.DEB.2.10.1402230859560.18653@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402232151280.19337@vincent-weaver-1.um.maine.edu>	<530AD71E.50800@zytor.com>	<alpine.DEB.2.10.1402241030500.19768@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>	<18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com>	<alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu>	<20140224172536.GD9987@twins.programming.kicks-ass.net>	<alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu>	<530B841F.5050803@zytor.com>	<alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>	<530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home>
+In-Reply-To: <20140224141329.1cd3bb52@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 10:34:13 -0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> On 02/24/2014 10:07 AM, Vince Weaver wrote:
-> >>
-> >> Anyway I've attached the full tail end of the trace if you want to see 
-> >> everything that happens.
-> > 
-> > and then I note there are *two* kernel page faults.
-> > 
-> >      perf_fuzzer-2979  [000]   161.475924: page_fault_kernel:    address=irq_stack_union ip=copy_user_generic_string error_code=0x0
-> > address=0x1 ip=0xffffffff812a7d9c error_code=0x0
-> >      perf_fuzzer-2979  [000]   161.475924: function:                __do_page_fault
-> >      perf_fuzzer-2979  [000]   161.475924: function:                   bad_area_nosemaphore
-> >      perf_fuzzer-2979  [000]   161.475925: function:                      __bad_area_nosemaphore
-> >      perf_fuzzer-2979  [000]   161.475925: function:                         no_context
-> >      perf_fuzzer-2979  [000]   161.475925: function:                            fixup_exception
-> >      perf_fuzzer-2979  [000]   161.475926: function:                               search_exception_tables
-> >      perf_fuzzer-2979  [000]   161.475926: function:                                  search_extable
-> >      perf_fuzzer-2979  [000]   161.475927: function:             copy_user_handle_tail
-> >      perf_fuzzer-2979  [000]   161.475927: function:             trace_do_page_fault
-> >      perf_fuzzer-2979  [000]   161.475928: page_fault_kernel:    address=irq_stack_union ip=copy_user_handle_tail error_code=0x0
-> > address=0x1 ip=0xffffffff812a92bb error_code=0x0
-> >      perf_fuzzer-2979  [000]   161.475928: function:                __do_page_fault
-> >      perf_fuzzer-2979  [000]   161.475928: function:                   bad_area_nosemaphore
-> >      perf_fuzzer-2979  [000]   161.475929: function:                      __bad_area_nosemaphore
-> >      perf_fuzzer-2979  [000]   161.475929: function:                         no_context
-> >      perf_fuzzer-2979  [000]   161.475929: function:                            fixup_exception
-> >      perf_fuzzer-2979  [000]   161.475929: function:                               search_exception_tables
-> >      perf_fuzzer-2979  [000]   161.475930: function:                                  search_extable
-> >      perf_fuzzer-2979  [000]   161.475931: function:             perf_output_begin
-> >      perf_fuzzer-2979  [000]   161.475931: function:             perf_output_copy
-> > 
-> > That second one is in copy_user_handle_tail()
-> > 
+On 02/24/2014 11:13 AM, Steven Rostedt wrote:
+>>
+>> Either way, it really seems like we have a case of CR2 leakage out of
+>> the NMI context.
 > 
-> Either way, it really seems like we have a case of CR2 leakage out of
-> the NMI context.
+> Ah, and x86_64 saves off the cr2 register when entering NMI and restores
+> it before returning. But it seems to be missing from the i386 code.
+> 
 
-Ah, and x86_64 saves off the cr2 register when entering NMI and restores
-it before returning. But it seems to be missing from the i386 code.
+OK, that might be a problem, but this is the 64-bit kernel.
 
--- Steve
+	-hpa
+
+
