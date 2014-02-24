@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaBXAsS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 19:48:18 -0500
-Received: from ozlabs.org ([203.10.76.45]:54817 "EHLO ozlabs.org"
+	id S1751851AbaBXAtC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 19:49:02 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12272 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbaBXAsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 19:48:16 -0500
-Date: Mon, 24 Feb 2014 11:48:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh@kernel.org>
-Subject: linux-next: manual merge of the mvebu tree with Linus' tree
-Message-Id: <20140224114810.468d0db355553fc15629592d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Feb_2014_11_48_10_+1100_CIfG1biWB6lSi8.7"
+	id S1751550AbaBXAs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 19:48:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,531,1389772800"; 
+   d="scan'208";a="480438438"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "rja@sgi.com" <rja@sgi.com>, "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minyard@acm.org" <minyard@acm.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH V2] Change ACPI IPMI support to "default y"
+Thread-Topic: [PATCH V2] Change ACPI IPMI support to "default y"
+Thread-Index: AQHPLnhtHHqrgNtJQkeFFZTg6j/LB5q+DjEAgAAGvYCAAAGPAIAAA6AAgAAAfgCAAAfaAIAAAu6AgAAHs4CAAAWJgIAABTyAgAAGxACAAA3MgIAAprZAgABpXACABDgaoA==
+Date: Mon, 24 Feb 2014 00:48:42 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024B2897@SHSMSX101.ccr.corp.intel.com>
+References: <20140220204028.GJ17949@sgi.com> <1392929163.20109.5.camel@x230>
+	 <20140220205901.GM17949@sgi.com> <1392930047.20109.6.camel@x230>
+	 <20140220212854.GO17949@sgi.com> <1392932363.20109.11.camel@x230>
+	 <20140220220656.GT17949@sgi.com> <1392935204.20109.17.camel@x230>
+	 <20140220224529.GV17949@sgi.com> <1392937781.20109.24.camel@x230>
+	 <20140220235904.GZ17949@sgi.com>
+	 <1AE640813FDE7649BE1B193DEA596E88024B228C@SHSMSX101.ccr.corp.intel.com>
+ <1392999172.20109.47.camel@x230>
+In-Reply-To: <1392999172.20109.47.camel@x230>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1O0nBjn010646
 
---Signature=_Mon__24_Feb_2014_11_48_10_+1100_CIfG1biWB6lSi8.7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Matthew Garrett
+> Sent: Saturday, February 22, 2014 12:13 AM
+> 
+> On Fri, 2014-02-21 at 02:17 +0000, Zheng, Lv wrote:
+> 
+> > In fact there is a workaround solution I've posted here:
+> > https://patchwork.kernel.org/patch/2831851/
+> > The updated version of this patch can be found at:
+> > https://bugzilla.kernel.org/attachment.cgi?id=112611
+> > It is the acpi-ipmi13.patch file.
+> 
+> I don't think that solves the underlying problem? We're still left with
+> no guarantee of ordering between ACPI IPMI operation region support
+> being available and the loading of a driver that may rely on it.
 
-Today's linux-next merge of the mvebu tree got a conflict in
-Documentation/devicetree/bindings/vendor-prefixes.txt between commit
-d5f93b8ad01e ("of: Update qcom vendor prefix description") from Linus'
-tree and commit f7f2ea9f49b0 ("DT: Vendor prefixes: Add ricoh, qnap, sii
-and synology") from the mvebu tree.
+Yes. As it is a bit far beyond the bug report, I didn't work on it.
+But actually, I have solution to achieve this.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> > I think there should be relationship between ACPI region and Linux kernel modules.
+> > In fact on the well-known operating system, _REG is always invoked at the end of the IRP_PNP_START_DEVICE completions.
+> > But we may still be able to return -EPROBE_DEFER in the power meter driver when it detects failures caused by the readiness state
+> of the region handlers.
+> 
+> We don't have a guarantee that it'll happen at probe time. The
+> capabilities list may be static, and so we'll get our first failure on
+> an attempted userspace access instead.
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+This is the issue related to the IPMI operation region, and it can be solved by a "request_module()" call.
+The -EPROBE_DEFER I mentioned is about the quality of  acpi power meter driver itself.
 
-diff --cc Documentation/devicetree/bindings/vendor-prefixes.txt
-index e9d19e2b359b,c73b435f58f5..000000000000
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@@ -69,7 -64,8 +69,8 @@@ phytec	PHYTEC Messtechnik Gmb
-  picochip	Picochip Ltd
-  powervr	PowerVR (deprecated, use img)
-  qca	Qualcomm Atheros, Inc.
- -qcom	Qualcomm, Inc.
- +qcom	Qualcomm Technologies, Inc
-+ qnap	QNAP Systems, Inc.
-  ralink	Mediatek/Ralink Technology Corp.
-  ramtron	Ramtron International
-  realtek Realtek Semiconductor Corp.
-@@@ -81,9 -78,9 +83,10 @@@ schindler	Schindle
-  sil	Silicon Image
-  silabs	Silicon Laboratories
-  simtek
-+ sii	Seiko Instruments, Inc.
-  sirf	SiRF Technology, Inc.
-  snps 	Synopsys, Inc.
- +spansion	Spansion Inc.
-  st	STMicroelectronics
-  ste	ST-Ericsson
-  stericsson	ST-Ericsson
+> It may be that Corey's suggestion satisfies the concerns Russ raised.
+> Building IPMI in but only probing by default on systems that declare a
+> BMC in ACPI or DMI should avoid boot-time delays while still ensuring
+> that the functionality is available on systems where there's a real
+> chance that the firmware expects the OS to provide support.
 
---Signature=_Mon__24_Feb_2014_11_48_10_+1100_CIfG1biWB6lSi8.7
-Content-Type: application/pgp-signature
+If you take a look at this patch (https://patchwork.kernel.org/patch/2831851/), you'll see it is possible to add request_module() in acpi_region_default_handler().
+The callback is invoked when the first IPMI region access happens and it is in the process context without any locking.
+I'd rather to embed acpi_ipmi into ipmi_si module with this fix:
+https://bugzilla.kernel.org/attachment.cgi?id=112611 (acpi-ipmi14.patch).
+After that, a request_module() invocation of ipmi_si in acpi_region_default_handler() can solve what you are worrying about.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+What's your opinion?
 
-iQIcBAEBCAAGBQJTCpbOAAoJEMDTa8Ir7ZwVvasP/2m2mZel48QzZNbn6BKW2UeE
-zulPy5mCHHAqkOdSkWkN+6S6mjiJDSWpz/HZm81ibyz9Vl09bXBQqkSSjDskfZaW
-ZO0q6otd7JfNz810uAyScv8dkW2e1WV0N4ZAnxtdcsxhnsRqC5IjYHYng8fGovfK
-Jo8+mXAKCrpxzjpqoU0b/wka56rw8EX2dKUayoFdbPMfYqCtoqr6aYNEOHn8R7XB
-K16xvFrXr5p+Mv41AL0YKTerti8kqTmvyXy64BXqjb+vXZ7A1BK9ii8E4hk1Ijk8
-n1SwGlechbABDEd4jp0vbk40zSQSOUV4db6sgWLXEaz4rO7UcEwvYwDlHr6VVnKP
-p1KAE95iTYippjspqHkm6eqN8CJvq0EqVqahvHwkWZ0sajvHwl1g5GC/GEw3a7mQ
-Qp/OIKnCEu410djPQojjkeBQlrmk9hABPCRhOofgD35ePclljUEQJDd/3rG38eeg
-tysZVvjK/6P6KCDMTEJDCMVwS4LXGNVYr8Q5iqy6TD0FBQ+BFsG/rKWV4hZD4RLM
-KVsXSOOlvYN0CuKGvxJfo1urxJQWavNglFLYwyndlkD3Kdo2oiEgO95UToWWrdAl
-4Rfq+Vwsj6NFeCaLFA0Bi6Rjh1gtO8wqmPL8wOq6nHhZstMpPrAIAoENY7Hpl0ma
-zRw9yfl6huFUKTw0Bs7j
-=pchW
------END PGP SIGNATURE-----
+Thanks and best regards
+-Lv
 
---Signature=_Mon__24_Feb_2014_11_48_10_+1100_CIfG1biWB6lSi8.7--
+> --
+> Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
