@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaBXHqk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 02:46:40 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:62891 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaBXHqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 02:46:38 -0500
-Message-ID: <530AF8DA.8050709@cogentembedded.com>
-Date: Mon, 24 Feb 2014 11:46:34 +0400
-From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-CC: linux-sh@vger.kernel.org, linus.walleij@linaro.org,
-        linux-gpio@vger.kernel.org, magnus.damm@gmail.com, horms@verge.net.au,
-        gnurou@gmail.com, linux-kernel@vger.kernel.org,
-        kuninori.morimoto.gx@renesas.com
-Subject: Re: [PATCH] gpio: gpio-rcar: init at postcore level
-References: <1393173467-12240-1-git-send-email-vladimir.barinov@cogentembedded.com> <530A477C.6070007@codethink.co.uk>
-In-Reply-To: <530A477C.6070007@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751860AbaBXHsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 02:48:01 -0500
+Received: from mx.mmd.net ([80.83.0.3]:55337 "EHLO mx.mmd.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaBXHr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 02:47:59 -0500
+From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+To: linux-pm@vger.kernel.org, rjw@rjwysocki.net
+Cc: daniel.lezcano@linaro.org, tuukka.tikkanen@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] Cpuidle: Use actual state latency in menu governor
+Date: Mon, 24 Feb 2014 08:29:32 +0200
+Message-Id: <1393223377-5744-3-git-send-email-tuukka.tikkanen@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
+References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ben,
+Currently menu governor records the exit latency of the state it has
+chosen for the idle period. The stored latency value is then later
+used to calculate the actual length of the idle period. This value
+may however be incorrect, as the entered state may not be the one
+chosen by the governor. The entered state information is available,
+so we can use that to obtain the real exit latency.
 
-On 02/23/2014 11:09 PM, Ben Dooks wrote:
-> On 23/02/14 16:37, vladimir.barinov@cogentembedded.com wrote:
->> From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
->>
->> This adds ability to use gpio API at board init_machine level.
->>
->> F.e. it can be used in the following situation.
->> Many reference hardware has onboard switches that selects which 
->> periferals
->> to connect to the system. The gpio input state from switches can be used
->> in choosing platform devices runtime in board code instead of 
->> ifdefs/defconfig
->> changes.
->
-> Firstly, anyone still using platform_devices to describe their
-> system needs to be stopped. We cannot go on supporting this when
-> our primary boot method is supposed to be device-tree. If we keep
-> doing this then we will not get any of the current issues fixed.
-Understand. I see that this is not a time for such changes.
-Hope that the DT model will take into account such kind of situation in 
-the future.
->
-> Will it impact the devicetree bindings on rcar?
-No
+Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+---
+ drivers/cpuidle/governors/menu.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-Regards,
-Vladimir
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index e9a2a27..115386a 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -124,7 +124,6 @@ struct menu_device {
+ 
+ 	unsigned int	next_timer_us;
+ 	unsigned int	predicted_us;
+-	unsigned int	exit_us;
+ 	unsigned int	bucket;
+ 	unsigned int	correction_factor[BUCKETS];
+ 	unsigned int	intervals[INTERVALS];
+@@ -298,7 +297,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	}
+ 
+ 	data->last_state_idx = 0;
+-	data->exit_us = 0;
+ 
+ 	/* Special case when user has set very strict latency requirement */
+ 	if (unlikely(latency_req == 0))
+@@ -359,7 +357,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 			continue;
+ 
+ 		data->last_state_idx = i;
+-		data->exit_us = s->exit_latency;
+ 	}
+ 
+ 	return data->last_state_idx;
+@@ -410,8 +407,8 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 * We correct for the exit latency; we are assuming here that the
+ 	 * exit latency happens after the event that we're interested in.
+ 	 */
+-	if (measured_us > data->exit_us)
+-		measured_us -= data->exit_us;
++	if (measured_us > target->exit_latency)
++		measured_us -= target->exit_latency;
+ 
+ 
+ 	/* Update our correction ratio */
+-- 
+1.7.9.5
+
