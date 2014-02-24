@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaBXBaF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:30:05 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39060 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBXBaA (ORCPT
+	id S1751781AbaBXBew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:34:52 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:38281 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaBXBeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:30:00 -0500
+	Sun, 23 Feb 2014 20:34:50 -0500
+X-Greylist: delayed 760 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Feb 2014 20:34:50 EST
 MIME-Version: 1.0
-In-Reply-To: <20140222170930.GE26637@thunk.org>
-References: <1392908861-3563-1-git-send-email-linkinjeon@gmail.com>
-	<20140222170930.GE26637@thunk.org>
-Date: Mon, 24 Feb 2014 10:22:10 +0900
-Message-ID: <CAKYAXd9vTbjTnJOQ1Y=pi4QJSYj41fWsQgRD3Fkufskez2W-YA@mail.gmail.com>
-Subject: Re: [PATCH v6] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+In-Reply-To: <20140224005710.GH4317@dastard>
+References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
+	<20140224005710.GH4317@dastard>
+Date: Mon, 24 Feb 2014 10:34:49 +0900
+Message-ID: <CAKYAXd83FtcoPc40FjAQ_-7uUfyY5bPZYKjzNLpUPFx=mtVJuA@mail.gmail.com>
+Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
+ for fallocate
 From: Namjae Jeon <linkinjeon@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, bpm@sgi.com, adilger.kernel@dilger.ca,
-        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+To: Dave Chinner <david@fromorbit.com>, mtk.manpages@gmail.com
+Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, lczerner@redhat.com,
         linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
         linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
+        Namjae Jeon <namjae.jeon@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-23 2:09 GMT+09:00, Theodore Ts'o <tytso@mit.edu>:
-> On Fri, Feb 21, 2014 at 12:07:41AM +0900, Namjae Jeon wrote:
+2014-02-24 9:57 GMT+09:00, Dave Chinner <david@fromorbit.com>:
+> On Wed, Feb 19, 2014 at 01:37:16AM +0900, Namjae Jeon wrote:
 >> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for Ext4.
+>> This patch series is in response of the following post:
+>> http://lwn.net/Articles/556136/
+>> "ext4: introduce two new ioctls"
+>>
+>> Dave chinner suggested that truncate_block_range
+>> (which was one of the ioctls name) should be an fallocate operation
+>> and not any fs specific ioctl, hence we add this functionality to
+>> fallocate.
+>>
+>> This patch series introduces new flag FALLOC_FL_COLLAPSE_RANGE for
+>> fallocate
+>> and implements it for XFS and Ext4.
 >>
 >> The semantics of this flag are following:
 >> 1) It collapses the range lying between offset and length by removing any
@@ -48,76 +59,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >>    in case of xfs and ext4.
 >> 4) Collaspe range does not work beyond i_size.
 >>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
->> Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
+>> This new functionality of collapsing range could be used by media editing
+>> tools
+>> which does non linear editing to quickly purge and edit parts of a media
+>> file.
+>> This will immensely improve the performance of these operations.
+>> The limitation of fs block size aligned offsets can be easily handled
+>> by media codecs which are encapsulated in a conatiner as they have to
+>> just change the offset to next keyframe value to match the proper
+>> alignment.
+>>
+>> Namjae Jeon (10):
+>>   fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+>>   xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
 >
-> In terms of how to get this upstream, it looks like if we do something
-> like this, we can let this patch go via the ext4 tree and we don't
-> need to worry about whether the vfs level changes have gone in our
-> not.
-Okay, Dave already answered.
+> I've pushed these to the following branch:
 >
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index ad13359..d7a78ed 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -46,6 +46,10 @@
+> 	git://oss.sgi.com/xfs/xfs.git xfs-collapse-range
 >
->  #include <trace/events/ext4.h>
+> And so they'll be in tomorrow's linux-next tree.
+Okay.
 >
-> +#ifndef FALLOC_FL_COLLAPSE_RANGE
-> +#define FALLOC_FL_COLLAPSE_RANGE	0x08
-> +#endif
-> +
->  /*
->   * used by extent splitting.
->   */
+>>   ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
 >
+> I've left this one alone for the ext4 guys to sort out.
+I will try to follow up continously.
 >
->> +	ret = ext4_es_remove_extent(inode, punch_start,
->> +				    EXT_MAX_BLOCKS - punch_start - 1);
->> +	if (ret) {
->> +		up_write(&EXT4_I(inode)->i_data_sem);
->> +		goto out_stop;
->> +	}
+>>   xfsprog: xfsio: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
 >
-> Doing this at first is probably a bad idea; you should do this at the
-> end, and then completely invalidate the es cache for that inode.  That
-> way, the right thing happens if you get an error in the middle
-> releasing the boxes and shifting the extents:
-Okay, I see.
+> That's already in a current xfstests tree.
+Okay.
+>
+>>   xfstest: shared/001: Standard collapse range tests
+>>   xfstest: shared/002: Delayed allocation collapse range
+>>   xfstest: shared/003: Multi collapse range tests
+>>   xfstest: shared/004: Delayed allocation multi collapse
+>>   xfstest: shared/005: Test multiple fallocate collapse
+>
+> These are now in the xfstests git tree.
+Okay.
+>
+>>   manpage: update FALLOC_FL_COLLAPSE_RANGE flag in fallocate
+>
+> And Michael will need to review and commit that to the kernel
+> manpages tree.
+Okay,
+Hi Micheal.
+Could you please review manpage patch ?
 
+Thanks :)
 >
->> +
->> +	ret = ext4_ext_remove_space(inode, punch_start, punch_stop - 1);
->> +	if (ret) {
->> +		up_write(&EXT4_I(inode)->i_data_sem);
->> +		goto out_stop;
->> +	}
->> +
->> +	ret = ext4_ext_shift_extents(inode, handle, punch_stop,
->> +				     punch_stop - punch_start);
->> +	if (ret) {
->> +		up_write(&EXT4_I(inode)->i_data_sem);
->> +		goto out_stop;
->> +	}
+> Cheers,
 >
-Hi Ted.
-> The fact that you are doing these two as two separate steps is
-> dangerous; what if you've already released the blocks in
-> ext4_ext_remove_space(), and ext4_ext_shift_extents() fails in the
-> middle of the processing?  That will leave the file system
-> inconsistent, which would be bad.
-If there is error in the middle of extent shifting, the hole will
-present between the last shifted extent and the extent at which error
-happen so this will be consistent state.
-IMHO even if there is error in between the shift, filesystem will be
-in consistent state.
-Am I missing something?
->
-> Making sure that the right happens if there is a failure in the middle
-> of the operation is Really Important....
->
-> 					- Ted
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 >
