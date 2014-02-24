@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaBXI7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:59:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52244 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaBXI7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:59:43 -0500
-Date: Mon, 24 Feb 2014 08:59:39 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH v2] mm/page_alloc: fix freeing of MIGRATE_RESERVE
- migratetype pages
-Message-ID: <20140224085939.GE6732@suse.de>
-References: <42197912.c6v2hLDCey@amdc1032>
+	id S1752559AbaBXJAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:00:09 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:51357 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752463AbaBXJAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 04:00:05 -0500
+Date: Mon, 24 Feb 2014 09:59:57 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Subject: Re: [PATCH 1/7] spi: sunxi: Add Allwinner A10 SPI controller driver
+Message-ID: <20140224085957.GB3468@lukather>
+References: <1393104959-12831-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1393104959-12831-2-git-send-email-maxime.ripard@free-electrons.com>
+ <20140223021530.GD25940@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
 Content-Disposition: inline
-In-Reply-To: <42197912.c6v2hLDCey@amdc1032>
+In-Reply-To: <20140223021530.GD25940@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 07:34:17PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> Pages allocated from MIGRATE_RESERVE migratetype pageblocks
-> are not freed back to MIGRATE_RESERVE migratetype free
-> lists in free_pcppages_bulk()->__free_one_page() if we got
-> to free_pcppages_bulk() through drain_[zone_]pages().
-> The freeing through free_hot_cold_page() is okay because
-> freepage migratetype is set to pageblock migratetype before
-> calling free_pcppages_bulk().  If pages of MIGRATE_RESERVE
-> migratetype end up on the free lists of other migratetype
-> whole Reserved pageblock may be later changed to the other
-> migratetype in __rmqueue_fallback() and it will be never
-> changed back to be a Reserved pageblock.  Fix the issue by
-> preserving freepage migratetype as a pageblock migratetype
-> (instead of overriding it to the requested migratetype)
-> for MIGRATE_RESERVE migratetype pages in rmqueue_bulk().
-> 
-> The problem was introduced in v2.6.31 by commit ed0ae21
-> ("page allocator: do not call get_pageblock_migratetype()
-> more than necessary").
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> ---
-> v2:
-> - updated patch description, there is no __zone_pcp_update()
->   in newer kernels
-> 
->  include/linux/mmzone.h |    5 +++++
->  mm/page_alloc.c        |   10 +++++++---
->  2 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> Index: b/include/linux/mmzone.h
-> ===================================================================
-> --- a/include/linux/mmzone.h	2014-02-14 18:59:08.177837747 +0100
-> +++ b/include/linux/mmzone.h	2014-02-14 18:59:09.077837731 +0100
-> @@ -63,6 +63,11 @@ enum {
->  	MIGRATE_TYPES
->  };
->  
-> +static inline bool is_migrate_reserve(int migratetype)
-> +{
-> +	return unlikely(migratetype == MIGRATE_RESERVE);
-> +}
-> +
->  #ifdef CONFIG_CMA
->  #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
->  #else
-> Index: b/mm/page_alloc.c
-> ===================================================================
-> --- a/mm/page_alloc.c	2014-02-14 18:59:08.185837746 +0100
-> +++ b/mm/page_alloc.c	2014-02-14 18:59:09.077837731 +0100
-> @@ -1174,7 +1174,7 @@ static int rmqueue_bulk(struct zone *zon
->  			unsigned long count, struct list_head *list,
->  			int migratetype, int cold)
->  {
-> -	int mt = migratetype, i;
-> +	int mt, i;
->  
->  	spin_lock(&zone->lock);
->  	for (i = 0; i < count; ++i) {
-> @@ -1195,9 +1195,13 @@ static int rmqueue_bulk(struct zone *zon
->  			list_add(&page->lru, list);
->  		else
->  			list_add_tail(&page->lru, list);
-> +		mt = get_pageblock_migratetype(page);
->  		if (IS_ENABLED(CONFIG_CMA)) {
-> -			mt = get_pageblock_migratetype(page);
-> -			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
-> +			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt) &&
-> +			    !is_migrate_reserve(mt))
-> +				mt = migratetype;
-> +		} else {
-> +			if (!is_migrate_reserve(mt))
->  				mt = migratetype;
 
-Minimally, this could be simplified because now it's an unconditional
-call to get_pageblock_migratetype.
+--98e8jtXdkpgskNou
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-However, it looks like this could be improved without doing that.
-__rmqueue_fallback will be called if a page of the requested migratetype
-was not found. Furthermore, if a pageblock has been stolen then the
-pages are shuffled between free lists so you should be able to modify
-this patch to
+Hi,
 
-1. have __rmqueue call set_freepage_migratetype(migratetype) if
-   __rmqueue_smallest found a page
-2. have __rmqueue_fallback call set_freepage_migratetype(new_type)
-   when it has selected which freelist to select from.
+On Sun, Feb 23, 2014 at 11:15:30AM +0900, Mark Brown wrote:
+> On Sat, Feb 22, 2014 at 10:35:53PM +0100, Maxime Ripard wrote:
+> > The older Allwinner SoCs (A10, A13, A10s and A20) all have the
+> > same SPI controller.
+>=20
+> Applied, thanks.  Please differentiate between these two devices in
+> the subject line when sending patches for example by using "sun6i"
+> and "sun4i".
 
-Can you check it out as an alternative to this patch please as it would
-have much less overhead than unconditionally calling
-get_pageblock_migratetype()?
+Ok, will do.
+Thanks!
+Maxime
 
--- 
-Mel Gorman
-SUSE Labs
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--98e8jtXdkpgskNou
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTCwoNAAoJEBx+YmzsjxAgl5oP/A4TlhDTNH4pRyyuFwxC21TA
+4IRTp93oGzkeIYp+Kc3luM44jf/JypdKcV4SU6OfDj4428TGUnCpVBgZ6ZtbkDq+
+rP490C78MTCYahOxpAbbY3JS/051Iv90xLphmH9FbVXyqhGIEplr/gEnp1sNqTTe
+9twA7Q4OFq0nDpoOI05CbMyCSw+r3VVSh5Ym9cEIjoZuCXlbqJJhG3ZITsfs4nJi
+RcTe3yBmdbPbPPOLTuibdbeyMiUzLZIKOIU3/dPGGqoEY1VTzspUq6Nag9qxeQ2i
+FzG03hov6zjxApYqax0R/+G8Z/4L4p+SOSsJpYJ9nQc3gD7oqbeo1fVJafaGhGnS
+cza0bn/bkC1CMw7MOfjWaLZbyDl+XmHYajBGdte9TR+8dQZXJsuGRg9+zNJ6i8Mx
+FrQuS9+24BA54NVWGYpKybkR7bN85BYeQpnVZ/5OhWxPyJATxNreiYcyay1IjPCb
+w7lg1PuSq0NOfiVPZtt8NzUp6KuijcZ6pAMJOWsqoN3hAMOhYAfCWXMwqPU45ntp
+csiVpBQnTwWhr34pPECi30sY/ujhvI0reE5GDP9uPyNvr57UivDm6N/FHmd1kdPQ
+e+/qkqFa2FdvSwz4ddVOntg8hWevCc93nD+/dzlmLR3wSXe89ZLZ9Jh/CuRayk79
++IgcWTnLqGWLhbGz7t0/
+=QMzT
+-----END PGP SIGNATURE-----
+
+--98e8jtXdkpgskNou--
