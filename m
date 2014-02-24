@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaBXBMk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 20:12:40 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:33108 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaBXBMh (ORCPT
+	id S1751915AbaBXBNm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 20:13:42 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46596 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaBXBNl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 20:12:37 -0500
+	Sun, 23 Feb 2014 20:13:41 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20140223212231.GD4317@dastard>
-References: <1392741475-20063-1-git-send-email-linkinjeon@gmail.com>
-	<20140223212231.GD4317@dastard>
-Date: Mon, 24 Feb 2014 10:12:34 +0900
-Message-ID: <CAKYAXd_iesKTqpAH8wPE6HVjNcXBRsor0SzRVbo3Jyr-YiTdPg@mail.gmail.com>
-Subject: Re: [PATCH v5 2/10] xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Matt Porter <mporter@linaro.org>, "Alex Elder" <elder@linaro.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20140220205615.GF5038@beef>
+Cc: bcm@fixthebug.org, "Tim Kryger" <tim.kryger@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1392402560-12929-1-git-send-email-elder@linaro.org>
+ <1392402560-12929-3-git-send-email-elder@linaro.org>
+ <20140220205615.GF5038@beef>
+Message-ID: <20140224011335.22529.77418@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2 2/3] clk: bcm281xx: don't disable unused peripheral clocks
+Date: Sun, 23 Feb 2014 17:13:35 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-24 6:22 GMT+09:00, Dave Chinner <david@fromorbit.com>:
-> On Wed, Feb 19, 2014 at 01:37:55AM +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> This patch implements fallocate's FALLOC_FL_COLLAPSE_RANGE for XFS.
->>
->> The semantics of this flag are following:
->> 1) It collapses the range lying between offset and length by removing any
->> data
->>    blocks which are present in this range and than updates all the
->> logical
->>    offsets of extents beyond "offset + len" to nullify the hole created
->> by
->>    removing blocks. In short, it does not leave a hole.
->> 2) It should be used exclusively. No other fallocate flag in combination.
->> 3) Offset and length supplied to fallocate should be fs block size
->> aligned
->>    in case of xfs and ext4.
->> 4) Collaspe range does not work beyond i_size.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> .....
->> +	while (!error && !done) {
->> +		tp = xfs_trans_alloc(mp, XFS_TRANS_DIOSTRAT);
->> +		tp->t_flags |= XFS_TRANS_RESERVE;
->
-Hi Dave.
-> This probably shouldn't use XFS_TRANS_RESERVE. If we are at ENOSPC,
-> then the operation simply fails. Yes, we've already punched the
-> hole, so we shouldn't get ENOSPC here, but I don't think it's worth
-> dipping into the reserve pool as it has much more important uses...
-Okay.
->
-> You don' tneed to resent the entire patch for this - I can remove it
-> directly myself....
-Thanks very much for your help!!
->
-> Otherwise it looks good, so consider it
->
-> Reviewed-by: Dave Chinner <dchinner@redhat.com>
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
+Quoting Matt Porter (2014-02-20 12:56:15)
+> On Fri, Feb 14, 2014 at 12:29:19PM -0600, Alex Elder wrote:
+> > Add the CLK_IGNORE_UNUSED flag when setting up a peripheral clock.
+> > This prevents unused clocks from getting disabled, and by doing
+> > this we can use the common clock code even before we've resolved
+> > all the spots that need to get a reference to their clock.
+> > 
+> > Signed-off-by: Alex Elder <elder@linaro.org>
+> > Reviewed-by: Matt Porter <mporter@linaro.org>
+> 
+> Mike: if you'll provide your ack on this patch, we would like to take
+> the entire series through arm-soc for 3.15 as we originally agreed
+> for 3.14. Patches 1 and 3 are the original two you acked for 3.14
+> but had to be dropped late in the merge window.
+
+Acked-by: Mike Turquette <mturquette@linaro.org>
+
+> 
+> Thanks,
+> Matt
+> 
+> > ---
+> >  drivers/clk/bcm/clk-kona-setup.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
+> > index f1e88fe..c7607fe 100644
+> > --- a/drivers/clk/bcm/clk-kona-setup.c
+> > +++ b/drivers/clk/bcm/clk-kona-setup.c
+> > @@ -579,7 +579,7 @@ static int peri_clk_setup(struct ccu_data *ccu, struct peri_clk_data *data,
+> >                       struct clk_init_data *init_data)
+> >  {
+> >       init_data->ops = &kona_peri_clk_ops;
+> > -     init_data->flags = 0;
+> > +     init_data->flags = CLK_IGNORE_UNUSED;
+> >  
+> >       return clk_sel_setup(data->clocks, &data->sel, init_data);
+> >  }
+> > -- 
+> > 1.7.9.5
+> > 
