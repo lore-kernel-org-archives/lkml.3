@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaBXMTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 07:19:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:11138 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaBXMTS (ORCPT
+	id S1752498AbaBXMUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 07:20:09 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35664 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaBXMUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 07:19:18 -0500
-X-IronPort-AV: E=Sophos;i="4.97,534,1389744000"; 
-   d="scan'208";a="103507957"
-Date: Mon, 24 Feb 2014 12:19:11 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Julien Grall <julien.grall@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <stefano.stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <xen-devel@lists.xenproject.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
- protected by an IOMMU
-In-Reply-To: <1392914159.32657.18.camel@kazak.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com>
-References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org> <1392914159.32657.18.camel@kazak.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 24 Feb 2014 07:20:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+In-Reply-To: <CANk1AXTnnhSnt_ayJYwDHRth44CWAwmxVA5kkbvnjqW39ssLQg@mail.gmail.com>
+References: <1391724370-30589-1-git-send-email-delicious.quinoa@gmail.com>
+	<CACRpkdYiC=nzVG4_nQuRVSNP9TB4W=3VL9QhBQjmqvLvmP6McA@mail.gmail.com>
+	<CANk1AXTnnhSnt_ayJYwDHRth44CWAwmxVA5kkbvnjqW39ssLQg@mail.gmail.com>
+Date: Mon, 24 Feb 2014 13:20:05 +0100
+Message-ID: <CACRpkdbkcuByEh_pasBoAQpXwa479iTuWLPPQW1TLRapbqjE7Q@mail.gmail.com>
+Subject: Re: [PATCH v11] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: Linus Walleij <linus.walleij@linaro.org>
+To: delicious quinoa <delicious.quinoa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing Greg.
+On Wed, Feb 12, 2014 at 5:17 PM, delicious quinoa
+<delicious.quinoa@gmail.com> wrote:
 
-On Thu, 20 Feb 2014, Ian Campbell wrote:
-> On Thu, 2014-02-20 at 16:21 +0000, Julien Grall wrote:
-> > Only Xen is able to know if a device can safely avoid to use xen-swiotlb.
-> > This patch introduce a new property "protected-devices" for the hypervisor
-> > node which list device which the IOMMU are been correctly programmed by Xen.
-> > 
-> > During Linux boot, Xen specific code will create an hash table which
-> > contains all these devices. The hash table will be used in need_xen_dma_ops
-> > to check if the Xen DMA ops needs to be used for the current device.
-> 
-> Is it out of the question to find a field within struct device itself to
-> store this e.g. in struct device_dma_parameters perhaps and avoid the
-> need for a hashtable lookup.
-> 
-> device->iommu_group might be another option, if we can create our own
-> group?
+> I am wondering about the change in usage of
+> irq_find_mapping/irq_create_mapping.  It seems like all the GPIO
+> drivers that use irq domains do it the way I was doing it
 
-I agree that a field in struct device would be ideal.
-Greg, get_maintainer.pl points at you as main maintainer of device.h, do
-you have an opinion on this?
+It is a well known problems that the kernel contain many bad
+examples. When in doubt ask for a good example to be provided.
+
+In gpio-omap.c you will find that this is done in the probe()
+path.
+
+> (that's
+> where I got the idea in the first place): irq_create_mapping is used
+> in the to_irq() function.  I guess this is a general direction all the
+> other drivers will be encouraged to go in also?
+
+Yes. The reason is that it should be possible to reques an IRQ
+from an irqchip no matter whether the gpio_to_irq() function
+was called first, as the APIs are orthogonal.
+
+Yours,
+Linus Walleij
