@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaBXNYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:24:22 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39359 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658AbaBXNYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:24:20 -0500
-Date: Mon, 24 Feb 2014 13:23:34 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: locking changes in tty broke low latency feature
-Message-ID: <20140224132334.313f2527@alan.etchedpixels.co.uk>
-In-Reply-To: <alpine.DEB.2.02.1402232330190.21251@ionos.tec.linutronix.de>
-References: <20140219230623.736E8406062@ip-64-139-1-69.sjc.megapath.net>
-	<53056E99.9070900@hurleysoftware.com>
-	<53064672.3000807@hurleysoftware.com>
-	<alpine.DEB.2.02.1402232330190.21251@ionos.tec.linutronix.de>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752767AbaBXNYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:24:16 -0500
+Received: from ring0.de ([5.45.105.125]:35673 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658AbaBXNYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 08:24:10 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        linux-kernel@vger.kernel.org, Sebastian Reichel <sre@debian.org>
+Subject: [PATCH] bq2415x_charger: Fix Atomic Sleep Bug
+Date: Mon, 24 Feb 2014 14:23:58 +0100
+Message-Id: <1393248238-995-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is a complete pointless test. Use a bog standard 8250 UART on the
-> PC and connect a microcontroller on the other end which serves you an
-> continous stream of data at 115200 Baud.
-> 
-> There is no way you can keep up with that without the low latency
-> option neither on old and nor on new machines if you have enough other
-> stuff going on in the system.
+Move sysfs_notify and i2c_transfer calls from bq2415x_notifier_call
+to bq2415x_timer_work to avoid sleeping in atomic context.
 
-Sorry but having done this in the past the reverse is true. On ancient
-machines with crap uarts the low_latency case would routinely overrun
-while the non low_latency case did not. That was half of the point of
-deferred processing - it pushed tty processing out of the IRQ handler so
-bytes were not lost and a 486DX could cope with a 56Kbit modem.
+This fixes the following bug:
 
-Alan
+[ 7.667449] Workqueue: events power_supply_changed_work
+[ 7.673034] [<c0015c28>] (unwind_backtrace+0x0/0xe0) from [<c0011e1c>] (show_stack+0x10/0x14)
+[ 7.682098] [<c0011e1c>] (show_stack+0x10/0x14) from [<c052cdd0>] (dump_stack+0x78/0xac)
+[ 7.690704] [<c052cdd0>] (dump_stack+0x78/0xac) from [<c052a044>] (__schedule_bug+0x48/0x60)
+[ 7.699645] [<c052a044>] (__schedule_bug+0x48/0x60) from [<c053071c>] (__schedule+0x74/0x638)
+[ 7.708618] [<c053071c>] (__schedule+0x74/0x638) from [<c05301fc>] (schedule_timeout+0x1dc/0x24c)
+[ 7.718017] [<c05301fc>] (schedule_timeout+0x1dc/0x24c) from [<c05316ec>] (wait_for_common+0x138/0x17c)
+[ 7.727966] [<c05316ec>] (wait_for_common+0x138/0x17c) from [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0)
+[ 7.737640] [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0) from [<c035d928>] (__i2c_transfer+0x40/0x74)
+[ 7.747039] [<c035d928>] (__i2c_transfer+0x40/0x74) from [<c035e22c>] (i2c_transfer+0x6c/0x90)
+[ 7.756195] [<c035e22c>] (i2c_transfer+0x6c/0x90) from [<c037ad24>] (bq2415x_i2c_write+0x48/0x78)
+[ 7.765563] [<c037ad24>] (bq2415x_i2c_write+0x48/0x78) from [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50)
+[ 7.776824] [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50) from [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c)
+[ 7.788085] [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c) from [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4)
+[ 7.798309] [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4) from [<c005f228>] (notifier_call_chain+0x38/0x68)
+[ 7.808715] [<c005f228>] (notifier_call_chain+0x38/0x68) from [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c)
+[ 7.819732] [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c) from [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18)
+[ 7.831420] [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18) from [<c0378078>] (power_supply_changed_work+0x6c/0xb8)
+[ 7.842864] [<c0378078>] (power_supply_changed_work+0x6c/0xb8) from [<c00556c0>] (process_one_work+0x248/0x440)
+[ 7.853546] [<c00556c0>] (process_one_work+0x248/0x440) from [<c0055d6c>] (worker_thread+0x208/0x350)
+[ 7.863372] [<c0055d6c>] (worker_thread+0x208/0x350) from [<c005b0ac>] (kthread+0xc8/0xdc)
+[ 7.872131] [<c005b0ac>] (kthread+0xc8/0xdc) from [<c000e138>] (ret_from_fork+0x14/0x3c)
+
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+Hi Dmitry,
+
+I think this patch should be applied to 3.14-rc.
+
+-- Sebastian
+---
+ drivers/power/bq2415x_charger.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
+index 79a37f6..8bf14fc 100644
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -840,8 +840,7 @@ static int bq2415x_notifier_call(struct notifier_block *nb,
+ 	if (bq->automode < 1)
+ 		return NOTIFY_OK;
+ 
+-	sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
+-	bq2415x_set_mode(bq, bq->reported_mode);
++	schedule_delayed_work(&bq->work, 0);
+ 
+ 	return NOTIFY_OK;
+ }
+@@ -892,6 +891,11 @@ static void bq2415x_timer_work(struct work_struct *work)
+ 	int error;
+ 	int boost;
+ 
++	if (bq->automode == 1 && (bq->reported_mode != bq->mode)) {
++		sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
++		bq2415x_set_mode(bq, bq->reported_mode);
++	}
++
+ 	if (!bq->autotimer)
+ 		return;
+ 
+-- 
+1.8.5.3
+
