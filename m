@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaBXNng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:43:36 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:11971 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaBXNne (ORCPT
+	id S1752819AbaBXNpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:45:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:52328 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532AbaBXNp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:43:34 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 24 Feb 2014 05:41:02 -0800
-Date: Mon, 24 Feb 2014 15:43:19 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: Tegra clockframework fixes for 3.14
-Message-ID: <20140224134319.GG19389@tbergstrom-lnx.Nvidia.com>
-References: <20140220172744.GA4378@tbergstrom-lnx.Nvidia.com>
- <20140224010211.22529.99924@quantum>
+	Mon, 24 Feb 2014 08:45:29 -0500
+X-Greylist: delayed 315 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Feb 2014 08:45:29 EST
+From: Arnd Bergmann <arnd@arndb.de>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: David Howells <dhowells@redhat.com>, Josh Triplett <josh@joshtriplett.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
+Date: Mon, 24 Feb 2014 14:39:46 +0100
+Message-ID: <16994526.0QcMcz0xo0@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140224131605.3bd7febc@alan.etchedpixels.co.uk>
+References: <20140224084437.GG20680@thin> <1747419.6FxgzfPen0@wuerfel> <20140224131605.3bd7febc@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140224010211.22529.99924@quantum>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:gFNSku5hHX2ZB+ZmQtzi2mCXExtYvOkwAWeYSJDgKnW
+ cAqxqFs7sXAHE7VW3oAcI7U7/rjYT5wVPZXbPbEElV2ItsBweo
+ waUGM1lJhl+PFzXBoLHq+3/4IJeEOkzoqf95+iD6aGpw/ifhIU
+ cOXcjUIITo+b40h8WsgpsTicnNt3KrElixSX1mJVORHzvjN8XQ
+ S6xZTV7ZPUDARz6ygR0rWdPDYvNyVqCf/W1/aut+QmYLUTkbXw
+ yJGC6N66TvkT0HOqhDHCznllY5kwL6BLANuQhmREfPxYtjmey0
+ B+j0QrisUDy+kiU531/iC3WmvPKWgIMzG1QweIVpCw5MQDQC9S
+ 3QNayYqZVJ/OxgTZ2sVs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 02:02:11AM +0100, Mike Turquette wrote:
-> Quoting Peter De Schrijver (2014-02-20 09:27:44)
-> > Hi Mike,
-> > 
-> > Could you merge these fixes still for 3.14?
+On Monday 24 February 2014 13:16:05 One Thousand Gnomes wrote:
 > 
-> No problem, but can you provide a list of the regressions fixed? I'll
-> add those to my merge commit message. No need for you to respin
-> anything. Next time if you could submit a signed tag with the
-> regressions listed in the message it would be a great help.
-> 
+> While I agree defining it as do {} while(1); would be a lot smarter,
+> simply making it required that a platform provides an implementation of
+> BUG() would be even better. 
 
-This fixes the following issues:
+But how do we get there? The majority of architectures define BUG()
+already, but a lot of them only if CONFIG_BUG is enabled. That is
+of course trivial do change, and it is what my older patch does
+for ARM and x86.
 
-clk: tegra124: remove gr2d and gr3d clocks - accesses to undefined registers
-clk: tegra: Fix vic03 mux index - wrong parent when PLLC3 is selected (because clk_m is actually selected)
-clk: tegra: use max divider if divider overflows - make tegra fractional divider match the clk-div.c behaviour
-clk: tegra: cclk_lp has a pllx/2 divider - pllx runs at half the programmed rate
-clk: tegra: fix sdmmc clks on Tegra1x4 - wrong parent selection
-clk: tegra: fix host1x clock on Tegra124 - wrong parent selection
-clk: tegra: PLLD2 fixes for hdmi - PLL runs at wrong rate
-clk: tegra: Fix PLLD mnp table - PLL runs at wrong rate
-clk: tegra: Fix PLLP rate table - kernel panic when using coreboot
-clk: tegra: Correct clock number for UARTE - wrong clock when using UARTE
-clk: tegra: Add missing Tegra20 fuse clks - fuse driver broken
+We also have seven architectures without a BUG() implementation (c6x,
+m32r, meta, microblaze, score, sh, unicore32) and six more (arm64,
+hexagon openrisc tile um xtensa) that have no bug.h at all.
 
-Cheers,
-
-Peter.
+	Arnd
