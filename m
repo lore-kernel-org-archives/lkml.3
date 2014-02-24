@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaBXQ1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:27:31 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:56771 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443AbaBXQ12 (ORCPT
+	id S1753525AbaBXQ1i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:27:38 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:56452 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514AbaBXQ1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:27:28 -0500
+	Mon, 24 Feb 2014 11:27:34 -0500
+Date: Mon, 24 Feb 2014 08:27:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, laijs@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        Chris Boot <bootc@bootc.net>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: memory-barriers.txt again (was Re: [PATCH 4/9] firewire: don't
+ use PREPARE_DELAYED_WORK)
+Message-ID: <20140224162728.GN8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5307DAC9.2020103@hurleysoftware.com>
+ <1393094608.11497.1.camel@dabdike.int.hansenpartnership.com>
+ <5308F0E2.3030804@hurleysoftware.com>
+ <1393095138.11497.5.camel@dabdike.int.hansenpartnership.com>
+ <5308F48C.8080609@hurleysoftware.com>
+ <20140223022303.3240093c@stein>
+ <20140223163743.GU4250@linux.vnet.ibm.com>
+ <530A5B93.7010304@hurleysoftware.com>
+ <20140223235012.GB8264@linux.vnet.ibm.com>
+ <20140224013254.5004c4fb@stein>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
-References: <20140220083032.GN4250@linux.vnet.ibm.com>
-	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	<20140220181116.GT4250@linux.vnet.ibm.com>
-	<CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	<1392922421.28840.36.camel@triegel.csb>
-	<CA+55aFwos2Gwd2LEvht4ymVxHb6GRVjtZ9wwJSaj1p--FqNUWw@mail.gmail.com>
-	<1393095223.28840.4914.camel@triegel.csb>
-	<CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
-	<20140223003933.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
-Date: Mon, 24 Feb 2014 17:27:26 +0100
-Message-ID: <CAFiYyc08cusFTsydD2C4rEZB-k38NnorzEXzKvqab0m3R+qn8w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Richard Biener <richard.guenther@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224013254.5004c4fb@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022416-0928-0000-0000-00000705C5DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 4:57 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Feb 23, 2014 at 11:31 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Let me think about it some more, but my gut feel is that just tweaking
->> the definition of what "ordered" means is sufficient.
->>
->> So to go back to the suggested ordering rules (ignoring the "restrict"
->> part, which is just to clarify that ordering through other means to
->> get to the object doesn't matter), I suggested:
->>
->>  "the consume ordering guarantees the ordering between that
->>   atomic read and the accesses to the object that the pointer
->>   points to"
->>
->> and I think the solution is to just say that this ordering acts as a
->> fence. It doesn't say exactly *where* the fence is, but it says that
->> there is *some* fence between the load of the pointer and any/all
->> accesses to the object through that pointer.
->
-> I'm wrong. That doesn't work. At all. There is no ordering except
-> through the pointer chain.
->
-> So I think saying just that, and nothing else (no magic fences, no
-> nothing) is the right thing:
->
->  "the consume ordering guarantees the ordering between that
->   atomic read and the accesses to the object that the pointer
->   points to directly or indirectly through a chain of pointers"
+On Mon, Feb 24, 2014 at 01:32:54AM +0100, Stefan Richter wrote:
+> On Feb 23 Paul E. McKenney wrote:
+> >>> Please see below for a patch against the current version of
+> >>> Documentation/memory-barriers.txt.  Does this update help?
+> 
+> Thank you, this clarifies it.
+> 
+> [...]
+> A new nit:
+> > +The operations will always occur in one of the following orders:
+> >  
+> > -	STORE *A, RELEASE, ACQUIRE, STORE *B
+> > -	STORE *A, ACQUIRE, RELEASE, STORE *B
+> > +	STORE *A, RELEASE, ACQUIRE, smp_mb__after_unlock_lock(), STORE *B
+> > +	STORE *A, ACQUIRE, RELEASE, smp_mb__after_unlock_lock(), STORE *B
+> > +	ACQUIRE, STORE *A, RELEASE, smp_mb__after_unlock_lock(), STORE *B
+> >  
+> > -If the RELEASE and ACQUIRE were instead both operating on the same lock
+> > -variable, only the first of these two alternatives can occur.
+> > +If the RELEASE and ACQUIRE were instead both operating on the
+> > +same lock variable, only the first of these two alternatives can
+> > +occur.
+>                                                ^^^
+> ...these {,three} alternatives...
 
-To me that reads like
+Good catch!  I chose the empty string.
 
-  int i;
-  int *q = &i;
-  int **p = &q;
+							Thanx, Paul
 
-  atomic_XXX (p, CONSUME);
-
-orders against accesses '*p', '**p', '*q' and 'i'.  Thus it seems they
-want to say that it orders against aliased storage - but then go further
-and include "indirectly through a chain of pointers"?!  Thus an
-atomic read of a int * orders against any 'int' memory operation but
-not against 'float' memory operations?
-
-Eh ...
-
-Just jumping in to throw in my weird-2-cents.
-
-Richard.
