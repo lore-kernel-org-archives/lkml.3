@@ -1,166 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBXNzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 08:55:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59290 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752691AbaBXNzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 08:55:09 -0500
-Date: Mon, 24 Feb 2014 14:55:07 +0100 (CET)
-From: Michael Matz <matz@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-In-Reply-To: <20140221191318.GK4250@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1402241403580.7694@wotan.suse.de>
-References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com> <20140220083032.GN4250@linux.vnet.ibm.com> <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com> <20140220181116.GT4250@linux.vnet.ibm.com>
- <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com> <20140220185608.GX4250@linux.vnet.ibm.com> <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com> <20140220221027.GC4250@linux.vnet.ibm.com>
- <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com> <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de> <20140221191318.GK4250@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752946AbaBXNzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 08:55:55 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62430 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaBXNzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 08:55:53 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        rjw@rjwysocki.net
+Cc: nicolas.pitre@linaro.org, preeti@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2 2/5] cpuidle/idle: Move the cpuidle_idle_call function to idle.c
+Date: Mon, 24 Feb 2014 14:55:48 +0100
+Message-Id: <1393250151-6982-2-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393250151-6982-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1393250151-6982-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The cpuidle_idle_call does nothing more than calling the three individuals
+function and is no longer used by any arch specific code but only in the
+cpuidle framework code. 
 
-On Fri, 21 Feb 2014, Paul E. McKenney wrote:
+We can move this function into the idle task code to ensure better
+proximity to the scheduler code.
 
-> > And with conservative I mean "everything is a source of a dependency, and 
-> > hence can't be removed, reordered or otherwise fiddled with", and that 
-> > includes code sequences where no atomic objects are anywhere in sight [1].
-> > In the light of that the only realistic way (meaning to not have to 
-> > disable optimization everywhere) to implement consume as currently 
-> > specified is to map it to acquire.  At which point it becomes pointless.
-> 
-> No, only memory_order_consume loads and [[carries_dependency]]
-> function arguments are sources of dependency chains.
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+---
+ drivers/cpuidle/cpuidle.c |   39 ---------------------------------------
+ include/linux/cpuidle.h   |    2 --
+ kernel/sched/idle.c       |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 46 insertions(+), 41 deletions(-)
 
-I don't see [[carries_dependency]] in the C11 final draft (yeah, should 
-get a real copy, I know, but let's assume it's the same language as the 
-standard).  Therefore, yes, only consume loads are sources of 
-dependencies.  The problem with the definition of the "carries a 
-dependency" relation is not the sources, but rather where it stops.  
-It's transitively closed over "value of evaluation A is used as operand in 
-evaluation B", with very few exceptions as per 5.1.2.4#14.  Evaluations 
-can contain function calls, so if there's _any_ chance that an operand of 
-an evaluation might even indirectly use something resulting from a consume 
-load then that evaluation must be compiled in a way to not break 
-dependency chains.
-
-I don't see a way to generally assume that e.g. the value of a function 
-argument can impossibly result from a consume load, therefore the compiler 
-must assume that all function arguments _can_ result from such loads, and 
-so must disable all depchain breaking optimization (which are many).
-
-> > [1] Simple example of what type of transformations would be disallowed:
-> > 
-> > int getzero (int i) { return i - i; }
-> 
-> This needs to be as follows:
-> 
-> [[carries_dependency]] int getzero(int i [[carries_dependency]])
-> {
-> 	return i - i;
-> }
-> 
-> Otherwise dependencies won't get carried through it.
-
-So, with the above do you agree that in absense of any other magic (see 
-below) the compiler is not allowed to transform my initial getzero() 
-(without the carries_dependency markers) implementation into "return 0;" 
-because of the C11 rules for "carries-a-dependency"?
-
-If so, do you then also agree that the specification of "carries a 
-dependency" is somewhat, err, shall we say, overbroad?
-
-> > depchains don't matter, could _then_ optmize it to zero.  But that's 
-> > insane, especially considering that it's hard to detect if a given context 
-> > doesn't care for depchains, after all the depchain relation is constructed 
-> > exactly so that it bleeds into nearly everywhere.  So we would most of 
-> > the time have to assume that the ultimate context will be depchain-aware 
-> > and therefore disable many transformations.
-> 
-> Any function that does not contain a memory_order_consume load and that 
-> doesn't have any arguments marked [[carries_dependency]] can be 
-> optimized just as before.
-
-And as such marker doesn't exist we must conservatively assume that it's 
-on _all_ parameters, so I'll stand by my claim.
-
-> > Then inlining getzero would merely add another "# j.dep = i.dep" 
-> > relation, so depchains are still there but the value optimization can 
-> > happen before inlining.  Having to do something like that I'd find 
-> > disgusting, and rather rewrite consume into acquire :)  Or make the 
-> > depchain relation somehow realistically implementable.
-> 
-> I was actually OK with arithmetic cancellation breaking the dependency 
-> chains.  Others on the committee felt otherwise, and I figured that (1) 
-> I wouldn't be writing that kind of function anyway and (2) they knew 
-> more about writing compilers than I.  I would still be OK saying that 
-> things like "i-i", "i*0", "i%1", "i&0", "i|~0" and so on just break the 
-> dependency chain.
-
-Exactly.  I can see the problem that people had with that, though.  There 
-are very many ways to write conceiled zeros (or generally neutral elements 
-of the function in question).  My getzero() function is one (it could e.g. 
-be an assembler implementation).  The allowance to break dependency chains 
-would have to apply to such cancellation as well, and so can't simply 
-itemize all cases in which cancellation is allowed.  Rather it would have 
-had to argue about something like "value dependency", ala "evaluation B 
-depends on A, if there exist at least two different values A1 and A2 
-(results from A), for which evaluation B (with otherwise same operands) 
-yields different values B1 and B2".
-
-Alas, it doesn't, except if you want to understand the term "the value of 
-A is used as an operand of B" in that way.  Even then you'd still have the 
-second case of the depchain definition, via intermediate not even atomic 
-memory stores and loads to make two evaluations be ordered per 
-carries-a-dependency.
-
-And even that understanding of "is used" wouldn't be enough, because there 
-are cases where the cancellation happens in steps, and where it interacts 
-with the third clause (transitiveness):  Assume this:
-
-  a = something()  // evaluation A
-  b = 1 - a        // evaluation B
-  c = a - 1 + b    // evaluation C
-
-Now, clearly B depends on A.  Also C depends on B (because with otherwise 
-same operands changing just B also changes C), because of transitiveness C 
-then also depends on A.  But equally cleary C was just an elaborate way to 
-write "0", and so depends on nothing.  The problem was of course that A 
-and B weren't independent when determining the dependencies of C.  But 
-allowing cancellation to break dependency chains would have to allow for 
-these cases as well.
-
-So, now, that leaves us basically with depchains forcing us to disable 
-many useful transformation or finding some other magic.  One would be to 
-just regard all consume loads as acquire loads and be done (and 
-effectively remove the ill-advised "carries a dependency" relation from 
-consideration).
-
-You say downthread that it'd also be possible to just emit barriers before 
-all function calls (I say "all" because the compiler will generally 
-have applied some transformation that broke depchains if they existed).  
-That seems to me to be a bigger hammer than just ignoring depchains and 
-emit acquires instead of consumes (because the latter changes only exactly 
-where atomics are used, the former seems to me to have unbounded effect).
-
-So, am still missing something or is my understanding of the 
-carries-a-dependency relation correct and my conclusions are merely too 
-pessimistic?
-
-
-Ciao,
-Michael.
+Index: cpuidle-next/drivers/cpuidle/cpuidle.c
+===================================================================
+--- cpuidle-next.orig/drivers/cpuidle/cpuidle.c
++++ cpuidle-next/drivers/cpuidle/cpuidle.c
+@@ -185,45 +185,6 @@ void cpuidle_reflect(struct cpuidle_devi
+ }
+ 
+ /**
+- * cpuidle_idle_call - the main idle loop
+- *
+- * NOTE: no locks or semaphores should be used here
+- * return non-zero on failure
+- */
+-int cpuidle_idle_call(void)
+-{
+-	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+-	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+-	int next_state, entered_state;
+-
+-	next_state = cpuidle_enabled(drv, dev);
+-	if (next_state < 0)
+-		return next_state;
+-
+-	/* ask the governor for the next state */
+-	next_state = cpuidle_select(drv, dev);
+-
+-	if (need_resched()) {
+-		dev->last_residency = 0;
+-		/* give the governor an opportunity to reflect on the outcome */
+-		cpuidle_reflect(dev, next_state);
+-		local_irq_enable();
+-		return 0;
+-	}
+-
+-	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+-
+-	entered_state = cpuidle_enter(drv, dev, next_state);
+-
+-	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+-
+-	/* give the governor an opportunity to reflect on the outcome */
+-	cpuidle_reflect(dev, entered_state);
+-
+-	return 0;
+-}
+-
+-/**
+  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
+  */
+ void cpuidle_install_idle_handler(void)
+Index: cpuidle-next/include/linux/cpuidle.h
+===================================================================
+--- cpuidle-next.orig/include/linux/cpuidle.h
++++ cpuidle-next/include/linux/cpuidle.h
+@@ -128,7 +128,6 @@ extern int cpuidle_enter(struct cpuidle_
+ 			 struct cpuidle_device *dev, int index);
+ extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
+ 
+-extern int cpuidle_idle_call(void);
+ extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+ extern struct cpuidle_driver *cpuidle_get_driver(void);
+ extern struct cpuidle_driver *cpuidle_driver_ref(void);
+@@ -160,7 +159,6 @@ static inline int cpuidle_enter(struct c
+ 				struct cpuidle_device *dev, int index)
+ {return -ENODEV; }
+ static inline void cpuidle_reflect(struct cpuidle_device *dev, int index) { }
+-static inline int cpuidle_idle_call(void) { return -ENODEV; }
+ static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+ {return -ENODEV; }
+ static inline struct cpuidle_driver *cpuidle_get_driver(void) {return NULL; }
+Index: cpuidle-next/kernel/sched/idle.c
+===================================================================
+--- cpuidle-next.orig/kernel/sched/idle.c
++++ cpuidle-next/kernel/sched/idle.c
+@@ -63,6 +63,52 @@ void __weak arch_cpu_idle(void)
+ 	local_irq_enable();
+ }
+ 
++#ifdef CONFIG_CPU_IDLE
++/**
++ * cpuidle_idle_call - the main idle function
++ *
++ * NOTE: no locks or semaphores should be used here
++ * return non-zero on failure
++ */
++static int cpuidle_idle_call(void)
++{
++	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
++	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
++	int next_state, entered_state;
++
++	next_state = cpuidle_enabled(drv, dev);
++	if (next_state < 0)
++		return next_state;
++
++	/* ask the governor for the next state */
++	next_state = cpuidle_select(drv, dev);
++
++	if (need_resched()) {
++		dev->last_residency = 0;
++		/* give the governor an opportunity to reflect on the outcome */
++		cpuidle_reflect(dev, next_state);
++		local_irq_enable();
++		return 0;
++	}
++
++	trace_cpu_idle_rcuidle(next_state, dev->cpu);
++
++	entered_state = cpuidle_enter(drv, dev, next_state);
++
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
++
++	/* give the governor an opportunity to reflect on the outcome */
++	cpuidle_reflect(dev, entered_state);
++
++	return 0;
++}
++#else
++static inline int cpuidle_idle_call(void)
++{
++	return -ENODEV;
++}
++#endif
++
+ /*
+  * Generic idle loop implementation
+  */
