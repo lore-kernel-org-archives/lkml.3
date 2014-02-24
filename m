@@ -1,176 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaBXWf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 17:35:29 -0500
-Received: from smtp106.biz.mail.ne1.yahoo.com ([98.138.207.13]:48227 "HELO
-	smtp106.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752955AbaBXWf1 (ORCPT
+	id S1753122AbaBXWfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 17:35:42 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:44794 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaBXWfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 17:35:27 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: bDCnyysVM1kmihL.cA5w8yHTwyKxUFSgqCYfbl67xedmA5.
- 33IQ1_sKvazfohKybBTuR_JwC_cy29.UYpRr8ekq8fG26NTeNe3XYxevBVga
- 9hSzO5kENf1vs5DNAXAM5D7GUhViWRQIDIxSuZK1UEf1nbzm8XjQ9PC1AMeq
- iBLuxaAgsVllp4UnVjSQaWLtkuk2AVnMWXTEUDhpqsX.n0PAt4LbSeryh8Tl
- ljqL4O3M_6WJ.Abuo4qvM4jcKL6TdyPXPtrfF4eJ1wsOm8yHC8Chsua6KmxE
- ZG3oi9SIio.xtAIuwOhn0LKuB_ScLw_iMlIBIhIDp7K6ZpKDjVw60XaF381t
- Dk56HIWXjUedgCUAItR4taCK20ErDw6obUKLfJLWr2mC9C5c9fDSoFSoIkwy
- jqr03jnl6OKljLrq7D._Y0qx2T_SqR5k5OB0ePYCLoGKbX.t2MICY9ODUcJ9
- J61FrWPMekrwgWskzzCTq.HKIW274n7jUkH7OtUTBCokrBfPTQAO_m0KSzAn
- AlBnLftsv33nofoOcO3b8joqSkb.bRTCrn_E20AcckolX
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
-        by smtp106.biz.mail.ne1.yahoo.com with SMTP; 24 Feb 2014 14:35:26 -0800 PST
-Message-ID: <530BC92D.6030509@schaufler-ca.com>
-Date: Mon, 24 Feb 2014 14:35:25 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 17:35:40 -0500
+Message-ID: <530BC93C.4090907@linaro.org>
+Date: Mon, 24 Feb 2014 23:35:40 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
-References: <cover.1393279025.git.joe@perches.com> <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>
-In-Reply-To: <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>, linux-pm@vger.kernel.org,
+        rjw@rjwysocki.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] Cpuidle: Use actual state latency in menu governor
+References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org> <1393223377-5744-3-git-send-email-tuukka.tikkanen@linaro.org>
+In-Reply-To: <1393223377-5744-3-git-send-email-tuukka.tikkanen@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/24/2014 1:59 PM, Joe Perches wrote:
-> Convert printks to pr_<level>
-> Add pr_fmt.
+On 02/24/2014 07:29 AM, Tuukka Tikkanen wrote:
+> Currently menu governor records the exit latency of the state it has
+> chosen for the idle period. The stored latency value is then later
+> used to calculate the actual length of the idle period. This value
+> may however be incorrect, as the entered state may not be the one
+> chosen by the governor. The entered state information is available,
+> so we can use that to obtain the real exit latency.
 >
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
 
-Acked-by: Casey Schaufler <casey@schaufler-ca.com>
-
-I will take this into the smack-next tree.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 > ---
->  security/smack/smack_lsm.c |  7 ++++---
->  security/smack/smackfs.c   | 25 +++++++++++--------------
->  2 files changed, 15 insertions(+), 17 deletions(-)
+>   drivers/cpuidle/governors/menu.c |    7 ++-----
+>   1 file changed, 2 insertions(+), 5 deletions(-)
 >
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 14f52be..a273aad 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -18,6 +18,8 @@
->   *      as published by the Free Software Foundation.
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/xattr.h>
->  #include <linux/pagemap.h>
->  #include <linux/mount.h>
-> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
->  		if (sock->sk->sk_family == PF_INET) {
->  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
->  			if (rc != 0)
-> -				printk(KERN_WARNING
-> -					"Smack: \"%s\" netlbl error %d.\n",
-> +				pr_warn("\"%s\" netlbl error %d\n",
->  					__func__, -rc);
->  		}
->  	} else
-> @@ -3916,7 +3917,7 @@ static __init int smack_init(void)
->  	if (tsp == NULL)
->  		return -ENOMEM;
->  
-> -	printk(KERN_INFO "Smack:  Initializing.\n");
-> +	pr_info("Initializing\n");
->  
->  	/*
->  	 * Set the security state for the initial task.
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 3198cfe..2e25220 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -16,6 +16,8 @@
->   *
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/kernel.h>
->  #include <linux/vmalloc.h>
->  #include <linux/security.h>
-> @@ -698,8 +700,7 @@ static void smk_cipso_doi(void)
->  
->  	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
->  	if (rc != 0)
-> -		printk(KERN_WARNING "%s:%d remove rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d remove rc = %d\n", __func__, __LINE__, rc);
->  
->  	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
->  	if (doip == NULL)
-> @@ -713,15 +714,13 @@ static void smk_cipso_doi(void)
->  
->  	rc = netlbl_cfg_cipsov4_add(doip, &nai);
->  	if (rc != 0) {
-> -		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d cipso add rc = %d\n", __func__, __LINE__, rc);
->  		kfree(doip);
->  		return;
->  	}
->  	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
->  	if (rc != 0) {
-> -		printk(KERN_WARNING "%s:%d map add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d map add rc = %d\n", __func__, __LINE__, rc);
->  		kfree(doip);
->  		return;
->  	}
-> @@ -741,8 +740,8 @@ static void smk_unlbl_ambient(char *oldambient)
->  	if (oldambient != NULL) {
->  		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
->  		if (rc != 0)
-> -			printk(KERN_WARNING "%s:%d remove rc = %d\n",
-> -			       __func__, __LINE__, rc);
-> +			pr_warn("%s:%d remove rc = %d\n",
-> +				__func__, __LINE__, rc);
->  	}
->  	if (smack_net_ambient == NULL)
->  		smack_net_ambient = &smack_known_floor;
-> @@ -750,8 +749,7 @@ static void smk_unlbl_ambient(char *oldambient)
->  	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient->smk_known, PF_INET,
->  				      NULL, NULL, &nai);
->  	if (rc != 0)
-> -		printk(KERN_WARNING "%s:%d add rc = %d\n",
-> -		       __func__, __LINE__, rc);
-> +		pr_warn("%s:%d add rc = %d\n", __func__, __LINE__, rc);
->  }
->  
->  /*
-> @@ -2302,8 +2300,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
->  
->  	rc = simple_fill_super(sb, SMACK_MAGIC, smack_files);
->  	if (rc != 0) {
-> -		printk(KERN_ERR "%s failed %d while creating inodes\n",
-> -			__func__, rc);
-> +		pr_err("%s failed %d while creating inodes\n", __func__, rc);
->  		return rc;
->  	}
->  
-> @@ -2369,13 +2366,13 @@ static int __init init_smk_fs(void)
->  
->  	err = smk_init_sysfs();
->  	if (err)
-> -		printk(KERN_ERR "smackfs: sysfs mountpoint problem.\n");
-> +		pr_err("smackfs: sysfs mountpoint problem\n");
->  
->  	err = register_filesystem(&smk_fs_type);
->  	if (!err) {
->  		smackfs_mount = kern_mount(&smk_fs_type);
->  		if (IS_ERR(smackfs_mount)) {
-> -			printk(KERN_ERR "smackfs:  could not mount!\n");
-> +			pr_err("smackfs: could not mount!\n");
->  			err = PTR_ERR(smackfs_mount);
->  			smackfs_mount = NULL;
->  		}
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index e9a2a27..115386a 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -124,7 +124,6 @@ struct menu_device {
+>
+>   	unsigned int	next_timer_us;
+>   	unsigned int	predicted_us;
+> -	unsigned int	exit_us;
+>   	unsigned int	bucket;
+>   	unsigned int	correction_factor[BUCKETS];
+>   	unsigned int	intervals[INTERVALS];
+> @@ -298,7 +297,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>   	}
+>
+>   	data->last_state_idx = 0;
+> -	data->exit_us = 0;
+>
+>   	/* Special case when user has set very strict latency requirement */
+>   	if (unlikely(latency_req == 0))
+> @@ -359,7 +357,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>   			continue;
+>
+>   		data->last_state_idx = i;
+> -		data->exit_us = s->exit_latency;
+>   	}
+>
+>   	return data->last_state_idx;
+> @@ -410,8 +407,8 @@ static void menu_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>   	 * We correct for the exit latency; we are assuming here that the
+>   	 * exit latency happens after the event that we're interested in.
+>   	 */
+> -	if (measured_us > data->exit_us)
+> -		measured_us -= data->exit_us;
+> +	if (measured_us > target->exit_latency)
+> +		measured_us -= target->exit_latency;
+>
+>
+>   	/* Update our correction ratio */
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
