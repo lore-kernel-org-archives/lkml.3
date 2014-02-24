@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaBXDrE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 22:47:04 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37607 "EHLO
+	id S1752671AbaBXDrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 22:47:16 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:37626 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaBXDq7 (ORCPT
+	with ESMTP id S1752543AbaBXDrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 22:46:59 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-07-530ac0b1ef11
+	Sun, 23 Feb 2014 22:47:13 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-1a-530ac0bfee0d
 From: Tarek Dakhran <t.dakhran@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -28,200 +28,278 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>,
         Tarek Dakhran <t.dakhran@samsung.com>
-Subject: [PATCH v7 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
-Date: Mon, 24 Feb 2014 12:43:53 +0900
-Message-id: <1393213435-20863-2-git-send-email-t.dakhran@samsung.com>
+Subject: [PATCH v7 3/3] ARM: dts: Add initial device tree support for EXYNOS5410
+Date: Mon, 24 Feb 2014 12:43:55 +0900
+Message-id: <1393213435-20863-4-git-send-email-t.dakhran@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com>
 References: <1393213435-20863-1-git-send-email-t.dakhran@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t/xK7obD3AFG0ybJGMxad0BJouH62+y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xK7r7D3AFG2zYxG8xad0BJouH62+y
 	WMw/co7Vov/NQlaL/49es1qce7WS0aJ3wVU2i7NNb9gtNj2+xmqxsG0Ji8XlXXPYLGac38dk
 	cfsyr8XS6xeZLJ5OuMhmMWH6WhaLdS+ns1i07j3CbrHlZwejxe+eT8wW65+fYrRYP+M1i8Wx
 	GUsYLabO+MHuIOGxZt4aRo+W5h42j8t9vUwef1e9YPbYOesuu8fK5V/YPDat6mTzeLV6JqvH
-	nWt72Dw2L6n3eHWNxaNvyypGj+3X5jF7fN4kF8AXxWWTkpqTWZZapG+XwJXRtvIrc8FVg4qe
-	3RfYGhhnaHYxcnJICJhIdOyZzQJhi0lcuLeeDcQWEljKKNHxOAHC7mWSuNEd1cXIwcEmoC2x
-	ZYcXSFhEQEFic+8z1i5GLg5mgU9sEj9WNTGBJIQFnCXOTtnCDGKzCKhKzHr1ihmkl1fAVWLt
-	gXiIVYoS3c8mgK3iFHCT6P3zhR1ilatEw6kNLBMYeRcwMqxiFE0tTS4oTkrPNdIrTswtLs1L
-	10vOz93ECImnrzsYlx6zOsQowMGoxMMrUc0VLMSaWFZcmXuIUYKDWUmEt6YMKMSbklhZlVqU
-	H19UmpNafIiRiYNTqoExevlDbb70mS0JNadcrzSwfEk91XZPVP/EZGETlVVrHE23s5icOtZs
-	0juTzdtutT5/+8TVEWs8NW7N5AzaqhB+TzhY9p/kDvbplt25LRw9MRZvX0RPD8hJdspc5738
-	jlvVY5nJ1TczLmZOkHQ5VbRk89WXHPW6LXPdY72yPhddWyOT4TSxXkCJpTgj0VCLuag4EQAw
-	7pDohQIAAA==
+	nWt72Dw2L6n3eHWNxaNvyypGj+3X5jF7fN4kF8AXxWWTkpqTWZZapG+XwJXR8Myo4Ixxxaz1
+	G1kaGNdpdDFyckgImEjM29jHCGGLSVy4t56ti5GLQ0hgKaPE8rUd7BBOL5PE3M9fmLsYOTjY
+	BLQltuzwAmkQEVCQ2Nz7jBWkhlngE5vEj1VNTCAJYYEAiZ1zu1lBbBYBVYlv91qZQWxeAVeJ
+	K6fnQG1TlOh+NoENxOYUcJPo/fOFHcQWAqppOLWBZQIj7wJGhlWMoqmlyQXFSem5RnrFibnF
+	pXnpesn5uZsYITH1dQfj0mNWhxgFOBiVeHglqrmChVgTy4orcw8xSnAwK4nw1pQBhXhTEiur
+	Uovy44tKc1KLDzEycXBKNTAm7jvOWmm4hnPFlMsx0TprObj14lapSv8y+TShdsdPx8KjjBcY
+	XRo3tp/du4erRvljpGLIypsefv94rB3ddCLCGRrfKRvv1uD5L9X+lWeWV0h0/6yIq8Ez/6ax
+	hc5k5jV+leJvs2W1v0zVpd6trXFR3pqlr1bK+XVI2pVsYzZ69GVikH3qEyWW4oxEQy3mouJE
+	ACFtAZCHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXYNOS5410 is SoC in Samsung's Exynos5 SoC series.
-Add initial support for this SoC.
+Add initial device tree nodes for EXYNOS5410 SoC and SMDK5410 board.
 
 Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
 Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- arch/arm/mach-exynos/Kconfig                 |   10 ++++++++++
- arch/arm/mach-exynos/common.c                |   18 ++++++++++++++++++
- arch/arm/mach-exynos/include/mach/map.h      |    1 +
- arch/arm/mach-exynos/mach-exynos5-dt.c       |    1 +
- arch/arm/mach-exynos/platsmp.c               |    2 ++
- arch/arm/plat-samsung/include/plat/cpu.h     |    8 ++++++++
- arch/arm/plat-samsung/include/plat/map-s5p.h |    3 +++
- 7 files changed, 43 insertions(+)
+ arch/arm/boot/dts/Makefile                |    1 +
+ arch/arm/boot/dts/exynos5410-smdk5410.dts |   72 +++++++++++++++
+ arch/arm/boot/dts/exynos5410.dtsi         |  140 +++++++++++++++++++++++++++++
+ 3 files changed, 213 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
+ create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index 4c414af..97a06c3 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -91,6 +91,16 @@ config SOC_EXYNOS5250
- 	help
- 	  Enable EXYNOS5250 SoC support
- 
-+config SOC_EXYNOS5410
-+	bool "SAMSUNG EXYNOS5410"
-+	default y
-+	depends on ARCH_EXYNOS5
-+	select PM_GENERIC_DOMAINS if PM
-+	select S5P_PM if PM_SLEEP
-+	select S5P_SLEEP if PM_SLEEP
-+	help
-+	  Enable EXYNOS5410 SoC support
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b9d6a8b..693dcdc 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -73,6 +73,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+ 	exynos5250-smdk5250.dtb \
+ 	exynos5250-snow.dtb \
+ 	exynos5420-arndale-octa.dtb \
++	exynos5410-smdk5410.dtb \
+ 	exynos5420-smdk5420.dtb \
+ 	exynos5440-sd5v1.dtb \
+ 	exynos5440-ssdk5440.dtb
+diff --git a/arch/arm/boot/dts/exynos5410-smdk5410.dts b/arch/arm/boot/dts/exynos5410-smdk5410.dts
+new file mode 100644
+index 0000000..7ffd351
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos5410-smdk5410.dts
+@@ -0,0 +1,72 @@
++/*
++ * SAMSUNG SMDK5410 board device tree source
++ *
++ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
 +
- config SOC_EXYNOS5420
- 	bool "SAMSUNG EXYNOS5420"
- 	default y
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 025fd82..5d53795 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -52,6 +52,7 @@ static const char name_exynos4210[] = "EXYNOS4210";
- static const char name_exynos4212[] = "EXYNOS4212";
- static const char name_exynos4412[] = "EXYNOS4412";
- static const char name_exynos5250[] = "EXYNOS5250";
-+static const char name_exynos5410[] = "EXYNOS5410";
- static const char name_exynos5420[] = "EXYNOS5420";
- static const char name_exynos5440[] = "EXYNOS5440";
- 
-@@ -85,6 +86,12 @@ static struct cpu_table cpu_ids[] __initdata = {
- 		.init		= exynos_init,
- 		.name		= name_exynos5250,
- 	}, {
-+		.idcode		= EXYNOS5410_SOC_ID,
-+		.idmask		= EXYNOS5_SOC_MASK,
-+		.map_io		= exynos5_map_io,
-+		.init		= exynos_init,
-+		.name		= name_exynos5410,
-+	}, {
- 		.idcode		= EXYNOS5420_SOC_ID,
- 		.idmask		= EXYNOS5_SOC_MASK,
- 		.map_io		= exynos5_map_io,
-@@ -215,6 +222,15 @@ static struct map_desc exynos4x12_iodesc[] __initdata = {
- 	},
- };
- 
-+static struct map_desc exynos5410_iodesc[] __initdata = {
-+	{
-+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
-+		.pfn		= __phys_to_pfn(EXYNOS5410_PA_SYSRAM_NS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
++/dts-v1/;
++#include "exynos5410.dtsi"
++/ {
++	model = "Samsung SMDK5410 board based on EXYNOS5410";
++	compatible = "samsung,smdk5410", "samsung,exynos5410";
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttySAC2,115200";
++	};
++
++	clocks {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		fin_pll: clock-fin-pll {
++			compatible = "fixed-clock";
++			reg = <0>;
++			#clock-cells = <0>;
++			clock-frequency = <24000000>;
++			clock-output-names = "fin_pll";
++		};
++	};
++
++	mmc@12200000 {
++		status = "okay";
++		num-slots = <1>;
++		supports-highspeed;
++		broken-cd;
++		card-detect-delay = <200>;
++		samsung,dw-mshc-ciu-div = <3>;
++		samsung,dw-mshc-sdr-timing = <2 3>;
++		samsung,dw-mshc-ddr-timing = <1 2>;
++
++		slot@0 {
++			reg = <0>;
++			bus-width = <8>;
++		};
++	};
++
++	mmc@12220000 {
++		status = "okay";
++		num-slots = <1>;
++		supports-highspeed;
++		card-detect-delay = <200>;
++		samsung,dw-mshc-ciu-div = <3>;
++		samsung,dw-mshc-sdr-timing = <2 3>;
++		samsung,dw-mshc-ddr-timing = <1 2>;
++
++		slot@0 {
++			reg = <0>;
++			bus-width = <4>;
++			disable-wp;
++		};
++	};
++
 +};
+diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
+new file mode 100644
+index 0000000..56b44d1
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos5410.dtsi
+@@ -0,0 +1,140 @@
++/*
++ * SAMSUNG EXYNOS5410 SoC device tree source
++ *
++ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * SAMSUNG EXYNOS5410 SoC device nodes are listed in this file.
++ * EXYNOS5410 based board files can include this file and provide
++ * values for board specfic bindings.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- static struct map_desc exynos5250_iodesc[] __initdata = {
- 	{
- 		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
-@@ -379,6 +395,8 @@ static void __init exynos5_map_io(void)
- 
- 	if (soc_is_exynos5250())
- 		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
-+	if (soc_is_exynos5410())
-+		iotable_init(exynos5410_iodesc, ARRAY_SIZE(exynos5410_iodesc));
- }
- 
- struct bus_type exynos_subsys = {
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index 7b046b5..894f431 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -29,6 +29,7 @@
- #define EXYNOS4210_PA_SYSRAM_NS		0x0203F000
- #define EXYNOS4x12_PA_SYSRAM_NS		0x0204F000
- #define EXYNOS5250_PA_SYSRAM_NS		0x0204F000
-+#define EXYNOS5410_PA_SYSRAM_NS		0x02073000
- 
- #define EXYNOS_PA_CHIPID		0x10000000
- 
-diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
-index 37ea261..22245b2 100644
---- a/arch/arm/mach-exynos/mach-exynos5-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
-@@ -51,6 +51,7 @@ static void __init exynos5_dt_machine_init(void)
- 
- static char const *exynos5_dt_compat[] __initdata = {
- 	"samsung,exynos5250",
-+	"samsung,exynos5410",
- 	"samsung,exynos5420",
- 	"samsung,exynos5440",
- 	NULL
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 8ea02f6..b681f89 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -39,6 +39,8 @@ static inline void __iomem *cpu_boot_reg_base(void)
- {
- 	if (soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_1_1)
- 		return S5P_INFORM5;
-+	if (soc_is_exynos5410())
-+		return EXYNOS5410_BOOT_REG;
- 	return S5P_VA_SYSRAM;
- }
- 
-diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
-index 31164b3..262ef86 100644
---- a/arch/arm/plat-samsung/include/plat/cpu.h
-+++ b/arch/arm/plat-samsung/include/plat/cpu.h
-@@ -46,6 +46,7 @@ extern unsigned long samsung_cpu_id;
- #define EXYNOS4_CPU_MASK	0xFFFE0000
- 
- #define EXYNOS5250_SOC_ID	0x43520000
-+#define EXYNOS5410_SOC_ID	0xE5410000
- #define EXYNOS5420_SOC_ID	0xE5420000
- #define EXYNOS5440_SOC_ID	0xE5440000
- #define EXYNOS5_SOC_MASK	0xFFFFF000
-@@ -68,6 +69,7 @@ IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
- IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
- IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
- IS_SAMSUNG_CPU(exynos5250, EXYNOS5250_SOC_ID, EXYNOS5_SOC_MASK)
-+IS_SAMSUNG_CPU(exynos5410, EXYNOS5410_SOC_ID, EXYNOS5_SOC_MASK)
- IS_SAMSUNG_CPU(exynos5420, EXYNOS5420_SOC_ID, EXYNOS5_SOC_MASK)
- IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
- 
-@@ -148,6 +150,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
- # define soc_is_exynos5250()	0
- #endif
- 
-+#if defined(CONFIG_SOC_EXYNOS5410)
-+# define soc_is_exynos5410()	is_samsung_exynos5410()
-+#else
-+# define soc_is_exynos5410()	0
-+#endif
++#include <dt-bindings/clock/exynos5410.h>
++#include "exynos5.dtsi"
++/ {
++	compatible = "samsung,exynos5410";
 +
- #if defined(CONFIG_SOC_EXYNOS5420)
- # define soc_is_exynos5420()	is_samsung_exynos5420()
- #else
-diff --git a/arch/arm/plat-samsung/include/plat/map-s5p.h b/arch/arm/plat-samsung/include/plat/map-s5p.h
-index c186786..6310928 100644
---- a/arch/arm/plat-samsung/include/plat/map-s5p.h
-+++ b/arch/arm/plat-samsung/include/plat/map-s5p.h
-@@ -57,6 +57,9 @@
- #define S3C_UART_OFFSET		(0x400)
- #endif
- 
-+#define S5P_VA_SYSRAM_NS_X(x)	(S5P_VA_SYSRAM_NS + x)
-+#define EXYNOS5410_BOOT_REG	S5P_VA_SYSRAM_NS_X(0x1c)
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
- #include <plat/map-s3c.h>
- 
- #endif /* __ASM_PLAT_MAP_S5P_H */
++		CPU0: cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <0>;
++			clock-frequency = <1600000000>;
++		};
++
++		CPU1: cpu@1 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <1>;
++			clock-frequency = <1600000000>;
++		};
++
++		CPU2: cpu@2 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <2>;
++			clock-frequency = <1600000000>;
++		};
++
++		CPU3: cpu@3 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a15";
++			reg = <3>;
++			clock-frequency = <1600000000>;
++		};
++	};
++
++	clock: clock-controller@10010000 {
++		compatible = "samsung,exynos5410-clock";
++		reg = <0x10010000 0x30000>;
++		#clock-cells = <1>;
++	};
++
++	timer@101C0000 {
++		compatible = "samsung,exynos4210-mct";
++		reg = <0x101C0000 0xB00>;
++		interrupt-parent = <&interrupt_map>;
++		interrupts = <0>, <1>, <2>, <3>,
++			<4>, <5>, <6>, <7>,
++			<8>, <9>, <10>, <11>;
++		clocks = <&fin_pll>, <&clock CLK_MCT>;
++		clock-names = "fin_pll", "mct";
++
++		interrupt_map: interrupt-map {
++			#interrupt-cells = <1>;
++			#address-cells = <0>;
++			#size-cells = <0>;
++			interrupt-map = <0 &combiner 23 3>,
++					<1 &combiner 23 4>,
++					<2 &combiner 25 2>,
++					<3 &combiner 25 3>,
++					<4 &gic 0 120 0>,
++					<5 &gic 0 121 0>,
++					<6 &gic 0 122 0>,
++					<7 &gic 0 123 0>,
++					<8 &gic 0 128 0>,
++					<9 &gic 0 129 0>,
++					<10 &gic 0 130 0>,
++					<11 &gic 0 131 0>;
++		};
++	};
++
++	mmc_0: mmc@12200000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 75 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12200000 0x1000>;
++		clocks = <&clock CLK_MMC0>, <&clock CLK_SCLK_MMC0>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	mmc_1: mmc@12210000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 76 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12210000 0x1000>;
++		clocks = <&clock CLK_MMC1>, <&clock CLK_SCLK_MMC1>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	mmc_2: mmc@12220000 {
++		compatible = "samsung,exynos5250-dw-mshc";
++		interrupts = <0 77 0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x12220000 0x1000>;
++		clocks = <&clock CLK_MMC2>, <&clock CLK_SCLK_MMC2>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x80>;
++		status = "disabled";
++	};
++
++	serial@12C00000 {
++		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++	serial@12C10000 {
++		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++	serial@12C20000 {
++		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
++
++};
 -- 
 1.7.10.4
 
