@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaBXJaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 04:30:16 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:41059 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaBXJaL (ORCPT
+	id S1752344AbaBXJau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 04:30:50 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:40804 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaBXJaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 04:30:11 -0500
+	Mon, 24 Feb 2014 04:30:13 -0500
 From: <vladimir.barinov@cogentembedded.com>
 To: <linux-sh@vger.kernel.org>
 Cc: <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
         <magnus.damm@gmail.com>, <horms@verge.net.au>, <gnurou@gmail.com>,
         <linux-kernel@vger.kernel.org>, <kuninori.morimoto.gx@renesas.com>,
         <valentine.barshak@cogentembedded.com>
-Subject: [PATCH V5 2/4] ARM: shmobile: r8a7791: Add PCI USB host clock support
-Date: Mon, 24 Feb 2014 13:30:02 +0400
-Message-Id: <1393234204-24096-3-git-send-email-vladimir.barinov@cogentembedded.com>
+Subject: [PATCH V5 3/4] ARM: shmobile: koelsch: Add USBHS and internal PCI USB support
+Date: Mon, 24 Feb 2014 13:30:03 +0400
+Message-Id: <1393234204-24096-4-git-send-email-vladimir.barinov@cogentembedded.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
 References: <1393234204-24096-1-git-send-email-vladimir.barinov@cogentembedded.com>
@@ -25,51 +25,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Valentine Barshak <valentine.barshak@cogentembedded.com>
 
-This adds internal PCI USB host clock support to R-Car M2 SoC.
+This adds the following to R-Car M2 Koelsch board:
+- USBHS PHY
+- USBHS device in usb0
+- internal PCI USB host device on usb1
+
+USBHS is configured for usb0 and cable id is checked at probe.
+USB PCI is configured for usb1.
+
+The USB phy is bound to ether USB host or USBHS device respectively, hence
+configured to ether channel 0 or 2 for usb0 and usb1.
 
 Signed-off-by: Valentine Barshak <valentine.barshak@cogentembedded.com>
 Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 
 Changes in V5:
+* get rid from PCI USB on usb0
+* moved MAX3355E ID pin check in usbhs probe
+
 Changes in V4:
+* folded USBHS and internal PCI USB related patches together
+* added handling of ID pin from MAX3355E chip
+* removed ifdefs
+
 Changes in V3:
-* none.
+* fixed a typo in the log message;
+* fixed the USB1 device name in the pinmux table.
 
 Changes in V2:
+* capitalized ARM in the subject;
+* rebased on top the latest devel tag;
+* added pipe_type array to the usbhs platform info since it differs from the default.
+
 * capitalized ARM in the subject;
 * rebased on top the latest devel tag.
 
 ---
- arch/arm/mach-shmobile/clock-r8a7791.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/mach-shmobile/board-koelsch.c |  172 +++++++++++++++++++++++++++++++++
+ 1 file changed, 172 insertions(+)
 
-Index: build/arch/arm/mach-shmobile/clock-r8a7791.c
+Index: build/arch/arm/mach-shmobile/board-koelsch.c
 ===================================================================
---- build.orig/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:52.582571801 +0400
-+++ build/arch/arm/mach-shmobile/clock-r8a7791.c	2014-02-23 21:47:57.446571701 +0400
-@@ -177,7 +177,7 @@
- 	MSTP811, MSTP810, MSTP809,
- 	MSTP726, MSTP724, MSTP723, MSTP721, MSTP720,
- 	MSTP719, MSTP718, MSTP715, MSTP714,
--	MSTP704,
-+	MSTP704, MSTP703,
- 	MSTP522,
- 	MSTP314, MSTP312, MSTP311,
- 	MSTP216, MSTP207, MSTP206,
-@@ -210,6 +210,7 @@
- 	[MSTP715] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 15, MSTPSR7, 0), /* SCIF4 */
- 	[MSTP714] = SH_CLK_MSTP32_STS(&p_clk, SMSTPCR7, 14, MSTPSR7, 0), /* SCIF5 */
- 	[MSTP704] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 4, MSTPSR7, 0), /* HSUSB */
-+	[MSTP703] = SH_CLK_MSTP32_STS(&mp_clk, SMSTPCR7, 3, MSTPSR7, 0), /* EHCI */
- 	[MSTP522] = SH_CLK_MSTP32_STS(&extal_clk, SMSTPCR5, 22, MSTPSR5, 0), /* Thermal */
- 	[MSTP314] = SH_CLK_MSTP32_STS(&div4_clks[DIV4_SD0], SMSTPCR3, 14, MSTPSR3, 0), /* SDHI0 */
- 	[MSTP312] = SH_CLK_MSTP32_STS(&div6_clks[DIV6_SD1], SMSTPCR3, 12, MSTPSR3, 0), /* SDHI1 */
-@@ -285,6 +286,8 @@
- 	CLKDEV_DEV_ID("sata-r8a7791.1", &mstp_clks[MSTP814]),
- 	CLKDEV_DEV_ID("renesas_usbhs", &mstp_clks[MSTP704]),
- 	CLKDEV_ICK_ID("usbhs", "usb_phy_rcar_gen2", &mstp_clks[MSTP704]),
-+	CLKDEV_DEV_ID("pci-rcar-gen2.0", &mstp_clks[MSTP703]),
-+	CLKDEV_DEV_ID("pci-rcar-gen2.1", &mstp_clks[MSTP703]),
+--- build.orig/arch/arm/mach-shmobile/board-koelsch.c	2014-02-24 11:48:43.221536471 +0400
++++ build/arch/arm/mach-shmobile/board-koelsch.c	2014-02-24 12:14:30.933504710 +0400
+@@ -36,12 +36,15 @@
+ #include <linux/pinctrl/machine.h>
+ #include <linux/platform_data/gpio-rcar.h>
+ #include <linux/platform_data/rcar-du.h>
++#include <linux/platform_data/usb-rcar-gen2-phy.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/gpio-regulator.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/sh_eth.h>
++#include <linux/usb/phy.h>
++#include <linux/usb/renesas_usbhs.h>
+ #include <linux/spi/flash.h>
+ #include <linux/spi/rspi.h>
+ #include <linux/spi/spi.h>
+@@ -367,6 +370,168 @@
+ 	DEFINE_RES_IRQ(gic_spi(168)),
  };
  
- #define R8A7791_CLOCK_ROOT(e, m, p0, p1, p30, p31)		\
++/* USBHS */
++static const struct resource usbhs_resources[] __initconst = {
++	DEFINE_RES_MEM(0xe6590000, 0x100),
++	DEFINE_RES_IRQ(gic_spi(107)),
++};
++
++struct usbhs_private {
++	struct renesas_usbhs_platform_info info;
++	struct usb_phy *phy;
++};
++
++#define usbhs_get_priv(pdev) \
++	container_of(renesas_usbhs_get_info(pdev), struct usbhs_private, info)
++
++static int usbhs_power_ctrl(struct platform_device *pdev,
++				void __iomem *base, int enable)
++{
++	struct usbhs_private *priv = usbhs_get_priv(pdev);
++
++	if (!priv->phy)
++		return -ENODEV;
++
++	if (enable) {
++		int retval = usb_phy_init(priv->phy);
++
++		if (!retval)
++			retval = usb_phy_set_suspend(priv->phy, 0);
++		return retval;
++	}
++
++	usb_phy_set_suspend(priv->phy, 1);
++	usb_phy_shutdown(priv->phy);
++	return 0;
++}
++
++static int usbhs_hardware_init(struct platform_device *pdev)
++{
++	struct usbhs_private *priv = usbhs_get_priv(pdev);
++	struct usb_phy *phy;
++	int ret;
++
++	/* Check MAX3355E ID pin */
++	gpio_request_one(RCAR_GP_PIN(5, 31), GPIOF_IN, NULL);
++	if (!gpio_get_value(RCAR_GP_PIN(5, 31))) {
++		pr_warn("Error: USB0 cable selects host mode\n");
++		ret = -ENOTSUPP;
++		goto error;
++	}
++
++	phy = usb_get_phy_dev(&pdev->dev, 0);
++	if (IS_ERR(phy))
++		return PTR_ERR(phy);
++
++	priv->phy = phy;
++	return 0;
++
++error:
++	gpio_free(RCAR_GP_PIN(5, 31));
++	return ret;
++}
++
++static int usbhs_hardware_exit(struct platform_device *pdev)
++{
++	struct usbhs_private *priv = usbhs_get_priv(pdev);
++
++	if (!priv->phy)
++		return 0;
++
++	usb_put_phy(priv->phy);
++	priv->phy = NULL;
++
++	gpio_free(RCAR_GP_PIN(5, 31));
++	return 0;
++}
++
++static int usbhs_get_id(struct platform_device *pdev)
++{
++	return USBHS_GADGET;
++}
++
++static u32 koelsch_usbhs_pipe_type[] = {
++	USB_ENDPOINT_XFER_CONTROL,
++	USB_ENDPOINT_XFER_ISOC,
++	USB_ENDPOINT_XFER_ISOC,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_INT,
++	USB_ENDPOINT_XFER_INT,
++	USB_ENDPOINT_XFER_INT,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++	USB_ENDPOINT_XFER_BULK,
++};
++
++static struct usbhs_private usbhs_priv __initdata = {
++	.info = {
++		.platform_callback = {
++			.power_ctrl	= usbhs_power_ctrl,
++			.hardware_init	= usbhs_hardware_init,
++			.hardware_exit	= usbhs_hardware_exit,
++			.get_id		= usbhs_get_id,
++		},
++		.driver_param = {
++			.buswait_bwait	= 4,
++			.pipe_type = koelsch_usbhs_pipe_type,
++			.pipe_size = ARRAY_SIZE(koelsch_usbhs_pipe_type),
++		},
++	}
++};
++
++static void __init koelsch_add_usb0_gadget(void)
++{
++	usb_bind_phy("renesas_usbhs", 0, "usb_phy_rcar_gen2");
++	platform_device_register_resndata(&platform_bus,
++					  "renesas_usbhs", -1,
++					  usbhs_resources,
++					  ARRAY_SIZE(usbhs_resources),
++					  &usbhs_priv.info,
++					  sizeof(usbhs_priv.info));
++}
++
++/* Internal PCI1 */
++static const struct resource pci1_resources[] __initconst = {
++	DEFINE_RES_MEM(0xee0d0000, 0x10000),	/* CFG */
++	DEFINE_RES_MEM(0xee0c0000, 0x10000),	/* MEM */
++	DEFINE_RES_IRQ(gic_spi(113)),
++};
++
++static void __init koelsch_add_usb1_host(void)
++{
++	platform_device_register_simple("pci-rcar-gen2",
++					1, pci1_resources,
++					ARRAY_SIZE(pci1_resources));
++}
++
++/* USBHS PHY */
++static const struct rcar_gen2_phy_platform_data usbhs_phy_pdata __initconst = {
++	.chan0_pci = 0,	/* Channel 0 is USBHS */
++	.chan2_pci = 1,	/* Channel 2 is PCI USB host */
++};
++
++static const struct resource usbhs_phy_resources[] __initconst = {
++	DEFINE_RES_MEM(0xe6590100, 0x100),
++};
++
++/* Add all available USB devices */
++static void __init koelsch_add_usb_devices(void)
++{
++	platform_device_register_resndata(&platform_bus, "usb_phy_rcar_gen2",
++					  -1, usbhs_phy_resources,
++					  ARRAY_SIZE(usbhs_phy_resources),
++					  &usbhs_phy_pdata,
++					  sizeof(usbhs_phy_pdata));
++	koelsch_add_usb0_gadget();
++	koelsch_add_usb1_host();
++}
++
+ static const struct pinctrl_map koelsch_pinctrl_map[] = {
+ 	/* DU */
+ 	PIN_MAP_MUX_GROUP_DEFAULT("rcar-du-r8a7791", "pfc-r8a7791",
+@@ -429,6 +594,12 @@
+ 				  "sdhi2_ctrl", "sdhi2"),
+ 	PIN_MAP_MUX_GROUP_DEFAULT("sh_mobile_sdhi.2", "pfc-r8a7791",
+ 				  "sdhi2_cd", "sdhi2"),
++	/* USB0 */
++	PIN_MAP_MUX_GROUP_DEFAULT("renesas_usbhs", "pfc-r8a7791",
++				  "usb0", "usb0"),
++	/* USB1 */
++	PIN_MAP_MUX_GROUP_DEFAULT("pci-rcar-gen2.1", "pfc-r8a7791",
++				  "usb1", "usb1"),
+ };
+ 
+ static void __init koelsch_add_standard_devices(void)
+@@ -485,6 +656,7 @@
+ 					  sdhi2_resources, ARRAY_SIZE(sdhi2_resources),
+ 					  &sdhi2_info, sizeof(struct sh_mobile_sdhi_info));
+ 
++	koelsch_add_usb_devices();
+ }
+ 
+ /*
