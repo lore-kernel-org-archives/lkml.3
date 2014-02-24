@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaBXDAf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Feb 2014 22:00:35 -0500
-Received: from void.printf.net ([89.145.121.20]:51097 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402AbaBXDAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Feb 2014 22:00:32 -0500
-From: Chris Ball <chris@printf.net>
-To: Roger <rogerable@realtek.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
-        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v4 1/3] mfd: Add realtek USB card reader driver
-References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>
-	<1392199238-14500-2-git-send-email-rogerable@realtek.com>
-	<20140214094427.GA7380@lee--X1> <5301A786.8040607@realtek.com>
-	<20140217082222.GA17875@lee--X1> <5301D369.5010100@realtek.com>
-	<20140217100211.GE17875@lee--X1> <5301E376.8010000@realtek.com>
-	<20140217120326.GC20218@lee--X1> <530AB4D3.4090103@realtek.com>
-Date: Mon, 24 Feb 2014 03:00:16 +0000
-In-Reply-To: <530AB4D3.4090103@realtek.com> (Roger's message of "Mon, 24 Feb
-	2014 10:56:19 +0800")
-Message-ID: <86mwhhrz9b.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752140AbaBXDHQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Feb 2014 22:07:16 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:40353 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751422AbaBXDHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Feb 2014 22:07:14 -0500
+Message-ID: <530AB6EA.7090807@marvell.com>
+Date: Mon, 24 Feb 2014 11:05:14 +0800
+From: Nenghua Cao <nhcao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] asoc: soc-core: fix coccinelle warnings
+References: <1392969970-28037-1-git-send-email-nhcao@marvell.com> <20140222025204.GM25940@sirena.org.uk>
+In-Reply-To: <20140222025204.GM25940@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-23_03:2014-02-21,2014-02-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402230211
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/22/2014 10:52 AM, Mark Brown wrote:
+> On Fri, Feb 21, 2014 at 04:06:10PM +0800, Nenghua Cao wrote:
+> 
+>> --- a/sound/soc/soc-core.c
+>> +++ b/sound/soc/soc-core.c
+>> @@ -2413,7 +2413,7 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
+>>  	struct snd_kcontrol *kcontrol;
+>>  	char *name = NULL;
+>>  
+>> -	memcpy(&template, _template, sizeof(template));
+>> +	memcpy(&template, _template, sizeof(struct snd_kcontrol_new));
+>>  	template.index = 0;
+>>  
+>>  	if (!long_name)
+> 
+> This looks like a regression - it's better form to use the object name
+> rather than the type of the object since this prevents errors if the
+> type changes.  What coccinelle was suggesting here was to replace with a
+> simple assingment statement rather than change the argument within the
+> memcpy(), I think this stops the warning showing because of that issue
+> since it makes it harder for coccinelle to figure out that this is a
+> memcpy() of the whole object.
+> 
+Hi, Mark
 
-On Mon, Feb 24 2014, Roger wrote:
-> Would you please help comment PATCH 2/3 and 3/3 (for mmc and memstick,
-> respectively) or give Acks? Thus we can proceed with applying or
-> revision if necessary.
-
-For 2/3:
-
-Acked-by: Chris Ball <chris@printf.net>
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <chris@printf.net>   <http://printf.net/>
+      I am not familiar with coccinelle. But it isn't reasonable and
+convenient to use simple assignment instead of memcpy() here. So let's
+retain it. I will submit another patch to fix "Assignment of bool to
+0/1" issue. How do you think about it?
