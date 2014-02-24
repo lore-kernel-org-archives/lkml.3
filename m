@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaBXQhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 11:37:46 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:46854 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaBXQho (ORCPT
+	id S1753047AbaBXQky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 11:40:54 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:50372 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaBXQkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 11:37:44 -0500
+	Mon, 24 Feb 2014 11:40:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAFiYyc08cusFTsydD2C4rEZB-k38NnorzEXzKvqab0m3R+qn8w@mail.gmail.com>
+In-Reply-To: <CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
 References: <20140220083032.GN4250@linux.vnet.ibm.com>
 	<CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
 	<20140220181116.GT4250@linux.vnet.ibm.com>
@@ -23,9 +23,10 @@ References: <20140220083032.GN4250@linux.vnet.ibm.com>
 	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
 	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
 	<CAFiYyc08cusFTsydD2C4rEZB-k38NnorzEXzKvqab0m3R+qn8w@mail.gmail.com>
-Date: Mon, 24 Feb 2014 08:37:43 -0800
-X-Google-Sender-Auth: dwVSVWkoz_XaU5Lmlj606Gnwapw
-Message-ID: <CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
+	<CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
+Date: Mon, 24 Feb 2014 08:40:50 -0800
+X-Google-Sender-Auth: oVee0W5yB6DHRSu1u4kZlbHywwA
+Message-ID: <CA+55aFwc=1rGngpY1vUUxow11ao4Q36T6u7p9i7m7H6DdNdcRw@mail.gmail.com>
 Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
 From: Linus Torvalds <torvalds@linux-foundation.org>
 To: Richard Biener <richard.guenther@gmail.com>
@@ -44,41 +45,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 8:27 AM, Richard Biener
-<richard.guenther@gmail.com> wrote:
+On Mon, Feb 24, 2014 at 8:37 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> To me that reads like
->
->   int i;
->   int *q = &i;
->   int **p = &q;
->
->   atomic_XXX (p, CONSUME);
->
-> orders against accesses '*p', '**p', '*q' and 'i'.  Thus it seems they
-> want to say that it orders against aliased storage - but then go further
-> and include "indirectly through a chain of pointers"?!  Thus an
-> atomic read of a int * orders against any 'int' memory operation but
-> not against 'float' memory operations?
+> So yes, the atomic_read() would be ordered wrt '*ptr' (getting 'q')
+> _and_ '**ptr' (getting 'i'), but nothing else - including just the
+> aliasing access of dereferencing 'i' directly.
 
-No, it's not about type at all, and the "chain of pointers" can be
-much more complex than that, since the "int *" can point to within an
-object that contains other things than just that "int" (the "int" can
-be part of a structure that then has pointers to other structures
-etc).
+Btw, what CPU architects and memory ordering guys tend to do in
+documentation is give a number of "litmus test" pseudo-code sequences
+to show the effects and intent of the language.
 
-So in your example,
+I think giving those kinds of litmus tests for both "this is ordered"
+and "this is not ordered" cases like the above is would be a great
+clarification. Partly because the language is going to be somewhat
+legalistic and thus hard to wrap your mind around, and partly to
+really hit home the *intent* of the language, which I think is
+actually fairly clear to both compiler writers and to programmers.
 
-    ptr = atomic_read(p, CONSUME);
-
-would indeed order against the subsequent access of the chain through
-*that* pointer (the whole "restrict" thing that I left out as a
-separate thing, which was probably a mistake), but certainly not
-against any integer pointer, and certainly not against any aliasing
-pointer chains.
-
-So yes, the atomic_read() would be ordered wrt '*ptr' (getting 'q')
-_and_ '**ptr' (getting 'i'), but nothing else - including just the
-aliasing access of dereferencing 'i' directly.
-
-            Linus
+               Linus
