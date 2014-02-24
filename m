@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaBXIEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 03:04:43 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:10583 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864AbaBXID1 (ORCPT
+	id S1753112AbaBXIFC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 03:05:02 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:27347 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752415AbaBXID0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 03:03:27 -0500
+	Mon, 24 Feb 2014 03:03:26 -0500
 From: Neil Zhang <zhangwm@marvell.com>
 To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 CC: Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH 1/6] usb: gadget: mv_udc: remove redundant pull up in udc_start
-Date: Mon, 24 Feb 2014 16:03:11 +0800
-Message-ID: <1393228996-14787-2-git-send-email-zhangwm@marvell.com>
+Subject: [PATCH 3/6] usb: gadget: mv_udc: clear corresponding interrupt when flush fifo
+Date: Mon, 24 Feb 2014 16:03:13 +0800
+Message-ID: <1393228996-14787-4-git-send-email-zhangwm@marvell.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
 References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
@@ -28,28 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Romove redundant pull up in udc_start since function udc_bind_to_driver
-in udc-core.c will do it for us.
+The interruts are useless when this endpoint is going to be flushed.
+Especially in the enumeration phase, let's take get device description
+for example.
+1. Device doesn't ACK the status package from host in time due to irq is
+disabled by some module.
+2. Host find no ACK in time, and send another request.
+3. Device gets the chance to handle the interrupt, the sequence is as
+following.
+	a. Flush pending requests in ep0.
+	b. Queue a request in ep0 according to host's request and change
+	   the ep0 state to DATA_STATE_XMIT.
+	c. Handle the pending interrupt for the last status package. But
+	   actually it will check the new added request instead of the status
+	   package and because of wront ep0 state, device will request an
+	   unexpected status package from host.
+	d. The ep0 state is going mad.
+
+The solution is that we need clear the pending corresponding interrupt
+as well as flush
+endpoint.
 
 Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- drivers/usb/gadget/mv_udc_core.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/gadget/mv_udc_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/usb/gadget/mv_udc_core.c b/drivers/usb/gadget/mv_udc_core.c
-index fcff3a5..ebc0dfd 100644
+index 657ac5c..d5a9bdf 100644
 --- a/drivers/usb/gadget/mv_udc_core.c
 +++ b/drivers/usb/gadget/mv_udc_core.c
-@@ -1365,9 +1365,6 @@ static int mv_udc_start(struct usb_gadget *gadget,
+@@ -692,6 +692,8 @@ static void mv_ep_fifo_flush(struct usb_ep *_ep)
  		}
- 	}
+ 		loops--;
+ 	} while (readl(&udc->op_regs->epstatus) & bit_pos);
++
++	writel(bit_pos, &udc->op_regs->epcomplete);
+ }
  
--	/* pullup is always on */
--	mv_udc_pullup(&udc->gadget, 1);
--
- 	/* When boot with cable attached, there will be no vbus irq occurred */
- 	if (udc->qwork)
- 		queue_work(udc->qwork, &udc->vbus_work);
+ /* queues (submits) an I/O request to an endpoint */
 -- 
 1.7.9.5
 
