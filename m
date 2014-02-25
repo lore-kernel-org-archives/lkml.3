@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaBYGWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:22:43 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19908 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720AbaBYGWh (ORCPT
+	id S1752843AbaBYGXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:23:06 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:16715 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaBYGXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:22:37 -0500
+	Tue, 25 Feb 2014 01:23:03 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 24 Feb 2014 22:19:01 -0800
+	by hqnvupgp07.nvidia.com on Mon, 24 Feb 2014 22:19:27 -0800
 From: Wei Ni <wni@nvidia.com>
 To: <khali@linux-fr.org>, <linux@roeck-us.net>
 CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         Wei Ni <wni@nvidia.com>
-Subject: [PATCH 0/2] expose lm90 to thermal fw
-Date: Tue, 25 Feb 2014 14:21:39 +0800
-Message-ID: <1393309301-28337-1-git-send-email-wni@nvidia.com>
+Subject: [PATCH 2/2] hwmon: lm90: expose to thermal fw via DT nodes
+Date: Tue, 25 Feb 2014 14:21:41 +0800
+Message-ID: <1393309301-28337-3-git-send-email-wni@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393309301-28337-1-git-send-email-wni@nvidia.com>
+References: <1393309301-28337-1-git-send-email-wni@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,18 +26,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose lm90 to thermal framework via DT nodes.
+This patch adds to lm90 temperature sensor the possibility
+to expose itself as thermal zone device, registered on the
+thermal framework.
 
-The [PATCH 1/2] had reviewed in:
-http://www.spinics.net/lists/linux-tegra/msg14108.html
+The thermal zone is built only if a device tree node
+describing a thermal zone for this sensor is present
+inside the lm90 DT node. Otherwise, the driver behavior
+will be the same.
 
-Wei Ni (2):
-  hwmon: (lm90) split set&show temp as common codes
-  hwmon: lm90: expose to thermal fw via DT nodes
+Signed-off-by: Wei Ni <wni@nvidia.com>
+---
+ drivers/hwmon/lm90.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
 
- drivers/hwmon/lm90.c |  228 ++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 173 insertions(+), 55 deletions(-)
-
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index fb9e224..8f52269 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -96,6 +96,8 @@
+ #include <linux/sysfs.h>
+ #include <linux/interrupt.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/of.h>
++#include <linux/thermal.h>
+ 
+ /*
+  * Addresses to scan
+@@ -119,6 +121,13 @@ static const unsigned short normal_i2c[] = {
+ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
+ 	max6646, w83l771, max6696, sa56004, g781, tmp451 };
+ 
++enum sensor_id {
++	LOCAL = 0,
++	REMOTE,
++	REMOTE2,
++	SENSOR_ID_END,
++};
++
+ /*
+  * The LM90 registers
+  */
+@@ -368,6 +377,7 @@ struct lm90_data {
+ 	struct i2c_client *client;
+ 	struct device *hwmon_dev;
+ 	const struct attribute_group *groups[6];
++	struct thermal_zone_device *tz[SENSOR_ID_END];
+ 	struct mutex update_lock;
+ 	struct regulator *regulator;
+ 	char valid; /* zero until following fields are valid */
+@@ -880,6 +890,24 @@ static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+ 	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
+ }
+ 
++static int lm90_read_local_temp(void *dev, long *temp)
++{
++	*temp = read_temp11(dev, LOCAL_TEMP);
++	return 0;
++}
++
++static int lm90_read_remote_temp(void *dev, long *temp)
++{
++	*temp = read_temp11(dev, REMOTE_TEMP);
++	return 0;
++}
++
++static int lm90_read_remote2_temp(void *dev, long *temp)
++{
++	*temp = read_temp11(dev, REMOTE2_TEMP);
++	return 0;
++}
++
+ static int write_temp11(struct device *dev, int nr, int index, long val)
+ {
+ 	struct {
+@@ -1659,6 +1687,33 @@ static int lm90_probe(struct i2c_client *client,
+ 		}
+ 	}
+ 
++	data->tz[LOCAL] = thermal_zone_of_sensor_register(&client->dev,
++							LOCAL,
++							&client->dev,
++							lm90_read_local_temp,
++							NULL);
++	if (IS_ERR(data->tz[LOCAL]))
++		data->tz[LOCAL] = NULL;
++
++	data->tz[REMOTE] = thermal_zone_of_sensor_register(&client->dev,
++							REMOTE,
++							&client->dev,
++							lm90_read_remote_temp,
++							NULL);
++	if (IS_ERR(data->tz[REMOTE]))
++		data->tz[REMOTE] = NULL;
++
++	if (data->flags & LM90_HAVE_TEMP3) {
++		data->tz[REMOTE2] = thermal_zone_of_sensor_register(
++							&client->dev,
++							REMOTE2,
++							&client->dev,
++							lm90_read_remote2_temp,
++							NULL);
++		if (IS_ERR(data->tz[REMOTE2]))
++			data->tz[REMOTE2] = NULL;
++	}
++
+ 	return 0;
+ 
+ exit_unregister:
+@@ -1674,8 +1729,11 @@ exit_restore:
+ 
+ static int lm90_remove(struct i2c_client *client)
+ {
++	int i;
+ 	struct lm90_data *data = i2c_get_clientdata(client);
+ 
++	for (i = 0; i < SENSOR_ID_END; i++)
++		thermal_zone_of_sensor_unregister(&client->dev, data->tz[i]);
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	device_remove_file(&client->dev, &dev_attr_pec);
+ 	lm90_restore_conf(client, data);
 -- 
 1.7.9.5
 
