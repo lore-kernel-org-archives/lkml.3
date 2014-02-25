@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaBYWDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 17:03:44 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:24827 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaBYWDm convert rfc822-to-8bit (ORCPT
+	id S1753276AbaBYWDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 17:03:52 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:44729 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaBYWDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 17:03:42 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-92-530d133b8aa0
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <530D134F.5090403@samsung.com>
-Date: Wed, 26 Feb 2014 07:03:59 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-To: Felipe Balbi <balbi@ti.com>, chris@printf.net
-Cc: jh80.chung@samsung.com, tgih.jun@samsung.com, linux-mmc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: host: dw: fix possible build error
-References: <1393340264-22687-1-git-send-email-balbi@ti.com>
-In-reply-to: <1393340264-22687-1-git-send-email-balbi@ti.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkWNdamDfYoGmatMXB+/UWEy5vZ7S4
-	8auN1eLyrjlsFkf+9zNafLh/kdni+NpwB3aPO9f2sHnceLWQyaNvyypGj+M3tjN5fN4kF8Aa
-	xWWTkpqTWZZapG+XwJXRN72NvaBVtKK33amB8ZxgFyMHh4SAicSTuUpdjJxAppjEhXvr2boY
-	uTiEBJYySuy60s8KkTCRWPLjMyOILSSwiFFi/1kdEJtXQFDix+R7LCA2s4C6xKR5i5ghbBGJ
-	/2f/skPY2hLLFr5mhhj6mlGi9eMRJohmLYkFDZvBGlgEVCW6OpeCLWAT0JHY/u04WI2oQJjE
-	1BNXwRaICBhKvLvxDGwQs8B6RomJW86DbRAWsJE4/+QhM8R1NhJPOl+CNXAK2Eqs+PCHFaRB
-	QuASu8TONRDvsAgISHybfIgF4n1ZiU0HmCG+lJQ4uOIGywRG8VlInpuF5LlZSJ6bheS5BYws
-	qxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzECI/T0v2e9OxhvH7A+xJgMtH4is5Rocj4wwvNK
-	4g2NzYwsTE1MjY3MLc1IE1YS5016mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVF+bjGD
-	hrKbccSLezIstSeePXCZcZLp+DOtrwnXD6o4lUe/O7N7WeVfzui0yeUve9IVnlvstXX6bcki
-	IFjmslk8XHCZstdjw82lS1rvmKpw3jvE+bdK8EzaCr+VUn7/u+SWfD423ddpYbPVJa3XRf3f
-	jffd27vo8NEdCS1Zfx85Xp7TMa1G1VKJpTgj0VCLuag4EQDWF5AF5gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAV1rYd5gg40XhSwO3q+3mHB5O6PF
-	jV9trBaXd81hszjyv5/R4sP9i8wWx9eGO7B73Lm2h83jxquFTB59W1Yxehy/sZ3J4/MmuQDW
-	qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygK5QU
-	yhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGfsmlxdsFqmYf7iFtYHxj0AX
-	IyeHhICJxJIfnxkhbDGJC/fWs4HYQgKLGCX2n9UBsXkFBCV+TL7H0sXIwcEsIC9x5FI2SJhZ
-	QF1i0rxFzF2MXEDlrxklWj8eYYKo15JY0LCZGcRmEVCV6OpcCjafTUBHYvu342A1ogJhElNP
-	XGUBsUUEDCXe3XgGNohZYD2jxMQt59lBEsICNhLnnzxkhjjIRuJJ50uwBk4BW4kVH/6wTmAU
-	mIXkvlkI981Cct8CRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHR/ExqB+PKBotDjAIc
-	jEo8vAEsvMFCrIllxZW5hxglOJiVRHgtvvEEC/GmJFZWpRblxxeV5qQWH2JMBvpuIrOUaHI+
-	MNHklcQbGpuYGVkamRtaGBmbkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANj7woz4a9x
-	v45MsZbLvLyz1pVZoL/zrnHZI7GEGaXXTsxKbRQ+6TXzzmSm2/aRhRpavQJGGqnML/cL2k6T
-	5E9637NRMHfD18VzlIKbzTkmXP+4UUFBa54rn4JyO/O1o24iXZHPlrDuYd3Uf6LY/7ImrxrD
-	c/ammBj9970TXhyeH8d5vG/Vp2IlluKMREMt5qLiRACoA87JKgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 25 Feb 2014 17:03:48 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
+	<87eh34jbsl.fsf_-_@xmission.com>
+	<20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu>
+	<87y510dpra.fsf@xmission.com> <20140225151349.GA19981@fieldses.org>
+Date: Tue, 25 Feb 2014 14:03:36 -0800
+In-Reply-To: <20140225151349.GA19981@fieldses.org> (J. Bruce Fields's message
+	of "Tue, 25 Feb 2014 10:13:49 -0500")
+Message-ID: <87mwhe26kn.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19M7RSGxyplI+A0Kv08TCl2FWOtdftHgx0=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0165]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;"J. Bruce Fields" <bfields@fieldses.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 08/11] vfs: Merge check_submounts_and_drop and d_invalidate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Felipe.
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-When you send the patch related with dw_mmc controller, could you use the prefix "mmc: dw_mmc:"?
-"mmc: dw_mmc: fix possible build error"
+> On Mon, Feb 24, 2014 at 04:01:29PM -0800, Eric W. Biederman wrote:
+>> Miklos Szeredi <miklos@szeredi.hu> writes:
+>> 
+>> >
+>> > You can optimize this by including the negative check within the above d_locked
+>> > region and calling __d_drop() instead.
+>> 
+>> For this patch just moving the code and not changing it is the corret
+>> thing to do because it helps with review and understanding the code.
+>> 
+>> There are two ways I could see going with optimizing the preamble.
+>> Simply dropping the d_lock from around the d_unhashed test as a pointer
+>> dereference should be atomic, and the test is racy against
+>> d_materialise_unique.
+>
+> Could you explain?  What's the race, and what are the consequences?
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
+>> (We don't always hold the parent directories inode mutex when d_invalidate is called).
 
-Best Regards,
-Jaehoon Chung
+d_unhashed is not a permanent condition because of d_materialise_unique,
+and d_splice_alias.
 
-On 02/25/2014 11:57 PM, Felipe Balbi wrote:
-> Fix the following build errors:
-> 
-> drivers/mmc/host/dw_mmc-k3.c: In function ‘dw_mci_k3_suspend’:
-> drivers/mmc/host/dw_mmc-k3.c:58:2: error: implicit declaration of
-> 	function ‘dw_mci_suspend’ [-Werror=implicit-function-declaration]
->   ret = dw_mci_suspend(host);
->   ^
-> drivers/mmc/host/dw_mmc-k3.c: In function ‘dw_mci_k3_resume’:
-> drivers/mmc/host/dw_mmc-k3.c:76:2: error: implicit declaration of
-> 	function ‘dw_mci_resume’ [-Werror=implicit-function-declaration]
->   return dw_mci_resume(host);
->   ^
-> drivers/mmc/host/dw_mmc-k3.c: At top level:
-> drivers/mmc/host/dw_mmc-k3.c:53:12: warning: ‘dw_mci_k3_suspend’ defined
-> 	but not used [-Wunused-function]
->  static int dw_mci_k3_suspend(struct device *dev)
->             ^
-> drivers/mmc/host/dw_mmc-k3.c:65:12: warning: ‘dw_mci_k3_resume’ defined
-> 	but not used [-Wunused-function]
->  static int dw_mci_k3_resume(struct device *dev)
->             ^
-> 
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/mmc/host/dw_mmc-k3.c | 2 ++
->  drivers/mmc/host/dw_mmc.h    | 2 +-
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc-k3.c b/drivers/mmc/host/dw_mmc-k3.c
-> index f567c21..650f9cc 100644
-> --- a/drivers/mmc/host/dw_mmc-k3.c
-> +++ b/drivers/mmc/host/dw_mmc-k3.c
-> @@ -50,6 +50,7 @@ static int dw_mci_k3_probe(struct platform_device *pdev)
->  	return dw_mci_pltfm_register(pdev, drv_data);
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
->  static int dw_mci_k3_suspend(struct device *dev)
->  {
->  	struct dw_mci *host = dev_get_drvdata(dev);
-> @@ -75,6 +76,7 @@ static int dw_mci_k3_resume(struct device *dev)
->  
->  	return dw_mci_resume(host);
->  }
-> +#endif /* CONFIG_PM_SLEEP */
->  
->  static SIMPLE_DEV_PM_OPS(dw_mci_k3_pmops, dw_mci_k3_suspend, dw_mci_k3_resume);
->  
-> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-> index 6bf24ab..1f7a745 100644
-> --- a/drivers/mmc/host/dw_mmc.h
-> +++ b/drivers/mmc/host/dw_mmc.h
-> @@ -185,7 +185,7 @@
->  
->  extern int dw_mci_probe(struct dw_mci *host);
->  extern void dw_mci_remove(struct dw_mci *host);
-> -#ifdef CONFIG_PM
-> +#ifdef CONFIG_PM_SLEEP
->  extern int dw_mci_suspend(struct dw_mci *host);
->  extern int dw_mci_resume(struct dw_mci *host);
->  #endif
-> 
+d_invalidate can be called on an unhashed dentry in one of two ways
+(either d_revalidate dropped the dentry or another routine that drops
+the dentry beat the current invocation of d_invalidate to the job).
 
+
+There are 3 places d_revalidate is called.
+
+Once on the rcu path with with the appropriate flag set.
+
+Once without out the parent i_mutex held, just off of the rcu path,
+on that path d_invalidate is when d_revalidate fails.
+
+Once during lookup with the parent directory i_mutex held.
+
+
+Because the parent direcories i_mutex is not always held accross
+d_revalidate and the following d_invalidate it happens that d_invalidate
+is not always an atomic operation.
+
+
+At worst the race results in a dentry that is dropped when it could be
+hashed, that we will resurrect next time someone attempts to look it
+up and d_materialise_unique/d_splice_alias is called.
+
+
+None of that really matters for optimizing d_invalidate, but it is part
+of the background in which d_invalidate lives. All that is significant
+in d_invalidate is knowing that d_materialise_unique, and possibly
+d_splice_alias may run concurrently with d_invalidate.  It is unlikely
+and essentially harmless.
+
+
+After my patchset (because I removed all of the d_drop's from
+.d_revalidate) the only race that should remain is between two parallel
+calls of d_invalidate.  Which probably means we can remove the test for
+d_unhashed altogether.
+
+Right now I just want to make this first big step and make certain the
+code is solid.  After that optimization is easy.
+
+Eric
