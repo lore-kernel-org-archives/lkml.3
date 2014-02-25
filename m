@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaBYCSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:18:10 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:49995 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaBYCSI (ORCPT
+	id S1753194AbaBYCXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 21:23:13 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:50583 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaBYCXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:18:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140225013424.GL25940@sirena.org.uk>
-References: <1392914164-28596-1-git-send-email-mpa@pengutronix.de>
-	<20140223051209.GK25940@sirena.org.uk>
-	<CAOMZO5BPvCcx_f09Khuw8MVxrR18fnv9e1xeuJ0c_8G22AR53g@mail.gmail.com>
-	<20140224205058.GA18317@pengutronix.de>
-	<20140225013424.GL25940@sirena.org.uk>
-Date: Mon, 24 Feb 2014 23:18:08 -0300
-Message-ID: <CAOMZO5ATGZB=PZzgK71mJyf10o1WvJuYQtxsiOjkMB3r9WqQ=A@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] regulator: core: Fix ops->enable/disable usage
-From: Fabio Estevam <festevam@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Markus Pargmann <mpa@pengutronix.de>, Sascha Hauer <kernel@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 24 Feb 2014 21:23:12 -0500
+Date: Tue, 25 Feb 2014 03:23:10 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Miller <davem@davemloft.net>, dcbw@redhat.com,
+        mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
+        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+Message-ID: <20140225022310.GH6598@order.stressinduktion.org>
+Mail-Followup-To: Ben Hutchings <ben@decadent.org.uk>,
+	David Miller <davem@davemloft.net>, dcbw@redhat.com,
+	mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
+	netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
+	kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+	kaber@trash.net
+References: <1393266120.8041.19.camel@dcbw.local> <20140224.180426.411052665068255886.davem@davemloft.net> <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk> <20140224.191238.921310808350170272.davem@davemloft.net> <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:34 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Feb 24, 2014 at 09:50:58PM +0100, Markus Pargmann wrote:
->
->> The only situation where this returns -EINVAL is a dummy regulator that
->> is not always_on. As it doesn't make sense to have a dummy regulator
->> that is not always_on, I will add a check for exactly this situation to
->> the regulator_register function and drop the "return -EINVAL" above.
->
-> I've squashed the following fix in today:
+On Tue, Feb 25, 2014 at 02:01:59AM +0000, Ben Hutchings wrote:
+> On Mon, 2014-02-24 at 19:12 -0500, David Miller wrote:
+> > From: Ben Hutchings <ben@decadent.org.uk>
+> > Date: Tue, 25 Feb 2014 00:02:00 +0000
+> > 
+> > > You can run an internal network, or access network, as v6-only with
+> > > NAT64 and DNS64 at the border.  I believe some mobile networks are doing
+> > > this; it was also done on the main FOSDEM wireless network this year.
+> > 
+> > This seems to be bloating up the networking headers of the internal
+> > network, for what purpose?
+> > 
+> > For mobile that's doubly inadvisable.
+> 
+> I don't know what the reasoning is for the mobile network operators.
+> They're forced to do NAT for v4 somewhere, and maybe v6-only makes the
+> access network easier to manage.
 
-Thanks. This fixes the issue.
+Yes, it seems the way to go:
+<http://www.dslreports.com/shownews/TMobile-Goes-IPv6-Only-on-Android-44-Devices-126506>
+
+I can't comment on the 464xlat that much because I haven't looked at an
+implementation yet, but it can very well be the case it still needs IPv4
+on the outgoing interface, I don't know (from the spec pov it doesn't
+look like that).
+
+Greetings,
+
+  Hannes
+
