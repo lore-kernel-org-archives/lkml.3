@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaBYElJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:41:09 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46987 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaBYElH (ORCPT
+	id S1752918AbaBYElo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:41:44 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:52890 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848AbaBYElm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:41:07 -0500
-Date: Mon, 24 Feb 2014 20:41:00 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, Ingo Molnar <mingo@redhat.com>,
-        acme@ghostprotocols.net, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] sched: tip/master show panic while booting/rebooting
-Message-ID: <20140225044100.GL8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5302EBA3.10909@linux.vnet.ibm.com>
- <20140225003048.GJ8264@linux.vnet.ibm.com>
- <530C03C6.9080405@linux.vnet.ibm.com>
+	Mon, 24 Feb 2014 23:41:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530C03C6.9080405@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022504-6688-0000-0000-000006F30C41
+In-Reply-To: <CAKohpokGtcJbdzt0FPZnKjSFi54Np+Ss7--Z83UEZp8FMY94pQ@mail.gmail.com>
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
+	<CAKohpo=mQWxoKTduR8FrrB4Qz45qXQrJjSudq=FkCJtHBTbo2Q@mail.gmail.com>
+	<5301CE86.9020105@linux.vnet.ibm.com>
+	<1489022.1IbaesBAQQ@vostro.rjw.lan>
+	<CAKohpokGtcJbdzt0FPZnKjSFi54Np+Ss7--Z83UEZp8FMY94pQ@mail.gmail.com>
+Date: Tue, 25 Feb 2014 10:11:41 +0530
+Message-ID: <CAKohpokk5-6vGV93fZDob8Q=xZXsd7E4OkMUAC1M6Z71G=d1Ow@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre-list@ossman.eu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 10:45:26AM +0800, Michael wang wrote:
-> Hi, Paul
-> 
-> On 02/25/2014 08:30 AM, Paul E. McKenney wrote:
-> [snip]
-> > 
-> > I don't see an opportunity for load_balance() to loop with interrupts
-> > disabled, but maybe I am looking at the wrong code.  The NMI handler
-> > looks to me like it is diagnosing rather than being the problem.
-> 
-> Thanks for the comment :)
-> 
-> It was a stuck inside pick_next_task_fair(), and we already got one
-> solution now ;-)
+On 18 February 2014 07:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 18 February 2014 03:30, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Monday, February 17, 2014 02:25:34 PM Srivatsa S. Bhat wrote:
+>>> Why go to no_policy when we can actually set things right?
+>>>
+>>> Anyway, I am not arguing against this strongly. I just wanted to share my
+>>> thoughts, since this is the approach that made more sense to me.
+>>
+>> And I agree with that.  In particular, since we're going to set the new
+>> policy *anyway* at this point, we can adjust the current frequency just fine
+>> in the process, can't we?
+>
+> Though I still feel that it wouldn't be the right thing to do as get()
+> just can't
+> return zero. Actually I was planning to place a WARN() over its return value
+> of zero.
+>
+> Anyway, as two of the three are in favor of this we can get that in.. But how
+> would that work?
+>
+> - What frequency should we call cpufreq_driver_target ?
+> - Remember that it wouldn't do anything if policy->cur is same as new freq.
+> - Also remember that drivers need special attention if new freq is > old
+> freq or vice versa. As they will change voltage before or after change here.
+> And because we actually don't know what frequency we are at currently, how
+> will we decide that?
 
-What I get for too-late reply.  Glad it is fixed!
-
-							Thanx, Paul
-
-> Regards,
-> Michael Wang
-> 
-> > 
-> > 							Thanx, Paul
-> > 
-> >>  [<ffffffff8108a88f>] idle_balance+0x10f/0x1c0
-> >>  [<ffffffff8108aa5e>] pick_next_task_fair+0x11e/0x2a0
-> >>  [<ffffffff8107bbf3>] ? dequeue_task+0x73/0x90
-> >>  [<ffffffff815717fa>] __schedule+0x12a/0x670
-> >>  [<ffffffff81571e19>] schedule+0x29/0x70
-> >>  [<ffffffff81067daf>] worker_thread+0x1bf/0x370
-> >>  [<ffffffff81067bf0>] ? manage_workers+0x160/0x160
-> >>  [<ffffffff8106e799>] kthread+0xc9/0xe0
-> >>  [<ffffffff8106e6d0>] ? flush_kthread_worker+0xb0/0xb0
-> >>  [<ffffffff8157d62c>] ret_from_fork+0x7c/0xb0
-> >>  [<ffffffff8106e6d0>] ? flush_kthread_worker+0xb0/0xb0
-> >> Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-
+@Rafael/Srivatsa: Ping!!
