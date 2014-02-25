@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaBYAMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:12:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:48533 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712AbaBYAMl (ORCPT
+	id S1753421AbaBYANf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:13:35 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34253 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792AbaBYANd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:12:41 -0500
-Date: Mon, 24 Feb 2014 19:12:38 -0500 (EST)
-Message-Id: <20140224.191238.921310808350170272.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: dcbw@redhat.com, mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
-        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk>
-References: <1393266120.8041.19.camel@dcbw.local>
-	<20140224.180426.411052665068255886.davem@davemloft.net>
-	<1393286520.6823.123.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 24 Feb 2014 19:13:33 -0500
+Message-ID: <1393287410.10384.23.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] vhost/scsi: Check LUN structure byte 0 is set to 1, per
+ spec
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Venkatesh Srinivas <venkateshs@google.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pbonzini@redhat.com, target-devel <target-devel@vger.kernel.org>
+Date: Mon, 24 Feb 2014 16:16:50 -0800
+In-Reply-To: <20140224221332.GA32725@google.com>
+References: <20140224221332.GA32725@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Feb 2014 16:12:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Tue, 25 Feb 2014 00:02:00 +0000
+Hi Venkatesh,
 
-> You can run an internal network, or access network, as v6-only with
-> NAT64 and DNS64 at the border.  I believe some mobile networks are doing
-> this; it was also done on the main FOSDEM wireless network this year.
+On Mon, 2014-02-24 at 14:13 -0800, Venkatesh Srinivas wrote:
+> The virtio spec requires byte 0 of the virtio-scsi LUN structure
+> to be '1'.
+> 
+> Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+> ---
+>   drivers/vhost/scsi.c | 6 ++++++
+>   1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index 0a025b8..e48d4a6 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -1001,6 +1001,12 @@ vhost_scsi_handle_vq(struct vhost_scsi *vs, struct vhost_virtqueue *vq)
+>   			break;
+>   		}
+>   
+> +		/* virtio-scsi spec requires byte 0 of the lun to be 1 */
+> +		if (unlikely(v_req.lun[0] != 1)) {
+> +			vhost_scsi_send_bad_target(vs, vq, head, out);
+> +			continue;
+> +		}
+> +
+>   		/* Extract the tpgt */
+>   		target = v_req.lun[1];
+>   		tpg = ACCESS_ONCE(vs_tpg[target]);
 
-This seems to be bloating up the networking headers of the internal
-network, for what purpose?
+Applied to target-pending/master, and including in the next v3.14-rc
+PULL request.
 
-For mobile that's doubly inadvisable.
+Thanks!
+
+--nab
 
