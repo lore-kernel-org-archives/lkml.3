@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408AbaBYMiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:38:00 -0500
-Received: from asav4.altibox.net ([81.167.36.153]:49812 "EHLO
-	asav4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaBYMgk (ORCPT
+	id S1753370AbaBYMh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:37:59 -0500
+Received: from asav21.altibox.net ([109.247.116.8]:48810 "EHLO
+	asav21.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319AbaBYMgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Feb 2014 07:36:40 -0500
 From: Henrik Austad <henrik@austad.us>
@@ -14,9 +14,9 @@ Cc: Henrik Austad <haustad@cisco.com>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         John Stultz <john.stultz@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 5/6] Expose the forced_timer_cpu to userspace via sysctl as R/W
-Date: Tue, 25 Feb 2014 13:34:00 +0100
-Message-Id: <1393331641-14016-6-git-send-email-henrik@austad.us>
+Subject: [PATCH 4/6] Force a specific CPU to handle all do_timer() events.
+Date: Tue, 25 Feb 2014 13:33:59 +0100
+Message-Id: <1393331641-14016-5-git-send-email-henrik@austad.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1393331641-14016-1-git-send-email-henrik@austad.us>
 References: <1393331641-14016-1-git-send-email-henrik@austad.us>
@@ -26,16 +26,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Henrik Austad <haustad@cisco.com>
 
-This allows userspace to set a specific CPU as the only core able
-to handle do_timer() updates via
+By default, this is disabled (set to -1) and must be explicitly set in order
+to have an effect. The CPU must be online.
 
-     cat sysctl kernel.forced_timer_cpu
-     /proc/sys/kernel/forced_timer_cpu
+If the specified CPU is part of the NO_HZ_FULL set, it is removed from
+the set. When forced tick is either disabled or moved to another CPU, it
+will try to re-enable NO_HZ_FULL on previous CPU.
 
-and for writing:
-
-     sysctl -w kernel.forced_timer_cpu=2
-     /bin/echo 2 > /proc/sys/kernel/forced_timer_cpu
+If the CPU is removed (hotpluggable CPUs), forced tick will be disabled.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Peter Zijlstra <peterz@infradead.org>
@@ -44,100 +42,189 @@ CC: John Stultz <john.stultz@linaro.org>
 CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Henrik Austad <haustad@cisco.com>
 ---
- include/linux/clocksource.h |    8 ++++++++
- kernel/sysctl.c             |    7 +++++++
- kernel/time/timekeeping.c   |   24 +++++++++++++++++++++++-
- 3 files changed, 38 insertions(+), 1 deletion(-)
+ kernel/time/tick-common.c   |  103 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/time/tick-internal.h |    4 ++
+ kernel/time/tick-sched.c    |   14 +++++-
+ 3 files changed, 120 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index cfd39e8..4ef47e7 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -361,6 +361,8 @@ static inline void clocksource_of_init(void) {}
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 1729b4b..d4e660a 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -51,6 +51,19 @@ ktime_t tick_period;
+ int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
  
  /*
-  * expose the CPU that handles the timer-tick.
++ * tick_do_timer_cpu_forced is YATCIV responsible for controlling the
++ * forced-timer logic. It has 2 modes
 + *
-+ * Both the current as well as the forced value.
-  */
- extern int expose_tick_do_timer_cpu;
- extern int timekeeping_expose_timer_cpu(struct ctl_table *table,
-@@ -368,5 +370,11 @@ extern int timekeeping_expose_timer_cpu(struct ctl_table *table,
- 					void __user *buffer,
- 					size_t *lenp,
- 					loff_t *ppos);
-+extern int expose_tick_forced_timer_cpu;
-+int timekeeping_expose_forced_timer_cpu(struct ctl_table *table,
-+					int write,
-+					void __user *buffer,
-+					size_t *lenp,
-+					loff_t *ppos);
- 
- #endif /* _LINUX_CLOCKSOURCE_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index a882c9e..c84c17a 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -432,6 +432,13 @@ static struct ctl_table kern_table[] = {
- 		.mode	   = 0444,
- 		.proc_handler	= timekeeping_expose_timer_cpu,
- 	},
-+	{
-+		.procname  = "forced_timer_cpu",
-+		.data      = &expose_tick_forced_timer_cpu,
-+		.maxlen	   = sizeof(int),
-+		.mode	   = 0644,
-+		.proc_handler	= timekeeping_expose_forced_timer_cpu,
-+	},
- #ifdef CONFIG_SCHED_AUTOGROUP
- 	{
- 		.procname	= "sched_autogroup_enabled",
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 55428f9..4bdfa11 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -37,6 +37,11 @@
- int expose_tick_do_timer_cpu;
- 
- /*
-+ * Hold the current value of forced CPU.
++ * - 'Off': -1  Default mode, timer ticks are being processed as normal.
++ *
++ * - 'On' : Stores the CPUid of the CPU currently assigned to handle all
++ *          do_timer() events. A CPU given this responsible will not be
++ *          allowed to enter NO_HZ_IDLE or NO_HZ_FULL mode.
 + */
-+int expose_tick_forced_timer_cpu = -1;
++int tick_do_timer_cpu_forced __read_mostly = -1;
++
 +
 +/*
-  * sysfs interface to timer-cpu
+  * Debugging: see timer_list.c
   */
- static ssize_t current_cpu_show(struct kobject *kobj,
-@@ -1791,7 +1796,7 @@ void xtime_update(unsigned long ticks)
+ struct tick_device *tick_get_device(int cpu)
+@@ -342,6 +355,12 @@ void tick_handover_do_timer(int *cpup)
+ 	if (*cpup == tick_do_timer_cpu) {
+ 		int cpu = cpumask_first(cpu_online_mask);
+ 
++		/* forced tick on this */
++		if (tick_do_timer_cpu_forced == tick_do_timer_cpu) {
++			tick_set_forced_cpu(-1);
++			pr_info("Disabled forced timer-tick due to dying CPU\n");
++		}
++
+ 		tick_do_timer_cpu = (cpu < nr_cpu_ids) ? cpu :
+ 			TICK_DO_TIMER_NONE;
+ 	}
+@@ -360,6 +379,90 @@ int tick_expose_cpu(void)
  }
  
  /*
-- * sysctl interface for exposing timer tick CPU
-+ * sysctl-interface exposing timer tick CPU
-  */
- int timekeeping_expose_timer_cpu(struct ctl_table *table,
- 				 int write,
-@@ -1803,3 +1808,20 @@ int timekeeping_expose_timer_cpu(struct ctl_table *table,
- 	expose_tick_do_timer_cpu = tick_expose_cpu();
- 	return proc_dointvec(table, write, buffer, lenp, ppos);
- }
-+
-+int timekeeping_expose_forced_timer_cpu(struct ctl_table *table,
-+					int write,
-+					void __user *buffer,
-+					size_t *lenp,
-+					loff_t *ppos)
++ * Set a forced value for tick_do_timer_cpu
++ *
++ * When not set, forced_tick_do_timer_cpu is -1, otherwise it is
++ * identical to tick_do_timer_cpu.
++ *
++ * When the core is set, this core is not able to drop into NOHZ idle
++ * and NOHZ full mode.
++ */
++int tick_set_forced_cpu(int new_cpu)
 +{
-+	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
-+	if (ret || !write)
++#ifdef CONFIG_NO_HZ_FULL
++	static int nohz_cpu_pre_forced = -1;
++#endif
++	int ret = 0;
++
++	DEFINE_MUTEX(forced_cpu_mutex);
++
++	mutex_lock(&forced_cpu_mutex);
++	if (new_cpu == tick_do_timer_cpu_forced)
 +		goto out;
 +
-+	ret = tick_set_forced_cpu(expose_tick_forced_timer_cpu);
-+	BUG_ON(tick_expose_cpu() != expose_tick_forced_timer_cpu);
++	if (new_cpu == -1) {
++#ifdef CONFIG_NO_HZ_FULL
++		if (nohz_cpu_pre_forced != -1) {
++			cpumask_set_cpu(nohz_cpu_pre_forced, tick_nohz_full_mask);
++			nohz_cpu_pre_forced = -1;
++		}
++#endif
++
++		/* let the timer-machinery pick up the fallout */
++		tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++		tick_do_timer_cpu_forced = -1;
++		goto out;
++	}
++
++	/*
++	 * Make sure new_cpu is actually a valid CPU.
++	 */
++	if (!cpu_online(new_cpu)) {
++		ret =  -EINVAL;
++		pr_warn("tick_set_forced_cpu(): Suggested CPU not available\n");
++		goto out;
++	}
++
++#ifdef CONFIG_NO_HZ_FULL
++	/*
++	 * no_hz_full require some extra care
++	 */
++	if (nohz_cpu_pre_forced != -1) {
++		cpumask_set_cpu(nohz_cpu_pre_forced, tick_nohz_full_mask);
++		nohz_cpu_pre_forced = -1;
++	}
++	if (tick_nohz_full_cpu(new_cpu)) {
++
++		nohz_cpu_pre_forced = new_cpu;
++		cpumask_clear_cpu(new_cpu, tick_nohz_full_mask);
++	}
++#endif
++	tick_do_timer_cpu_forced = new_cpu;
++	tick_do_timer_cpu = new_cpu;
++
 +out:
-+	expose_tick_forced_timer_cpu = tick_get_forced_cpu();
++	mutex_unlock(&forced_cpu_mutex);
 +	return ret;
 +}
++int tick_get_forced_cpu(void)
++{
++	return tick_do_timer_cpu_forced;
++}
++
++bool forced_timer_can_stop_tick(void)
++{
++	/*
++	 * can be racy if we get an update of tick_do_timer_cpu_foced
++	 * right in the middle of this call
++	 *
++	 * Currently only called from tick-sched::can_stop_full_tick() and can_stop_idle_tick()
++	 *
++	 * If disabled, tick_do_timer_cpu_forced is -1, which will never be a CPUid.
++	 */
++	return !(tick_do_timer_cpu_forced == raw_smp_processor_id());
++}
++
++/*
+  * Shutdown an event device on a given cpu:
+  *
+  * This is called on a life CPU, when a CPU is dead. So we cannot
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 5051dbd..9eed487 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -155,5 +155,9 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
+ #endif
+ 
+ extern int tick_expose_cpu(void);
++int tick_set_forced_cpu(int new_cpu);
++int tick_get_forced_cpu(void);
++bool forced_timer_can_stop_tick(void);
++
+ extern void do_timer(unsigned long ticks);
+ extern void update_wall_time(void);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9f8af69..95e6d7d 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -172,6 +172,11 @@ static bool can_stop_full_tick(void)
+ 		return false;
+ 	}
+ 
++	if (!forced_timer_can_stop_tick()) {
++		trace_tick_stop(0, "forced timer-tick running on CPU\n");
++		return false;
++	}
++
+ 	/* sched_clock_tick() needs us? */
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+ 	/*
+@@ -704,11 +709,18 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 	 * invoked.
+ 	 */
+ 	if (unlikely(!cpu_online(cpu))) {
+-		if (cpu == tick_do_timer_cpu)
++		if (cpu == tick_do_timer_cpu) {
+ 			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++		}
+ 		return false;
+ 	}
+ 
++	/*
++	 * if forced do_timer is set, we cannot stop the tick on this CPU.
++	 */
++	if (unlikely(!forced_timer_can_stop_tick()))
++		return false;
++
+ 	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE)) {
+ 		ts->sleep_length = (ktime_t) { .tv64 = NSEC_PER_SEC/HZ };
+ 		return false;
 -- 
 1.7.9.5
 
