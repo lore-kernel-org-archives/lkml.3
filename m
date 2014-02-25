@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaBYACK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:02:10 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49460 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753331AbaBYACG (ORCPT
+	id S1753439AbaBYACd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:02:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36450 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753028AbaBYACa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:02:06 -0500
-Date: Tue, 25 Feb 2014 00:01:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, dmaengine@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] clk: sun6i: Protect CPU clock
-Message-ID: <20140225000154.GR21483@n2100.arm.linux.org.uk>
-References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com> <1393258967-4843-2-git-send-email-maxime.ripard@free-electrons.com> <20140224163034.GN21483@n2100.arm.linux.org.uk> <530BD804.5090806@elopez.com.ar>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <530BD804.5090806@elopez.com.ar>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 24 Feb 2014 19:02:30 -0500
+Message-ID: <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: dcbw@redhat.com, mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
+        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+Date: Tue, 25 Feb 2014 00:02:00 +0000
+In-Reply-To: <20140224.180426.411052665068255886.davem@davemloft.net>
+References: <1392857777.22693.14.camel@dcbw.local>
+	 <CAB=NE6Xvqcdje5OSxjzTRa3wv-vZHr+MJHY86ZCfFXU2Lpzi8Q@mail.gmail.com>
+	 <1393266120.8041.19.camel@dcbw.local>
+	 <20140224.180426.411052665068255886.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-q/kcLpXQr5co7KvsyRKe"
+X-Mailer: Evolution 3.8.5-2+b2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.242
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Emilio.
 
-On Mon, Feb 24, 2014 at 08:38:44PM -0300, Emilio López wrote:
-> Why is this so? Can't a clock be left enabled while nobody has a  
-> reference to it? I have looked around in Documentation/ (rather quickly  
-> I must say) and have not found any explicit mention that it is required  
-> to keep a reference to the clock while it's enabled. I'd appreciate it  
-> if you could explain this a bit more verbosely or point me to the  
-> relevant documents.
+--=-q/kcLpXQr5co7KvsyRKe
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-First up, if you have a requirement that a clock be enabled, then is it
-not unreasonable to ensure that the clock is referenced?
+On Mon, 2014-02-24 at 18:04 -0500, David Miller wrote:
+> From: Dan Williams <dcbw@redhat.com>
+> Date: Mon, 24 Feb 2014 12:22:00 -0600
+>=20
+> > In the future I expect more people will want to disable IPv4 as
+> > they move to IPv6.
+>=20
+> I definitely don't.
+>=20
+> I've been lightly following this conversation and I have to say
+> a few things.
+>=20
+> disable_ipv6 was added because people wanted to make sure their
+> machines didn't generate any ipv6 traffic because "ipv6 is not
+> mature", "we don't have our firewalls configured to handle that
+> kind of traffic" etc.
+>=20
+> None of these things apply to ipv4.
+>=20
+> And if you think people will go to ipv6 only, you are dreaming.
+>
+> Name a provider of a major web sitewho will go to strictly only
+> providing an ipv6 facing site?
+>
+> Only an idiot who wanted to lose significiant nunbers of page views
+> and traffic would do that,
 
-Secondly, what if we have code which scans the clocks in the system,
-shutting down those leaf clocks which appear to be unreferenced?
+That's obviously true for public-facing servers, but that doesn't mean
+it's not useful to anyone.
 
-Thirdly, the API (as I designed it) says so:
+> so ipv4 based connectivity will be universally necessary forever.
 
-/**
- * clk_put      - "free" the clock source
- * @clk: clock source
- *
- * Note: drivers must ensure that all clk_enable calls made on this
- * clock source are balanced by clk_disable calls prior to calling
- * this function.
- *
- * clk_put should not be called from within interrupt context.
- */
-void clk_put(struct clk *clk);
+You can run an internal network, or access network, as v6-only with
+NAT64 and DNS64 at the border.  I believe some mobile networks are doing
+this; it was also done on the main FOSDEM wireless network this year.
 
-which has been there since the API was first created - it's part of the
-contract between drivers using the API and implementers creating something
-which conforms to the API - which today means CCF.
+Ben.
 
-The intention here is that while there are any users holding a clk_get()
-reference on a clock, the clock is assumed to be required for some
-device, and the struct clk may not be kfree'd, nor may its state be
-changed in an unpredictable way to those drivers holding a reference
-to it.
+> I think disable_ipv4 is absolutely a non-starter.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+
+--=20
+Ben Hutchings
+Beware of bugs in the above code;
+I have only proved it correct, not tried it. - Donald Knuth
+
+--=-q/kcLpXQr5co7KvsyRKe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUwvdeOe/yOyVhhEJAQplZA//QAOw2FY8BWwaK/c447vv7/VYuzUNjLOL
+Ea5KRTemhsIXOddkKnNggp/S3gyTEN4xMGGf4+/DvdhRnRpWT/4os65OU/yR2lD6
+sUUhvP2ALHFNWxOu/k8eAB+P5nc92ulBXy1kGHnIoPZxC7PEj8O5zNHPQvyhTPBM
+rrUGp3XkZ704uf3EA8pA2NE/o4e8f8uQC0uq97J0vfIZYSZ4opFT9wdsU92Q0UR5
+1Z3E2n1f3ZRD0n5+CKV7pNPvuD52HOhknai6Rcg86b4/YDd+4mgSYjA68CJTAyeQ
+EzlPnT6LyP119eylvkfpwvkO0YBfJJ1UBlBsNPPn+ki1CcZ+X4aomcvo9UxTVYye
+X8N1SJzTm4h53fFRDoLR5WRBL67rGezSWz/ZUfxy92O8PQUTAjPNUHGnuwSdh2A8
+p20dt8NlQAlbYMwwklbNQtgEuH+mod1ntljx6MJOA4RELN3mQxgBTAfHBHWiNfS6
+BJYUUcDWjygc9vLIhYOx1ioJArNSnMw/hjP0uD/jvigrtfdD6DYjQf8XBGwvQqyr
+ziKk7pj8CfhLdo1YwS8EFmX6Mh3Dhf8xE+2+O7L+dyXLCItjOeg/xE3ZrXudb0qB
+9fMGr5W3o2Ot6ICvKxAY2r3N87N9s1gqgoK2kKx/tB6RA0DkN1YdnLvsCEfnhnuv
+KLuqk8+mKes=
+=iTMC
+-----END PGP SIGNATURE-----
+
+--=-q/kcLpXQr5co7KvsyRKe--
