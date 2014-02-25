@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaBYMGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:06:17 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44490 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744AbaBYMGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:06:16 -0500
-Message-ID: <530C8711.4000600@ti.com>
-Date: Tue, 25 Feb 2014 17:35:37 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752939AbaBYMG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:06:59 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57220 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751402AbaBYMG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 07:06:58 -0500
+Message-ID: <530C875F.80207@hurleysoftware.com>
+Date: Tue, 25 Feb 2014 07:06:55 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Loc Ho <lho@apm.com>, <tj@kernel.org>
-CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>
-Subject: Re: [PATCH RESEND v10 1/4] PHY: Add function set_speed to generic
- PHY framework
-References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com>
-In-Reply-To: <1393308882-3964-2-git-send-email-lho@apm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Chris Bainbridge <chris.bainbridge@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: set Pentium M as PAE capable
+References: <20140225060146.GA4339@debian.local> <530C7465.2080600@zytor.com>
+In-Reply-To: <530C7465.2080600@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/25/2014 05:45 AM, H. Peter Anvin wrote:
+> On 02/24/2014 10:01 PM, Chris Bainbridge wrote:
+>> Pentium M is PAE capable but does not indicate so in the CPUID response.
+>> This is an issue now that some distributions are no longer shipping
+>> non-PAE kernels (those distributions no longer boot on Pentium M). This
+>> small patch fixes the issue by forcing the PAE capability on Pentium M.
+>>
+>> For more discussion see https://bugs.launchpad.net/baltix/+bug/930447
+>>
+>
+> 1. This patch doesn't match the discussion in the link.
+> 2. You would have to also enable this in the cpu testing code in
+>     arch/x86/boot.
+> 3. At the very least we need to print a serious warning that the CPU
+>     is being run outside its specifications.  I have no personal
+>     information about why this CPUID bit was disabled, but it could be
+>     that it was discovered in testing that it didn't work correctly in
+>     all circumstances (e.g. high temperature.)  This is very much "use
+>     at your own risk..."; you could get data corruption or even
+>     hardware damage.
+>
+>     We should probably also taint the kernel.
 
-On Tuesday 25 February 2014 11:44 AM, Loc Ho wrote:
-> This patch adds function set_speed to the generic PHY framework operation
-> structure. This function can be called to instruct the PHY underlying layer
-> at specified lane to configure for specified speed in hertz.
-> 
-> Signed-off-by: Loc Ho <lho@apm.com>
-> ---
->  drivers/phy/phy-core.c  |   21 +++++++++++++++++++++
->  include/linux/phy/phy.h |    8 ++++++++
->  2 files changed, 29 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> index 645c867..44f2f63 100644
-> --- a/drivers/phy/phy-core.c
-> +++ b/drivers/phy/phy-core.c
-> @@ -257,6 +257,27 @@ int phy_power_off(struct phy *phy)
->  }
->  EXPORT_SYMBOL_GPL(phy_power_off);
->  
+Perhaps obviously, this should require either command line or build opt-in.
 
-missing function comment :-s
+Regards,
+Peter Hurley
 
-> +int phy_set_speed(struct phy *phy, int lane, u64 speed)
-> +{
-
-Thanks
-Kishon
