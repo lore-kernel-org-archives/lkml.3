@@ -1,157 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaBYP5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:57:17 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40431 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619AbaBYP5P (ORCPT
+	id S1753148AbaBYQDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:03:13 -0500
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:39406 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbaBYQDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:57:15 -0500
-Message-ID: <530CBD53.9010605@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 21:27:07 +0530
-From: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 25 Feb 2014 11:03:11 -0500
+X-Greylist: delayed 2304 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 11:03:11 EST
+Date: Tue, 25 Feb 2014 15:24:43 +0000
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jim McDonough <jmcd@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        David Disseldorp <ddiss@samba.org>, Steve French <smfrench@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Stable backport of cifs nlink workaround?
+Message-ID: <20140225152443.GA15552@sucs.org>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: [RFC PATCH v1 0/2] perf: Support for SDT markers
-References: <20140224090833.7998.5416.stgit@hemant-fedora> <530C821D.7000704@hitachi.com>
-In-Reply-To: <530C821D.7000704@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022515-2000-0000-0000-00000FE4A7DE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 05:14 PM, Masami Hiramatsu wrote:
-> (2014/02/24 18:14), Hemant Kumar wrote:
->> This patchset helps in listing dtrace style markers(SDT) present in user space
->> applications through perf.
->> Notes/markers are placed at important places by the
->> developers. They have a negligible overhead when not enabled.
->> We can enable them and probe at these places and find some important information
->> like the arguments' values, etc.
->>
->> We have lots of applications which use SDT markers today, like:
->> Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
->>
->> To add SDT markers into user applications:
->> We need to have this header sys/sdt.h present.
->> sys/sdt.h used is version 3.
->> If not present, install systemtap-sdt-devel package (for fedora-18).
->>
->> Please refer to the Documentation patch to see how the SDT markers are added into
->> a program.
->>
->> With this patchset,
->> - Use perf to list the markers in the app:
->> # perf list sdt ./user_app
->>
->> ./user_app :
->> %user_app:foo_start
->> %user_app:fun_start
->>
->> - Also, we can see the SDT markers present in our system in the usual binaries.
->> These usual binaries are libraries (dsos) listed by ldconfig --print-cache and some
->> binaries present in PATH environment variable.
->>
->> First, scan the binaries using :
->> # perf list sdt --scan
->>
->> Creating a cache of SDT markers...
->> perf sdt cache created!
->>   Use : "perf list sdt"
->>   to see the SDT markers
-> Hmm, in that case, I think you'd better introduce perf-sdt for scanning.
-> e.g.
->
->   # perf sdt --scan app
+Hi,
 
-Hmm, this seems a better idea :)
+Is there any chance that 74d290da476f672ad756634d12aa707375d3564d
+([CIFS] Provide sane values for nlink) could be backported to the stable
+3.2 kernel?
 
->   then you can add app to sdt cache, without app,
->
->   # perf sdt --scan
->
->   will just scans all binaries on the PATH and the libraries which listed
-> by `ldconfig --print-caceh`
->
-> And perf-list shows only the SDTs in the cache.
+The reason I ask is because if you Using a Debain Wheezy box with a
+3.2.41-2+deb7u2 kernel the following is problematic:
 
-Well, what will be better? perf-list or perf-sdt or perf-list sdt??
-If perf-list, then wouldn't it be a huge list!!
+Mount a share using cifs from a Windows 2008 machine on to 2008share
+Use Samba 3.6 to export the share as //linux/2008share
+Using a Windows 2012 machine browse to \\linux\2008share
 
->
-> If there is no SDTs in the cache, `perf-list sdt` will warn you to
-> run the `perf sdt --scan`.
+because the directories will appear to be files to the Windows 2012
+machine.
 
-Right.
+On the Debian box doing
+stat 2008share/dir
+says
+Device: 18h/24d	Inode: 844424932383132  Links: 1
 
->
->> After the sdt cache file is created, use perf list to view the markers :
->> # perf list sdt
->>
->> %rtld : init_start
->> %rtld : init_complete
->> %rtld : map_failed
->> %rtld : map_start
->> %rtld : lll_futex_wake
->> ...
->> ...
->> %libgcc : unwind
->> %libvirt : rpc_server_client_auth_allow
->> %libvirt : rpc_server_client_auth_fail
->> %libvirt : rpc_server_client_auth_deny
->>
->> Alternatively, one can view the /var/cache/perf/perf-sdt.cache directly.
->>
->> This link shows an example of marker probing with Systemtap:
->> https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
->>
->> Also, this link provides important info regarding SDT notes:
->> http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
->>
->> - Markers in binaries :
->> These SDT markers are present in the ELF in the section named
->> ".note.stapsdt".
->> Here, the name of the marker, its provider, type, location, base
->> address, semaphore address.
->> We can retrieve these values using the members name_off and desc_off in
->> Nhdr structure. If these are not enabled, they are present in the ELF as nop.
->>
->> Changes since last series :
->> - Made the SDT markers present in a system more visible through perf list
->>    as suggested by Pekka Enberg.
->> - Less complex command line interface to access the SDT markers.
->> - Added a cache file to store most of the SDT markers of a system.
->>
->> TODO:
->> - Add support to probe these SDT markers and integrate with a previous patch
->>    (support to perf to probe SDT markers) posted in lkml.
->>    https://lkml.org/lkml/2013/10/23/10
-> Yeah, but I think we'd better choose another way to integrate it.
-> Since SDT is like markers(static events), setting each of them via perf-probe is
-> not intuitive. :)  I'd like to use it as an event, e.g.
->
->   # perf top -e "%libgcc:unwind"
->
-> And perf top internally calls perf-probe to add new uprobe event, and
-> clean the new event at exit.
->
->
->
+Using a Fedora 20 box with a 3.13.3-201.fc20.x86_64 kernel to do the
+same says:
+Device: 27h/39d	Inode: 844424932383132  Links: 2
 
-Yeah! Right :) Makes sense.
+In https://bugzilla.kernel.org/show_bug.cgi?id=52791#c4 Jeff mentions
+that if there were demand a RHEL 6 customer could ask for a backport so
+it looks like the change is isolated enough to be put into stable...
 
-Will implement the suggestions in the next version asap!
+https://bugzilla.samba.org/show_bug.cgi?id=9346 also talks about the
+issue.
 
 -- 
-Thanks
-Hemant Kumar
-
+Sitsofe | http://sucs.org/~sits/
