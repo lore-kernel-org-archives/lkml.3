@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaBYJwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:52:10 -0500
-Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:51234 "EHLO
-	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750744AbaBYJwH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:52:07 -0500
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
-To: Alexander Gordeev <agordeev@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: Dept-Eng QLA2xxx Upstream <qla2xxx-upstream@qlogic.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 20/22] qla2xxx: Use pci_enable_msix_range()
-Thread-Topic: [PATCH 20/22] qla2xxx: Use pci_enable_msix_range()
-Thread-Index: AQHPMg87iD1LWGzPO067X063mCiHIg==
-Date: Tue, 25 Feb 2014 09:52:02 +0000
-Message-ID: <F5D084D6342F9B479C34599BB0A03E4D89867332@AVMB1.qlogic.org>
-References: <cover.1391512266.git.agordeev@redhat.com>
- <36da37b8ca3a13e24a3363ed19d6a08061c85970.1391512266.git.agordeev@redhat.com>
-In-Reply-To: <36da37b8ca3a13e24a3363ed19d6a08061c85970.1391512266.git.agordeev@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-x-originating-ip: [10.35.7.64]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <B0CACDB358679F4DADA7A77C27A9DB10@qlogic.com>
-Content-Transfer-Encoding: 8BIT
+	id S1752723AbaBYJxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:53:33 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:30994 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106AbaBYJxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 04:53:30 -0500
+X-IronPort-AV: E=Sophos;i="4.97,539,1389772800"; 
+   d="scan'208";a="16253202"
+Message-ID: <530C67F4.7010208@broadcom.com>
+Date: Tue, 25 Feb 2014 10:52:52 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7359 signatures=668944
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1305240000 definitions=main-1402250019
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Rob Herring" <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: add device tree for SHIELD
+References: <1393237593-28121-1-git-send-email-acourbot@nvidia.com> <530B952D.2000006@wwwdotorg.org> <530BFC58.6020003@nvidia.com>
+In-Reply-To: <530BFC58.6020003@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me.
-
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-
->As result of deprecation of MSI-X/MSI enablement functions
->pci_enable_msix() and pci_enable_msi_block() all drivers
->using these two interfaces need to be updated to use the
->new pci_enable_msi_range() and pci_enable_msix_range()
->interfaces.
->
->Log message code 0x00c6 preserved, although it is reported
->after successful call to pci_enable_msix_range(), not before
->possibly unsuccessful call to pci_enable_msix(). Consumers
->of the error code should not notice the difference.
->
->Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->Cc: qla2xxx-upstream@qlogic.com
->Cc: linux-scsi@vger.kernel.org
->Cc: linux-pci@vger.kernel.org
->---
-> drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
-> 1 files changed, 11 insertions(+), 16 deletions(-)
->
->diff --git a/drivers/scsi/qla2xxx/qla_isr.c
->b/drivers/scsi/qla2xxx/qla_isr.c
->index 9bc86b9..b2dcfa4 100644
->--- a/drivers/scsi/qla2xxx/qla_isr.c
->+++ b/drivers/scsi/qla2xxx/qla_isr.c
->@@ -2896,27 +2896,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha,
->struct rsp_que *rsp)
-> 	for (i = 0; i < ha->msix_count; i++)
-> 		entries[i].entry = i;
+On 02/25/2014 03:13 AM, Alexandre Courbot wrote:
+>>
+>>> +    /* Wifi */
+>>> +    sdhci@78000000 {
+>>> +        status = "okay";
+>>> +        bus-width = <4>;
+>>> +        broken-cd;
+>>> +        keep-power-in-suspend;
+>>> +        cap-sdio-irq;
+>>
+>> Is non-removable better than broken-cd, or are they entirely unrelated?
 > 
->-	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
->-	if (ret) {
->-		if (ret < MIN_MSIX_COUNT)
->-			goto msix_failed;
->-
->+	ret = pci_enable_msix_range(ha->pdev,
->+				    entries, MIN_MSIX_COUNT, ha->msix_count);
->+	if (ret < 0) {
->+		ql_log(ql_log_fatal, vha, 0x00c7,
->+		    "MSI-X: Failed to enable support, "
->+		    "giving   up -- %d/%d.\n",
->+		    ha->msix_count, ret);
->+		goto msix_out;
->+	} else if (ret < ha->msix_count) {
-> 		ql_log(ql_log_warn, vha, 0x00c6,
-> 		    "MSI-X: Failed to enable support "
-> 		    "-- %d/%d\n Retry with %d vectors.\n",
-> 		    ha->msix_count, ret, ret);
->-		ha->msix_count = ret;
->-		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
->-		if (ret) {
->-msix_failed:
->-			ql_log(ql_log_fatal, vha, 0x00c7,
->-			    "MSI-X: Failed to enable support, "
->-			    "giving   up -- %d/%d.\n",
->-			    ha->msix_count, ret);
->-			goto msix_out;
->-		}
->-		ha->max_rsp_queues = ha->msix_count - 1;
-> 	}
->+	ha->msix_count = ret;
->+	ha->max_rsp_queues = ha->msix_count - 1;
-> 	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
-> 				ha->msix_count, GFP_KERNEL);
-> 	if (!ha->msix_entries) {
->-- 
->1.7.7.6
->
+> They are unrelated actually. With non-removable the driver expects the
+> device to always be there since boot, and does not check for the card to
+> be removed/added after boot. broken-cd indicates there is no CD line and
+> the device should be polled regularly.
+> 
+> For the Wifi chip, non-removable would be the correct setting
+> hardware-wise, but there is a trap: the chip has its reset line asserted
+> at boot-time, and you need to set GPIO 229 to de-assert it. Only after
+> that will the device be detected on the SDIO bus. Since it lacks a CD
+> line, it must be polled, hence the broken-cd property.
+> 
+> This also raises another, redundant problem with DT bindings: AFAIK we
+> currently have no way to let the system know the device will only appear
+> after a given GPIO is set. It would also be nice to be able to give some
+> parameters to the Wifi driver through the DT (like the OOB interrupt).
+> Right now the Wifi chip is brought up by exporting the GPIO and writing
+> to it from user-space, and the OOB interrupt is not used.
+
+Hi Alexandre,
+
+I recently posted a proposal for brcmfmac DT binding [1]. I did receive
+some comments, but it would be great if you (and/or others involved) had
+a look at it as well and give me some feedback. DT work still needs to
+grow on me.
+
+> Otherwise, Wifi works great with the brcmfmac driver and NVRAM file
+> extracted from Android.
+
+With in-band interrupts, indeed. The HOST_WAKE signal is the OOB
+interrupt which would need to be provided in the device-tree.
+
+Regards,
+Arend
+
+[1] http://mid.gmane.org/1392059868-8782-1-git-send-email-arend@broadcom.com
 
