@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606AbaBYUfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 15:35:32 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:55003 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaBYUfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 15:35:30 -0500
-Message-ID: <530CFE7F.7030300@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 12:35:11 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753661AbaBYUg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 15:36:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60268 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752635AbaBYUg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 15:36:56 -0500
+Message-ID: <530CFEDF.3060801@redhat.com>
+Date: Tue, 25 Feb 2014 15:36:47 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2 05/11] powerpc: add hv_gpci interface header
-References: <20140225033328.1D5652C030B@ozlabs.org>
-In-Reply-To: <20140225033328.1D5652C030B@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Stancek <jstancek@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: page_alloc: reset aging cycle with GFP_THISNODE
+References: <1393360022-22566-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1393360022-22566-1-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022520-8236-0000-0000-0000002A3F52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 07:33 PM, Michael Ellerman wrote:
-> On Fri, 2014-14-02 at 22:02:09 UTC, Cody P Schafer wrote:
->> "H_GetPerformanceCounterInfo" (refered to as hv_gpci or just gpci from
->> here on) is an interface to retrieve specific performance counters and
->> other data from the hypervisor. All outputs have a fixed format (and
->> are represented as structs in this patch).
->
-> I still see unused stuff in here, can you strip it back to just what we need.
-> Same goes for the next patch.
->
+On 02/25/2014 03:27 PM, Johannes Weiner wrote:
+> Jan Stancek reports manual page migration encountering allocation
+> failures after some pages when there is still plenty of memory free,
+> and bisected the problem down to 81c0a2bb515f ("mm: page_alloc: fair
+> zone allocator policy").
+> 
+> The problem is that page migration uses GFP_THISNODE and this makes
+> the page allocator bail out before entering the slowpath entirely,
+> without resetting the zone round-robin batches.  A string of such
+> allocations will fail long before the node's free memory is exhausted.
+> 
+> GFP_THISNODE is a special flag for callsites that implement their own
+> clever node fallback and so no direct reclaim should be invoked.  But
+> if the allocations fail, the fair allocation batches should still be
+> reset, and if the node is full, it should be aged in the background.
+> 
+> Make GFP_THISNODE wake up kswapd and reset the zone batches, but bail
+> out before entering direct reclaim to not stall the allocating task.
+> 
+> Reported-by: Jan Stancek <jstancek@redhat.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org> # 3.12+
 
-Sure, I can remove the unused structures and enum entries (hadn't 
-realized you wanted that in the last review).
+Acked-by: Rik van Riel <riel@redhat.com>
 
+-- 
+All rights reversed
