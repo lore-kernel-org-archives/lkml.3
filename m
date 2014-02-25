@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaBYXmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 18:42:10 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:48991 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaBYXmI (ORCPT
+	id S1753195AbaBYXoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 18:44:30 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42791 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072AbaBYXo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 18:42:08 -0500
-Date: Tue, 25 Feb 2014 15:41:20 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Chinner <david@fromorbit.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
- fallocate
-In-Reply-To: <20140223213606.GE4317@dastard>
-Message-ID: <alpine.LSU.2.11.1402251525370.2380@eggly.anvils>
-References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com> <20140222140625.GD26637@thunk.org> <20140223213606.GE4317@dastard>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 25 Feb 2014 18:44:28 -0500
+Message-ID: <1393371856.2886.2.camel@linux-whg8.site>
+Subject: Re: [RFC PATCH for-next 2/4] epoll: epoll() syscall declaration
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 25 Feb 2014 15:44:16 -0800
+In-Reply-To: <20140225103013.GB9963@dcvr.yhbt.net>
+References: <1393206162-18151-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+	 <1393206162-18151-3-git-send-email-n1ght.4nd.d4y@gmail.com>
+	 <20140224053232.GB7056@dcvr.yhbt.net>
+	 <CAJ3m7BrjXvCOD_JpBHO7-ZuHFycr=GCrBiW2S1gfN4Ms-9h-Hw@mail.gmail.com>
+	 <20140225103013.GB9963@dcvr.yhbt.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014, Dave Chinner wrote:
-> On Sat, Feb 22, 2014 at 09:06:25AM -0500, Theodore Ts'o wrote:
-> > On Wed, Feb 19, 2014 at 01:37:43AM +0900, Namjae Jeon wrote:
-> > > +	/*
-> > > +	 * There is no need to overlap collapse range with EOF, in which case
-> > > +	 * it is effectively a truncate operation
-> > > +	 */
-> > > +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) &&
-> > > +	    (offset + len >= i_size_read(inode)))
-> > > +		return -EINVAL;
-> > > +
+On Tue, 2014-02-25 at 10:30 +0000, Eric Wong wrote:
+> Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
+> > On Sun, Feb 23, 2014 at 9:32 PM, Eric Wong <normalperson@yhbt.net> wrote:
+> > > Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
+> > >> +asmlinkage long sys_epoll(int ep, struct epoll __user *in,
+> > >> +                       unsigned int inc, struct epoll __user *out,
+> > >> +                       unsigned int outc, int timeout);
+> > >
+> > > I can understand using the new struct for 'in', but 'out' could just be
+> > > "struct epoll_event *" like sys_epoll_wait, right?
+> > >
+> > >>  asmlinkage long sys_epoll_wait(int epfd, struct epoll_event __user *events,
 > > 
-> > I wonder if we should just translate a collapse range that is
-> > equivalent to a truncate operation to, in fact, be a truncate
-> > operation?
+> > Yeah and I went back and forth on that, it just seemed to me that the
+> > inconsistency could be confusing to others... maybe instead of defining a new
+> > struct to begin with it might make me sense to just have an 'infd' array of file
+> > descriptors in addition to an 'in' array of epoll_event struct
+> > (obviously the length
+> > of these would be identical).
 > 
-> Trying to collapse a range that extends beyond EOF, IMO, is likely
-> to only happen if the DVR/NLE application is buggy. Hence I think
-> that telling the application it is doing something that is likely to
-> be wrong is better than silently truncating the file....
+> I don't think a separate array for in is a good idea, too error prone
+> and you lose locality.
+> 
+> For output, some users either end up allocating more memory/retrieve
+> fewer items with the larger struct for *out.
+Well having a different struct for input and output would be just as
+error prone too, plus the file descriptor of a triggered event is
+highly relevant information.
 
-I do agree with Ted on this point.  This is not an xfs ioctl added
-for one DVR/NLE application, it's a mode of a Linux system call.
-
-We do not usually reject with an error when one system call happens
-to ask for something which can already be accomplished another way;
-nor nanny our callers.
-
-It seems natural to me that COLLAPSE_RANGE should support beyond EOF;
-unless that adds significantly to implementation difficulties?
-
-Actually, is it even correct to fail at EOF?  What if fallocation
-with FALLOC_FL_KEEP_SIZE was used earlier, to allocate beyond EOF:
-shouldn't it be possible to shift that allocation down, along with
-the EOF, rather than leave it behind as a stranded island?
-
-Hugh
