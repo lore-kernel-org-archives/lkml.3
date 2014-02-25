@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaBYKVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:21:46 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:58605 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425AbaBYKVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:21:45 -0500
-Date: Tue, 25 Feb 2014 10:21:44 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH for-next 4/4] epoll: epoll() syscall definition
-Message-ID: <20140225102144.GA10176@dcvr.yhbt.net>
-References: <1393206162-18151-1-git-send-email-n1ght.4nd.d4y@gmail.com>
- <1393206162-18151-5-git-send-email-n1ght.4nd.d4y@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393206162-18151-5-git-send-email-n1ght.4nd.d4y@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753151AbaBYKVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:21:33 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:40719 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532AbaBYKVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 05:21:23 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v2 5/6] spi: sh-msiof: Convert to let spi core validate xfer->bits_per_word
+Date: Tue, 25 Feb 2014 11:21:12 +0100
+Message-Id: <1393323673-2751-6-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
+References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
-> + * stores triggered eventpoll entries in the 'out' array. The input array is
-> + * _not_ read-only, because the resulting event mask gets written back to each
-> + * entry's ->ep_events field. When successful, this will be the same as before
-> + * (plus EPOLLERR & EPOLLHUP). If ->ep_events gets cleared, then it is reasonable
-> + * to infer that the entry's ->ep_fildes was a bad file descriptor.
-> + */
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-> +	if (!access_ok(VERIFY_WRITE, in, inc * sizeof(struct epoll)))
-> +		goto out;
-> +	for (i = 0; i < inc; ++i) {
-> +		int fd, io;
-> +		long long id;
-> +
-> +		ret = -EFAULT;
-> +		if (__get_user(fd, &in[i].ep_fildes) ||
-> +		    __get_user(io, &in[i].ep_events) ||
-> +		    __get_user(id, &in[i].ep_ident))
-> +			goto out;
-> +
-> +		ep_control(file->private_data, fd, &io, id, 0);
-> +		ret = -EFAULT;
-> +		if (__put_user(io, &in[i].ep_events))
-> +			goto out;
+Set bits_per_word_mask so the spi core will reject transfers that attempt
+to use an unsupported bits_per_word value.
 
-I don't think we should waste cycles writing to 'in' on success.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v2:
+  - No changes
+
+ drivers/spi/spi-sh-msiof.c |   19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+index 18e3a8d628e9..27536933d734 100644
+--- a/drivers/spi/spi-sh-msiof.c
++++ b/drivers/spi/spi-sh-msiof.c
+@@ -438,22 +438,6 @@ static u32 sh_msiof_spi_hz(struct spi_device *spi, struct spi_transfer *t)
+ 	return hz;
+ }
+ 
+-static int sh_msiof_spi_setup_transfer(struct spi_device *spi,
+-				       struct spi_transfer *t)
+-{
+-	int bits;
+-
+-	/* noting to check hz values against since parent clock is disabled */
+-
+-	bits = sh_msiof_spi_bits(spi, t);
+-	if (bits < 8)
+-		return -EINVAL;
+-	if (bits > 32)
+-		return -EINVAL;
+-
+-	return spi_bitbang_setup_transfer(spi, t);
+-}
+-
+ static int sh_msiof_spi_setup(struct spi_device *spi)
+ {
+ 	struct device_node	*np = spi->master->dev.of_node;
+@@ -825,10 +809,11 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	master->cleanup = spi_bitbang_cleanup;
+ 	master->prepare_message = sh_msiof_prepare_message;
+ 	master->unprepare_message = sh_msiof_unprepare_message;
++	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(8, 32);
+ 
+ 	p->bitbang.master = master;
+ 	p->bitbang.chipselect = sh_msiof_spi_chipselect;
+-	p->bitbang.setup_transfer = sh_msiof_spi_setup_transfer;
++	p->bitbang.setup_transfer = spi_bitbang_setup_transfer;
+ 	p->bitbang.txrx_bufs = sh_msiof_spi_txrx;
+ 	p->bitbang.txrx_word[SPI_MODE_0] = sh_msiof_spi_txrx_word;
+ 	p->bitbang.txrx_word[SPI_MODE_1] = sh_msiof_spi_txrx_word;
+-- 
+1.7.9.5
+
