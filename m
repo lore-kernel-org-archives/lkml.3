@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaBYBw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 20:52:58 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37956 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaBYBw4 (ORCPT
+	id S1753542AbaBYBxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:53:10 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64129 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813AbaBYBxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 20:52:56 -0500
+	Mon, 24 Feb 2014 20:53:08 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: [PATCH 09/11] sched: remove rq->cpu_load and rq->nr_load_updates
-Date: Tue, 25 Feb 2014 09:50:52 +0800
-Message-Id: <1393293054-11378-10-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 10/11] sched: rename update_*_cpu_load
+Date: Tue, 25 Feb 2014 09:50:53 +0800
+Message-Id: <1393293054-11378-11-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1393293054-11378-1-git-send-email-alex.shi@linaro.org>
 References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org>
@@ -27,174 +27,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu_load is the copy of rq->cfs.runnable_load_avg. And it updated
-on time. So we can use the latter directly. Thus saved 2 rq variables:
-cpu_load and nr_load_updates.
-Then don't need __update_cpu_load(), just keep sched_avg_update().
-Thus removed get_rq_runnable_load() which used for update_cpu_load only.
+Since we have no cpu_load update, rename the related functions:
+s/update_idle_cpu_load/update_idle_rt_avg/
+s/update_cpu_load_nohz/update_rt_avg_nohz/
+s/update_cpu_load_active/update_avg_load_active/
+
+No functional change.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- kernel/sched/core.c  |  2 --
- kernel/sched/debug.c |  2 --
- kernel/sched/proc.c  | 55 +++++++++++++---------------------------------------
- kernel/sched/sched.h |  2 --
- 4 files changed, 13 insertions(+), 48 deletions(-)
+ include/linux/sched.h    | 2 +-
+ kernel/sched/core.c      | 2 +-
+ kernel/sched/fair.c      | 2 +-
+ kernel/sched/proc.c      | 8 ++++----
+ kernel/sched/sched.h     | 4 ++--
+ kernel/time/tick-sched.c | 2 +-
+ 6 files changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 60c18de..26727fc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -174,7 +174,7 @@ extern unsigned long this_cpu_load(void);
+ 
+ 
+ extern void calc_global_load(unsigned long ticks);
+-extern void update_cpu_load_nohz(void);
++extern void update_rt_avg_nohz(void);
+ 
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c156c9b..11968df 100644
+index 11968df..d21514c 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -6855,8 +6855,6 @@ void __init sched_init(void)
- #ifdef CONFIG_RT_GROUP_SCHED
- 		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
- #endif
--
--		rq->cpu_load = 0;
- 		rq->last_load_update_tick = jiffies;
+@@ -2431,7 +2431,7 @@ void scheduler_tick(void)
+ 	raw_spin_lock(&rq->lock);
+ 	update_rq_clock(rq);
+ 	curr->sched_class->task_tick(rq, curr, 0);
+-	update_cpu_load_active(rq);
++	update_avg_load_active(rq);
+ 	raw_spin_unlock(&rq->lock);
  
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index a24d549..83737ce 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -298,12 +298,10 @@ do {									\
- 	SEQ_printf(m, "  .%-30s: %lu\n", "load",
- 		   rq->load.weight);
- 	P(nr_switches);
--	P(nr_load_updates);
- 	P(nr_uninterruptible);
- 	PN(next_balance);
- 	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
- 	PN(clock);
--	P(cpu_load);
- #undef P
- #undef PN
+ 	perf_event_task_tick();
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b8423dc..9a0b2aa 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7015,7 +7015,7 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
  
+ 		raw_spin_lock_irq(&rq->lock);
+ 		update_rq_clock(rq);
+-		update_idle_cpu_load(rq);
++		update_idle_rt_avg(rq);
+ 		raw_spin_unlock_irq(&rq->lock);
+ 
+ 		rebalance_domains(rq, CPU_IDLE);
 diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index 383c4ba..dd3c2d9 100644
+index dd3c2d9..42b7706 100644
 --- a/kernel/sched/proc.c
 +++ b/kernel/sched/proc.c
-@@ -8,12 +8,19 @@
- 
- #include "sched.h"
- 
-+#ifdef CONFIG_SMP
- unsigned long this_cpu_load(void)
- {
--	struct rq *this = this_rq();
--	return this->cpu_load;
-+	struct rq *rq = this_rq();
-+	return rq->cfs.runnable_load_avg;
- }
--
-+#else
-+unsigned long this_cpu_load(void)
-+{
-+	struct rq *rq = this_rq();
-+	return rq->load.weight;
-+}
-+#endif
- 
- /*
-  * Global load-average calculations
-@@ -398,34 +405,6 @@ static void calc_load_account_active(struct rq *this_rq)
-  * End of global load-average stuff
+@@ -423,7 +423,7 @@ static void calc_load_account_active(struct rq *this_rq)
+  * Called from nohz_idle_balance() to update the load ratings before doing the
+  * idle balance.
   */
- 
--
--/*
-- * Update rq->cpu_load statistics. This function is usually called every
-- * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-- * every tick. We fix it up based on jiffies.
-- */
--static void __update_cpu_load(struct rq *this_rq, unsigned long this_load)
--{
--	this_rq->nr_load_updates++;
--
--	/* Update our load: */
--	this_rq->cpu_load = this_load; /* Fasttrack for idx 0 */
--
--	sched_avg_update(this_rq);
--}
--
--#ifdef CONFIG_SMP
--static inline unsigned long get_rq_runnable_load(struct rq *rq)
--{
--	return rq->cfs.runnable_load_avg;
--}
--#else
--static inline unsigned long get_rq_runnable_load(struct rq *rq)
--{
--	return rq->load.weight;
--}
--#endif
--
- #ifdef CONFIG_NO_HZ_COMMON
- /*
-  * There is no sane way to deal with nohz on smp when using jiffies because the
-@@ -447,17 +426,15 @@ static inline unsigned long get_rq_runnable_load(struct rq *rq)
- void update_idle_cpu_load(struct rq *this_rq)
+-void update_idle_cpu_load(struct rq *this_rq)
++void update_idle_rt_avg(struct rq *this_rq)
  {
  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
--	unsigned long load = get_rq_runnable_load(this_rq);
  
- 	/*
- 	 * bail if there's load or we're actually up-to-date.
- 	 */
--	if (load || curr_jiffies == this_rq->last_load_update_tick)
-+	if (curr_jiffies == this_rq->last_load_update_tick)
- 		return;
- 
- 	this_rq->last_load_update_tick = curr_jiffies;
--
--	__update_cpu_load(this_rq, load);
-+	sched_avg_update(this_rq);
- }
- 
+@@ -440,17 +440,17 @@ void update_idle_cpu_load(struct rq *this_rq)
  /*
-@@ -466,7 +443,6 @@ void update_idle_cpu_load(struct rq *this_rq)
- void update_cpu_load_nohz(void)
+  * Called from tick_nohz_idle_exit()
+  */
+-void update_cpu_load_nohz(void)
++void update_rt_avg_nohz(void)
  {
  	struct rq *this_rq = this_rq();
--
- 	update_idle_cpu_load(this_rq);
+-	update_idle_cpu_load(this_rq);
++	update_idle_rt_avg(this_rq);
  }
  #endif /* CONFIG_NO_HZ */
-@@ -476,12 +452,7 @@ void update_cpu_load_nohz(void)
+ 
+ /*
+  * Called from scheduler_tick()
   */
- void update_cpu_load_active(struct rq *this_rq)
+-void update_cpu_load_active(struct rq *this_rq)
++void update_avg_load_active(struct rq *this_rq)
  {
--	unsigned long load = get_rq_runnable_load(this_rq);
--	/*
--	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
--	 */
  	this_rq->last_load_update_tick = jiffies;
--	__update_cpu_load(this_rq, load);
--
-+	sched_avg_update(this_rq);
- 	calc_load_account_active(this_rq);
- }
+ 	sched_avg_update(this_rq);
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 30efb79..0213f52 100644
+index 0213f52..190d694 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -516,7 +516,6 @@ struct rq {
- 	unsigned int nr_numa_running;
- 	unsigned int nr_preferred_running;
- #endif
--	unsigned long cpu_load;
- 	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ_COMMON
- 	u64 nohz_stamp;
-@@ -529,7 +528,6 @@ struct rq {
+@@ -21,7 +21,7 @@ extern unsigned long calc_load_update;
+ extern atomic_long_t calc_load_tasks;
  
- 	/* capture load from *all* tasks on this cpu: */
- 	struct load_weight load;
--	unsigned long nr_load_updates;
- 	u64 nr_switches;
+ extern long calc_load_fold_active(struct rq *this_rq);
+-extern void update_cpu_load_active(struct rq *this_rq);
++extern void update_avg_load_active(struct rq *this_rq);
  
- 	struct cfs_rq cfs;
+ /*
+  * Helpers for converting nanosecond timing to jiffy resolution
+@@ -1192,7 +1192,7 @@ extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
+ 
+ unsigned long to_ratio(u64 period, u64 runtime);
+ 
+-extern void update_idle_cpu_load(struct rq *this_rq);
++extern void update_idle_rt_avg(struct rq *this_rq);
+ 
+ extern void init_task_runnable_average(struct task_struct *p);
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9f8af69..b1a400a 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -866,7 +866,7 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ {
+ 	/* Update jiffies first */
+ 	tick_do_update_jiffies64(now);
+-	update_cpu_load_nohz();
++	update_rt_avg_nohz();
+ 
+ 	calc_load_exit_idle();
+ 	touch_softlockup_watchdog();
 -- 
 1.8.1.2
 
