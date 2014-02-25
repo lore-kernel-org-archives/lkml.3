@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaBYMTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:19:18 -0500
-Received: from ringil.hengli.com.au ([178.18.16.133]:53534 "EHLO
-	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783AbaBYMTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:19:17 -0500
-Date: Tue, 25 Feb 2014 20:19:11 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Tom Lendacky <thomas.lendacky@amd.com>
-Cc: linux-crypto@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] crypto: ccp - minor code fixes
-Message-ID: <20140225121911.GJ12216@gondor.apana.org.au>
-References: <20140224144156.16181.81272.stgit@tlendack-t1.amdoffice.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140224144156.16181.81272.stgit@tlendack-t1.amdoffice.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753125AbaBYMWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:22:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35456 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489AbaBYMWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 07:22:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,540,1389772800"; 
+   d="scan'208";a="481424939"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
+        Marc Dietrich <marvin24@gmx.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: [PATCHv2 1/5] ARM: tegra: remove obsolete gpio entries
+Date: Tue, 25 Feb 2014 14:22:26 +0200
+Message-Id: <1393330950-7283-2-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 08:41:56AM -0600, Tom Lendacky wrote:
-> The following series implements some fixes to some code paths executed
-> during crypto API request processing.  These fixes address processing of
-> requests when the CCP driver returns -EBUSY and freeing memory in error
-> paths.
-> 
-> This patch series is based on the cryptodev-2.6 kernel tree.
+After moving to description based gpio interface in
+rfkill-gpio, the gpio numbers are not used any more.
 
-All applied.  Thanks!
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ arch/arm/mach-tegra/board-paz00.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/board-paz00.c b/arch/arm/mach-tegra/board-paz00.c
+index e4dec9f..9c6029b 100644
+--- a/arch/arm/mach-tegra/board-paz00.c
++++ b/arch/arm/mach-tegra/board-paz00.c
+@@ -23,9 +23,7 @@
+ #include "board.h"
+ 
+ static struct rfkill_gpio_platform_data wifi_rfkill_platform_data = {
+-	.name		= "wifi_rfkill",
+-	.reset_gpio	= 25, /* PD1 */
+-	.shutdown_gpio	= 85, /* PK5 */
++	.name	= "wifi_rfkill",
+ 	.type	= RFKILL_TYPE_WLAN,
+ };
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.9.0.rc3
+
