@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaBYMD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:03:56 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:50069 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaBYMDy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:03:54 -0500
-Message-ID: <530C8615.4020004@huawei.com>
-Date: Tue, 25 Feb 2014 20:01:25 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752829AbaBYMGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:06:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:44490 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744AbaBYMGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 07:06:16 -0500
+Message-ID: <530C8711.4000600@ti.com>
+Date: Tue, 25 Feb 2014 17:35:37 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [cgroup/task_lock] INFO: suspicious RCU usage.
-References: <20140221021622.GB13515@localhost> <20140221154025.GB460@htj.dyndns.org> <530C5977.4090402@huawei.com>
-In-Reply-To: <530C5977.4090402@huawei.com>
+To: Loc Ho <lho@apm.com>, <tj@kernel.org>
+CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>
+Subject: Re: [PATCH RESEND v10 1/4] PHY: Add function set_speed to generic
+ PHY framework
+References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com>
+In-Reply-To: <1393308882-3964-2-git-send-email-lho@apm.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> [main] Setsockopt(1 2b 80d1000 4) on fd 223 [17:2:768]
->>> [   27.030764] 
->>> [   27.031119] ===============================
->>> [   27.031833] [ INFO: suspicious RCU usage. ]
->>> [   27.032536] 3.14.0-rc3-02458-g837caba #2 Not tainted
->>> [   27.033378] -------------------------------
->>> [   27.044237] include/linux/cgroup.h:697 suspicious rcu_dereference_check() usage!
->>> [   27.045795] 
->>> [   27.045795] other info that might help us debug this:
->>> [   27.045795] 
->>> [   27.047114] 
->>> [   27.047114] rcu_scheduler_active = 1, debug_locks = 0
->>> [main] Setsockopt(1 c 80d1000 4) on fd 225 [39:5:0]
->>> [   27.048751] 2 locks held by trinity-c0/4479:
->>> [   27.049478]  #0:  (callback_mutex){+.+...}, at: [<81118395>] cpuset_cpus_allowed+0x1e/0x123
->>> [   27.051132]  #1:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<8111839c>] cpuset_cpus_allowed+0x25/0x123
->>> [   27.052788] 
->>> [   27.052788] stack backtrace:
->>> [   27.053528] CPU: 0 PID: 4479 Comm: trinity-c0 Not tainted 3.14.0-rc3-02458-g837caba #2
->>> [   27.064971]  00000000 00000000
->>>  919eff28 81877cc3[main] Setsockopt(1 7 80d1000 4) on fd 226 [1:5:1]
->>
->> So, this is from removing task_lock from task_css_set_check() and
->> adding rcu_read_lock() in cpuset_cpus_allowed() should fix it.
-> 
-> Yeah, rcu_read_lock() should be sufficient.
-> 
->> I'm
->> not sure how much of task_lock() locking we currently have in cpuset
->> is actually necessary tho.  Shouldn't we be able to do most with just
->> callback_mutex, if not cpuset_mutex?  Li, any ideas?
->>
-> 
-> task_lock() is also used to protect task->mems_allowed. I'll see if we
-> can get rid of most (if not all) task_lock() lockings in cpuset.
-> 
+Hi,
 
-After a quick lock, I think except the one in cpuset_change_task_nodemask(), all
-other task_lock() lockings can be replace by rcu_readlock().
+On Tuesday 25 February 2014 11:44 AM, Loc Ho wrote:
+> This patch adds function set_speed to the generic PHY framework operation
+> structure. This function can be called to instruct the PHY underlying layer
+> at specified lane to configure for specified speed in hertz.
+> 
+> Signed-off-by: Loc Ho <lho@apm.com>
+> ---
+>  drivers/phy/phy-core.c  |   21 +++++++++++++++++++++
+>  include/linux/phy/phy.h |    8 ++++++++
+>  2 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 645c867..44f2f63 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -257,6 +257,27 @@ int phy_power_off(struct phy *phy)
+>  }
+>  EXPORT_SYMBOL_GPL(phy_power_off);
+>  
 
+missing function comment :-s
+
+> +int phy_set_speed(struct phy *phy, int lane, u64 speed)
+> +{
+
+Thanks
+Kishon
