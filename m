@@ -1,125 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaBYT1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:27:21 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:42663 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaBYT1U (ORCPT
+	id S1752039AbaBYT2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:28:13 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:41990 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbaBYT2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:27:20 -0500
-Message-ID: <1393356413.7727.27.camel@j-VirtualBox>
-Subject: Re: [PATCH 0/8] locking/core patches
-From: Jason Low <jason.low2@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Waiman Long <waiman.long@hp.com>, mingo@kernel.org,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, riel@redhat.com, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Tue, 25 Feb 2014 11:26:53 -0800
-In-Reply-To: <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
-References: <20140210195820.834693028@infradead.org>
-	 <20140210150230.b7f46688093ebc5c45fee870@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 25 Feb 2014 14:28:12 -0500
+Date: Tue, 25 Feb 2014 11:28:02 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd@lists.infradead.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>, Pekon Gupta <pekon@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [GIT PULL] MTD fixes for 3.14-rc
+Message-ID: <20140225192802.GA4194@ld-irv-0074>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 15:02 -0800, Andrew Morton wrote:
-> On Mon, 10 Feb 2014 20:58:20 +0100 Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > Hi all,
-> > 
-> > I would propose merging the following patches...
-> > 
-> > The first set is mostly from Jason and tweaks the mutex adaptive
-> > spinning, AIM7 throughput numbers:
-> > 
-> > PRE:  100   2000.04  21564.90 2721.29 311.99     3.12       0.01     0.00     99
-> > POST: 100   2000.04  42603.85 5142.80 311.99     3.12       0.00     0.00     99
-> 
-> What do these columns represent?  I'm guessing the large improvement
-> was in context switches?
 
-Hello,
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I also re-tested the mutex patches 1-6 on my 2 and 8 socket machines
-with the high_systime and fserver AIM7 workloads (ran on disk). The
-workloads are able to generate contention on the 
-&EXT4_SB(inode->i_sb)->s_orphan_lock mutex. Below are the % improvement
-in throughput with the patches on a recent tip kernel. The main benefits
-were on the larger box and when there were higher number of users.
+Hi Linus,
 
-Note: the -0.7% drop in performance for fserver at 10-90 users on the 2
-socket machine was mainly due to "[PATCH 6/8] mutex: Extra reschedule
-point". Without patch 6, there was almost no % difference in throughput
-between the baseline kernel and kernel with patches 1-5.
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
 
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
 
-8 socket machine:
+are available in the git repository at:
 
---------------------------
-       	 fserver   
---------------------------
-users     | % improvement
-          | in throughput
-          | with patches
---------------------------
-1000-2000 |  +29.2%
---------------------------
-100-900   |  +10.0%
---------------------------
-10-90     |   +0.4%
+  git://git.infradead.org/linux-mtd.git tags/for-linus-20140225
 
+for you to fetch changes up to bb38eefb6858ce16b34716145b9597a5680aa54c:
 
---------------------------
-       high_systime
---------------------------
-users     | % improvement
-          | in throughput
-          | with patches
---------------------------
-1000-2000 |  +34.9%
---------------------------
-100-900   |  +49.2%
---------------------------
-10-90     |   +3.1%
+  mtd: nand: omap: fix ecclayout->oobfree->length (2014-02-23 14:49:57 -0800)
 
+----------------------------------------------------------------
+Two main MTD fixes:
 
+ 1. Read retry counting was off by one, so if we had a true ECC error (i.e., no
+    retry voltage threshold would give a clean read), we would end up returning
+    -EINVAL on the Nth mode instead of -EBADMSG after then (N-1)th mode
 
-2 socket machine:
+ 2. The OMAP NAND driver had some of its ECC layouts wrong when introduced in
+    3.13, causing incompatibilities between the bootloader on-flash layout and
+    the layout expected in Linux. The expected layouts are now documented in
+    the commit messages, and we plan to add this under Documentation/mtd/nand/
+    eventually.
 
---------------------------
-         fserver   
---------------------------
-users     | % improvement
-          | in throughput
-          | with patches
---------------------------
-1000-2000 |   +1.8%
---------------------------
-100-900   |   +0.0%
---------------------------
-10-90     |   -0.7%
+----------------------------------------------------------------
+Brian Norris (1):
+      mtd: nand: fix off-by-one read retry mode counting
 
+Pekon Gupta (3):
+      mtd: nand: omap: fix ecclayout to be in sync with u-boot NAND driver
+      mtd: nand: omap: fix ecclayout->oobfree->offset
+      mtd: nand: omap: fix ecclayout->oobfree->length
 
---------------------------
-       high_systime
---------------------------
-users     | % improvement
-          | in throughput
-          | with patches
---------------------------
-1000-2000 |   +0.8%
---------------------------
-100-900   |   +0.4%
---------------------------
-10-90     |   +0.0%
+ drivers/mtd/nand/nand_base.c |  2 +-
+ drivers/mtd/nand/omap2.c     | 61 +++++++++++++++++++++++++++++---------------
+ 2 files changed, 41 insertions(+), 22 deletions(-)
 
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTDO7CAAoJEFySrpd9RFgtdrMQAKnJZGCp9UNp/F47Wnh+lGiK
+kXY9XBpRSzJSSLGtf53wgbw8dbtDyx50gW9prXZ4VaIPJ2GCoXXYL+EWDMfp/BiB
+7NtKn+QL2hsUDPIOp9/Gpb2gZNOunxUWCr0o8DXFoYN+cVOhnfiNBlGegECRjox9
+hQ/ZIrNV/hzUdg3GzDmJgMs/MpX9IWZQZh8oiWXiQRIt1zecPZ6Ml2PW2jeqWQk9
+r9dleGztpREkDcsVmHY3iYN5PdvaJHgXB0ygZdDqR0/ssaHf5raRz1F6A9S8/x35
+3Vn6PbJyoHRab3tCGqy6mQeoAutgy+Hm7z7S5GMgdnWZvspMq9YizKAT632WyLRy
+lGaXIQ+j1eu4/2MC2uJOzdL0oanKdgUiuk1ezX1XuV0urlwC6Xmt0xTbVKg8ubwZ
+xwF8TVz/C7PsSUAzu5cDa/2mlbYTi+m08nBPUnGoCan/4HSEmNbHVT7ZiLqS8rnF
+7POHd9w1AilUYYBCaX4spKJH+h+Qyy5zgJjeGmB6xjn5mIVldWFfLkRK5NgqapaU
+4zragee7NT6K5TUSSzRVO3tjEiwGAc+yD8w53m6KrTRgA53ry9OlhNLA8hElAOj2
+YUjJOZ2PjyIRNbby9fku2X8bozNZXMZgijhf9+lQmOYcI5yF1FqoIf2MNLQIWSlL
+sS12vcPuzu5s4j1K/Rtm
+=s7u3
+-----END PGP SIGNATURE-----
 
+--UlVJffcvxoiEqYs2--
