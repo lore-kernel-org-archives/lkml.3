@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaBYJoa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:44:30 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:55642 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944AbaBYJo0 (ORCPT
+	id S1752829AbaBYJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:36:58 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62426 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaBYJgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:44:26 -0500
+	Tue, 25 Feb 2014 04:36:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140224192813.GA4451@sonymobile.com>
-References: <20140217172329.2c61499f57842ec2ed177bc5@canb.auug.org.au>
-	<530247FC.90606@infradead.org>
-	<CACRpkdamW1-CxZV65at3PaPhY5nANRDd=SY=FsNPVnrPxyD81w@mail.gmail.com>
-	<20140224174646.GA32621@sonymobile.com>
-	<530B8C15.50100@infradead.org>
-	<20140224184120.GB18563@joshc.qualcomm.com>
-	<20140224192813.GA4451@sonymobile.com>
-Date: Tue, 25 Feb 2014 10:44:26 +0100
-Message-ID: <CACRpkdbKmHW3OqDWs7Mj1eGE2foigUomMiMndejqY_2Yj-kznw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 17 (pinctrl-msm)
+In-Reply-To: <20140224181023.GA1010@titan.lakedaemon.net>
+References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20140224181023.GA1010@titan.lakedaemon.net>
+Date: Tue, 25 Feb 2014 10:36:54 +0100
+Message-ID: <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
+Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
+ Dove pinctrl
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 8:28 PM, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
+On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
 
-> This comes from the request of having everything as a module, to reduce the
-> size of the multi-platform ARM builds. I would say that the important part
-> related to that would be to keep the platform specific tables in modules.
+> Sebastian, Linus,
 >
-> But keeping these parts as modules would still mean that it's a module that
-> install the chained irq handler.
-
-Yeah that is a bit of double-command is it not :-)
-
-> @Linus, I'm not sure about what should be module and not in pinctrl, but this
-> part of pinctrl-msm is less important then the others to be able to be compiled
-> as a module.
+> I've now created mvebu/pinctrl-dove for this series.  It's based on
+> v3.14-rc1, and depends on mvebu/pinctrl (which depends on
+> mvebu/pinctrl-3xx).
 >
-> FWIW;
-> Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> I've kept this series in a separate branch in case we encounter an
+> unforeseen problem with something in here.  Then this branch can be
+> dropped, and /pinctrl-3xx and /pinctrl will still make it in.
+>
+> So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
+> in mvebu/dt.
 
-Well we can't export that function in the rc series so I applied
-this patch for fixes with your review tag.
+OK so what should I be pulling in first now?
 
-We can discuss making chained IRQ handlers in modules
-for the next merge window...
-
-Linus
+Yours,
+Linus Walleij
