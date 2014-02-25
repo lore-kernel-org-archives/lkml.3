@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaBYPK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:10:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752598AbaBYPK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:10:57 -0500
-Date: Tue, 25 Feb 2014 16:10:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, matt.helsley@gmail.com, davem@davemloft.net,
-        guillaume@morinfr.org
-Subject: Re: + exitc-call-proc_exit_connector-after-exit_state-is-set.patch
-	added to -mm tree
-Message-ID: <20140225151043.GA24546@redhat.com>
-References: <530bbf59.78aTdR6Ql6kCpXnE%akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530bbf59.78aTdR6Ql6kCpXnE%akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753318AbaBYPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:11:27 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:54585 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbaBYPLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 10:11:25 -0500
+Message-ID: <1393341068.4170.7.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCHv2 0/5] net: rfkill: gpio: cleanup and a few new acpi ids
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
+        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Date: Tue, 25 Feb 2014 16:11:08 +0100
+In-Reply-To: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The process events connector delivers a notification when a process exits.
->  This is really convenient for a process that spawns and wants to monitor
-> its children through an epoll-able() interface.
->
-> Unfortunately, there is a small window between when the event is delivered
-> and the child become wait()-able.
->
-> This is creates a race if the parent wants to make sure that it knows
-> about the exit, e.g
->
-> pid_t pid = fork();
-> if (pid > 0) {
-> 	register_interest_for_pid(pid);
-> 	if (waitpid(pid, NULL, WNOHANG) > 0)
-> 	{
-> 	  /* We might have raced with exit() */
-> 	}
+On Tue, 2014-02-25 at 14:22 +0200, Heikki Krogerus wrote:
 
-Just in case... Even with this patch the code above is still "racy" if the
-child is multi-threaded. Plus it should obviously filter-out subthreads.
-And afaics there is no way to make it reliable, even if you change the
-code above so that waitpid() is called only after the last thread exits
-WNOHANG still can fail.
+> I was waiting for the DT support from Chen-Yu before sending these,
+> but decided it makes no difference when I send them. I'm dropping the
+> con ID in the second patch because Dan noticed the warning, but of
+> course it will mean the "gpios" property can be used with DT.
+> 
+> The two last patches just add ACPI IDs for some new Baytrail based
+> boards.
 
-Not that I am not arguing with this change. Although I hope that someone
-can confirm that netlink_broadcast() is safe even if release_task(current)
-was already called, so that the caller has no pids, sighand, is not visible
-via /proc/, etc.
+Do these patches have any dependencies, or should I just add them to the
+mac80211-next tree (since I don't keep a separate rfkill tree)?
 
-Oleg.
+Or does anyone else want to take them? In that case, it's all fine with
+me, I'm really just nominally the rfkill maintainer and have no idea
+about these patches... :)
+
+johannes
 
