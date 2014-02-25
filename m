@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaBYHmZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 02:42:25 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35360 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaBYHmX (ORCPT
+	id S1751928AbaBYHoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 02:44:44 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43828 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaBYHok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 02:42:23 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <530C4954.9090709@jp.fujitsu.com>
-Date: Tue, 25 Feb 2014 16:42:12 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 25 Feb 2014 02:44:40 -0500
+Date: Tue, 25 Feb 2014 13:14:17 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yijing Wang <wangyijing@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-ia64@vger.kernel.org, linux-pci@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: [PATCH 3/8] lib: Move prototype declaration to header file
+ include/linux/swiotlb.h
+Message-ID: <f95be69d8113dc58603894701e5a3114723b7acc.1393313946.git.rashika.kheria@gmail.com>
+References: <7bf34999aea7f3d1441dc8fc344882a814da6e06.1393313946.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-CC: Miao Xie <miaox@cn.fujitsu.com>
-Subject: [PATCH] btrfs: Copyright string update
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7bf34999aea7f3d1441dc8fc344882a814da6e06.1393313946.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix corporate name for copyright.
+Move prototype declaration of function to header file
+include/linux/swiotlb.h from arch/ia64/hp/common/hwsw_iommu.c,
+arch/ia64/hp/common/sba_iommu.c and arch/x86/pci/sta2x11-fixup.c because
+it is used by more than one file.
 
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+This eliminates the following warning in lib/swiotlb.c:
+lib/swiotlb.c:240:1: warning: no previous prototype for ‘swiotlb_late_init_with_default_size’ [-Wmissing-prototypes]
+lib/swiotlb.c:537:13: warning: no previous prototype for ‘map_single’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- fs/btrfs/delayed-inode.c |    2 +-
- fs/btrfs/delayed-inode.h |    2 +-
- fs/btrfs/math.h          |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/ia64/hp/common/hwsw_iommu.c |    3 ---
+ arch/ia64/hp/common/sba_iommu.c  |    2 --
+ arch/x86/pci/sta2x11-fixup.c     |    1 -
+ include/linux/swiotlb.h          |    4 +++-
+ 4 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/fs/btrfs/delayed-inode.c b/fs/btrfs/delayed-inode.c
-index 451b00c..483b918 100644
---- a/fs/btrfs/delayed-inode.c
-+++ b/fs/btrfs/delayed-inode.c
-@@ -1,5 +1,5 @@
+diff --git a/arch/ia64/hp/common/hwsw_iommu.c b/arch/ia64/hp/common/hwsw_iommu.c
+index 1e4cae5..b14cab1 100644
+--- a/arch/ia64/hp/common/hwsw_iommu.c
++++ b/arch/ia64/hp/common/hwsw_iommu.c
+@@ -20,9 +20,6 @@
+ 
+ extern struct dma_map_ops sba_dma_ops, swiotlb_dma_ops;
+ 
+-/* swiotlb declarations & definitions: */
+-extern int swiotlb_late_init_with_default_size (size_t size);
+-
  /*
-- * Copyright (C) 2011 Fujitsu.  All rights reserved.
-+ * Copyright (C) 2011 FUJITSU LIMITED.  All rights reserved.
-  * Written by Miao Xie <miaox@cn.fujitsu.com>
-  *
-  * This program is free software; you can redistribute it and/or
-diff --git a/fs/btrfs/delayed-inode.h b/fs/btrfs/delayed-inode.h
-index f70119f..a07746d 100644
---- a/fs/btrfs/delayed-inode.h
-+++ b/fs/btrfs/delayed-inode.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (C) 2011 Fujitsu.  All rights reserved.
-+ * Copyright (C) 2011 FUJITSU LIMITED.  All rights reserved.
-  * Written by Miao Xie <miaox@cn.fujitsu.com>
-  *
-  * This program is free software; you can redistribute it and/or
-diff --git a/fs/btrfs/math.h b/fs/btrfs/math.h
-index b7816ce..1ce7e18 100644
---- a/fs/btrfs/math.h
-+++ b/fs/btrfs/math.h
-@@ -1,6 +1,6 @@
+  * Note: we need to make the determination of whether or not to use
+  * the sw I/O TLB based purely on the device structure.  Anything else
+diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
+index 8e858b5..b341994 100644
+--- a/arch/ia64/hp/common/sba_iommu.c
++++ b/arch/ia64/hp/common/sba_iommu.c
+@@ -46,8 +46,6 @@
+ 
+ #include <asm/acpi-ext.h>
+ 
+-extern int swiotlb_late_init_with_default_size (size_t size);
+-
+ #define PFX "IOC: "
  
  /*
-- * Copyright (C) 2012 Fujitsu.  All rights reserved.
-+ * Copyright (C) 2012 FUJITSU LIMITED.  All rights reserved.
-  * Written by Miao Xie <miaox@cn.fujitsu.com>
-  *
-  * This program is free software; you can redistribute it and/or
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+index 9d8a509..a39000b 100644
+--- a/arch/x86/pci/sta2x11-fixup.c
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -28,7 +28,6 @@
+ #include <linux/list.h>
+ 
+ #define STA2X11_SWIOTLB_SIZE (4*1024*1024)
+-extern int swiotlb_late_init_with_default_size(size_t default_size);
+ 
+ /*
+  * We build a list of bus numbers that are under the ConneXt. The
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index a5ffd32..7f419b6 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -27,7 +27,9 @@ int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
+ unsigned long swiotlb_size_or_default(void);
+ extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+-
++int swiotlb_late_init_with_default_size (size_t );
++phys_addr_t map_single(struct device *hwdev, phys_addr_t phys, size_t size,
++		       enum dma_data_direction dir);
+ /*
+  * Enumeration for sync targets
+  */
 -- 
-1.7.1
+1.7.9.5
 
