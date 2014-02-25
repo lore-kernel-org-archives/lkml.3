@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaBYOk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:40:57 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:47080 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131AbaBYOkz (ORCPT
+	id S1753296AbaBYOlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:41:47 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:34396 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439AbaBYOlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:40:55 -0500
+	Tue, 25 Feb 2014 09:41:45 -0500
+Date: Tue, 25 Feb 2014 09:41:41 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        DCG_UPD_stlinux_kernel@list.st.com, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140225144141.GA26788@htj.dyndns.org>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
+ <1393328481-7251-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <15001517.xLHO8lGdWr@vostro.rjw.lan>
-References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
-	<530BAA31.4050701@codeaurora.org>
-	<CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
-	<15001517.xLHO8lGdWr@vostro.rjw.lan>
-Date: Tue, 25 Feb 2014 20:10:54 +0530
-Message-ID: <CAKohponkjccKjc9xBQ3kCjdTMqFtKLCh1-mQXMS579+2_JmTCA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
- online work is done
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393328481-7251-3-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 February 2014 18:34, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Well, that depends on what the current users expect it to look like initially.
-> It should be initialized to the point in which all of them can handle it
-> correctly.
+On Tue, Feb 25, 2014 at 11:41:21AM +0000, Lee Jones wrote:
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: linux-ide@vger.kernel.org
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Exactly.
+Applied to libata/for-3.15 w/ missing "\n" added to dev_err() in
+st_ahci_suspend().
 
-> That's not going to work in at least some cases anyway, because for some types
-> of HW we simply can't retrieve the current frequency in a non-racy way.
+Thanks.
 
-I agree. But this is all that we can guarantee here :)
+-- 
+tejun
