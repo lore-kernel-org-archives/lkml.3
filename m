@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbaBYMZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:25:18 -0500
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:46258
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753500AbaBYMZO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753507AbaBYMZO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Feb 2014 07:25:14 -0500
+Received: from mail-bn1lp0154.outbound.protection.outlook.com ([207.46.163.154]:14854
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752657AbaBYMZI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 07:25:08 -0500
 From: KY Srinivasan <kys@microsoft.com>
 To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
 CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        x86 <x86@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linuxdrivers <devel@linuxdriverproject.org>
-Subject: RE: [patch 25/26] x86: hyperv: Cleanup the irq mess
-Thread-Topic: [patch 25/26] x86: hyperv: Cleanup the irq mess
-Thread-Index: AQHPMN/cB0XcplfKTkOLs+jEGSB3RZrF35iA
-Date: Tue, 25 Feb 2014 12:24:59 +0000
-Message-ID: <379403385de44bcab2ad8a676d9cd49b@BY2PR03MB299.namprd03.prod.outlook.com>
+        x86 <x86@kernel.org>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: RE: [patch 22/26] x86: Add proper vector accounting for HyperV
+Thread-Topic: [patch 22/26] x86: Add proper vector accounting for HyperV
+Thread-Index: AQHPMN/a+m85yqdrzUWUByp1sVomYZrF3TYg
+Date: Tue, 25 Feb 2014 12:24:58 +0000
+Message-ID: <c2fd31b7434f4510a5424aa0ac701f72@BY2PR03MB299.namprd03.prod.outlook.com>
 References: <20140223212703.511977310@linutronix.de>
- <20140223212739.028307673@linutronix.de>
-In-Reply-To: <20140223212739.028307673@linutronix.de>
+ <20140223212738.681855582@linutronix.de>
+In-Reply-To: <20140223212738.681855582@linutronix.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [210.188.139.189]
 x-forefront-prvs: 01334458E5
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(51704005)(377454003)(13464003)(74366001)(74316001)(93136001)(76786001)(76796001)(76576001)(74876001)(74706001)(95666003)(81542001)(92566001)(81342001)(86362001)(93516002)(94316002)(94946001)(81816001)(80022001)(95416001)(86612001)(66066001)(69226001)(33646001)(85306002)(87936001)(2656002)(87266001)(80976001)(19580395003)(19580405001)(83322001)(85852003)(56816005)(90146001)(79102001)(81686001)(83072002)(47446002)(63696002)(4396001)(54356001)(76482001)(77982001)(59766001)(53806001)(54316002)(56776001)(51856001)(65816001)(46102001)(74502001)(50986001)(47976001)(49866001)(31966008)(74662001)(47736001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB596;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:210.188.139.189;FPR:B40051FD.B7F29388.71FE33BF.42E410B2.2058C;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(13464003)(199002)(189002)(377454003)(51704005)(63696002)(95666003)(47446002)(80022001)(65816001)(66066001)(85306002)(74502001)(19580395003)(47976001)(50986001)(79102001)(93136001)(19580405001)(83322001)(80976001)(77982001)(59766001)(51856001)(53806001)(56776001)(54316002)(74662001)(31966008)(54356001)(4396001)(49866001)(47736001)(46102001)(76482001)(76576001)(76786001)(76796001)(81342001)(86362001)(93516002)(33646001)(95416001)(81816001)(81686001)(74366001)(94316002)(81542001)(69226001)(94946001)(86612001)(74706001)(85852003)(83072002)(74876001)(2656002)(56816005)(74316001)(90146001)(92566001)(87266001)(87936001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB597;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:210.188.139.189;FPR:84F8F9DD.3CF2A722.2AE3ABBC.40ADF9ED.20272;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -42,286 +41,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > From: Thomas Gleixner [mailto:tglx@linutronix.de]
 > Sent: Sunday, February 23, 2014 1:40 PM
 > To: LKML
-> Cc: Ingo Molnar; Peter Zijlstra; x86; KY Srinivasan; Greg Kroah-Hartman;
-> linuxdrivers
-> Subject: [patch 25/26] x86: hyperv: Cleanup the irq mess
+> Cc: Ingo Molnar; Peter Zijlstra; x86; Konrad Rzeszutek Wilk; KY Srinivasan
+> Subject: [patch 22/26] x86: Add proper vector accounting for HyperV
 > 
-> The vmbus/hyperv interrupt handling is another complete trainwreck and
-> probably the worst of all currently in tree.
+> HyperV abuses a device interrupt to account for the
+> HYPERVISOR_CALLBACK_VECTOR.
 > 
-> If CONFIG_HYPERV=y then the interrupt delivery to the vmbus happens via
-> the direct HYPERVISOR_CALLBACK_VECTOR. So far so good, but:
-> 
->   The driver requests first a normal device interrupt. The only reason
->   to do so is to increment the interrupt stats of that device
->   interrupt.
-> 
->   We have proper accounting mechanisms for direct vectors, but of
->   course it's too much effort to add that 5 lines of code.
-> 
->   Aside of that the alloc_intr_gate() is not protected against
->   reallocation which makes module reload impossible.
-> 
-> If CONFIG_HYPERV=n then the vmbus request a regular device interrupt via
-> request_irq() and installs it's own private flow handler. Of course this lacks
-> any explanation why it can't use the standard flow handler or the existing
-> handle_percpu_irq handler.
-> 
-> Solution to the problem is simple to rip out the whole mess and implement it
-> correctly.
+> Provide proper accounting as we have for the other vectors as well.
+
 Thomas,
 
-Thank you for cleaning up this code. When CONFIG_HYPERV== n, none of the VMBUS code is active.
-The special case can go away as you have noted.
+Thank you for cleaning up this code.
 
 Regards,
 
 K. Y
 > 
-> First of all move all that code to arch/x86/kernel/cpu/mshyperv.c
-> 
-> For the CONFIG_HYPERV=y case merily install the
-> HYPERVISOR_CALLBACK_VECTOR with proper reallocation protection and
-> use the proper direct vector accounting mechanism.
-> 
-> For the CONFIG_HYPERV=n case request the device irq and install the weird
-> flow handler.
-> 
-> If the special flow handler can go away, which I assume to be true, then this
-> simplifies the code even further.
-> 
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > Cc: x86 <x86@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linuxdrivers <devel@linuxdriverproject.org>
-> 
 > ---
->  arch/x86/include/asm/mshyperv.h |    4 +
->  arch/x86/kernel/cpu/mshyperv.c  |   97 ++++++++++++++++++++++++------
-> ----------
->  drivers/hv/vmbus_drv.c          |   39 +---------------
->  3 files changed, 66 insertions(+), 74 deletions(-)
+>  arch/x86/include/asm/hardirq.h |    3 +++
+>  arch/x86/kernel/irq.c          |    6 ++++++
+>  2 files changed, 9 insertions(+)
 > 
-> Index: tip/arch/x86/include/asm/mshyperv.h
+> Index: tip/arch/x86/include/asm/hardirq.h
 > ==========================================================
 > =========
-> --- tip.orig/arch/x86/include/asm/mshyperv.h
-> +++ tip/arch/x86/include/asm/mshyperv.h
-> @@ -2,6 +2,7 @@
->  #define _ASM_X86_MSHYPER_H
-> 
->  #include <linux/types.h>
-> +#include <linux/interrupt.h>
->  #include <asm/hyperv.h>
-> 
->  struct ms_hyperv_info {
-> @@ -16,6 +17,7 @@ void hyperv_callback_vector(void);  #define
-> trace_hyperv_callback_vector hyperv_callback_vector  #endif  void
-> hyperv_vector_handler(struct pt_regs *regs); -void
-> hv_register_vmbus_handler(int irq, irq_handler_t handler);
-> +int hv_setup_vmbus_irq(int irq, irq_handler_t handler, void *dev_id);
-> +void hv_remove_vmbus_irq(int irq, void *dev_id);
-> 
+> --- tip.orig/arch/x86/include/asm/hardirq.h
+> +++ tip/arch/x86/include/asm/hardirq.h
+> @@ -33,6 +33,9 @@ typedef struct {
+>  #ifdef CONFIG_X86_MCE_THRESHOLD
+>  	unsigned int irq_threshold_count;
 >  #endif
-> Index: tip/arch/x86/kernel/cpu/mshyperv.c
-> ==========================================================
-> =========
-> --- tip.orig/arch/x86/kernel/cpu/mshyperv.c
-> +++ tip/arch/x86/kernel/cpu/mshyperv.c
-> @@ -17,6 +17,7 @@
->  #include <linux/hardirq.h>
->  #include <linux/efi.h>
->  #include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  #include <asm/processor.h>
->  #include <asm/hypervisor.h>
->  #include <asm/hyperv.h>
-> @@ -30,6 +31,64 @@
->  struct ms_hyperv_info ms_hyperv;
->  EXPORT_SYMBOL_GPL(ms_hyperv);
-> 
-> +#ifdef CONFIG_HYPERV
-> +static irq_handler_t *vmbus_handler;
-> +
-> +void hyperv_vector_handler(struct pt_regs *regs) {
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> +
-> +	irq_enter();
-> +	exit_idle();
-> +
-> +	inc_irq_stat(irq_hv_callback_count);
-> +	if (vmbus_handler)
-> +		vmbus_handler();
-> +
-> +	irq_exit();
-> +	set_irq_regs(old_regs);
-> +}
-> +
-> +int hv_setup_vmbus_irq(int irq, irq_handler_t *handler, void *dev_id) {
-> +	vmbus_handler = handler;
-> +	/*
-> +	 * Setup the IDT for hypervisor callback. Prevent reallocation
-> +	 * at module reload.
-> +	 */
-> +	if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-> +		alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-> +				hyperv_callback_vector);
-> +}
-> +
-> +void hv_remove_vmbus_irq(unsigned int irq, void *dev_id) {
-> +	/* We have no way to deallocate the interrupt gate */
-> +	vmbus_handler = NULL;
-> +}
-> +#else
-> +int hv_setup_vmbus_irq(int irq, irq_handler_t handler, void *dev_id) {
-> +	int ret = request_irq(irq, handler, 0, "hyperv", dev_id);
-> +
-> +	if (!ret) {
-> +		/*
-> +		 * Vmbus interrupts can be handled concurrently on
-> +		 * different CPUs. Install the simple percpu flow handler.
-> +		 */
-> +		irq_set_handler(irq, handle_percpu_simple_irq);
-> +	}
-> +	return ret;
-> +}
-> +
-> +void hv_remove_vmbus_irq(int irq, void *dev_id) {
-> +	free_irq(irq, dev_id);;
-> +}
+> +#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
+> +	unsigned int irq_hv_callback_count;
 > +#endif
-> +EXPORT_SYMBOL_GPL(hv_setup_vmbus_irq);
-> +EXPORT_SYMBOL_GPL(hv_remove_vmbus_irq);
-> +
->  static uint32_t  __init ms_hyperv_platform(void)  {
->  	u32 eax;
-> @@ -113,41 +172,3 @@ const __refconst struct hypervisor_x86 x
->  	.init_platform		= ms_hyperv_init_platform,
->  };
->  EXPORT_SYMBOL(x86_hyper_ms_hyperv);
-> -
-> -#if IS_ENABLED(CONFIG_HYPERV)
-> -static int vmbus_irq = -1;
-> -static irq_handler_t vmbus_isr;
-> -
-> -void hv_register_vmbus_handler(int irq, irq_handler_t handler) -{
-> -	/*
-> -	 * Setup the IDT for hypervisor callback.
-> -	 */
-> -	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-> hyperv_callback_vector);
-> -
-> -	vmbus_irq = irq;
-> -	vmbus_isr = handler;
-> -}
-> -
-> -void hyperv_vector_handler(struct pt_regs *regs) -{
-> -	struct pt_regs *old_regs = set_irq_regs(regs);
-> -	struct irq_desc *desc;
-> -
-> -	irq_enter();
-> -	exit_idle();
-> -
-> -	desc = irq_to_desc(vmbus_irq);
-> -
-> -	if (desc)
-> -		generic_handle_irq_desc(vmbus_irq, desc);
-> -
-> -	irq_exit();
-> -	set_irq_regs(old_regs);
-> -}
-> -#else
-> -void hv_register_vmbus_handler(int irq, irq_handler_t handler) -{ -} -#endif
-> -EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-> Index: tip/drivers/hv/vmbus_drv.c
+>  } ____cacheline_aligned irq_cpustat_t;
+> 
+>  DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
+> Index: tip/arch/x86/kernel/irq.c
 > ==========================================================
 > =========
-> --- tip.orig/drivers/hv/vmbus_drv.c
-> +++ tip/drivers/hv/vmbus_drv.c
-> @@ -25,7 +25,6 @@
->  #include <linux/init.h>
->  #include <linux/module.h>
->  #include <linux/device.h>
-> -#include <linux/irq.h>
->  #include <linux/interrupt.h>
->  #include <linux/sysctl.h>
->  #include <linux/slab.h>
-> @@ -558,9 +557,6 @@ static struct bus_type  hv_bus = {
->  	.dev_groups =		vmbus_groups,
->  };
-> 
-> -static const char *driver_name = "hyperv";
-> -
-> -
->  struct onmessage_work_context {
->  	struct work_struct work;
->  	struct hv_message msg;
-> @@ -677,19 +673,6 @@ static irqreturn_t vmbus_isr(int irq, vo  }
-> 
->  /*
-> - * vmbus interrupt flow handler:
-> - * vmbus interrupts can concurrently occur on multiple CPUs and
-> - * can be handled concurrently.
-> - */
-> -
-> -static void vmbus_flow_handler(unsigned int irq, struct irq_desc *desc) -{
-> -	kstat_incr_irqs_this_cpu(irq, desc);
-> -
-> -	desc->action->handler(irq, desc->action->dev_id);
-> -}
-> -
-> -/*
->   * vmbus_bus_init -Main vmbus driver initialization routine.
->   *
->   * Here, we
-> @@ -715,26 +698,13 @@ static int vmbus_bus_init(int irq)
->  	if (ret)
->  		goto err_cleanup;
-> 
-> -	ret = request_irq(irq, vmbus_isr, 0, driver_name, hv_acpi_dev);
-> +	ret = hv_setup_vmbus_irq(irq, vmbus_isr, hv_acpi_dev);
-> 
->  	if (ret != 0) {
-> -		pr_err("Unable to request IRQ %d\n",
-> -			   irq);
-> +		pr_err("Unable to request IRQ %d\n", irq);
->  		goto err_unregister;
->  	}
-> 
-> -	/*
-> -	 * Vmbus interrupts can be handled concurrently on
-> -	 * different CPUs. Establish an appropriate interrupt flow
-> -	 * handler that can support this model.
-> -	 */
-> -	irq_set_handler(irq, vmbus_flow_handler);
-> -
-> -	/*
-> -	 * Register our interrupt handler.
-> -	 */
-> -	hv_register_vmbus_handler(irq, vmbus_isr);
-> -
->  	ret = hv_synic_alloc();
->  	if (ret)
->  		goto err_alloc;
-> @@ -753,7 +723,7 @@ static int vmbus_bus_init(int irq)
-> 
->  err_alloc:
->  	hv_synic_free();
-> -	free_irq(irq, hv_acpi_dev);
-> +	hv_remove_vmbus_irq(irq, hv_acpi_dev);
-> 
->  err_unregister:
->  	bus_unregister(&hv_bus);
-> @@ -978,8 +948,7 @@ cleanup:
-> 
->  static void __exit vmbus_exit(void)
->  {
-> -
-> -	free_irq(irq, hv_acpi_dev);
-> +	hv_remove_vmbus_irq(irq, hv_acpi_dev);
->  	vmbus_free_channels();
->  	bus_unregister(&hv_bus);
->  	hv_cleanup();
+> --- tip.orig/arch/x86/kernel/irq.c
+> +++ tip/arch/x86/kernel/irq.c
+> @@ -125,6 +125,12 @@ int arch_show_interrupts(struct seq_file
+>  		seq_printf(p, "%10u ", per_cpu(mce_poll_count, j));
+>  	seq_printf(p, "  Machine check polls\n");  #endif
+> +#if defined(CONFIG_HYPERV) || defined(CONFIG_XEN)
+> +	seq_printf(p, "%*s: ", prec, "THR");
+> +	for_each_online_cpu(j)
+> +		seq_printf(p, "%10u ", irq_stats(j)->irq_hv_callback_count);
+> +	seq_printf(p, "  Hypervisor callback interrupts\n"); #endif
+>  	seq_printf(p, "%*s: %10u\n", prec, "ERR",
+> atomic_read(&irq_err_count));  #if defined(CONFIG_X86_IO_APIC)
+>  	seq_printf(p, "%*s: %10u\n", prec, "MIS",
+> atomic_read(&irq_mis_count));
 > 
 
