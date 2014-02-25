@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaBYBpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 20:45:49 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51216 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaBYBps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 20:45:48 -0500
-Date: Tue, 25 Feb 2014 10:05:23 +0900
-From: Mark Brown <broonie@kernel.org>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        nikesh <Nikesh.Oswal@wolfsonmicro.com>
-Message-ID: <20140225010523.GJ25940@sirena.org.uk>
-References: <1393250058-18430-1-git-send-email-Nikesh.Oswal@wolfsonmicro.com>
+	id S1753183AbaBYBrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:47:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55104 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212AbaBYBrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 20:47:21 -0500
+X-IronPort-AV: E=Sophos;i="4.97,538,1389715200"; 
+   d="scan'208";a="9596607"
+Message-ID: <530BF6B4.3040206@cn.fujitsu.com>
+Date: Tue, 25 Feb 2014 09:49:40 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BxIhUKWW31lNoI9D"
-Content-Disposition: inline
-In-Reply-To: <1393250058-18430-1-git-send-email-Nikesh.Oswal@wolfsonmicro.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASOC: dapm: add param_fixup callback
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
-To: unlisted-recipients:; (no To-header on input)
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+References: <20140207140536.943daf965008b9428cdcb468@linux-foundation.org>	<201402081055.BGJ73403.tQMLFVOJSOOFFH@I-love.SAKURA.ne.jp>	<20140207180647.5944fe3d.akpm@linux-foundation.org>	<201402092327.JAD12489.QOLSFVMHJtFOOF@I-love.SAKURA.ne.jp>	<201402102243.IEJ52676.JOFVMOQFOFSLtH@I-love.SAKURA.ne.jp> <201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
+In-Reply-To: <201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/25 09:44:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/25 09:45:00,
+	Serialize complete at 2014/02/25 09:45:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC scheduler people.
 
---BxIhUKWW31lNoI9D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I can't figure out what we get with this patch.
 
-On Mon, Feb 24, 2014 at 01:54:18PM +0000, NikeshOswal wrote:
-> From: nikesh <Nikesh.Oswal@wolfsonmicro.com>
+On 02/17/2014 07:27 PM, Tetsuo Handa wrote:
+> Tetsuo Handa wrote:
+>> This is a draft patch which changes task_struct->comm to use RCU.
+> 
+> Changes from previous draft version:
+> 
+>   Changed "struct rcu_comm" to use copy-on-write approach. Those multi-thread
+>   or multi-process applications which do not change comm name will consume
+>   memory for only one "struct rcu_comm".
+> 
+>   Changed do_commset() not to sleep.
+> 
+>   Changed to tolerate loss of consistency when memory allocation failed.
+> 
+>   Fixed race condition in copy_process().
+> 
+> Regards.
+> ----------
+>>From ada6c4d94f5afda36c7c21869d38b7111a6fe9bc Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 17 Feb 2014 14:32:11 +0900
+> Subject: [PATCH] Change task_struct->comm to use RCU.
+> 
+> This patch changes task_struct->comm to be updated using RCU
+> (unless memory allocation fails).
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> ---
+>  fs/exec.c                 |  145 +++++++++++++++++++++++++++++++++++++++------
+>  include/linux/init_task.h |    4 +-
+>  include/linux/sched.h     |   37 ++++++++++--
+>  kernel/fork.c             |    9 +++
+>  kernel/kthread.c          |    4 +-
+>  kernel/sched/core.c       |    2 +-
+>  6 files changed, 173 insertions(+), 28 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index a781dec..8a68ab3 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -263,6 +263,11 @@ extern char ___assert_task_state[1 - 2*!!(
+>  
+>  /* Task command name length */
+>  #define TASK_COMM_LEN 16
+> +struct rcu_comm {
+> +	char name[TASK_COMM_LEN];
+> +	atomic_t usage;
+> +	struct rcu_head rcu;
+> +};
+>  
 
-You need to fix both your git and e-mail setups, you should be using
-"Nikesh Oswal" or similar as your real name and more importantly your
-mail setup is sending mail as "NikeshOswal" with no even a domain part
-which means you can't be replied to.  It is very important that you are
-able to get review comments at the address you post from.
 
-> dai-link params for codec-codec links were fixed.
-> The fixed link between codec and another chip which
-> may be another codec, baseband, bluetooth codec etc
+I think the name "rcu_comm" is not good, I suggest that s/rcu_comm/task_comm/g.
 
-Please use the full width for your changelog.
-
-> Change-Id: Iad6ee3951bc4e8b8bc519c62642a2b4bcd949c18
-
-Don't include noise like this in upstream submissions.
-
-> -	const struct snd_soc_pcm_stream *params;
-> +	struct snd_soc_pcm_stream *params;
-> +	/* optional params re-writing for dai links */
-> +	int (*params_fixup)(struct snd_soc_dapm_widget *w, int event);
-
-This isn't a great interface, it relies on the driver peering inside the
-core data structures and it means that we have to drop the consts from
-users.  Systems not using this feature ought to be able to declare their
-parameters as static const but this breaks that ability.  Similarly
-users that are fully dynamic need to allocate some static data to work
-with this interface.
-
-If you look at the existing interface you'll also see that it takes an
-array of parameters rather than just a single parameter.  The idea was
-to extend the interface to provide a control to userspace allowing
-selection of one of the configurations from a list for use with cases
-like modems which can switch between 8kHz and 16kHz modes.
-
---BxIhUKWW31lNoI9D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTC+xPAAoJELSic+t+oim9EN0QAIH9wnKFhpH1CZfAZFSQs/5G
-+sETiAQBGduB7EyJb1ZpQqjTjhnLDSfor28Uhuyd6WyQBwIPTiMKREyNFg7W7JiI
-CsgTi7w/KeU1nBL9ckEMxDXqdZ3vibV9TlwI6eSB0PSKVUnBDJYjWL2km6SujNKZ
-RKCpI2HT8jPkQdRY5Zgk6j+i2/ziQPjERISyjQE6s+Hs2VHmQfHKsHhwrhWD+h5z
-IdavPM2Ugi8ves+IqvnYSzkDV5q4WfyvN3toVCl931EXrIe0bbXHE5ucR+sKO5xo
-llLyGm2/aBityXi9Biof/qz98lS98Yc0Tjfg11g5Iqq3uhnZFUj0mUc4SOXkq0bU
-ZPWrw0T0xIPj6bShSFyfSW5EPXo8Xo5iaujBSqPv3700/KjURfhF+xtiA18wGhB/
-+7CMj/BWAw8JTgxgyCCfq1El4b6RaT9wHodIuO7X4YxVwNcdeVe6//lYLK6fJx4S
-1X4MSeLWloMFSeDHIu27r3aUDBAfvwcZ9dS9/YNq3od70QvTQtp7PPUt8seh6TaJ
-eGJNsrpGkJ5eHS/FqHOMcDxTp/kyD+1E06sNILMRifBr0z/rx7c2Ve4pXeBj3VBj
-3duzrrDfiEgz1GRt62+w2Siip66fRlejbRMQbyUAUX69BPUnDlFHZEtW0ZmR9JNn
-i2/jOqCn6vmSANBQ4FKS
-=UjEx
------END PGP SIGNATURE-----
-
---BxIhUKWW31lNoI9D--
