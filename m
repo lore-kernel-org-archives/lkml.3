@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaBYDyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 22:54:08 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:49064 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbaBYDyG (ORCPT
+	id S1753166AbaBYD4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:56:50 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:51174
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751660AbaBYD4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 22:54:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140225034635.GB7343@MrMyself>
-References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
-	<20140224113011.GE25940@sirena.org.uk>
-	<B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
-	<20140224160648.GC6132@MrMyself>
-	<20140225000027.GI25940@sirena.org.uk>
-	<20140225023840.GB7229@MrMyself>
-	<20140225030947.GO25940@sirena.org.uk>
-	<20140225031313.GA7343@MrMyself>
-	<20140225033929.GP25940@sirena.org.uk>
-	<20140225034635.GB7343@MrMyself>
-Date: Tue, 25 Feb 2014 00:54:04 -0300
-Message-ID: <CAOMZO5B8J-Fsv6BkeAQAneu1yf6vC-tV74VB-D6JPA1PPjd99Q@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: cs42888: Add codec driver support
-From: Fabio Estevam <festevam@gmail.com>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Austin, Brian" <Brian.Austin@cirrus.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
+	Mon, 24 Feb 2014 22:56:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh1155h)
+Date: Tue, 25 Feb 2014 11:54:48 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "Austin, Brian" <Brian.Austin@cirrus.com>,
         "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "rob@landley.net" <rob@landley.net>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
         "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        Liam Girdwood <lgirdwood@gmail.com>,
         "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
+Message-ID: <20140225035447.GC7343@MrMyself>
+References: <20140224113011.GE25940@sirena.org.uk>
+ <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
+ <20140224160648.GC6132@MrMyself>
+ <20140225000027.GI25940@sirena.org.uk>
+ <20140225023840.GB7229@MrMyself>
+ <20140225030947.GO25940@sirena.org.uk>
+ <20140225031313.GA7343@MrMyself>
+ <20140225033929.GP25940@sirena.org.uk>
+ <20140225034635.GB7343@MrMyself>
+ <20140225035232.GQ25940@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140225035232.GQ25940@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolin,
+On Tue, Feb 25, 2014 at 12:52:32PM +0900, Mark Brown wrote:
+> On Tue, Feb 25, 2014 at 11:46:36AM +0800, Nicolin Chen wrote:
+> > On Tue, Feb 25, 2014 at 12:39:29PM +0900, Mark Brown wrote:
+> 
+> > > So register it from the ESAI driver then.
+> 
+> > Then I think I need to find a way to pass the clock to CODEC driver...
+> 
+> Won't the normal DT mechanisms work here?  I'd expect them to, you can
+> already have multiple clock providers in a system.
 
-On Tue, Feb 25, 2014 at 12:46 AM, Nicolin Chen
-<Guangyu.Chen@freescale.com> wrote:
->> So register it from the ESAI driver then.
->
-> Then I think I need to find a way to pass the clock to CODEC driver...
+My knowledge should be out of date here. It's nicer to do it in that way.
 
-Does this example from mxs-saif help?
+Thank you.
 
-commit 7c9e6150f2e7cbd60e0bc9a19118ca1dc97d2780
-Author: Shawn Guo <shawn.guo@linaro.org>
-Date:   Mon Jul 1 16:16:10 2013 +0800
 
-    ASoC: mxs: register saif mclk to clock framework
-
-    Mostly the mxs system design uses saif0 mclk output as the clock source
-    of codec.  Since the mclk is implemented as a general divider with the
-    saif clk as the parent clock, let's register the mclk as a basic
-    clk-divider to common clock framework.  Then with it being a clock
-    provdier, clk_get() call in codec driver probe function will just work.
-
-    Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-    Signed-off-by: Mark Brown <broonie@linaro.org>
