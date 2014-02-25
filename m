@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaBYIYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 03:24:20 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56054 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaBYIYS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 03:24:18 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1751489AbaBYIaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 03:30:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41138 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735AbaBYIao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 03:30:44 -0500
+Date: Tue, 25 Feb 2014 09:32:30 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2] xen-pciback: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
+Message-ID: <20140225083230.GA2794@dhcp-26-207.brq.redhat.com>
+References: <1392804931-30671-10-git-send-email-agordeev@redhat.com>
+ <5304CC49.7020000@oracle.com>
+ <5304D063.90000@oracle.com>
+ <20140219160501.GA32067@dhcp-26-207.brq.redhat.com>
+ <5304DABD.9000605@oracle.com>
+ <20140221165235.GF17353@dhcp-26-207.brq.redhat.com>
+ <20140221165340.GG17353@dhcp-26-207.brq.redhat.com>
+ <20140224191831.GA7056@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Nishanth Menon <nm@ti.com>,
-        =?utf-8?q?Beno=C3=AEt_Cousson?= <bcousson@baylibre.com>,
-        "Tony Lindgren" <tony@atomide.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1391019557-22313-2-git-send-email-nm@ti.com>
-Cc: "Tero Kristo" <t-kristo@ti.com>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Nishanth Menon" <nm@ti.com>
-References: <1391019557-22313-1-git-send-email-nm@ti.com>
- <1391019557-22313-2-git-send-email-nm@ti.com>
-Message-ID: <20140225082411.22529.21466@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 1/2] clk: ti: am335x: remove unecessary cpu0 clk node
-Date: Tue, 25 Feb 2014 00:24:11 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224191831.GA7056@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Nishanth Menon (2014-01-29 10:19:16)
-> cpu0 clock node has no functionality, since cpufreq-cpu0 is already
-> capable of picking up the clock from dts.
+On Mon, Feb 24, 2014 at 02:18:31PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Fri, Feb 21, 2014 at 05:53:40PM +0100, Alexander Gordeev wrote:
+> > As result of deprecation of MSI-X/MSI enablement functions
+> > pci_enable_msix() and pci_enable_msi_block() all drivers
+> > using these two interfaces need to be updated to use the
+> > new pci_enable_msi_range()  or pci_enable_msi_exact()
+> > and pci_enable_msix_range() or pci_enable_msix_exact()
+> > interfaces.
 > 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+> What is this based on? Thanks.
 
-Taken into clk-next!
+3.14-rc4
 
+-- 
 Regards,
-Mike
-
-> ---
->  drivers/clk/ti/clk-33xx.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/clk/ti/clk-33xx.c b/drivers/clk/ti/clk-33xx.c
-> index 776ee45..028b337 100644
-> --- a/drivers/clk/ti/clk-33xx.c
-> +++ b/drivers/clk/ti/clk-33xx.c
-> @@ -34,7 +34,6 @@ static struct ti_dt_clk am33xx_clks[] = {
->         DT_CLK(NULL, "dpll_core_m5_ck", "dpll_core_m5_ck"),
->         DT_CLK(NULL, "dpll_core_m6_ck", "dpll_core_m6_ck"),
->         DT_CLK(NULL, "dpll_mpu_ck", "dpll_mpu_ck"),
-> -       DT_CLK("cpu0", NULL, "dpll_mpu_ck"),
->         DT_CLK(NULL, "dpll_mpu_m2_ck", "dpll_mpu_m2_ck"),
->         DT_CLK(NULL, "dpll_ddr_ck", "dpll_ddr_ck"),
->         DT_CLK(NULL, "dpll_ddr_m2_ck", "dpll_ddr_m2_ck"),
-> -- 
-> 1.7.9.5
-> 
+Alexander Gordeev
+agordeev@redhat.com
