@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaBYIxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 03:53:41 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:35739 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaBYIxi (ORCPT
+	id S1752638AbaBYIyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 03:54:13 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:33139 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaBYIyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 03:53:38 -0500
+	Tue, 25 Feb 2014 03:54:11 -0500
+Date: Tue, 25 Feb 2014 08:54:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, David Jander <david@protonic.nl>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [PATCH V1 1/3] include/linux/mfd/da9052/da9052: Add new BC chip
+Message-ID: <20140225085403.GC19099@lee--X1>
+References: <201402191636.s1JGarhP017640@swsrvapps-02.lan>
 MIME-Version: 1.0
-In-Reply-To: <1392926021-19526-1-git-send-email-geert@linux-m68k.org>
-References: <1392926021-19526-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 25 Feb 2014 09:53:37 +0100
-Message-ID: <CACRpkdbYh2LKBW-qG7EiccF7D4cXEcrWv0hiH1PY5jiW3XY1Zw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: sh-pfc: r8a7790: Add alternative MSIOF pin groups
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201402191636.s1JGarhP017640@swsrvapps-02.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 8:53 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
+> Add the hash define for the new variant of the DA9053 PMIC called BC.
+> 
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> ---
+> 
+> This patch is relative to linux-next repository tag next-20140219
+> 
+> This patch must be applied before the others in this patch series
+> or the drivers that the other patches modify will not compile.
+> 
+>  include/linux/mfd/da9052/da9052.h |    1 +
+>  1 file changed, 1 insertion(+)
 
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Applied with an amended/corrected subject line.
 
-Laurent, can I have your ACK/review on Geert's patches?
+> diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+> index 21e21b8..bba65f5 100644
+> --- a/include/linux/mfd/da9052/da9052.h
+> +++ b/include/linux/mfd/da9052/da9052.h
+> @@ -83,6 +83,7 @@ enum da9052_chip_id {
+>  	DA9053_AA,
+>  	DA9053_BA,
+>  	DA9053_BB,
+> +	DA9053_BC,
+>  };
+>  
+>  struct da9052_pdata;
 
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
