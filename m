@@ -1,180 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaBYUFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 15:05:01 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10688 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422AbaBYUE7 (ORCPT
+	id S1753535AbaBYUFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 15:05:47 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:49936 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416AbaBYUFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 15:04:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+spdmbOTU8qJWiQkBojNoyPWl8RgfxXCs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 3F82E533CE6
-Date: Tue, 25 Feb 2014 15:04:47 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140225200447.GA1872@titan.lakedaemon.net>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
- <20140225151656.GI1010@titan.lakedaemon.net>
- <530CB725.5070904@gmail.com>
- <20140225154347.GJ1010@titan.lakedaemon.net>
- <530CEDB7.2070103@gmail.com>
+	Tue, 25 Feb 2014 15:05:44 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 5/8] security: selinux: Use a more current logging style
+Date: Tue, 25 Feb 2014 15:05:41 -0500
+Message-ID: <2895078.vC4M4VjvUd@sifl>
+User-Agent: KMail/4.12.2 (Linux/3.12.9-gentoo; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <637b2f31e31f2b0d7a67131f1db125cc0b2bb829.1393279025.git.joe@perches.com>
+References: <cover.1393279025.git.joe@perches.com> <637b2f31e31f2b0d7a67131f1db125cc0b2bb829.1393279025.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530CEDB7.2070103@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
-
-On Tue, Feb 25, 2014 at 08:23:35PM +0100, Sebastian Hesselbarth wrote:
-> [Cooked down Cc list to relevant people and added Ezequiel who agreed
-> to test on Armada 375/38x.]
+On Monday, February 24, 2014 01:59:58 PM Joe Perches wrote:
+> Convert printk to pr_<level>.
+> Add pr_fmt.
+> Coalesce formats, add missing space where appropriate.
+> Standardize on one space after "SELinux: " prefix.
 > 
-> On 02/25/2014 04:43 PM, Jason Cooper wrote:
-> >On Tue, Feb 25, 2014 at 04:30:45PM +0100, Sebastian Hesselbarth wrote:
-> >>On 02/25/14 16:16, Jason Cooper wrote:
-> >>>On Tue, Feb 25, 2014 at 10:36:54AM +0100, Linus Walleij wrote:
-> >>>>On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> >>>>>I've now created mvebu/pinctrl-dove for this series.  It's based on
-> >>>>>v3.14-rc1, and depends on mvebu/pinctrl (which depends on
-> >>>>>mvebu/pinctrl-3xx).
-> >>>>>
-> >>>>>I've kept this series in a separate branch in case we encounter an
-> >>>>>unforeseen problem with something in here.  Then this branch can be
-> >>>>>dropped, and /pinctrl-3xx and /pinctrl will still make it in.
-> >>>>>
-> >>>>>So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
-> >>>>>in mvebu/dt.
-> >>>>
-> >>>>OK so what should I be pulling in first now?
-> >>>
-> >>>Of course I woke up this morning not happy with this :-/  Here's what it
-> >>>looks like currently:
-> >>>
-> >>>   /v3.14-rc1
-> >>>   |
-> >>>--+---+---+---+---+ mvebu/pinctrl-3xx
-> >>>   |               \
-> >>>   |---+---+---+---+---+---+---+ mvebu/pinctrl
-> >>>   \                           \
-> >>>    \---------------------------+---+---+---+ mvebu/pinctrl-dove
-> >>>
-> >>>Not to scale.
-> >>>
-> >>>
-> >>>I would prefer to do:
-> >>>
-> >>>   /v3.14-rc1
-> >>>   |
-> >>>--+---+---+---+---+ mvebu/pinctrl-cleanup
-> >>>   |               \
-> >>>   |----------------+--+---+---+ mvebu/pinctrl-3xx
-> >>>   \                \
-> >>>    \----------------+---+---+--+---+---+---+ mvebu/pinctrl-dove
-> >>>
-> >>>But this would mean moving some patches to branches other than what they
-> >>>were sent with.  The advantage is that /pinctrl-3xx and /pinctrl-dove
-> >>>don't depend on each other, and only depend on -cleanup.  Which is great
-> >>>if there is something wrong in either branch.
-> >>>
-> >>>Sebastian, I can cherry-pick the patches around, but you know the code
-> >>>better than any of us, do you foresee any problems with this scenario?
-> >>
-> >>If Thomas agrees, I can rework Armada 375/38x pinctrl stubs to fit on
-> >>mvebu/pinctrl. That should allow you to have mvebu/pinctrl-dove
-> >>independent of mvebu/pinctrl-3xx.
-> >>
-> >>Not a big deal, I'd just pick 375/38x patches from mvebu/pinctrl and
-> >>squash them into mvebu/pinctrl-3xx. The only "issue" is that DT
-> >>documentation update patches from mvebu/pinctrl-dove have to be split
-> >>too.
-> >>
-> >>I'll prepare the three new branches for you and Thomas to look at
-> >>today.
-> >
-> >Ok, great.  Thanks Sebastian!
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+A few minor comments inline ...
+
+> diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+> index fc3e662..f9bb683 100644
+> --- a/security/selinux/avc.c
+> +++ b/security/selinux/avc.c
+> @@ -13,6 +13,9 @@
+>   *	it under the terms of the GNU General Public License version 2,
+>   *	as published by the Free Software Foundation.
+>   */
+> +
+> +#define pr_fmt(fmt) "SELinux: " KBUILD_MODNAME ": " fmt
+> +
+
+Wouldn't this result in "SELinux: selinux: ..."?  If not great, if so, let's 
+just specify "avc" the old fashioned way.
+
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index d07413d..49a4a3d 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+
+>  	/* Set the security state for the initial task. */
+>  	cred_init_security();
+> @@ -5976,9 +5958,9 @@ static __init int selinux_init(void)
+>  		panic("SELinux: Unable to register with kernel.\n");
 > 
-> Ok, branches based on v3.14-rc1 with above dependencies can be found on:
+>  	if (selinux_enforcing)
+> -		printk(KERN_DEBUG "SELinux:  Starting in enforcing mode\n");
+> +		printk(KERN_DEBUG "SELinux: Starting in enforcing mode\n");
+>  	else
+> -		printk(KERN_DEBUG "SELinux:  Starting in permissive mode\n");
+> +		printk(KERN_DEBUG "SELinux: Starting in permissive mode\n");
 > 
-> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-cleanup
-> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-3xx
-> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-dove
+>  	return 0;
+>  }
+
+What about using 'pr_fmt("...")' in the printks above?  Seems like it would 
+help with consistency.
+
+> @@ -5990,10 +5972,10 @@ static void delayed_superblock_init(struct
+> super_block *sb, void *unused)
 > 
-> and an a-i-o branch to ease testing:
+>  void selinux_complete_init(void)
+>  {
+> -	printk(KERN_DEBUG "SELinux:  Completing initialization.\n");
+> +	printk(KERN_DEBUG "SELinux: Completing initialization\n");
 > 
-> https://github.com/shesselba/linux-dove.git for-mvebu/all-merged-in
+>  	/* Set up any superblocks initialized prior to the policy load. */
+> -	printk(KERN_DEBUG "SELinux:  Setting up existing superblocks.\n");
+> +	printk(KERN_DEBUG "SELinux: Setting up existing superblocks\n");
+>  	iterate_supers(delayed_superblock_init, NULL);
+>  }
+
+Same.
+
+> @@ -6055,7 +6037,7 @@ static int __init selinux_nf_ip_init(void)
+>  	if (!selinux_enabled)
+>  		goto out;
 > 
-> @Jason: I guess we should resend all three branches as individual
-> patches on list somehow.
+> -	printk(KERN_DEBUG "SELinux:  Registering netfilter hooks\n");
+> +	printk(KERN_DEBUG "SELinux: Registering netfilter hooks\n");
+> 
+>  	err = nf_register_hooks(selinux_ipv4_ops, ARRAY_SIZE(selinux_ipv4_ops));
+>  	if (err)
+> @@ -6076,7 +6058,7 @@ __initcall(selinux_nf_ip_init);
+>  #ifdef CONFIG_SECURITY_SELINUX_DISABLE
+>  static void selinux_nf_ip_exit(void)
+>  {
+> -	printk(KERN_DEBUG "SELinux:  Unregistering netfilter hooks\n");
+> +	printk(KERN_DEBUG "SELinux: Unregistering netfilter hooks\n");
 
-Damn!  So close!
+Same.
 
-$ git diff mvebu/pinctrl-dove shesselba/for-mvebu/all-merged-in
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index 2b76524f4aa7..eeb08edb67ac 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -390,7 +390,9 @@
- 
- 			pinctrl: pin-ctrl@d0200 {
- 				compatible = "marvell,dove-pinctrl";
--				reg = <0xd0200 0x10>;
-+				reg = <0xd0200 0x14>,
-+				      <0xd0440 0x04>,
-+				      <0xd802c 0x08>;
- 				clocks = <&gate_clk 22>;
- 
- 				pmx_gpio_0: pmx-gpio-0 {
-@@ -614,6 +616,12 @@
- 				interrupts = <5>;
- 			};
- 
-+			gconf: global-config@e802c {
-+				compatible = "marvell,dove-global-config",
-+				             "syscon";
-+				reg = <0xe802c 0x14>;
-+			};
-+
- 			gpio2: gpio-ctrl@e8400 {
- 				compatible = "marvell,orion-gpio";
- 				#gpio-cells = <2>;
-diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
-index 322ca8cb63eb..1049f82fb62f 100644
---- a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
-@@ -428,7 +428,6 @@ static int armada_38x_pinctrl_probe(struct platform_device *pdev)
- 		return PTR_ERR(mpp_base);
- 
- 	soc->variant = (unsigned) match->data & 0xff;
--
- 	soc->controls = armada_38x_mpp_controls;
- 	soc->ncontrols = ARRAY_SIZE(armada_38x_mpp_controls);
- 	soc->gpioranges = armada_38x_mpp_gpio_ranges;
+> diff --git a/security/selinux/netport.c b/security/selinux/netport.c
+> index d353797..20a4ed0 100644
+> --- a/security/selinux/netport.c
+> +++ b/security/selinux/netport.c
+> @@ -12,7 +12,6 @@
+>   *   (see security/selinux/netif.c for more information)
+>   *
+>   */
+> -
+>  /*
+>   * (c) Copyright Hewlett-Packard Development Company, L.P., 2008
+>   *
 
+Whitespace noise.
 
-If you can drop the dtsi changes (I have them in mvebu/dt), and fix the
-whitespace change, then we can merge them as is.
+> diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+> index c0f4988..ff9e193 100644
+> --- a/security/selinux/ss/policydb.c
+> +++ b/security/selinux/ss/policydb.c
+> @@ -25,6 +25,8 @@
+>   *	the Free Software Foundation, version 2.
+>   */
+> 
+> +#define pr_fmt(fmt) "SELinux: " fmt
+> +
+>  #include <linux/kernel.h>
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+> @@ -515,14 +517,14 @@ static int policydb_index(struct policydb *p)
+>  {
+>  	int i, rc;
+> 
+> -	printk(KERN_DEBUG "SELinux:  %d users, %d roles, %d types, %d bools",
+> +	printk(KERN_DEBUG "SELinux: %d users, %d roles, %d types, %d bools",
+>  	       p->p_users.nprim, p->p_roles.nprim, p->p_types.nprim,
+> p->p_bools.nprim); if (p->mls_enabled)
+>  		printk(", %d sens, %d cats", p->p_levels.nprim,
+>  		       p->p_cats.nprim);
+>  	printk("\n");
+> 
+> -	printk(KERN_DEBUG "SELinux:  %d classes, %d rules\n",
+> +	printk(KERN_DEBUG "SELinux: %d classes, %d rules\n",
+>  	       p->p_classes.nprim, p->te_avtab.nel);
 
-Thanks a ton for handling this!
+More potential 'pr_fmt(x)' uses ...
 
-thx,
-
-Jason.
+-- 
+paul moore
+www.paul-moore.com
 
