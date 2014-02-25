@@ -1,164 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaBYNwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 08:52:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40623 "EHLO mx1.redhat.com"
+	id S1753260AbaBYNwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 08:52:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47722 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752598AbaBYNwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 08:52:19 -0500
-Date: Tue, 25 Feb 2014 15:57:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org,
-        Qin Chuanyu <qinchuanyu@huawei.com>
-Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
- exceed the limit
-Message-ID: <20140225135738.GA15274@redhat.com>
-References: <1393311238-7750-1-git-send-email-jasowang@redhat.com>
+	id S1752539AbaBYNw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 08:52:27 -0500
+Message-ID: <530C9FF1.3060409@ti.com>
+Date: Tue, 25 Feb 2014 19:21:45 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393311238-7750-1-git-send-email-jasowang@redhat.com>
+To: Loc Ho <lho@apm.com>, <tj@kernel.org>
+CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>,
+        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
+Subject: Re: [PATCH RESEND v10 2/4] Documentation: Add APM X-Gene SoC 15Gbps
+ Multi-purpose PHY driver binding documentation
+References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com> <1393308882-3964-3-git-send-email-lho@apm.com>
+In-Reply-To: <1393308882-3964-3-git-send-email-lho@apm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
-> We used to stop the handling of tx when the number of pending DMAs
-> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
-> of both host and guest. But it was too aggressive in some cases, since
-> any delay or blocking of a single packet may delay or block the guest
-> transmission. Consider the following setup:
-> 
->     +-----+        +-----+
->     | VM1 |        | VM2 |
->     +--+--+        +--+--+
->        |              |
->     +--+--+        +--+--+
->     | tap0|        | tap1|
->     +--+--+        +--+--+
->        |              |
->     pfifo_fast   htb(10Mbit/s)
->        |              |
->     +--+--------------+---+
->     |     bridge          |
->     +--+------------------+
->        |
->     pfifo_fast
->        |
->     +-----+
->     | eth0|(100Mbit/s)
->     +-----+
-> 
-> - start two VMs and connect them to a bridge
-> - add an physical card (100Mbit/s) to that bridge
-> - setup htb on tap1 and limit its throughput to 10Mbit/s
-> - run two netperfs in the same time, one is from VM1 to VM2. Another is
->   from VM1 to an external host through eth0.
-> - result shows that not only the VM1 to VM2 traffic were throttled but
->   also the VM1 to external host through eth0 is also throttled somehow.
-> 
-> This is because the delay added by htb may lead the delay the finish
-> of DMAs and cause the pending DMAs for tap0 exceeds the limit
-> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
-> htb send some packets. The problem here is all of the packets
-> transmission were blocked even if it does not go to VM2.
-> 
-> We can solve this issue by relaxing it a little bit: switching to use
-> data copy instead of stopping tx when the number of pending DMAs
-> exceed the VHOST_MAX_PEND. This is safe because:
-> 
-> - The number of pending DMAs were still limited by VHOST_MAX_PEND
-> - The out of order completion during mode switch can make sure that
->   most of the tx buffers were freed in time in guest.
-> 
-> So even if about 50% packets were delayed in zero-copy case, vhost
-> could continue to do the transmission through data copy in this case.
-> 
-> Test result:
-> 
-> Before this patch:
-> VM1 to VM2 throughput is 9.3Mbit/s
-> VM1 to External throughput is 40Mbit/s
-> 
-> After this patch:
-> VM1 to VM2 throughput is 9.3Mbit/s
-> Vm1 to External throughput is 93Mbit/s
+On Tuesday 25 February 2014 11:44 AM, Loc Ho wrote:
 
-Would like to see CPU utilization #s as well.
+missing commit log..
 
-> Simple performance test on 40gbe shows no obvious changes in
-> throughput after this patch.
-> 
-> The patch only solve this issue when unlimited sndbuf. We still need a
-> solution for limited sndbuf.
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Qin Chuanyu <qinchuanyu@huawei.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-I think this needs some thought.
-
-In particular I think this works because VHOST_MAX_PEND
-is much smaller than the ring size.
-Shouldn't max_pend then be tied to the ring size if it's small?
-
-Another question is about stopping vhost:
-ATM it's waiting for skbs to complete.
-Should we maybe hunt down skbs queued and destroy them
-instead?
-I think this happens when a device is removed.
-
-Thoughts?
-
+-Kishon
+> Signed-off-by: Loc Ho <lho@apm.com>
+> Signed-off-by: Tuan Phan <tphan@apm.com>
+> Signed-off-by: Suman Tripathi <stripathi@apm.com>
 > ---
->  drivers/vhost/net.c | 17 +++++++----------
->  1 file changed, 7 insertions(+), 10 deletions(-)
+>  .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 ++++++++++++++++++++
+>  1 files changed, 79 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
 > 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index a0fa5de..3e96e47 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -345,7 +345,7 @@ static void handle_tx(struct vhost_net *net)
->  		.msg_flags = MSG_DONTWAIT,
->  	};
->  	size_t len, total_len = 0;
-> -	int err;
-> +	int err, num_pends;
->  	size_t hdr_size;
->  	struct socket *sock;
->  	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
-> @@ -366,13 +366,6 @@ static void handle_tx(struct vhost_net *net)
->  		if (zcopy)
->  			vhost_zerocopy_signal_used(net, vq);
->  
-> -		/* If more outstanding DMAs, queue the work.
-> -		 * Handle upend_idx wrap around
-> -		 */
-> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
-> -			      % UIO_MAXIOV == nvq->done_idx))
-> -			break;
-> -
->  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
->  					 ARRAY_SIZE(vq->iov),
->  					 &out, &in,
-> @@ -405,9 +398,13 @@ static void handle_tx(struct vhost_net *net)
->  			break;
->  		}
->  
-> +		num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
-> +			    (nvq->upend_idx - nvq->done_idx) :
-> +			    (nvq->upend_idx + UIO_MAXIOV -
-> +			     nvq->done_idx);
+> diff --git a/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
+> new file mode 100644
+> index 0000000..5f3a65a
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
+> @@ -0,0 +1,79 @@
+> +* APM X-Gene 15Gbps Multi-purpose PHY nodes
 > +
->  		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
-> -				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
-> -				      nvq->done_idx
-> +				   && num_pends <= VHOST_MAX_PEND
->  				   && vhost_net_tx_select_zcopy(net);
->  
->  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-> -- 
-> 1.8.3.2
+> +PHY nodes are defined to describe on-chip 15Gbps Multi-purpose PHY. Each
+> +PHY (pair of lanes) has its own node.
+> +
+> +Required properties:
+> +- compatible		: Shall be "apm,xgene-phy".
+> +- reg			: PHY memory resource is the SDS PHY access resource.
+> +- #phy-cells		: Shall be 1 as it expects one argument for setting
+> +			  the mode of the PHY. Possible values are 0 (SATA),
+> +			  1 (SGMII), 2 (PCIe), 3 (USB), and 4 (XFI).
+> +
+> +Optional properties:
+> +- status		: Shall be "ok" if enabled or "disabled" if disabled.
+> +			  Default is "ok".
+> +- clocks		: Reference to the clock entry.
+> +- apm,tx-eye-tuning	: Manual control to fine tune the capture of the serial
+> +			  bit lines from the automatic calibrated position.
+> +			  Two set of 3-tuple setting for each (up to 3)
+> +			  supported link speed on the host. Range from 0 to
+> +			  127 in unit of one bit period. Default is 10.
+> +- apm,tx-eye-direction	: Eye tuning manual control direction. 0 means sample
+> +			  data earlier than the nominal sampling point. 1 means
+> +			  sample data later than the nominal sampling point.
+> +			  Two set of 3-tuple setting for each (up to 3)
+> +			  supported link speed on the host. Default is 0.
+> +- apm,tx-boost-gain	: Frequency boost AC (LSB 3-bit) and DC (2-bit)
+> +			  gain control. Two set of 3-tuple setting for each
+> +			  (up to 3) supported link speed on the host. Range is
+> +			  between 0 to 31 in unit of dB. Default is 3.
+> +- apm,tx-amplitude	: Amplitude control. Two set of 3-tuple setting for
+> +			  each (up to 3) supported link speed on the host.
+> +			  Range is between 0 to 199500 in unit of uV.
+> +			  Default is 199500 uV.
+> +- apm,tx-pre-cursor1	: 1st pre-cursor emphasis taps control. Two set of
+> +			  3-tuple setting for each (up to 3) supported link
+> +			  speed on the host. Range is 0 to 273000 in unit of
+> +			  uV. Default is 0.
+> +- apm,tx-pre-cursor2	: 2st pre-cursor emphasis taps control. Two set of
+> +			  3-tuple setting for each (up to 3) supported link
+> +			  speed on the host. Range is 0 to 127400 in unit uV.
+> +			  Default is 0x0.
+> +- apm,tx-post-cursor	: Post-cursor emphasis taps control. Two set of
+> +			  3-tuple setting for Gen1, Gen2, and Gen3. Range is
+> +			  between 0 to 0x1f in unit of 18.2mV. Default is 0xf.
+> +- apm,tx-speed		: Tx operating speed. One set of 3-tuple for each
+> +			  supported link speed on the host.
+> +			   0 = 1-2Gbps
+> +			   1 = 2-4Gbps (1st tuple default)
+> +			   2 = 4-8Gbps
+> +			   3 = 8-15Gbps (2nd tuple default)
+> +			   4 = 2.5-4Gbps
+> +			   5 = 4-5Gbps
+> +			   6 = 5-6Gbps
+> +			   7 = 6-16Gbps (3rd tuple default)
+> +
+> +NOTE: PHY override parameters are board specific setting.
+> +
+> +Example:
+> +		phy1: phy@1f21a000 {
+> +			compatible = "apm,xgene-phy";
+> +			reg = <0x0 0x1f21a000 0x0 0x100>;
+> +			#phy-cells = <1>;
+> +			status = "disabled";
+> +		};
+> +
+> +		phy2: phy@1f22a000 {
+> +			compatible = "apm,xgene-phy";
+> +			reg = <0x0 0x1f22a000 0x0 0x100>;
+> +			#phy-cells = <1>;
+> +			status = "ok";
+> +		};
+> +
+> +		phy3: phy@1f23a000 {
+> +			compatible = "apm,xgene-phy";
+> +			reg = <0x0 0x1f23a000 0x0 0x100>;
+> +			#phy-cells = <1>;
+> +			status = "ok";
+> +		};
+> 
+
