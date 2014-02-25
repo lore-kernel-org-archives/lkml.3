@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261AbaBYQUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:20:39 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:55805 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbaBYQUi (ORCPT
+	id S1753198AbaBYQW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:22:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46226 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129AbaBYQWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:20:38 -0500
-Date: Tue, 25 Feb 2014 17:20:56 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <peterz@infradead.org>, <mingo@redhat.com>
-Subject: Re: [PATCH] sched/deadline: Cleanup RT leftovers from
- {inc/dec}_dl_migration
-Message-Id: <20140225172056.27f2091bcb0cb077281dcc45@gmail.com>
-In-Reply-To: <1393343543.4089.5.camel@tkhai>
-References: <1393343543.4089.5.camel@tkhai>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 25 Feb 2014 11:22:24 -0500
+Message-ID: <530CC33F.8050805@infradead.org>
+Date: Tue, 25 Feb 2014 08:22:23 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Feb 25 (externally_visible attribute)
+References: <20140225184832.420d9e32378e9f68a9432bcb@canb.auug.org.au>
+In-Reply-To: <20140225184832.420d9e32378e9f68a9432bcb@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014 19:52:23 +0400
-Kirill Tkhai <ktkhai@parallels.com> wrote:
-
+On 02/24/2014 11:48 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> In deadline class we do not have group scheduling.
+> This tree fails (more than usual) the powerpc allyesconfig build.
 > 
-> So, let's remove unnecessary
-> 
-> 	X = X;
-> 
-> equations.
+> Changes since 20140224:
 > 
 
-Thanks!
+I'm seeing several of these warnings (since 20140224):
 
-- Juri
+arch/x86/crypto/sha1_ssse3_glue.c:43:1: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]
+arch/x86/crypto/sha256_ssse3_glue.c:56:1: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]
+arch/x86/crypto/sha512_ssse3_glue.c:55:1: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]
+arch/x86/kernel/machine_kexec_32.c:191:12: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]
 
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> CC: Juri Lelli <juri.lelli@gmail.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@redhat.com>
-> ---
->  kernel/sched/deadline.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index ef96edc..2c28437 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -135,7 +135,6 @@ static void update_dl_migration(struct dl_rq *dl_rq)
->  static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
->  {
->  	struct task_struct *p = dl_task_of(dl_se);
-> -	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
->  
->  	if (p->nr_cpus_allowed > 1)
->  		dl_rq->dl_nr_migratory++;
-> @@ -146,7 +145,6 @@ static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
->  static void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
->  {
->  	struct task_struct *p = dl_task_of(dl_se);
-> -	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
->  
->  	if (p->nr_cpus_allowed > 1)
->  		dl_rq->dl_nr_migratory--;
-> 
-> 
-> 
+
+-- 
+~Randy
