@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaBYNGh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 08:06:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50401 "EHLO mx2.suse.de"
+	id S1752902AbaBYNG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 08:06:56 -0500
+Received: from mout.gmx.net ([212.227.15.18]:63159 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752120AbaBYNGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 08:06:36 -0500
-Date: Tue, 25 Feb 2014 13:06:32 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: exclude memory less nodes from zone_reclaim
-Message-ID: <20140225130632.GR6732@suse.de>
-References: <1392889904-18019-1-git-send-email-mhocko@suse.cz>
+	id S1752120AbaBYNGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 08:06:54 -0500
+From: Marc Dietrich <marvin24@gmx.de>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCHv2 1/5] ARM: tegra: remove obsolete gpio entries
+Date: Tue, 25 Feb 2014 14:06:45 +0100
+Message-ID: <5570705.i8uRb6OetD@fb07-iapwap2>
+User-Agent: KMail/4.12.2 (Linux/3.14.0-rc3-12.gfc9498b-desktop+; KDE/4.12.2; x86_64; ; )
+In-Reply-To: <1393330950-7283-2-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com> <1393330950-7283-2-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1392889904-18019-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Provags-ID: V03:K0:ZUGAxe0GJrbgyGwyel2vBsqeobkMMS2fbMojjGhnE3y9VtlhyTC
+ 8Kw0sptpQDsJ/npVPuNUi9ipc+Q88RArikrcb7A8uXzMgPpcVC7spCWIj3pU8dYCNAUCLMK
+ H90h/CivjPlWqKI3zirkjA7NCPixDofmZ4qwifdFnfVRR5C0JujmGEQx+AX6WqeDNPEDPhY
+ Hhg4qFbr7oK72/mPN4rAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:51:44AM +0100, Michal Hocko wrote:
-> We had a report about strange OOM killer strikes on a PPC machine
-> although there was a lot of swap free and a tons of anonymous memory
-> which could be swapped out. In the end it turned out that the OOM was
-> a side effect of zone reclaim which wasn't doesn't unmap and swapp out
-> and so the system was pushed to the OOM. Although this sounds like a bug
-> somewhere in the kswapd vs. zone reclaim vs. direct reclaim interaction
-> numactl on the said hardware suggests that the zone reclaim should
-> have been set in the first place:
-> node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-> node 0 size: 0 MB
-> node 0 free: 0 MB
-> node 2 cpus:
-> node 2 size: 7168 MB
-> node 2 free: 6019 MB
-> node distances:
-> node   0   2
-> 0:  10  40
-> 2:  40  10
-> 
-> So all the CPUs are associated with Node0 which doesn't have any memory
-> while Node2 contains all the available memory. Node distances cause an
-> automatic zone_reclaim_mode enabling.
-> 
-> Zone reclaim is intended to keep the allocations local but this doesn't
-> make any sense on the memory less nodes. So let's exclude such nodes
-> for init_zone_allows_reclaim which evaluates zone reclaim behavior and
-> suitable reclaim_nodes.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-> Tested-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Hi Heikki,
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Am Dienstag, 25. Februar 2014, 14:22:26 schrieb Heikki Krogerus:
+> After moving to description based gpio interface in
+> rfkill-gpio, the gpio numbers are not used any more.
+> 
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-FWIW, I do expect that memory hot-adding memory later will cause problems
-because the node is only initialised if it was previously considered offline
-but Nishanth is making changes in that area and it would be easier to fix
-it up in that context.
+Reviewed-by: Marc Dietrich <marvin24@gmx.de>
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks for taking care!
+
+Marc
+
+> ---
+>  arch/arm/mach-tegra/board-paz00.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-tegra/board-paz00.c
+> b/arch/arm/mach-tegra/board-paz00.c index e4dec9f..9c6029b 100644
+> --- a/arch/arm/mach-tegra/board-paz00.c
+> +++ b/arch/arm/mach-tegra/board-paz00.c
+> @@ -23,9 +23,7 @@
+>  #include "board.h"
+> 
+>  static struct rfkill_gpio_platform_data wifi_rfkill_platform_data = {
+> -	.name		= "wifi_rfkill",
+> -	.reset_gpio	= 25, /* PD1 */
+> -	.shutdown_gpio	= 85, /* PK5 */
+> +	.name	= "wifi_rfkill",
+>  	.type	= RFKILL_TYPE_WLAN,
+>  };
+
