@@ -1,128 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaBYNwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 08:52:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:47722 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539AbaBYNw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 08:52:27 -0500
-Message-ID: <530C9FF1.3060409@ti.com>
-Date: Tue, 25 Feb 2014 19:21:45 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Loc Ho <lho@apm.com>, <tj@kernel.org>
-CC: <olof@lixom.net>, <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <ddutile@redhat.com>, <jcm@redhat.com>, <patches@apm.com>,
-        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
-Subject: Re: [PATCH RESEND v10 2/4] Documentation: Add APM X-Gene SoC 15Gbps
- Multi-purpose PHY driver binding documentation
-References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com> <1393308882-3964-3-git-send-email-lho@apm.com>
-In-Reply-To: <1393308882-3964-3-git-send-email-lho@apm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753318AbaBYNyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 08:54:11 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50478 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752314AbaBYNyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 08:54:07 -0500
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, lee.jones@linaro.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH 2/4] regmap: Add bypassed version of regmap_multi_reg_write
+Date: Tue, 25 Feb 2014 13:45:50 +0000
+Message-Id: <1393335952-28490-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1393335952-28490-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1393335952-28490-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 February 2014 11:44 AM, Loc Ho wrote:
+Devices with more complex boot proceedures may occasionally apply the
+register patch manual. regmap_multi_reg_write is a logical way to do so,
+however the patch must be applied with cache bypass on, such that it
+doesn't override any user settings. This patch adds a
+regmap_multi_reg_write_bypassed function that applies a set of writes
+with the bypass enabled.
 
-missing commit log..
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap.c |   75 ++++++++++++++++++++++++++++++++++-------
+ include/linux/regmap.h       |    3 ++
+ 2 files changed, 65 insertions(+), 13 deletions(-)
 
--Kishon
-> Signed-off-by: Loc Ho <lho@apm.com>
-> Signed-off-by: Tuan Phan <tphan@apm.com>
-> Signed-off-by: Suman Tripathi <stripathi@apm.com>
-> ---
->  .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 ++++++++++++++++++++
->  1 files changed, 79 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
-> new file mode 100644
-> index 0000000..5f3a65a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
-> @@ -0,0 +1,79 @@
-> +* APM X-Gene 15Gbps Multi-purpose PHY nodes
-> +
-> +PHY nodes are defined to describe on-chip 15Gbps Multi-purpose PHY. Each
-> +PHY (pair of lanes) has its own node.
-> +
-> +Required properties:
-> +- compatible		: Shall be "apm,xgene-phy".
-> +- reg			: PHY memory resource is the SDS PHY access resource.
-> +- #phy-cells		: Shall be 1 as it expects one argument for setting
-> +			  the mode of the PHY. Possible values are 0 (SATA),
-> +			  1 (SGMII), 2 (PCIe), 3 (USB), and 4 (XFI).
-> +
-> +Optional properties:
-> +- status		: Shall be "ok" if enabled or "disabled" if disabled.
-> +			  Default is "ok".
-> +- clocks		: Reference to the clock entry.
-> +- apm,tx-eye-tuning	: Manual control to fine tune the capture of the serial
-> +			  bit lines from the automatic calibrated position.
-> +			  Two set of 3-tuple setting for each (up to 3)
-> +			  supported link speed on the host. Range from 0 to
-> +			  127 in unit of one bit period. Default is 10.
-> +- apm,tx-eye-direction	: Eye tuning manual control direction. 0 means sample
-> +			  data earlier than the nominal sampling point. 1 means
-> +			  sample data later than the nominal sampling point.
-> +			  Two set of 3-tuple setting for each (up to 3)
-> +			  supported link speed on the host. Default is 0.
-> +- apm,tx-boost-gain	: Frequency boost AC (LSB 3-bit) and DC (2-bit)
-> +			  gain control. Two set of 3-tuple setting for each
-> +			  (up to 3) supported link speed on the host. Range is
-> +			  between 0 to 31 in unit of dB. Default is 3.
-> +- apm,tx-amplitude	: Amplitude control. Two set of 3-tuple setting for
-> +			  each (up to 3) supported link speed on the host.
-> +			  Range is between 0 to 199500 in unit of uV.
-> +			  Default is 199500 uV.
-> +- apm,tx-pre-cursor1	: 1st pre-cursor emphasis taps control. Two set of
-> +			  3-tuple setting for each (up to 3) supported link
-> +			  speed on the host. Range is 0 to 273000 in unit of
-> +			  uV. Default is 0.
-> +- apm,tx-pre-cursor2	: 2st pre-cursor emphasis taps control. Two set of
-> +			  3-tuple setting for each (up to 3) supported link
-> +			  speed on the host. Range is 0 to 127400 in unit uV.
-> +			  Default is 0x0.
-> +- apm,tx-post-cursor	: Post-cursor emphasis taps control. Two set of
-> +			  3-tuple setting for Gen1, Gen2, and Gen3. Range is
-> +			  between 0 to 0x1f in unit of 18.2mV. Default is 0xf.
-> +- apm,tx-speed		: Tx operating speed. One set of 3-tuple for each
-> +			  supported link speed on the host.
-> +			   0 = 1-2Gbps
-> +			   1 = 2-4Gbps (1st tuple default)
-> +			   2 = 4-8Gbps
-> +			   3 = 8-15Gbps (2nd tuple default)
-> +			   4 = 2.5-4Gbps
-> +			   5 = 4-5Gbps
-> +			   6 = 5-6Gbps
-> +			   7 = 6-16Gbps (3rd tuple default)
-> +
-> +NOTE: PHY override parameters are board specific setting.
-> +
-> +Example:
-> +		phy1: phy@1f21a000 {
-> +			compatible = "apm,xgene-phy";
-> +			reg = <0x0 0x1f21a000 0x0 0x100>;
-> +			#phy-cells = <1>;
-> +			status = "disabled";
-> +		};
-> +
-> +		phy2: phy@1f22a000 {
-> +			compatible = "apm,xgene-phy";
-> +			reg = <0x0 0x1f22a000 0x0 0x100>;
-> +			#phy-cells = <1>;
-> +			status = "ok";
-> +		};
-> +
-> +		phy3: phy@1f23a000 {
-> +			compatible = "apm,xgene-phy";
-> +			reg = <0x0 0x1f23a000 0x0 0x100>;
-> +			#phy-cells = <1>;
-> +			status = "ok";
-> +		};
-> 
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 1ebc6df..6b07a97 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1591,6 +1591,26 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(regmap_bulk_write);
+ 
++static int _regmap_multi_reg_write(struct regmap *map,
++				   const struct reg_default *regs,
++				   int num_regs)
++{
++	int i, ret;
++
++	for (i = 0; i < num_regs; i++) {
++		if (regs[i].reg % map->reg_stride)
++			return -EINVAL;
++		ret = _regmap_write(map, regs[i].reg, regs[i].def);
++		if (ret != 0) {
++			dev_err(map->dev, "Failed to write %x = %x: %d\n",
++				regs[i].reg, regs[i].def, ret);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
+ /*
+  * regmap_multi_reg_write(): Write multiple registers to the device
+  *
+@@ -1610,28 +1630,57 @@ EXPORT_SYMBOL_GPL(regmap_bulk_write);
+ int regmap_multi_reg_write(struct regmap *map, const struct reg_default *regs,
+ 			   int num_regs)
+ {
+-	int ret = 0, i;
+-
+-	for (i = 0; i < num_regs; i++) {
+-		int reg = regs[i].reg;
+-		if (reg % map->reg_stride)
+-			return -EINVAL;
+-	}
++	int ret;
+ 
+ 	map->lock(map->lock_arg);
+ 
+-	for (i = 0; i < num_regs; i++) {
+-		ret = _regmap_write(map, regs[i].reg, regs[i].def);
+-		if (ret != 0)
+-			goto out;
+-	}
+-out:
++	ret = _regmap_multi_reg_write(map, regs, num_regs);
++
+ 	map->unlock(map->lock_arg);
+ 
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_multi_reg_write);
+ 
++/*
++ * regmap_multi_reg_write_bypassed(): Write multiple registers to the
++ *                                    device but not the cache
++ *
++ * where the set of register are supplied in any order
++ *
++ * @map: Register map to write to
++ * @regs: Array of structures containing register,value to be written
++ * @num_regs: Number of registers to write
++ *
++ * This function is intended to be used for writing a large block of data
++ * atomically to the device in single transfer for those I2C client devices
++ * that implement this alternative block write mode.
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++int regmap_multi_reg_write_bypassed(struct regmap *map,
++				    const struct reg_default *regs,
++				    int num_regs)
++{
++	int ret;
++	bool bypass;
++
++	map->lock(map->lock_arg);
++
++	bypass = map->cache_bypass;
++	map->cache_bypass = true;
++
++	ret = _regmap_multi_reg_write(map, regs, num_regs);
++
++	map->cache_bypass = bypass;
++
++	map->unlock(map->lock_arg);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_multi_reg_write_bypassed);
++
+ /**
+  * regmap_raw_write_async(): Write raw values to one or more registers
+  *                           asynchronously
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index ccb2ed0..15a6c2c 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -390,6 +390,9 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 			size_t val_count);
+ int regmap_multi_reg_write(struct regmap *map, const struct reg_default *regs,
+ 			int num_regs);
++int regmap_multi_reg_write_bypassed(struct regmap *map,
++				    const struct reg_default *regs,
++				    int num_regs);
+ int regmap_raw_write_async(struct regmap *map, unsigned int reg,
+ 			   const void *val, size_t val_len);
+ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
+-- 
+1.7.2.5
 
