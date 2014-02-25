@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaBYDQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 22:16:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:41698 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752150AbaBYDQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 22:16:08 -0500
-Date: Tue, 25 Feb 2014 14:16:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
-        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new
- flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-Message-Id: <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
-In-Reply-To: <20140224005710.GH4317@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
-	<20140224005710.GH4317@dastard>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Feb_2014_14_16_01_+1100_2WgBxiSFHZfpoj/H"
+	id S1752791AbaBYDYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:24:48 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:48557 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210AbaBYDYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 22:24:46 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
+	<87txc0jbvt.fsf_-_@xmission.com>
+	<20140218171708.GD4026@tucsk.piliscsaba.szeredi.hu>
+Date: Mon, 24 Feb 2014 19:24:27 -0800
+In-Reply-To: <20140218171708.GD4026@tucsk.piliscsaba.szeredi.hu> (Miklos
+	Szeredi's message of "Tue, 18 Feb 2014 18:17:08 +0100")
+Message-ID: <87mwhfdgd0.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/w1I7uHz5pfYLiFOrtEIBihjeRLVDXrtw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.1 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2646]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 05/11] vfs: Add a function to lazily unmount all mounts from any dentry.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Feb_2014_14_16_01_+1100_2WgBxiSFHZfpoj/H
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
-Hi Dave,
-
-On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
+> On Sat, Feb 15, 2014 at 01:37:26PM -0800, Eric W. Biederman wrote:
+>> 
+>> v2: Always drop the lock when exiting early.
+>> v3: Make detach_mounts robust about freeing several
+>>     mounts on the same mountpoint at one time, and remove
+>>     the unneeded mnt_list list test.
+>> v4: Document the purpose of detach_mounts and why new_mountpoint is
+>>     safe to call.
+>> 
+>> Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
+>> ---
+>>  fs/mount.h     |    2 ++
+>>  fs/namespace.c |   39 +++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 41 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/fs/mount.h b/fs/mount.h
+>> index 50a72d46e7a6..2b470f34e665 100644
+>> --- a/fs/mount.h
+>> +++ b/fs/mount.h
+>> @@ -84,6 +84,8 @@ extern struct mount *__lookup_mnt_last(struct vfsmount *, struct dentry *);
+>>  
+>>  extern bool legitimize_mnt(struct vfsmount *, unsigned);
+>>  
+>> +extern void detach_mounts(struct dentry *dentry);
+>> +
+>>  static inline void get_mnt_ns(struct mnt_namespace *ns)
+>>  {
+>>  	atomic_inc(&ns->count);
+>> diff --git a/fs/namespace.c b/fs/namespace.c
+>> index 33db9e95bd5c..7abbf722ce18 100644
+>> --- a/fs/namespace.c
+>> +++ b/fs/namespace.c
+>> @@ -1359,6 +1359,45 @@ static int do_umount(struct mount *mnt, int flags)
+>>  	return retval;
+>>  }
+>>  
+>> +/*
+>> + * detach_mounts - lazily unmount all mounts on the specified dentry
+>> + *
+>> + * During unlink, rmdir, and d_drop it is possible to loose the path
+>> + * to an existing mountpoint, and wind up leaking the mount.
+>> + * detach_mounts allows lazily unmounting those mounts instead of
+>> + * leaking them.
+>> + * 
+>> + * The caller may hold dentry->d_inode->i_mutex.
+>> + */
+>> +void detach_mounts(struct dentry *dentry)
+>> +{
+>> +	struct mountpoint *mp;
+>> +	struct mount *mnt;
+>> +
+>> +	namespace_lock();
+>> +	if (!d_mountpoint(dentry))
+>> +		goto out_unlock;
+>> +
+>> +	/* 
+>> +	 * The namespace lock and d_mountpoint being set guarantees
+>> +	 * that new_mountpoint will just be a lookup of the existing
+>> +	 * mountpoint structure.
+>> +	 */
+>> +	mp = new_mountpoint(dentry);
 >
-> > Namjae Jeon (10):
-> >   fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-> >   xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
->=20
-> I've pushed these to the following branch:
->=20
-> 	git://oss.sgi.com/xfs/xfs.git xfs-collapse-range
->=20
-> And so they'll be in tomorrow's linux-next tree.
->=20
-> >   ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
->=20
-> I've left this one alone for the ext4 guys to sort out.
+> Howabout a get_mountpoint(dentry) helper, that returns NULL if it turns out to
+> be not a mountpoint?  And, as an added bonus, you can drop the comment above as
+> well.
 
-So presumably that xfs tree branch is now completely stable and so Ted
-could just merge that branch into the ext4 tree as well and put the ext4
-part on top of that in his tree.
+I hate to admit it but that is a nice change.   Especially as it allows
+removing the d_mounpoint check inside of namespace_lock.  I still need a
+cheak d_mounpoint check outside of namespace lock but inside it can go.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The first time I looked at doing that I missed something and the change
+looked too awkward to be worth implementing :(
 
---Signature=_Tue__25_Feb_2014_14_16_01_+1100_2WgBxiSFHZfpoj/H
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTDAr1AAoJEMDTa8Ir7ZwVwWwP+gPZe8NtKPGNcImOr5glL63z
-MIQUFgD8gf+GbRAMHjpS8YqejSSu4+9p0j3pemP3EbbQqkh2QimPCdkJXcVvj5E8
-XeRlSxEEkQcozkgs137OcFGZikt0iduOh5AOJj4lf4pwfK8mcsfN1upCBO0626vu
-JHHobnwqw7rVCI4YBiJ3wf2ApG5jeiUJFpRnQW65J85gHWlg3dUYkaFVBYN3QMEJ
-MP2XD7xRhnq0Q9whKsKPv3awX4YtdUEkQg0gr3akiWV9ANL3XKpv46AvDnWaNIyI
-J4zXZ/tGDo9bGYR4lbKyTbAVB9lxQBaGY+U527EpjeJAdweHImftoX/bE21bfs5R
-97k3QSF4jUdaIeK6ho4O4/t3Xdf0FYsSo8ZXxhKN+HRssKelEbH2VieJKmVRMYwW
-a3EztVYukCZ+AWrjopWtO/Ng4sYrzU/gDU2WyDonO85Tda31i6DVui4ppeix6SI/
-wFu4NLkR33tkjKc6oY9+4uaxUzddq7xVeLdJQ0nmNvZOYRgDDZ861u5KREeVMGB5
-9gU/4M0EB+kf89AHRmiToPaYWw6BPpowkz/39uvtBJCOusO9xzaF3lOZDYZ42FyU
-noyUSzrpemZJpmTzgUowa2+WIWA5HecDqzCGBD5xHRrYWpeVNH6t5AuA+g607yWB
-Pfl6QASOJRvSWjYO6aQh
-=2fKf
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Feb_2014_14_16_01_+1100_2WgBxiSFHZfpoj/H--
+Eric
