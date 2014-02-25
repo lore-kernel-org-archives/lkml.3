@@ -1,140 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaBYJVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:21:16 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:51700 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbaBYJVI (ORCPT
+	id S1753143AbaBYJWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:22:07 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:4469 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaBYJWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:21:08 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: wad@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
-Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v2 3/3] arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h
-Date: Tue, 25 Feb 2014 18:20:25 +0900
-Message-Id: <1393320025-2855-4-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
+	Tue, 25 Feb 2014 04:22:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 25 Feb 2014 01:19:28 -0800
+Message-ID: <530C60A4.5040302@nvidia.com>
+Date: Tue, 25 Feb 2014 17:21:40 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>,
+        "khali@linux-fr.org" <khali@linux-fr.org>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] hwmon: (lm90) split set&show temp as common codes
+References: <1393309301-28337-1-git-send-email-wni@nvidia.com>
+ <1393309301-28337-2-git-send-email-wni@nvidia.com>
+ <530C391B.5090206@roeck-us.net> <530C527F.1020806@nvidia.com>
+ <530C5AE8.8010709@roeck-us.net>
+In-Reply-To: <530C5AE8.8010709@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel/seccomp.c includes linux/compat.h and, indicrectly, asm/compat.h
-via asm/syscall.h. Due to the duplicated definitions of is_compat_task,
-compiling this file will fail in the case of !CONFIG_COMPAT.
-So this patch
-1) removes is_compat_task() definition from asm/compat.h
-2) replaces asm/compat.h to linux/compat.h in kernel/*.c
+On 02/25/2014 04:57 PM, Guenter Roeck wrote:
+> On 02/25/2014 12:21 AM, Wei Ni wrote:
+>> On 02/25/2014 02:32 PM, Guenter Roeck wrote:
+>>> On 02/24/2014 10:21 PM, Wei Ni wrote:
+>>>> Split set&show temp codes as common functions, so we can use it
+>>>> directly when implement linux thermal framework.
+>>>> And handle error return value for the lm90_select_remote_channel
+>>>> and write_tempx, then set_temp8 and set_temp11 could return it
+>>>> to user-space.
+>>>>
+>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+>>>> ---
+>>>>    drivers/hwmon/lm90.c |  170 ++++++++++++++++++++++++++++++++++----------------
+>>>>    1 file changed, 115 insertions(+), 55 deletions(-)
+>>>>
+>>>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>>>> index c9ff08d..fb9e224 100644
+>>>> --- a/drivers/hwmon/lm90.c
+>>>> +++ b/drivers/hwmon/lm90.c
+>>>> @@ -473,20 +473,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+>>>>     * various registers have different meanings as a result of selecting a
+>>>>     * non-default remote channel.
+>>>>     */
+>>>> -static inline void lm90_select_remote_channel(struct i2c_client *client,
+>>>> -					      struct lm90_data *data,
+>>>> -					      int channel)
+>>>> +static inline int lm90_select_remote_channel(struct i2c_client *client,
+>>>> +					     struct lm90_data *data,
+>>>> +					     int channel)
+>>>>    {
+>>>>    	u8 config;
+>>>> +	int err;
+>>>>
+>>>>    	if (data->kind == max6696) {
+>>>>    		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+>>>>    		config &= ~0x08;
+>>>>    		if (channel)
+>>>>    			config |= 0x08;
+>>>> -		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>>>> -					  config);
+>>>> +		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>>>> +						config);
+>>>> +		if (err < 0) {
+>>>> +			dev_err(&client->dev,
+>>>> +				"Failed to select remote channel %d, err %d\n",
+>>>> +				channel, err);
+>>>> +			return err;
+>>>
+>>> Not my call to make, but I really dislike all that new noisiness.
+>>> Sure, it is ok to pass the error back, but in my opinion that is
+>>> good enough. If every driver in the kernel would be that noisy,
+>>> the log would be all but useless.
+>>
+>> This was discussed in https://lkml.org/lkml/2013/12/227
+>> Jean wish to catch and return write errors,then the set_temp8() could
+>> return error to user-space.
+>>
+> 
+> The link doesn't work for me. Anyway, catching write errors and being
+> noisy about it are different issues, and I am a bit surprised that
+> Jean wants the driver to be noisy about it, but if so I won't object.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/include/asm/compat.h   |    5 -----
- arch/arm64/kernel/hw_breakpoint.c |    2 +-
- arch/arm64/kernel/process.c       |    2 +-
- arch/arm64/kernel/ptrace.c        |    2 +-
- arch/arm64/kernel/signal.c        |    2 +-
- 5 files changed, 4 insertions(+), 9 deletions(-)
+Sorry, the link should be https://lkml.org/lkml/2013/7/12/227
 
-diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
-index fda2704..3b334f9 100644
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -305,11 +305,6 @@ static inline int is_compat_thread(struct thread_info *thread)
- 
- #else /* !CONFIG_COMPAT */
- 
--static inline int is_compat_task(void)
--{
--	return 0;
--}
--
- static inline int is_compat_thread(struct thread_info *thread)
- {
- 	return 0;
-diff --git a/arch/arm64/kernel/hw_breakpoint.c b/arch/arm64/kernel/hw_breakpoint.c
-index f17f581..a45e2db 100644
---- a/arch/arm64/kernel/hw_breakpoint.c
-+++ b/arch/arm64/kernel/hw_breakpoint.c
-@@ -20,6 +20,7 @@
- 
- #define pr_fmt(fmt) "hw-breakpoint: " fmt
- 
-+#include <linux/compat.h>
- #include <linux/cpu_pm.h>
- #include <linux/errno.h>
- #include <linux/hw_breakpoint.h>
-@@ -27,7 +28,6 @@
- #include <linux/ptrace.h>
- #include <linux/smp.h>
- 
--#include <asm/compat.h>
- #include <asm/current.h>
- #include <asm/debug-monitors.h>
- #include <asm/hw_breakpoint.h>
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 248a15d..c3805b6 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -20,6 +20,7 @@
- 
- #include <stdarg.h>
- 
-+#include <linux/compat.h>
- #include <linux/export.h>
- #include <linux/sched.h>
- #include <linux/kernel.h>
-@@ -44,7 +45,6 @@
- #include <linux/personality.h>
- #include <linux/notifier.h>
- 
--#include <asm/compat.h>
- #include <asm/cacheflush.h>
- #include <asm/fpsimd.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index f2a74bc..340d51f 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -20,6 +20,7 @@
-  */
- 
- #include <linux/audit.h>
-+#include <linux/compat.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
-@@ -38,7 +39,6 @@
- #include <linux/tracehook.h>
- #include <linux/elf.h>
- 
--#include <asm/compat.h>
- #include <asm/debug-monitors.h>
- #include <asm/pgtable.h>
- #include <asm/syscall.h>
-diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-index 890a591..4a09989 100644
---- a/arch/arm64/kernel/signal.c
-+++ b/arch/arm64/kernel/signal.c
-@@ -17,6 +17,7 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- 
-+#include <linux/compat.h>
- #include <linux/errno.h>
- #include <linux/signal.h>
- #include <linux/personality.h>
-@@ -25,7 +26,6 @@
- #include <linux/tracehook.h>
- #include <linux/ratelimit.h>
- 
--#include <asm/compat.h>
- #include <asm/debug-monitors.h>
- #include <asm/elf.h>
- #include <asm/cacheflush.h>
--- 
-1.7.9.5
+> 
+> Guenter
+> 
 
