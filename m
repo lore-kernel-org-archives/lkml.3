@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbaBYBxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 20:53:10 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64129 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813AbaBYBxI (ORCPT
+	id S1753567AbaBYBxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:53:22 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33619 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbaBYBxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 20:53:08 -0500
+	Mon, 24 Feb 2014 20:53:20 -0500
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com
 Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
@@ -17,9 +17,9 @@ Cc: vincent.guittot@linaro.org, daniel.lezcano@linaro.org, fweisbec@gmail.com,
         akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
         fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
         wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: [PATCH 10/11] sched: rename update_*_cpu_load
-Date: Tue, 25 Feb 2014 09:50:53 +0800
-Message-Id: <1393293054-11378-11-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 11/11] sched: clean up task_hot function
+Date: Tue, 25 Feb 2014 09:50:54 +0800
+Message-Id: <1393293054-11378-12-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1393293054-11378-1-git-send-email-alex.shi@linaro.org>
 References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org>
@@ -27,131 +27,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have no cpu_load update, rename the related functions:
-s/update_idle_cpu_load/update_idle_rt_avg/
-s/update_cpu_load_nohz/update_rt_avg_nohz/
-s/update_cpu_load_active/update_avg_load_active/
-
-No functional change.
+task_hot doesn't need the 'sched_domain' parameter, so remove it.
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- include/linux/sched.h    | 2 +-
- kernel/sched/core.c      | 2 +-
- kernel/sched/fair.c      | 2 +-
- kernel/sched/proc.c      | 8 ++++----
- kernel/sched/sched.h     | 4 ++--
- kernel/time/tick-sched.c | 2 +-
- 6 files changed, 10 insertions(+), 10 deletions(-)
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 60c18de..26727fc 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -174,7 +174,7 @@ extern unsigned long this_cpu_load(void);
- 
- 
- extern void calc_global_load(unsigned long ticks);
--extern void update_cpu_load_nohz(void);
-+extern void update_rt_avg_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 11968df..d21514c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2431,7 +2431,7 @@ void scheduler_tick(void)
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
--	update_cpu_load_active(rq);
-+	update_avg_load_active(rq);
- 	raw_spin_unlock(&rq->lock);
- 
- 	perf_event_task_tick();
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b8423dc..9a0b2aa 100644
+index 9a0b2aa..22e6d8f 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -7015,7 +7015,7 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
- 
- 		raw_spin_lock_irq(&rq->lock);
- 		update_rq_clock(rq);
--		update_idle_cpu_load(rq);
-+		update_idle_rt_avg(rq);
- 		raw_spin_unlock_irq(&rq->lock);
- 
- 		rebalance_domains(rq, CPU_IDLE);
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index dd3c2d9..42b7706 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -423,7 +423,7 @@ static void calc_load_account_active(struct rq *this_rq)
-  * Called from nohz_idle_balance() to update the load ratings before doing the
-  * idle balance.
+@@ -5003,7 +5003,7 @@ static void move_task(struct task_struct *p, struct lb_env *env)
+  * Is this task likely cache-hot:
   */
--void update_idle_cpu_load(struct rq *this_rq)
-+void update_idle_rt_avg(struct rq *this_rq)
+ static int
+-task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
++task_hot(struct task_struct *p, u64 now)
  {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+ 	s64 delta;
  
-@@ -440,17 +440,17 @@ void update_idle_cpu_load(struct rq *this_rq)
- /*
-  * Called from tick_nohz_idle_exit()
-  */
--void update_cpu_load_nohz(void)
-+void update_rt_avg_nohz(void)
- {
- 	struct rq *this_rq = this_rq();
--	update_idle_cpu_load(this_rq);
-+	update_idle_rt_avg(this_rq);
- }
- #endif /* CONFIG_NO_HZ */
+@@ -5164,7 +5164,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 2) task is cache cold, or
+ 	 * 3) too many balance attempts have failed.
+ 	 */
+-	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
++	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq));
+ 	if (!tsk_cache_hot)
+ 		tsk_cache_hot = migrate_degrades_locality(p, env);
  
- /*
-  * Called from scheduler_tick()
-  */
--void update_cpu_load_active(struct rq *this_rq)
-+void update_avg_load_active(struct rq *this_rq)
- {
- 	this_rq->last_load_update_tick = jiffies;
- 	sched_avg_update(this_rq);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 0213f52..190d694 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -21,7 +21,7 @@ extern unsigned long calc_load_update;
- extern atomic_long_t calc_load_tasks;
- 
- extern long calc_load_fold_active(struct rq *this_rq);
--extern void update_cpu_load_active(struct rq *this_rq);
-+extern void update_avg_load_active(struct rq *this_rq);
- 
- /*
-  * Helpers for converting nanosecond timing to jiffy resolution
-@@ -1192,7 +1192,7 @@ extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
- 
- unsigned long to_ratio(u64 period, u64 runtime);
- 
--extern void update_idle_cpu_load(struct rq *this_rq);
-+extern void update_idle_rt_avg(struct rq *this_rq);
- 
- extern void init_task_runnable_average(struct task_struct *p);
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..b1a400a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -866,7 +866,7 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
- {
- 	/* Update jiffies first */
- 	tick_do_update_jiffies64(now);
--	update_cpu_load_nohz();
-+	update_rt_avg_nohz();
- 
- 	calc_load_exit_idle();
- 	touch_softlockup_watchdog();
 -- 
 1.8.1.2
 
