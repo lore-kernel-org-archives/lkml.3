@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaBYRuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 12:50:50 -0500
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:54407 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681AbaBYRuq (ORCPT
+	id S1753453AbaBYR7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:59:21 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:56268 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaBYR7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 12:50:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6qBChBat-f-90uS-O=pXvcFTx_G2k+xntUSZh37Bc4RQ@mail.gmail.com>
-References: <1859471893.20140126115521@eikelenboom.it>
-	<20140127000305.GA14236@electric-eye.fr.zoreil.com>
-	<CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com>
-	<84816226.20140206123631@eikelenboom.it>
-	<942972114.20140206140909@eikelenboom.it>
-	<CAPcyv4g2EnCLFWfLfSDnjtwrid2tCq2k6wh-8sPYY06eJpM83A@mail.gmail.com>
-	<1434499348.20140211205617@eikelenboom.it>
-	<CAPcyv4juAS0ODRPKE-_wXYu5bixLnvsgs3jgo4vzWcatfnyVsw@mail.gmail.com>
-	<1392178661.1752.1.camel@edumazet-glaptop2.roam.corp.google.com>
-	<1392322487.11022.4.camel@dwillia2-mobl2.amr.corp.intel.com>
-	<343228200.20140213224922@eikelenboom.it>
-	<CA+5PVA6qBChBat-f-90uS-O=pXvcFTx_G2k+xntUSZh37Bc4RQ@mail.gmail.com>
-Date: Tue, 25 Feb 2014 09:50:45 -0800
-Message-ID: <CAPcyv4g79y3k7XwOrS3HdDdeeV8P0YgSPtkp82mXdMZTuDvKmg@mail.gmail.com>
-Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7
- overlapping mappings of pfn 55ebe
-From: Dan Williams <dan.j.williams@intel.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Wei Liu <wei.liu2@citrix.com>, Francois Romieu <romieu@fr.zoreil.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Feb 2014 12:59:18 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCHv2 0/5] net: rfkill: gpio: cleanup and a few new acpi ids
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1393341068.4170.7.camel@jlt4.sipsolutions.net>
+Date: Tue, 25 Feb 2014 09:59:07 -0800
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
+        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <D8A6682F-CC21-4428-AFA3-C50FBA8ED1F7@holtmann.org>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com> <1393341068.4170.7.camel@jlt4.sipsolutions.net>
+To: Johannes Berg <johannes@sipsolutions.net>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 9:45 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> On Thu, Feb 13, 2014 at 4:49 PM, Sander Eikelenboom
-> <linux@eikelenboom.it> wrote:
->>
->> Thursday, February 13, 2014, 9:14:47 PM, you wrote:
->>
->>> On Tue, 2014-02-11 at 20:17 -0800, Eric Dumazet wrote:
->>>> On Tue, 2014-02-11 at 18:07 -0800, Dan Williams wrote:
->>>>
->>>> > The overlap granularity is too large.  Multiple dma_map_single
->>>> > mappings are allowed to a given page as long as they don't collide on
->>>> > the same cache line.
->>>> >
->>>>
->>>> I am not sure why you try number of mappings of a page.
->>>>
->>>> Try launching 100 concurrent netperf -t TCP_SENFILE
->>>>
->>>> Same page might be mapped more than 100 times, more than 10000 times in
->>>> some cases.
->>
->>> Thanks for that test case.
->>
->>> I updated the fix patch with the following.
->>
->>> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
->>> index 42b12740940b..611010df1e9c 100644
->>> --- a/lib/dma-debug.c
->>> +++ b/lib/dma-debug.c
->>> @@ -513,6 +513,13 @@ static int active_cln_insert(struct dma_debug_entry *entry)
->>>         unsigned long flags;
->>>         int rc;
->>>
->>> +       /* If the device is not writing memory then we don't have any
->>> +        * concerns about the cpu consuming stale data.  This mitigates
->>> +        * legitimate usages of overlapping mappings.
->>> +        */
->> +       if (entry->>direction == DMA_TO_DEVICE)
->>> +               return 0;
->>> +
->>>         spin_lock_irqsave(&radix_lock, flags);
->>>         rc = radix_tree_insert(&dma_active_cacheline, to_cln(entry), entry);
->>>         if (rc == -EEXIST)
->>> @@ -526,6 +533,10 @@ static void active_cln_remove(struct dma_debug_entry *entry)
->>>  {
->>>         unsigned long flags;
->>>
->>> +       /* ...mirror the insert case */
->> +       if (entry->>direction == DMA_TO_DEVICE)
->>> +               return;
->>> +
->>>         spin_lock_irqsave(&radix_lock, flags);
->>>         /* since we are counting overlaps the final put of the
->>>          * cacheline will occur when the overlap count is 0.
->>
->>
->>> Sander, barring a negative test result from you I'll send the attached
->>> patch to Andrew.
->>
->> Hi Dan,
->>
->> That seems to effectively suppress the warning, thanks and:
->>
->> Tested-by; Sander Eikelenboom <linux@eikelenboom.it>
->
-> Is there a reason this isn't in Linus' tree yet?
->
+Hi Johannes,
 
-It's in -mm and now -next, I expect it will go upstream with akpm's next sync.
+>> I was waiting for the DT support from Chen-Yu before sending these,
+>> but decided it makes no difference when I send them. I'm dropping the
+>> con ID in the second patch because Dan noticed the warning, but of
+>> course it will mean the "gpios" property can be used with DT.
+>> 
+>> The two last patches just add ACPI IDs for some new Baytrail based
+>> boards.
+> 
+> Do these patches have any dependencies, or should I just add them to the
+> mac80211-next tree (since I don't keep a separate rfkill tree)?
+> 
+> Or does anyone else want to take them? In that case, it's all fine with
+> me, I'm really just nominally the rfkill maintainer and have no idea
+> about these patches... :)
 
---
-Dan
+someone has to take them. So I say go for it.
+
+Regards
+
+Marcel
+
