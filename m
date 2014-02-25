@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaBYVry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 16:47:54 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33181 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339AbaBYVrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 16:47:52 -0500
-Date: Tue, 25 Feb 2014 22:47:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Vivek Goyal <vgoyal@redhat.com>, mjg59@srcf.ucam.org, jkosina@suse.cz,
-        greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH 06/11] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20140225214748.GA21559@pd.tnic>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-7-git-send-email-vgoyal@redhat.com>
- <20140221145910.GE11531@pd.tnic>
- <20140224164131.GJ4631@redhat.com>
- <20140225203519.77abfa8d@hananiah.suse.cz>
+	id S1753101AbaBYVud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 16:50:33 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:43212 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442AbaBYVu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 16:50:29 -0500
+Message-ID: <530D1021.1050402@acm.org>
+Date: Tue, 25 Feb 2014 15:50:25 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140225203519.77abfa8d@hananiah.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Tomas Cech <tcech@suse.cz>, openipmi-developer@lists.sourceforge.net,
+        Rocky Craig <rocky.craig@hp.com>
+Subject: Re: [PATCH 1/1] Char: ipmi_bt_sm, fix infinite loop
+References: <1393323294-11423-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1393323294-11423-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:35:19PM +0100, Petr Tesarik wrote:
-> #define BIT(nr)                 (1UL << (nr))
-> 
-> For my part I'm not convinced it's a better way to do it, unless
-> Borislav also wanted to suggest adding an enum for the bit number
-> values...
+Looks right to me.  Rocky, copying you in case there's an issue with this.
 
-Well,
+Thanks,
 
-#define KEXEC_FILE_UNLOAD	BIT(1)
+-corey
 
-is much more readable.
+On 02/25/2014 04:14 AM, Jiri Slaby wrote:
+> In read_all_bytes, we do
+>   unsigned char i;
+> ...
+>   bt->read_data[0] = BMC2HOST;
+>   bt->read_count = bt->read_data[0];
+> ...
+>   for (i = 1; i <= bt->read_count; i++)
+>     bt->read_data[i] = BMC2HOST;
+>
+> If bt->read_data[0] == bt->read_count == 255, we loop infinitely in
+> the 'for' loop. Make 'i' an 'int' instead of 'char' to get rid of the
+> overflow and finish the loop after 255 iterations every time.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+> Cc: Tomas Cech <tcech@suse.cz>
+> Cc: Corey Minyard <minyard@acm.org>
+> Cc: <openipmi-developer@lists.sourceforge.net>
+> ---
+>  drivers/char/ipmi/ipmi_bt_sm.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+> index f5e4cd7617f6..61e71616689b 100644
+> --- a/drivers/char/ipmi/ipmi_bt_sm.c
+> +++ b/drivers/char/ipmi/ipmi_bt_sm.c
+> @@ -352,7 +352,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
+>  
+>  static inline int read_all_bytes(struct si_sm_data *bt)
+>  {
+> -	unsigned char i;
+> +	unsigned int i;
+>  
+>  	/*
+>  	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
 
-The enum thing is also nice to have but it's not my personal preference.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
