@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaBYQF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:05:26 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:36992 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaBYQFZ (ORCPT
+	id S1753219AbaBYQGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:06:43 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:53135 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439AbaBYQGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:05:25 -0500
-From: Juri Lelli <juri.lelli@gmail.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@gmail.com>
-Subject: [PATCH] sched/rt: fix rt timer activation/deactivation
-Date: Tue, 25 Feb 2014 17:05:28 +0100
-Message-Id: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 25 Feb 2014 11:06:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393343227-13092-1-git-send-email-ajax@redhat.com>
+References: <1222713404-1097-1-git-send-email-ajax@redhat.com>
+	<1393343227-13092-1-git-send-email-ajax@redhat.com>
+Date: Tue, 25 Feb 2014 11:06:41 -0500
+X-Google-Sender-Auth: 8ItxfDyquss8iun0Ym2QDNj_zI8
+Message-ID: <CA+5PVA6zHH_rj_2cawnWxQ_JRiyybFsNM3d30cCN=FpMiMuXxg@mail.gmail.com>
+Subject: Re: [PATCH] i8042: Don't print an error message just because there's
+ no chip
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Adam Jackson <ajax@redhat.com>
+Cc: linux-input@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Peter Jones <pjones@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Destroy rt bandwidth timer when rq has no more RT tasks, even when
-CONFIG_RT_GROUP_SCHED is not set.
+On Tue, Feb 25, 2014 at 10:47 AM, Adam Jackson <ajax@redhat.com> wrote:
+> From: Peter Jones <pjones@redhat.com>
+>
+> Some systems, such as EFI-based Apple systems, won't necessarily have an
+> i8042 to initialize. We shouldn't be printing an error message in this
+> case, since not detecting the chip is the correct behavior.
+>
+> v2: Downgrade to pr_notice instead of pr_err.
+>
+> Signed-off-by: Adam Jackson <ajax@redhat.com>
 
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- kernel/sched/rt.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+Reviewed-by:  Josh Boyer <jwboyer@fedoraproject.org>
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index a2740b7..7dba25a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -86,12 +86,12 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
- 	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
- }
- 
--#ifdef CONFIG_RT_GROUP_SCHED
- static void destroy_rt_bandwidth(struct rt_bandwidth *rt_b)
- {
- 	hrtimer_cancel(&rt_b->rt_period_timer);
- }
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
- #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
- 
- static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
-@@ -1011,8 +1011,12 @@ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- 	start_rt_bandwidth(&def_rt_bandwidth);
- }
- 
--static inline
--void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
-+static void
-+dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
-+{
-+	if (!rt_rq->rt_nr_running)
-+		destroy_rt_bandwidth(&def_rt_bandwidth);
-+}
- 
- #endif /* CONFIG_RT_GROUP_SCHED */
- 
--- 
-1.7.9.5
-
+> ---
+>  drivers/input/serio/i8042.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+> index 020053f..05c6285 100644
+> --- a/drivers/input/serio/i8042.c
+> +++ b/drivers/input/serio/i8042.c
+> @@ -855,7 +855,7 @@ static int __init i8042_check_aux(void)
+>  static int i8042_controller_check(void)
+>  {
+>         if (i8042_flush()) {
+> -               pr_err("No controller found\n");
+> +               pr_notice("No controller found\n");
+>                 return -ENODEV;
+>         }
+>
