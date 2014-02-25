@@ -1,99 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaBYWTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 17:19:37 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:44899 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680AbaBYWTd (ORCPT
+	id S1753749AbaBYWTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 17:19:54 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:50264 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722AbaBYWTv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 17:19:33 -0500
-Message-ID: <530D16E2.9060108@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 14:19:14 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 25 Feb 2014 17:19:51 -0500
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/11] perf: add PMU_RANGE_ATTR() helper for use by
- sw-like pmus
-References: <20140225033326.135BB2C0227@ozlabs.org> <530CFE30.70803@linux.vnet.ibm.com>
-In-Reply-To: <530CFE30.70803@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022522-1542-0000-0000-0000069D99E1
+In-Reply-To: <2446186.I4KkJ8Hjdb@lenovo>
+References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
+ <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk> <20140224.235343.1936318499491821387.davem@davemloft.net>
+ <2446186.I4KkJ8Hjdb@lenovo>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 25 Feb 2014 14:19:29 -0800
+X-Google-Sender-Auth: YBQLLWK6jJNDngF0aqA-83_1Zi8
+Message-ID: <CAB=NE6WAmHqAYsh6rwyHdvZy3J6ck-uD_Kavk3qqy02vML359g@mail.gmail.com>
+Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Ben Hutchings <ben@decadent.org.uk>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 12:33 PM, Cody P Schafer wrote:
-> On 02/24/2014 07:33 PM, Michael Ellerman wrote:
->> On Fri, 2014-14-02 at 22:02:05 UTC, Cody P Schafer wrote:
->>> Add PMU_RANGE_ATTR() and PMU_RANGE_RESV() (for reserved areas) which
->>> generate functions to extract the relevent bits from
->>> event->attr.config{,1,2} for use by sw-like pmus where the
->>> 'config{,1,2}' values don't map directly to hardware registers.
->>>
->>> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
->>> ---
->>>   include/linux/perf_event.h | 17 +++++++++++++++++
->>>   1 file changed, 17 insertions(+)
->>>
->>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
->>> index e56b07f..2702e91 100644
->>> --- a/include/linux/perf_event.h
->>> +++ b/include/linux/perf_event.h
->>> @@ -871,4 +871,21 @@ _name##_show(struct device
->>> *dev,                    \
->>>                                       \
->>>   static struct device_attribute format_attr_##_name = __ATTR_RO(_name)
->>>
->>> +#define PMU_RANGE_ATTR(name, attr_var, bit_start, bit_end)        \
->>> +PMU_FORMAT_ATTR(name, #attr_var ":" #bit_start "-" #bit_end);        \
->>> +PMU_RANGE_RESV(name, attr_var, bit_start, bit_end)
->>> +
->>> +#define PMU_RANGE_RESV(name, attr_var, bit_start, bit_end)        \
->>> +static u64 event_get_##name##_max(void)                    \
->>> +{                                    \
->>> +    int bits = (bit_end) - (bit_start) + 1;                \
->>> +    return ((0x1ULL << (bits - 1ULL)) - 1ULL) |            \
->>> +        (0xFULL << (bits - 4ULL));                \
->>> +}                                    \
->>> +static u64 event_get_##name(struct perf_event *event)            \
->>> +{                                    \
->>> +    return (event->attr.attr_var >> (bit_start)) &            \
->>> +        event_get_##name##_max();                \
->>> +}
->>
->> I still don't like the names.
->>
->> EVENT_GETTER_AND_FORMAT()
+On Mon, Feb 24, 2014 at 9:37 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> Le lundi 24 février 2014, 23:53:43 David Miller a écrit :
+>> They are visible to userspace via sysfs.
 >
-> EVENT_RANGE()
->
-> I'd prefer to describe the intended usage rather than what is generated
-> both in case we change some of the specifics later, and to provide
-> additional information to the developers beyond what a simple code
-> reading gives.
->
->> EVENT_RESERVED()
->
-> Sure. The PMU_* naming was just based on the PMU_FORMAT_ATTR() naming,
-> so I kept it for continuity with the existing API. Maybe
-> EVENT_RANGE_RESERVED() would be more appropriate?
->
+> In /sys/class/net/*/flags, although we are lacking quite a lot of documentation
+> for the exported attributes there.
 
-Thinking about this a bit more, EVENT_RANGE() and EVENT_RANGE_RESERVED() 
-aren't quite ideal either. The "EVENT" name collides with the files we 
-put in the event/ dir, which these macros generate files for the format/ 
-dir. Maybe:
+I only see dev->flags there, I don't see any toggle capability for
+priv_flags. Let me know if you find anywhere that userspace lets a
+user toggle private flags, I just don't see it.
 
-FORMAT_RANGE() and FORMAT_RANGE_RESERVED()
-or
-PMU_FORMAT_RANGE(), PMU_FORMAT_RANGE_RESERVED()
+I'll extend the documentation for a v2 with the sysfs attribute stuff.
 
+  Luis
