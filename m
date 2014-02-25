@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaBYPFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:05:55 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:54849 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091AbaBYPFw (ORCPT
+	id S1753239AbaBYPGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:06:42 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:56924 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaBYPGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:05:52 -0500
-Date: Tue, 25 Feb 2014 10:05:48 -0500
+	Tue, 25 Feb 2014 10:06:40 -0500
+Date: Tue, 25 Feb 2014 10:06:36 -0500
 From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+To: Li Zefan <lizefan@huawei.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET v2 cgroup/for-3.15] cgroup: update task migration path
-Message-ID: <20140225150548.GE26788@htj.dyndns.org>
-References: <1392323333-18907-1-git-send-email-tj@kernel.org>
+Subject: Re: [cgroup/task_lock] INFO: suspicious RCU usage.
+Message-ID: <20140225150636.GF26788@htj.dyndns.org>
+References: <20140221021622.GB13515@localhost>
+ <20140221154025.GB460@htj.dyndns.org>
+ <530C5977.4090402@huawei.com>
+ <530C8615.4020004@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392323333-18907-1-git-send-email-tj@kernel.org>
+In-Reply-To: <530C8615.4020004@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 03:28:46PM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> This is v2 of update-task-migration-path patchset.  Changes from v1[L]
-> are
+Hello, Li.
 
-Applied to cgroup/for-3.15.
+On Tue, Feb 25, 2014 at 08:01:25PM +0800, Li Zefan wrote:
+...
+> >> So, this is from removing task_lock from task_css_set_check() and
+> >> adding rcu_read_lock() in cpuset_cpus_allowed() should fix it.
+> > 
+> > Yeah, rcu_read_lock() should be sufficient.
+> > 
+> >> I'm
+> >> not sure how much of task_lock() locking we currently have in cpuset
+> >> is actually necessary tho.  Shouldn't we be able to do most with just
+> >> callback_mutex, if not cpuset_mutex?  Li, any ideas?
+> >>
+> > 
+> > task_lock() is also used to protect task->mems_allowed. I'll see if we
+> > can get rid of most (if not all) task_lock() lockings in cpuset.
+> > 
+> 
+> After a quick lock, I think except the one in cpuset_change_task_nodemask(), all
+> other task_lock() lockings can be replace by rcu_readlock().
+
+I committed the original series as-is.  Can you please post follow-up
+patches to update cpuset locking?
 
 Thanks.
 
