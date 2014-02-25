@@ -1,158 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaBYJPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:15:52 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51284 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbaBYJPt (ORCPT
+	id S1752682AbaBYJQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:16:15 -0500
+Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:48077 "EHLO
+	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750818AbaBYJQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:15:49 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: will.deacon@arm.com
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v2 1/1] arm64: make a single hook to syscall_trace() for all syscall features
-Date: Tue, 25 Feb 2014 18:14:43 +0900
-Message-Id: <1393319683-2707-2-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393319683-2707-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1391767651-5296-1-git-send-email-takahiro.akashi@linaro.org>
- <1393319683-2707-1-git-send-email-takahiro.akashi@linaro.org>
+	Tue, 25 Feb 2014 04:16:12 -0500
+Message-ID: <530C5D8C.1080809@st.com>
+Date: Tue, 25 Feb 2014 09:08:28 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Maxime Coquelin <maxime.coquelin@st.com>,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, <kernel@stlinux.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Olof Johansson <olof@lixom.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stephen.gallimore@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 0/6] ARM: STi reset controller support
+References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>				<1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>			<1391592486.11239.4.camel@pizza.hi.pengutronix.de>		 <52F4D76F.8070301@st.com> <5304B849.2080806@st.com>	 <1393237988.3091.14.camel@pizza.hi.pengutronix.de>	 <530B514A.4070209@st.com> <1393254982.3091.44.camel@pizza.hi.pengutronix.de>
+In-Reply-To: <1393254982.3091.44.camel@pizza.hi.pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently syscall_trace() is called only for ptrace.
-With additional TIF_xx flags defined, it is now called in all the cases
-of audit, ftrace and seccomp in addition to ptrace.
+On 24/02/14 15:16, Philipp Zabel wrote:
+> Hi Srinivas,
+> 
+> Am Montag, den 24.02.2014, 14:03 +0000 schrieb srinivas kandagatla:
+>> Thanks Philipp for your comments,
+>>
+>> On 24/02/14 10:33, Philipp Zabel wrote:
+>>>>> Did Srini's explanations convinced you?
+>>>>>
+>>>>> If so, could you queue the series for v3.15?
+>>> to be honest, I'm not comfortable with this explanation. If the
+>>> "powerdown" bits only gate the clocks to those modules, calling it a
+>>> reset control is clearly the wrong abstraction. If that is the case,
+>>> couldn't you handle those bits via the clock framework?
+>> I just had a re-look at the IPs specs for more information on where
+>> these power-down signals are actually terminating on the IP side.
+>>
+>> For example: ST-Synopsis Ethernet GMAC IP has two pins
+>> power_down_req[IN] and power_down_ack[OUT]. power_down_req is used by
+>> the software to either put the IP in powerdown or bring it out of
+>> powerdown state.
+> 
+> Now I'm a bit confused. There is no mention of GMAC in your patches,
+> and for ETH[01] they contain only the SOFTRESET bits. I have no issue
+> with the SOFTRESETs.
+Yes, GMAC was a bad example indeed. However this same logic applies to
+the USB IP as well.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Acked-by: Richard Guy Briggs <rgb@redhat.com>
----
- arch/arm64/include/asm/thread_info.h |   13 ++++++++++
- arch/arm64/kernel/entry.S            |    5 ++--
- arch/arm64/kernel/ptrace.c           |   45 +++++++++++++++++-----------------
- 3 files changed, 38 insertions(+), 25 deletions(-)
+GMAC power-down-reset can be added to the power-down-reset list for
+consistency.
 
-diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 720e70b..0a8b2a9 100644
---- a/arch/arm64/include/asm/thread_info.h
-+++ b/arch/arm64/include/asm/thread_info.h
-@@ -91,6 +91,9 @@ static inline struct thread_info *current_thread_info(void)
- /*
-  * thread information flags:
-  *  TIF_SYSCALL_TRACE	- syscall trace active
-+ *  TIF_SYSCALL_TRACEPOINT - syscall tracepoint for ftrace
-+ *  TIF_SYSCALL_AUDIT	- syscall auditing
-+ *  TIF_SECOMP		- syscall secure computing
-  *  TIF_SIGPENDING	- signal pending
-  *  TIF_NEED_RESCHED	- rescheduling necessary
-  *  TIF_NOTIFY_RESUME	- callback before returning to user
-@@ -101,6 +104,9 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_NEED_RESCHED	1
- #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
- #define TIF_SYSCALL_TRACE	8
-+#define TIF_SYSCALL_AUDIT	9
-+#define TIF_SYSCALL_TRACEPOINT	10
-+#define TIF_SECCOMP		11
- #define TIF_POLLING_NRFLAG	16
- #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
- #define TIF_FREEZE		19
-@@ -112,10 +118,17 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
- #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
- #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-+#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
-+#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
-+#define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
-+#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
- #define _TIF_32BIT		(1 << TIF_32BIT)
- 
- #define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
- 				 _TIF_NOTIFY_RESUME)
- 
-+#define _TIF_SYSCALL_WORK	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
-+				 _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
-+
- #endif /* __KERNEL__ */
- #endif /* __ASM_THREAD_INFO_H */
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 0d7b789..6d613cd 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -630,8 +630,9 @@ el0_svc_naked:					// compat entry point
- 	enable_irq
- 
- 	get_thread_info tsk
--	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
--	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
-+	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall hooks
-+	tst	x16, #_TIF_SYSCALL_WORK
-+	b.ne	__sys_trace
- 	adr	lr, ret_fast_syscall		// return address
- 	cmp     scno, sc_nr                     // check upper syscall limit
- 	b.hs	ni_sys
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 6a8928b..c70133e 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -1062,31 +1062,30 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
- {
- 	unsigned long saved_reg;
- 
--	if (!test_thread_flag(TIF_SYSCALL_TRACE))
--		return regs->syscallno;
--
--	if (is_compat_task()) {
--		/* AArch32 uses ip (r12) for scratch */
--		saved_reg = regs->regs[12];
--		regs->regs[12] = dir;
--	} else {
--		/*
--		 * Save X7. X7 is used to denote syscall entry/exit:
--		 *   X7 = 0 -> entry, = 1 -> exit
--		 */
--		saved_reg = regs->regs[7];
--		regs->regs[7] = dir;
--	}
-+	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
-+		if (is_compat_task()) {
-+			/* AArch32 uses ip (r12) for scratch */
-+			saved_reg = regs->regs[12];
-+			regs->regs[12] = dir;
-+		} else {
-+			/*
-+			 * Save X7. X7 is used to denote syscall entry/exit:
-+			 *   X7 = 0 -> entry, = 1 -> exit
-+			 */
-+			saved_reg = regs->regs[7];
-+			regs->regs[7] = dir;
-+		}
- 
--	if (dir)
--		tracehook_report_syscall_exit(regs, 0);
--	else if (tracehook_report_syscall_entry(regs))
--		regs->syscallno = ~0UL;
-+		if (dir)
-+			tracehook_report_syscall_exit(regs, 0);
-+		else if (tracehook_report_syscall_entry(regs))
-+			regs->syscallno = ~0UL;
- 
--	if (is_compat_task())
--		regs->regs[12] = saved_reg;
--	else
--		regs->regs[7] = saved_reg;
-+		if (is_compat_task())
-+			regs->regs[12] = saved_reg;
-+		else
-+			regs->regs[7] = saved_reg;
-+	}
- 
- 	return regs->syscallno;
- }
--- 
-1.7.9.5
+We did not define the power-down-reset for GMAC because the reset state
+of GMAC will not be in power down. softreset should be enough to bring
+the IP in to a usable state. So the software never drives the power
+down-request but instead uses softreset in this particular case.
+
+> 
+>> The IP itself drives power_down_ack to indicate when the power down
+>> request is successfully finished. For power_down/power_up request the IP
+>> will change the internal state accordingly including powering up/down
+>> its internal blocks and/or clock gating.
+>>
+>>> If on the other hand these powerdown bits also trigger reset machinery,
+>>> such that asserting and deasserting that bit will change the module's
+>>> internal state, I could be convinced to queue them like this.
+>> This is true with ST IPs, these lines change the state of the IP as
+>> described above. Reset framework seems to fits in very well with this
+>> behavior rather than power-domains or clock framework.
+> 
+> If you put the IP in power down when it is idle, and then power it up
+> again, will the IP registers have kept their previous state?
+No, the context is lost, the IP needs re-initialization.
+
+Thanks,
+srini
+> 
+> regards
+> Philipp
+> 
+> 
+> 
 
