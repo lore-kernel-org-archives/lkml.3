@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaBYLsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:48:25 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:33656 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468AbaBYLsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:48:24 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: [PATCH v8 4/6] ARM: rockchip: add sram dt nodes and documentation
-Date: Tue, 25 Feb 2014 12:47:42 +0100
-Message-ID: <4021819.DsUjhG2Ihi@phil>
-User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <21117503.1c6iOkvYSr@phil>
-References: <21117503.1c6iOkvYSr@phil>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753204AbaBYLss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:48:48 -0500
+Received: from smtprelay0208.hostedemail.com ([216.40.44.208]:50303 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751593AbaBYLsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 06:48:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 13,1.2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2196:2199:2393:2553:2559:2562:2691:2828:2895:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3872:3873:3874:4037:4321:4385:5007:7652:8784:8957:9010:10008:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: can31_868a7f0adcd0f
+X-Filterd-Recvd-Size: 2441
+Message-ID: <1393328923.8716.20.camel@joe-AO722>
+Subject: Re: [PATCH] Staging: comedi: Fix line length exceeding 80 characters
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Monam Agarwal <monamagarwal123@gmail.com>
+Date: Tue, 25 Feb 2014 03:48:43 -0800
+In-Reply-To: <20140225110532.GK26722@mwanda>
+References: <1393260582-10234-1-git-send-email-monamagarwal123@gmail.com>
+	 <530C666B.6080900@mev.co.uk> <1393322365.8716.3.camel@joe-AO722>
+	 <20140225110532.GK26722@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dt-nodes for the sram on rk3066 and rk3188 including the reserved section
-needed for smp bringup.
+On Tue, 2014-02-25 at 14:05 +0300, Dan Carpenter wrote:
+> On Tue, Feb 25, 2014 at 01:59:25AM -0800, Joe Perches wrote:
+> > On Tue, 2014-02-25 at 09:46 +0000, Ian Abbott wrote:
+> > > On 2014-02-24 16:49, Monam Agarwal wrote:
+> > []
+> > > > diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+> > []
+> > > > @@ -1481,7 +1481,8 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+> > > >   	async->cmd.data = NULL;
+> > > >   	/* load channel/gain list */
+> > > >   	async->cmd.chanlist = memdup_user(user_chanlist,
+> > > > -					  async->cmd.chanlist_len * sizeof(int));
+> > > > +					  async->cmd.chanlist_len
+> > > > +					  * sizeof(int));
+> > > The `*` operator should go at the end of the line according to the 
+> > > CodingStyle.
+> > I don't believe there's a CodingStyle guide for this.
+> Meanwhile you have felt totally justified in correcting me on this in
+> the past.  :P
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
----
- .../devicetree/bindings/arm/rockchip/smp-sram.txt  | 30 ++++++++++++++++++++++
- arch/arm/boot/dts/rk3066a.dtsi                     | 13 ++++++++++
- arch/arm/boot/dts/rk3188.dtsi                      | 13 ++++++++++
- 3 files changed, 56 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
+Doubtful.  You're probably thinking of something else.
 
-diff --git a/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt b/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
-new file mode 100644
-index 0000000..d9416fb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
-@@ -0,0 +1,30 @@
-+Rockchip SRAM for smp bringup:
-+------------------------------
-+
-+Rockchip's smp-capable SoCs use the first part of the sram for the bringup
-+of the cores. Once the core gets powered up it executes the code that is
-+residing at the very beginning of the sram.
-+
-+Therefore a reserved section sub-node has to be added to the mmio-sram
-+declaration.
-+
-+Required sub-node properties:
-+- compatible : should be "rockchip,rk3066-smp-sram"
-+
-+The rest of the properties should follow the generic mmio-sram discription
-+found in ../../misc/sram.txt
-+
-+Example:
-+
-+	sram: sram@10080000 {
-+		compatible = "mmio-sram";
-+		reg = <0x10080000 0x10000>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		smp-sram@10080000 {
-+			compatible = "rockchip,rk3066-smp-sram";
-+			reg = <0x10080000 0x50>;
-+		};
-+	};
-diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
-index be5d2b0..37d0768 100644
---- a/arch/arm/boot/dts/rk3066a.dtsi
-+++ b/arch/arm/boot/dts/rk3066a.dtsi
-@@ -64,6 +64,19 @@
- 			clock-names = "timer", "pclk";
- 		};
- 
-+		sram: sram@10080000 {
-+			compatible = "mmio-sram";
-+			reg = <0x10080000 0x10000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+
-+			smp-sram@10080000 {
-+				compatible = "rockchip,rk3066-smp-sram";
-+				reg = <0x10080000 0x50>;
-+			};
-+		};
-+
- 		pinctrl@20008000 {
- 			compatible = "rockchip,rk3066a-pinctrl";
- 			reg = <0x20008000 0x150>;
-diff --git a/arch/arm/boot/dts/rk3188.dtsi b/arch/arm/boot/dts/rk3188.dtsi
-index 1a26b03..412f4d0 100644
---- a/arch/arm/boot/dts/rk3188.dtsi
-+++ b/arch/arm/boot/dts/rk3188.dtsi
-@@ -60,6 +60,19 @@
- 			interrupts = <GIC_PPI 13 0xf04>;
- 		};
- 
-+		sram: sram@10080000 {
-+			compatible = "mmio-sram";
-+			reg = <0x10080000 0x8000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+
-+			smp-sram@10080000 {
-+				compatible = "rockchip,rk3066-smp-sram";
-+				reg = <0x10080000 0x50>;
-+			};
-+		};
-+
- 		pinctrl@20008000 {
- 			compatible = "rockchip,rk3188-pinctrl";
- 			reg = <0x20008000 0xa0>,
--- 
-1.8.5.3
+Besides, we generally agree on style.  Anything I may
+have written was more more suggestion than correction.
 
+> Anyway, it should be that the operator goes on the first line like Ian
+> says...
+
+Feel free to use whatever style you want.
+
+Feel free to update CodingStyle too.
+
+cheers, Joe
 
