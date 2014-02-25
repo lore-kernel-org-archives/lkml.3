@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaBYOTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:19:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:1123 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439AbaBYOTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:19:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,540,1389772800"; 
-   d="scan'208";a="487770411"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, willy@linux.intel.com
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v6 19/22] ext4: Make ext4_block_zero_page_range static
-Date: Tue, 25 Feb 2014 09:18:35 -0500
-Message-Id: <1393337918-28265-20-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+	id S1753924AbaBYO0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:26:30 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:40152 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaBYOTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:19:12 -0500
+Date: Tue, 25 Feb 2014 15:19:09 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Henrik Austad <henrik@austad.us>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linuxtronix.de>,
+        Henrik Austad <haustad@cisco.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6 v2] Expose do_timer CPU as RW to userspace
+Message-ID: <20140225141906.GA22814@localhost.localdomain>
+References: <1393331641-14016-1-git-send-email-henrik@austad.us>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393331641-14016-1-git-send-email-henrik@austad.us>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's only called within inode.c, so make it static, remove its prototype
-from ext4.h and move it above all of its callers so it doesn't need a
-prototype within inode.c.
+On Tue, Feb 25, 2014 at 01:33:55PM +0100, Henrik Austad wrote:
+> From: Henrik Austad <haustad@cisco.com>
+> 
+> Hi!
+> 
+> This is a rework of the preiovus patch based on the feedback gathered
+> from the last round. I've split it up a bit, mostly to make it easier to
+> single out the parts that require more attention (#4 comes to mind).
+> 
+> Being able to read (and possible force a specific CPU to handle all
+> do_timer() updates) can be very handy when debugging a system and tuning
+> for performance. It is not always easy to route interrupts to a specific
+> core (or away from one, for that matter).
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/ext4/ext4.h  |  2 --
- fs/ext4/inode.c | 42 +++++++++++++++++++++---------------------
- 2 files changed, 21 insertions(+), 23 deletions(-)
+It's a bit vague as a reason for the patchset. Do we really need it?
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index d3a534f..e025c29 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2133,8 +2133,6 @@ extern int ext4_writepage_trans_blocks(struct inode *);
- extern int ext4_chunk_trans_blocks(struct inode *, int nrblocks);
- extern int ext4_block_truncate_page(handle_t *handle,
- 		struct address_space *mapping, loff_t from);
--extern int ext4_block_zero_page_range(handle_t *handle,
--		struct address_space *mapping, loff_t from, loff_t length);
- extern int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
- 			     loff_t lstart, loff_t lend);
- extern int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 6e39895..ce7341c 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3312,33 +3312,13 @@ void ext4_set_aops(struct inode *inode)
- }
- 
- /*
-- * ext4_block_truncate_page() zeroes out a mapping from file offset `from'
-- * up to the end of the block which corresponds to `from'.
-- * This required during truncate. We need to physically zero the tail end
-- * of that block so it doesn't yield old data if the file is later grown.
-- */
--int ext4_block_truncate_page(handle_t *handle,
--		struct address_space *mapping, loff_t from)
--{
--	unsigned offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned length;
--	unsigned blocksize;
--	struct inode *inode = mapping->host;
--
--	blocksize = inode->i_sb->s_blocksize;
--	length = blocksize - (offset & (blocksize - 1));
--
--	return ext4_block_zero_page_range(handle, mapping, from, length);
--}
--
--/*
-  * ext4_block_zero_page_range() zeros out a mapping of length 'length'
-  * starting from file offset 'from'.  The range to be zero'd must
-  * be contained with in one block.  If the specified range exceeds
-  * the end of the block it will be shortened to end of the block
-  * that cooresponds to 'from'
-  */
--int ext4_block_zero_page_range(handle_t *handle,
-+static int ext4_block_zero_page_range(handle_t *handle,
- 		struct address_space *mapping, loff_t from, loff_t length)
- {
- 	ext4_fsblk_t index = from >> PAGE_CACHE_SHIFT;
-@@ -3428,6 +3408,26 @@ unlock:
- 	return err;
- }
- 
-+/*
-+ * ext4_block_truncate_page() zeroes out a mapping from file offset `from'
-+ * up to the end of the block which corresponds to `from'.
-+ * This required during truncate. We need to physically zero the tail end
-+ * of that block so it doesn't yield old data if the file is later grown.
-+ */
-+int ext4_block_truncate_page(handle_t *handle,
-+		struct address_space *mapping, loff_t from)
-+{
-+	unsigned offset = from & (PAGE_CACHE_SIZE-1);
-+	unsigned length;
-+	unsigned blocksize;
-+	struct inode *inode = mapping->host;
-+
-+	blocksize = inode->i_sb->s_blocksize;
-+	length = blocksize - (offset & (blocksize - 1));
-+
-+	return ext4_block_zero_page_range(handle, mapping, from, length);
-+}
-+
- int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
- 			     loff_t lstart, loff_t length)
- {
--- 
-1.8.5.3
+Concerning the read-only part, if I want to know which CPU is handling the
+timekeeping, I'd rather use tracing than a sysfs file. I can correlate
+timekeeping update traces with other events. Especially as the timekeeping duty
+can change hands and move to any CPU all the time. We really don't want to
+poll on a sysfs file to get that information. It's not adapted and doesn't
+carry any timestamp. It may be useful only if the timekeeping CPU is static.
 
+Now looking at the write part. What kind of usecase do you have in mind?
+
+It's also important to consider that, in the case of NO_HZ_IDLE, if you force
+the timekeeping duty to a specific CPU, it won't be able to enter in dynticks
+idle mode as long as any other CPU is running. Because those CPUs can make use of
+jiffies or gettimeofday() and must have uptodate values. This involve quite
+some complication like using the full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE)
+to avoid races between timekeeper entering dynticks idle mode and other CPUs waking
+up from idle. But the worst here is the powesaving issues resulting from the timekeeper
+who can't sleep.
+
+These issues are being dealt with in NO_HZ_FULL because we want the timekeeping duty
+to be affine to the CPUs that are no full dynticks. But in the case of NO_HZ_IDLE,
+I fear it's not going to be desirable.
+
+Thanks.
