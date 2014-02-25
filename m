@@ -1,41 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBYLbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:31:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38617 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaBYLbF (ORCPT
+	id S1753130AbaBYLbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:31:15 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:5289 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784AbaBYLbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:31:05 -0500
-Date: Tue, 25 Feb 2014 12:31:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Dave P Martin <Dave.Martin@arm.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 7/7] perf: kill perf_event_context::pmu
-Message-ID: <20140225113100.GN9987@twins.programming.kicks-ass.net>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
- <20140210181026.GD27965@twins.programming.kicks-ass.net>
- <20140211175651.GA15200@e106331-lin.cambridge.arm.com>
+	Tue, 25 Feb 2014 06:31:06 -0500
+Message-ID: <530C7E6C.2020500@huawei.com>
+Date: Tue, 25 Feb 2014 19:28:44 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140211175651.GA15200@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v3] sysfs: fix namespace refcnt leak
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 05:56:51PM +0000, Mark Rutland wrote:
-> Another option would be to have a context per-pmu. Each context's pmu
-> pointer would be valid, and (other than the case of software events) it
-> doesn't make sense to place events from disparate PMUs into the same
-> group anyway. Then you don't need a fixed sized pmu list in the context
-> or some arcane list structs.
+As mount() and kill_sb() is not a one-to-one match, we shoudn't get
+ns refcnt unconditionally in sysfs_mount(), and instead we should
+get the refcnt only when kernfs_mount() allocated a new superblock.
 
-No it does make sense; for example on hardware that doesn't have a PMI
-you can create a software event + hardware event group and have the
-software interrupt read the hardware counter and still get 'some'
-sampling.
+v2:
+- Changed the name of the new argument, suggested by Tejun.
+- Made the argument optional, suggested by Tejun.
+
+v3:
+- Make the new argument as second-to-last arg, suggested by Tejun.
+
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ fs/kernfs/mount.c      | 8 +++++++-
+ fs/sysfs/mount.c       | 5 +++--
+ include/linux/kernfs.h | 9 +++++----
+ 3 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index 405279b..6a5f04a 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -131,6 +131,7 @@ const void *kernfs_super_ns(struct super_block *sb)
+  * @fs_type: file_system_type of the fs being mounted
+  * @flags: mount flags specified for the mount
+  * @root: kernfs_root of the hierarchy being mounted
++ * @new_sb_created: tell the caller if we allocated a new superblock
+  * @ns: optional namespace tag of the mount
+  *
+  * This is to be called from each kernfs user's file_system_type->mount()
+@@ -141,7 +142,8 @@ const void *kernfs_super_ns(struct super_block *sb)
+  * The return value can be passed to the vfs layer verbatim.
+  */
+ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-			       struct kernfs_root *root, const void *ns)
++			       struct kernfs_root *root, bool *new_sb_created,
++			       const void *ns)
+ {
+ 	struct super_block *sb;
+ 	struct kernfs_super_info *info;
+@@ -159,6 +161,10 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+ 		kfree(info);
+ 	if (IS_ERR(sb))
+ 		return ERR_CAST(sb);
++
++	if (new_sb_created)
++		*new_sb_created = !sb->s_root;
++
+ 	if (!sb->s_root) {
+ 		error = kernfs_fill_super(sb);
+ 		if (error) {
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 5c7fdd9..a66ad61 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -27,6 +27,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ {
+ 	struct dentry *root;
+ 	void *ns;
++	bool new_sb;
+ 
+ 	if (!(flags & MS_KERNMOUNT)) {
+ 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
+@@ -37,8 +38,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 	}
+ 
+ 	ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
+-	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns);
+-	if (IS_ERR(root))
++	root = kernfs_mount_ns(fs_type, flags, sysfs_root, &new_sb, ns);
++	if (IS_ERR(root) || !new_sb)
+ 		kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
+ 	return root;
+ }
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 649497a..09669d0 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -279,7 +279,8 @@ void kernfs_notify(struct kernfs_node *kn);
+ 
+ const void *kernfs_super_ns(struct super_block *sb);
+ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-			       struct kernfs_root *root, const void *ns);
++			       struct kernfs_root *root, bool *new_sb_created,
++			       const void *ns);
+ void kernfs_kill_sb(struct super_block *sb);
+ 
+ void kernfs_init(void);
+@@ -372,7 +373,7 @@ static inline const void *kernfs_super_ns(struct super_block *sb)
+ 
+ static inline struct dentry *
+ kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+-		struct kernfs_root *root, const void *ns)
++		struct kernfs_root *root, bool *new_sb_created, const void *ns)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline void kernfs_kill_sb(struct super_block *sb) { }
+@@ -430,9 +431,9 @@ static inline int kernfs_rename(struct kernfs_node *kn,
+ 
+ static inline struct dentry *
+ kernfs_mount(struct file_system_type *fs_type, int flags,
+-	     struct kernfs_root *root)
++	     struct kernfs_root *root, bool *new_sb_created)
+ {
+-	return kernfs_mount_ns(fs_type, flags, root, NULL);
++	return kernfs_mount_ns(fs_type, flags, root, new_sb_created, NULL);
+ }
+ 
+ #endif	/* __LINUX_KERNFS_H */
+-- 
+1.8.0.2
+
