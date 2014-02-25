@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaBYLh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:37:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:60143 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaBYLh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:37:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,539,1389772800"; 
-   d="scan'208";a="413433354"
-Date: Tue, 25 Feb 2014 17:07:53 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        linux-kernel@vger.kernel.org, Anton Vorontsov <anton@enomsg.org>,
-        luca@coelho.fi, Johannes Berg <johannes.berg@intel.com>
-Subject: Re: [PATCH 3.14] power_supply: don't export power_supply_notifier
-Message-ID: <20140225113753.GA20856@jenny-desktop>
-References: <1392988768-16693-1-git-send-email-johannes@sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392988768-16693-1-git-send-email-johannes@sipsolutions.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753033AbaBYLiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:38:11 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:63653 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329AbaBYLiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 06:38:08 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv7 0/7] add compressing abstraction and multi stream support
+Date: Tue, 25 Feb 2014 14:34:26 +0300
+Message-Id: <1393328073-12313-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.291.g027825b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:19:28PM +0100, Johannes Berg wrote:
-> From: Johannes Berg <johannes.berg@intel.com>
-> 
-> Since there are registration/unregistration functions and the
-> invocation is in the core code, there's no need to export the
-> notifier chain head, make it static instead.
+This patchset introduces zcomp compression backend abstraction
+adding ability to support compression algorithms other than LZO;
+support for multi compression streams, making parallel compressions
+possible.
 
-This is a generic notifier which can be used outside power_supply_core.c
-to post psy events as in patch
-power_supply-Introduce-generic-psy-charging-driver.patch. So the notifier chain
-need to be exported.
+v6->v7 (reviewed by Minchan Kim):
+-- enable multi and single stream support out of the box (drop
+   ZRAM_MULTI_STREAM config option)
+-- add set_max_stream knob, so we can adjust max number of compression
+   streams in runtime (for multi stream backend at the moment)
+-- minor code `nitpicks'
+
+v5->v6 (reviewed by Minchan Kim):
+-- handle single compression stream case separately, using mutex locking,
+   to address perfomance regression
+-- handle multi compression stream using spin lock and wait_event()/wake_up()
+-- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+   config option)
+
+v4->v5 (reviewed by Minchan Kim):
+-- renamed zcomp buffer_lock; removed src len and dst len from
+   compress() and decompress(); not using term `buffer' and
+   `workmem' in code and documentation; define compress() and
+   decompress() functions for LZO backend; not using goto's;
+   do not put idle zcomp_strm to idle list tail.
+
+v3->v4 (reviewed by Minchan Kim):
+-- renamed compression backend and working memory structs as requested
+   by Minchan Kim; fixed several issues noted by Minchan Kim.
+
+Sergey Senozhatsky (7):
+  zram: introduce compressing backend abstraction
+  zram: use zcomp compressing backends
+  zram: factor out single stream compression
+  zram: add multi stream functionality
+  zram: enable multi stream compression support in zram
+  zram: add set_max_streams knob
+  zram: document max_comp_streams
+
+ Documentation/ABI/testing/sysfs-block-zram |   9 +-
+ Documentation/blockdev/zram.txt            |  31 ++-
+ drivers/block/zram/Makefile                |   2 +-
+ drivers/block/zram/zcomp.c                 | 324 +++++++++++++++++++++++++++++
+ drivers/block/zram/zcomp.h                 |  59 ++++++
+ drivers/block/zram/zcomp_lzo.c             |  48 +++++
+ drivers/block/zram/zram_drv.c              |  96 +++++----
+ drivers/block/zram/zram_drv.h              |  10 +-
+ 8 files changed, 532 insertions(+), 47 deletions(-)
+ create mode 100644 drivers/block/zram/zcomp.c
+ create mode 100644 drivers/block/zram/zcomp.h
+ create mode 100644 drivers/block/zram/zcomp_lzo.c
+
+-- 
+1.9.0.291.g027825b
+
