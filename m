@@ -1,53 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaBYLiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:38:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38772 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaBYLix (ORCPT
+	id S1753276AbaBYLip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:38:45 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:34606 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206AbaBYLiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:38:53 -0500
-Date: Tue, 25 Feb 2014 12:38:48 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-kernel@vger.kernel.org, will.deacon@arm.com, dave.martin@arm.com,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 3/7] perf: kill perf_event_context_type
-Message-ID: <20140225113848.GO9987@twins.programming.kicks-ass.net>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-4-git-send-email-mark.rutland@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392054264-23570-4-git-send-email-mark.rutland@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 25 Feb 2014 06:38:24 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv7 7/7] zram: document max_comp_streams
+Date: Tue, 25 Feb 2014 14:34:33 +0300
+Message-Id: <1393328073-12313-8-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.291.g027825b
+In-Reply-To: <1393328073-12313-1-git-send-email-sergey.senozhatsky@gmail.com>
+References: <1393328073-12313-1-git-send-email-sergey.senozhatsky@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 05:44:20PM +0000, Mark Rutland wrote:
-> Currently perf_event_context::type is used to determine whether a
-> context is cpu-bound or task-bound. However perf_event_context::task can
-> be used to determine this just as cheaply, and requires no additional
-> initialisation.
-> 
-> This patch removes perf_event_context::type, and modifies existing users
-> to check check perf_event_context::task instead. The now unused enum
-> perf_event_context_type is removed.
+Add max_comp_streams device attribute documentation.
 
-> @@ -7130,7 +7129,7 @@ SYSCALL_DEFINE5(perf_event_open,
->  		 * task or CPU context:
->  		 */
->  		if (move_group) {
-> -			if (group_leader->ctx->type != ctx->type)
-> +			if (group_leader->ctx->task != ctx->task)
->  				goto err_context;
->  		} else {
->  			if (group_leader->ctx != ctx)
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ Documentation/ABI/testing/sysfs-block-zram |  9 ++++++++-
+ Documentation/blockdev/zram.txt            | 31 +++++++++++++++++++++++++-----
+ 2 files changed, 34 insertions(+), 6 deletions(-)
 
-That's not an equivalent statement. ctx->task (t1) != ctx->task (t2)
-while they're still both of the same type.
+diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+index 8aa0468..0da9ed6 100644
+--- a/Documentation/ABI/testing/sysfs-block-zram
++++ b/Documentation/ABI/testing/sysfs-block-zram
+@@ -50,7 +50,6 @@ Description:
+ 		The failed_reads file is read-only and specifies the number of
+ 		failed reads happened on this device.
+ 
+-
+ What:		/sys/block/zram<id>/failed_writes
+ Date:		February 2014
+ Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+@@ -58,6 +57,14 @@ Description:
+ 		The failed_writes file is read-only and specifies the number of
+ 		failed writes happened on this device.
+ 
++What:		/sys/block/zram<id>/max_comp_streams
++Date:		February 2014
++Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
++Description:
++		The max_comp_streams file is read-write and specifies the
++		number of backend's zcomp_strm compression streams (number of
++		concurrent compress operations).
++
+ What:		/sys/block/zram<id>/notify_free
+ Date:		August 2010
+ Contact:	Nitin Gupta <ngupta@vflare.org>
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index b31ac5e..d7f2f8f 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -21,7 +21,28 @@ Following shows a typical sequence of steps for using zram.
+ 	This creates 4 devices: /dev/zram{0,1,2,3}
+ 	(num_devices parameter is optional. Default: 1)
+ 
+-2) Set Disksize
++2) Set max number of compression streams
++	Compression backend may use up to max_comp_streams compression streams,
++	thus allowing up to max_comp_streams concurrent compression operations.
++	By default, compression backend uses single compression stream.
++
++	Examples:
++	#show max compression streams number
++	cat /sys/block/zram0/max_comp_streams
++
++	#set max compression streams number to 3
++	echo 3 > /sys/block/zram0/max_comp_streams
++
++Note:
++In order to enable compression backend's multi stream support max_comp_streams must
++be initially set to desired concurrency level before ZRAM device initialisation.
++Once the device initialised as a single stream compression backend (max_comp_streams
++equals to 0) changing the value of max_comp_streams will not take any effect, because
++single stream compression backend implemented as a special case and does not support
++dynamic max_comp_streams. Multi stream backend supports dynamic max_comp_streams
++adjustment in range [2, N].
++
++3) Set Disksize
+         Set disk size by writing the value to sysfs node 'disksize'.
+         The value can be either in bytes or you can use mem suffixes.
+         Examples:
+@@ -38,14 +59,14 @@ There is little point creating a zram of greater than twice the size of memory
+ since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+ size of the disk when not in use so a huge zram is wasteful.
+ 
+-3) Activate:
++4) Activate:
+ 	mkswap /dev/zram0
+ 	swapon /dev/zram0
+ 
+ 	mkfs.ext4 /dev/zram1
+ 	mount /dev/zram1 /tmp
+ 
+-4) Stats:
++5) Stats:
+ 	Per-device statistics are exported as various nodes under
+ 	/sys/block/zram<id>/
+ 		disksize
+@@ -60,11 +81,11 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		compr_data_size
+ 		mem_used_total
+ 
+-5) Deactivate:
++6) Deactivate:
+ 	swapoff /dev/zram0
+ 	umount /dev/zram1
+ 
+-6) Reset:
++7) Reset:
+ 	Write any positive value to 'reset' sysfs node
+ 	echo 1 > /sys/block/zram0/reset
+ 	echo 1 > /sys/block/zram1/reset
+-- 
+1.9.0.291.g027825b
 
-Now I don't think you'll ever end up with different tasks in this case
-so it might still work out; but you don't mention this and I'd have to
-like think to make sure.
