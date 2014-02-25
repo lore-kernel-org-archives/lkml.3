@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaBYQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:57:19 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:43736 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaBYQ5S (ORCPT
+	id S1753098AbaBYRDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:03:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:59252 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbaBYRDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:57:18 -0500
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 11:57:18 EST
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd64:c99e:f704:9cf4:8492]
-In-Reply-To: <20140225164921.GA4458@kroah.com>
-References: <20140225170944.d322d9868871bc2f669b92e5@canb.auug.org.au>
-	<20140225164921.GA4458@kroah.com>
-Date: Tue, 25 Feb 2014 08:51:37 -0800
-Message-ID: <CAOesGMiTZN3z441d3bOaCcF8Zsss4WZv6YkH9CJpZtTBGxadWw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with the arm-soc tree
-From: Olof Johansson <olof@lixom.net>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+	Tue, 25 Feb 2014 12:03:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [GIT PULL] integrator base patches for v3.15
+Date: Tue, 25 Feb 2014 18:03:08 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "arm@kernel.org" <arm@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>
+References: <CACRpkdYeaMqTNUTqBSg6vNa9=VucjpFFkx3diHJJNgZTg+iq1w@mail.gmail.com> <201402241117.48617.arnd@arndb.de> <CACRpkdbtv2ZQbt0=7QhBZSRRAdONgKeKCO9yj=UwWRAU2WOWwA@mail.gmail.com>
+In-Reply-To: <CACRpkdbtv2ZQbt0=7QhBZSRRAdONgKeKCO9yj=UwWRAU2WOWwA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402251803.08685.arnd@arndb.de>
+X-Provags-ID: V02:K0:WrsZgqr/7VfBy+3jVIMCHPjnganLUenAob5OIDzBbL/
+ YQpN8cgXcQKRZJW0NNn29gptoEibtV51r7LMHU4fN7yFMMRE+s
+ 8f74GM076vcAITWyf67J7sAB/BCFHbbILxGFPSI2O2IU+zOACx
+ Fj8ERi/2SjF/xwPzWnLbI7aAvjAOqAIYIaVqFQ16IsjnIzhF41
+ eTEjU0O4ThfELnpLewuU2OokYyZeOwgIGqzDQFwMN0+QAIptgD
+ 5/Xnuak1A2D/nk2eWReVsaf7GdB8bchs111PQniAU0GgAtRR+o
+ LC1zG36YPPFPHDH5ybXuQ6wvwuckM15NALCMnA1sIQdS7oTLmZ
+ VKHEm/iBSV0l5IXs/0TA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 8:49 AM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Feb 25, 2014 at 05:09:44PM +1100, Stephen Rothwell wrote:
->> Hi Greg,
->>
->> Today's linux-next merge of the staging tree got a conflict in
->> arch/arm/boot/dts/imx53-qsb.dts between commit d5eb195f26fa ("ARM: dts:
->> i.MX53: move common QSB nodes to new file") from the arm-soc tree and
->> commit 17b5001b5143 ("imx-drm: convert to componentised device support")
->> from the staging tree.
->>
->> I fixed it up (see at bottom) and can carry the fix as necessary (no
->> action is required).  I also added the following fix up patch:
->
-> I think it's right, but I really have no idea about any of these.  I'll
-> defer to Russell to ensure they are correct.
+On Monday 24 February 2014, Linus Walleij wrote:
+> >
+> > irqchip: VIC: export vic_init_cascaded
+> >
+> > vic_init_cascaded is called by integrator impd1 code that can
+> > be a loadable module, so the function has to be exported.
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Can either of you pls apply this directly to the ARM SoC tree?
+> 
 
-We normally merge all dts changes through arm-soc to avoid these kind
-of conflicts. Since your tree is a stable one there isn't much to do
-about it, but I'd appreciate it if we just got those parts of the
-patch series in the future to avoid these situations. We've been bit
-by it before.
+Applied on next/drivers now.
 
-
--Olof
+	ARnd
