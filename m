@@ -1,100 +1,510 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaBYSOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:14:06 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:59425 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193AbaBYSOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:14:02 -0500
-Date: Tue, 25 Feb 2014 12:12:34 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-CC: Neil Zhang <zhangwm@marvell.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
-Message-ID: <20140225181234.GF23275@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
- <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
- <20140225011839.GD7540@shlinux1.ap.freescale.net>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
- <6ad74d797ecc473f922ffdb58c3e9c70@BN1PR03MB235.namprd03.prod.outlook.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A5@SC-VEXCH4.marvell.com>
- <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="65ImJOski3p8EhYV"
-Content-Disposition: inline
-In-Reply-To: <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753601AbaBYSQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 13:16:54 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:9771 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaBYSQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 13:16:52 -0500
+Message-ID: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH v2] mm: per-thread vma caching
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, aswin@hp.com, scott.norton@hp.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Tue, 25 Feb 2014 10:16:46 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---65ImJOski3p8EhYV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-Hi,
+This patch is a continuation of efforts trying to optimize find_vma(),
+avoiding potentially expensive rbtree walks to locate a vma upon faults.
+The original approach (https://lkml.org/lkml/2013/11/1/410), where the
+largest vma was also cached, ended up being too specific and random, thus
+further comparison with other approaches were needed. There are two things
+to consider when dealing with this, the cache hit rate and the latency of
+find_vma(). Improving the hit-rate does not necessarily translate in finding
+the vma any faster, as the overhead of any fancy caching schemes can be too
+high to consider.
 
-On Tue, Feb 25, 2014 at 07:46:08AM +0000, Peter Chen wrote:
-> > > > > > Hardware zlt will try to send the zero length packet
-> > > > > > automatically when the data transferd is multiple times of max
-> > > > > > packet, this will cause issues on Windows.
-> > > > > > So let's disable HW zlt by default.
-> > > > >
-> > > > > Would you have description that what kinds of issue on Windows if
-> > > > > zlt is is selected?
-> > > > >
-> > > >
-> > > > Enumeration will fail.
-> > > >
-> > >
-> > > What causes enumeration fail, why it does not occur before?
-> > >
-> > A unexpected zero packet cause enumeration fail.
-> > It's not easy that the descriptor is actually 1024 bytes, so not easy to
-> > be found.
-> >=20
->=20
-> Chipidea bug too? Does it follow ch 8.5.3.2 Variable-length Data Stage, U=
-SB 2.0 spec?
+We currently cache the last used vma for the whole address space, which
+provides a nice optimization, reducing the total cycles in find_vma() by up
+to 250%, for workloads with good locality. On the other hand, this simple
+scheme is pretty much useless for workloads with poor locality. Analyzing
+ebizzy runs shows that, no matter how many threads are running, the
+mmap_cache hit rate is less than 2%, and in many situations below 1%.
 
-wait, this is a chipidea core ? Why aren't you guys using the chipidea
-driver yet ? You need to switch over to that driver dude, we can't have
-duplicated code in the tree.
+The proposed approach is to keep the current cache and adding a small, per
+thread, LRU cache. By keeping the mm->mmap_cache, programs with large heaps
+or good locality can benefit by not having to deal with an additional cache
+when the hit rate is good enough. Concretely, the following results are seen
+on an 80 core, 8 socket x86-64 box:
 
-I'm sorry, but I won't be taking this series, please use chipidea
-driver, it should be very simple to add a glue layer for your core to
-the chipidea driver.
+1) System bootup: Most programs are single threaded, so the per-thread scheme
+does improve ~50% hit rate by just adding a few more slots to the cache.
 
---=20
-balbi
++----------------+----------+------------------+
+| caching scheme | hit-rate | cycles (billion) |
++----------------+----------+------------------+
+| baseline       | 50.61%   | 19.90            |
+| patched        | 73.45%   | 13.58            |
++----------------+----------+------------------+
 
---65ImJOski3p8EhYV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+2) Kernel build: This one is already pretty good with the current approach
+as we're dealing with good locality.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
++----------------+----------+------------------+
+| caching scheme | hit-rate | cycles (billion) |
++----------------+----------+------------------+
+| baseline       | 75.28%   | 11.03            |
+| patched        | 88.09%   | 9.31             |
++----------------+----------+------------------+
 
-iQIcBAEBAgAGBQJTDN0SAAoJEIaOsuA1yqREVLUP/0tYu9VNXMLJDuqHubTLmqFQ
-TQ0KSZbjZBBPMRa3xaZfvIORKac6LwBHueP14qyF5TwfTlUypiMLxrnERe8O2qrl
-42PjvyxRBaJNK3t3DwFQwYFHRTwdkYKc+MyhSlq50IljG3WZu1CG2Q5lNLZtpfLp
-27O1c1E0nSomzObPwr5b+aCtBiblvKJVN8g6JET+M0Nu7kMKn7LoWqAW7jbPjRHE
-TIJfFRA8MGStwV3GZ4eHHL63CPk2VUMqufedqOabXMK+lCtLDzIA4Fzn9QO2qPrH
-NBFUktK8VQvIHFQeFIzSloIwKDxptfJy2vbUUgKjkWE0eAGw8HK6v2vawEjmq8vO
-H7JjnuL72Uscvhd4/Oe5vArTraO27tEXGVbNTuGQDfhfdsdaLxxTJSX3Auns8MVz
-z6Px94lYnO50l9V/eyQ01qUii42YK/lEZlZQRVQdttGeQccUSQutUhjqrhjbZoir
-L0YM8p6Epefje+DNHu2ejAmj9I9A8gWmkp94uQ5pxFq3P/WvX0fDtbNVGAgCgT8I
-JCkjd/OUMYPckAz0NWUC6K9nQVB8rFwTINPakaeupSGtb1XPT/kI8fysGx6/zE7o
-10gB80KhrVsOhMlEhKX+0px1wFOB3QoXIFSA9l6KPH2nd8Pxeiby6aFpC3wPBUMf
-scoDMfA6Onn9e1MCmRK7
-=lccO
------END PGP SIGNATURE-----
+3) Oracle 11g Data Mining (4k pages): Similar to the kernel build workload.
 
---65ImJOski3p8EhYV--
++----------------+----------+------------------+
+| caching scheme | hit-rate | cycles (billion) |
++----------------+----------+------------------+
+| baseline       | 70.66%   | 17.14            |
+| patched        | 91.15%   | 12.57            |
++----------------+----------+------------------+
+
+4) Ebizzy: There's a fair amount of variation from run to run, but this
+approach always shows nearly perfect hit rates, while baseline is just
+about non-existent. The amounts of cycles can fluctuate between anywhere
+from ~60 to ~116 for the baseline scheme, but this approach reduces it
+considerably. For instance, with 80 threads:
+
++----------------+----------+------------------+
+| caching scheme | hit-rate | cycles (billion) |
++----------------+----------+------------------+
+| baseline       | 1.06%    | 91.54            |
+| patched        | 99.97%   | 14.18            |
++----------------+----------+------------------+
+
+Systems with !CONFIG_MMU get to keep the current logic.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+Changes from v1 (https://lkml.org/lkml/2014/2/21/8): 
+- Removed the per-mm cache for CONFIG_MMU, only having the 
+  per thread approach.
+
+- Since lookups are always performed before updates, only 
+  invalidate when searching for a vma. Simplify the updating.
+
+- Hash based on the page# instead of the remaining two bits 
+  of the offset, results show that both methods are pretty 
+  much identical for hit-rates.
+
+Please note that nommu and unicore32 arch are *untested*.
+Thanks.
+
+ arch/unicore32/include/asm/mmu_context.h | 10 ++++-
+ fs/proc/task_mmu.c                       |  2 +-
+ include/linux/mm_types.h                 |  6 ++-
+ include/linux/sched.h                    |  5 +++
+ include/linux/vmacache.h                 | 24 +++++++++++
+ kernel/debug/debug_core.c                |  6 ++-
+ kernel/fork.c                            |  7 +++-
+ mm/Makefile                              |  2 +-
+ mm/mmap.c                                | 54 +++++++++++++------------
+ mm/nommu.c                               | 12 +++---
+ mm/vmacache.c                            | 69 ++++++++++++++++++++++++++++++++
+ 11 files changed, 157 insertions(+), 40 deletions(-)
+ create mode 100644 include/linux/vmacache.h
+ create mode 100644 mm/vmacache.c
+
+diff --git a/arch/unicore32/include/asm/mmu_context.h b/arch/unicore32/include/asm/mmu_context.h
+index fb5e4c6..c571759 100644
+--- a/arch/unicore32/include/asm/mmu_context.h
++++ b/arch/unicore32/include/asm/mmu_context.h
+@@ -56,6 +56,14 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ #define deactivate_mm(tsk, mm)	do { } while (0)
+ #define activate_mm(prev, next)	switch_mm(prev, next, NULL)
+ 
++static inline void __vmacache_invalidate(struct mm_struct *mm)
++{
++#ifdef CONFIG_MMU
++	vmacache_invalidate(mm);
++#else
++	mm->vmacache = NULL;
++#endif
++}
+ /*
+  * We are inserting a "fake" vma for the user-accessible vector page so
+  * gdb and friends can get to it through ptrace and /proc/<pid>/mem.
+@@ -73,7 +81,7 @@ do { \
+ 		else \
+ 			mm->mmap = NULL; \
+ 		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
+-		mm->mmap_cache = NULL; \
++		__vmacache_invalidate(mm); \
+ 		mm->map_count--; \
+ 		remove_vma(high_vma); \
+ 	} \
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index fb52b54..231c836 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -152,7 +152,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 
+ 	/*
+ 	 * We remember last_addr rather than next_addr to hit with
+-	 * mmap_cache most of the time. We have zero last_addr at
++	 * vmacache most of the time. We have zero last_addr at
+ 	 * the beginning and also after lseek. We will have -1 last_addr
+ 	 * after the end of the vmas.
+ 	 */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 290901a..e8b90b0 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -342,13 +342,15 @@ struct mm_rss_stat {
+ 
+ struct kioctx_table;
+ struct mm_struct {
+-	struct vm_area_struct * mmap;		/* list of VMAs */
++	struct vm_area_struct *mmap;		/* list of VMAs */
+ 	struct rb_root mm_rb;
+-	struct vm_area_struct * mmap_cache;	/* last find_vma result */
+ #ifdef CONFIG_MMU
++	u32 vmacache_seqnum;                   /* per-thread vmacache */
+ 	unsigned long (*get_unmapped_area) (struct file *filp,
+ 				unsigned long addr, unsigned long len,
+ 				unsigned long pgoff, unsigned long flags);
++#else
++	struct vm_area_struct *vmacache;	/* last find_vma result */
+ #endif
+ 	unsigned long mmap_base;		/* base of mmap area */
+ 	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index a781dec..09dd1ff 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -23,6 +23,7 @@ struct sched_param {
+ #include <linux/errno.h>
+ #include <linux/nodemask.h>
+ #include <linux/mm_types.h>
++#include <linux/vmacache.h>
+ #include <linux/preempt_mask.h>
+ 
+ #include <asm/page.h>
+@@ -1228,6 +1229,10 @@ struct task_struct {
+ #ifdef CONFIG_COMPAT_BRK
+ 	unsigned brk_randomized:1;
+ #endif
++#ifdef CONFIG_MMU
++	u32 vmacache_seqnum;
++	struct vm_area_struct *vmacache[VMACACHE_SIZE];
++#endif
+ #if defined(SPLIT_RSS_COUNTING)
+ 	struct task_rss_stat	rss_stat;
+ #endif
+diff --git a/include/linux/vmacache.h b/include/linux/vmacache.h
+new file mode 100644
+index 0000000..4fb7841
+--- /dev/null
++++ b/include/linux/vmacache.h
+@@ -0,0 +1,24 @@
++#ifndef __LINUX_VMACACHE_H
++#define __LINUX_VMACACHE_H
++
++#include <linux/mm.h>
++
++#define VMACACHE_SIZE 4
++
++extern void vmacache_invalidate_all(void);
++
++static inline void vmacache_invalidate(struct mm_struct *mm)
++{
++	mm->vmacache_seqnum++;
++
++	/* deal with overflows */
++	if (unlikely(mm->vmacache_seqnum == 0))
++		vmacache_invalidate_all();
++}
++
++extern void vmacache_update(struct mm_struct *mm, unsigned long addr,
++			    struct vm_area_struct *newvma);
++extern struct vm_area_struct *vmacache_find(struct mm_struct *mm,
++					    unsigned long addr);
++
++#endif /* __LINUX_VMACACHE_H */
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 334b398..fefc055 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -224,10 +224,12 @@ static void kgdb_flush_swbreak_addr(unsigned long addr)
+ 	if (!CACHE_FLUSH_IS_SAFE)
+ 		return;
+ 
+-	if (current->mm && current->mm->mmap_cache) {
+-		flush_cache_range(current->mm->mmap_cache,
++#ifndef CONFIG_MMU
++	if (current->mm && current->mm->vmacache) {
++		flush_cache_range(current->mm->vmacache,
+ 				  addr, addr + BREAK_INSTR_SIZE);
+ 	}
++#endif
+ 	/* Force flush instruction cache if it was outside the mm */
+ 	flush_icache_range(addr, addr + BREAK_INSTR_SIZE);
+ }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index a17621c..14396bf 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -363,7 +363,12 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 
+ 	mm->locked_vm = 0;
+ 	mm->mmap = NULL;
+-	mm->mmap_cache = NULL;
++	mm->vmacache_seqnum = oldmm->vmacache_seqnum + 1;
++
++	/* deal with overflows */
++	if (unlikely(mm->vmacache_seqnum == 0))
++		vmacache_invalidate_all();
++
+ 	mm->map_count = 0;
+ 	cpumask_clear(mm_cpumask(mm));
+ 	mm->mm_rb = RB_ROOT;
+diff --git a/mm/Makefile b/mm/Makefile
+index 310c90a..2bb5b6a 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -5,7 +5,7 @@
+ mmu-y			:= nommu.o
+ mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+-			   vmalloc.o pagewalk.o pgtable-generic.o
++			   vmalloc.o pagewalk.o pgtable-generic.o vmacache.o
+ 
+ ifdef CONFIG_CROSS_MEMORY_ATTACH
+ mmu-$(CONFIG_MMU)	+= process_vm_access.o
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 20ff0c3..dfd7fe7 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -681,8 +681,9 @@ __vma_unlink(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	prev->vm_next = next = vma->vm_next;
+ 	if (next)
+ 		next->vm_prev = prev;
+-	if (mm->mmap_cache == vma)
+-		mm->mmap_cache = prev;
++
++	/* Kill the cache */
++	vmacache_invalidate(mm);
+ }
+ 
+ /*
+@@ -1989,34 +1990,33 @@ EXPORT_SYMBOL(get_unmapped_area);
+ /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ {
+-	struct vm_area_struct *vma = NULL;
++	struct rb_node *rb_node;
++	struct vm_area_struct *vma;
+ 
+ 	/* Check the cache first. */
+-	/* (Cache hit rate is typically around 35%.) */
+-	vma = ACCESS_ONCE(mm->mmap_cache);
+-	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+-		struct rb_node *rb_node;
++	vma = vmacache_find(mm, addr);
++	if (likely(vma))
++		return vma;
+ 
+-		rb_node = mm->mm_rb.rb_node;
+-		vma = NULL;
++	rb_node = mm->mm_rb.rb_node;
++	vma = NULL;
+ 
+-		while (rb_node) {
+-			struct vm_area_struct *vma_tmp;
+-
+-			vma_tmp = rb_entry(rb_node,
+-					   struct vm_area_struct, vm_rb);
+-
+-			if (vma_tmp->vm_end > addr) {
+-				vma = vma_tmp;
+-				if (vma_tmp->vm_start <= addr)
+-					break;
+-				rb_node = rb_node->rb_left;
+-			} else
+-				rb_node = rb_node->rb_right;
+-		}
+-		if (vma)
+-			mm->mmap_cache = vma;
++	while (rb_node) {
++		struct vm_area_struct *tmp;
++
++		tmp = rb_entry(rb_node, struct vm_area_struct, vm_rb);
++
++		if (tmp->vm_end > addr) {
++			vma = tmp;
++			if (tmp->vm_start <= addr)
++				break;
++			rb_node = rb_node->rb_left;
++		} else
++			rb_node = rb_node->rb_right;
+ 	}
++
++	if (vma)
++		vmacache_update(mm, addr, vma);
+ 	return vma;
+ }
+ 
+@@ -2388,7 +2388,9 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	} else
+ 		mm->highest_vm_end = prev ? prev->vm_end : 0;
+ 	tail_vma->vm_next = NULL;
+-	mm->mmap_cache = NULL;		/* Kill the cache. */
++
++	/* Kill the cache */
++	vmacache_invalidate(mm);
+ }
+ 
+ /*
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 8740213..c2d1b92 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -776,8 +776,8 @@ static void delete_vma_from_mm(struct vm_area_struct *vma)
+ 	protect_vma(vma, 0);
+ 
+ 	mm->map_count--;
+-	if (mm->mmap_cache == vma)
+-		mm->mmap_cache = NULL;
++	if (mm->vmacache == vma)
++		mm->vmacache = NULL;
+ 
+ 	/* remove the VMA from the mapping */
+ 	if (vma->vm_file) {
+@@ -825,7 +825,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 	struct vm_area_struct *vma;
+ 
+ 	/* check the cache first */
+-	vma = ACCESS_ONCE(mm->mmap_cache);
++	vma = ACCESS_ONCE(mm->vmacache);
+ 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ 		return vma;
+ 
+@@ -835,7 +835,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 		if (vma->vm_start > addr)
+ 			return NULL;
+ 		if (vma->vm_end > addr) {
+-			mm->mmap_cache = vma;
++			mm->vmacache = vma;
+ 			return vma;
+ 		}
+ 	}
+@@ -874,7 +874,7 @@ static struct vm_area_struct *find_vma_exact(struct mm_struct *mm,
+ 	unsigned long end = addr + len;
+ 
+ 	/* check the cache first */
+-	vma = mm->mmap_cache;
++	vma = mm->vmacache;
+ 	if (vma && vma->vm_start == addr && vma->vm_end == end)
+ 		return vma;
+ 
+@@ -886,7 +886,7 @@ static struct vm_area_struct *find_vma_exact(struct mm_struct *mm,
+ 		if (vma->vm_start > addr)
+ 			return NULL;
+ 		if (vma->vm_end == end) {
+-			mm->mmap_cache = vma;
++			mm->vmacache = vma;
+ 			return vma;
+ 		}
+ 	}
+diff --git a/mm/vmacache.c b/mm/vmacache.c
+new file mode 100644
+index 0000000..d577ad3
+--- /dev/null
++++ b/mm/vmacache.c
+@@ -0,0 +1,69 @@
++#include <linux/sched.h>
++#include <linux/vmacache.h>
++
++void vmacache_invalidate_all(void)
++{
++	struct task_struct *g, *p;
++
++	rcu_read_lock();
++	for_each_process_thread(g, p) {
++		/*
++		 * Only flush the vmacache pointers as the
++		 * mm seqnum is already set and curr's will
++		 * be set upon invalidation when the next
++		 * lookup is done.
++		 */
++		memset(p->vmacache, 0, sizeof(p->vmacache));
++	}
++	rcu_read_unlock();
++}
++
++static bool vmacache_valid(struct mm_struct *mm)
++{
++	struct task_struct *curr = current;
++
++	if (mm != curr->mm)
++		return false;
++
++	if (mm->vmacache_seqnum != curr->vmacache_seqnum) {
++		/*
++		 * First attempt will always be invalid, initialize the
++		 * new cache for this task here.
++		 */
++		curr->vmacache_seqnum = mm->vmacache_seqnum;
++		memset(curr->vmacache, 0, sizeof(curr->vmacache));
++		return false;
++	}
++	return true;
++}
++
++struct vm_area_struct *vmacache_find(struct mm_struct *mm,
++				     unsigned long addr)
++
++{
++	int i;
++
++	if (!vmacache_valid(mm))
++		return NULL;
++
++	for (i = 0; i < VMACACHE_SIZE; i++) {
++		struct vm_area_struct *vma = current->vmacache[i];
++
++		if (vma && vma->vm_start <= addr && vma->vm_end > addr)
++			return vma;
++	}
++
++	return NULL;
++}
++
++void vmacache_update(struct mm_struct *mm, unsigned long addr,
++		     struct vm_area_struct *newvma)
++{
++	/*
++	 * Hash based on the page number. Provides a good
++	 * hit rate for workloads with good locality and
++	 * those with random accesses as well.
++	 */
++	int idx = (addr >> PAGE_SHIFT) & 3;
++	current->vmacache[idx] = newvma;
++}
+-- 
+1.8.1.4
+
+
+
