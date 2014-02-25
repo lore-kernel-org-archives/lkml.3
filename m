@@ -1,283 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaBYHja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 02:39:30 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37354 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaBYHj2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 02:39:28 -0500
-Message-ID: <530C48A7.2070706@monstr.eu>
-Date: Tue, 25 Feb 2014 08:39:19 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752096AbaBYHjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 02:39:36 -0500
+Received: from tundra.namei.org ([65.99.196.166]:43645 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842AbaBYHjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 02:39:33 -0500
+Date: Tue, 25 Feb 2014 18:47:17 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 6/8] security: smack: Use a more current logging style
+In-Reply-To: <530BCF57.6000304@schaufler-ca.com>
+Message-ID: <alpine.LRH.2.02.1402251847070.29807@tundra.namei.org>
+References: <cover.1393279025.git.joe@perches.com> <3b69f0961dff21133e276d5c3edee8b05c41f8c5.1393279025.git.joe@perches.com> <530BC92D.6030509@schaufler-ca.com> <530BCF57.6000304@schaufler-ca.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: Alejandro Cabrera <acabrera@udio.cujae.edu.cu>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 07/11] watchdog: xilinx: Use of_property_read_u32
-References: <53094A15.1080708@udio.cujae.edu.cu> <53093038.6000604@roeck-us.net> <53097091.50204@udio.cujae.edu.cu> <530950A1.40302@roeck-us.net> <530991AA.9040201@udio.cujae.edu.cu> <53096E8D.50202@roeck-us.net> <530A20ED.3070505@udio.cujae.edu.cu> <530A0909.50101@roeck-us.net> <530A453E.4070608@udio.cujae.edu.cu> <530B085C.7090401@monstr.eu> <20140224192507.GO1484@spo001.leaseweb.com>
-In-Reply-To: <20140224192507.GO1484@spo001.leaseweb.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="J6hmoWmb1isMCfldFxlXQsusB6cWtKFr1"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---J6hmoWmb1isMCfldFxlXQsusB6cWtKFr1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, 24 Feb 2014, Casey Schaufler wrote:
 
-On 02/24/2014 08:25 PM, Wim Van Sebroeck wrote:
-> Hi Michal,
->=20
->> On 02/23/2014 08:00 PM, Alejandro Cabrera wrote:
->>> On 23/2/2014 6:43 AM, Guenter Roeck wrote:
->>>> On 02/23/2014 08:25 AM, Alejandro Cabrera wrote:
->>>>> On 22/2/2014 7:44 PM, Guenter Roeck wrote:
->>>>>> On 02/22/2014 10:14 PM, Alejandro Cabrera wrote:
->>>>>>> On 22/2/2014 5:36 PM, Guenter Roeck wrote:
->>>>>>>> On 02/22/2014 07:52 PM, Alejandro Cabrera wrote:
->>>>>>>>> On 22/2/2014 3:18 PM, Guenter Roeck wrote:
->>>>>>>>>> On 02/22/2014 05:08 PM, Alejandro Cabrera wrote:
->>>>>>>>>>> On 22/2/2014 10:46 AM, Wim Van Sebroeck wrote:
->>>>>>>>>>>> Hi All,
->>>>>>>>>>>>
->>>>>>>>>>>>> Hi Michal,
->>>>>>>>>>>>>
->>>>>>>>>>>>> On Wed, Feb 12, 2014 at 02:41:21PM +0100, Michal Simek wrot=
-e:
->>>>>>>>>>>>>> Use of_property_read_u32 functions to clean probe function=
-=2E
->>>>>>>>>>>>>>
->>>>>>>>>>>>>> Signed-off-by: Michal Simek<michal.simek@xilinx.com>
->>>>>>>>>>>>>> Reviewed-by: Guenter Roeck<linux@roeck-us.net>
->>>>>>>>>>>>>> ---
->>>>>>>>>>>>>>
->>>>>>>>>>>>>> Changes in v3:
->>>>>>>>>>>>>> - Remove one if checking and use variable directly
->>>>>>>>>>>>>>
->>>>>>>>>>>>> Looks good.
->>>>>>>>>>>>>
->>>>>>>>>>>>> Another comment/remark.
->>>>>>>>>>>>>
->>>>>>>>>>>>>> -    pfreq =3D (u32 *)of_get_property(pdev->dev.of_node,
->>>>>>>>>>>>>> -                    "clock-frequency", NULL);
->>>>>>>>>>>>>> -
->>>>>>>>>>>>>> -    if (pfreq =3D=3D NULL) {
->>>>>>>>>>>>>> +    rc =3D of_property_read_u32(pdev->dev.of_node, "clock=
--frequency",&pfreq);
->>>>>>>>>>>>>> +    if (rc) {
->>>>>>>>>>>>>>           dev_warn(&pdev->dev,
->>>>>>>>>>>>>>                "The watchdog clock frequency cannot be obt=
-ained\n");
->>>>>>>>>>>>>>           no_timeout =3D true;
->>>>>>>>>>>>>>       }
->>>>>>>>>>>>>>
->>>>>>>>>>>>>> -    tmptr =3D (u32 *)of_get_property(pdev->dev.of_node,
->>>>>>>>>>>>>> -                    "xlnx,wdt-interval", NULL);
->>>>>>>>>>>>>> -    if (tmptr =3D=3D NULL) {
->>>>>>>>>>>>>> +    rc =3D of_property_read_u32(pdev->dev.of_node, "xlnx,=
-wdt-interval",
->>>>>>>>>>>>>> + &xdev->wdt_interval);
->>>>>>>>>>>>>> +    if (rc) {
->>>>>>>>>>>>>>           dev_warn(&pdev->dev,
->>>>>>>>>>>>>>                "Parameter \"xlnx,wdt-interval\" not found\=
-n");
->>>>>>>>>>>>>>           no_timeout =3D true;
->>>>>>>>>>>>>> -    } else {
->>>>>>>>>>>>>> -        xdev->wdt_interval =3D *tmptr;
->>>>>>>>>>>>>>       }
->>>>>>>>>>>>>>
->>>>>>>>>>>>>> -    tmptr =3D (u32 *)of_get_property(pdev->dev.of_node,
->>>>>>>>>>>>>> -                    "xlnx,wdt-enable-once", NULL);
->>>>>>>>>>>>>> -    if (tmptr =3D=3D NULL) {
->>>>>>>>>>>>>> +    rc =3D of_property_read_u32(pdev->dev.of_node, "xlnx,=
-wdt-enable-once",
->>>>>>>>>>>>>> + &enable_once);
->>>>>>>>>>>>>> +    if (rc)
->>>>>>>>>>>>>>           dev_warn(&pdev->dev,
->>>>>>>>>>>>>>                "Parameter \"xlnx,wdt-enable-once\" not fou=
-nd\n");
->>>>>>>>>>>>>> -        watchdog_set_nowayout(xilinx_wdt_wdd, true);
->>>>>>>>>>>>>> -    }
->>>>>>>>>>>>> All the above properties are optional. Is a warning really
->>>>>>>>>>>>> warranted in this case ? I usually associate a warning with=
+> On 2/24/2014 2:35 PM, Casey Schaufler wrote:
+> > On 2/24/2014 1:59 PM, Joe Perches wrote:
+> >> Convert printks to pr_<level>
+> >> Add pr_fmt.
+> >>
+> >> Signed-off-by: Joe Perches <joe@perches.com>
+> > Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+> >
+> > I will take this into the smack-next tree.
+> 
+> Unless James would rather take the whole set, that is.
 
->>>>>>>>>>>>> something that is wrong, which is not the case here.
->>>>>>>>>>>>>
->>>>>>>>>>>>> I would encourage you to drop those warnings, but that shou=
-ld be
->>>>>>>>>>>>> a separate patch.
->>>>>>>>>>>> I agree with Guenter: these are not really warnings. Seperat=
-e patch is thus welcome.
->>>>>>>>>>> Hi
->>>>>>>>>>>
->>>>>>>>>>> I support Michal intention, I think it is a warning because d=
-evice tree blob must have the "xlnx,wdt-enable-once" property specified i=
-n order to allow the system to be sure of the real value of this property=
-=2E In addition to, this warning can be helpful to detect a wrong device =
-tree specification.
->>>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> The dt documentation states that the properties are optional.
->>>>>>>>>>
->>>>>>>>>> Optional properties:
->>>>>>>>>> - clock-frequency       : Frequency of clock in Hz
->>>>>>>>>> - xlnx,wdt-enable-once  : 0 - Watchdog can be restarted
->>>>>>>>>>                           1 - Watchdog can be enabled just onc=
-e
->>>>>>>>>> - xlnx,wdt-interval     : Watchdog timeout interval in 2^<val>=
- clock cycles,
->>>>>>>>>> <val> is integer from 8 to 31.
->>>>>>>>>>
->>>>>>>>>> This clearly conflicts with your statement. An optional proper=
-ty
->>>>>>>>>> is just that, optional. If it warrants a warning, it must
->>>>>>>>>> not be optional. If you claim that not providing the propertie=
-s
->>>>>>>>>> would be "wrong", why are they defined as optional ?
->>>>>>>>> Hi Guenter
->>>>>>>>>
->>>>>>>>> I didn't know that these properties was classified as optional.=
-=2E.
->>>>>>>>> I think that they should not be, because all xilinx watchog dev=
-ices (at least for microblaze processor)
->>>>>>>>> have these properties defined in theirs MPD files and theirs va=
-lues can be obtained during the
->>>>>>>>> hardware specification to device tree conversion.
->>>>>>>>>> What is your definition of "wrong" and "must have" ?
->>>>>>>>> what I mean for "must have" is: if these properties can be obta=
-ined
->>>>>>>>> for all xilinx watchdog devices they must be present in the dev=
-ice tree because they allows
->>>>>>>>> the system (linux/user) to know exactly how a watchdog device i=
-s configured.
->>>>>>>>> Because these properties always can be obtained from hardware d=
-esign there is no
->>>>>>>>> reason to leave them out from the device tree. This is why I co=
-nsider that a device tree without
->>>>>>>>> these properties should be considered as "wrong" device tree.
->>>>>>>>>> How do you expect anyone to know that omitting those
->>>>>>>>>> "optional" properties is by some definition "wrong" ?
->>>>>>>>> I'm agree with you.
->>>>>>>>> Maybe these properties shouldn't be optional.
->>>>>>>>> For example suppose that "xlnx,wdt-enable-once" is missing in t=
-he device tree,
->>>>>>>>> when a watchdog daemon ask for this property what is the obtain=
-ed value ?
->>>>>>>>> Independently of this value, why do not warn the user about thi=
-s missing property
->>>>>>>>> when it can always be in the device tree ?
->>>>>>>>>
->>>>>>>>
->>>>>>>> Really, this line of argument doesn't make any sense to me.
->>>>>>>> "xlnx,wdt-enable-once", for example, is a boolean and means
->>>>>>>> that the watchdog, when enabled, can not be stopped. It defaults=
-
->>>>>>>> to false, and thus is inherently optional. Making it mandatory
->>>>>>>> doesn't really add any value.
->>>>>>>>
->>>>>>>
->>>>>>> If the device has been configured with wdt-enable-once=3Dtrue
->>>>>>> and the device tree doesn't have this property then a watchdog da=
-emon
->>>>>>> would see it as "false" because it is the default making the syst=
-em to misbehave...
->>>>>>> A warning during driver loading could help user to identify the p=
-roblem.
->>>>>>>
->>>>>>
->>>>>> All this would give you is a false sense of safety. The property c=
-ould
->>>>>> just as well be there and be wrong (eg be configured as =3D <0> wh=
-en it
->>>>>> should be 1, or with a wrong frequency.
->>>>> These issues "cannot" be detected but the missing properties yes.
->>>>>> Following your logic, every driver
->>>>>> would need to warn about everything, just to be sure.
->>>>> Every driver should warn about anything that it considers weird and=
- let the user to decide if it matters or not.
->>>>> I think that an example of weird could be the lack of an expected p=
-roperty.
->>>>>
->>>>
->>>> I don't think it makes sense to continue this discussion.
->>>> We have fundamental differences in opinion which we won't
->>>> resolve by repeating our arguments over and over.
->>>>
->>>> Wim, I'll let you decide how to handle this. My recommendation
->>>> is to request the author to decide if the properties are optional
->>>> or not before accepting this patch set. Either the properties
->>>> are optional, and there should be no warnings, or they are
->>>> mandatory and the driver should bail out if they are missing.
->>>>
->>> I'm totally agreed with you :)
->>>
->>
->> You have reached to completely different discussion.
->> We should talk just about the code I have sent.
->> I have checked what I have done and the intention was just to have bet=
-ter driver.
->> I even didn't change any logic about DT and probe. DT binding just des=
-cribes
->> what it is written in the driver, nothing more nothing else.
->>
->> Please keep this in your mind.
->>
->> The driver with this binding is in the kernel for a while and if bindi=
-ng is wrong
->> let's change it but it should be in separate patch which can fix bindi=
-ng
->> warn/error messages.
->>
->> Wim: If you agree, I have no problem to send this follow up patch
->> which can be applied on the top of this series.
->> We can make xlnx,wdt-enable-once and xlnx,wdt-interval as required pro=
-perties
->> and clock-frequence can go away and we can use CCF.
->=20
-> As said: a follow up patch would be welcome. So yes I agree.
-> And I also think that the discussion was interesting because it pointed=
- out that
- a review of the bindings could also be usefull (what is required versus =
-what os optional).
-
-Definitely it is not the first time where binding doc is useful.
-Also from binding we can see which features are common for all
-drivers in the same kind.
-
-Thanks,
-Michal
+Yep, I'll take the whole set.
 
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+> 
+> >
+> >> ---
+> >>  security/smack/smack_lsm.c |  7 ++++---
+> >>  security/smack/smackfs.c   | 25 +++++++++++--------------
+> >>  2 files changed, 15 insertions(+), 17 deletions(-)
+> >>
+> >> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> >> index 14f52be..a273aad 100644
+> >> --- a/security/smack/smack_lsm.c
+> >> +++ b/security/smack/smack_lsm.c
+> >> @@ -18,6 +18,8 @@
+> >>   *      as published by the Free Software Foundation.
+> >>   */
+> >>  
+> >> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >> +
+> >>  #include <linux/xattr.h>
+> >>  #include <linux/pagemap.h>
+> >>  #include <linux/mount.h>
+> >> @@ -2106,8 +2108,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
+> >>  		if (sock->sk->sk_family == PF_INET) {
+> >>  			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
+> >>  			if (rc != 0)
+> >> -				printk(KERN_WARNING
+> >> -					"Smack: \"%s\" netlbl error %d.\n",
+> >> +				pr_warn("\"%s\" netlbl error %d\n",
+> >>  					__func__, -rc);
+> >>  		}
+> >>  	} else
+> >> @@ -3916,7 +3917,7 @@ static __init int smack_init(void)
+> >>  	if (tsp == NULL)
+> >>  		return -ENOMEM;
+> >>  
+> >> -	printk(KERN_INFO "Smack:  Initializing.\n");
+> >> +	pr_info("Initializing\n");
+> >>  
+> >>  	/*
+> >>  	 * Set the security state for the initial task.
+> >> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+> >> index 3198cfe..2e25220 100644
+> >> --- a/security/smack/smackfs.c
+> >> +++ b/security/smack/smackfs.c
+> >> @@ -16,6 +16,8 @@
+> >>   *
+> >>   */
+> >>  
+> >> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> >> +
+> >>  #include <linux/kernel.h>
+> >>  #include <linux/vmalloc.h>
+> >>  #include <linux/security.h>
+> >> @@ -698,8 +700,7 @@ static void smk_cipso_doi(void)
+> >>  
+> >>  	rc = netlbl_cfg_map_del(NULL, PF_INET, NULL, NULL, &nai);
+> >>  	if (rc != 0)
+> >> -		printk(KERN_WARNING "%s:%d remove rc = %d\n",
+> >> -		       __func__, __LINE__, rc);
+> >> +		pr_warn("%s:%d remove rc = %d\n", __func__, __LINE__, rc);
+> >>  
+> >>  	doip = kmalloc(sizeof(struct cipso_v4_doi), GFP_KERNEL);
+> >>  	if (doip == NULL)
+> >> @@ -713,15 +714,13 @@ static void smk_cipso_doi(void)
+> >>  
+> >>  	rc = netlbl_cfg_cipsov4_add(doip, &nai);
+> >>  	if (rc != 0) {
+> >> -		printk(KERN_WARNING "%s:%d cipso add rc = %d\n",
+> >> -		       __func__, __LINE__, rc);
+> >> +		pr_warn("%s:%d cipso add rc = %d\n", __func__, __LINE__, rc);
+> >>  		kfree(doip);
+> >>  		return;
+> >>  	}
+> >>  	rc = netlbl_cfg_cipsov4_map_add(doip->doi, NULL, NULL, NULL, &nai);
+> >>  	if (rc != 0) {
+> >> -		printk(KERN_WARNING "%s:%d map add rc = %d\n",
+> >> -		       __func__, __LINE__, rc);
+> >> +		pr_warn("%s:%d map add rc = %d\n", __func__, __LINE__, rc);
+> >>  		kfree(doip);
+> >>  		return;
+> >>  	}
+> >> @@ -741,8 +740,8 @@ static void smk_unlbl_ambient(char *oldambient)
+> >>  	if (oldambient != NULL) {
+> >>  		rc = netlbl_cfg_map_del(oldambient, PF_INET, NULL, NULL, &nai);
+> >>  		if (rc != 0)
+> >> -			printk(KERN_WARNING "%s:%d remove rc = %d\n",
+> >> -			       __func__, __LINE__, rc);
+> >> +			pr_warn("%s:%d remove rc = %d\n",
+> >> +				__func__, __LINE__, rc);
+> >>  	}
+> >>  	if (smack_net_ambient == NULL)
+> >>  		smack_net_ambient = &smack_known_floor;
+> >> @@ -750,8 +749,7 @@ static void smk_unlbl_ambient(char *oldambient)
+> >>  	rc = netlbl_cfg_unlbl_map_add(smack_net_ambient->smk_known, PF_INET,
+> >>  				      NULL, NULL, &nai);
+> >>  	if (rc != 0)
+> >> -		printk(KERN_WARNING "%s:%d add rc = %d\n",
+> >> -		       __func__, __LINE__, rc);
+> >> +		pr_warn("%s:%d add rc = %d\n", __func__, __LINE__, rc);
+> >>  }
+> >>  
+> >>  /*
+> >> @@ -2302,8 +2300,7 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+> >>  
+> >>  	rc = simple_fill_super(sb, SMACK_MAGIC, smack_files);
+> >>  	if (rc != 0) {
+> >> -		printk(KERN_ERR "%s failed %d while creating inodes\n",
+> >> -			__func__, rc);
+> >> +		pr_err("%s failed %d while creating inodes\n", __func__, rc);
+> >>  		return rc;
+> >>  	}
+> >>  
+> >> @@ -2369,13 +2366,13 @@ static int __init init_smk_fs(void)
+> >>  
+> >>  	err = smk_init_sysfs();
+> >>  	if (err)
+> >> -		printk(KERN_ERR "smackfs: sysfs mountpoint problem.\n");
+> >> +		pr_err("smackfs: sysfs mountpoint problem\n");
+> >>  
+> >>  	err = register_filesystem(&smk_fs_type);
+> >>  	if (!err) {
+> >>  		smackfs_mount = kern_mount(&smk_fs_type);
+> >>  		if (IS_ERR(smackfs_mount)) {
+> >> -			printk(KERN_ERR "smackfs:  could not mount!\n");
+> >> +			pr_err("smackfs: could not mount!\n");
+> >>  			err = PTR_ERR(smackfs_mount);
+> >>  			smackfs_mount = NULL;
+> >>  		}
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-
-
---J6hmoWmb1isMCfldFxlXQsusB6cWtKFr1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMMSKcACgkQykllyylKDCGjeACfd6zRAV85RzhOY4l64OMJQ/yy
-aKgAmgIrRqWNJhRkDJHTvqfmVnLbldne
-=9E6O
------END PGP SIGNATURE-----
-
---J6hmoWmb1isMCfldFxlXQsusB6cWtKFr1--
+-- 
+James Morris
+<jmorris@namei.org>
