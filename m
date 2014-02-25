@@ -1,115 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaBYJh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:37:57 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:35210 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960AbaBYJhu (ORCPT
+	id S1753101AbaBYJiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:38:13 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48640 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaBYJiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:37:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<874n3n7czm.fsf_-_@xmission.com>
-Date: Tue, 25 Feb 2014 01:37:44 -0800
-In-Reply-To: <874n3n7czm.fsf_-_@xmission.com> (Eric W. Biederman's message of
-	"Tue, 25 Feb 2014 01:33:49 -0800")
-Message-ID: <87bnxv5y8n.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Feb 2014 04:38:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/qAM5SiMHgjDSiMS8e54+UTNQX+EGWDGs=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.1 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0389]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Al Viro <viro@zeniv.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: [PATCH 05/12] vfs: factor out lookup_mountpoint from new_mountpoint
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <530C4B65.2060207@suse.de>
+References: <1393253450-12217-1-git-send-email-hare@suse.de>
+	<CANq1E4Tt4bomRh9i1CL6LDYFi4afX1pPABJSczRSGsMJZsiqqg@mail.gmail.com>
+	<530C4B65.2060207@suse.de>
+Date: Tue, 25 Feb 2014 10:38:04 +0100
+Message-ID: <CANq1E4RypUFd5vHbLnqM8tdFr3P7gLR=HTtYhf=Bf4nWtPbCiQ@mail.gmail.com>
+Subject: Re: [PATCHv3] tty: Set correct tty name in 'active' sysfs attribute
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ray Strode <halfline@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Werner Fink <werner@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-I am shortly going to add a new user of struct mountpoint that
-needs to look up existing entries but does not want to create
-a struct mountpoint if one does not exist.  Therefore to keep
-the code simple and easy to read split out lookup_mountpoint
-from new_mountpoint.
+On Tue, Feb 25, 2014 at 8:51 AM, Hannes Reinecke <hare@suse.de> wrote:
+> On 02/24/2014 03:58 PM, David Herrmann wrote:
+>> Hi
+>>
+>> On Mon, Feb 24, 2014 at 3:50 PM, Hannes Reinecke <hare@suse.de> wrote:
+>>> The 'active' sysfs attribute should refer to the currently
+>>> active tty devices the console is running on, not the currently
+>>> active console.
+>>> The console structure doesn't refer to any device in sysfs,
+>>> only the tty the console is running on has.
+>>> So we need to print out the tty names in 'active', not
+>>> the console names.
+>>> But we need to take care for the virtual console to always display
+>>> 'tty0' so as not to break existing programs.
+>>>
+>>> Cc: Lennart Poettering <lennart@poettering.net>
+>>> Cc: Kay Sievers <kay@vrfy.org>
+>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> Cc: Jiri Slaby <jslaby@suse.cz>
+>>> Signed-off-by: Werner Fink <werner@suse.de>
+>>> Signed-off-by: Hannes Reinecke <hare@suse.de>
+>>> ---
+>>>  drivers/tty/tty_io.c | 24 ++++++++++++++++++------
+>>>  1 file changed, 18 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+>>> index c74a00a..96eb462 100644
+>>> --- a/drivers/tty/tty_io.c
+>>> +++ b/drivers/tty/tty_io.c
+>>> @@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
+>>>   *
+>>>   *     Locking: None
+>>>   */
+>>> -static void tty_line_name(struct tty_driver *driver, int index, char *p)
+>>> +static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+>>>  {
+>>>         if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+>>> -               strcpy(p, driver->name);
+>>> +               return sprintf(p, "%s", driver->name);
+>>>         else
+>>> -               sprintf(p, "%s%d", driver->name, index + driver->name_base);
+>>> +               return sprintf(p, "%s%d", driver->name,
+>>> +                              index + driver->name_base);
+>>>  }
+>>>
+>>>  /**
+>>> @@ -3545,9 +3546,20 @@ static ssize_t show_cons_active(struct device *dev,
+>>>                 if (i >= ARRAY_SIZE(cs))
+>>>                         break;
+>>>         }
+>>> -       while (i--)
+>>> -               count += sprintf(buf + count, "%s%d%c",
+>>> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
+>>> +       while (i--) {
+>>> +               struct tty_driver *driver;
+>>> +               const char *name = cs[i]->name;
+>>> +               int index = cs[i]->index;
+>>> +
+>>> +               driver = cs[i]->device(cs[i], &index);
+>>> +               /* Some programs rely on 'tty0' for console */
+>>> +               if (driver && (index > 0 || driver->major != TTY_MAJOR)) {
+>>
+>> As Ray mentioned in the previous discussion, this has to be
+>> cs[i]->index instead of "index" as ->device() changes the parameter.
+>> See drivers/tty/vt/vt.c vt_console_device().
+>>
+> Positive?
+> I thought this was precisely the problem, ->device() changing the
+> index '0' into something non-zero.
+> The reports we had were that the line 'tty0' changed into 'tty1'.
+> Hence ->device() converted cs[i]->index (which is '0') into index
+> (which is '1').
+> Hence the check would be correct, wouldn't it?
 
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/namespace.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
+If "cs[i]" points to tty0, then cs[i]->index is 0. If you call
+->device(), it will store 1 (or !=0) in "index". Thus, "(driver &&
+(index > 0))" will be true and you will write tty1 into the file
+instead of tty0. So you don't want to check whether the new value is
+non-zero, but whether the *previous* value was 0, turning this into:
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 32d380eabdac..f2f03082fe70 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -667,11 +667,10 @@ out:
- 	return is_covered;
- }
- 
--static struct mountpoint *new_mountpoint(struct dentry *dentry)
-+static struct mountpoint *lookup_mountpoint(struct dentry *dentry)
- {
- 	struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
- 	struct mountpoint *mp;
--	int ret;
- 
- 	list_for_each_entry(mp, chain, m_hash) {
- 		if (mp->m_dentry == dentry) {
-@@ -682,6 +681,14 @@ static struct mountpoint *new_mountpoint(struct dentry *dentry)
- 			return mp;
- 		}
- 	}
-+	return NULL;
-+}
-+
-+static struct mountpoint *new_mountpoint(struct dentry *dentry)
-+{
-+	struct list_head *chain = mountpoint_hashtable + hash(NULL, dentry);
-+	struct mountpoint *mp;
-+	int ret;
- 
- 	mp = kmalloc(sizeof(struct mountpoint), GFP_KERNEL);
- 	if (!mp)
-@@ -1702,7 +1709,9 @@ retry:
- 	namespace_lock();
- 	mnt = lookup_mnt(path);
- 	if (likely(!mnt)) {
--		struct mountpoint *mp = new_mountpoint(dentry);
-+		struct mountpoint *mp = lookup_mountpoint(dentry);
-+		if (!mp)
-+			mp = new_mountpoint(dentry);
- 		if (IS_ERR(mp)) {
- 			namespace_unlock();
- 			mutex_unlock(&dentry->d_inode->i_mutex);
--- 
-1.7.5.4
+if (driver && (cs[i]->index > 0 || driver->major != TTY_MAJOR))
 
+So loosely speaking, we use the new code only for devices which either
+are not a VT or have an idx > 0. Otherwise, we use our fallback.
+
+Thanks
+David
