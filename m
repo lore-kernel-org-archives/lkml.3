@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaBYCCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:02:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36731 "EHLO
+	id S1752891AbaBYCLO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 21:11:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36758 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752000AbaBYCCU (ORCPT
+	by vger.kernel.org with ESMTP id S1752318AbaBYCLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:02:20 -0500
-Message-ID: <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+	Mon, 24 Feb 2014 21:11:12 -0500
+Message-ID: <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
 From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: dcbw@redhat.com, mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
-        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net
-Date: Tue, 25 Feb 2014 02:01:59 +0000
-In-Reply-To: <20140224.191238.921310808350170272.davem@davemloft.net>
-References: <1393266120.8041.19.camel@dcbw.local>
-	 <20140224.180426.411052665068255886.davem@davemloft.net>
-	 <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk>
-	 <20140224.191238.921310808350170272.davem@davemloft.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 25 Feb 2014 02:11:05 +0000
+In-Reply-To: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-YYrQ2oDAg0I7CCTJmDT8"
+	protocol="application/pgp-signature"; boundary="=-KIdEAk1LqGPJ6HCaYEf8"
 X-Mailer: Evolution 3.8.5-2+b2 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.242
@@ -34,29 +28,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-YYrQ2oDAg0I7CCTJmDT8
+--=-KIdEAk1LqGPJ6HCaYEf8
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2014-02-24 at 19:12 -0500, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Tue, 25 Feb 2014 00:02:00 +0000
+On Mon, 2014-02-24 at 16:14 -0800, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
 >=20
-> > You can run an internal network, or access network, as v6-only with
-> > NAT64 and DNS64 at the border.  I believe some mobile networks are doin=
-g
-> > this; it was also done on the main FOSDEM wireless network this year.
+> We have documentation for these flags but they're scattered
+> all over the place. #defines don't allow documentation to be
+> written easily so to help to start bringing some documentation
+> together use the enums kdoc practice but keep the defines to
+> allow userspace to be able to #ifdef them.
 >=20
-> This seems to be bloating up the networking headers of the internal
-> network, for what purpose?
+> I've verified the same values are assigned before and after
+> with a simple userspace test program [0] and checksumming the
+> output.
 >=20
-> For mobile that's doubly inadvisable.
+> [0] http://drvbp1.linux-foundation.org/~mcgrof/kdoc/netdev_flags/
+>=20
+> mcgrof@gnat ~/tmp $ ./check-flags | sha1sum
+> 0ec5b6b1840aa3bb9ce464e61c564820871c92c3  -
+>=20
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  include/uapi/linux/if.h | 201 +++++++++++++++++++++++++++++++++++-------=
+------
+>  1 file changed, 149 insertions(+), 52 deletions(-)
+>=20
+> diff --git a/include/uapi/linux/if.h b/include/uapi/linux/if.h
+> index d758163..1555623 100644
+> --- a/include/uapi/linux/if.h
+> +++ b/include/uapi/linux/if.h
+[...]
+> +/**
+> + * enum net_device_priv_flags - &struct net_device priv_flags
+> + *
+> + * These are the &struct net_device, they are only set internally
+> + * by drivers and used in the kernel but are invisible to userspace.
+[...]
 
-I don't know what the reasoning is for the mobile network operators.
-They're forced to do NAT for v4 somewhere, and maybe v6-only makes the
-access network easier to manage.
-
-I doubt the extra header length hurts that much on a 3G or 4G network.
+Indeed, I wonder why they are in the UAPI header.  As userland doesn't
+have a legitimate use for them, maybe you could move them back to
+include/linux/if.h instead of bothering with adding macros?
 
 Ben.
 
@@ -66,26 +82,26 @@ Everything should be made as simple as possible, but not simpler.
                                                            - Albert Einstei=
 n
 
---=-YYrQ2oDAg0I7CCTJmDT8
+--=-KIdEAk1LqGPJ6HCaYEf8
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIVAwUAUwv5l+e/yOyVhhEJAQpXUA/9HUG2G2LIDPmo09FoOGCUKQ3ak6vf9ZgB
-WCkn4sqbfANNxloU8AZT/rnWzcaU5GwlTm4b3XCEmiU9pDCOfZDDa81a2j20MnqI
-MHY61c19Vg7SIeQ46TbVGlUOvn13XkHeqYulQIfgW6EvUnVugVog1/MHdagsTpjM
-wJSHN1y8NegK07aO9KkEMM16APT6nE1bZ8tVTB5iwaX3b23ZBY/Z5P7Zk70gcbLt
-4VoaNmzv76O5SQJ82KQjbpuI+ZNYYXstG6ZIfRUEcFbBEZc0+6LQoEkEK9LOJcSk
-4khGycBNemZlQleyhs35WdYde9ZCHkOhHOBzYmmBiuVdy8wwm+rYSEr0RNpBnMji
-6cltOYeIX0pXC0FVf7ooeQLrZhYhEmo2AM0qCOqsOt6waTQ54zBmb/PNK2aJUKhJ
-Gvkb/5aNQrAiOV5XWkrzT+jXRAVd8JYHQYE/nSBHwtdk+mdukXLdlBz4FaB8o5I/
-peG/3Xvo+J74WEHLOGJhvKRgS6N6WZ7rurLUX4O4EiSZD90HoSdQBp7yhaasjfEw
-65x2pf+ZM99XwS+41dVj9TCc14KjRdbt13FeJaSbz2GD+WpcOIRRdR2/0LL7/Swl
-lYpVB21XTFhrERBL9qRt1X43sHnqCHgDL1+UfJLmCZ9JXHaQ1vqdkTv9BTTgkeee
-zdXHXl0KAsg=
-=rbWU
+iQIVAwUAUwv7uee/yOyVhhEJAQqL4RAAjeZK8JAnM7+VxCuNBx28qaIlEFSLHJ6e
+sZUVJ7Zvh2mL1WRQwmWLyKN4nlp5keD/R02daDxAH1qVVtccE+b2wRusR6Q5RtlH
+t72VKkrgrcx63PXdmOMcNvjxHV1s87HKiTgRE8O4C5sLPlAeyzuDw2OHJeUsAK7b
+q0CixfZBa7QqJxqCfrdhkH9Hj+ymlaNqhs/n+C8Kvj/RIuzZp5pvZqgNOJKuWjA+
+osq9K/nhfRLzCadPXgMnxvadPVfOpShDAD34q8UOMWKCUo8Zys6Xn0uJ/Y8V2xgC
+7p5TKfx0mUm38YPH0mOmeXq6+h19itOBGbXr74ynHs7bjyjywvPiaURfU1bXrV/q
+wXGo1jprvsby4gbY3Q5hp7dkwzZLwuQkpLaADa02jVD6aR04i0jmpxOU54N23Pk0
+mNuHhreIqyV+6+rqfwuEH8U6aR29iKWDxDdiC9V4rqInh++qmHIiMBwlnwGTLTqC
+ntr1Op77itDcixY0KPWGcPzd6ZzVlCFZOEG4vOOYLXEtRJzQbcdkLoWCdy7zvmBd
+PZuMFwanPKpglfTZTh6iO49SRO7Fy9v+dBaOThRTg2EJx9nAeA1X9pLJEStU4Y9d
+yWZ63AepZLcjDeQWKymf3Ltq7HYyGNO6E89dWP2oE1bSEHZz3FW2qnDNy6wRxJNO
+WEkGg0dUsJQ=
+=P2zm
 -----END PGP SIGNATURE-----
 
---=-YYrQ2oDAg0I7CCTJmDT8--
+--=-KIdEAk1LqGPJ6HCaYEf8--
