@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaBYJYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:24:38 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:59103 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaBYJYd (ORCPT
+	id S1753283AbaBYJYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:24:48 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:37718 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855AbaBYJYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:24:33 -0500
+	Tue, 25 Feb 2014 04:24:42 -0500
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
@@ -14,9 +14,9 @@ Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
         linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         linux-kernel@vger.kernel.org,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v4 5/7] arm64: ftrace: Add system call tracepoint
-Date: Tue, 25 Feb 2014 18:23:14 +0900
-Message-Id: <1393320196-2942-6-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v4 6/7] arm64: Add 'notrace' attribute to unwind_frame() for ftrace
+Date: Tue, 25 Feb 2014 18:23:15 +0900
+Message-Id: <1393320196-2942-7-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393320196-2942-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
@@ -25,86 +25,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows system call entry or exit to be traced as ftrace events,
-ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
-Those events appear and can be controlled under
-    ${sysfs}/tracing/events/syscalls/
+walk_stackframe() calls unwind_frame(), and if walk_stackframe() is
+"notrace", unwind_frame() should be also "notrace".
 
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- arch/arm64/Kconfig               |    1 +
- arch/arm64/include/asm/syscall.h |    1 +
- arch/arm64/include/asm/unistd.h  |    2 ++
- arch/arm64/kernel/ptrace.c       |    9 +++++++++
- 4 files changed, 13 insertions(+)
+ arch/arm64/kernel/stacktrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 6954959..b1dcdb4 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -43,6 +43,7 @@ config ARM64
- 	select HAVE_MEMBLOCK
- 	select HAVE_PATA_PLATFORM
- 	select HAVE_PERF_EVENTS
-+	select HAVE_SYSCALL_TRACEPOINTS
- 	select IRQ_DOMAIN
- 	select MODULES_USE_ELF_RELA
- 	select NO_BOOTMEM
-diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
-index 70ba9d4..383771e 100644
---- a/arch/arm64/include/asm/syscall.h
-+++ b/arch/arm64/include/asm/syscall.h
-@@ -18,6 +18,7 @@
- 
- #include <linux/err.h>
- 
-+extern const void *sys_call_table[];
- 
- static inline int syscall_get_nr(struct task_struct *task,
- 				 struct pt_regs *regs)
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 82ce217..c335479 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -28,3 +28,5 @@
- #endif
- #define __ARCH_WANT_SYS_CLONE
- #include <uapi/asm/unistd.h>
-+
-+#define NR_syscalls (__NR_syscalls)
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index c70133e..dc90f9f 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -41,6 +41,9 @@
- #include <asm/traps.h>
- #include <asm/system_misc.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/syscalls.h>
-+
- /*
-  * TODO: does not yet catch signals sent when the child dies.
-  * in exit.c or in signal.c.
-@@ -1062,6 +1065,9 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+diff --git a/arch/arm64/kernel/stacktrace.c b/arch/arm64/kernel/stacktrace.c
+index c3b6c63..54122c4 100644
+--- a/arch/arm64/kernel/stacktrace.c
++++ b/arch/arm64/kernel/stacktrace.c
+@@ -35,7 +35,7 @@
+  *	ldp	x29, x30, [sp]
+  *	add	sp, sp, #0x10
+  */
+-int unwind_frame(struct stackframe *frame)
++int notrace unwind_frame(struct stackframe *frame)
  {
- 	unsigned long saved_reg;
- 
-+	if (dir && unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_exit(regs, regs_return_value(regs));
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
- 		if (is_compat_task()) {
- 			/* AArch32 uses ip (r12) for scratch */
-@@ -1087,5 +1093,8 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
- 			regs->regs[7] = saved_reg;
- 	}
- 
-+	if (!dir && unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_enter(regs, regs->syscallno);
-+
- 	return regs->syscallno;
- }
+ 	unsigned long high, low;
+ 	unsigned long fp = frame->fp;
 -- 
 1.7.9.5
 
