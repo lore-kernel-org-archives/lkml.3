@@ -1,152 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaBYBdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 20:33:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32899 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675AbaBYBdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 20:33:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,538,1389772800"; 
-   d="scan'208";a="481195656"
-Date: Tue, 25 Feb 2014 09:33:14 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [sched/balance] 7511dd0a7: +2.1e+05% context switches
-Message-ID: <20140225013314.GA8148@localhost>
-References: <20140219130028.GB8169@localhost>
- <5305ACF9.60403@linaro.org>
+	id S1753179AbaBYBek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:34:40 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51206 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbaBYBej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 20:34:39 -0500
+Date: Tue, 25 Feb 2014 10:34:24 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Fabio Estevam <festevam@gmail.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <20140225013424.GL25940@sirena.org.uk>
+References: <1392914164-28596-1-git-send-email-mpa@pengutronix.de>
+ <20140223051209.GK25940@sirena.org.uk>
+ <CAOMZO5BPvCcx_f09Khuw8MVxrR18fnv9e1xeuJ0c_8G22AR53g@mail.gmail.com>
+ <20140224205058.GA18317@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zm9sv4N+ZePDBU/L"
 Content-Disposition: inline
-In-Reply-To: <5305ACF9.60403@linaro.org>
+In-Reply-To: <20140224205058.GA18317@pengutronix.de>
+X-Cookie: You're at the end of the road again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 121.174.50.227
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 0/2] regulator: core: Fix ops->enable/disable usage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 03:21:29PM +0800, Alex Shi wrote:
-> On 02/19/2014 09:00 PM, Fengguang Wu wrote:
-> > bc575710efe937e  7511dd0a73aaf2ca4bcd829f9
-> > ---------------  -------------------------
-> >       2029 ~ 0%    +222.9%       6551 ~17%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-> >     143678 ~42%  +4.8e+05%  6.927e+08 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-> >     145708 ~42%  +4.8e+05%  6.927e+08 ~ 0%  TOTAL time.involuntary_context_switches
-> 
-> 
-> Thanks for testing, Fengguang!
-> 
-> Does the context switch increasing happen on whole patchset? or just
-> happens on this patch?
 
-Only this patch. Some other patches actually reduce the context switches.
-This is all the changes for branch alexshi/topdown:
+--Zm9sv4N+ZePDBU/L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-    111372 ~ 1%     +60.1%     178267 ~ 1%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-    111372 ~ 1%     +60.1%     178267 ~ 1%  TOTAL hackbench.throughput
+On Mon, Feb 24, 2014 at 09:50:58PM +0100, Markus Pargmann wrote:
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-  11862017 ~10%    +769.1%  1.031e+08 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-  11862017 ~10%    +769.1%  1.031e+08 ~ 9%  TOTAL numa-numastat.node0.numa_hit
+> The only situation where this returns -EINVAL is a dummy regulator that
+> is not always_on. As it doesn't make sense to have a dummy regulator
+> that is not always_on, I will add a check for exactly this situation to
+> the regulator_register function and drop the "return -EINVAL" above.
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-  11862016 ~10%    +769.1%  1.031e+08 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-  11862016 ~10%    +769.1%  1.031e+08 ~ 9%  TOTAL numa-numastat.node0.local_node
+I've squashed the following fix in today:
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-   4629280 ~ 9%    +714.0%   37683303 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-   4629280 ~ 9%    +714.0%   37683303 ~ 9%  TOTAL proc-vmstat.pgalloc_dma32
+=46rom 937635aa9c667b90b76505de91c5693da6a5c120 Mon Sep 17 00:00:00 2001
+=46rom: Mark Brown <broonie@linaro.org>
+Date: Tue, 25 Feb 2014 10:24:55 +0900
+Subject: [PATCH] regulator: Handle invalid enable operation for always/boot=
+ on
+ regulators
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-   6476588 ~11%    +751.1%   55123483 ~ 7%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-   6476588 ~11%    +751.1%   55123483 ~ 7%  TOTAL numa-vmstat.node0.numa_hit
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-   6380486 ~11%    +761.9%   54995307 ~ 7%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-   6380486 ~11%    +761.9%   54995307 ~ 7%  TOTAL numa-vmstat.node0.numa_local
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 8cbc7d7..9a09f3c 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1017,7 +1017,7 @@ static int set_machine_constraints(struct regulator_d=
+ev *rdev,
+ 	 */
+ 	if (rdev->constraints->always_on || rdev->constraints->boot_on) {
+ 		ret =3D _regulator_do_enable(rdev);
+-		if (ret < 0) {
++		if (ret < 0 && ret !=3D -EINVAL) {
+ 			rdev_err(rdev, "failed to enable\n");
+ 			goto out;
+ 		}
+--=20
+1.9.0.rc3
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-     24214 ~ 1%     -71.8%       6824 ~ 7%  lkp-a03/micro/will-it-scale/sched_yield
-     55173 ~ 0%     -76.9%      12720 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-     55292 ~ 0%     -78.9%      11653 ~ 3%  lkp-snb01/micro/will-it-scale/sched_yield
-    134680 ~ 0%     -76.8%      31198 ~ 3%  TOTAL interrupts.RES
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-     25891 ~ 1%     +99.5%      51664 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
-     25891 ~ 1%     +99.5%      51664 ~ 0%  TOTAL softirqs.SCHED
+--Zm9sv4N+ZePDBU/L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-   4282244 ~ 1%     -46.6%    2284599 ~ 8%  lkp-ws02/micro/hackbench/1600%-threads-pipe
-   4282244 ~ 1%     -46.6%    2284599 ~ 8%  TOTAL proc-vmstat.pgfault
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-    105276 ~ 0%     -43.3%      59659 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-    105799 ~ 1%     -38.0%      65577 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
-    211075 ~ 0%     -40.7%     125236 ~ 0%  TOTAL cpuidle.C7-SNB.usage
+iQIcBAEBAgAGBQJTC/McAAoJELSic+t+oim9rccP/0giz6cmMgye4hG2/kS7p7ig
+Si54NnJU+d6RpDhcWtL69TnqhCKKm6+3onBEQbaoa5UuYFVgwcddlPHHcDTMyue1
+A5Wg9nDkBEDJ71CeqcBBxWYatg6pavcAC0fTuppUoveDjVQQQXVO7lN2NS77Rmyq
+NzMoi0iWpcqSXdh0HhYHhFZD4xcKG9oD1kexRZiIB4t6Le1lgtWyG524o1wVOK4b
+Ganak7aiIQv7lgszEDSKRASGEyJMlaDthTvG+URs0XJvljfEzK4X7Ys4ewxj0BUr
+hkHbudVCQLWwQytl3Ve4Q3ZebdffF9iwlDpgM1Louw1lUzd6JNnbtW7QsI7k+9q4
+D1KqClXGzwtaMaU65VLCuS+Aku614H1hqU/uPVKWrPlybw+tQbfu6tTkR++MKtSV
+dsH9+sHbAuYCUY34J7wNjs3bZaLUs7fTHcQ4/lClVznjGciQRYtQ000DyXB6WNRw
+wGG8ahKGBAlqGvEPGFwUDLZGz3Nw5H+qywTYI+6Kheqtgi3QTzmJQHHKuwdc5zkP
+UnsjzTziYXh1wPpiNjJMOSgfv/sOmTLQDkjN6Pyj/YScD61kdBkSgAMvlNvpZVPK
+Rf62nT9oooac7inWzyrYSM2GbmVO7+0cMe1HyeyWVCpYAZPZgQfBVjTm98C8TNDd
+LnAkcXuclVH4yt6+LnAQ
+=bpzo
+-----END PGP SIGNATURE-----
 
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
- 4.174e+08 ~ 0%     +31.2%  5.478e+08 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
- 4.174e+08 ~ 0%     +31.2%  5.478e+08 ~ 0%  TOTAL cpuidle.C4.time
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-     20.64 ~ 0%     +23.9%      25.57 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-     20.64 ~ 0%     +23.9%      25.57 ~ 0%  TOTAL turbostat.%c1
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-    214235 ~ 0%     -13.4%     185581 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
-    214235 ~ 0%     -13.4%     185581 ~ 0%  TOTAL interrupts.LOC
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-    133373 ~ 0%     -10.8%     119020 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
-    133373 ~ 0%     -10.8%     119020 ~ 0%  TOTAL softirqs.TIMER
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-      1109 ~ 8%   +9292.8%     104250 ~ 1%  lkp-a03/micro/will-it-scale/sched_yield
-      4060 ~38%  +1.2e+05%    4868923 ~ 2%  lkp-snb01/micro/will-it-scale/sched_yield
-      5169 ~32%  +96094.8%    4973173 ~ 2%  TOTAL vmstat.system.cs
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-      2045 ~ 1%    +221.7%       6578 ~ 2%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-      2045 ~ 1%    +221.7%       6578 ~ 2%  TOTAL time.involuntary_context_switches
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-       800 ~ 0%     -18.8%        650 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
-       800 ~ 0%     -18.8%        650 ~ 0%  TOTAL vmstat.system.in
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-     50.56 ~ 0%      -1.8%      49.64 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-     50.55 ~ 0%      -9.4%      45.80 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
-    101.11 ~ 0%      -5.6%      95.44 ~ 0%  TOTAL turbostat.%c0
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-      1518 ~ 0%      -4.9%       1443 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-      1518 ~ 0%      -4.9%       1443 ~ 0%  TOTAL time.user_time
-
-      v3.14-rc2  d2f8e017fdd913fc150160508  
----------------  -------------------------  
-       488 ~ 0%      -4.8%        465 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
-       488 ~ 0%      -4.8%        465 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-
-Thanks,
-Fengguang
+--Zm9sv4N+ZePDBU/L--
