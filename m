@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaBYMmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:42:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51668 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaBYMmo (ORCPT
+	id S1752746AbaBYMxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:53:32 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55106 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752680AbaBYMx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:42:44 -0500
-Date: Tue, 25 Feb 2014 21:42:37 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: alsa-devel@alsa-project.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>,
-        devicetree@vger.kernel.org
-Message-ID: <20140225124237.GG25940@sirena.org.uk>
-References: <cover.1392995566.git.moinejf@free.fr>
- <4dca81f45b67a4dcb21271e57409ba114c3b59cb.1392995566.git.moinejf@free.fr>
+	Tue, 25 Feb 2014 07:53:29 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug online work is done
+Date: Tue, 25 Feb 2014 14:04:16 +0100
+Message-ID: <15001517.xLHO8lGdWr@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org> <530BAA31.4050701@codeaurora.org> <CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0AE7xBcoXTow8yBG"
-Content-Disposition: inline
-In-Reply-To: <4dca81f45b67a4dcb21271e57409ba114c3b59cb.1392995566.git.moinejf@free.fr>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] ASoC: simple-card: Fix device node locks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, February 25, 2014 02:20:57 PM Viresh Kumar wrote:
+> On 25 February 2014 01:53, Saravana Kannan <skannan@codeaurora.org> wrote:
+> > I was simplifying the scenario that causes it. We change the min/max using
+> > ADJUST notifiers for multiple reasons -- thermal being one of them.
+> >
+> > thermal/cpu_cooling is one example of it.
+> 
+> Just to understand the clear picture, you are actually hitting this bug? Or
+> is this only a theoretical bug?
+> 
+> > So, cpufreq_update_policy() can be called on any CPU. If that races with
+> > someone offlining a CPU and onlining it, you'll get this crash.
+> 
+> Then shouldn't that be fixed by locks? I think yes. That makes me agree with
+> Srivatsa more here.
+> 
+> Though I would say that your argument was also valid that 'policy' shouldn't be
+> up for sale unless it is prepared to. And for that reason only I
+> floated that question
+> earlier: What exactly we need to make sure is initialized in policy? Because
+> policy might keep changing in future as well and that needs locks to protect
+> that stuff. Like min/max/governor/ etc..
 
---0AE7xBcoXTow8yBG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, that depends on what the current users expect it to look like initially.
+It should be initialized to the point in which all of them can handle it
+correctly.
 
-On Thu, Feb 20, 2014 at 06:25:12PM +0100, Jean-Francois Moine wrote:
-> Some device nodes stay locked and some other ones are not locked
-> while being used during the card lifetime.
+> So, probably a solution here might be a mix of both. Initialize policy to this
+> minimum level and then make sure locking is used correctly..
 
-Please pay more attention to describing your patches clearly in
-changelogs and to splitting them up for review.  This is a frequent
-issue and it does make it much harder to check what's happening.
+Yes.
 
-In this case you're not actually working with locking but rather with
-reference counting and there's no real description of the actual errors
-either.  Saying something like "function X takes a reference which we
-need to drop" would help a lot, and it would let us think about if it's
-sensible for the function to return holding the reference in the first
-place and how long the reference needs to be held for.
+> > The idea would exist, but we can just call cpufreq_generic_get() and pass it
+> > policy->clk if it is not NULL. Does that work for you?
+> 
+> No. Not all drivers implement clk interface. And so clk doesn't look to be the
+> right parameter. I thought maybe 'policy' can be the right parameter and
+> then people can get use policy->cpu to get cpu id out of it.
+> 
+> But even that doesn't look to be a great idea. X86 drivers may share policy
+> structure for CPUs that don't actually share a clock line. And so they do need
+> right CPU number as parameter instead of policy. As they might be doing
+> some tricky stuff there. Also, we need to make sure that ->get() returns
+> the frequency at which CPU x is running.
 
---0AE7xBcoXTow8yBG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+That's not going to work in at least some cases anyway, because for some types
+of HW we simply can't retrieve the current frequency in a non-racy way.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks!
 
-iQIcBAEBAgAGBQJTDI+5AAoJELSic+t+oim9GL0QAIieIbNbLSitT8rabMy2nezx
-bczJ3Q+mvo/lKuBklY3mjK/3IpfVY0/HAvKKaKvdlP2N15pC2ftEfKgbHd4VyMm9
-o6hrJ2BmwXPKGl8v/VasBPar0lkI2N1wA/yXzsrapjsiLkT4QhtVHVgZ3EwOVTdE
-2wtZv56oz4IyAo0+kfhQ/hVOrElbujXPrUK+sCQYJ1a+hl3IGbxsxv/yDvM5zXrx
-JwEtDM0LuxH+/bpKWUMf2j8cWdGEoPR0CiPr8GCGZEoqy8YwBsnLiGUzA00pF7tM
-iO/GX4cv/mcIAMblhI+lA2rOT5y8lc1U1tEtQAd+bwPEThdzHxBerGksaRRpb9Ki
-PSLLHjocuai9B50COuugqCv7bypHgDeZx5aXCNNTcYyfoTw9b3FbnT/1Exuo4jIV
-efVI5fc9H80JZLro04M0b8jVMMCty7AdkhrZOxLAgk/Q3tx0Y+SRZmLq6BlsaVUd
-dp6bKeCRLA/z27+fE20yX8ZxqKtHMVw6I3yi8R5CXz5To1YYo3ctvuYqLIDAva5I
-ZLFkrgO+o/fygessg2Dk2QB05JDre/Xnq7w5MyDYTAgpr9Wiw7wVZBE1CFXqmr7k
-8mvFxj8wor2T8J+bqKsT2eoqyWsZ7qT543KsmOkmNSlNH9Ik6dJqzMvkMDoN4eNp
-09IHrwdP/HD+TRR4+ya2
-=AlD1
------END PGP SIGNATURE-----
-
---0AE7xBcoXTow8yBG--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
