@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaBYTqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:46:00 -0500
-Received: from mail.efficios.com ([78.47.125.74]:37942 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607AbaBYTp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:45:58 -0500
-Date: Tue, 25 Feb 2014 19:46:01 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <1332921457.30140.1393357561516.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1164803689.30103.1393357052243.JavaMail.zimbra@efficios.com>
-Subject: [BUG kretprobes] kretprobe triggers General Protection Faults
+	id S1753715AbaBYTrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:47:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51955 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaBYTrH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 14:47:07 -0500
+Date: Tue, 25 Feb 2014 20:46:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm: per-thread vma caching
+Message-ID: <20140225194649.GV6835@laptop.programming.kicks-ass.net>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+ <20140225183522.GU6835@laptop.programming.kicks-ass.net>
+ <1393353454.2577.42.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: kretprobe triggers General Protection Faults
-Thread-Index: F5LUODDQbD0wZXfS+BkP9/PRTtR17w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393353454.2577.42.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 25, 2014 at 10:37:34AM -0800, Davidlohr Bueso wrote:
+> On Tue, 2014-02-25 at 19:35 +0100, Peter Zijlstra wrote:
+> > On Tue, Feb 25, 2014 at 10:16:46AM -0800, Davidlohr Bueso wrote:
+> > > +void vmacache_update(struct mm_struct *mm, unsigned long addr,
+> > > +		     struct vm_area_struct *newvma)
+> > > +{
+> > > +	/*
+> > > +	 * Hash based on the page number. Provides a good
+> > > +	 * hit rate for workloads with good locality and
+> > > +	 * those with random accesses as well.
+> > > +	 */
+> > > +	int idx = (addr >> PAGE_SHIFT) & 3;
+> > 
+> >  % VMACACHE_SIZE
+> > 
+> > perhaps? GCC should turn that into a mask for all sensible values I
+> > would think.
+> > 
+> > Barring that I think something like:
+> > 
+> > #define VMACACHE_BITS	2
+> > #define VMACACHE_SIZE	(1U << VMACACHE_BITS)
+> > #define VMACACHE_MASK	(VMACACHE_SIZE - 1)
+> 
+> Hmm all that seems like an overkill.
 
-I had a bug report[1] from a user trying to add a kretprobe on the system
-call entry code path:
-
-arch/x86/kernel/entry_64.S:
-
-ffffffff813dffe2 <system_call_fastpath+0x16>:
-        cmpl $__NR_syscall_max,%eax
-#endif
-        ja badsys
-        movq %r10,%rcx
-        call *sys_call_table(,%rax,8)  # XXX:    rip relative
-        movq %rax,RAX-ARGOFFSET(%rsp)   <--- return address pointing here
-
-And all hell breaks loose (various types of faults, machine reboots,
-applications exit randomly, etc.). I understand that this code path
-is not marked as unsafe against kprobes, and I tested that a kprobes
-indeed works fine there. However, kretprobes probably presumes a function
-stack layout that is just not valid for the syscall entry routine.
-
-Any thoughts on how kretprobes should handle this ?
-
-Thanks,
-
-Mathieu
-
-[1] http://bugs.lttng.org/issues/687
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+If GCC does the right thing with % VMACACHE_SIZE it gets rid of an ugly
+constant. But the 3 VMACACHE_* things are 'better' in that its
+impossible to set VMACACHE_SIZE to silly values.
