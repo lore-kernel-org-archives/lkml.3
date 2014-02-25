@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaBYPrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:47:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18254 "EHLO mx1.redhat.com"
+	id S1753347AbaBYPtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:49:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56112 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752634AbaBYPrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:47:09 -0500
-From: Adam Jackson <ajax@redhat.com>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Jones <pjones@redhat.com>
-Subject: [PATCH] i8042: Don't print an error message just because there's no chip
-Date: Tue, 25 Feb 2014 10:47:07 -0500
-Message-Id: <1393343227-13092-1-git-send-email-ajax@redhat.com>
-In-Reply-To: <1222713404-1097-1-git-send-email-ajax@redhat.com>
-References: <1222713404-1097-1-git-send-email-ajax@redhat.com>
+	id S1752840AbaBYPs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 10:48:59 -0500
+Message-ID: <530CBB3D.3080604@zytor.com>
+Date: Tue, 25 Feb 2014 07:48:13 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+References: <20140224162400.GE16457@pd.tnic> <20140224201943.GA4397@pd.tnic>
+In-Reply-To: <20140224201943.GA4397@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Jones <pjones@redhat.com>
+On 02/24/2014 12:19 PM, Borislav Petkov wrote:
+> Btw,
+> 
+> I don't know whether the following observation is related or not, but it
+> so happens that after resume from suspend-to-disk, I see the booting up
+> of the resume kernel on the console but when it is time for the original
+> kernel to take over and switch to graphics, the screen remains black but
+> the machine is responsive over the network.
+> 
+> And this doesn't happen on every resume but only sporadically.
+> 
+> And yep, -rc3 was fine.
+> 
+> On Mon, Feb 24, 2014 at 05:24:00PM +0100, Borislav Petkov wrote:
+>> This started happening this morning after booting -rc4+tip, let's
+>> add *everybody* to CC :-)
+>>
+>> We have intel_uncore_init, snb_uncore_imc_init_box, uncore_pci_probe and
+>> other goodies on the stack.
+>>
 
-Some systems, such as EFI-based Apple systems, won't necessarily have an
-i8042 to initialize. We shouldn't be printing an error message in this
-case, since not detecting the chip is the correct behavior.
+snb_uncore_imc_init_box() is introduced new in tip:perf/core, and is a
+relatively recent commit (b9e1ab6d4c0582cad97699285a6b3cf992251b00), so
+I suspect that that wasn't in whatever -rc3 mix you were testing.
 
-v2: Downgrade to pr_notice instead of pr_err.
+I am wondering if backing/disabling out that support (perhaps by
+removing the relevant PCI ID) fixes the problem?
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
----
- drivers/input/serio/i8042.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index 020053f..05c6285 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -855,7 +855,7 @@ static int __init i8042_check_aux(void)
- static int i8042_controller_check(void)
- {
- 	if (i8042_flush()) {
--		pr_err("No controller found\n");
-+		pr_notice("No controller found\n");
- 		return -ENODEV;
- 	}
- 
--- 
-1.8.5.3
+	-hpa
 
