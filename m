@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaBYHQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 02:16:39 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:15654 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaBYHQi (ORCPT
+	id S1751605AbaBYHQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 02:16:56 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:60067 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751485AbaBYHQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 02:16:38 -0500
-Message-ID: <530C4330.20706@huawei.com>
-Date: Tue, 25 Feb 2014 15:16:00 +0800
-From: xiakaixu <xiakaixu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 25 Feb 2014 02:16:53 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Feb 2014 23:16:50 -0800
+Subject: RE: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
+Thread-Topic: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
+Thread-Index: Ac8x6HNwjGqoalXpQ0eXSPDU7x4zUgAENcvQ
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A6@SC-VEXCH4.marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+ <1393228996-14787-6-git-send-email-zhangwm@marvell.com>
+ <20140225041854.GB14793@shlinux1.ap.freescale.net>
+In-Reply-To: <20140225041854.GB14793@shlinux1.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
-        <acme@ghostprotocols.net>
-CC: <linux-kernel@vger.kernel.org>, Huxinwei <huxinwei@huawei.com>,
-        Genghui <hui.geng@huawei.com>, <peifeiyue@huawei.com>
-Subject: Re: A Bug Inquiry in linux/tools/perf/builtin-record.c
-References: <53040D7F.3000905@huawei.com>
-In-Reply-To: <53040D7F.3000905@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.100.238]
-X-CFilter-Loop: Reflected
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-25_01:2014-02-25,2014-02-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402240224
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-ÓÚ 2014/2/19 9:48, xiakaixu Ğ´µÀ:
-> Hi all,
-> 
-> There is a bug found in my work when running "perf record". The basic information
-> is here. As we know, perf record is a parent process and the programme traced is
-> a child process when running "perf record". Sometimes the child process become
-> zombie state and disappear until the parent process is killed. The bug stays in linux/
-> tools/perf/builtin-record.c.
-> *********************************************************************
-> static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
->     ......
-> 	if (hits == rec->samples) {
->                          if (done)
->                                  break;
->                          err = poll(evsel_list->pollfd, evsel_list->nr_fds, -1);
->                          waking++;
->                  }
->     ......
-> *********************************************************************
-> The parent process still call the function
-> poll(evsel_list->pollfd, evsel_list->nr_fds, -1) when the child process has exited
-> already, which caused a zombie process.
-> 
-> May I have your opinion ?
-> Waiting for your reply!
-> 
-> Best Regards
-> Kaixu Xia
-> 
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1P7GxuI020419
 
 
+
+> -----Original Message-----
+> From: Peter Chen [mailto:peter.chen@freescale.com]
+> Sent: 2014Äê2ÔÂ25ÈÕ 12:19
+> To: Neil Zhang
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
+> 
+> On Mon, Feb 24, 2014 at 04:03:15PM +0800, Neil Zhang wrote:
+> > There is an issue with the add dTD tripwire semaphore (ATDTW bit in
+> > USBCMD register) that can cause the controller to ignore a dTD that is
+> > added to a primed endpoint. When this happens, the software can read
+> > the tripwire bit and the status bit at '1' even though the endpoint is
+> > unprimed.
+> >
+> > After executing a dTD, the device controller endpoint state machine
+> > executes a final read of the dTD terminate bit to check if the
+> > application added a dTD to the linked list at the last moment. This
+> > read is done in the finpkt_read_latest_next_td (44) state. After the
+> > read is performed, if the terminate bit is still set, the state
+> > machine moves to unprime the endpoint. The decision to unprime the
+> > endpoint is done in the checkqh_decision (59) state, based on the value of
+> the terminate bit.
+> >
+> > Before reaching the checkqh_decision state, the state machine
+> > traverses the writeqhtd_status (57), writeqh_status (56), and
+> > release_prime_mask
+> > (42) states. As shown in the waveform, the ep_addtd_tripwire_clr
+> > signal is not set to clear the tripwire bit in these states.
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >  drivers/usb/gadget/mv_udc_core.c |   20 ++++++++++++++++++++
+> >  1 file changed, 20 insertions(+)
+> >
+> > diff --git a/drivers/usb/gadget/mv_udc_core.c
+> > b/drivers/usb/gadget/mv_udc_core.c
+> > index a620cff..8df8606 100644
+> > --- a/drivers/usb/gadget/mv_udc_core.c
+> > +++ b/drivers/usb/gadget/mv_udc_core.c
+> > @@ -196,7 +196,27 @@ static int process_ep_req(struct mv_udc *udc, int
+> index,
+> >  			while (readl(&udc->op_regs->epstatus) & bit_pos)
+> >  				udelay(1);
+> >  			break;
+> > +		} else {
+> > +			if (!(readl(&udc->op_regs->epstatus) & bit_pos)) {
+> > +				/* The DMA engine thinks there is no more dTD */
+> > +				curr_dqh->next_dtd_ptr = curr_dtd->dtd_next
+> > +					& EP_QUEUE_HEAD_NEXT_POINTER_MASK;
+> > +
+> > +				/* clear active and halt bit */
+> > +				curr_dqh->size_ioc_int_sts &=
+> > +						~(DTD_STATUS_ACTIVE
+> > +						| DTD_STATUS_HALTED);
+> > +
+> > +				/* Do prime again */
+> > +				wmb();
+> > +				writel(bit_pos, &udc->op_regs->epprime);
+> > +				while (readl(&udc->op_regs->epprime) & bit_pos)
+> > +					cpu_relax();
+> > +
+> > +				break;
+> > +			}
+> >  		}
+> > +
+> >  		udelay(1);
+> >  	}
+> >
+> 
+> Is it a chipidea IP issue? Any errate number for this issue?
+> Does we need it for chipidea driver?
+> 
+
+Yes, I think so.
+9000531823	B2-Medium	Adding a dTD to a Primed Endpoint May Not Get Recognized
+Impacted Configuration: All device mode configurations. 
+
+> --
+> 
+> Best Regards,
+> Peter Chen
+
+Best Regards,
+Neil Zhang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
