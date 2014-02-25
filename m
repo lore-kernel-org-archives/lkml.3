@@ -1,141 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaBYGWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:22:21 -0500
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:52251 "HELO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751402AbaBYGWU (ORCPT
+	id S1752555AbaBYGW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:22:27 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19885 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaBYGWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:22:20 -0500
-X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 01:22:19 EST
-From: Loc Ho <lho@apm.com>
-To: kishon@ti.com, tj@kernel.org
-Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: [PATCH RESEND v10 0/4] PHY: Add APM X-Gene SoC 15Gbps Multi-purpose PHY support
-Date: Mon, 24 Feb 2014 23:14:38 -0700
-Message-Id: <1393308882-3964-1-git-send-email-lho@apm.com>
-X-Mailer: git-send-email 1.5.5
+	Tue, 25 Feb 2014 01:22:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 24 Feb 2014 22:19:48 -0800
+From: Wei Ni <wni@nvidia.com>
+To: <khali@linux-fr.org>, <linux@roeck-us.net>
+CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Wei Ni <wni@nvidia.com>
+Subject: [PATCH 1/2] hwmon: (lm90) split set&show temp as common codes
+Date: Tue, 25 Feb 2014 14:21:40 +0800
+Message-ID: <1393309301-28337-2-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393309301-28337-1-git-send-email-wni@nvidia.com>
+References: <1393309301-28337-1-git-send-email-wni@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for APM X-Gene SoC 15Gbps Multi-purpose PHY. This
-is the physical layer interface for the corresponding host controller. This
-driver uses the PHY generic framework. In addition, the PHY generic
-framework is patched to provide an function to set the speed of the PHY.
+Split set&show temp codes as common functions, so we can use it
+directly when implement linux thermal framework.
+And handle error return value for the lm90_select_remote_channel
+and write_tempx, then set_temp8 and set_temp11 could return it
+to user-space.
 
-v10
-* Update comment for function xgene_phy_force_lat_summer_cal and
-  xgene_phy_sata_force_gen with function style fully-winged style
-
-v9
-* Update CMU parameter setting for register 13
-* Add required delay when configure CMU PLL, Manual Calibration PLL, and VCO
-  PLL
-* Add comment for CMU PLL calibration loop delay of 10us
-* Add required delay for stopping and starting summer calibrations
-* Update comment for summer and latch calibration delays
-* Update comment for PHY reset Rx delay and decrease max sleep time from 500
-  to 150us
-* Always program the DFE (equalizer) setting to 0x7e00 as with original version
-* Fix Tx speed selection to always using Gen3 setting when force to an
-  specified generation speed
-
-v8
-* Update binding documentation
-* Remove XGENE_PHY_DTS and XGENE_PHY_EXT_DTS defines
-* Remove support for internal clock
-* Remove support for external reference CMU
-* Remove the need for external reference resource DTS entry and its related
-  code
-
-v7
-* Add/Update PHY CMU/lane parameters and its default values
-* Rename variable enable_manual_cal to preA3Chip
-* Remove function phy_rd, phy_wr, and phy_wr_flush
-* Change function cmu_wr, cmu_rd, cmu_toggle1to0, cmu_clrbits, cmu_setbits,
-  serdes_wr, serdes_rd, serdes_clrbits, and serdes_setbits to take context
-  instead void *
-* Remove function serdes_toggle1to0
-* Decrease the polling time from 10ms to 1ms on CMU calibration complete
-  detection
-* Move all SATA specify code in function xgene_phy_hw_initialize into
-  function xgene_phy_hw_init_sata
-* Add usleep_range after starting summer/latch calibrations
-* Add usleep_range between receiver reset (function xgene_phy_reset_rxd)
-* Save and restore PHY register 31 instead writing 0 in function
-  xgene_phy_gen_avg_val
-* Update function xgene_phy_sata_force_gen programming sequences
-* Add support to reset the receiver lane in function xgene_phy_set_speed
-  if speed is 0
-* Update PHY parameters in DTS per controller
-* Some minor code clean up
-
-v6
-* Move PHY document to Documentation/devicetree/binding/phy
-* Remove _ADDR from all register defines
-* Update clock-names property for sataphy1clk, sataphy2clk, and sataphy3clk
-
-v5
-* Update DTS binding documentation
-* Remove direct clock access and use clock interface instead
-* Change override parameters to decimal instead hex values
-* Change apm,tx-amplitude, apm,tx-pre-cursor1, apm,tx-pre-cursor2,
-  apm,tx-post-cursor to be unit of uV
-
-v4
-* Update documentation with 'apm,' instead 'apm-'
-* Change DTS override parameter to have 'apm,'
-* Add select GENERIC_PHY to Kconfig PHY_XGENE
-* Make override parameters to be pair of three values instead one
-* Some minor comment and indentation changes
-* Remove error register addition offset
-* Add ULL to constants
-* Use module_init instead subsys_initcall
-* Make DTS node based on first register address
-* Update override setting values
-
-v3
-* Major re-write of the code based on various review comments
-* Support external clock only at the moment
-* Support SATA mode only at the moment
-* No UEFI support at the moment
-
-v2
-* Remove port knowledge from functions
-* Make all functions static
-* Remove ID completely
-* Make resource requirement based on compatible type
-* Rename override PHY parameters with more descriptive name
-* Add override PHY parameter for per controller, per port, and per speed
-* Patch the generic PHY frame to expose set_speed operation
-
-v1
-* Initial version
-
-Signed-off-by: Loc Ho <lho@apm.com>
-Signed-off-by: Tuan Phan <tphan@apm.com>
-Signed-off-by: Suman Tripathi <stripathi@apm.com>
+Signed-off-by: Wei Ni <wni@nvidia.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 ---
-Loc Ho (4):
-  PHY: Add function set_speed to generic PHY framework
-  Documentation: Add APM X-Gene SoC 15Gbps Multi-purpose PHY driver
-    binding documentation
-  PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY driver
-  arm64: Add APM X-Gene SoC 15Gbps Multi-purpose PHY DTS entries
+ drivers/hwmon/lm90.c |  170 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 115 insertions(+), 55 deletions(-)
 
- .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 +
- arch/arm64/boot/dts/apm-storm.dtsi                 |   75 +
- drivers/phy/Kconfig                                |    7 +
- drivers/phy/Makefile                               |    2 +
- drivers/phy/phy-core.c                             |   21 +
- drivers/phy/phy-xgene.c                            | 1826 ++++++++++++++++++++
- include/linux/phy/phy.h                            |    8 +
- 7 files changed, 2018 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
- create mode 100644 drivers/phy/phy-xgene.c
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index c9ff08d..fb9e224 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -473,20 +473,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+  * various registers have different meanings as a result of selecting a
+  * non-default remote channel.
+  */
+-static inline void lm90_select_remote_channel(struct i2c_client *client,
+-					      struct lm90_data *data,
+-					      int channel)
++static inline int lm90_select_remote_channel(struct i2c_client *client,
++					     struct lm90_data *data,
++					     int channel)
+ {
+ 	u8 config;
++	int err;
+ 
+ 	if (data->kind == max6696) {
+ 		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+ 		config &= ~0x08;
+ 		if (channel)
+ 			config |= 0x08;
+-		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+-					  config);
++		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
++						config);
++		if (err < 0) {
++			dev_err(&client->dev,
++				"Failed to select remote channel %d, err %d\n",
++				channel, err);
++			return err;
++		}
+ 	}
++
++	return 0;
+ }
+ 
+ /*
+@@ -759,29 +768,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
+  * Sysfs stuff
+  */
+ 
+-static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+-			  char *buf)
++static int read_temp8(struct device *dev, int index)
+ {
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm90_data *data = lm90_update_device(dev);
+ 	int temp;
+ 
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
++		temp = temp_from_u8_adt7461(data, data->temp8[index]);
+ 	else if (data->kind == max6646)
+-		temp = temp_from_u8(data->temp8[attr->index]);
++		temp = temp_from_u8(data->temp8[index]);
+ 	else
+-		temp = temp_from_s8(data->temp8[attr->index]);
++		temp = temp_from_s8(data->temp8[index]);
+ 
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 && attr->index == 3)
++	if (data->kind == lm99 && index == 3)
+ 		temp += 16000;
+ 
+-	return sprintf(buf, "%d\n", temp);
++	return temp;
+ }
+ 
+-static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+-			 const char *buf, size_t count)
++static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
++			  char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++
++	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
++}
++
++static int write_temp8(struct device *dev, int index, long val)
+ {
+ 	static const u8 reg[TEMP8_REG_NUM] = {
+ 		LM90_REG_W_LOCAL_LOW,
+@@ -794,60 +808,79 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+ 		MAX6659_REG_W_REMOTE_EMERG,
+ 	};
+ 
+-	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm90_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+-	int nr = attr->index;
+-	long val;
+ 	int err;
+ 
+-	err = kstrtol(buf, 10, &val);
+-	if (err < 0)
+-		return err;
+-
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 && attr->index == 3)
++	if (data->kind == lm99 && index == 3)
+ 		val -= 16000;
+ 
+ 	mutex_lock(&data->update_lock);
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		data->temp8[nr] = temp_to_u8_adt7461(data, val);
++		data->temp8[index] = temp_to_u8_adt7461(data, val);
+ 	else if (data->kind == max6646)
+-		data->temp8[nr] = temp_to_u8(val);
++		data->temp8[index] = temp_to_u8(val);
+ 	else
+-		data->temp8[nr] = temp_to_s8(val);
+-
+-	lm90_select_remote_channel(client, data, nr >= 6);
+-	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
+-	lm90_select_remote_channel(client, data, 0);
++		data->temp8[index] = temp_to_s8(val);
+ 
++	if ((err = lm90_select_remote_channel(client, data, index >= 6)) ||
++	    (err = i2c_smbus_write_byte_data(client, reg[index],
++					     data->temp8[index])) ||
++	    (err = lm90_select_remote_channel(client, data, 0)))
++		dev_err(dev, "write_temp8 failed, err %d\n", err);
+ 	mutex_unlock(&data->update_lock);
++
++	return err;
++}
++
++static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
++			 const char *buf, size_t count)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	int index = attr->index;
++	long val;
++	int err;
++
++	err = kstrtol(buf, 10, &val);
++	if (err < 0)
++		return err;
++
++	err = write_temp8(dev, index, val);
++	if (err < 0)
++		return err;
++
+ 	return count;
+ }
+ 
+-static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+-			   char *buf)
++static int read_temp11(struct device *dev, int index)
+ {
+-	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct lm90_data *data = lm90_update_device(dev);
+ 	int temp;
+ 
+ 	if (data->kind == adt7461 || data->kind == tmp451)
+-		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
++		temp = temp_from_u16_adt7461(data, data->temp11[index]);
+ 	else if (data->kind == max6646)
+-		temp = temp_from_u16(data->temp11[attr->index]);
++		temp = temp_from_u16(data->temp11[index]);
+ 	else
+-		temp = temp_from_s16(data->temp11[attr->index]);
++		temp = temp_from_s16(data->temp11[index]);
+ 
+ 	/* +16 degrees offset for temp2 for the LM99 */
+-	if (data->kind == lm99 &&  attr->index <= 2)
++	if (data->kind == lm99 && index <= 2)
+ 		temp += 16000;
+ 
+-	return sprintf(buf, "%d\n", temp);
++	return temp;
+ }
+ 
+-static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+-			  const char *buf, size_t count)
++static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
++			   char *buf)
++{
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++
++	return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
++}
++
++static int write_temp11(struct device *dev, int nr, int index, long val)
+ {
+ 	struct {
+ 		u8 high;
+@@ -861,18 +894,10 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
+ 	};
+ 
+-	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+ 	struct lm90_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+-	int nr = attr->nr;
+-	int index = attr->index;
+-	long val;
+ 	int err;
+ 
+-	err = kstrtol(buf, 10, &val);
+-	if (err < 0)
+-		return err;
+-
+ 	/* +16 degrees offset for temp2 for the LM99 */
+ 	if (data->kind == lm99 && index <= 2)
+ 		val -= 16000;
+@@ -887,15 +912,50 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+ 	else
+ 		data->temp11[index] = temp_to_s8(val) << 8;
+ 
+-	lm90_select_remote_channel(client, data, reg[nr].channel);
+-	i2c_smbus_write_byte_data(client, reg[nr].high,
+-				  data->temp11[index] >> 8);
+-	if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
+-		i2c_smbus_write_byte_data(client, reg[nr].low,
+-					  data->temp11[index] & 0xff);
+-	lm90_select_remote_channel(client, data, 0);
++	err = lm90_select_remote_channel(client, data, reg[nr].channel);
++	if (err)
++		goto error;
++
++	err = i2c_smbus_write_byte_data(client, reg[nr].high,
++					data->temp11[index] >> 8);
++	if (err)
++		goto error;
++
++	if (data->flags & LM90_HAVE_REM_LIMIT_EXT) {
++		err = i2c_smbus_write_byte_data(client, reg[nr].low,
++						data->temp11[index] & 0xff);
++		if (err)
++			goto error;
++	}
++
++	err = lm90_select_remote_channel(client, data, 0);
++
++error:
++	if (err)
++		dev_err(dev, "write_temp11 failed, err %d\n", err);
+ 
+ 	mutex_unlock(&data->update_lock);
++
++	return err;
++}
++
++static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
++			  const char *buf, size_t count)
++{
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int nr = attr->nr;
++	int index = attr->index;
++	long val;
++	int err;
++
++	err = kstrtol(buf, 10, &val);
++	if (err < 0)
++		return err;
++
++	err = write_temp11(dev, nr, index, val);
++	if (err < 0)
++		return err;
++
+ 	return count;
+ }
+ 
+-- 
+1.7.9.5
 
