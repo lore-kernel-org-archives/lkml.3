@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577AbaBYASD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:18:03 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49483 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752914AbaBYASA (ORCPT
+	id S1752834AbaBYA1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:27:49 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39699 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaBYA1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:18:00 -0500
-Date: Tue, 25 Feb 2014 00:17:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
-        linux-pci@vger.kernel.org, Simon Horman <horms+renesas@verge.net.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: DMABOUNCE in pci-rcar
-Message-ID: <20140225001748.GS21483@n2100.arm.linux.org.uk>
-References: <201402241200.21944.arnd@arndb.de> <CANqRtoTLUfK7bjhmUbTdBi7r7OzrmwdAg_wnRbGHN7EUjGtouQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqRtoTLUfK7bjhmUbTdBi7r7OzrmwdAg_wnRbGHN7EUjGtouQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 24 Feb 2014 19:27:47 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/3] hibernation support on ARM
+Date: Mon, 24 Feb 2014 16:27:36 -0800
+Message-Id: <1393288059-18174-1-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:49:28AM +0900, Magnus Damm wrote:
-> On Mon, Feb 24, 2014 at 8:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >From my point of view we need some kind of bounce buffer unless we
-> have IOMMU support. I understand that an IOMMU would be much better
-> than a software-based implementation. If it is possible to use an
-> IOMMU with these devices remain to be seen.
-> 
-> I didn't know about the SWIOTLB code, neither did I know that
-> DMABOUNCE was supposed to be avoided. Now I do!
+Patches adding support for hibernation on ARM
+  - ARM hibernation / suspend-to-disk
+  - Fix hang in freeze_processes during hibernation
+  - add an irq disabled version of soft_restart
 
-The reason DMABOUNCE should be avoided is because it is a known source
-of OOMs, and that has never been investigated and fixed.  You can read
-about some of the kinds of problems this code creates here:
+Patches based on v3.13 tag, verified hibernation on beaglebone black on a branch
+based on 3.13 merged with initial omap support from Russ Dill which be found here:
+http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
+(includes v1 patchset)
 
-http://webcache.googleusercontent.com/search?q=cache:jwl4g8hqWa8J:comments.gmane.org/gmane.linux.ports.arm.kernel/15850+&cd=2&hl=en&ct=clnk&gl=uk&client=firefox-a
+[PATCH v2 1/3] ARM: Add irq disabled version of soft_restart.
 
-That was never got to the bottom of.  I could harp on about not having
-the hardware, the people with the hardware not being capable of debugging
-it, or not willing to litter their kernels with printks when they've
-found a reproducable way to trigger it, etc - but none of that really
-matters.
+ arch/arm/include/asm/system_misc.h |    1 +
+ arch/arm/kernel/process.c          |   15 ++++++++++-----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-What matters is the end result is nothing was ever done to investigate
-the causes, so it remains "unsafe" to use.
+ Adds the ability to run soft restart with local_irq/fiq_disable
+ Useful in hibernation code paths (unchanged from v1)
 
-> I do realize that my following patches madly mix potential bus code
-> and actual device support, however..
-> 
-> [PATCH v2 06/08] PCI: rcar: Add DMABOUNCE support
-> [PATCH 07/08] PCI: rcar: Enable BOUNCE in case of HIGHMEM
-> 
-> .. without my patches the driver does not handle CONFIG_BOUNCE and
-> CONFIG_VMSPLIT_2G.
+[PATCH v2 2/3] Fix hibernation restore hang in freeze_processes
+ drivers/base/firmware_class.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Can we please kill the idea that CONFIG_VMSPLIT_* has something to do
-with DMA?  It doesn't.  VMSPLIT sets where the boundary between userspace
-and kernel space is placed in virtual memory.  It doesn't really change
-which memory is DMA-able.
+ Add handling for PM_RESTORE_PREPARE notifier (unchanged from v1)
 
-There is the BLK_BOUNCE_HIGH option, but that's more to do with drivers
-saying "I don't handle highmem pages because I'm old and no one's updated
-me".
+[PATCH v2 3/3] ARM hibernation / suspend-to-disk
+ arch/arm/include/asm/memory.h |    1 +
+ arch/arm/kernel/Makefile      |    1 +
+ arch/arm/kernel/hibernate.c   |  104 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/Kconfig           |    5 ++
+ include/linux/suspend.h       |    2 +
+ 5 files changed, 113 insertions(+)
 
-The same is true of highmem vs bouncing for DMA.  Highmem is purely a
-virtual memory concept and has /nothing/ to do with whether the memory
-can be DMA'd to.
+ Adds support for ARM based hibernation
 
-Let's take an extreme example.  Let's say I set a 3G VM split, so kernel
-memory starts at 0xc0000000.  I then set the vmalloc space to be 1024M -
-but the kernel strinks that down to the maximum that can be accomodated,
-which leaves something like 16MB of lowmem.  Let's say I have 512MB of
-RAM in the machine.
 
-Now let's consider I do the same thing, but with a 2G VM split.  Has the
-memory pages which can be DMA'd to changed at all?  Yes, the CPU's view
-of pages has changed, but the DMA engine's view hasn't changed /one/ /bit/.
+Additional notes:
+-----------------
 
-Now consider when vmalloc space isn't expanded to maximum and all that
-RAM is mapped into the kernel direct mapped region.  Again, any
-difference as far as the DMA engine goes?  No there isn't.
+There are two checkpatch warnings added by this patch.  These follow
+behavior in existing hibernation implementations on other platforms.
 
-So, the idea that highmem or vmsplit has any kind of impact on whether
-memory can be DMA'd to by the hardware is absolutely absurd.
+    WARNING: externs should be avoided in .c files
+    #116: FILE: arch/arm/kernel/hibernate.c:26:
+    +extern const void __nosave_begin, __nosave_end;
 
-VMsplit and highmem are a CPU visible concept, and has very little to do
-with whether the memory is DMA-able.
+  This extern is picking up the linker nosave region definitions, only
+  used in hibernate.  Follows same extern line used mips, powerpc, s390,
+  sh, sparc, x86 & unicore32
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+    WARNING: externs should be avoided in .c files
+    #191: FILE: arch/arm/kernel/hibernate.c:101:
+    +extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+
+  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
+
+
+Changes in v2:
+--------------
+* Removed unneeded flush_thread, use of __naked and cpu_init.
+* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as 
+  emails are bouncing.
+
+
+
+
