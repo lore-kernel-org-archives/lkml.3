@@ -1,138 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaBYLbP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:31:15 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5289 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaBYLbG (ORCPT
+	id S1753122AbaBYLc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:32:58 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:59471 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaBYLc4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:31:06 -0500
-Message-ID: <530C7E6C.2020500@huawei.com>
-Date: Tue, 25 Feb 2014 19:28:44 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 25 Feb 2014 06:32:56 -0500
+Date: Tue, 25 Feb 2014 11:32:51 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Len Brown <len.brown@intel.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Russ Dill <Russ.Dill@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        Cyril Chemparathy <cyril@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140225113251.GB6855@e102568-lin.cambridge.arm.com>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
+ <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+ <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+ <20140222103840.GH21483@n2100.arm.linux.org.uk>
+ <20140222120910.GA9012@e102568-lin.cambridge.arm.com>
+ <20140223200208.12998.47604@capellas-linux>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v3] sysfs: fix namespace refcnt leak
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140223200208.12998.47604@capellas-linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 25 Feb 2014 11:32:58.0262 (UTC) FILETIME=[553E4B60:01CF321D]
+X-MC-Unique: 114022511325305701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mount() and kill_sb() is not a one-to-one match, we shoudn't get
-ns refcnt unconditionally in sysfs_mount(), and instead we should
-get the refcnt only when kernfs_mount() allocated a new superblock.
+On Sun, Feb 23, 2014 at 08:02:08PM +0000, Sebastian Capella wrote:
+> Quoting Lorenzo Pieralisi (2014-02-22 04:09:10)
+> > On Sat, Feb 22, 2014 at 10:38:40AM +0000, Russell King - ARM Linux wrote:
+> > > On Wed, Feb 19, 2014 at 04:12:54PM +0000, Lorenzo Pieralisi wrote:
+> > > > On Wed, Feb 19, 2014 at 01:52:09AM +0000, Sebastian Capella wrote:
+> > > > > +/*
+> > > > > + * Snapshot kernel memory and reset the system.
+> > > > > + * After resume, the hibernation snapshot is written out.
+> > > > > + */
+> > > > > +static int notrace __swsusp_arch_save_image(unsigned long unused)
+> > > > > +{
+> > > > > + int ret;
+> > > > > +
+> > > > > + ret = swsusp_save();
+> > > > > + if (ret == 0)
+> > > > > +         soft_restart(virt_to_phys(cpu_resume));
+> > > > 
+> > > > By the time the suspend finisher (ie this function) is run, the
+> > > > processor state has been saved and I think that's all you have to do,
+> > > > function can just return after calling swsusp_save(), unless I am missing
+> > > > something.
+> > > > 
+> > > > I do not understand why a soft_restart is required here. On a side note,
+> > > > finisher is called with irqs disabled so, since you added a function for
+> > > > soft restart noirq, it should be used, if needed, but I have to understand
+> > > > why in the first place.
+> > > 
+> > > It's required because you can't just return from the finisher.  A normal
+> > > return from the finisher will always be interpreted as an abort rather
+> > > than success (because the state has to be unwound.)
+> > > 
+> > > This is the only way to get a zero return from cpu_suspend().
+> > 
+> > Yes, that's the only reason why this code is jumping to cpu_resume, since
+> > all it is needed is to snapshot the CPU context and by the time the
+> > finisher is called that's done. Wanted to say that soft reboot is not
+> > useful (cache flushing and resume with MMU off), but what you are saying
+> > is correct. We might be saving swsusp_save return value in a global
+> > variable and just return from the finisher, but that's horrible and
+> > given the amount of time it takes to snapshot the image to disk the
+> > cost of this soft reboot will be dwarfed by that.
+> > 
+> > I wanted to ask and clarify why the code was written like this though, given
+> > its complexity.
+> 
+> We could also return a constant > 1.  __cpu_suspend code will replace
+> a 0 return with 1 for paths exiting suspend, but will not change return
+> values != 0.  
 
-v2:
-- Changed the name of the new argument, suggested by Tejun.
-- Made the argument optional, suggested by Tejun.
+Yes, we could but that's an API abuse and as I mentioned that soft_reboot is
+not a massive deal, should not block your series. It is certainly
+something to be benchmarked though since wiping the entire cache hierarchy
+for nothing is not nifty.
 
-v3:
-- Make the new argument as second-to-last arg, suggested by Tejun.
+> cpu_suspend_abort:
+>         ldmia   sp!, {r1 - r3}          @ pop phys pgd, virt SP, phys
+> 	resume fn
+> 	teq     r0, #0
+> 	moveq   r0, #1                  @ force non-zero value
+> 	mov     sp, r2
+> 	ldmfd   sp!, {r4 - r11, pc}
+> 
+> We could take advantage of that if we wanted, but Lorenzo pointed out
+> also that the relative benefit is very low since the cost of
+> resuming is >> soft_restart. 
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- fs/kernfs/mount.c      | 8 +++++++-
- fs/sysfs/mount.c       | 5 +++--
- include/linux/kernfs.h | 9 +++++----
- 3 files changed, 15 insertions(+), 7 deletions(-)
+The cost of writing to disk, to be precise. Again, this should be benchmarked.
 
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index 405279b..6a5f04a 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -131,6 +131,7 @@ const void *kernfs_super_ns(struct super_block *sb)
-  * @fs_type: file_system_type of the fs being mounted
-  * @flags: mount flags specified for the mount
-  * @root: kernfs_root of the hierarchy being mounted
-+ * @new_sb_created: tell the caller if we allocated a new superblock
-  * @ns: optional namespace tag of the mount
-  *
-  * This is to be called from each kernfs user's file_system_type->mount()
-@@ -141,7 +142,8 @@ const void *kernfs_super_ns(struct super_block *sb)
-  * The return value can be passed to the vfs layer verbatim.
-  */
- struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--			       struct kernfs_root *root, const void *ns)
-+			       struct kernfs_root *root, bool *new_sb_created,
-+			       const void *ns)
- {
- 	struct super_block *sb;
- 	struct kernfs_super_info *info;
-@@ -159,6 +161,10 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
- 		kfree(info);
- 	if (IS_ERR(sb))
- 		return ERR_CAST(sb);
-+
-+	if (new_sb_created)
-+		*new_sb_created = !sb->s_root;
-+
- 	if (!sb->s_root) {
- 		error = kernfs_fill_super(sb);
- 		if (error) {
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 5c7fdd9..a66ad61 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -27,6 +27,7 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- {
- 	struct dentry *root;
- 	void *ns;
-+	bool new_sb;
- 
- 	if (!(flags & MS_KERNMOUNT)) {
- 		if (!capable(CAP_SYS_ADMIN) && !fs_fully_visible(fs_type))
-@@ -37,8 +38,8 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
- 	}
- 
- 	ns = kobj_ns_grab_current(KOBJ_NS_TYPE_NET);
--	root = kernfs_mount_ns(fs_type, flags, sysfs_root, ns);
--	if (IS_ERR(root))
-+	root = kernfs_mount_ns(fs_type, flags, sysfs_root, &new_sb, ns);
-+	if (IS_ERR(root) || !new_sb)
- 		kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
- 	return root;
- }
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 649497a..09669d0 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -279,7 +279,8 @@ void kernfs_notify(struct kernfs_node *kn);
- 
- const void *kernfs_super_ns(struct super_block *sb);
- struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--			       struct kernfs_root *root, const void *ns);
-+			       struct kernfs_root *root, bool *new_sb_created,
-+			       const void *ns);
- void kernfs_kill_sb(struct super_block *sb);
- 
- void kernfs_init(void);
-@@ -372,7 +373,7 @@ static inline const void *kernfs_super_ns(struct super_block *sb)
- 
- static inline struct dentry *
- kernfs_mount_ns(struct file_system_type *fs_type, int flags,
--		struct kernfs_root *root, const void *ns)
-+		struct kernfs_root *root, bool *new_sb_created, const void *ns)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline void kernfs_kill_sb(struct super_block *sb) { }
-@@ -430,9 +431,9 @@ static inline int kernfs_rename(struct kernfs_node *kn,
- 
- static inline struct dentry *
- kernfs_mount(struct file_system_type *fs_type, int flags,
--	     struct kernfs_root *root)
-+	     struct kernfs_root *root, bool *new_sb_created)
- {
--	return kernfs_mount_ns(fs_type, flags, root, NULL);
-+	return kernfs_mount_ns(fs_type, flags, root, new_sb_created, NULL);
- }
- 
- #endif	/* __LINUX_KERNFS_H */
--- 
-1.8.0.2
+> I'll go with leaving the soft_restart as is unless someone feels
+> strongly against.
+
+Leaving it as it is is fine for now, but should be commented, because that's
+not clear why it is needed by just reading the code.
+
+Thanks,
+Lorenzo
 
