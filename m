@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750774AbaBYFCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 00:02:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41714 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaBYFCq (ORCPT
+	id S1750941AbaBYFHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 00:07:31 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58526 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaBYFHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 00:02:46 -0500
-Date: Mon, 24 Feb 2014 23:00:53 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, Andy Gross <agross@codeaurora.org>,
-        <devicetree@vger.kernel.org>, Vinod Koul <vinod.koul@intel.com>,
-        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Patch v7 2/2] dmaengine: add Qualcomm BAM dma driver
-Message-ID: <20140225050053.GA15411@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393283500-18599-1-git-send-email-agross@codeaurora.org>
- <1393283500-18599-3-git-send-email-agross@codeaurora.org>
- <20140225000913.GA10801@saruman.home>
- <20140225030459.GN25940@sirena.org.uk>
+	Tue, 25 Feb 2014 00:07:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
-Content-Disposition: inline
-In-Reply-To: <20140225030459.GN25940@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140221222947.GB13233@quad.lixom.net>
+References: <CAEPRUYpCVpV7HwuO6c95ybk3yp1teJgW-9qwyHnjKbs03C9bgQ@mail.gmail.com>
+	<20140221222947.GB13233@quad.lixom.net>
+Date: Mon, 24 Feb 2014 21:01:37 -0800
+Message-ID: <CAEPRUYqUNxOT=KnhSmbXbL2e2tCs=jAhQqKLiVVc13okpBxHnw@mail.gmail.com>
+Subject: Re: [GIT PULL] bcm pinctrl rename
+From: Christian Daudt <bcm@fixthebug.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Matt Porter <mporter@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sherman Yin <syin@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---J2SCkAp4GZ/dPZZf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Feb 21, 2014 at 2:29 PM, Olof Johansson <olof@lixom.net> wrote:
+> (As per irc discussion). The rename isn't the right thing to do at this
+> time in the release, but the binding needs to be tweaked before it ships
+> in a full release, or we'll always need to live with it.
+>
+> So, I'll be happy to take the bindings piece and the dtsi piece (and the
+> small edit to the driver to change the compatible string match table),
+> but the file rename and Kconfig entry edit is 3.15 material.
+>
+> Please send new pull request with just that (or, if you prefer, just send the
+> patches and we can apply them too).
+>
 
-On Tue, Feb 25, 2014 at 12:05:00PM +0900, Mark Brown wrote:
-> On Mon, Feb 24, 2014 at 06:09:13PM -0600, Felipe Balbi wrote:
->=20
-> > > +	depends on ARCH_QCOM || (COMPILE_TEST && OF && ARM)
->=20
-> > do you really want to make it depend on ARM even when COMPILE_TEST=3Dy ?
->=20
-> writel_relaxed() is unfortunately not generally available so it'd fail
-> to build on platforms like x86.
+Can you please pull the patches below. Note that if you wanto to
+absolutely reduce this to the bone, you can drop the last patch in the
+series titled "pinctrl: Rename Broadcom Capri pinctrl binding". That
+is the documentation fixup, so the binding doc will be wrong until
+3.15. But that will reduce the change to just 2 lines :)
+ thanks,
+   csd
 
-bummer
 
---=20
-balbi
+The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
 
---J2SCkAp4GZ/dPZZf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+are available in the git repository at:
 
-iQIcBAEBAgAGBQJTDCOFAAoJEIaOsuA1yqRErRYP/j3hbkX09e6dLlK2Gw08v8Fg
-I0NdDr+beRSC40bauUAYH9EEOQ9vMDXMpM6rZm0ZWTcG/gpaQFbKPN3R53Q/ptFC
-BLZ6DH1t92jqkFuue24l4LRRAC/NGzr9CsXBcIdYYV48pnSQiS5RUC6Ke8M+loB0
-O1cxa+Mi4YxO8XZB+lnngKCcxr9cLhl1ovH2ji1N6klLbIl36WGM4w5l9pGeuGOf
-uyK0BHkQ8M50sKfeOwgSzPK9Zf51VPNW3eB9/xeb//P4dsQW56YwoHCuFr2C99tX
-k+Tf7FIwGr3DUNOz5JmorW3Uft4nmJrwes1bf6COYVuovyZb4IiQpzppquWra6yS
-1NAqg9FxyK/8WbqcJiNmcXq6TkEpBwvmchEeZvtTskPxnssdbrscPuQLGraE64A+
-jk5il4cU+RNZgZ8ecaweVkGVZbopWK7uKPvCzhXBlf13Kbcp+iI/Az619EDudMlo
-idmHFtDV1ITgexPUjFgIHALhkdzKhijBXeVEJWQao+bGOSs8exNq24ksAIemZpDF
-bhk1WBqHPMHvVFWBZXLSFQ1sJJskW6LDYMKjDM7+DbqSpIx1iOi57ZygUhfSspj0
-fITJe5WFOWyZ4YmfxU9KtGWgMPx3PGen/iaZm+Eze+mwQfBW/e+Zo7LeBAmHVdLA
-WIpHemjcMgw3yYKVDKUU
-=G9vX
------END PGP SIGNATURE-----
+  git://github.com/broadcom/bcm11351.git
+tags/bcm-for-3.14-pinctrl-reduced-rename
 
---J2SCkAp4GZ/dPZZf--
+for you to fetch changes up to 735ea23c4868bf3123a4c79184e9206e0cc60211:
+
+  pinctrl: Rename Broadcom Capri pinctrl binding (2014-02-24 20:25:54 -0800)
+
+----------------------------------------------------------------
+Rename pinctrl dt binding to restore consistency with
+other bcm mobile bindings.
+
+----------------------------------------------------------------
+Christian Daudt (1):
+      pinctrl: refer to updated dt binding string.
+
+Sherman Yin (2):
+      Update dtsi with new pinctrl compatible string
+      pinctrl: Rename Broadcom Capri pinctrl binding
+
+ Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt =>
+brcm,bcm11351-pinctrl.txt} | 8 ++++----
+ arch/arm/boot/dts/bcm11351.dtsi
+                          | 2 +-
+ drivers/pinctrl/pinctrl-capri.c
+                          | 2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+ rename Documentation/devicetree/bindings/pinctrl/{brcm,capri-pinctrl.txt
+=> brcm,bcm11351-pinctrl.txt} (98%)
