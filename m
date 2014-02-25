@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaBYT4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:56:35 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:34595 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaBYT4d (ORCPT
+	id S1753464AbaBYUCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 15:02:14 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:52449 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132AbaBYUCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:56:33 -0500
-Message-ID: <1393358179.7727.34.camel@j-VirtualBox>
-Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
- spinning
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Tue, 25 Feb 2014 11:56:19 -0800
-In-Reply-To: <20140210203659.671232531@infradead.org>
-References: <20140210195820.834693028@infradead.org>
-	 <20140210203659.671232531@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 25 Feb 2014 15:02:12 -0500
+Date: Tue, 25 Feb 2014 21:02:09 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.14 (take 2)
+Message-ID: <alpine.DEB.2.02.1402252058290.9497@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 20:58 +0100, Peter Zijlstra wrote:
+	Hi Linus,
 
-> +unqueue:
-> +	/*
-> +	 * Step - A  -- stabilize @prev
-> +	 *
-> +	 * Undo our @prev->next assignment; this will make @prev's
-> +	 * unlock()/unqueue() wait for a next pointer since @lock points to us
-> +	 * (or later).
-> +	 */
-> +
-> +	for (;;) {
-> +		if (prev->next == node &&
-> +		    cmpxchg(&prev->next, node, NULL) == node)
-> +			break;
-> +
-> +		/*
-> +		 * We can only fail the cmpxchg() racing against an unlock(),
-> +		 * in which case we should observe @node->locked becomming
-> +		 * true.
-> +		 */
-> +		if (smp_load_acquire(&node->locked))
-> +			return true;
-> +
-> +		/*
-> +		 * Or we race against a concurrent unqueue()'s step-B, in which
-> +		 * case its step-C will write us a new @node->prev pointer.
-> +		 */
-> +		prev = ACCESS_ONCE(node->prev);
+The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
 
-Should we also add an arch_mutex_cpu_relax() to this loop?
+  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+for you to fetch changes up to 7247f55381d54645a1eb47588de51bb26fa7cb7a:
+
+  m68k: Wire up sched_setattr and sched_getattr (2014-02-10 20:10:20 +0100)
+
+Summary:
+  - More barrier.h consolidation,
+  - Sched_[gs]etattr() syscalls.
+
+Thanks for pulling!
+
+----------------------------------------------------------------
+Geert Uytterhoeven (3):
+      m68k: Sort arch/m68k/include/asm/Kbuild
+      m68k: Switch to asm-generic/barrier.h
+      m68k: Wire up sched_setattr and sched_getattr
+
+ arch/m68k/include/asm/Kbuild        |    6 +++---
+ arch/m68k/include/asm/barrier.h     |    8 --------
+ arch/m68k/include/asm/unistd.h      |    2 +-
+ arch/m68k/include/uapi/asm/unistd.h |    2 ++
+ arch/m68k/kernel/syscalltable.S     |    2 ++
+ 5 files changed, 8 insertions(+), 12 deletions(-)
+ delete mode 100644 arch/m68k/include/asm/barrier.h
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
