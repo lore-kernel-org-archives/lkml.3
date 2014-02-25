@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaBYKta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:49:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37705 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaBYKt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:49:29 -0500
-Date: Tue, 25 Feb 2014 11:49:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-Message-ID: <20140225104924.GK9987@twins.programming.kicks-ass.net>
-References: <5305856F.3000109@linux.vnet.ibm.com>
- <53078241.3060201@oracle.com>
- <53080122.609@linux.vnet.ibm.com>
- <530ABB44.5000601@oracle.com>
- <530AD653.3000808@linux.vnet.ibm.com>
- <20140224071028.GW9987@twins.programming.kicks-ass.net>
- <530B1B80.4000307@linux.vnet.ibm.com>
- <20140224121218.GR15586@twins.programming.kicks-ass.net>
- <20140224131025.GG3104@twins.programming.kicks-ass.net>
- <530C2045.1090704@linux.vnet.ibm.com>
+	id S1752267AbaBYKvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:51:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735AbaBYKvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 05:51:20 -0500
+Message-ID: <530C759B.10907@redhat.com>
+Date: Tue, 25 Feb 2014 11:51:07 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530C2045.1090704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] zram: delete zram_init_device() function
+References: <1393290516-21158-1-git-send-email-minchan@kernel.org> <1393290516-21158-2-git-send-email-minchan@kernel.org>
+In-Reply-To: <1393290516-21158-2-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 12:47:01PM +0800, Michael wang wrote:
-> On 02/24/2014 09:10 PM, Peter Zijlstra wrote:
-> > On Mon, Feb 24, 2014 at 01:12:18PM +0100, Peter Zijlstra wrote:
-> >> +		if (p) {
-> >> +			if (unlikely(p == RETRY_TASK))
-> >> +				goto again;
-> > 
-> > We could even make that: unlikely(p & 1), I think most CPUs can encode
-> > that far better than the full pointer immediate.
+On 02/25/2014 02:08 AM, Minchan Kim wrote:
+> From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > 
-> Agree, unless odd-align stuff appeared...
+> allocate new `zram_meta' in disksize_store() only for uninitialised
+> zram device, saving a number of allocations and deallocations in case
+> if disksize_store() was called on currently used device. at the same
+> time zram_meta stack variable is not necessary, because we can set
+> ->meta directly. there is also no need in setting QUEUE_FLAG_NONROT
+> queue on every disksize_store(), set it once during device creation.
+> 
+> [minchan@kernel.org]: handled zram->meta alloc fail case.
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-That shouldn't happen; we rely on u32 alignment all over the place. So
-for general objects we should have at least the lower two bits free to
-play with.
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+
+> ---
+>  drivers/block/zram/zram_drv.c | 25 +++++++++----------------
+>  1 file changed, 9 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 21aee3edcb25..9baac5b76bfe 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -533,40 +533,32 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  	up_write(&zram->init_lock);
+>  }
+>  
+> -static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+> -{
+> -	/* zram devices sort of resembles non-rotational disks */
+> -	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+> -	zram->meta = meta;
+> -	pr_debug("Initialization done!\n");
+> -}
+> -
+>  static ssize_t disksize_store(struct device *dev,
+>  		struct device_attribute *attr, const char *buf, size_t len)
+>  {
+>  	u64 disksize;
+> -	struct zram_meta *meta;
+>  	struct zram *zram = dev_to_zram(dev);
+>  
+>  	disksize = memparse(buf, NULL);
+>  	if (!disksize)
+>  		return -EINVAL;
+>  
+> -	disksize = PAGE_ALIGN(disksize);
+> -	meta = zram_meta_alloc(disksize);
+> -	if (!meta)
+> -		return -ENOMEM;
+>  	down_write(&zram->init_lock);
+>  	if (init_done(zram)) {
+>  		up_write(&zram->init_lock);
+> -		zram_meta_free(meta);
+>  		pr_info("Cannot change disksize for initialized device\n");
+>  		return -EBUSY;
+>  	}
+>  
+> +	disksize = PAGE_ALIGN(disksize);
+> +	zram->meta = zram_meta_alloc(disksize);
+> +	if (!zram->meta) {
+> +		up_write(&zram->init_lock);
+> +		return -ENOMEM;
+> +	}
+> +
+>  	zram->disksize = disksize;
+>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+> -	zram_init_device(zram, meta);
+>  	up_write(&zram->init_lock);
+>  
+>  	return len;
+> @@ -776,7 +768,8 @@ static int create_device(struct zram *zram, int device_id)
+>  
+>  	/* Actual capacity set using syfs (/sys/block/zram<id>/disksize */
+>  	set_capacity(zram->disk, 0);
+> -
+> +	/* zram devices sort of resembles non-rotational disks */
+> +	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+>  	/*
+>  	 * To ensure that we always get PAGE_SIZE aligned
+>  	 * and n*PAGE_SIZED sized I/O requests.
+> 
+
