@@ -1,126 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaBYWDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 17:03:52 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:44729 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaBYWDs (ORCPT
+	id S1752785AbaBYWKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 17:10:12 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:37150 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaBYWKK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 17:03:48 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
-	<87eh34jbsl.fsf_-_@xmission.com>
-	<20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu>
-	<87y510dpra.fsf@xmission.com> <20140225151349.GA19981@fieldses.org>
-Date: Tue, 25 Feb 2014 14:03:36 -0800
-In-Reply-To: <20140225151349.GA19981@fieldses.org> (J. Bruce Fields's message
-	of "Tue, 25 Feb 2014 10:13:49 -0500")
-Message-ID: <87mwhe26kn.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Feb 2014 17:10:10 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19M7RSGxyplI+A0Kv08TCl2FWOtdftHgx0=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0165]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;"J. Bruce Fields" <bfields@fieldses.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 08/11] vfs: Merge check_submounts_and_drop and d_invalidate
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Transfer-Encoding: 8BIT
+To: Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <fcff6030d4dd07c43482a551cf1bc79545fbb55d.1392886522.git.michal.simek@xilinx.com>
+Cc: "Michal Simek" <monstr@monstr.eu>,
+        "Josh Cartwright" <josh.cartwright@ni.com>,
+        "Steffen Trumtrar" <s.trumtrar@pengutronix.de>,
+        "Rob Herring" <robherring2@gmail.com>,
+        "Peter Crosthwaite" <peter.crosthwaite@xilinx.com>,
+        "Soren Brinkmann" <soren.brinkmann@xilinx.com>,
+        "Stephen Boyd" <sboyd@codeaurora.org>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        "James Hogan" <james.hogan@imgtec.com>,
+        "Felipe Pena" <felipensp@gmail.com>, linux-kernel@vger.kernel.org
+References: <fcff6030d4dd07c43482a551cf1bc79545fbb55d.1392886522.git.michal.simek@xilinx.com>
+Message-ID: <20140225221003.22529.54270@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: zynq: Use clk_readl/clk_writel helper function
+Date: Tue, 25 Feb 2014 14:10:03 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+Quoting Michal Simek (2014-02-20 00:55:46)
+> Do not use readl/writel directly because the whole
+> clk subsystem is using clk_readl/clk_writel functions.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> Acked-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-> On Mon, Feb 24, 2014 at 04:01:29PM -0800, Eric W. Biederman wrote:
->> Miklos Szeredi <miklos@szeredi.hu> writes:
->> 
->> >
->> > You can optimize this by including the negative check within the above d_locked
->> > region and calling __d_drop() instead.
->> 
->> For this patch just moving the code and not changing it is the corret
->> thing to do because it helps with review and understanding the code.
->> 
->> There are two ways I could see going with optimizing the preamble.
->> Simply dropping the d_lock from around the d_unhashed test as a pointer
->> dereference should be atomic, and the test is racy against
->> d_materialise_unique.
->
-> Could you explain?  What's the race, and what are the consequences?
+Taken into clk-next.
 
->> (We don't always hold the parent directories inode mutex when d_invalidate is called).
+Regards,
+Mike
 
-d_unhashed is not a permanent condition because of d_materialise_unique,
-and d_splice_alias.
-
-d_invalidate can be called on an unhashed dentry in one of two ways
-(either d_revalidate dropped the dentry or another routine that drops
-the dentry beat the current invocation of d_invalidate to the job).
-
-
-There are 3 places d_revalidate is called.
-
-Once on the rcu path with with the appropriate flag set.
-
-Once without out the parent i_mutex held, just off of the rcu path,
-on that path d_invalidate is when d_revalidate fails.
-
-Once during lookup with the parent directory i_mutex held.
-
-
-Because the parent direcories i_mutex is not always held accross
-d_revalidate and the following d_invalidate it happens that d_invalidate
-is not always an atomic operation.
-
-
-At worst the race results in a dentry that is dropped when it could be
-hashed, that we will resurrect next time someone attempts to look it
-up and d_materialise_unique/d_splice_alias is called.
-
-
-None of that really matters for optimizing d_invalidate, but it is part
-of the background in which d_invalidate lives. All that is significant
-in d_invalidate is knowing that d_materialise_unique, and possibly
-d_splice_alias may run concurrently with d_invalidate.  It is unlikely
-and essentially harmless.
-
-
-After my patchset (because I removed all of the d_drop's from
-.d_revalidate) the only race that should remain is between two parallel
-calls of d_invalidate.  Which probably means we can remove the test for
-d_unhashed altogether.
-
-Right now I just want to make this first big step and make certain the
-code is solid.  After that optimization is easy.
-
-Eric
+> ---
+> 
+>  drivers/clk/zynq/clkc.c |  4 ++--
+>  drivers/clk/zynq/pll.c  | 18 +++++++++---------
+>  2 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+> index 09dd017..e726c1b 100644
+> --- a/drivers/clk/zynq/clkc.c
+> +++ b/drivers/clk/zynq/clkc.c
+> @@ -148,7 +148,7 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
+>         clks[fclk] = clk_register_gate(NULL, clk_name,
+>                         div1_name, CLK_SET_RATE_PARENT, fclk_gate_reg,
+>                         0, CLK_GATE_SET_TO_DISABLE, fclk_gate_lock);
+> -       enable_reg = readl(fclk_gate_reg) & 1;
+> +       enable_reg = clk_readl(fclk_gate_reg) & 1;
+>         if (enable && !enable_reg) {
+>                 if (clk_prepare_enable(clks[fclk]))
+>                         pr_warn("%s: FCLK%u enable failed\n", __func__,
+> @@ -277,7 +277,7 @@ static void __init zynq_clk_setup(struct device_node *np)
+>                         SLCR_IOPLL_CTRL, 4, 1, 0, &iopll_lock);
+> 
+>         /* CPU clocks */
+> -       tmp = readl(SLCR_621_TRUE) & 1;
+> +       tmp = clk_readl(SLCR_621_TRUE) & 1;
+>         clk = clk_register_mux(NULL, "cpu_mux", cpu_parents, 4,
+>                         CLK_SET_RATE_NO_REPARENT, SLCR_ARM_CLK_CTRL, 4, 2, 0,
+>                         &armclk_lock);
+> diff --git a/drivers/clk/zynq/pll.c b/drivers/clk/zynq/pll.c
+> index 3226f54..cec9759 100644
+> --- a/drivers/clk/zynq/pll.c
+> +++ b/drivers/clk/zynq/pll.c
+> @@ -90,7 +90,7 @@ static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
+>          * makes probably sense to redundantly save fbdiv in the struct
+>          * zynq_pll to save the IO access.
+>          */
+> -       fbdiv = (readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
+> +       fbdiv = (clk_readl(clk->pll_ctrl) & PLLCTRL_FBDIV_MASK) >>
+>                         PLLCTRL_FBDIV_SHIFT;
+> 
+>         return parent_rate * fbdiv;
+> @@ -112,7 +112,7 @@ static int zynq_pll_is_enabled(struct clk_hw *hw)
+> 
+>         spin_lock_irqsave(clk->lock, flags);
+> 
+> -       reg = readl(clk->pll_ctrl);
+> +       reg = clk_readl(clk->pll_ctrl);
+> 
+>         spin_unlock_irqrestore(clk->lock, flags);
+> 
+> @@ -138,10 +138,10 @@ static int zynq_pll_enable(struct clk_hw *hw)
+>         /* Power up PLL and wait for lock */
+>         spin_lock_irqsave(clk->lock, flags);
+> 
+> -       reg = readl(clk->pll_ctrl);
+> +       reg = clk_readl(clk->pll_ctrl);
+>         reg &= ~(PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK);
+> -       writel(reg, clk->pll_ctrl);
+> -       while (!(readl(clk->pll_status) & (1 << clk->lockbit)))
+> +       clk_writel(reg, clk->pll_ctrl);
+> +       while (!(clk_readl(clk->pll_status) & (1 << clk->lockbit)))
+>                 ;
+> 
+>         spin_unlock_irqrestore(clk->lock, flags);
+> @@ -168,9 +168,9 @@ static void zynq_pll_disable(struct clk_hw *hw)
+>         /* shut down PLL */
+>         spin_lock_irqsave(clk->lock, flags);
+> 
+> -       reg = readl(clk->pll_ctrl);
+> +       reg = clk_readl(clk->pll_ctrl);
+>         reg |= PLLCTRL_RESET_MASK | PLLCTRL_PWRDWN_MASK;
+> -       writel(reg, clk->pll_ctrl);
+> +       clk_writel(reg, clk->pll_ctrl);
+> 
+>         spin_unlock_irqrestore(clk->lock, flags);
+>  }
+> @@ -225,9 +225,9 @@ struct clk *clk_register_zynq_pll(const char *name, const char *parent,
+> 
+>         spin_lock_irqsave(pll->lock, flags);
+> 
+> -       reg = readl(pll->pll_ctrl);
+> +       reg = clk_readl(pll->pll_ctrl);
+>         reg &= ~PLLCTRL_BPQUAL_MASK;
+> -       writel(reg, pll->pll_ctrl);
+> +       clk_writel(reg, pll->pll_ctrl);
+> 
+>         spin_unlock_irqrestore(pll->lock, flags);
+> 
+> --
+> 1.8.2.3
+> 
