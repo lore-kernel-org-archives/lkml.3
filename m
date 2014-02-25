@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaBYVd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 16:33:59 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:53460 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaBYVd6 (ORCPT
+	id S1753130AbaBYVf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 16:35:58 -0500
+Received: from smtprelay0120.hostedemail.com ([216.40.44.120]:56998 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751339AbaBYVf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 16:33:58 -0500
-Date: Tue, 25 Feb 2014 13:33:53 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andrey Panin <pazke@donpac.ru>,
-        David Rientjes <rientjes@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: RFC: Removing Visual Workstation and NUMAQ
-Message-ID: <20140225213353.GA9980@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <530CFD6C.7040705@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530CFD6C.7040705@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022521-8236-0000-0000-0000002AB816
+	Tue, 25 Feb 2014 16:35:57 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3865:3867:3868:3874:4321:5007:6119:7652:7809:10004:10400:10848:11232:11657:11658:11914:12043:12296:12517:12519:12555:12679:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dad15_1690bd2d3e71a
+X-Filterd-Recvd-Size: 1441
+Message-ID: <1393364153.8716.63.camel@joe-AO722>
+Subject: [PATCH] MAINTAINERS: Intel nic drivers
+From: Joe Perches <joe@perches.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 25 Feb 2014 13:35:53 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 12:30:36PM -0800, H. Peter Anvin wrote:
-> I would like to remove Visual Workstation and NUMAQ from the x86 kernel.
->  This removes a fair bit of code which from the current looks is only
-> being made to suffer general patches:
-> 
-> Visual Workstation:
-> 
->  Documentation/sgi-visws.txt            |  13 -
->  MAINTAINERS                            |   7 -
->  arch/x86/Kconfig                       |  13 -
->  arch/x86/include/asm/visws/cobalt.h    | 127 -----
->  arch/x86/include/asm/visws/lithium.h   |  53 --
->  arch/x86/include/asm/visws/piix4.h     | 107 ----
->  arch/x86/include/asm/visws/sgivw.h     |   5 -
->  arch/x86/pci/Makefile                  |   2 -
->  arch/x86/pci/visws.c                   |  87 ----
->  arch/x86/platform/Makefile             |   1 -
->  arch/x86/platform/visws/Makefile       |   1 -
->  arch/x86/platform/visws/visws_quirks.c | 608 -----------------------
->  12 files changed, 1024 deletions(-)
-> 
-> NUMAQ:
-> 
->  arch/x86/include/asm/numaq.h    | 171 ----------
->  arch/x86/kernel/apic/Makefile   |   1 -
->  arch/x86/kernel/apic/numaq_32.c | 524 ------------------------------
->  arch/x86/pci/Makefile           |   1 -
->  arch/x86/pci/numaq_32.c         | 165 ----------
->  5 files changed, 862 deletions(-)
-> 
-> 
-> If there still are people who care about these platforms, please speak up.
+Add a new F: line for the intel subdirectories.
 
->From a NUMAQ viewpoint:
+This allows get_maintainers to avoid using git log
+and cc'ing people that have submitted clean-up style
+patches for all first level directories under
+drivers/net/ethernet/intel/
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This does not make e100.c maintained.
 
-							Thanx, Paul
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 90baeb1..9778d12 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4574,6 +4574,7 @@ F:	Documentation/networking/ixgbevf.txt
+ F:	Documentation/networking/i40e.txt
+ F:	Documentation/networking/i40evf.txt
+ F:	drivers/net/ethernet/intel/
++F:	drivers/net/ethernet/intel/*/
+ 
+ INTEL-MID GPIO DRIVER
+ M:	David Cohen <david.a.cohen@linux.intel.com>
+
 
