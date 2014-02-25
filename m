@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaBYOYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:24:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:47174 "EHLO mga01.intel.com"
+	id S1753407AbaBYOTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:19:15 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31820 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753413AbaBYOTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:19:16 -0500
+	id S1752586AbaBYOTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:19:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,540,1389772800"; 
-   d="scan'208";a="481478441"
+   d="scan'208";a="461939304"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org, willy@linux.intel.com
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v6 06/22] Replace XIP read and write with DAX I/O
-Date: Tue, 25 Feb 2014 09:18:22 -0500
-Message-Id: <1393337918-28265-7-git-send-email-matthew.r.wilcox@intel.com>
+Subject: [PATCH v6 04/22] Change direct_access calling convention
+Date: Tue, 25 Feb 2014 09:18:20 -0500
+Message-Id: <1393337918-28265-5-git-send-email-matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
 References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
@@ -23,594 +23,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic AIO infrastructure instead of custom read and write
-methods.  In addition to giving us support for AIO, this adds the missing
-locking between read() and truncate().
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Ross Zwisler <ross.zwisler@linux.intel.com>
 ---
- fs/Makefile        |   1 +
- fs/dax.c           | 192 +++++++++++++++++++++++++++++++++++++++++++
- fs/ext2/file.c     |   6 +-
- fs/ext2/inode.c    |   7 +-
- include/linux/fs.h |  18 ++++-
- mm/filemap.c       |   6 +-
- mm/filemap_xip.c   | 234 -----------------------------------------------------
- 7 files changed, 219 insertions(+), 245 deletions(-)
- create mode 100644 fs/dax.c
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     |  6 +++---
+ drivers/block/brd.c               |  8 +++++---
+ drivers/s390/block/dcssblk.c      | 19 ++++++++++---------
+ fs/ext2/xip.c                     | 30 +++++++++++++-----------------
+ include/linux/blkdev.h            |  4 ++--
+ 6 files changed, 42 insertions(+), 40 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 47ac07b..2f194cd 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_SIGNALFD)		+= signalfd.o
- obj-$(CONFIG_TIMERFD)		+= timerfd.o
- obj-$(CONFIG_EVENTFD)		+= eventfd.o
- obj-$(CONFIG_AIO)               += aio.o
-+obj-$(CONFIG_FS_XIP)		+= dax.o
- obj-$(CONFIG_FILE_LOCKING)      += locks.o
- obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
- obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
-diff --git a/fs/dax.c b/fs/dax.c
-new file mode 100644
-index 0000000..81099f9
---- /dev/null
-+++ b/fs/dax.c
-@@ -0,0 +1,192 @@
-+/*
-+ * fs/dax.c - Direct Access filesystem code
-+ * Copyright (c) 2013-2014 Intel Corporation
-+ * Author: Matthew Wilcox <matthew.r.wilcox@intel.com>
-+ * Author: Ross Zwisler <ross.zwisler@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/atomic.h>
-+#include <linux/blkdev.h>
-+#include <linux/buffer_head.h>
-+#include <linux/fs.h>
-+#include <linux/genhd.h>
-+#include <linux/mutex.h>
-+#include <linux/uio.h>
-+
-+static long dax_get_addr(struct inode *inode, struct buffer_head *bh,
-+								void **addr)
-+{
-+	struct block_device *bdev = bh->b_bdev;
-+	const struct block_device_operations *ops = bdev->bd_disk->fops;
-+	unsigned long pfn;
-+	sector_t sector = bh->b_blocknr << (inode->i_blkbits - 9);
-+	return ops->direct_access(bdev, sector, addr, &pfn, bh->b_size);
-+}
-+
-+static void dax_new_buf(void *addr, unsigned size, unsigned first,
-+					loff_t offset, loff_t end, int rw)
-+{
-+	loff_t final = end - offset;	/* The final byte in this buffer */
-+	if (rw != WRITE) {
-+		memset(addr, 0, size);
-+		return;
-+	}
-+
-+	if (first > 0)
-+		memset(addr, 0, first);
-+	if (final < size)
-+		memset(addr + final, 0, size - final);
-+}
-+
-+static bool buffer_written(struct buffer_head *bh)
-+{
-+	return buffer_mapped(bh) && !buffer_unwritten(bh);
-+}
-+
-+static ssize_t dax_io(int rw, struct inode *inode, const struct iovec *iov,
-+			loff_t start, loff_t end, get_block_t get_block,
-+			struct buffer_head *bh)
-+{
-+	ssize_t retval = 0;
-+	unsigned seg = 0;
-+	unsigned len;
-+	unsigned copied = 0;
-+	loff_t offset = start;
-+	loff_t max = start;
-+	void *addr;
-+	bool hole = false;
-+
-+	if (rw != WRITE)
-+		end = min(end, i_size_read(inode));
-+
-+	while (offset < end) {
-+		void __user *buf = iov[seg].iov_base + copied;
-+
-+		if (max == offset) {
-+			sector_t block = offset >> inode->i_blkbits;
-+			unsigned first = offset - (block << inode->i_blkbits);
-+			long size;
-+			memset(bh, 0, sizeof(*bh));
-+			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
-+			retval = get_block(inode, block, bh, rw == WRITE);
-+			if (retval)
-+				break;
-+			if (rw == WRITE) {
-+				if (!buffer_mapped(bh)) {
-+					retval = -EIO;
-+					break;
-+				}
-+				hole = false;
-+			} else {
-+				hole = !buffer_written(bh);
-+			}
-+
-+			if (hole) {
-+				addr = NULL;
-+				if (buffer_uptodate(bh))
-+					size = bh->b_size - first;
-+				else
-+					size = (1 << inode->i_blkbits) - first;
-+			} else {
-+				retval = dax_get_addr(inode, bh, &addr);
-+				if (retval < 0)
-+					break;
-+				if (buffer_unwritten(bh) || buffer_new(bh))
-+					dax_new_buf(addr, retval, first,
-+						   offset, end, rw);
-+				addr += first;
-+				size = retval - first;
-+			}
-+			max = min(offset + size, end);
-+		}
-+
-+		len = min_t(unsigned, iov[seg].iov_len - copied, max - offset);
-+
-+		if (rw == WRITE)
-+			len -= __copy_from_user_nocache(addr, buf, len);
-+		else if (!hole)
-+			len -= __copy_to_user(buf, addr, len);
-+		else
-+			len -= __clear_user(buf, len);
-+
-+		if (!len)
-+			break;
-+
-+		offset += len;
-+		copied += len;
-+		addr += len;
-+		if (copied == iov[seg].iov_len) {
-+			seg++;
-+			copied = 0;
-+		}
-+	}
-+
-+	return (offset == start) ? retval : offset - start;
-+}
-+
-+/**
-+ * dax_do_io - Perform I/O to a DAX file
-+ * @rw: READ to read or WRITE to write
-+ * @iocb: The control block for this I/O
-+ * @inode: The file which the I/O is directed at
-+ * @iov: The user addresses to do I/O from or to
-+ * @offset: The file offset where the I/O starts
-+ * @nr_segs: The length of the iov array
-+ * @get_block: The filesystem method used to translate file offsets to blocks
-+ * @end_io: A filesystem callback for I/O completion
-+ * @flags: See below
-+ *
-+ * This function uses the same locking scheme as do_blockdev_direct_IO:
-+ * If @flags has DIO_LOCKING set, we assume that the i_mutex is held by the
-+ * caller for writes.  For reads, we take and release the i_mutex ourselves.
-+ * If DIO_LOCKING is not set, the filesystem takes care of its own locking.
-+ * As with do_blockdev_direct_IO(), we increment i_dio_count while the I/O
-+ * is in progress.
-+ */
-+ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
-+		const struct iovec *iov, loff_t offset, unsigned nr_segs,
-+		get_block_t get_block, dio_iodone_t end_io, int flags)
-+{
-+	struct buffer_head bh;
-+	unsigned seg;
-+	ssize_t retval = -EINVAL;
-+	loff_t end = offset;
-+
-+	for (seg = 0; seg < nr_segs; seg++)
-+		end += iov[seg].iov_len;
-+
-+	if ((flags & DIO_LOCKING) && (rw == READ)) {
-+		struct address_space *mapping = inode->i_mapping;
-+		mutex_lock(&inode->i_mutex);
-+		retval = filemap_write_and_wait_range(mapping, offset, end - 1);
-+		if (retval) {
-+			mutex_unlock(&inode->i_mutex);
-+			goto out;
-+		}
-+	}
-+
-+	/* Protects against truncate */
-+	atomic_inc(&inode->i_dio_count);
-+
-+	retval = dax_io(rw, inode, iov, offset, end, get_block, &bh);
-+
-+	if ((flags & DIO_LOCKING) && (rw == READ))
-+		mutex_unlock(&inode->i_mutex);
-+
-+	inode_dio_done(inode);
-+
-+	if ((retval > 0) && end_io)
-+		end_io(iocb, offset, retval, bh.b_private);
-+ out:
-+	return retval;
-+}
-+EXPORT_SYMBOL_GPL(dax_do_io);
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index 44c36e5..ef5cf96 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -81,8 +81,10 @@ const struct file_operations ext2_file_operations = {
- #ifdef CONFIG_EXT2_FS_XIP
- const struct file_operations ext2_xip_file_operations = {
- 	.llseek		= generic_file_llseek,
--	.read		= xip_file_read,
--	.write		= xip_file_write,
-+	.read		= do_sync_read,
-+	.write		= do_sync_write,
-+	.aio_read	= generic_file_aio_read,
-+	.aio_write	= generic_file_aio_write,
- 	.unlocked_ioctl = ext2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext2_compat_ioctl,
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index e7d3192..f128ebf 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -858,7 +858,11 @@ ext2_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
- 	struct inode *inode = mapping->host;
- 	ssize_t ret;
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b62eabf 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
  
--	ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
-+	if (IS_DAX(inode))
-+		ret = dax_do_io(rw, iocb, inode, iov, offset, nr_segs,
-+				ext2_get_block, NULL, DIO_LOCKING);
-+	else
-+		ret = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
- 				 ext2_get_block);
- 	if (ret < 0 && (rw & WRITE))
- 		ext2_write_failed(mapping, offset + iov_length(iov, nr_segs));
-@@ -888,6 +892,7 @@ const struct address_space_operations ext2_aops = {
- const struct address_space_operations ext2_aops_xip = {
- 	.bmap			= ext2_bmap,
- 	.get_xip_mem		= ext2_get_xip_mem,
-+	.direct_IO		= ext2_direct_IO,
- };
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that it can provide, although it must not exceed the number of
++bytes requested.  It may also return a negative errno if an error occurs.
  
- const struct address_space_operations ext2_nobh_aops = {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 42fe4e5..07888b9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2517,17 +2517,22 @@ extern int generic_file_open(struct inode * inode, struct file * filp);
- extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
- #ifdef CONFIG_FS_XIP
--extern ssize_t xip_file_read(struct file *filp, char __user *buf, size_t len,
--			     loff_t *ppos);
- extern int xip_file_mmap(struct file * file, struct vm_area_struct * vma);
--extern ssize_t xip_file_write(struct file *filp, const char __user *buf,
--			      size_t len, loff_t *ppos);
- extern int xip_truncate_page(struct address_space *mapping, loff_t from);
-+ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
-+		loff_t, unsigned segs, get_block_t, dio_iodone_t, int flags);
- #else
- static inline int xip_truncate_page(struct address_space *mapping, loff_t from)
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 830edc8..1697e29 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -139,9 +139,9 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
+  */
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
  {
- 	return 0;
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+ 	loff_t offset;
+@@ -158,7 +158,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return min_t(unsigned long, size, bank->size - offset);
  }
-+
-+static inline ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
-+		const struct iovec *iov, loff_t offset, unsigned nr_segs,
-+		get_block_t get_block, dio_iodone_t end_io, int flags)
-+{
-+	return -ENOTTY;
-+}
+ 
+ static const struct block_device_operations axon_ram_devops = {
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index e73b85c..00da60d 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -361,8 +361,8 @@ out:
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
+@@ -379,7 +379,9 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/* Could optimistically check to see if the next page in the
++	 * file is mapped to the next page of physical RAM */
++	return PAGE_SIZE;
+ }
  #endif
  
- #ifdef CONFIG_BLOCK
-@@ -2677,6 +2682,11 @@ extern int generic_show_options(struct seq_file *m, struct dentry *root);
- extern void save_mount_options(struct super_block *sb, char *options);
- extern void replace_mount_options(struct super_block *sb, char *options);
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index ebf41e2..da914b2 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
  
-+static inline bool io_is_direct(struct file *filp)
-+{
-+	return (filp->f_flags & O_DIRECT) || IS_DAX(file_inode(filp));
-+}
-+
- static inline ino_t parent_ino(struct dentry *dentry)
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+ 
+@@ -866,25 +866,26 @@ fail:
+ 	bio_io_error(bio);
+ }
+ 
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
  {
- 	ino_t res;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 7a13f6a..1b7dff6 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1417,8 +1417,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (retval)
- 		return retval;
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
  
--	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
--	if (filp->f_flags & O_DIRECT) {
-+	if (io_is_direct(filp)) {
- 		loff_t size;
- 		struct address_space *mapping;
- 		struct inode *inode;
-@@ -2468,8 +2467,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (err)
- 		goto out;
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
++	dev_sz = dev_info->end - dev_info->start;
+ 	if (secnum % (PAGE_SIZE/512))
+ 		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
++	offset = secnum * 512;
++	if (offset > dev_sz)
+ 		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
  
--	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
--	if (unlikely(file->f_flags & O_DIRECT)) {
-+	if (io_is_direct(file)) {
- 		loff_t endbyte;
- 		ssize_t written_buffered;
- 
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index c8d23e9..f7c37a1 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -42,119 +42,6 @@ static struct page *xip_sparse_page(void)
+-	return 0;
++	return min_t(unsigned long, size, dev_sz - offset);
  }
  
- /*
-- * This is a file read routine for execute in place files, and uses
-- * the mapping->a_ops->get_xip_mem() function for the actual low-level
-- * stuff.
-- *
-- * Note the struct file* is not used at all.  It may be NULL.
-- */
--static ssize_t
--do_xip_mapping_read(struct address_space *mapping,
--		    struct file_ra_state *_ra,
--		    struct file *filp,
--		    char __user *buf,
--		    size_t len,
--		    loff_t *ppos)
--{
--	struct inode *inode = mapping->host;
--	pgoff_t index, end_index;
--	unsigned long offset;
--	loff_t isize, pos;
--	size_t copied = 0, error = 0;
--
--	BUG_ON(!mapping->a_ops->get_xip_mem);
--
--	pos = *ppos;
--	index = pos >> PAGE_CACHE_SHIFT;
--	offset = pos & ~PAGE_CACHE_MASK;
--
--	isize = i_size_read(inode);
--	if (!isize)
--		goto out;
--
--	end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
--	do {
--		unsigned long nr, left;
--		void *xip_mem;
--		unsigned long xip_pfn;
--		int zero = 0;
--
--		/* nr is the maximum number of bytes to copy from this page */
--		nr = PAGE_CACHE_SIZE;
--		if (index >= end_index) {
--			if (index > end_index)
--				goto out;
--			nr = ((isize - 1) & ~PAGE_CACHE_MASK) + 1;
--			if (nr <= offset) {
--				goto out;
--			}
--		}
--		nr = nr - offset;
--		if (nr > len - copied)
--			nr = len - copied;
--
--		error = mapping->a_ops->get_xip_mem(mapping, index, 0,
--							&xip_mem, &xip_pfn);
--		if (unlikely(error)) {
--			if (error == -ENODATA) {
--				/* sparse */
--				zero = 1;
--			} else
--				goto out;
--		}
--
--		/* If users can be writing to this page using arbitrary
--		 * virtual addresses, take care about potential aliasing
--		 * before reading the page on the kernel side.
--		 */
--		if (mapping_writably_mapped(mapping))
--			/* address based flush */ ;
--
--		/*
--		 * Ok, we have the mem, so now we can copy it to user space...
--		 *
--		 * The actor routine returns how many bytes were actually used..
--		 * NOTE! This may not be the same as how much of a user buffer
--		 * we filled up (we may be padding etc), so we can only update
--		 * "pos" here (the actor routine has to update the user buffer
--		 * pointers and the remaining count).
--		 */
--		if (!zero)
--			left = __copy_to_user(buf+copied, xip_mem+offset, nr);
--		else
--			left = __clear_user(buf + copied, nr);
--
--		if (left) {
--			error = -EFAULT;
--			goto out;
--		}
--
--		copied += (nr - left);
--		offset += (nr - left);
--		index += offset >> PAGE_CACHE_SHIFT;
--		offset &= ~PAGE_CACHE_MASK;
--	} while (copied < len);
--
--out:
--	*ppos = pos + copied;
--	if (filp)
--		file_accessed(filp);
--
--	return (copied ? copied : error);
--}
--
--ssize_t
--xip_file_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
--{
--	if (!access_ok(VERIFY_WRITE, buf, len))
--		return -EFAULT;
--
--	return do_xip_mapping_read(filp->f_mapping, &filp->f_ra, filp,
--			    buf, len, ppos);
--}
--EXPORT_SYMBOL_GPL(xip_file_read);
--
--/*
-  * __xip_unmap is invoked from xip_unmap and
-  * xip_write
-  *
-@@ -340,127 +227,6 @@ int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
- }
- EXPORT_SYMBOL_GPL(xip_file_mmap);
+ static void
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..fa40091 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,13 @@
+ #include "ext2.h"
+ #include "xip.h"
  
--static ssize_t
--__xip_file_write(struct file *filp, const char __user *buf,
--		  size_t count, loff_t pos, loff_t *ppos)
--{
--	struct address_space * mapping = filp->f_mapping;
--	const struct address_space_operations *a_ops = mapping->a_ops;
--	struct inode 	*inode = mapping->host;
--	long		status = 0;
--	size_t		bytes;
--	ssize_t		written = 0;
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+ 	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
 -
--	BUG_ON(!mapping->a_ops->get_xip_mem);
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
 -
--	do {
--		unsigned long index;
--		unsigned long offset;
--		size_t copied;
--		void *xip_mem;
--		unsigned long xip_pfn;
--
--		offset = (pos & (PAGE_CACHE_SIZE -1)); /* Within page */
--		index = pos >> PAGE_CACHE_SHIFT;
--		bytes = PAGE_CACHE_SIZE - offset;
--		if (bytes > count)
--			bytes = count;
--
--		status = a_ops->get_xip_mem(mapping, index, 0,
--						&xip_mem, &xip_pfn);
--		if (status == -ENODATA) {
--			/* we allocate a new page unmap it */
--			mutex_lock(&xip_sparse_mutex);
--			status = a_ops->get_xip_mem(mapping, index, 1,
--							&xip_mem, &xip_pfn);
--			mutex_unlock(&xip_sparse_mutex);
--			if (!status)
--				/* unmap page at pgoff from all other vmas */
--				__xip_unmap(mapping, index);
--		}
--
--		if (status)
--			break;
--
--		copied = bytes -
--			__copy_from_user_nocache(xip_mem + offset, buf, bytes);
--
--		if (likely(copied > 0)) {
--			status = copied;
--
--			if (status >= 0) {
--				written += status;
--				count -= status;
--				pos += status;
--				buf += status;
--			}
--		}
--		if (unlikely(copied != bytes))
--			if (status >= 0)
--				status = -EFAULT;
--		if (status < 0)
--			break;
--	} while (count);
--	*ppos = pos;
--	/*
--	 * No need to use i_size_read() here, the i_size
--	 * cannot change under us because we hold i_mutex.
--	 */
--	if (pos > inode->i_size) {
--		i_size_write(inode, pos);
--		mark_inode_dirty(inode);
--	}
--
--	return written ? written : status;
--}
--
--ssize_t
--xip_file_write(struct file *filp, const char __user *buf, size_t len,
--	       loff_t *ppos)
--{
--	struct address_space *mapping = filp->f_mapping;
--	struct inode *inode = mapping->host;
--	size_t count;
--	loff_t pos;
--	ssize_t ret;
--
--	mutex_lock(&inode->i_mutex);
--
--	if (!access_ok(VERIFY_READ, buf, len)) {
--		ret=-EFAULT;
--		goto out_up;
--	}
--
--	pos = *ppos;
--	count = len;
--
--	/* We can write back this queue in page reclaim */
--	current->backing_dev_info = mapping->backing_dev_info;
--
--	ret = generic_write_checks(filp, &pos, &count, S_ISBLK(inode->i_mode));
--	if (ret)
--		goto out_backing;
--	if (count == 0)
--		goto out_backing;
--
--	ret = file_remove_suid(filp);
--	if (ret)
--		goto out_backing;
--
--	ret = file_update_time(filp);
--	if (ret)
--		goto out_backing;
--
--	ret = __xip_file_write (filp, buf, count, pos, ppos);
--
-- out_backing:
--	current->backing_dev_info = NULL;
-- out_up:
--	mutex_unlock(&inode->i_mutex);
--	return ret;
--}
--EXPORT_SYMBOL_GPL(xip_file_write);
--
- /*
-  * truncate a page used for execute in place
-  * functionality is analog to block_truncate_page but does use get_xip_mem
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return ops->direct_access(bdev, sector, kaddr, pfn, size);
+ }
+ 
+ static inline int
+@@ -53,12 +48,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ {
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
+ 
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
+ }
+ 
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +73,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
+ {
+-	int rc;
++	long rc;
+ 	sector_t block;
+ 
+ 	/* first, retrieve the sector number */
+@@ -86,6 +82,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 4afa4f8..c6f6210 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1560,8 +1560,8 @@ struct block_device_operations {
+ 	void (*release) (struct gendisk *, fmode_t);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access) (struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
 -- 
 1.8.5.3
 
