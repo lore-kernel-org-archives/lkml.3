@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaBYOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:40:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826AbaBYOkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:40:23 -0500
-Message-ID: <1393337404.7307.51.camel@deneb.redhat.com>
-Subject: Re: [PATCH v4 0/6] generic early_ioremap support
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Dave Young <dyoung@redhat.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>, patches@linaro.org
-Date: Tue, 25 Feb 2014 09:10:04 -0500
-In-Reply-To: <1392238575-10000-1-git-send-email-msalter@redhat.com>
-References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753253AbaBYOk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:40:57 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:47080 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131AbaBYOkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:40:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <15001517.xLHO8lGdWr@vostro.rjw.lan>
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
+	<530BAA31.4050701@codeaurora.org>
+	<CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
+	<15001517.xLHO8lGdWr@vostro.rjw.lan>
+Date: Tue, 25 Feb 2014 20:10:54 +0530
+Message-ID: <CAKohponkjccKjc9xBQ3kCjdTMqFtKLCh1-mQXMS579+2_JmTCA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 15:56 -0500, Mark Salter wrote:
-> This patch series takes the common bits from the x86 early ioremap
-> implementation and creates a generic implementation which may be used
-> by other architectures. The early ioremap interfaces are intended for
-> situations where boot code needs to make temporary virtual mappings
-> before the normal ioremap interfaces are available. Typically, this
-> means before paging_init() has run.
-> 
-> These patches are layered on top of generic fixmap patches which
-> were pulled into 3.14-rc with the exception of the arm patch:
-> 
->   https://lkml.org/lkml/2013/11/25/477
-> 
-> The arm fixmap patch is currently in the akpm tree and has been
-> part of linux-next for a while.
-> 
-> This is version 4 of the patch series. These patches (and underlying
-> fixmap patches) may be found at:
-> 
->   git://github.com/mosalter/linux.git (early-ioremap-v4 branch)
+On 25 February 2014 18:34, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> Well, that depends on what the current users expect it to look like initially.
+> It should be initialized to the point in which all of them can handle it
+> correctly.
 
-There have been no comments on this patch series over the past
-two weeks. I'd like to get it into linux-next for some wider
-testing and eventually into 3.15. Is there something I can do
-to help it along?
+Exactly.
 
+> That's not going to work in at least some cases anyway, because for some types
+> of HW we simply can't retrieve the current frequency in a non-racy way.
 
+I agree. But this is all that we can guarantee here :)
