@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaBYErL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:47:11 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34894 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbaBYErJ (ORCPT
+	id S1752701AbaBYExs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:53:48 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49914 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaBYExr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:47:09 -0500
-Message-ID: <530C2045.1090704@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 12:47:01 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <20140224131025.GG3104@twins.programming.kicks-ass.net>
-In-Reply-To: <20140224131025.GG3104@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Feb 2014 23:53:47 -0500
+Date: Mon, 24 Feb 2014 23:53:43 -0500 (EST)
+Message-Id: <20140224.235343.1936318499491821387.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: mcgrof@do-not-panic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mcgrof@suse.com
+Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk>
+References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
+	<1393294265.6823.154.camel@deadeye.wl.decadent.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022504-8256-0000-0000-00000BA1A2DB
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Feb 2014 20:53:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 09:10 PM, Peter Zijlstra wrote:
-> On Mon, Feb 24, 2014 at 01:12:18PM +0100, Peter Zijlstra wrote:
->> +		if (p) {
->> +			if (unlikely(p == RETRY_TASK))
->> +				goto again;
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Tue, 25 Feb 2014 02:11:05 +0000
+
+> On Mon, 2014-02-24 at 16:14 -0800, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> 
+>> ---
+>>  include/uapi/linux/if.h | 201 +++++++++++++++++++++++++++++++++++-------------
+>>  1 file changed, 149 insertions(+), 52 deletions(-)
+>> 
+>> diff --git a/include/uapi/linux/if.h b/include/uapi/linux/if.h
+>> index d758163..1555623 100644
+>> --- a/include/uapi/linux/if.h
+>> +++ b/include/uapi/linux/if.h
+> [...]
+>> +/**
+>> + * enum net_device_priv_flags - &struct net_device priv_flags
+>> + *
+>> + * These are the &struct net_device, they are only set internally
+>> + * by drivers and used in the kernel but are invisible to userspace.
+> [...]
 > 
-> We could even make that: unlikely(p & 1), I think most CPUs can encode
-> that far better than the full pointer immediate.
+> Indeed, I wonder why they are in the UAPI header.  As userland doesn't
+> have a legitimate use for them, maybe you could move them back to
+> include/linux/if.h instead of bothering with adding macros?
 
-Agree, unless odd-align stuff appeared...
+They are visible to userspace via sysfs.
 
-Regards,
-Michael Wang
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+My memory may be bad, but I believe this has been brought up before.
