@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750917AbaBYFX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 00:23:28 -0500
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:52685 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750707AbaBYFX0 (ORCPT
+	id S1751476AbaBYFZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 00:25:36 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:51485 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaBYFZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 00:23:26 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2733:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:4321:5007:7652:7903:9040:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: jewel45_751b3618ed73f
-X-Filterd-Recvd-Size: 1762
-Message-ID: <1393305803.11020.119.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-From: Joe Perches <joe@perches.com>
-To: Tom Rini <trini@ti.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 24 Feb 2014 21:23:23 -0800
-In-Reply-To: <530BCB27.5040808@ti.com>
-References: <1393274296-26179-1-git-send-email-trini@ti.com>
-	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
-	 <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>
-	 <1393279377.11020.66.camel@joe-AO722> <530BC209.2000708@ti.com>
-	 <1393279691.11020.69.camel@joe-AO722> <530BC5A4.4060803@ti.com>
-	 <1393281098.11020.82.camel@joe-AO722> <530BCB27.5040808@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 00:25:34 -0500
+X-AuditID: cbfee690-b7f266d00000287c-ac-530c294bf1e5
+Date: Tue, 25 Feb 2014 05:25:31 +0000 (GMT)
+From: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH V8 1/2] PHY: Exynos: Add Exynos5250 SATA PHY driver
+To: kishon@ti.com, yuvaraj.cd@samsung.com
+Cc: kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        swarren@wwwdotorg.org, mark.rutland@arm.com, yuvaraj.cd@gmail.com,
+        ks.giri@samsung.com, vasanth.a@samsung.com,
+        Jingoo Han <jg1.han@samsung.com>
+Reply-to: jg1.han@samsung.com
+MIME-version: 1.0
+X-MTR: 20140225051516731@jg1.han
+Msgkey: 20140225051516731@jg1.han
+X-EPLocale: en_US.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140225051516731@jg1.han
+X-ParentMTR: 
+X-ArchiveUser: EV
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <10341096.99771393305930937.JavaMail.weblogic@epml25>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJsWRmVeSWpSXmKPExsVy+t8zI11vTZ5ggzXb1Swu75rD5sDo8XmT
+	XABjVAOjTWJRckZmWapCal5yfkpmXrqtUmiIm66FkkJGfnGJrVK0kYGxnpGpiZ6RibmepUGs
+	lZGpkkJeYm6qrVKFLlSvkkJRcgFQbW5lMdCAnFQ9qLhecWpeikNWfinIJXrFibnFpXnpesn5
+	uUoKZYk5pUAjlPQTpjJmzN7Vz1rQw1PR1fOJrYHxAXcXIyeHkICSxKSTexlBbAkBE4lVzaeZ
+	IGwxiQv31rN1MXIB1SxjlGje1QdX1L7uIytEYj6jRO+ONlaQBIuAqsScg33sIDabgLrEhN/N
+	LCC2sIC7xPNlh8BsEQFTicPfN7KANDMLrGCW+DNzHzvEGbIS9ybPZgaxeQUEJU7OfAJUxAG0
+	TUGi6aIlRFhRYuqEvawQR0hI3Lm/H8rmlZjR/pQFwpaTmPZ1DTOELS1xftYGRphvFn9/DBXn
+	lzh2ewcTxHheiSf3g2HG7N78hQ3CFpCYeuYgVKuqxJdNt6HifBJrFr6FWiUocfpaNzNM7/0t
+	c8EBxwx05pTuh+wQtpbElx/72FB9BWI7SnzcNIt9AqPyLCSpWUjaZyFpR1azgJFlFaNoakFy
+	QXFSepEJcmxvYoQkwgk7GO8dsD7EuJ8RGCcTmaVEk/OBqTSvJN7Q2MzIwtTE1NjI3NKMQmET
+	UwsLEyOqCCuJ86o9SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwNhp8+j01y8OnOErOzZ9
+	Ctx4138qJ/dBaaXdp/0+V0y69WNVzNWDrUytd5Xi3YqljKduPsn6X3lmgMv6HSXqsUxLvn6s
+	+pjqf5Sp+8TncMU09eszvS6/XMoQ/TvmQPjWp9EWcjsEa+K/2jxNCkhbwuRy80jZKSauqfI3
+	OXckdO7naWG9I5Sw20iJpTgj0VCLuag4EQDaI0RG9wMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpik+LIzCtJLcpLzFFi42I5/e/2TF1vTZ5ggzW/lSwu75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6xZayVoYGBkSlQVUJG
+	xuxd/awFPTwVXT2f2BoYH3B3MXJyCAkoSUw6uZcRxJYQMJFoX/eRFcIWk7hwbz1bFyMXUM18
+	RoneHW1gCRYBVYk5B/vYQWw2AXWJCb+bWUBsYQF3iefLDoHZIgKmEoe/b2QBaWYWWMEs8Wfm
+	PnaIbbIS9ybPZgaxeQUEJU7OfAJUxAG0TUGi6aIlRFhRYuqEvVBHSEjcub8fyuaVmNH+lAXC
+	lpOY9nUNM4QtLXF+1gZGmKMXf38MFeeXOHZ7BxPEeF6JJ/eDYcbs3vyFDcIWkJh65iBUq6rE
+	l023oeJ8EmsWvoVaJShx+lo3M0zv/S1zmUBsZqAzp3Q/ZIewtSS+/NjHhuorENtR4uOmWewT
+	GOVmIUnNQtI+C0k7spoFjCyrGEVTC5ILipPSK4z0ihNzi0vz0vWS83M3MYJT1LNFOxj/nbc+
+	xCjAwajEw9tRzB0sxJpYVlyZe4hRgoNZSYQ3RIQnWIg3JbGyKrUoP76oNCe1+BBjMjACJzJL
+	iSbnA9NnXkm8obGxiZmJqbmBhYGlOWnCSuK88reSgoQE0hNLUrNTUwtSi2C2MHFwSjUwZuvP
+	aEmRfPJISoN7HV+r1ue+yCqRANncvU/1Pp+508Ib+L3+jR53wLvaxuJFW4/+OFv16nfbgq7N
+	FgHlV7ZrvG/UNrN41LzB5/qEF51vlzx4tHj1hN9d6X31e1xDP8uVrj6rkvW4Xmm6aqhU1yV+
+	R93cKn2ZBzOCXr3ic1IMuXRN6rjBx3mNSizFGYmGWsxFxYkAtlhesZUDAAA=
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1P5Pfhm020028
 
-On Mon, 2014-02-24 at 17:43 -0500, Tom Rini wrote:
-> My perl is quite limited, so however much effort you're interested in
-> putting in here is greatly appreciated (even if it's pointing out
-> something else already in the script to copy and modify).  We already
-> ship a .checkpatch.conf so having to enable something by default is
-> fine.  Thanks!
+On Mon, 24 Feb 2014 19:26:44, Kishon Vijay Abraham I wrote: 
+> On Monday 24 February 2014 07:02 PM, Yuvaraj Kumar C D wrote:
+> > This patch adds the SATA PHY driver for Exynos5250.Exynos5250 SATA
+> > PHY comprises of CMU and TRSV blocks which are of I2C register Map.
+> > So this patch also adds a i2c client driver, which is used configure
+> 
+> We no longer have i2c client driver here.
 
-The U-Boot checkpatch is not the same as the current
-linux version and would need updating.
+Right.
 
-Tell me a little more please about how often or possible
-it would be to update the current linux version of
-checkpatch to the version used in U-Boot.
+> > the CMU and TRSV block of exynos5250 SATA PHY.
+> > 
+> > This patch incorporates the generic PHY framework to deal with SATA
+> > PHY.
+> 
+> It should be rephrased to have *uses* generic PHY framework. However I feel we
+> can do away with this line.
 
+Right, "incorporates" is confusing.
 
+> > 
+> > This patch depends on the below patch for the sata functionality
+> > 	[1].ata: ahci_platform: Manage SATA PHY
+> > 		by Roger Quadros <rogerq@xxxxxx>
+> 
+> hasn't this patch merged yet?
+
+Currently, this patch was queued into libata tree, for-next. [1]
+
+[1] http://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/commit/?h=for-next&id=21b5faeec229d4f70a7f60a7b0b065c98198f491
+
+Best regards,
+Jingoo HanˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
