@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaBYIu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 03:50:28 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:57637 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaBYIuZ (ORCPT
+	id S1752352AbaBYIud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 03:50:33 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51897 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210AbaBYIua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 03:50:25 -0500
+	Tue, 25 Feb 2014 03:50:30 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net, skannan@codeaurora.org
 Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/3] cpufreq: Initialize policy before making it available for others to use
-Date: Tue, 25 Feb 2014 14:20:10 +0530
-Message-Id: <57b8ab66ba21f42c91311641319cec16d2c8923d.1393318100.git.viresh.kumar@linaro.org>
+Subject: [PATCH 3/3] cpufreq: initialize governor for a new policy under policy->rwsem
+Date: Tue, 25 Feb 2014 14:20:11 +0530
+Message-Id: <3305df5abda26f22c501e5fa27ee7e2c8845b024.1393318100.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <9f9546137135103556c69815c72b81ed93cc1ca2.1393318100.git.viresh.kumar@linaro.org>
 References: <9f9546137135103556c69815c72b81ed93cc1ca2.1393318100.git.viresh.kumar@linaro.org>
@@ -25,61 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Policy must be fully initialized before it is being made available for use by
-others. This patch moves some initialization code before making policy available
-for others.
+policy->rwsem is used to lock access to all parts of code modifying struct
+cpufreq_policy but wasn't used on a new policy created from __cpufreq_add_dev().
 
+Because of which if we call cpufreq_update_policy() repeatedly on one CPU and do
+offline/online of another CPU then we might see these crashes:
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000020
+pgd = c0003000
+[00000020] *pgd=80000000004003, *pmd=00000000
+Internal error: Oops: 206 [#1] PREEMPT SMP ARM
+
+PC is at __cpufreq_governor+0x10/0x1ac
+LR is at cpufreq_update_policy+0x114/0x150
+
+---[ end trace f23a8defea6cd706 ]---
+Kernel panic - not syncing: Fatal exception
+CPU0: stopping
+CPU: 0 PID: 7136 Comm: mpdecision Tainted: G      D W    3.10.0-gd727407-00074-g979ede8 #396
+
+[<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58)
+[<c02a23ac>] (__blocking_notifier_call_chain+0x40/0x58) from [<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c)
+[<c02a23d8>] (blocking_notifier_call_chain+0x14/0x1c) from [<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8)
+[<c0803c68>] (cpufreq_set_policy+0xd4/0x2b8) from [<c0803e7c>] (cpufreq_init_policy+0x30/0x98)
+[<c0803e7c>] (cpufreq_init_policy+0x30/0x98) from [<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4)
+[<c0805a18>] (__cpufreq_add_dev.isra.17+0x4dc/0x7a4) from [<c0805d38>] (cpufreq_cpu_callback+0x58/0x84)
+[<c0805d38>] (cpufreq_cpu_callback+0x58/0x84) from [<c0afe180>] (notifier_call_chain+0x40/0x68)
+[<c0afe180>] (notifier_call_chain+0x40/0x68) from [<c02812dc>] (__cpu_notify+0x28/0x44)
+[<c02812dc>] (__cpu_notify+0x28/0x44) from [<c0aeed90>] (_cpu_up+0xf4/0x1dc)
+[<c0aeed90>] (_cpu_up+0xf4/0x1dc) from [<c0aeeed4>] (cpu_up+0x5c/0x78)
+[<c0aeeed4>] (cpu_up+0x5c/0x78) from [<c0aec808>] (store_online+0x44/0x74)
+[<c0aec808>] (store_online+0x44/0x74) from [<c03a40f4>] (sysfs_write_file+0x108/0x14c)
+[<c03a40f4>] (sysfs_write_file+0x108/0x14c) from [<c03517d4>] (vfs_write+0xd0/0x180)
+[<c03517d4>] (vfs_write+0xd0/0x180) from [<c0351ca8>] (SyS_write+0x38/0x68)
+[<c0351ca8>] (SyS_write+0x38/0x68) from [<c0205de0>] (ret_fast_syscall+0x0/0x30)
+
+Fix these by taking locks at appropriate places in __cpufreq_add_dev() as well.
+
+Reported-by: Saravana Kannan <skannan@codeaurora.org>
+Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ drivers/cpufreq/cpufreq.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index cc4f244..110c0cd 100644
+index 110c0cd..513d1d4 100644
 --- a/drivers/cpufreq/cpufreq.c
 +++ b/drivers/cpufreq/cpufreq.c
-@@ -1116,6 +1116,20 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		goto err_set_policy_cpu;
+@@ -1130,6 +1130,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		policy->user_policy.max = policy->max;
  	}
  
-+	/* related cpus should atleast have policy->cpus */
-+	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
-+
-+	/*
-+	 * affected cpus must always be the one, which are online. We aren't
-+	 * managing offline cpus here.
-+	 */
-+	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
-+
-+	if (!frozen) {
-+		policy->user_policy.min = policy->min;
-+		policy->user_policy.max = policy->max;
-+	}
-+
++	down_write(&policy->rwsem);
  	write_lock_irqsave(&cpufreq_driver_lock, flags);
  	for_each_cpu(j, policy->cpus)
  		per_cpu(cpufreq_cpu_data, j) = policy;
-@@ -1169,20 +1183,6 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		}
+@@ -1204,6 +1205,7 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+ 		policy->user_policy.policy = policy->policy;
+ 		policy->user_policy.governor = policy->governor;
  	}
++	up_write(&policy->rwsem);
  
--	/* related cpus should atleast have policy->cpus */
--	cpumask_or(policy->related_cpus, policy->related_cpus, policy->cpus);
--
--	/*
--	 * affected cpus must always be the one, which are online. We aren't
--	 * managing offline cpus here.
--	 */
--	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
--
--	if (!frozen) {
--		policy->user_policy.min = policy->min;
--		policy->user_policy.max = policy->max;
--	}
--
- 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
- 				     CPUFREQ_START, policy);
- 
+ 	kobject_uevent(&policy->kobj, KOBJ_ADD);
+ 	up_read(&cpufreq_rwsem);
 -- 
 1.7.12.rc2.18.g61b472e
 
