@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaBYRTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 12:19:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47827 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634AbaBYRTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 12:19:51 -0500
-Date: Tue, 25 Feb 2014 18:19:40 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Alexander Graf <agraf@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+	id S1753271AbaBYRfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:35:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:65329 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752936AbaBYRfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 12:35:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,541,1389772800"; 
+   d="scan'208";a="489593593"
+Message-ID: <530CD443.7010400@intel.com>
+Date: Tue, 25 Feb 2014 09:34:59 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Alexander Graf <agraf@suse.de>, linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
         Izik Eidus <izik.eidus@ravellosystems.com>,
         Andrea Arcangeli <aarcange@redhat.com>
 Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-Message-ID: <20140225171940.GS6835@laptop.programming.kicks-ass.net>
 References: <1393284484-27637-1-git-send-email-agraf@suse.de>
- <20140225171528.GJ4407@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140225171528.GJ4407@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1393284484-27637-1-git-send-email-agraf@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 12:15:28PM -0500, Johannes Weiner wrote:
-> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
-> > Configuration of tunables and Linux virtual memory settings has traditionally
-> > happened via sysctl. Thanks to that there are well established ways to make
-> > sysctl configuration bits persistent (sysctl.conf).
-> > 
-> > KSM introduced a sysfs based configuration path which is not covered by user
-> > space persistent configuration frameworks.
-> > 
-> > In order to make life easy for sysadmins, this patch adds all access to all
-> > KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
-> > giving us a streamlined way to make KSM configuration persistent.
-> > 
-> > Reported-by: Sasche Peilicke <speilicke@suse.com>
-> > Signed-off-by: Alexander Graf <agraf@suse.de>
-> > ---
-> >  kernel/sysctl.c |   10 +++++++
-> >  mm/ksm.c        |   78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 88 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> > index 332cefc..2169a00 100644
-> > --- a/kernel/sysctl.c
-> > +++ b/kernel/sysctl.c
-> > @@ -217,6 +217,9 @@ extern struct ctl_table random_table[];
-> >  #ifdef CONFIG_EPOLL
-> >  extern struct ctl_table epoll_table[];
-> >  #endif
-> > +#ifdef CONFIG_KSM
-> > +extern struct ctl_table ksm_table[];
-> > +#endif
-> >  
-> >  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
-> >  int sysctl_legacy_va_layout;
-> > @@ -1279,6 +1282,13 @@ static struct ctl_table vm_table[] = {
-> >  	},
-> >  
-> >  #endif /* CONFIG_COMPACTION */
-> > +#ifdef CONFIG_KSM
-> > +	{
-> > +		.procname	= "ksm",
-> > +		.mode		= 0555,
-> > +		.child		= ksm_table,
-> > +	},
-> > +#endif
+On 02/24/2014 03:28 PM, Alexander Graf wrote:
+> Configuration of tunables and Linux virtual memory settings has traditionally
+> happened via sysctl. Thanks to that there are well established ways to make
+> sysctl configuration bits persistent (sysctl.conf).
 > 
-> ksm can be a module, so this won't work.
+> KSM introduced a sysfs based configuration path which is not covered by user
+> space persistent configuration frameworks.
 > 
-> Can we make those controls proper module parameters instead?
+> In order to make life easy for sysadmins, this patch adds all access to all
+> KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
+> giving us a streamlined way to make KSM configuration persistent.
 
-You can do dynamic sysctl registration and removal. Its its own little
-filesystem of sorts.
+Doesn't this essentially mean "don't use sysfs for configuration"?
+Seems like at least /sys/kernel/mm/transparent_hugepage would need the
+same treatment.
+
+Couldn't we also (maybe in parallel) just teach the sysctl userspace
+about sysfs?  This way we don't have to do parallel sysctls and sysfs
+for *EVERYTHING* in the kernel:
+
+	sysfs.kernel.mm.transparent_hugepage.enabled=enabled
+
+Or do we just say "sysctls are the way to go for anything that might
+need to be persistent, don't use sysfs"?
