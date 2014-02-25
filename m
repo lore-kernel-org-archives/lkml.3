@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaBYU63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 15:58:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50031 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaBYU60 (ORCPT
+	id S1753496AbaBYU7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 15:59:37 -0500
+Received: from forward7l.mail.yandex.net ([84.201.143.140]:35544 "EHLO
+	forward7l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaBYU7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 15:58:26 -0500
-Message-ID: <530D0394.4020208@ti.com>
-Date: Tue, 25 Feb 2014 14:56:52 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Mark Brown <broonie@kernel.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/6] PM / Voltagedomain: Add generic clk notifier
- handler for regulator based dynamic voltage scaling
-References: <1392755543-28335-1-git-send-email-nm@ti.com> <1392755543-28335-2-git-send-email-nm@ti.com> <20140225055142.22529.21814@quantum>
-In-Reply-To: <20140225055142.22529.21814@quantum>
+	Tue, 25 Feb 2014 15:59:36 -0500
+X-Yandex-Uniq: 757c79e5-2eb6-4b7b-885a-25a5a4f5b11a
+Authentication-Results: smtp17.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1393361805.12438.6.camel@HP-250-G1-Notebook-PC>
+Subject: Re: [PATCH] sched/rt: fix rt timer activation/deactivation
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 26 Feb 2014 00:56:45 +0400
+In-Reply-To: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
+References: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-On 02/24/2014 11:51 PM, Mike Turquette wrote:
-> Quoting Nishanth Menon (2014-02-18 12:32:18)
->> From: Mike Turquette <mturquette@linaro.org>
->>
->> This patch provides helper functions for drivers that wish to scale
->> voltage through the clock rate-change notifiers. The approach taken
->> is that the user-driver(cpufreq/devfreq) do not care about the
->> details of the OPP table, nor does it care about handling the voltage
->> regulator directly.
->>
->> By using the clk notifier flags, we are able to sequence the operations
->> in the right order. The current logic is heavily influenced by
->> implementation done in cpufreq-cpu0.
->>
->> [nm@ti.com: Fixes in logic, and broken out from clk to allow building
->> a generic voltagedomain solution independent of cpufreq]
->> Signed-off-by: Nishanth Menon <nm@ti.com>
->> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+On Вт, 2014-02-25 at 17:05 +0100, Juri Lelli wrote:
+> Destroy rt bandwidth timer when rq has no more RT tasks, even when
+> CONFIG_RT_GROUP_SCHED is not set.
 > 
-> Not-signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+> ---
+>  kernel/sched/rt.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
 > 
-> I haven't reviewed this series and it is a pretty big deviation from my
-> original RFC. You can have authorship of the patches if you want.
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index a2740b7..7dba25a 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -86,12 +86,12 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
+>  	raw_spin_lock_init(&rt_rq->rt_runtime_lock);
+>  }
+>  
+> -#ifdef CONFIG_RT_GROUP_SCHED
+>  static void destroy_rt_bandwidth(struct rt_bandwidth *rt_b)
+>  {
+>  	hrtimer_cancel(&rt_b->rt_period_timer);
+>  }
+>  
+> +#ifdef CONFIG_RT_GROUP_SCHED
+>  #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
+>  
+>  static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
+> @@ -1011,8 +1011,12 @@ inc_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>  	start_rt_bandwidth(&def_rt_bandwidth);
+>  }
+>  
+> -static inline
+> -void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
+> +static void
+> +dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+> +{
+> +	if (!rt_rq->rt_nr_running)
+> +		destroy_rt_bandwidth(&def_rt_bandwidth);
+> +}
 
-Sure, I had send a private note requesting clarification about the
-authorship, but I guess I can take this as the response :).
+The problem is bandwidth timer is not per-cpu. It's only for all
+processors from the span (sched_rt_period_mask()). Other CPUs may
+have enqueued RT tasks. So, it's not possible to do this.
 
-> 
-> I'm not sure about trying to capture the "voltdm" as a core concept. It
-> feels a bit unwieldy to me.
+>  
+>  #endif /* CONFIG_RT_GROUP_SCHED */
+>  
 
-Considering it is a simple collation of regulators and SoC specific
-"magic" which have to be operated in tandem to clock operation, Why
-does it seem unwieldy? Usage of multiple voltage planes in a single
-voltage domain concept does not seem unique to TI processors either:
-For example, imx6q-cpufreq.c uses 3 regulators (arm, pu, soc),
-s5pv210-cpufreq.c uses two regulators (vddarm, vddint), ideally OMAP
-implementation would use two (vdd_mpu, vbb_mpu).
 
-> I have wondered about making an abstract
-> "performance domain" which is the dvfs analogue to generic power
-> domains. This a reasonable split since gpd are good for idle power
-> savings (e.g. clock gate, power gate, sleep state, etc) and "perf
-> domains" would be good for active power savings (dvfs).
-> 
-> Having a generic container for performance domains might make a good
-> place to stuff all of this glue logic that we keep running into (e.g.
-> CPU and GPU max frequencies that are related), and it might make another
-> nice knob for the thermal folks to use.
-
-This sounds like one level higher abstraction that we are speaking of
-here? I was'nt intending to solve the bigger picture problem here -
-just an abstraction level that might allow reusablity for multiple
-SoCs. In fact, having an abstraction away for voltage domain(which may
-consist of multiple regulators and any SoC specific magic) purely
-allows us to move towards a direction you mention here.
-
-> 
-> For the case of the OMAP voltage domains, it would be a place to stuff
-> all of the VC/VP -> ABB -> Smart Reflex AVS stuff.
-> 
-
-Unfortunately, I dont completely comprehend objection we have to this
-approach (other than an higher level abstraction is needed) and if we
-do have an objection, what is the alternate approach should be for
-representing hardware which this series attempts to present.
-
--- 
-Regards,
-Nishanth Menon
