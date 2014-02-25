@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaBYSgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:36:35 -0500
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:56419 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbaBYSge (ORCPT
+	id S1753813AbaBYShj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 13:37:39 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:36099 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaBYShi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:36:34 -0500
-X-Greylist: delayed 60339 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 13:36:34 EST
-Message-ID: <1393353389.2577.40.camel@buesod1.americas.hpqcorp.net>
+	Tue, 25 Feb 2014 13:37:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+Date: Tue, 25 Feb 2014 10:37:37 -0800
+X-Google-Sender-Auth: 1HY-HULnArUwCFERnIFOYD_ScIE
+Message-ID: <CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
 Subject: Re: [PATCH v2] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Rik van Riel <riel@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Feb 2014 10:36:29 -0800
-In-Reply-To: <530CDFE0.10800@redhat.com>
-References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-	 <530CDFE0.10800@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 13:24 -0500, Rik van Riel wrote:
-> On 02/25/2014 01:16 PM, Davidlohr Bueso wrote:
-> 
-> > The proposed approach is to keep the current cache and adding a small, per
-> > thread, LRU cache. By keeping the mm->mmap_cache, 
-> 
-> This bit of the changelog may want updating :)
+On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> index a17621c..14396bf 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -363,7 +363,12 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+>
+>         mm->locked_vm = 0;
+>         mm->mmap = NULL;
+> -       mm->mmap_cache = NULL;
+> +       mm->vmacache_seqnum = oldmm->vmacache_seqnum + 1;
+> +
+> +       /* deal with overflows */
+> +       if (unlikely(mm->vmacache_seqnum == 0))
+> +               vmacache_invalidate_all();
 
-bah, yes thanks.
+Correct me if I'm wrong, but this can not possibly be correct.
 
+vmacache_invalidate_all() walks over all the threads of the current
+process, but "mm" here is the mm of the *new* process that is getting
+created, and is unrelated in all ways to the threads of the old
+process.
 
+So it walks completely the wrong list of threads.
+
+In fact, the sequence number of the old vm and the sequence number of
+the new vm cannot in any way be related.
+
+As far as I can tell, the only sane thing to do at fork/clone() time is to:
+
+ - clear all the cache entries (of the new 'struct task_struct'! - so
+not in dup_mmap, but make sure it's zeroed when allocating!)(
+
+ - set vmcache_seqnum to 0 in dup_mmap (since any sequence number is
+fine when it got invalidated, and 0 is best for "avoid overflow").
+
+but I haven't thought deeply about this, but I pretty much guarantee
+that the quoted sequence above is wrong as-is.
+
+               Linus
