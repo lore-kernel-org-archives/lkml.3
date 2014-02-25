@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaBYRpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 12:45:53 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:39940 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaBYRpv (ORCPT
+	id S1753540AbaBYRrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:47:12 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:51480 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301AbaBYRrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 12:45:51 -0500
+	Tue, 25 Feb 2014 12:47:11 -0500
+Message-ID: <530CD71F.9030908@arm.com>
+Date: Tue, 25 Feb 2014 17:47:11 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <343228200.20140213224922@eikelenboom.it>
-References: <1859471893.20140126115521@eikelenboom.it>
-	<20140127000305.GA14236@electric-eye.fr.zoreil.com>
-	<CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com>
-	<84816226.20140206123631@eikelenboom.it>
-	<942972114.20140206140909@eikelenboom.it>
-	<CAPcyv4g2EnCLFWfLfSDnjtwrid2tCq2k6wh-8sPYY06eJpM83A@mail.gmail.com>
-	<1434499348.20140211205617@eikelenboom.it>
-	<CAPcyv4juAS0ODRPKE-_wXYu5bixLnvsgs3jgo4vzWcatfnyVsw@mail.gmail.com>
-	<1392178661.1752.1.camel@edumazet-glaptop2.roam.corp.google.com>
-	<1392322487.11022.4.camel@dwillia2-mobl2.amr.corp.intel.com>
-	<343228200.20140213224922@eikelenboom.it>
-Date: Tue, 25 Feb 2014 12:45:49 -0500
-X-Google-Sender-Auth: eKXLBlggIbh8VpKi8MD1vRhslbE
-Message-ID: <CA+5PVA6qBChBat-f-90uS-O=pXvcFTx_G2k+xntUSZh37Bc4RQ@mail.gmail.com>
-Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7
- overlapping mappings of pfn 55ebe
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Wei Liu <wei.liu2@citrix.com>, Francois Romieu <romieu@fr.zoreil.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ben Segall <bsegall@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
+References: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com> <20140225131642.GA3265@linux.vnet.ibm.com>
+In-Reply-To: <20140225131642.GA3265@linux.vnet.ibm.com>
+X-OriginalArrivalTime: 25 Feb 2014 17:47:14.0172 (UTC) FILETIME=[9E023BC0:01CF3251]
+X-MC-Unique: 114022517470904101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 13, 2014 at 4:49 PM, Sander Eikelenboom
-<linux@eikelenboom.it> wrote:
->
-> Thursday, February 13, 2014, 9:14:47 PM, you wrote:
->
->> On Tue, 2014-02-11 at 20:17 -0800, Eric Dumazet wrote:
->>> On Tue, 2014-02-11 at 18:07 -0800, Dan Williams wrote:
->>>
->>> > The overlap granularity is too large.  Multiple dma_map_single
->>> > mappings are allowed to a given page as long as they don't collide on
->>> > the same cache line.
->>> >
->>>
->>> I am not sure why you try number of mappings of a page.
->>>
->>> Try launching 100 concurrent netperf -t TCP_SENFILE
->>>
->>> Same page might be mapped more than 100 times, more than 10000 times in
->>> some cases.
->
->> Thanks for that test case.
->
->> I updated the fix patch with the following.
->
->> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
->> index 42b12740940b..611010df1e9c 100644
->> --- a/lib/dma-debug.c
->> +++ b/lib/dma-debug.c
->> @@ -513,6 +513,13 @@ static int active_cln_insert(struct dma_debug_entry *entry)
->>         unsigned long flags;
->>         int rc;
+On 25/02/14 13:16, Srikar Dronamraju wrote:
+>> The struct sched_avg of struct rq is only used in case group
+>> scheduling is enabled inside __update_tg_runnable_avg() to update
+>> per-cpu representation of a task group.  I.e. that there is no need to
+>> maintain the runnable avg of a rq in the !CONFIG_FAIR_GROUP_SCHED case.
 >>
->> +       /* If the device is not writing memory then we don't have any
->> +        * concerns about the cpu consuming stale data.  This mitigates
->> +        * legitimate usages of overlapping mappings.
->> +        */
-> +       if (entry->>direction == DMA_TO_DEVICE)
->> +               return 0;
->> +
->>         spin_lock_irqsave(&radix_lock, flags);
->>         rc = radix_tree_insert(&dma_active_cacheline, to_cln(entry), entry);
->>         if (rc == -EEXIST)
->> @@ -526,6 +533,10 @@ static void active_cln_remove(struct dma_debug_entry *entry)
->>  {
->>         unsigned long flags;
+>> This patch guards struct sched_avg of struct rq and
+>> update_rq_runnable_avg() with CONFIG_FAIR_GROUP_SCHED.
 >>
->> +       /* ...mirror the insert case */
-> +       if (entry->>direction == DMA_TO_DEVICE)
->> +               return;
->> +
->>         spin_lock_irqsave(&radix_lock, flags);
->>         /* since we are counting overlaps the final put of the
->>          * cacheline will occur when the overlap count is 0.
->
->
->> Sander, barring a negative test result from you I'll send the attached
->> patch to Andrew.
->
-> Hi Dan,
->
-> That seems to effectively suppress the warning, thanks and:
->
-> Tested-by; Sander Eikelenboom <linux@eikelenboom.it>
+> 
+> While this patch looks good, I see fields in sched_avg viz decay_count,
+> last_runnable_update, load_avg_contrib  only relevant to sched_entity.
+> i.e they don't seem to be updated or used for rq->avg. Should we look at
+> splitting sched_avg so that rq->avg doesn't have unwanted fields?
 
-Is there a reason this isn't in Linus' tree yet?
+Yes, AFAICS at least load_avg_contrib and decay_count are only relevant
+for struct sched_entity whereas last_runnable_update is used in
+__update_entity_runnable_avg() itself.
 
-josh
+By having struct sched_avg embedded into struct sched_entity and struct
+rq, __update_entity_runnable_avg() and __update_tg_runnable_avg() can be
+used on both and moreover, all current members of struct sched_avg
+belong logically together.
+
+With this patch I was more interested in the fact that we do not have to
+maintain the load avg for struct rq in a !CONFIG_FAIR_GROUP_SCHED system.
+
+-- Dietmar
+
+> 
+> --
+> Thanks and Regards
+> Srikar Dronamraju
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
