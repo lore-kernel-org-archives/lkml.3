@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaBYPa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:30:57 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:41128 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683AbaBYPaz (ORCPT
+	id S1753343AbaBYPbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:31:32 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47658 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaBYPbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:30:55 -0500
-Message-ID: <530CB725.5070904@gmail.com>
-Date: Tue, 25 Feb 2014 16:30:45 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-To: Jason Cooper <jason@lakedaemon.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140224181023.GA1010@titan.lakedaemon.net> <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com> <20140225151656.GI1010@titan.lakedaemon.net>
-In-Reply-To: <20140225151656.GI1010@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 10:31:31 -0500
+Date: Tue, 25 Feb 2014 10:33:37 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <20140225094352.73e0e28c@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <18f0cea3-7e3b-4477-b433-0269f3de976b@email.android.com> <alpine.DEB.2.10.1402241204070.20170@vincent-weaver-1.um.maine.edu> <20140224172536.GD9987@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu> <530B841F.5050803@zytor.com> <alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu> <530B90A5.3090302@zytor.com>
+ <20140224141329.1cd3bb52@gandalf.local.home> <20140224193043.GP6835@laptop.programming.kicks-ass.net> <530C12CA.6070308@zytor.com> <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
+ <20140225094352.73e0e28c@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/14 16:16, Jason Cooper wrote:
-> On Tue, Feb 25, 2014 at 10:36:54AM +0100, Linus Walleij wrote:
->> On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
->>> I've now created mvebu/pinctrl-dove for this series.  It's based on
->>> v3.14-rc1, and depends on mvebu/pinctrl (which depends on
->>> mvebu/pinctrl-3xx).
->>>
->>> I've kept this series in a separate branch in case we encounter an
->>> unforeseen problem with something in here.  Then this branch can be
->>> dropped, and /pinctrl-3xx and /pinctrl will still make it in.
->>>
->>> So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
->>> in mvebu/dt.
->>
->> OK so what should I be pulling in first now?
->
-> Of course I woke up this morning not happy with this :-/  Here's what it
-> looks like currently:
->
->    /v3.14-rc1
->    |
-> --+---+---+---+---+ mvebu/pinctrl-3xx
->    |               \
->    |---+---+---+---+---+---+---+ mvebu/pinctrl
->    \                           \
->     \---------------------------+---+---+---+ mvebu/pinctrl-dove
->
-> Not to scale.
->
->
-> I would prefer to do:
->
->    /v3.14-rc1
->    |
-> --+---+---+---+---+ mvebu/pinctrl-cleanup
->    |               \
->    |----------------+--+---+---+ mvebu/pinctrl-3xx
->    \                \
->     \----------------+---+---+--+---+---+---+ mvebu/pinctrl-dove
->
-> But this would mean moving some patches to branches other than what they
-> were sent with.  The advantage is that /pinctrl-3xx and /pinctrl-dove
-> don't depend on each other, and only depend on -cleanup.  Which is great
-> if there is something wrong in either branch.
->
-> Sebastian, I can cherry-pick the patches around, but you know the code
-> better than any of us, do you foresee any problems with this scenario?
+On Tue, 25 Feb 2014, Steven Rostedt wrote:
 
-If Thomas agrees, I can rework Armada 375/38x pinctrl stubs to fit on
-mvebu/pinctrl. That should allow you to have mvebu/pinctrl-dove
-independent of mvebu/pinctrl-3xx.
+> On Tue, 25 Feb 2014 06:34:55 -0800
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> 
+> > #2 is what I really don't understand.
+> > 
+> > I worry something else is going on there
+> 
+> Yeah, me too.
+> 
 
-Not a big deal, I'd just pick 375/38x patches from mvebu/pinctrl and 
-squash them into mvebu/pinctrl-3xx. The only "issue" is that DT
-documentation update patches from mvebu/pinctrl-dove have to be split
-too.
+OK, well I'll work on isolating that next, I was hoping the segfault issue 
+was related.  It's a lot harder getting traces out of a machine that 
+insta-reboots so fast that it can't even finish printing the oops message.
 
-I'll prepare the three new branches for you and Thomas to look at
-today.
+I need my testing machine for some unrelated experiments so I might not 
+get a chance to work on this further for a day or two.
 
-Sebastian
-
+Vince
