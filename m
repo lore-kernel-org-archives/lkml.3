@@ -1,90 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaBYDcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 22:32:54 -0500
-Received: from ozlabs.org ([203.10.76.45]:37848 "EHLO ozlabs.org"
+	id S1753174AbaBYDdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:33:33 -0500
+Received: from ozlabs.org ([203.10.76.45]:59732 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181AbaBYDcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 22:32:53 -0500
-Date: Tue, 25 Feb 2014 14:32:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the mfd-lj tree
-Message-Id: <20140225143246.914c9732966764234bc51de2@canb.auug.org.au>
-In-Reply-To: <20140220150508.79bfff95fb5d93c651801ffd@canb.auug.org.au>
-References: <20140214134217.aa7e1994b4cab7ee563c8307@canb.auug.org.au>
-	<20140217141446.454ab86eb19621fd397be6ed@canb.auug.org.au>
-	<20140220150508.79bfff95fb5d93c651801ffd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Feb_2014_14_32_46_+1100_FyNMutQDxv8dKUFb"
+	id S1753060AbaBYDda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 22:33:30 -0500
+In-Reply-To: <1392415338-16288-10-git-send-email-cody@linux.vnet.ibm.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v2 09/11] powerpc/perf: add support for the hv 24x7 interface
+Message-Id: <20140225033329.BBB492C033B@ozlabs.org>
+Date: Tue, 25 Feb 2014 14:33:29 +1100 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Feb_2014_14_32_46_+1100_FyNMutQDxv8dKUFb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-14-02 at 22:02:13 UTC, Cody P Schafer wrote:
+> This provides a basic interface between hv_24x7 and perf. Similar to
+> the one provided for gpci, it lacks transaction support and does not
+> list any events.
+> 
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/perf/hv-24x7.c | 491 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 491 insertions(+)
+>  create mode 100644 arch/powerpc/perf/hv-24x7.c
+> 
+> diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
+> new file mode 100644
+> index 0000000..13de140
+> --- /dev/null
+> +++ b/arch/powerpc/perf/hv-24x7.c
+...
+> +
+> +/*
+> + * read_offset_data - copy data from one buffer to another while treating the
+> + *                    source buffer as a small view on the total avaliable
+> + *                    source data.
+> + *
+> + * @dest: buffer to copy into
+> + * @dest_len: length of @dest in bytes
+> + * @requested_offset: the offset within the source data we want. Must be > 0
+> + * @src: buffer to copy data from
+> + * @src_len: length of @src in bytes
+> + * @source_offset: the offset in the sorce data that (src,src_len) refers to.
+> + *                 Must be > 0
+> + *
+> + * returns the number of bytes copied.
+> + *
+> + * '.' areas in d are written to.
+> + *
+> + *                       u
+> + *   x         w	 v  z
+> + * d           |.........|
+> + * s |----------------------|
+> + *
+> + *                      u
+> + *   x         w	z     v
+> + * d           |........------|
+> + * s |------------------|
+> + *
+> + *   x         w        u,z,v
+> + * d           |........|
+> + * s |------------------|
+> + *
+> + *   x,w                u,v,z
+> + * d |------------------|
+> + * s |------------------|
+> + *
+> + *   x        u
+> + *   w        v		z
+> + * d |........|
+> + * s |------------------|
+> + *
+> + *   x      z   w      v
+> + * d            |------|
+> + * s |------|
+> + *
+> + * x = source_offset
+> + * w = requested_offset
+> + * z = source_offset + src_len
+> + * v = requested_offset + dest_len
+> + *
+> + * w_offset_in_s = w - x = requested_offset - source_offset
+> + * z_offset_in_s = z - x = src_len
+> + * v_offset_in_s = v - x = request_offset + dest_len - src_len
+> + * u_offset_in_s = min(z_offset_in_s, v_offset_in_s)
+> + *
+> + * copy_len = u_offset_in_s - w_offset_in_s = min(z_offset_in_s, v_offset_in_s)
+> + *						- w_offset_in_s
 
-Hi Lee,
+Comments are great, especially for complicated code like this. But at a glance
+I don't actually understand what this comment is trying to tell me.
 
-On Thu, 20 Feb 2014 15:05:08 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Mon, 17 Feb 2014 14:14:46 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > On Fri, 14 Feb 2014 13:42:17 +1100 Stephen Rothwell <sfr@canb.auug.org.=
-au> wrote:
-> > >
-> > > After merging the mfd-lj tree, today's linux-next build (x86_64
-> > > allmodconfig) failed like this:
-> > >=20
-> > > In file included from drivers/mfd/max665x.c:19:0:
-> > > include/linux/mfd/max665x-private.h:31:1: error: expected ';', identi=
-fier or '(' before 'struct'
-> > >  struct max665x_dev {
-> > >  ^
-> > >=20
-> > > Caused by commit e77bb5297293 ("mfd: max665x: Differentiate between
-> > > MAX665X devices").  Clearly never built by anyone :-(
-> > >=20
-> > > I have used the mfd-lj tree from next-20140210 again for today (since=
- the
-> > > other version had other problems).
-> >=20
-> > Still seeing this error.
->=20
-> Still ...
+> + */
+> +static ssize_t read_offset_data(void *dest, size_t dest_len,
+> +				loff_t requested_offset, void *src,
+> +				size_t src_len, loff_t source_offset)
+> +{
+> +	size_t w_offset_in_s = requested_offset - source_offset;
+> +	size_t z_offset_in_s = src_len;
+> +	size_t v_offset_in_s = requested_offset + dest_len - src_len;
+> +	size_t u_offset_in_s = min(z_offset_in_s, v_offset_in_s);
+> +	size_t copy_len = u_offset_in_s - w_offset_in_s;
+> +
+> +	if (requested_offset < 0 || source_offset < 0)
+> +		return -EINVAL;
+> +
+> +	if (z_offset_in_s <= w_offset_in_s)
+> +		return 0;
+> +
+> +	memcpy(dest, src + w_offset_in_s, copy_len);
+> +	return copy_len;
+> +}
+> +
+> +static unsigned long h_get_24x7_catalog_page(char page[static 4096],
+> +					     u32 version, u32 index)
+> +{
+> +	WARN_ON(!IS_ALIGNED((unsigned long)page, 4096));
+> +	return plpar_hcall_norets(H_GET_24X7_CATALOG_PAGE,
+> +			virt_to_phys(page),
+> +			version,
+> +			index);
+> +}
+> +
+> +static ssize_t catalog_read(struct file *filp, struct kobject *kobj,
+> +			    struct bin_attribute *bin_attr, char *buf,
+> +			    loff_t offset, size_t count)
+> +{
+> +	unsigned long hret;
+> +	ssize_t ret = 0;
+> +	size_t catalog_len = 0, catalog_page_len = 0, page_count = 0;
+> +	loff_t page_offset = 0;
+> +	uint32_t catalog_version_num = 0;
+> +	void *page = kmalloc(4096, GFP_USER);
+> +	struct hv_24x7_catalog_page_0 *page_0 = page;
+> +	if (!page)
+> +		return -ENOMEM;
+> +
+> +
+> +	hret = h_get_24x7_catalog_page(page, 0, 0);
+> +	if (hret) {
+> +		ret = -EIO;
+> +		goto e_free;
+> +	}
+> +
+> +	catalog_version_num = be32_to_cpu(page_0->version);
+> +	catalog_page_len = be32_to_cpu(page_0->length);
+> +	catalog_len = catalog_page_len * 4096;
+> +
+> +	page_offset = offset / 4096;
+> +	page_count  = count  / 4096;
+> +
+> +	if (page_offset >= catalog_page_len)
+> +		goto e_free;
+> +
+> +	if (page_offset != 0) {
+> +		hret = h_get_24x7_catalog_page(page, catalog_version_num,
+> +					       page_offset);
+> +		if (hret) {
+> +			ret = -EIO;
+> +			goto e_free;
+> +		}
+> +	}
+> +
+> +	ret = read_offset_data(buf, count, offset,
+> +				page, 4096, page_offset * 4096);
+> +e_free:
+> +	if (hret)
+> +		pr_err("h_get_24x7_catalog_page(ver=%d, page=%lld) failed: rc=%ld\n",
+> +				catalog_version_num, page_offset, hret);
+> +	kfree(page);
+> +
+> +	pr_devel("catalog_read: offset=%lld(%lld) count=%zu(%zu) catalog_len=%zu(%zu) => %zd\n",
+> +			offset, page_offset, count, page_count, catalog_len,
+> +			catalog_page_len, ret);
+> +
+> +	return ret;
+> +}
+> +
+> +#define PAGE_0_ATTR(_name, _fmt, _expr)				\
+> +static ssize_t _name##_show(struct device *dev,			\
+> +			    struct device_attribute *dev_attr,	\
+> +			    char *buf)				\
+> +{								\
+> +	unsigned long hret;					\
+> +	ssize_t ret = 0;					\
+> +	void *page = kmalloc(4096, GFP_USER);			\
+> +	struct hv_24x7_catalog_page_0 *page_0 = page;		\
+> +	if (!page)						\
+> +		return -ENOMEM;					\
+> +	hret = h_get_24x7_catalog_page(page, 0, 0);		\
+> +	if (hret) {						\
+> +		ret = -EIO;					\
+> +		goto e_free;					\
+> +	}							\
+> +	ret = sprintf(buf, _fmt, _expr);			\
+> +e_free:								\
+> +	kfree(page);						\
+> +	return ret;						\
+> +}								\
+> +static DEVICE_ATTR_RO(_name)
+> +
+> +PAGE_0_ATTR(catalog_version, "%lld\n",
+> +		(unsigned long long)be32_to_cpu(page_0->version));
+> +PAGE_0_ATTR(catalog_len, "%lld\n",
+> +		(unsigned long long)be32_to_cpu(page_0->length) * 4096);
+> +static BIN_ATTR_RO(catalog, 0/* real length varies */);
 
-Ping ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So we're dumping the catalog out as a binary blob.
 
---Signature=_Tue__25_Feb_2014_14_32_46_+1100_FyNMutQDxv8dKUFb
-Content-Type: application/pgp-signature
+Why do we want to do that?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+It clearly violates the sysfs rule-of-sorts of ASCII and one value per file.
+Obviously there can be exceptions, but what's our justification?
 
-iQIcBAEBCAAGBQJTDA7iAAoJEMDTa8Ir7ZwV5MMP/0M7mq3uYEsLlxYI3AZ6ZcRd
-3z8WyE6bAjH9sqElR2EXuheG47H0IxBEvcqVYEeSVaw6NNGIvVbLnCtYsmDSaVf4
-yaPsrMqe3+FWkeW992B7tZ6aE1fkVHJktPoWAuqsagsEwQ3CP6GMkRFRsR8Tyvf+
-W8OL6W83ZOtQWsD6DeCR2de/HNl+Aebc7JxYPhLAwenExUAFrbTJFYSj/11yizcF
-Cp8qgGEkVNqRY4zwKzwKayRJTnfVswrw4zr/EyUxQxirT2rpyCKQmHOQZJOpVOkM
-2zYZJfNzR6zZtZzoQeS/Aq8maNRa87F8QPSI1tsp6EYghWG6QskzCZQNVM5le+50
-WTtiQ6bfR6XsaU7cpGuGVF5of3aqgB2JHszVA08NzPNPBTvHNgOUTbhf/M5IFyI8
-yH0IEL6sgHVQBCArg6LbAYzzUrHn01v8nxz0mWyyia9tB71GvugStG2i0qrtwPzI
-h2F8v2bAt/BA2FLQAyh+SSoX7A1+9wg8EOK+hy6YEcgf8++hYHUjf3EW7dAOklHL
-/n1GcyoWiu3f71IDkH8WgEKSbi9thKZ+V0yCQ0PJX6/S+zGhRgI2PMQFid64Mlgo
-TS1cIKxaSFy7MX9nJk9U1Q1Qhc9IK8V/yG9d3WvUNQ5GLo/Xod4f0urAhPZDRB92
-d8T7JzWv36c2ppJ7bthG
-=oZ/M
------END PGP SIGNATURE-----
+> +static struct bin_attribute *if_bin_attrs[] = {
+> +	&bin_attr_catalog,
+> +	NULL,
+> +};
+> +
+> +static struct attribute *if_attrs[] = {
+> +	&dev_attr_catalog_len.attr,
+> +	&dev_attr_catalog_version.attr,
+> +	NULL,
+> +};
+> +
+> +static struct attribute_group if_group = {
+> +	.name = "interface",
+> +	.bin_attrs = if_bin_attrs,
+> +	.attrs = if_attrs,
+> +};
 
---Signature=_Tue__25_Feb_2014_14_32_46_+1100_FyNMutQDxv8dKUFb--
+Both pmus have an "interface" directory, but they don't seem to have anything
+in common? Its feels a little ad-hoc.
+
+> +static const struct attribute_group *attr_groups[] = {
+> +	&format_group,
+> +	&if_group,
+> +	NULL,
+> +};
+
+
+cheers
