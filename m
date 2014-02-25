@@ -1,447 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaBYPwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:52:22 -0500
-Received: from mail-bn1lp0157.outbound.protection.outlook.com ([207.46.163.157]:43155
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117AbaBYPwU convert rfc822-to-8bit (ORCPT
+	id S1753489AbaBYPwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:52:34 -0500
+Received: from relay.parallels.com ([195.214.232.42]:37645 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbaBYPwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:52:20 -0500
-X-Greylist: delayed 843 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 10:52:19 EST
-From: "Kulkarni, Ganapatrao" <Ganapatrao.Kulkarni@caviumnetworks.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>
-CC: "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 1/7] arm64: Add ftrace support
-Thread-Topic: [PATCH v4 1/7] arm64: Add ftrace support
-Thread-Index: AQHPMgtt/LXRcg+3e0+pktJrxiIsyprGFlQk
-Date: Tue, 25 Feb 2014 15:38:12 +0000
-Message-ID: <bb10d8181ab547108dd2ce0efafbb493@BLUPR07MB449.namprd07.prod.outlook.com>
-References: <1391768336-5642-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320196-2942-1-git-send-email-takahiro.akashi@linaro.org>,<1393320196-2942-2-git-send-email-takahiro.akashi@linaro.org>
-In-Reply-To: <1393320196-2942-2-git-send-email-takahiro.akashi@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [14.140.2.178]
-x-forefront-prvs: 01334458E5
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(189002)(199002)(377454003)(92566001)(2201001)(93516002)(81342001)(94316002)(81542001)(83322001)(80976001)(19580405001)(19580395003)(86362001)(50986001)(33646001)(74876001)(83072002)(47736001)(4396001)(2656002)(87266001)(85852003)(49866001)(69226001)(47976001)(95416001)(76796001)(56816005)(63696002)(90146001)(76786001)(76576001)(87936001)(74706001)(93136001)(76482001)(51856001)(74662001)(81816001)(59766001)(77982001)(74366001)(85306002)(56776001)(31966008)(54356001)(94946001)(95666003)(79102001)(47446002)(81686001)(46102001)(66066001)(74316001)(54316002)(80022001)(53806001)(74502001)(65816001)(2004002)(21314002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB115;H:BLUPR07MB449.namprd07.prod.outlook.com;CLIP:14.140.2.178;FPR:ECA4F6E6.A1F69D03.D3D1628B.CCDB6A24.20761;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Feb 2014 10:52:30 -0500
+Message-ID: <1393343543.4089.5.camel@tkhai>
+Subject: [PATCH] sched/deadline: Cleanup RT leftovers from
+ {inc/dec}_dl_migration
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <juri.lelli@gmail.com>, <peterz@infradead.org>, <mingo@redhat.com>
+Date: Tue, 25 Feb 2014 19:52:23 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-________________________________________
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Sent: Tuesday, February 25, 2014 2:53 PM
-To: rostedt@goodmis.org; fweisbec@gmail.com; mingo@redhat.com; catalin.marinas@arm.com; will.deacon@arm.com; tim.bird@sonymobile.com
-Cc: Kulkarni, Ganapatrao; dsaxena@linaro.org; arndb@arndb.de; linux-arm-kernel@lists.infradead.org; linaro-kernel@lists.linaro.org; linux-kernel@vger.kernel.org; AKASHI Takahiro
-Subject: [PATCH v4 1/7] arm64: Add ftrace support
+In deadline class we do not have group scheduling.
 
-This patch implements arm64 specific part to support function tracers,
-such as function (CONFIG_FUNCTION_TRACER), function_graph
-(CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
-(CONFIG_FUNCTION_PROFILER).
+So, let's remove unnecessary
 
-With 'function' tracer, all the functions in the kernel are traced with
-timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
-specified, call graph is generated.
+	X = X;
 
-The kernel must be compiled with -pg option so that _mcount() is inserted
-at the beginning of functions. This function is called on every function's
-entry as long as tracing is enabled.
-In addition, function_graph tracer also needs to be able to probe function's
-exit. ftrace_graph_caller() & return_to_handler do this by faking link
-register's value to intercept function's return path.
+equations.
 
-More details on architecture specific requirements are described in
-Documentation/trace/ftrace-design.txt.
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+CC: Juri Lelli <juri.lelli@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>
 ---
- arch/arm64/Kconfig               |    2 +
- arch/arm64/include/asm/ftrace.h  |   23 +++++
- arch/arm64/kernel/Makefile       |    4 +
- arch/arm64/kernel/arm64ksyms.c   |    4 +
- arch/arm64/kernel/entry-ftrace.S |  173 ++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/ftrace.c       |   64 ++++++++++++++
- 6 files changed, 270 insertions(+)
- create mode 100644 arch/arm64/include/asm/ftrace.h
- create mode 100644 arch/arm64/kernel/entry-ftrace.S
- create mode 100644 arch/arm64/kernel/ftrace.c
+ kernel/sched/deadline.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 27bbcfc..5783641 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -33,6 +33,8 @@ config ARM64
-        select HAVE_DMA_ATTRS
-        select HAVE_DMA_CONTIGUOUS
-        select HAVE_EFFICIENT_UNALIGNED_ACCESS
-+       select HAVE_FUNCTION_TRACER
-+       select HAVE_FUNCTION_GRAPH_TRACER
-        select HAVE_GENERIC_DMA_COHERENT
-        select HAVE_HW_BREAKPOINT if PERF_EVENTS
-        select HAVE_MEMBLOCK
-diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
-new file mode 100644
-index 0000000..58ea595
---- /dev/null
-+++ b/arch/arm64/include/asm/ftrace.h
-@@ -0,0 +1,23 @@
-+/*
-+ * arch/arm64/include/asm/ftrace.h
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_FTRACE_H
-+#define __ASM_FTRACE_H
-+
-+#include <asm/insn.h>
-+
-+#define MCOUNT_ADDR            ((unsigned long)_mcount)
-+#define MCOUNT_INSN_SIZE       AARCH64_INSN_SIZE
-+
-+#ifndef __ASSEMBLY__
-+extern void _mcount(unsigned long);
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* __ASM_FTRACE_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 2d4554b..ac67fd0 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -5,6 +5,9 @@
- CPPFLAGS_vmlinux.lds   := -DTEXT_OFFSET=$(TEXT_OFFSET)
- AFLAGS_head.o          := -DTEXT_OFFSET=$(TEXT_OFFSET)
-
-+CFLAGS_REMOVE_ftrace.o = -pg
-+CFLAGS_REMOVE_insn.o = -pg
-+
- # Object file lists.
- arm64-obj-y            := cputable.o debug-monitors.o entry.o irq.o fpsimd.o   \
-                           entry-fpsimd.o process.o ptrace.o setup.o signal.o   \
-@@ -13,6 +16,7 @@ arm64-obj-y           := cputable.o debug-monitors.o entry.o irq.o fpsimd.o   \
-
- arm64-obj-$(CONFIG_COMPAT)             += sys32.o kuser32.o signal32.o         \
-                                           sys_compat.o
-+arm64-obj-$(CONFIG_FUNCTION_TRACER)    += ftrace.o entry-ftrace.o
- arm64-obj-$(CONFIG_MODULES)            += arm64ksyms.o module.o
- arm64-obj-$(CONFIG_SMP)                        += smp.o smp_spin_table.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)     += perf_event.o
-diff --git a/arch/arm64/kernel/arm64ksyms.c b/arch/arm64/kernel/arm64ksyms.c
-index 338b568..7f0512f 100644
---- a/arch/arm64/kernel/arm64ksyms.c
-+++ b/arch/arm64/kernel/arm64ksyms.c
-@@ -56,3 +56,7 @@ EXPORT_SYMBOL(clear_bit);
- EXPORT_SYMBOL(test_and_clear_bit);
- EXPORT_SYMBOL(change_bit);
- EXPORT_SYMBOL(test_and_change_bit);
-+
-+#ifdef CONFIG_FUNCTION_TRACER
-+EXPORT_SYMBOL(_mcount);
-+#endif
-diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
-new file mode 100644
-index 0000000..2e8162e
---- /dev/null
-+++ b/arch/arm64/kernel/entry-ftrace.S
-@@ -0,0 +1,173 @@
-+/*
-+ * arch/arm64/kernel/entry-ftrace.S
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/ftrace.h>
-+#include <asm/insn.h>
-+
-+/*
-+ * Gcc with -pg will put the following code in the beginning of each function:
-+ *      mov x0, x30
-+ *      bl _mcount
-+ *     [function's body ...]
-+ * "bl _mcount" may be replaced to "bl ftrace_caller" or NOP if dynamic
-+ * ftrace is enabled.
-+ *
-+ * Please note that x0 as an argument will not be used here because we can
-+ * get lr(x30) of instrumented function at any time by winding up call stack
-+ * as long as the kernel is compiled without -fomit-frame-pointer.
-+ * (or CONFIG_FRAME_POINTER, this is forced on arm64)
-+ *
-+ * stack layout after mcount_enter:
-+ *
-+ *   0 ---------------------------------------- sp of _mcount()
-+ *      x29: fp of instrumented function       fp is not winded
-+ *     --------------------
-+ *      x30: lr of _mcount() (= instrumented function's pc)
-+ * +16 ---------------------------------------- sp of instrumented function
-+ *
-+ *     ....
-+ *
-+ * +xx ---------------------------------------- fp of instrumented function
-+ *      x29: fp of parent
-+ *     --------------------
-+ *      x30: lr of instrumented function (= parent's pc)
-+ *     --------------------
-+ *      xxx
-+ */
-+
-can stack layout be more readable as below?
-
-Stack layout of _mcount after mcount_enter
-
-       |------------------| sp + 16   <= frame pointer of _mcount.
-       |                       |
-       |       x30          | <=  lr of _mcount (instrumented func's pc)
-       |                       |
-       |------------------| sp + 8
-       |                       |
-       |       x29          | <= value of x29 is sp of instrumented function.
-       |                       |
-       |------------------| sp   <= stack pointer of _mcount
-
-   
-Stack layout of instrumented function.
-                .
-                .
-                .
-                .
-       |------------------| sp + 16
-       |                      |
-       |       x30         | <=  lr of instrumented function (= parent's pc)
-       |                      |
-       |------------------| sp + 8
-       |                      |
-       |       x29         | <= sp of parent.
-       |                      |
-       |------------------| sp  <= this address is stored at sp of _mcount
-
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index ef96edc..2c28437 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -135,7 +135,6 @@ static void update_dl_migration(struct dl_rq *dl_rq)
+ static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ {
+ 	struct task_struct *p = dl_task_of(dl_se);
+-	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
  
-+       .macro mcount_enter
-+       stp     x29, x30, [sp, #-16]!
-+       .endm
-+
-+       .macro mcount_exit
-+       ldp     x29, x30, [sp], #16
-+       ret
-+       .endm
-+
-+       .macro mcount_adjust_addr rd, rn
-+       sub     \rd, \rn, #AARCH64_INSN_SIZE
-+       .endm
-+
-+       /* for instrumented function's parent */
-+       .macro mcount_get_parent_fp reg
-+       ldr     \reg, [sp]
-+       ldr     \reg, [\reg]
-+       .endm
-+
-+       /* for instrumented function */
-+       .macro mcount_get_pc0 reg
-+       mcount_adjust_addr      \reg, x30
-+       .endm
-+
-+       .macro mcount_get_pc reg
-+       ldr     \reg, [sp, #8]
-+       mcount_adjust_addr      \reg, \reg
-+       .endm
-+
-+       .macro mcount_get_lr reg
-+       ldr     \reg, [sp]
-+       ldr     \reg, [\reg, #8]
-+       mcount_adjust_addr      \reg, \reg
-+       .endm
-+
-+       .macro mcount_get_saved_lr_addr reg
-+       ldr     \reg, [sp]
-+       add     \reg, \reg, #8
-+       .endm
-+
-+/*
-+ * void _mcount(unsigned long return_address)
-+ * @return_address: return address to instrumented function
-+ *
-+ * This function makes calls, if enabled, to:
-+ *     - tracer function to probe instrumented function's entry,
-+ *     - ftrace_graph_caller to set up an exit hook
-+ */
-+ENTRY(_mcount)
-+#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+       ldr     x0, =ftrace_trace_stop
-+       ldr     x0, [x0]                // if ftrace_trace_stop
-+       ret                             //   return;
-+#endif
-+       mcount_enter
-+
-+       ldr     x0, =ftrace_trace_function
-+       ldr     x2, [x0]
-+       adr     x0, ftrace_stub
-+       cmp     x0, x2                  // if (ftrace_trace_function
-+       b.eq    skip_ftrace_call        //     != ftrace_stub) {
-+
-+       mcount_get_pc   x0              //       function's pc
-+       mcount_get_lr   x1              //       function's lr (= parent's pc)
-+       blr     x2                      //   (*ftrace_trace_function)(pc, lr);
-+
-+#ifndef CONFIG_FUNCTION_GRAPH_TRACER
-+skip_ftrace_call:                      //   return;
-+       mcount_exit                     // }
-+#else
-+       mcount_exit                     //   return;
-+                                       // }
-+skip_ftrace_call:
-+       ldr     x1, =ftrace_graph_return
-+       ldr     x2, [x1]                //   if ((ftrace_graph_return
-+       cmp     x0, x2                  //        != ftrace_stub)
-+       b.ne    ftrace_graph_caller
-+
-+       ldr     x1, =ftrace_graph_entry //     || (ftrace_graph_entry
-+       ldr     x2, [x1]                //        != ftrace_graph_entry_stub))
-+       ldr     x0, =ftrace_graph_entry_stub
-+       cmp     x0, x2
-+       b.ne    ftrace_graph_caller     //     ftrace_graph_caller();
-+
-+       mcount_exit
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-+ENDPROC(_mcount)
-+
-+ENTRY(ftrace_stub)
-+       ret
-+ENDPROC(ftrace_stub)
-+
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+/*
-+ * void ftrace_graph_caller(void)
-+ *
-+ * Called from _mcount() or ftrace_caller() when function_graph tracer is
-+ * selected.
-+ * This function w/ prepare_ftrace_return() fakes link register's value on
-+ * the call stack in order to intercept instrumented function's return path
-+ * and run return_to_handler() later on its exit.
-+ */
-+ENTRY(ftrace_graph_caller)
-+       mcount_get_saved_lr_addr  x0    //     pointer to function's saved lr
-+       mcount_get_pc             x1    //     function's pc
-+       mcount_get_parent_fp      x2    //     parent's fp
-+       bl      prepare_ftrace_return   // prepare_ftrace_return(&lr, pc, fp)
-+
-+       mcount_exit
-+ENDPROC(ftrace_graph_caller)
-+
-+/*
-+ * void return_to_handler(void)
-+ *
-+ * Run ftrace_return_to_handler() before going back to parent.
-+ * @fp is checked against the value passed by ftrace_graph_caller()
-+ * only when CONFIG_FUNCTION_GRAPH_FP_TEST is enabled.
-+ */
-+       .global return_to_handler
-+return_to_handler:
-+       str     x0, [sp, #-16]!
-+       mov     x0, x29                 //     parent's fp
-+       bl      ftrace_return_to_handler// addr = ftrace_return_to_hander(fp);
-+       mov     x30, x0                 // restore the original return address
-+       ldr     x0, [sp], #16
-+       ret
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-diff --git a/arch/arm64/kernel/ftrace.c b/arch/arm64/kernel/ftrace.c
-new file mode 100644
-index 0000000..a559ab8
---- /dev/null
-+++ b/arch/arm64/kernel/ftrace.c
-@@ -0,0 +1,64 @@
-+/*
-+ * arch/arm64/kernel/ftrace.c
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/ftrace.h>
-+#include <linux/swab.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/ftrace.h>
-+#include <asm/insn.h>
-+
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+/*
-+ * function_graph tracer expects ftrace_return_to_handler() to be called
-+ * on the way back to parent. For this purpose, this function is called
-+ * in _mcount() or ftrace_caller() to replace return address (*parent) on
-+ * the call stack to return_to_handler.
-+ *
-+ * Note that @frame_pointer is used only for sanity check later.
-+ */
-+void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
-+                          unsigned long frame_pointer)
-+{
-+       unsigned long return_hooker = (unsigned long)&return_to_handler;
-+       unsigned long old;
-+       struct ftrace_graph_ent trace;
-+       int err;
-+
-+       if (unlikely(atomic_read(&current->tracing_graph_pause)))
-+               return;
-+
-+       /*
-+        * Note:
-+        * No protection against faulting at *parent, which may be seen
-+        * on other archs. It's unlikely on AArch64.
-+        */
-+       old = *parent;
-+       *parent = return_hooker;
-+
-+       trace.func = self_addr;
-+       trace.depth = current->curr_ret_stack + 1;
-+
-+       /* Only trace if the calling function expects to */
-+       if (!ftrace_graph_entry(&trace)) {
-+               *parent = old;
-+               return;
-+       }
-+
-+       err = ftrace_push_return_trace(old, self_addr, &trace.depth,
-+                                      frame_pointer);
-+       if (err == -EBUSY) {
-+               *parent = old;
-+               return;
-+       }
-+}
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
---
-1.7.9.5
+ 	if (p->nr_cpus_allowed > 1)
+ 		dl_rq->dl_nr_migratory++;
+@@ -146,7 +145,6 @@ static void inc_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ static void dec_dl_migration(struct sched_dl_entity *dl_se, struct dl_rq *dl_rq)
+ {
+ 	struct task_struct *p = dl_task_of(dl_se);
+-	dl_rq = &rq_of_dl_rq(dl_rq)->dl;
+ 
+ 	if (p->nr_cpus_allowed > 1)
+ 		dl_rq->dl_nr_migratory--;
+
+
 
