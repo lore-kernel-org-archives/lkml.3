@@ -1,43 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaBYNvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 08:51:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51335 "EHLO mx2.suse.de"
+	id S1753233AbaBYNwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 08:52:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40623 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752834AbaBYNv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 08:51:26 -0500
-Message-ID: <1393336285.3114.8.camel@linux-fkkt.site>
-Subject: Re: USB keyboard occasional key stuck
-From: Oliver Neukum <oneukum@suse.de>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Tue, 25 Feb 2014 14:51:25 +0100
-In-Reply-To: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
-References: <CAMVG2ss9nA4zcOT3c47EwEMrR7Z_gAQU-HTYGjdWcdYzihSnbg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752598AbaBYNwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 08:52:19 -0500
+Date: Tue, 25 Feb 2014 15:57:38 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org,
+        Qin Chuanyu <qinchuanyu@huawei.com>
+Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
+ exceed the limit
+Message-ID: <20140225135738.GA15274@redhat.com>
+References: <1393311238-7750-1-git-send-email-jasowang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393311238-7750-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-17 at 21:23 +0800, Daniel J Blueman wrote:
-> Across 5+ years of kernels, I've been seeing occasional (1-2 times per
-> day) key-stuck issues where eg a fn+delete combo repeats delete until
-> I press delete again. I've seen this happen with fn+ctrl+left, leaving
-> left held and likewise with right.
+On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
+> We used to stop the handling of tx when the number of pending DMAs
+> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+> of both host and guest. But it was too aggressive in some cases, since
+> any delay or blocking of a single packet may delay or block the guest
+> transmission. Consider the following setup:
+> 
+>     +-----+        +-----+
+>     | VM1 |        | VM2 |
+>     +--+--+        +--+--+
+>        |              |
+>     +--+--+        +--+--+
+>     | tap0|        | tap1|
+>     +--+--+        +--+--+
+>        |              |
+>     pfifo_fast   htb(10Mbit/s)
+>        |              |
+>     +--+--------------+---+
+>     |     bridge          |
+>     +--+------------------+
+>        |
+>     pfifo_fast
+>        |
+>     +-----+
+>     | eth0|(100Mbit/s)
+>     +-----+
+> 
+> - start two VMs and connect them to a bridge
+> - add an physical card (100Mbit/s) to that bridge
+> - setup htb on tap1 and limit its throughput to 10Mbit/s
+> - run two netperfs in the same time, one is from VM1 to VM2. Another is
+>   from VM1 to an external host through eth0.
+> - result shows that not only the VM1 to VM2 traffic were throttled but
+>   also the VM1 to external host through eth0 is also throttled somehow.
+> 
+> This is because the delay added by htb may lead the delay the finish
+> of DMAs and cause the pending DMAs for tap0 exceeds the limit
+> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
+> htb send some packets. The problem here is all of the packets
+> transmission were blocked even if it does not go to VM2.
+> 
+> We can solve this issue by relaxing it a little bit: switching to use
+> data copy instead of stopping tx when the number of pending DMAs
+> exceed the VHOST_MAX_PEND. This is safe because:
+> 
+> - The number of pending DMAs were still limited by VHOST_MAX_PEND
+> - The out of order completion during mode switch can make sure that
+>   most of the tx buffers were freed in time in guest.
+> 
+> So even if about 50% packets were delayed in zero-copy case, vhost
+> could continue to do the transmission through data copy in this case.
+> 
+> Test result:
+> 
+> Before this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> VM1 to External throughput is 40Mbit/s
+> 
+> After this patch:
+> VM1 to VM2 throughput is 9.3Mbit/s
+> Vm1 to External throughput is 93Mbit/s
 
-I saw something like this during the development of runtime PM
-for HID. It turns out that keyboards don't assert remote wakeup
-upon key release.
+Would like to see CPU utilization #s as well.
 
-Just to rule this out can you deactivate runtime PM and recompile
-to switch of LPM?
+> Simple performance test on 40gbe shows no obvious changes in
+> throughput after this patch.
+> 
+> The patch only solve this issue when unlimited sndbuf. We still need a
+> solution for limited sndbuf.
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Qin Chuanyu <qinchuanyu@huawei.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-	Regards
-		Oliver
+I think this needs some thought.
 
+In particular I think this works because VHOST_MAX_PEND
+is much smaller than the ring size.
+Shouldn't max_pend then be tied to the ring size if it's small?
 
+Another question is about stopping vhost:
+ATM it's waiting for skbs to complete.
+Should we maybe hunt down skbs queued and destroy them
+instead?
+I think this happens when a device is removed.
+
+Thoughts?
+
+> ---
+>  drivers/vhost/net.c | 17 +++++++----------
+>  1 file changed, 7 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index a0fa5de..3e96e47 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -345,7 +345,7 @@ static void handle_tx(struct vhost_net *net)
+>  		.msg_flags = MSG_DONTWAIT,
+>  	};
+>  	size_t len, total_len = 0;
+> -	int err;
+> +	int err, num_pends;
+>  	size_t hdr_size;
+>  	struct socket *sock;
+>  	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
+> @@ -366,13 +366,6 @@ static void handle_tx(struct vhost_net *net)
+>  		if (zcopy)
+>  			vhost_zerocopy_signal_used(net, vq);
+>  
+> -		/* If more outstanding DMAs, queue the work.
+> -		 * Handle upend_idx wrap around
+> -		 */
+> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
+> -			      % UIO_MAXIOV == nvq->done_idx))
+> -			break;
+> -
+>  		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+>  					 ARRAY_SIZE(vq->iov),
+>  					 &out, &in,
+> @@ -405,9 +398,13 @@ static void handle_tx(struct vhost_net *net)
+>  			break;
+>  		}
+>  
+> +		num_pends = likely(nvq->upend_idx >= nvq->done_idx) ?
+> +			    (nvq->upend_idx - nvq->done_idx) :
+> +			    (nvq->upend_idx + UIO_MAXIOV -
+> +			     nvq->done_idx);
+> +
+>  		zcopy_used = zcopy && len >= VHOST_GOODCOPY_LEN
+> -				   && (nvq->upend_idx + 1) % UIO_MAXIOV !=
+> -				      nvq->done_idx
+> +				   && num_pends <= VHOST_MAX_PEND
+>  				   && vhost_net_tx_select_zcopy(net);
+>  
+>  		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+> -- 
+> 1.8.3.2
