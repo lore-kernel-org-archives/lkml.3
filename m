@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaBYABA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:01:00 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51174 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727AbaBYAA6 (ORCPT
+	id S1753269AbaBYABo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:01:44 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:57065 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaBYABm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:00:58 -0500
-Date: Tue, 25 Feb 2014 09:00:27 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: "Austin, Brian" <Brian.Austin@cirrus.com>,
-        "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Message-ID: <20140225000027.GI25940@sirena.org.uk>
-References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140224113011.GE25940@sirena.org.uk>
- <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
- <20140224160648.GC6132@MrMyself>
+	Mon, 24 Feb 2014 19:01:42 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<87a9kkax0j.fsf@xmission.com>
+	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+	<CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
+	<87li281wx6.fsf_-_@xmission.com> <87ob28kqks.fsf_-_@xmission.com>
+	<87eh34jbsl.fsf_-_@xmission.com>
+	<20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu>
+Date: Mon, 24 Feb 2014 16:01:29 -0800
+In-Reply-To: <20140218174053.GE4026@tucsk.piliscsaba.szeredi.hu> (Miklos
+	Szeredi's message of "Tue, 18 Feb 2014 18:40:53 +0100")
+Message-ID: <87y510dpra.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PcnNQAcZvbjJh8WA"
-Content-Disposition: inline
-In-Reply-To: <20140224160648.GC6132@MrMyself>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18eInVeFUNxEMiMsm5pDGKrSqzBrmrp4NA=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 08/11] vfs: Merge check_submounts_and_drop and d_invalidate
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Miklos Szeredi <miklos@szeredi.hu> writes:
 
---PcnNQAcZvbjJh8WA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Sat, Feb 15, 2014 at 01:39:22PM -0800, Eric W. Biederman wrote:
+>> 
+>> Now that d_invalidate is the only caller of check_submounts_and_drop,
+>> expand check_submounts_and_drop inline in d_invalidate.
+>> 
+>> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>> ---
+>>  fs/dcache.c            |   55 +++++++++++++++++++----------------------------
+>>  include/linux/dcache.h |    1 -
+>>  2 files changed, 22 insertions(+), 34 deletions(-)
+>> 
+>> diff --git a/fs/dcache.c b/fs/dcache.c
+>> index 27585b1dd6f1..5b41205cbf33 100644
+>> --- a/fs/dcache.c
+>> +++ b/fs/dcache.c
 
-On Tue, Feb 25, 2014 at 12:06:49AM +0800, Nicolin Chen wrote:
-> On Mon, Feb 24, 2014 at 03:52:24PM +0000, Austin, Brian wrote:
+>> -int check_submounts_and_drop(struct dentry *dentry)
+>> +int d_invalidate(struct dentry *dentry)
+>>  {
+>>  	int ret = 0;
+>>  
+>> +	/*
+>> +	 * If it's already been dropped, return OK.
+>> +	 */
+>> +	spin_lock(&dentry->d_lock);
+>> +	if (d_unhashed(dentry)) {
+>> +		spin_unlock(&dentry->d_lock);
+>> +		return 0;
+>> +	}
+>> +	spin_unlock(&dentry->d_lock);
+>> +
+>>  	/* Negative dentries can be dropped without further checks */
+>>  	if (!dentry->d_inode) {
+>>  		d_drop(dentry);
+>
+>
+> You can optimize this by including the negative check within the above d_locked
+> region and calling __d_drop() instead.
 
-> Wait...Regarding this clock part, I just forgot the reason I put the code:
+For this patch just moving the code and not changing it is the corret
+thing to do because it helps with review and understanding the code.
 
-> 385         cs42888->clk = devm_clk_get(&i2c->dev, "mclk");
-> 386         if (IS_ERR(cs42888->clk))
-> 387                 dev_warn(&i2c->dev, "failed to get the clock: %ld\n",
-> 388                                 PTR_ERR(cs42888->clk));
+There are two ways I could see going with optimizing the preamble.
+Simply dropping the d_lock from around the d_unhashed test as a pointer
+dereference should be atomic, and the test is racy against
+d_materialise_unique. (We don't always hold the parent
+directories inode mutex when d_invalidate is called).  So the d_lock
+buys us very little.  Alternatively we could move the work into the
+d_walk callbacks.
 
-> was because the MCLK might be provided from SoC (DAI master) so it could
-> be totally controlled by CPU DAI driver, ESAI for example has its own
-> dividers to derive the HCKT clock (MCLK for Tx) from ahb clock in SoC
-> clock tree, in which case we might not easily pass a valid clock phandle
-> via DT. (RFC to this thought.)
+That kind of optimization deserves it's own patch that can be reviewed
+independently.
 
-We should be getting those clocks visible in the clock API rather than
-doing this.
-
---PcnNQAcZvbjJh8WA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTC90YAAoJELSic+t+oim9+tUQAJmsfJ5U9ZMR3D4G7qxQi6gy
-Q295xlQdHlWD9HzZlPqccF7xf6P1aDeSv1xBZ/Oczq/5e35w+PqZP4rOqofXqXi/
-EwfX2DLkkd6nOsCn9lOrGAwb3wRxp9rAb0FaGnbkg7bYeghN+9ssCsmICc+o3l8Y
-2f5h+h07T0rB/GPI65QdfU7yC/ojKGsGvHePi7xWnpxxchnkK9IENeGKpmYZlpU0
-lNcBrrI7ATyWOGcSvWJtmE4sRfGAkYCKXAQ9tJ+YeCbMIEZ+MovEosZ3pOMF92N2
-T62LxqVRud5YbskDdkZw7dPNsQ2lifD+P9jDFViBxciUXW0B3bYFh+EOFMXfppMA
-qanev9R7u39UkjUaIxBxPnoGC0bxui04a12GEZXc/9nIuKJ33PxTjtnIWzSDlZg6
-h5+c1LDvRfcL42HFNB7jMXJcgcf3q7Aw71oVQ9pc60txxbBP6cKxvQGXkbQlI/eC
-F8eDaBzfH0+wQU+fJZH9XZ70mB3zo6M3oTOW8c7wGwp5lILO5HwwBh+PO0DfSphP
-22CEMVE8LRjcJ3SZqmuUt+zQPnwtTHoqX/v9sjzemS5ZmRBTz+HXCwlOsiW5sk3T
-UbDCCsxLGEJ86F3sZ6HLdS/+BC5aGu9hKvZw1bboDZcqq9zGfY/5ovlaHc7pA+3a
-ykEEdEKQPlyCNBBrrwjh
-=VY5i
------END PGP SIGNATURE-----
-
---PcnNQAcZvbjJh8WA--
+Eric
