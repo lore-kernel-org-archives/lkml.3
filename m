@@ -1,303 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaBYOkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:40:08 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57167 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752444AbaBYOkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:40:05 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] gpio / ACPI: Add support for ACPI GPIO operation regions
-Date: Tue, 25 Feb 2014 15:55:02 +0100
-Message-ID: <2863081.yf9Ke2teV0@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1393257611-18031-7-git-send-email-mika.westerberg@linux.intel.com>
-References: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com> <1393257611-18031-7-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753091AbaBYOk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:40:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752826AbaBYOkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:40:23 -0500
+Message-ID: <1393337404.7307.51.camel@deneb.redhat.com>
+Subject: Re: [PATCH v4 0/6] generic early_ioremap support
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Dave Young <dyoung@redhat.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>, patches@linaro.org
+Date: Tue, 25 Feb 2014 09:10:04 -0500
+In-Reply-To: <1392238575-10000-1-git-send-email-msalter@redhat.com>
+References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 24, 2014 06:00:11 PM Mika Westerberg wrote:
-> GPIO operation regions is a new feature introduced in ACPI 5.0
-> specification. This feature adds a way for platform ASL code to call back
-> to OS GPIO driver and toggle GPIO pins.
+On Wed, 2014-02-12 at 15:56 -0500, Mark Salter wrote:
+> This patch series takes the common bits from the x86 early ioremap
+> implementation and creates a generic implementation which may be used
+> by other architectures. The early ioremap interfaces are intended for
+> situations where boot code needs to make temporary virtual mappings
+> before the normal ioremap interfaces are available. Typically, this
+> means before paging_init() has run.
 > 
-> An example ASL code from Lenovo Miix 2 tablet with only relevant part
-> listed:
+> These patches are layered on top of generic fixmap patches which
+> were pulled into 3.14-rc with the exception of the arm patch:
 > 
->  Device (\_SB.GPO0)
->  {
->      Name (AVBL, Zero)
->      Method (_REG, 2, NotSerialized)
->      {
->          If (LEqual (Arg0, 0x08))
->          {
->              // Marks the region available
->              Store (Arg1, AVBL)
->          }
->      }
+>   https://lkml.org/lkml/2013/11/25/477
 > 
->      OperationRegion (GPOP, GeneralPurposeIo, Zero, 0x0C)
->      Field (GPOP, ByteAcc, NoLock, Preserve)
->      {
->          Connection (
->              GpioIo (Exclusive, PullDefault, 0, 0, IoRestrictionOutputOnly,
->                      "\\_SB.GPO0", 0x00, ResourceConsumer,,)
->              {
->                  0x003B
->              }
->          ),
->          SHD3,   1,
->      }
->  }
+> The arm fixmap patch is currently in the akpm tree and has been
+> part of linux-next for a while.
 > 
->  Device (SHUB)
->  {
->      Method (_PS0, 0, Serialized)
->      {
->          If (LEqual (\_SB.GPO0.AVBL, One))
->          {
->              Store (One, \_SB.GPO0.SHD3)
->              Sleep (0x32)
->          }
->      }
->      Method (_PS3, 0, Serialized)
->      {
->          If (LEqual (\_SB.GPO0.AVBL, One))
->          {
->              Store (Zero, \_SB.GPO0.SHD3)
->          }
->      }
->  }
+> This is version 4 of the patch series. These patches (and underlying
+> fixmap patches) may be found at:
 > 
-> The sensor hub (SHUB) device uses GPIO connection SHD3 to power the device
-> whenever the GPIO operation region is available.
+>   git://github.com/mosalter/linux.git (early-ioremap-v4 branch)
 
-I would add more explanation of the ASL above here.  Basically, how it is
-supposed to work and what's the handler's role in it.
+There have been no comments on this patch series over the past
+two weeks. I'd like to get it into linux-next for some wider
+testing and eventually into 3.15. Is there something I can do
+to help it along?
 
-> Implement the support by registering GPIO operation region handlers for all
-> GPIO devices that have an ACPI handle. First time the GPIO is used by the
-> ASL code we make sure that the GPIO stays requested until the GPIO chip
-> driver itself is unloaded. If we find out that the GPIO is already
-> requested we just toggle it according to the value got from ASL code.
 
-The patch itself looks good to me.
-
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/gpio/gpiolib-acpi.c | 156 ++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 156 insertions(+)
-> 
-> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-> index 275735f390af..0133d38c447f 100644
-> --- a/drivers/gpio/gpiolib-acpi.c
-> +++ b/drivers/gpio/gpiolib-acpi.c
-> @@ -16,6 +16,7 @@
->  #include <linux/export.h>
->  #include <linux/acpi.h>
->  #include <linux/interrupt.h>
-> +#include <linux/mutex.h>
->  
->  #include "gpiolib.h"
->  
-> @@ -26,7 +27,20 @@ struct acpi_gpio_event {
->  	unsigned int irq;
->  };
->  
-> +struct acpi_gpio_connection {
-> +	struct list_head node;
-> +	struct gpio_desc *desc;
-> +};
-> +
->  struct acpi_gpio_chip {
-> +	/*
-> +	 * ACPICA requires that the first field of the context parameter
-> +	 * passed to acpi_install_address_space_handler() is large enough
-> +	 * to hold struct acpi_connection_info.
-> +	 */
-> +	struct acpi_connection_info conn_info;
-> +	struct list_head conns;
-> +	struct mutex conn_lock;
->  	struct gpio_chip *chip;
->  	struct list_head events;
->  };
-> @@ -334,6 +348,146 @@ struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
->  	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
->  }
->  
-> +static acpi_status
-> +acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
-> +			    u32 bits, u64 *value, void *handler_context,
-> +			    void *region_context)
-> +{
-> +	struct acpi_gpio_chip *achip = region_context;
-> +	struct gpio_chip *chip = achip->chip;
-> +	struct acpi_resource_gpio *agpio;
-> +	struct acpi_resource *ares;
-> +	acpi_status status;
-> +	bool pull;
-> +	int i;
-> +
-> +	status = acpi_buffer_to_resource(achip->conn_info.connection,
-> +					 achip->conn_info.length, &ares);
-> +	if (ACPI_FAILURE(status))
-> +		return status;
-> +
-> +	if (WARN_ON(ares->type != ACPI_RESOURCE_TYPE_GPIO)) {
-> +		ACPI_FREE(ares);
-> +		return AE_BAD_PARAMETER;
-> +	}
-> +
-> +	agpio = &ares->data.gpio;
-> +	pull = agpio->pin_config == ACPI_PIN_CONFIG_PULLUP;
-> +
-> +	if (WARN_ON(agpio->io_restriction == ACPI_IO_RESTRICT_INPUT &&
-> +	    function == ACPI_WRITE)) {
-> +		ACPI_FREE(ares);
-> +		return AE_BAD_PARAMETER;
-> +	}
-> +
-> +	for (i = 0; i < agpio->pin_table_length; i++) {
-> +		unsigned pin = agpio->pin_table[i];
-> +		struct acpi_gpio_connection *conn;
-> +		struct gpio_desc *desc;
-> +		bool found;
-> +
-> +		desc = gpiochip_get_desc(chip, pin);
-> +		if (IS_ERR(desc)) {
-> +			status = AE_ERROR;
-> +			goto out;
-> +		}
-> +
-> +		mutex_lock(&achip->conn_lock);
-> +
-> +		found = false;
-> +		list_for_each_entry(conn, &achip->conns, node) {
-> +			if (conn->desc == desc) {
-> +				found = true;
-> +				break;
-> +			}
-> +		}
-> +		if (!found) {
-> +			int ret;
-> +
-> +			ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
-> +			if (ret) {
-> +				status = AE_ERROR;
-> +				mutex_unlock(&achip->conn_lock);
-> +				goto out;
-> +			}
-> +
-> +			switch (agpio->io_restriction) {
-> +			case ACPI_IO_RESTRICT_INPUT:
-> +				gpiod_direction_input(desc);
-> +				break;
-> +			case ACPI_IO_RESTRICT_OUTPUT:
-> +				gpiod_direction_output(desc, pull);
-> +				break;
-> +			default:
-> +				/*
-> +				 * Assume that the BIOS has configured the
-> +				 * direction and pull accordingly.
-> +				 */
-> +				break;
-> +			}
-> +
-> +			conn = kzalloc(sizeof(*conn), GFP_KERNEL);
-> +			if (!conn) {
-> +				status = AE_NO_MEMORY;
-> +				mutex_unlock(&achip->conn_lock);
-> +				goto out;
-> +			}
-> +
-> +			conn->desc = desc;
-> +
-> +			list_add_tail(&conn->node, &achip->conns);
-> +		}
-> +
-> +		mutex_unlock(&achip->conn_lock);
-> +
-> +
-> +		if (function == ACPI_WRITE)
-> +			gpiod_set_raw_value(desc, !!((1 << i) & *value));
-> +		else
-> +			*value |= gpiod_get_raw_value(desc) << i;
-> +	}
-> +
-> +out:
-> +	ACPI_FREE(ares);
-> +	return status;
-> +}
-> +
-> +static void acpi_gpiochip_request_regions(struct acpi_gpio_chip *achip)
-> +{
-> +	struct gpio_chip *chip = achip->chip;
-> +	acpi_handle handle = ACPI_HANDLE(chip->dev);
-> +	acpi_status status;
-> +
-> +	INIT_LIST_HEAD(&achip->conns);
-> +	mutex_init(&achip->conn_lock);
-> +	status = acpi_install_address_space_handler(handle, ACPI_ADR_SPACE_GPIO,
-> +						    acpi_gpio_adr_space_handler,
-> +						    NULL, achip);
-> +	if (ACPI_FAILURE(status))
-> +		dev_err(chip->dev, "Failed to install GPIO OpRegion handler\n");
-> +}
-> +
-> +static void acpi_gpiochip_free_regions(struct acpi_gpio_chip *achip)
-> +{
-> +	struct gpio_chip *chip = achip->chip;
-> +	acpi_handle handle = ACPI_HANDLE(chip->dev);
-> +	struct acpi_gpio_connection *conn, *tmp;
-> +	acpi_status status;
-> +
-> +	status = acpi_remove_address_space_handler(handle, ACPI_ADR_SPACE_GPIO,
-> +						   acpi_gpio_adr_space_handler);
-> +	if (ACPI_FAILURE(status)) {
-> +		dev_err(chip->dev, "Failed to remove GPIO OpRegion handler\n");
-> +		return;
-> +	}
-> +
-> +	list_for_each_entry_safe_reverse(conn, tmp, &achip->conns, node) {
-> +		gpiochip_free_own_desc(conn->desc);
-> +		list_del(&conn->node);
-> +		kfree(conn);
-> +	}
-> +}
-> +
->  void acpi_gpiochip_add(struct gpio_chip *chip)
->  {
->  	struct acpi_gpio_chip *achip;
-> @@ -361,6 +515,7 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
->  	}
->  
->  	acpi_gpiochip_request_interrupts(achip);
-> +	acpi_gpiochip_request_regions(achip);
->  }
->  
->  void acpi_gpiochip_remove(struct gpio_chip *chip)
-> @@ -379,6 +534,7 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
->  		return;
->  	}
->  
-> +	acpi_gpiochip_free_regions(achip);
->  	acpi_gpiochip_free_interrupts(achip);
->  
->  	acpi_detach_data(handle, acpi_gpio_chip_dh);
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
