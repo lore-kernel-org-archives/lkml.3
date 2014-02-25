@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaBYGFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:05:55 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:53721 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaBYGFx (ORCPT
+	id S1752322AbaBYGIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:08:17 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:44792 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaBYGIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:05:53 -0500
+	Tue, 25 Feb 2014 01:08:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
-References: <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
-	<20140223003933.GQ4250@linux.vnet.ibm.com>
-	<CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
-	<20140224172110.GO8264@linux.vnet.ibm.com>
-	<CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
-	<20140224185341.GU8264@linux.vnet.ibm.com>
-	<CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
-	<20140224223701.GC8264@linux.vnet.ibm.com>
-	<CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
-Date: Mon, 24 Feb 2014 22:05:52 -0800
-X-Google-Sender-Auth: EWsw8WqPHI6KtGCOdnY5wHjCg3k
-Message-ID: <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <530C2FD7.4000105@linux.vnet.ibm.com>
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
+	<CAKohpo=mQWxoKTduR8FrrB4Qz45qXQrJjSudq=FkCJtHBTbo2Q@mail.gmail.com>
+	<5301CE86.9020105@linux.vnet.ibm.com>
+	<1489022.1IbaesBAQQ@vostro.rjw.lan>
+	<CAKohpokGtcJbdzt0FPZnKjSFi54Np+Ss7--Z83UEZp8FMY94pQ@mail.gmail.com>
+	<CAKohpokk5-6vGV93fZDob8Q=xZXsd7E4OkMUAC1M6Z71G=d1Ow@mail.gmail.com>
+	<530C2FD7.4000105@linux.vnet.ibm.com>
+Date: Tue, 25 Feb 2014 11:38:14 +0530
+Message-ID: <CAKohponr5b8nBaV9TFiiFkvyg8Qb6qz_0UXbYCaFRPG=XP28rA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pierre Ossman <pierre-list@ossman.eu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 3:35 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 25 February 2014 11:23, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> Hmm, that's a good point. However, lets first think about the simple scenario
+> that the driver _is_ able to detect the current frequency from the hardware
+> (a non-zero, sane value) say X KHz, and that frequency is different from what
+> the cpufreq subsystem thinks it is (Y KHz).
 >
-> Litmus test 1:
->
->     p = atomic_read(pp, consume);
->     if (p == &variable)
->         return p->val;
->
->    is *NOT* ordered
+> In the current code, when we observe this, we send out a notification and try
+> to adjust to X KHz. Instead, what I'm suggesting is to invoke the driver to
+> set the frequency to Y KHz, since that's what the cpufreq subsystems wants the
+> frequency to be at.
 
-Btw, don't get me wrong. I don't _like_ it not being ordered, and I
-actually did spend some time thinking about my earlier proposal on
-strengthening the 'consume' ordering.
+Actually we don't know at this point what cpufreq wants :)
+Governor will decide what frequency to run CPU at and lets leave it to
+that point.
+As the transition that we might end up doing here would be simply overridden
+very soon. And to be honest this decision must be taken by governor and not
+core. We just want to make sure core is in sync with hardware.
 
-I have for the last several years been 100% convinced that the Intel
-memory ordering is the right thing, and that people who like weak
-memory ordering are wrong and should try to avoid reproducing if at
-all possible. But given that we have memory orderings like power and
-ARM, I don't actually see a sane way to get a good strong ordering.
-You can teach compilers about cases like the above when they actually
-see all the code and they could poison the value chain etc. But it
-would be fairly painful, and once you cross object files (or even just
-functions in the same compilation unit, for that matter), it goes from
-painful to just "ridiculously not worth it".
+> As for the case where the driver reports the frequency to be 0 KHz, we can
+> print a WARN() and try to force set the frequency to Y KHz. But if that turns
+> out to be too tricky to handle, we can just put a WARN() and error out, as you
+> proposed earlier.
 
-So I think the C semantics should mirror what the hardware gives us -
-and do so even in the face of reasonable optimizations - not try to do
-something else that requires compilers to treat "consume" very
-differently.
-
-If people made me king of the world, I'd outlaw weak memory ordering.
-You can re-order as much as you want in hardware with speculation etc,
-but you should always *check* your speculation and make it *look* like
-you did everything in order. Which is pretty much the intel memory
-ordering (ignoring the write buffering).
-
-               Linus
+Ok..
