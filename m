@@ -1,120 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaBYXuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 18:50:50 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:35594 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaBYXus (ORCPT
+	id S1753447AbaBYXvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 18:51:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51884 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaBYXvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 18:50:48 -0500
+	Tue, 25 Feb 2014 18:51:45 -0500
+Date: Wed, 26 Feb 2014 08:51:39 +0900
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140225235139.GG2927@sirena.org.uk>
+References: <1393322091-24427-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <5E6DB7F9-41E0-4DCC-A14B-49E2F4134A1C@suse.de>
-References: <1393284484-27637-1-git-send-email-agraf@suse.de>
- <20140225171528.GJ4407@cmpxchg.org> <20140225171940.GS6835@laptop.programming.kicks-ass.net>
- <5E6DB7F9-41E0-4DCC-A14B-49E2F4134A1C@suse.de>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 26 Feb 2014 00:50:24 +0100
-Message-ID: <CAPXgP10dB6a9BkgZNjPwHSRChfXfSAjhkpzjWwqYwGa+8JwgaQ@mail.gmail.com>
-Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-To: Alexander Graf <agraf@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7uYPyRQQ5N0D02nI"
+Content-Disposition: inline
+In-Reply-To: <1393322091-24427-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You will be married within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 121.174.50.227
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl-sai: fix Freescale SAI DAI format setting.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 12:16 AM, Alexander Graf <agraf@suse.de> wrote:
->
->
->>> Am 26.02.2014 um 01:19 schrieb Peter Zijlstra <peterz@infradead.org>:
->>>
->>>> On Tue, Feb 25, 2014 at 12:15:28PM -0500, Johannes Weiner wrote:
->>>> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
->>>> Configuration of tunables and Linux virtual memory settings has traditionally
->>>> happened via sysctl. Thanks to that there are well established ways to make
->>>> sysctl configuration bits persistent (sysctl.conf).
->>>>
->>>> KSM introduced a sysfs based configuration path which is not covered by user
->>>> space persistent configuration frameworks.
->>>>
->>>> In order to make life easy for sysadmins, this patch adds all access to all
->>>> KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
->>>> giving us a streamlined way to make KSM configuration persistent.
->>>>
->>>> Reported-by: Sasche Peilicke <speilicke@suse.com>
->>>> Signed-off-by: Alexander Graf <agraf@suse.de>
->>>> ---
->>>> kernel/sysctl.c |   10 +++++++
->>>> mm/ksm.c        |   78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>> 2 files changed, 88 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
->>>> index 332cefc..2169a00 100644
->>>> --- a/kernel/sysctl.c
->>>> +++ b/kernel/sysctl.c
->>>> @@ -217,6 +217,9 @@ extern struct ctl_table random_table[];
->>>> #ifdef CONFIG_EPOLL
->>>> extern struct ctl_table epoll_table[];
->>>> #endif
->>>> +#ifdef CONFIG_KSM
->>>> +extern struct ctl_table ksm_table[];
->>>> +#endif
->>>>
->>>> #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
->>>> int sysctl_legacy_va_layout;
->>>> @@ -1279,6 +1282,13 @@ static struct ctl_table vm_table[] = {
->>>>   },
->>>>
->>>> #endif /* CONFIG_COMPACTION */
->>>> +#ifdef CONFIG_KSM
->>>> +    {
->>>> +        .procname    = "ksm",
->>>> +        .mode        = 0555,
->>>> +        .child        = ksm_table,
->>>> +    },
->>>> +#endif
->>>
->>> ksm can be a module, so this won't work.
->>>
->>> Can we make those controls proper module parameters instead?
->>
->> You can do dynamic sysctl registration and removal. Its its own little
->> filesystem of sorts.
->
-> Hm. Doesn't this open another big can of worms? If we have ksm as a module and our sysctl helpers try to enable ksm on boot, they may not be able to because the module hasn't been loaded yet.
->
-> So in that case, we want to always register the sysctl and dynamically load the ksm module when the sysctl gets accessed - similar to how we can do stub devices that load modiles, no?
 
-The files sysctl tries to write to at bootup need to be all there
-right from the start, otherwise there can't be anything to access, and
-no way to trigger any module load.
+--7uYPyRQQ5N0D02nI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The auto-load stuff in /dev works by userspace creating dead device
-nodes with the proper dev_t before the device exists, which is a very
-different model.
+On Tue, Feb 25, 2014 at 05:54:51PM +0800, Xiubo Li wrote:
+> o Fix some bugs of fsl_sai_set_dai_fmt_tr().
+> o Add SND_SOC_DAIFMT_LEFT_J support.
+> o Add SND_SOC_DAIFMT_CBS_CFM support.
+> o Add SND_SOC_DAIFMT_CBM_CFS support.
+> o And SND_SOC_DAIFMT_RIGHT_J need to be done in the future.
 
-sysctl is not suitable for any instantiated or conditional data like
-loadable module, devices, ... Things need to be there right from the
-start, later registered facilities will not be noticed by sysctl in
-userspace and are therefore not hooked into system management. If any
-values should be applied from userspace, this will not really work
-out.
+Applied, thanks.
 
-There a network devices configs doing that today, and they don't
-really work that well; it's a gigantic stupid hack in userspace to
-fiddle with /proc/sys/ when a netdev shows up, no model to copy to any
-new facility.
+--7uYPyRQQ5N0D02nI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Usually, loadable module parameter need to live in /sys/module/ or
-/sys/bus/, where uevents are generated and udev can pick up the event
-and apply system configuration.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Kay
+iQIcBAEBAgAGBQJTDSyIAAoJELSic+t+oim9mdEP/1bT3t1R2ymhc/JFmVeTnO5k
+0E65OBwQYwnkFsicwM3alIqF+UkiGxnkLozhzO4UF6zwso+T0D7oTxqfuUpl9vA3
+VsX4B1SS3VLkPdVD9Vzf/kZa8lFHTDIcccauAt6ewnqGYt4TFM8VO7tRN+Pw6dNH
+JSLfKDz9vGRodZqxL24YudNz07acIdHkTiL+V87NGg1Fl0+P6FUBXx0hmjNsdKzP
+9ezOpblDsuVu1eLTLyKaokrtQy/4VHbKLRzvszxgtJCkj4Gs7Ddh7XehiCk+7C0j
+g4C+fIlk/X9NkQ9dZkPnsKN5T2z5qdP3K8xYDNf3t8CFds/m7zHCyShxxVVftlqG
+86mGDy/6t601Z0aX3H67089XuDQnODb3isoNK+SMxiiMkq6X3D1BPVc1pzrGG58B
+cUrXTxmJL3g5Rn1gOoBu3sp3G8EPZOwOLVEgsqdOVLdES+vVse0bJRvA5cm9mV6z
+H3TysY8PxOHautcpIL3Uddwv7DRYV7i6CFFPBy7h2i/zN60CXWQtB/pCc3L8zpBd
+rv1u97GqmzItA/fatwRy39Z3tMAtOqxssDpDn/ftak19q2bwjX4cD9XXKI1ZBN1X
+JqSZ0s537sDH2rzlzPWF4x6VfBh9+D0AN9c2lCBQ6rgiF73hckX/ApuyxTEM1Ka8
+pzWdesk7GnnEjFBgjaBO
+=4gJh
+-----END PGP SIGNATURE-----
+
+--7uYPyRQQ5N0D02nI--
