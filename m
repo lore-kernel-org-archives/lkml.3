@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaBYCsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:48:09 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59422 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaBYCsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:48:07 -0500
-Message-ID: <530C0461.9030602@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 10:48:01 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <530B8DBC.6020105@oracle.com>
-In-Reply-To: <530B8DBC.6020105@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022502-8256-0000-0000-00000BA148F5
+	id S1752972AbaBYCtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 21:49:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60535 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752837AbaBYCtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 21:49:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,538,1389772800"; 
+   d="scan'208";a="489216080"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: "David E. Box" <david.e.box@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com,
+        jacob.jun.pan@intel.com
+Subject: [PATCH V2 2/2] x86: IOSF: Change IOSF_MBI Kconfig to default y
+Date: Mon, 24 Feb 2014 18:47:22 -0800
+Message-Id: <1393296442-12942-3-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1393296442-12942-1-git-send-email-david.e.box@linux.intel.com>
+References: <1393296442-12942-1-git-send-email-david.e.box@linux.intel.com>
+In-Reply-To: <1393117352-23717-1-git-send-email-david.e.box@linux.intel.com>
+References: <1393117352-23717-1-git-send-email-david.e.box@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 02:21 AM, Sasha Levin wrote:
-[snip]
->>
->> Fixes: 38033c37faab ("sched: Push down pre_schedule() and
->> idle_balance()")
->> Cc: Juri Lelli<juri.lelli@gmail.com>
->> Cc: Ingo Molnar<mingo@kernel.org>
->> Cc: Steven Rostedt<rostedt@goodmis.org>
->> Reported-by: Michael Wang<wangyun@linux.vnet.ibm.com>
->> Signed-off-by: Peter Zijlstra<peterz@infradead.org>
-> 
-> Sign me up to the fan club of this patch, I love it.
-> 
-> After running it for a bit I see that all the hangs I've seen before are
-> gone, even those that I didn't assume were sched related.
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-Good to know the problem got solved :)
+The IOSF Mailbox interface is an access mechanism used by multiple drivers to
+communicate with key configuration registers on new Intel SOC platforms. The
+interface is ubiquitous enough that we need to ensure the availability of the
+driver in non-EXPERT x86 kernels.
 
-Regards,
-Michael Wang
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+---
+ arch/x86/Kconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-> 
-> 
-> Thanks,
-> Sasha
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d3b1f8b..4de5205 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2385,11 +2385,12 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	bool
++	bool "IOSF MBI support" if EXPERT
++	default y
+ 	depends on PCI
+ 	---help---
+ 	  To be selected by modules requiring access to the Intel OnChip System
+-	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
++	  Fabric (IOSF) Sideband MailBox Interface (MBI). For IOSF platforms
+ 	  enumerable by PCI.
+ 
+ source "net/Kconfig"
+-- 
+1.7.10.4
 
