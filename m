@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaBYENj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:13:39 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:55793 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbaBYENh (ORCPT
+	id S1752966AbaBYEOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:14:19 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:58719 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752780AbaBYEOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:13:37 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <530C186D.3050602@roeck-us.net>
-Date: Mon, 24 Feb 2014 20:13:33 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Feb 2014 23:14:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak8KAJUXDFN5LJYe/2dsb2JhbABZgwY7qUMDkweFVYEYF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIBMZ6FxaOTgeDJIEUBJgzilKHVoFvgVIo
+Date: Tue, 25 Feb 2014 15:13:46 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
+        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
+        mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
+ for fallocate
+Message-ID: <20140225041346.GA29907@dastard>
+References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
+ <20140224005710.GH4317@dastard>
+ <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
 MIME-Version: 1.0
-To: Huacai Chen <chenhuacai@gmail.com>
-CC: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Paul Burton <paul.burton@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries)
- causing qemu hang with mips64 kernels
-References: <52F5A6EE.7020000@roeck-us.net> <CAAhV-H7GbarXPb2uye1jiH+caAL4vWTVBeGY77Yf0tvdpGJtiA@mail.gmail.com> <52F5B8CE.1000808@roeck-us.net>
-In-Reply-To: <52F5B8CE.1000808@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2014 08:55 PM, Guenter Roeck wrote:
-> On 02/07/2014 07:57 PM, Huacai Chen wrote:
->> Hi,
->>
->> Maybe you can try this:
->> http://patchwork.linux-mips.org/patch/6506/
->> http://patchwork.linux-mips.org/patch/6507/
->>
-> With those two patches applied the problem is gone.
->
+On Tue, Feb 25, 2014 at 02:16:01PM +1100, Stephen Rothwell wrote:
+> Hi Dave,
+> 
+> On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > > Namjae Jeon (10):
+> > >   fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+> > >   xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+> > 
+> > I've pushed these to the following branch:
+> > 
+> > 	git://oss.sgi.com/xfs/xfs.git xfs-collapse-range
+> > 
+> > And so they'll be in tomorrow's linux-next tree.
+> > 
+> > >   ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
+> > 
+> > I've left this one alone for the ext4 guys to sort out.
+> 
+> So presumably that xfs tree branch is now completely stable and so Ted
+> could just merge that branch into the ext4 tree as well and put the ext4
+> part on top of that in his tree.
 
-Any idea if and when those patches may find their way upstream ?
-3.14-rc4 still has the problem.
+Well, for some definition of stable. Right now it's just a topic
+branch that is merged into the for-next branch, so in theory it is
+still just a set of pending changes in a branch in a repo that has
+been pushed to linux-next for testing.
 
-Thanks,
-Guenter
+That said, I don't see that branch changing unless we find bugs in
+the code or a problem with the API needs fixing, at which point I
+would add more commits to it and rebase the for-next branch that you
+are pulling into the linux-next tree.
 
-> Thanks a lot!
->
-> Guenter
->
->> On Sat, Feb 8, 2014 at 11:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>> Hi all,
->>>
->>> in 3.14-rc1, my mips64 qemu test fails. The image boots and then hangs.
->>> Bisect points to commit 597ce1723 (MIPS: Support for 64-bit FP with O32
->>> binaries).
->>> Reverting this commit fixes the problem. Disabling MIPS_O32_FP64_SUPPORT
->>> in my test image does _not_ solve the problem. The qemu version does not
->>> seem
->>> to make a difference; I tested with qemu 1.6.0 and 1.7.0.
->>>
->>> Console log output is available in
->>> http://server.roeck-us.net:8010/builders/qemu-mips64-master/builds/34/steps/buildcommand/logs/stdio
->>>
->>> When the problem is seen, the emulation hangs as can be seen in the log,
->>> and the qemu process consumes 100% CPU until it is killed.
->>>
->>> qemu command line is
->>>
->>> qemu-system-mips64 -kernel vmlinux -M malta -hda
->>> core-image-minimal-qemumips64.ext3 \
->>> -vga cirrus -usb -usbdevice wacom-tablet -no-reboot -m 128 --append
->>> "root=/dev/hda \
->>> rw mem=128M console=ttyS0 console=tty" -nographic
->>>
->>> The same configuration works fine with earlier kernels. I'll be happy to
->>> provide
->>> the detailed configuration as well as the root file system for testing if
->>> needed.
->>>
->>> Obviously I have no idea if this is a problem with the patch or with qemu.
->>> If there is anything I can do to help tracking down the problem further,
->>> please let me know.
->>>
->>> Thanks,
->>> Guenter
->>>
->>
->>
->
+Realistically, I'm waiting for Lukas to repost his other pending
+fallocate changes (the zero range changes) so I can pull the VFS and
+XFS bits of that into the XFS tree and I can test them together
+before I'll call the xfs-collapse-range stable and ready to be
+merged into some other tree...
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
