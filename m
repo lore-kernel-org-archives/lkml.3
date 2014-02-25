@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaBYEOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:14:19 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:58719 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752780AbaBYEOE (ORCPT
+	id S1752900AbaBYEOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:14:18 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:34144 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752767AbaBYENm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:14:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak8KAJUXDFN5LJYe/2dsb2JhbABZgwY7qUMDkweFVYEYF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIBMZ6FxaOTgeDJIEUBJgzilKHVoFvgVIo
-Date: Tue, 25 Feb 2014 15:13:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
-        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-Message-ID: <20140225041346.GA29907@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
- <20140224005710.GH4317@dastard>
- <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
+	Mon, 24 Feb 2014 23:13:42 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Feb 2014 20:13:34 -0800
+Subject: RE: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Topic: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Index: Ac8xzzV7+gQ4C3tATQ2PzDbpbbQvGwAEKlPQ
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+ <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
+ <20140225011839.GD7540@shlinux1.ap.freescale.net>
+In-Reply-To: <20140225011839.GD7540@shlinux1.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-25_01:2014-02-21,2014-02-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402240189
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1P4Ejug019857
 
-On Tue, Feb 25, 2014 at 02:16:01PM +1100, Stephen Rothwell wrote:
-> Hi Dave,
+
+
+
+> -----Original Message-----
+> From: Peter Chen [mailto:peter.chen@freescale.com]
+> Sent: 2014Äê2ÔÂ25ÈÕ 9:19
+> To: Neil Zhang
+> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
 > 
-> On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Feb 24, 2014 at 04:03:12PM +0800, Neil Zhang wrote:
+> > Hardware zlt will try to send the zero length packet automatically
+> > when the data transferd is multiple times of max packet, this will
+> > cause issues on Windows.
+> > So let's disable HW zlt by default.
+> 
+> Would you have description that what kinds of issue on Windows if zlt is is
+> selected?
+> 
+
+Enumeration will fail.
+
+> Peter
+> 
 > >
-> > > Namjae Jeon (10):
-> > >   fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-> > >   xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-> > 
-> > I've pushed these to the following branch:
-> > 
-> > 	git://oss.sgi.com/xfs/xfs.git xfs-collapse-range
-> > 
-> > And so they'll be in tomorrow's linux-next tree.
-> > 
-> > >   ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-> > 
-> > I've left this one alone for the ext4 guys to sort out.
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >  drivers/usb/gadget/mv_udc_core.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/usb/gadget/mv_udc_core.c
+> > b/drivers/usb/gadget/mv_udc_core.c
+> > index ebc0dfd..657ac5c 100644
+> > --- a/drivers/usb/gadget/mv_udc_core.c
+> > +++ b/drivers/usb/gadget/mv_udc_core.c
+> > @@ -89,7 +89,7 @@ static void ep0_reset(struct mv_udc *udc)
+> >  		/* configure ep0 endpoint capabilities in dQH */
+> >  		ep->dqh->max_packet_length =
+> >  			(EP0_MAX_PKT_SIZE << EP_QUEUE_HEAD_MAX_PKT_LEN_POS)
+> > -			| EP_QUEUE_HEAD_IOS;
+> > +			| EP_QUEUE_HEAD_IOS | EP_QUEUE_HEAD_ZLT_SEL;
+> >
+> >  		ep->dqh->next_dtd_ptr = EP_QUEUE_HEAD_NEXT_TERMINATE;
+> >
+> > --
+> > 1.7.9.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-usb"
+> > in the body of a message to majordomo@vger.kernel.org More majordomo
+> > info at  http://vger.kernel.org/majordomo-info.html
+> >
+> >
 > 
-> So presumably that xfs tree branch is now completely stable and so Ted
-> could just merge that branch into the ext4 tree as well and put the ext4
-> part on top of that in his tree.
+> --
+> 
+> Best Regards,
+> Peter Chen
 
-Well, for some definition of stable. Right now it's just a topic
-branch that is merged into the for-next branch, so in theory it is
-still just a set of pending changes in a branch in a repo that has
-been pushed to linux-next for testing.
 
-That said, I don't see that branch changing unless we find bugs in
-the code or a problem with the API needs fixing, at which point I
-would add more commits to it and rebase the for-next branch that you
-are pulling into the linux-next tree.
-
-Realistically, I'm waiting for Lukas to repost his other pending
-fallocate changes (the zero range changes) so I can pull the VFS and
-XFS bits of that into the XFS tree and I can test them together
-before I'll call the xfs-collapse-range stable and ready to be
-merged into some other tree...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
