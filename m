@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224AbaBYXrC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 18:47:02 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:42139 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaBYXrA (ORCPT
+	id S1753414AbaBYXuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 18:50:50 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:35594 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142AbaBYXus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 18:47:00 -0500
-Message-ID: <1393372009.2886.5.camel@linux-whg8.site>
-Subject: Re: [RFC PATCH for-next 4/4] epoll: epoll() syscall definition
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 25 Feb 2014 15:46:49 -0800
-In-Reply-To: <20140225102144.GA10176@dcvr.yhbt.net>
-References: <1393206162-18151-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-	 <1393206162-18151-5-git-send-email-n1ght.4nd.d4y@gmail.com>
-	 <20140225102144.GA10176@dcvr.yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 18:50:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <5E6DB7F9-41E0-4DCC-A14B-49E2F4134A1C@suse.de>
+References: <1393284484-27637-1-git-send-email-agraf@suse.de>
+ <20140225171528.GJ4407@cmpxchg.org> <20140225171940.GS6835@laptop.programming.kicks-ass.net>
+ <5E6DB7F9-41E0-4DCC-A14B-49E2F4134A1C@suse.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 26 Feb 2014 00:50:24 +0100
+Message-ID: <CAPXgP10dB6a9BkgZNjPwHSRChfXfSAjhkpzjWwqYwGa+8JwgaQ@mail.gmail.com>
+Subject: Re: [PATCH] ksm: Expose configuration via sysctl
+To: Alexander Graf <agraf@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 10:21 +0000, Eric Wong wrote:
-> Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
-> > + * stores triggered eventpoll entries in the 'out' array. The input array is
-> > + * _not_ read-only, because the resulting event mask gets written back to each
-> > + * entry's ->ep_events field. When successful, this will be the same as before
-> > + * (plus EPOLLERR & EPOLLHUP). If ->ep_events gets cleared, then it is reasonable
-> > + * to infer that the entry's ->ep_fildes was a bad file descriptor.
-> > + */
-> 
-> > +	if (!access_ok(VERIFY_WRITE, in, inc * sizeof(struct epoll)))
-> > +		goto out;
-> > +	for (i = 0; i < inc; ++i) {
-> > +		int fd, io;
-> > +		long long id;
-> > +
-> > +		ret = -EFAULT;
-> > +		if (__get_user(fd, &in[i].ep_fildes) ||
-> > +		    __get_user(io, &in[i].ep_events) ||
-> > +		    __get_user(id, &in[i].ep_ident))
-> > +			goto out;
-> > +
-> > +		ep_control(file->private_data, fd, &io, id, 0);
-> > +		ret = -EFAULT;
-> > +		if (__put_user(io, &in[i].ep_events))
-> > +			goto out;
-> 
-> I don't think we should waste cycles writing to 'in' on success.
+On Wed, Feb 26, 2014 at 12:16 AM, Alexander Graf <agraf@suse.de> wrote:
+>
+>
+>>> Am 26.02.2014 um 01:19 schrieb Peter Zijlstra <peterz@infradead.org>:
+>>>
+>>>> On Tue, Feb 25, 2014 at 12:15:28PM -0500, Johannes Weiner wrote:
+>>>> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
+>>>> Configuration of tunables and Linux virtual memory settings has traditionally
+>>>> happened via sysctl. Thanks to that there are well established ways to make
+>>>> sysctl configuration bits persistent (sysctl.conf).
+>>>>
+>>>> KSM introduced a sysfs based configuration path which is not covered by user
+>>>> space persistent configuration frameworks.
+>>>>
+>>>> In order to make life easy for sysadmins, this patch adds all access to all
+>>>> KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
+>>>> giving us a streamlined way to make KSM configuration persistent.
+>>>>
+>>>> Reported-by: Sasche Peilicke <speilicke@suse.com>
+>>>> Signed-off-by: Alexander Graf <agraf@suse.de>
+>>>> ---
+>>>> kernel/sysctl.c |   10 +++++++
+>>>> mm/ksm.c        |   78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>> 2 files changed, 88 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>>>> index 332cefc..2169a00 100644
+>>>> --- a/kernel/sysctl.c
+>>>> +++ b/kernel/sysctl.c
+>>>> @@ -217,6 +217,9 @@ extern struct ctl_table random_table[];
+>>>> #ifdef CONFIG_EPOLL
+>>>> extern struct ctl_table epoll_table[];
+>>>> #endif
+>>>> +#ifdef CONFIG_KSM
+>>>> +extern struct ctl_table ksm_table[];
+>>>> +#endif
+>>>>
+>>>> #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+>>>> int sysctl_legacy_va_layout;
+>>>> @@ -1279,6 +1282,13 @@ static struct ctl_table vm_table[] = {
+>>>>   },
+>>>>
+>>>> #endif /* CONFIG_COMPACTION */
+>>>> +#ifdef CONFIG_KSM
+>>>> +    {
+>>>> +        .procname    = "ksm",
+>>>> +        .mode        = 0555,
+>>>> +        .child        = ksm_table,
+>>>> +    },
+>>>> +#endif
+>>>
+>>> ksm can be a module, so this won't work.
+>>>
+>>> Can we make those controls proper module parameters instead?
+>>
+>> You can do dynamic sysctl registration and removal. Its its own little
+>> filesystem of sorts.
+>
+> Hm. Doesn't this open another big can of worms? If we have ksm as a module and our sysctl helpers try to enable ksm on boot, they may not be able to because the module hasn't been loaded yet.
+>
+> So in that case, we want to always register the sysctl and dynamically load the ksm module when the sysctl gets accessed - similar to how we can do stub devices that load modiles, no?
 
-Fair enough, my thought process was mainly too add some consistency to
-the system call, but removing that constraint would clean up
-ep_control() anyway.
+The files sysctl tries to write to at bootup need to be all there
+right from the start, otherwise there can't be anything to access, and
+no way to trigger any module load.
 
+The auto-load stuff in /dev works by userspace creating dead device
+nodes with the proper dev_t before the device exists, which is a very
+different model.
+
+sysctl is not suitable for any instantiated or conditional data like
+loadable module, devices, ... Things need to be there right from the
+start, later registered facilities will not be noticed by sysctl in
+userspace and are therefore not hooked into system management. If any
+values should be applied from userspace, this will not really work
+out.
+
+There a network devices configs doing that today, and they don't
+really work that well; it's a gigantic stupid hack in userspace to
+fiddle with /proc/sys/ when a netdev shows up, no model to copy to any
+new facility.
+
+Usually, loadable module parameter need to live in /sys/module/ or
+/sys/bus/, where uevents are generated and udev can pick up the event
+and apply system configuration.
+
+Kay
