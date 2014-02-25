@@ -1,89 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaBYO71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:59:27 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59897 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179AbaBYO7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:59:25 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <chris@printf.net>
-CC: <jh80.chung@samsung.com>, <tgih.jun@samsung.com>,
-        <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] mmc: host: dw: fix possible build error
-Date: Tue, 25 Feb 2014 08:57:44 -0600
-Message-ID: <1393340264-22687-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.9.0
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S1753117AbaBYO7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:59:04 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59494 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbaBYO6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:58:49 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v4 2/3] [media] of: move common endpoint parsing to drivers/of
+Date: Tue, 25 Feb 2014 15:58:23 +0100
+Message-Id: <1393340304-19005-3-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.104
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following build errors:
+This patch adds a new struct of_endpoint which is then embedded in struct
+v4l2_of_endpoint and contains the endpoint properties that are not V4L2
+specific, or in fact not even media specific: port number, endpoint id,
+local device tree node and remote endpoint phandle.
+of_graph_parse_endpoint parses those properties and is used by
+v4l2_of_parse_endpoint, which just adds the V4L2 MBUS information
+to the containing v4l2_of_endpoint structure.
 
-drivers/mmc/host/dw_mmc-k3.c: In function ‘dw_mci_k3_suspend’:
-drivers/mmc/host/dw_mmc-k3.c:58:2: error: implicit declaration of
-	function ‘dw_mci_suspend’ [-Werror=implicit-function-declaration]
-  ret = dw_mci_suspend(host);
-  ^
-drivers/mmc/host/dw_mmc-k3.c: In function ‘dw_mci_k3_resume’:
-drivers/mmc/host/dw_mmc-k3.c:76:2: error: implicit declaration of
-	function ‘dw_mci_resume’ [-Werror=implicit-function-declaration]
-  return dw_mci_resume(host);
-  ^
-drivers/mmc/host/dw_mmc-k3.c: At top level:
-drivers/mmc/host/dw_mmc-k3.c:53:12: warning: ‘dw_mci_k3_suspend’ defined
-	but not used [-Wunused-function]
- static int dw_mci_k3_suspend(struct device *dev)
-            ^
-drivers/mmc/host/dw_mmc-k3.c:65:12: warning: ‘dw_mci_k3_resume’ defined
-	but not used [-Wunused-function]
- static int dw_mci_k3_resume(struct device *dev)
-            ^
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/mmc/host/dw_mmc-k3.c | 2 ++
- drivers/mmc/host/dw_mmc.h    | 2 +-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/v4l2-core/v4l2-of.c | 16 +++-------------
+ drivers/of/of_graph.c             | 32 ++++++++++++++++++++++++++++++++
+ include/linux/of_graph.h          | 20 ++++++++++++++++++++
+ include/media/v4l2-of.h           |  9 +++------
+ 4 files changed, 58 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc-k3.c b/drivers/mmc/host/dw_mmc-k3.c
-index f567c21..650f9cc 100644
---- a/drivers/mmc/host/dw_mmc-k3.c
-+++ b/drivers/mmc/host/dw_mmc-k3.c
-@@ -50,6 +50,7 @@ static int dw_mci_k3_probe(struct platform_device *pdev)
- 	return dw_mci_pltfm_register(pdev, drv_data);
- }
- 
-+#ifdef CONFIG_PM_SLEEP
- static int dw_mci_k3_suspend(struct device *dev)
+diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+index f919db3..222ed58 100644
+--- a/drivers/media/v4l2-core/v4l2-of.c
++++ b/drivers/media/v4l2-core/v4l2-of.c
+@@ -127,17 +127,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+ int v4l2_of_parse_endpoint(const struct device_node *node,
+ 			   struct v4l2_of_endpoint *endpoint)
  {
- 	struct dw_mci *host = dev_get_drvdata(dev);
-@@ -75,6 +76,7 @@ static int dw_mci_k3_resume(struct device *dev)
+-	struct device_node *port_node = of_get_parent(node);
+-
+-	memset(endpoint, 0, offsetof(struct v4l2_of_endpoint, head));
+-
+-	endpoint->local_node = node;
+-	/*
+-	 * It doesn't matter whether the two calls below succeed.
+-	 * If they don't then the default value 0 is used.
+-	 */
+-	of_property_read_u32(port_node, "reg", &endpoint->port);
+-	of_property_read_u32(node, "reg", &endpoint->id);
++	of_graph_parse_endpoint(node, &endpoint->ep);
++	endpoint->bus_type = 0;
++	memset(&endpoint->bus, 0, sizeof(endpoint->bus));
  
- 	return dw_mci_resume(host);
+ 	v4l2_of_parse_csi_bus(node, endpoint);
+ 	/*
+@@ -147,8 +139,6 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
+ 	if (endpoint->bus.mipi_csi2.flags == 0)
+ 		v4l2_of_parse_parallel_bus(node, endpoint);
+ 
+-	of_node_put(port_node);
+-
+ 	return 0;
  }
-+#endif /* CONFIG_PM_SLEEP */
+ EXPORT_SYMBOL(v4l2_of_parse_endpoint);
+diff --git a/drivers/of/of_graph.c b/drivers/of/of_graph.c
+index 267d8f7..d0f1683 100644
+--- a/drivers/of/of_graph.c
++++ b/drivers/of/of_graph.c
+@@ -15,6 +15,38 @@
+ #include <linux/of.h>
+ #include <linux/of_graph.h>
+ #include <linux/types.h>
++#include <media/of_graph.h>
++
++/**
++ * of_graph_parse_endpoint() - parse common endpoint node properties
++ * @node: pointer to endpoint device_node
++ * @endpoint: pointer to the OF endpoint data structure
++ *
++ * All properties are optional. If none are found, we don't set any flags.
++ * This means the port has a static configuration and no properties have
++ * to be specified explicitly.
++ * The caller should hold a reference to @node.
++ */
++int of_graph_parse_endpoint(const struct device_node *node,
++			    struct of_endpoint *endpoint)
++{
++	struct device_node *port_node = of_get_parent(node);
++
++	memset(endpoint, 0, sizeof(*endpoint));
++
++	endpoint->local_node = node;
++	/*
++	 * It doesn't matter whether the two calls below succeed.
++	 * If they don't then the default value 0 is used.
++	 */
++	of_property_read_u32(port_node, "reg", &endpoint->port);
++	of_property_read_u32(node, "reg", &endpoint->id);
++
++	of_node_put(port_node);
++
++	return 0;
++}
++EXPORT_SYMBOL(of_graph_parse_endpoint);
  
- static SIMPLE_DEV_PM_OPS(dw_mci_k3_pmops, dw_mci_k3_suspend, dw_mci_k3_resume);
+ /**
+  * of_graph_get_next_endpoint() - get next endpoint node
+diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+index 3bbeb60..2b233db 100644
+--- a/include/linux/of_graph.h
++++ b/include/linux/of_graph.h
+@@ -14,7 +14,21 @@
+ #ifndef __LINUX_OF_GRAPH_H
+ #define __LINUX_OF_GRAPH_H
  
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 6bf24ab..1f7a745 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -185,7 +185,7 @@
++/**
++ * struct of_endpoint - the OF graph endpoint data structure
++ * @port: identifier (value of reg property) of a port this endpoint belongs to
++ * @id: identifier (value of reg property) of this endpoint
++ * @local_node: pointer to device_node of this endpoint
++ */
++struct of_endpoint {
++	unsigned int port;
++	unsigned int id;
++	const struct device_node *local_node;
++};
++
+ #ifdef CONFIG_OF
++int of_graph_parse_endpoint(const struct device_node *node,
++				struct of_endpoint *endpoint);
+ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 					struct device_node *previous);
+ struct device_node *of_graph_get_remote_port_parent(
+@@ -22,6 +36,12 @@ struct device_node *of_graph_get_remote_port_parent(
+ struct device_node *of_graph_get_remote_port(const struct device_node *node);
+ #else
  
- extern int dw_mci_probe(struct dw_mci *host);
- extern void dw_mci_remove(struct dw_mci *host);
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- extern int dw_mci_suspend(struct dw_mci *host);
- extern int dw_mci_resume(struct dw_mci *host);
- #endif
++static inline int of_graph_parse_endpoint(const struct device_node *node,
++					struct of_endpoint *endpoint);
++{
++	return -ENOSYS;
++}
++
+ static inline struct device_node *of_graph_get_next_endpoint(
+ 					const struct device_node *parent,
+ 					struct device_node *previous)
+diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
+index 3a49735..2229a0e 100644
+--- a/include/media/v4l2-of.h
++++ b/include/media/v4l2-of.h
+@@ -19,6 +19,7 @@
+ #include <linux/errno.h>
+ #include <linux/of_graph.h>
+ 
++#include <media/of_graph.h>
+ #include <media/v4l2-mediabus.h>
+ 
+ struct device_node;
+@@ -51,17 +52,13 @@ struct v4l2_of_bus_parallel {
+ 
+ /**
+  * struct v4l2_of_endpoint - the endpoint data structure
+- * @port: identifier (value of reg property) of a port this endpoint belongs to
+- * @id: identifier (value of reg property) of this endpoint
+- * @local_node: pointer to device_node of this endpoint
++ * @ep: struct of_endpoint containing port, id, and local of_node
+  * @bus_type: bus type
+  * @bus: bus configuration data structure
+  * @head: list head for this structure
+  */
+ struct v4l2_of_endpoint {
+-	unsigned int port;
+-	unsigned int id;
+-	const struct device_node *local_node;
++	struct of_endpoint ep;
+ 	enum v4l2_mbus_type bus_type;
+ 	union {
+ 		struct v4l2_of_bus_parallel parallel;
 -- 
-1.9.0
+1.8.5.3
 
