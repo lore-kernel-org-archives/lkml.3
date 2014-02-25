@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaBYBQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 20:16:30 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:29256 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbaBYBQ2 (ORCPT
+	id S1752828AbaBYBbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:31:47 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:43416 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555AbaBYBbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 20:16:28 -0500
-Message-ID: <1393290984.2577.5.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Feb 2014 17:16:24 -0800
-In-Reply-To: <CA+55aFyQJGG6SC99mWwm3L=xYTCmt3=Qm-R4pWjeCyY_xAt63Q@mail.gmail.com>
-References: <1392960523.3039.16.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFw1_Ecbjjv9vijj3o46mkq3NrJn0X-FnbpCGBZG2=NuOA@mail.gmail.com>
-	 <1393016019.3039.40.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFyQJGG6SC99mWwm3L=xYTCmt3=Qm-R4pWjeCyY_xAt63Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Feb 2014 20:31:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1402222338420.21251@ionos.tec.linutronix.de>
+References: <1388707565-16535-1-git-send-email-yinghai@kernel.org>
+	<1388707565-16535-3-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1401222241100.24986@ionos.tec.linutronix.de>
+	<CAE9FiQUo9NGbjiZbMsf2yBFbn=iLJ-jc3QtZ8K6qwVuhmqzq=Q@mail.gmail.com>
+	<alpine.DEB.2.02.1402221104440.21251@ionos.tec.linutronix.de>
+	<CAE9FiQVf2L-FjkXR3WC=0iHNY73D2G4jyMeko4f4DPuxAXTK+Q@mail.gmail.com>
+	<CAE9FiQVf7u62S4puc2iMqiFO2YU-Kf35XVB9mC+SEP6Z73x7Zw@mail.gmail.com>
+	<alpine.DEB.2.02.1402222338420.21251@ionos.tec.linutronix.de>
+Date: Mon, 24 Feb 2014 17:31:43 -0800
+X-Google-Sender-Auth: Hbgrhu4FKK9OD7bljOJxsFbDCBU
+Message-ID: <CAE9FiQUbWrAeavs-9Ze19FxWWn7dC1JA-69FfVhZSgwYCcohhA@mail.gmail.com>
+Subject: Re: [PATCH v5 02/33] genirq: Add irq_alloc_reserved_desc()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tony Luck <tony.luck@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-21 at 13:18 -0800, Linus Torvalds wrote:
-> On Fri, Feb 21, 2014 at 12:53 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > I think you are right. I just reran some of the tests and things are
-> > pretty much the same, so we could get rid of it.
-> 
-> Ok, I'd prefer the simpler model of just a single per-thread hashed
-> lookup, and then we could perhaps try something more complex if there
-> are particular loads that really matter. I suspect there is more
-> upside to playing with the hashing of the per-thread cache (making it
-> three bits, whatever) than with some global thing.
-> 
-> >> Also, the hash you use for the vmacache index is *particularly* odd.
-> >>
-> >>         int idx =  (addr >> 10) & 3;
-> >>
-> >> you're using the top two bits of the address *within* the page.
-> >> There's a lot of places that round addresses down to pages, and in
-> >> general it just looks really odd to use an offset within a page as an
-> >> index, since in some patterns (linear accesses, whatever), the page
-> >> faults will always be to the beginning of the page, so index 0 ends up
-> >> being special.
-> >
-> > Ah, this comes from tediously looking at access patterns. I actually
-> > printed pages of them. I agree that it is weird, and I'm by no means
-> > against changing it. However, the results are just too good, specially
-> > for ebizzy, so I decided to keep it, at least for now. I am open to
-> > alternatives.
-> 
-> Hmm. Numbers talk, bullshit walks. So if you have the numbers that say
-> this is actually a good model..
+On Sat, Feb 22, 2014 at 3:38 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> OMG, you really mean that:
+>
+> +++ b/arch/alpha/kernel/irq_i8259.c
+> @@ -92,6 +92,7 @@ init_i8259a_irqs(void)
+>         outb(0xff, 0xA1);       /* mask all of 8259A-2 */
+>
+>         for (i = 0; i < 16; i++) {
+> +               irq_alloc_desc_at(i, 0);
+>                 irq_set_chip_and_handler(i, &i8259a_irq_type, handle_level_irq);
+>         }
+>
+> You can't be serious about that. There are tons of ways to call into
+> the core and access an irq descriptor aside of irq_set_chip* before it
+> is potentially allocated.
+>
+> Are you going to analyze all of them and add an irq_alloc_desc_at()
+> before that call?
+>
+> HELL, NO!
+>
+> I'm really tired of that.
+>
+> Stay away from kernel/irq/* and wait for people who are competent
+> enough and willing to spend the extra thoughts to come up with
+> solutions which are not completely ass backwards.
 
-If we add the two missing bits to the shifting and use PAGE_SHIFT (x86
-at least) we get just as good results as with 10. So we would probably
-prefer hashing based on the page number and not some offset within the
-page.
+oh, no, sorry for annoying you again.
 
-Thanks,
-Davidlohr
+In the irq_alloc_desc_at() path for !SPARSE_IRQ, it should not touch anything
+except setting that bit in allocated_irqs bitmap.
 
+Or could just replace irq_reserve_irq in irq_set_chip(), in that way will avoid
+touching arch codes.
+
+like
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index dc04c16..02d6ad0 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -28,8 +28,13 @@
+ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
+ {
+     unsigned long flags;
+-    struct irq_desc *desc = irq_get_desc_lock(irq, &flags, 0);
++    struct irq_desc *desc;
++
++#ifndef CONFIG_SPARSE_IRQ
++    irq_alloc_desc_at(irq, 0);
++#endif
+
++    desc = irq_get_desc_lock(irq, &flags, 0);
+     if (!desc)
+         return -EINVAL;
+
+@@ -38,12 +43,7 @@ int irq_set_chip(unsigned int irq, struct irq_chip *chip)
+
+     desc->irq_data.chip = chip;
+     irq_put_desc_unlock(desc, flags);
+-    /*
+-     * For !CONFIG_SPARSE_IRQ make the irq show up in
+-     * allocated_irqs. For the CONFIG_SPARSE_IRQ case, it is
+-     * already marked, and this call is harmless.
+-     */
+-    irq_reserve_irq(irq);
++
+     return 0;
+ }
+ EXPORT_SYMBOL(irq_set_chip);
