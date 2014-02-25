@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaBYHQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 02:16:56 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:60067 "EHLO
+	id S1751864AbaBYHSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 02:18:51 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:59472 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751485AbaBYHQx (ORCPT
+	by vger.kernel.org with ESMTP id S1750707AbaBYHSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 02:16:53 -0500
+	Tue, 25 Feb 2014 02:18:50 -0500
 From: Neil Zhang <zhangwm@marvell.com>
 To: Peter Chen <peter.chen@freescale.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
+CC: Matthieu CASTET <matthieu.castet@parrot.com>,
+        "balbi@ti.com" <balbi@ti.com>,
         "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Feb 2014 23:16:50 -0800
-Subject: RE: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
-Thread-Topic: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
-Thread-Index: Ac8x6HNwjGqoalXpQ0eXSPDU7x4zUgAENcvQ
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A6@SC-VEXCH4.marvell.com>
+Date: Mon, 24 Feb 2014 23:18:44 -0800
+Subject: RE: [PATCH 0/6] bug fix for mv_udc_core.c
+Thread-Topic: [PATCH 0/6] bug fix for mv_udc_core.c
+Thread-Index: Ac8x6DQmIunpx4o4TVuZaBRhrRe4IAAEXAng
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A8@SC-VEXCH4.marvell.com>
 References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
- <1393228996-14787-6-git-send-email-zhangwm@marvell.com>
- <20140225041854.GB14793@shlinux1.ap.freescale.net>
-In-Reply-To: <20140225041854.GB14793@shlinux1.ap.freescale.net>
+ <20140224113153.64c5a772@parrot.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC4133CD@SC-VEXCH4.marvell.com>
+ <20140225041730.GA14793@shlinux1.ap.freescale.net>
+In-Reply-To: <20140225041730.GA14793@shlinux1.ap.freescale.net>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
  definitions=2014-02-25_01:2014-02-25,2014-02-25,1970-01-01 signatures=0
@@ -38,94 +40,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1P7GxuI020419
-
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1P7Iu78020432
 
 
 > -----Original Message-----
 > From: Peter Chen [mailto:peter.chen@freescale.com]
-> Sent: 2014Äê2ÔÂ25ÈÕ 12:19
+> Sent: 2014å¹´2æœˆ25æ—¥ 12:18
 > To: Neil Zhang
-> Cc: balbi@ti.com; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 5/6] USB: gadget: mv_udc: workaroud for missing dTD
+> Cc: Matthieu CASTET; balbi@ti.com; gregkh@linuxfoundation.org;
+> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/6] bug fix for mv_udc_core.c
 > 
-> On Mon, Feb 24, 2014 at 04:03:15PM +0800, Neil Zhang wrote:
-> > There is an issue with the add dTD tripwire semaphore (ATDTW bit in
-> > USBCMD register) that can cause the controller to ignore a dTD that is
-> > added to a primed endpoint. When this happens, the software can read
-> > the tripwire bit and the status bit at '1' even though the endpoint is
-> > unprimed.
+> On Mon, Feb 24, 2014 at 04:42:40AM -0800, Neil Zhang wrote:
 > >
-> > After executing a dTD, the device controller endpoint state machine
-> > executes a final read of the dTD terminate bit to check if the
-> > application added a dTD to the linked list at the last moment. This
-> > read is done in the finpkt_read_latest_next_td (44) state. After the
-> > read is performed, if the terminate bit is still set, the state
-> > machine moves to unprime the endpoint. The decision to unprime the
-> > endpoint is done in the checkqh_decision (59) state, based on the value of
-> the terminate bit.
+> > > -----Original Message-----
+> > > From: Matthieu CASTET [mailto:matthieu.castet@parrot.com]
+> > > Sent: 2014å¹´2æœˆ24æ—¥ 18:32
+> > > To: Neil Zhang
+> > > Cc: balbi@ti.com; gregkh@linuxfoundation.org;
+> > > linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH 0/6] bug fix for mv_udc_core.c
+> > >
+> > > Le Mon, 24 Feb 2014 16:03:10 +0800,
+> > > Neil Zhang <zhangwm@marvell.com> a Ã©crit :
+> > >
+> > > > This patch set is mainly for bug fix.
+> > > >
+> > > > Neil Zhang (6):
+> > > >   usb: gadget: mv_udc: remove redundant pull up in udc_start
+> > > >   usb: gadget: mv_udc: disable HW zlt for ep0
+> > > >   usb: gadget: mv_udc: clear corresponding interrupt when flush fifo
+> > > >   usb: gadget: mv_udc: check endpoint before queue dtd
+> > > >   USB: gadget: mv_udc: workaroud for missing dTD
+> > > >   USB: gadget: mv_udc: fix corner case for missiong dTD
+> > > >
+> > > >  drivers/usb/gadget/mv_udc_core.c |   47
+> > > ++++++++++++++++++++++++++++++++++----
+> > > >  1 file changed, 42 insertions(+), 5 deletions(-)
+> > > >
+> > >
+> > > Do you have plan to move to the chipidea udc driver ?
+> > >
+> > > You could have some bug fix for free or share your bug fix with others.
+> > >
 > >
-> > Before reaching the checkqh_decision state, the state machine
-> > traverses the writeqhtd_status (57), writeqh_status (56), and
-> > release_prime_mask
-> > (42) states. As shown in the waveform, the ep_addtd_tripwire_clr
-> > signal is not set to clear the tripwire bit in these states.
 > >
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> > ---
-> >  drivers/usb/gadget/mv_udc_core.c |   20 ++++++++++++++++++++
-> >  1 file changed, 20 insertions(+)
-> >
-> > diff --git a/drivers/usb/gadget/mv_udc_core.c
-> > b/drivers/usb/gadget/mv_udc_core.c
-> > index a620cff..8df8606 100644
-> > --- a/drivers/usb/gadget/mv_udc_core.c
-> > +++ b/drivers/usb/gadget/mv_udc_core.c
-> > @@ -196,7 +196,27 @@ static int process_ep_req(struct mv_udc *udc, int
-> index,
-> >  			while (readl(&udc->op_regs->epstatus) & bit_pos)
-> >  				udelay(1);
-> >  			break;
-> > +		} else {
-> > +			if (!(readl(&udc->op_regs->epstatus) & bit_pos)) {
-> > +				/* The DMA engine thinks there is no more dTD */
-> > +				curr_dqh->next_dtd_ptr = curr_dtd->dtd_next
-> > +					& EP_QUEUE_HEAD_NEXT_POINTER_MASK;
-> > +
-> > +				/* clear active and halt bit */
-> > +				curr_dqh->size_ioc_int_sts &=
-> > +						~(DTD_STATUS_ACTIVE
-> > +						| DTD_STATUS_HALTED);
-> > +
-> > +				/* Do prime again */
-> > +				wmb();
-> > +				writel(bit_pos, &udc->op_regs->epprime);
-> > +				while (readl(&udc->op_regs->epprime) & bit_pos)
-> > +					cpu_relax();
-> > +
-> > +				break;
-> > +			}
-> >  		}
-> > +
-> >  		udelay(1);
-> >  	}
-> >
+> > Not yet.
+> > Will estimate it later.
+> > >
 > 
-> Is it a chipidea IP issue? Any errate number for this issue?
-> Does we need it for chipidea driver?
+> Freescale uses mv udc driver at u-boot, so the chipidea IP should be
+> compatible for two SoCs , both Intel and msm are using chipidea driver at linux
+> kernel, it should be not difficult for marvell to use it.
 > 
-
-Yes, I think so.
-9000531823	B2-Medium	Adding a dTD to a Primed Endpoint May Not Get Recognized
-Impacted Configuration: All device mode configurations. 
-
+> For this patchset, some of them may already be fixed at chipidea driver (3/6,
+> 4/6), some of them may not (5/6, 6/6).
+> 
 > --
+
+Thanks for the comments.
+Since we are using it in our product, so it's not that easy to switch to a new driver.
+
 > 
 > Best Regards,
 > Peter Chen
 
 Best Regards,
 Neil Zhang
-
 ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
