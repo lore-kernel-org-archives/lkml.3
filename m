@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaBYA7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:59:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52698 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbaBYA7G (ORCPT
+	id S1752473AbaBYBDy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 20:03:54 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:49469 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaBYBDx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:59:06 -0500
-Date: Mon, 24 Feb 2014 17:00:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: devel@driverdev.osuosl.org, abbotti@mev.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3 v2] Staging: comedi: addi-data: fix a couple of lines
- that are too long
-Message-ID: <20140225010039.GA31031@kroah.com>
-References: <1393039316-7274-1-git-send-email-chase.southwood@yahoo.com>
- <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
+	Mon, 24 Feb 2014 20:03:53 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393259709-18516-1-git-send-email-chase.southwood@yahoo.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8BIT
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "Tomasz Figa" <tomasz.figa@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <530B8627.4020705@free-electrons.com>
+Cc: "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        "Andrew Lunn" <andrew@lunn.ch>, "Jason Cooper" <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org,
+        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>
+References: <1392054179-28830-1-git-send-email-gregory.clement@free-electrons.com>
+ <530A420B.5050207@gmail.com> <530B8627.4020705@free-electrons.com>
+Message-ID: <20140225010347.22529.41519@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] clk: respect the clock dependencies in of_clk_init
+Date: Mon, 24 Feb 2014 17:03:47 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:35:09AM -0600, Chase Southwood wrote:
-> There are a couple of cases where a comment being on the same line as a
-> statement is causing the line to be over 80 characters long.  This is an
-> easy fix, move these comments to the previous line.
+Quoting Gregory CLEMENT (2014-02-24 09:49:27)
+> On 23/02/2014 19:46, Tomasz Figa wrote:
+> > On 10.02.2014 18:42, Gregory CLEMENT wrote:
+> >> +
+> >> +    for (i = 0; i < num_parents; i++) {
+> >> +            if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", i,
+> >> +                                           &clkspec))
+> >> +                    return 1;
+> >> +
+> >> +            /* Check if we have such a provider in our array */
+> >> +            found = false;
+> >> +            list_for_each_entry(provider, &of_clk_providers, link) {
+> >> +                    if (provider->node == clkspec.np) {
+> >> +                            found = true;
+> >> +                            break;
+> >> +                    }
+> >> +            }
+> >> +
+> >> +            if (!found)
+> >> +                    return 0;
+> >> +    }
+> > 
+> > ...or even better, __of_clk_get_from_provider() could modified to return
+> > -EPROBE_DEFER if requested provider is not registered and you could 
 > 
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+> There is already a patch sent for this "clk: return probe defer when DT clock
+> not yet ready": http://article.gmane.org/gmane.linux.kernel/1643466
 > 
-> ---
-> 2: Some changes to PATCH 2/3 v2 occurred in the immediate context of
-> changes in this patch.  I've redone this patch after updating PATCH 2/3
-> so that it still applies cleanly.
+> Mike will you take it?
+> 
+> Then I can use it to implement the suggestion made by Tomasz.
 
-Thank you for noticing and fixing this up before I hit it, much
-appreciated.
+I have just merged it to clk-next. I'll push out an updated clk-next
+branch later tonight.
 
-greg k-h
+Regards,
+Mike
