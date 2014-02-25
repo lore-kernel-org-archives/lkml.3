@@ -1,251 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaBYRFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 12:05:52 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37335 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaBYRFv (ORCPT
+	id S1753343AbaBYRIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:08:17 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42702 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752877AbaBYRIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 12:05:51 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 1/2] pinctrl: sh-pfc: r8a7790: Add alternative MSIOF pin groups
-Date: Tue, 25 Feb 2014 18:07:08 +0100
-Message-ID: <2539875.LC3GLXFbLI@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1392926021-19526-1-git-send-email-geert@linux-m68k.org>
-References: <1392926021-19526-1-git-send-email-geert@linux-m68k.org>
+	Tue, 25 Feb 2014 12:08:16 -0500
+Date: Tue, 25 Feb 2014 12:08:14 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of
+ suspended devices
+In-Reply-To: <10187724.x3fLnu1cYV@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1402251010190.1294-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Tue, 25 Feb 2014, Rafael J. Wysocki wrote:
 
-Thank you for the patch.
-
-On Thursday 20 February 2014 20:53:40 Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> > This discussion is getting a little messy.  Let's try to clarify it.
+> > Here is the major point:
+> > 
+> > 	We would like to save time during system suspend/resume by
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> Actually, that's not only about saving time, but also about saving energy.
 
-I'm a bit concerned that this would allow boards to select combinations of 
-main and alternate MSIOF pins not supported by the hardware, but there's 
-little we can do about that, so
+Sure.
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
->  drivers/pinctrl/sh-pfc/pfc-r8a7790.c |  129 +++++++++++++++++++++++++++++++
->  1 file changed, 129 insertions(+)
+> > 	skipping over devices that are already in runtime suspend,
+> > 	whenever it is safe to do so.
+> > 
+> > Of course, the "it is safe to do so" part is what makes this difficult.  
+> > It boils down to three characteristics for each device.
+> > 
+> >     (a) The device uses the same power state for runtime suspend and
+> > 	system suspend.  Therefore, if the device is already in runtime
+> > 	suspend and the wakeup settings are correct, there is no need
+> > 	for the PM core to invoke the device's ->suspend callbacks.
+> > 
+> > This requires a few comments.  The matter of whether the same power
+> > state is used for both types of suspend is generally known beforehand,
+> > because it is decided by the subsystem or driver.  The matter of
+> > whether the wakeup settings are correct often can't be known until the
+> > system suspend starts, because userspace can select whether or not
+> > wakeup should be enabled during a system sleep.
+> > 
+> > Also, if the PM core is going to skip the ->suspend callbacks then it 
+> > is obliged to skip the ->resume callbacks as well (we mustn't call one 
+> > without the other).  Therefore, in cases where (a) holds, the device 
+> > will necessarily emerge from the system resume in a runtime-suspended 
+> > state.
 > 
-> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c index 2ca319f15d31..2d1a0a158682
-> 100644
-> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7790.c
-> @@ -2260,6 +2260,42 @@ static const unsigned int msiof0_tx_pins[] = {
->  static const unsigned int msiof0_tx_mux[] = {
->  	MSIOF0_TXD_MARK,
->  };
-> +
-> +static const unsigned int msiof0_clk_b_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(1, 23),
-> +};
-> +static const unsigned int msiof0_clk_b_mux[] = {
-> +	MSIOF0_SCK_B_MARK,
-> +};
-> +static const unsigned int msiof0_ss1_b_pins[] = {
-> +	/* SS1 */
-> +	RCAR_GP_PIN(1, 12),
-> +};
-> +static const unsigned int msiof0_ss1_b_mux[] = {
-> +	MSIOF0_SS1_B_MARK,
-> +};
-> +static const unsigned int msiof0_ss2_b_pins[] = {
-> +	/* SS2 */
-> +	RCAR_GP_PIN(1, 10),
-> +};
-> +static const unsigned int msiof0_ss2_b_mux[] = {
-> +	MSIOF0_SS2_B_MARK,
-> +};
-> +static const unsigned int msiof0_rx_b_pins[] = {
-> +	/* RXD */
-> +	RCAR_GP_PIN(1, 29),
-> +};
-> +static const unsigned int msiof0_rx_b_mux[] = {
-> +	MSIOF0_RXD_B_MARK,
-> +};
-> +static const unsigned int msiof0_tx_b_pins[] = {
-> +	/* TXD */
-> +	RCAR_GP_PIN(1, 28),
-> +};
-> +static const unsigned int msiof0_tx_b_mux[] = {
-> +	MSIOF0_TXD_B_MARK,
-> +};
->  /* - MSIOF1
-> ----------------------------------------------------------------- */ static
-> const unsigned int msiof1_clk_pins[] = {
->  	/* SCK */
-> @@ -2303,6 +2339,42 @@ static const unsigned int msiof1_tx_pins[] = {
->  static const unsigned int msiof1_tx_mux[] = {
->  	MSIOF1_TXD_MARK,
->  };
-> +
-> +static const unsigned int msiof1_clk_b_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(1, 16),
-> +};
-> +static const unsigned int msiof1_clk_b_mux[] = {
-> +	MSIOF1_SCK_B_MARK,
-> +};
-> +static const unsigned int msiof1_ss1_b_pins[] = {
-> +	/* SS1 */
-> +	RCAR_GP_PIN(0, 18),
-> +};
-> +static const unsigned int msiof1_ss1_b_mux[] = {
-> +	MSIOF1_SS1_B_MARK,
-> +};
-> +static const unsigned int msiof1_ss2_b_pins[] = {
-> +	/* SS2 */
-> +	RCAR_GP_PIN(0, 19),
-> +};
-> +static const unsigned int msiof1_ss2_b_mux[] = {
-> +	MSIOF1_SS2_B_MARK,
-> +};
-> +static const unsigned int msiof1_rx_b_pins[] = {
-> +	/* RXD */
-> +	RCAR_GP_PIN(1, 17),
-> +};
-> +static const unsigned int msiof1_rx_b_mux[] = {
-> +	MSIOF1_RXD_B_MARK,
-> +};
-> +static const unsigned int msiof1_tx_b_pins[] = {
-> +	/* TXD */
-> +	RCAR_GP_PIN(0, 20),
-> +};
-> +static const unsigned int msiof1_tx_b_mux[] = {
-> +	MSIOF1_TXD_B_MARK,
-> +};
->  /* - MSIOF2
-> ----------------------------------------------------------------- */ static
-> const unsigned int msiof2_clk_pins[] = {
->  	/* SCK */
-> @@ -2389,6 +2461,35 @@ static const unsigned int msiof3_tx_pins[] = {
->  static const unsigned int msiof3_tx_mux[] = {
->  	MSIOF3_TXD_MARK,
->  };
-> +
-> +static const unsigned int msiof3_clk_b_pins[] = {
-> +	/* SCK */
-> +	RCAR_GP_PIN(0, 0),
-> +};
-> +static const unsigned int msiof3_clk_b_mux[] = {
-> +	MSIOF3_SCK_B_MARK,
-> +};
-> +static const unsigned int msiof3_sync_b_pins[] = {
-> +	/* SYNC */
-> +	RCAR_GP_PIN(0, 1),
-> +};
-> +static const unsigned int msiof3_sync_b_mux[] = {
-> +	MSIOF3_SYNC_B_MARK,
-> +};
-> +static const unsigned int msiof3_rx_b_pins[] = {
-> +	/* RXD */
-> +	RCAR_GP_PIN(0, 2),
-> +};
-> +static const unsigned int msiof3_rx_b_mux[] = {
-> +	MSIOF3_RXD_B_MARK,
-> +};
-> +static const unsigned int msiof3_tx_b_pins[] = {
-> +	/* TXD */
-> +	RCAR_GP_PIN(0, 3),
-> +};
-> +static const unsigned int msiof3_tx_b_mux[] = {
-> +	MSIOF3_TXD_B_MARK,
-> +};
->  /* - QSPI
-> ------------------------------------------------------------------- */
-> static const unsigned int qspi_ctrl_pins[] = {
->  	/* SPCLK, SSL */
-> @@ -3676,12 +3777,22 @@ static const struct sh_pfc_pin_group pinmux_groups[]
-> = { SH_PFC_PIN_GROUP(msiof0_ss2),
->  	SH_PFC_PIN_GROUP(msiof0_rx),
->  	SH_PFC_PIN_GROUP(msiof0_tx),
-> +	SH_PFC_PIN_GROUP(msiof0_clk_b),
-> +	SH_PFC_PIN_GROUP(msiof0_ss1_b),
-> +	SH_PFC_PIN_GROUP(msiof0_ss2_b),
-> +	SH_PFC_PIN_GROUP(msiof0_rx_b),
-> +	SH_PFC_PIN_GROUP(msiof0_tx_b),
->  	SH_PFC_PIN_GROUP(msiof1_clk),
->  	SH_PFC_PIN_GROUP(msiof1_sync),
->  	SH_PFC_PIN_GROUP(msiof1_ss1),
->  	SH_PFC_PIN_GROUP(msiof1_ss2),
->  	SH_PFC_PIN_GROUP(msiof1_rx),
->  	SH_PFC_PIN_GROUP(msiof1_tx),
-> +	SH_PFC_PIN_GROUP(msiof1_clk_b),
-> +	SH_PFC_PIN_GROUP(msiof1_ss1_b),
-> +	SH_PFC_PIN_GROUP(msiof1_ss2_b),
-> +	SH_PFC_PIN_GROUP(msiof1_rx_b),
-> +	SH_PFC_PIN_GROUP(msiof1_tx_b),
->  	SH_PFC_PIN_GROUP(msiof2_clk),
->  	SH_PFC_PIN_GROUP(msiof2_sync),
->  	SH_PFC_PIN_GROUP(msiof2_ss1),
-> @@ -3694,6 +3805,10 @@ static const struct sh_pfc_pin_group pinmux_groups[]
-> = { SH_PFC_PIN_GROUP(msiof3_ss2),
->  	SH_PFC_PIN_GROUP(msiof3_rx),
->  	SH_PFC_PIN_GROUP(msiof3_tx),
-> +	SH_PFC_PIN_GROUP(msiof3_clk_b),
-> +	SH_PFC_PIN_GROUP(msiof3_sync_b),
-> +	SH_PFC_PIN_GROUP(msiof3_rx_b),
-> +	SH_PFC_PIN_GROUP(msiof3_tx_b),
->  	SH_PFC_PIN_GROUP(qspi_ctrl),
->  	SH_PFC_PIN_GROUP(qspi_data2),
->  	SH_PFC_PIN_GROUP(qspi_data4),
-> @@ -3967,6 +4082,11 @@ static const char * const msiof0_groups[] = {
->  	"msiof0_ss2",
->  	"msiof0_rx",
->  	"msiof0_tx",
-> +	"msiof0_clk_b",
-> +	"msiof0_ss1_b",
-> +	"msiof0_ss2_b",
-> +	"msiof0_rx_b",
-> +	"msiof0_tx_b",
->  };
-> 
->  static const char * const msiof1_groups[] = {
-> @@ -3976,6 +4096,11 @@ static const char * const msiof1_groups[] = {
->  	"msiof1_ss2",
->  	"msiof1_rx",
->  	"msiof1_tx",
-> +	"msiof1_clk_b",
-> +	"msiof1_ss1_b",
-> +	"msiof1_ss2_b",
-> +	"msiof1_rx_b",
-> +	"msiof1_tx_b",
->  };
-> 
->  static const char * const msiof2_groups[] = {
-> @@ -3994,6 +4119,10 @@ static const char * const msiof3_groups[] = {
->  	"msiof3_ss2",
->  	"msiof3_rx",
->  	"msiof3_tx",
-> +	"msiof3_clk_b",
-> +	"msiof3_sync_b",
-> +	"msiof3_rx_b",
-> +	"msiof3_tx_b",
->  };
-> 
->  static const char * const qspi_groups[] = {
+> The "emerge from system resume" requires a bit of clarification in my
+> opinion.  Do you refer to the status of the device when user space is
+> thawed or earlier?  If earlier, then when exactly?
 
--- 
-Regards,
+The status of the device when its ->resume callback returns.  Or in 
+the context of your patch, when the ->resume callback is skipped.
 
-Laurent Pinchart
+> > This may or may not cause problems for the device's children; 
+> > see below.
+> > 
+> >     (b) It's okay for the device's parent to be in runtime suspend
+> > 	when the device's ->suspend callbacks are invoked.
+> > 
+> > I included this just to be thorough.  In fact, I expect (b) to be true 
+> > for pretty much every device already.
+> 
+> I don't quite understand this.  What if the parent is a bridge and the
+> child's ->suspend tries to access the child's registers?  That surely won't
+> work if the parent is in a low-power state at that point.
+
+It _does_ work on all current systems -- but only because the question 
+never arises if the device's parent is never in runtime suspend when 
+the device's ->suspend callbacks are invoked.
+
+I admit, there most likely _are_ devices that would get into trouble if
+the question ever did arise.
+
+> > In the absence of any sort of special arrangement, if (b) wasn't true 
+> > for some device then that device would already be experiencing problems 
+> > going into system suspend.
+> 
+> Unless, of course, its parent is a PCI device, because in that case it will
+> always be resumed by the PCI bus type.  And if the "always resumed" is going
+> to be changed to "only resumed if the parent's configuration needs to change",
+> there may be some regressions here and there.
+
+Okay, so you want to take a problem involving PCI and some other
+subsystems, and solve it by getting the PM core involved.  And you want
+to mix it in with the idea of "fast suspend".  Is that really the best
+approach?
+
+Here's another approach.  Add an "okay for my parent to be
+runtime-suspended when my ->suspend and ->resume callbacks are invoked"  
+flag to dev->power.  Make pci_pm_prepare(dev) check this flag in every
+child of dev; if there are any children where the flag isn't set then
+call pm_runtime_resume(dev) (and print a message in the kernel log so 
+that you know which driver needs to be fixed).
+
+This is appropriate because it adjusts the PCI core in a way that can
+safely avoid regressions, without getting the PM core involved in
+matters that should remain strictly between the PCI subsystem and the
+subsystems of children of PCI devices.
+
+It also allows the "fast suspend" change to be cleanly separated out 
+into a second patch.  In that patch, all you do is set 
+dev->power.fast_suspend if ->prepare returns > 0, and then you skip 
+->suspend and ->resume if fast_suspend is set and the device is
+runtime-suspended.
+
+> I agree with the idea, but I have a certain view on how to achieve it.
+> Which is by allowing the "good" ones to mark themselves as "good", then
+> go through the ones that aren't marked as "good" yet, fix them up and
+> mark them as "good".  Finally, when everyone is marked "good", we can
+> drop the marking.
+
+How will you know when nothing remains unmarked?
+
+> The reasoning was basically to set fast_suspend for a device if your condition
+> (a) held *and* if fast_suspend was set for all of the device's children.  Then
+> we would know that all those children would be RPM_SUSPENDED during system
+> resume as well and the resume part might be "streamlined" as well.  There was
+> nothing about (c) anywhere in that patchset. :-)
+
+This seems like getting the answer to the wrong question.  You want to
+know whether the children are okay with the parent being
+runtime-suspended during the child's suspend and resume callbacks, but
+instead you are asking if the children can remain runtime-suspended
+through the entire system suspend.  Those are two different questions.
+
+They seem related, because if the parent is in runtime suspend then the
+child must also be in runtime suspend (disregarding the possibility of
+ignore_children).  But this is a red herring.  It's entirely possible
+for the child to be RPM_ACTIVE during one of these callback even if the
+parent is RPM_SUSPENDED when the callback starts.  The child's driver
+merely needs to call pm_runtime_resume(dev) at the beginning of the
+callback.
+
+If the child's driver does this, it would be perfectly okay for the
+parent to use fast_suspend without the child using it too.  You could
+skip calling the parent's suspend and resume callbacks, and the child
+would work just fine.
+
+> That would be a different optimization from the one I'm thinking about.
+> 
+> For now, I'm focusing on one problem, which is when resuming runtime-suspended
+> devices during system suspend may be avoided and how to make that generally
+> work for different parent-child arrangements.
+> 
+> The resume part changes in my patchset were consequences of that only.
+
+See, I think that by considering this as a single problem, you aren't 
+getting down to the fundamental issues.
+
+Alan Stern
 
