@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaBYQdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:33:16 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:45559 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaBYQdN (ORCPT
+	id S1753220AbaBYQlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:41:03 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:49982 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaBYQlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:33:13 -0500
+	Tue, 25 Feb 2014 11:41:00 -0500
+Message-ID: <530CC796.1010800@cogentembedded.com>
+Date: Tue, 25 Feb 2014 20:40:54 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140225163010.GG24636@pd.tnic>
-References: <20140224162400.GE16457@pd.tnic>
-	<20140224201943.GA4397@pd.tnic>
-	<530CBB3D.3080604@zytor.com>
-	<CABPqkBR4bR9U1bhTtA02gDVR0aZ7iXBfg87jPLHfhrZVeFF8_g@mail.gmail.com>
-	<20140225163010.GG24636@pd.tnic>
-Date: Tue, 25 Feb 2014 17:33:13 +0100
-Message-ID: <CABPqkBT3O2VwV48OC9TgCLKrEnC_qokxU8_odMZQ+d+55wdKgA@mail.gmail.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-From: Stephane Eranian <eranian@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
+        Marc Dietrich <marvin24@gmx.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCHv2 4/5] net: rfkill: gpio: add ACPI ID for GPS module on
+ Lenove Miix2
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com> <1393330950-7283-5-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1393330950-7283-5-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 5:30 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Feb 25, 2014 at 05:14:01PM +0100, Stephane Eranian wrote:
->> I am trying to understand your test case.
->> Were you actually measure uncore_imc events at the time you suspended?
->
-> No test case, just the machine booting; look at the printk timestamps.
->
->> I tried on my IvyBridge Lenovo and it works fine with 3.14-rc4+
->> (tip.git). I used: echo -n disk >/sys/power/state
->
-> That's an x230 too, right? What I do is, I take linus/master, merge
-> tip/master, Matt's efi/next tree and my edac/for-next tree into it and
-> then boot that.
+Hello.
 
-No, it's a T430s. What happens if you boot vanilla tip.git?
+On 25-02-2014 16:22, Heikki Krogerus wrote:
 
->
-> I don't think that the edac and efi trees interfere though. I'll do a
-> fresh merge of only current tip/master into linus/master to test hpa's
-> suggestion in the other mail.
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+> On Lenovo Miix 2 8", BCM4752 is renamed LNV4752.
+
+    You have typoed in the subject, s/Lenove/Lenovo/.
+
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+
+WBR, Sergei
+
+
