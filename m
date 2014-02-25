@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaBYIwo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 03:52:44 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:42583 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaBYIwl (ORCPT
+	id S1752619AbaBYIx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 03:53:27 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:17175 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaBYIxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 03:52:41 -0500
-Date: Tue, 25 Feb 2014 08:52:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tony@atomide.com, bcousson@baylibre.com, balbi@ti.com, nm@ti.com,
-        khilman@linaro.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v8 03/14] mfd: omap-usb-host: Use clock names as per
- function for reference clocks
-Message-ID: <20140225085234.GB19099@lee--X1>
-References: <1392896409-5101-1-git-send-email-rogerq@ti.com>
- <1392896409-5101-4-git-send-email-rogerq@ti.com>
+	Tue, 25 Feb 2014 03:53:25 -0500
+Message-ID: <530C5977.4090402@huawei.com>
+Date: Tue, 25 Feb 2014 16:51:03 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1392896409-5101-4-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [cgroup/task_lock] INFO: suspicious RCU usage.
+References: <20140221021622.GB13515@localhost> <20140221154025.GB460@htj.dyndns.org>
+In-Reply-To: <20140221154025.GB460@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Use a meaningful name for the reference clocks so that it indicates the function.
+On 2014/2/21 23:40, Tejun Heo wrote:
+> Hello,
 > 
-> CC: Lee Jones <lee.jones@linaro.org>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  drivers/mfd/omap-usb-host.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> On Fri, Feb 21, 2014 at 10:16:22AM +0800, Fengguang Wu wrote:
+>> commit fb47fea7a59cf3d6387c566084a6684b5005af83
+>> Author:     Tejun Heo <tj@kernel.org>
+>> AuthorDate: Thu Feb 13 15:16:35 2014 -0500
+>> Commit:     Tejun Heo <tj@kernel.org>
+>> CommitDate: Thu Feb 13 15:16:35 2014 -0500
+>>
+>>     cgroup: drop task_lock() protection around task->cgroups
+>>     
+>>     For optimization, task_lock() is additionally used to protect
+>>     task->cgroups.  The optimization is pretty dubious as either
+>>     css_set_rwsem is grabbed anyway or PF_EXITING already protects
+>>     task->cgroups.  It adds only overhead and confusion at this point.
+>>     Let's drop task_[un]lock() and update comments accordingly.
+>>     
+>>     Signed-off-by: Tejun Heo <tj@kernel.org>
+>>
+>> [main] Setsockopt(1 2b 80d1000 4) on fd 223 [17:2:768]
+>> [   27.030764] 
+>> [   27.031119] ===============================
+>> [   27.031833] [ INFO: suspicious RCU usage. ]
+>> [   27.032536] 3.14.0-rc3-02458-g837caba #2 Not tainted
+>> [   27.033378] -------------------------------
+>> [   27.044237] include/linux/cgroup.h:697 suspicious rcu_dereference_check() usage!
+>> [   27.045795] 
+>> [   27.045795] other info that might help us debug this:
+>> [   27.045795] 
+>> [   27.047114] 
+>> [   27.047114] rcu_scheduler_active = 1, debug_locks = 0
+>> [main] Setsockopt(1 c 80d1000 4) on fd 225 [39:5:0]
+>> [   27.048751] 2 locks held by trinity-c0/4479:
+>> [   27.049478]  #0:  (callback_mutex){+.+...}, at: [<81118395>] cpuset_cpus_allowed+0x1e/0x123
+>> [   27.051132]  #1:  (&(&p->alloc_lock)->rlock){+.+...}, at: [<8111839c>] cpuset_cpus_allowed+0x25/0x123
+>> [   27.052788] 
+>> [   27.052788] stack backtrace:
+>> [   27.053528] CPU: 0 PID: 4479 Comm: trinity-c0 Not tainted 3.14.0-rc3-02458-g837caba #2
+>> [   27.064971]  00000000 00000000
+>>  919eff28 81877cc3[main] Setsockopt(1 7 80d1000 4) on fd 226 [1:5:1]
 > 
-> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-> index 865c276..651e249 100644
-> --- a/drivers/mfd/omap-usb-host.c
-> +++ b/drivers/mfd/omap-usb-host.c
-> @@ -718,24 +718,24 @@ static int usbhs_omap_probe(struct platform_device *pdev)
->  		goto err_mem;
->  	}
->  
-> -	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
-> +	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
->  	if (IS_ERR(omap->xclk60mhsp1_ck)) {
->  		ret = PTR_ERR(omap->xclk60mhsp1_ck);
-> -		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
-> +		dev_err(dev, "refclk_60m_ext_p1 failed error:%d\n", ret);
->  		goto err_mem;
->  	}
+> So, this is from removing task_lock from task_css_set_check() and
+> adding rcu_read_lock() in cpuset_cpus_allowed() should fix it.
 
-Will anything break if I were to apply the MFD patches seperately?
+Yeah, rcu_read_lock() should be sufficient.
 
-> -	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
-> +	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
->  	if (IS_ERR(omap->xclk60mhsp2_ck)) {
->  		ret = PTR_ERR(omap->xclk60mhsp2_ck);
-> -		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
-> +		dev_err(dev, "refclk_60m_ext_p2 failed error:%d\n", ret);
->  		goto err_mem;
->  	}
->  
-> -	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
-> +	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
->  	if (IS_ERR(omap->init_60m_fclk)) {
->  		ret = PTR_ERR(omap->init_60m_fclk);
-> -		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
-> +		dev_err(dev, "refclk_60m_int failed error:%d\n", ret);
->  		goto err_mem;
->  	}
->  
+> I'm
+> not sure how much of task_lock() locking we currently have in cpuset
+> is actually necessary tho.  Shouldn't we be able to do most with just
+> callback_mutex, if not cpuset_mutex?  Li, any ideas?
+> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+task_lock() is also used to protect task->mems_allowed. I'll see if we
+can get rid of most (if not all) task_lock() lockings in cpuset.
+
