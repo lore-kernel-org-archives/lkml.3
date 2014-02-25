@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaBYEya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:54:30 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58268 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaBYEyI (ORCPT
+	id S1750774AbaBYFCs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 00:02:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:41714 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaBYFCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:54:08 -0500
-Message-ID: <530C21E6.5020106@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 10:23:58 +0530
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 25 Feb 2014 00:02:46 -0500
+Date: Mon, 24 Feb 2014 23:00:53 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, Andy Gross <agross@codeaurora.org>,
+        <devicetree@vger.kernel.org>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Patch v7 2/2] dmaengine: add Qualcomm BAM dma driver
+Message-ID: <20140225050053.GA15411@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393283500-18599-1-git-send-email-agross@codeaurora.org>
+ <1393283500-18599-3-git-send-email-agross@codeaurora.org>
+ <20140225000913.GA10801@saruman.home>
+ <20140225030459.GN25940@sirena.org.uk>
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Olof Johansson <olof@lixom.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Wang Dongsheng <dongsheng.wang@freescale.com>
-CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc: warn users of smt-snooze-delay that the API
- isn't there anymore
-References: <1393028074-26797-1-git-send-email-cody@linux.vnet.ibm.com>
-In-Reply-To: <1393028074-26797-1-git-send-email-cody@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022504-5564-0000-0000-00000C2F60FD
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <20140225030459.GN25940@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 February 2014 05:44 AM, Cody P Schafer wrote:
-> /sys/devices/system/cpu/cpu*/smt-snooze-delay was converted into a NOP
-> in commit 3fa8cad82b94d0bed002571bd246f2299ffc876b, and now does
-> nothing. Add a pr_warn() to convince any users that they should stop
-> using it.
-> 
-> The commit message from the removing commit notes that this
-> functionality should move into the cpuidle driver, essentially by
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Would prefer to cleanup the code since the functionality is moved,
-instead of adding to it.
+On Tue, Feb 25, 2014 at 12:05:00PM +0900, Mark Brown wrote:
+> On Mon, Feb 24, 2014 at 06:09:13PM -0600, Felipe Balbi wrote:
+>=20
+> > > +	depends on ARCH_QCOM || (COMPILE_TEST && OF && ARM)
+>=20
+> > do you really want to make it depend on ARM even when COMPILE_TEST=3Dy ?
+>=20
+> writel_relaxed() is unfortunately not generally available so it'd fail
+> to build on platforms like x86.
 
-> adjusting target_residency to the specified value. At the moment,
-> target_residency is not exposed by cpuidle's sysfs, so there isn't a
-> drop in replacement for this.
-> 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/kernel/sysfs.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-> index 97e1dc9..84097b4 100644
-> --- a/arch/powerpc/kernel/sysfs.c
-> +++ b/arch/powerpc/kernel/sysfs.c
-> @@ -50,6 +50,9 @@ static ssize_t store_smt_snooze_delay(struct device *dev,
->  	if (ret != 1)
->  		return -EINVAL;
->  
-> +	pr_warn_ratelimited("%s (%d): /sys/devices/system/cpu/cpu%d/smt-snooze-delay is deprecated and is a NOP\n",
-> +		  current->comm, task_pid_nr(current), cpu->dev.id);
-> +
->  	per_cpu(smt_snooze_delay, cpu->dev.id) = snooze;
->  	return count;
->  }
-> @@ -60,6 +63,9 @@ static ssize_t show_smt_snooze_delay(struct device *dev,
->  {
->  	struct cpu *cpu = container_of(dev, struct cpu, dev);
->  
-> +	pr_warn_ratelimited("%s (%d): /sys/devices/system/cpu/cpu%d/smt-snooze-delay is deprecated and is a NOP\n",
-> +		  current->comm, task_pid_nr(current), cpu->dev.id);
-> +
->  	return sprintf(buf, "%ld\n", per_cpu(smt_snooze_delay, cpu->dev.id));
->  }
->  
-> 
+bummer
 
+--=20
+balbi
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTDCOFAAoJEIaOsuA1yqRErRYP/j3hbkX09e6dLlK2Gw08v8Fg
+I0NdDr+beRSC40bauUAYH9EEOQ9vMDXMpM6rZm0ZWTcG/gpaQFbKPN3R53Q/ptFC
+BLZ6DH1t92jqkFuue24l4LRRAC/NGzr9CsXBcIdYYV48pnSQiS5RUC6Ke8M+loB0
+O1cxa+Mi4YxO8XZB+lnngKCcxr9cLhl1ovH2ji1N6klLbIl36WGM4w5l9pGeuGOf
+uyK0BHkQ8M50sKfeOwgSzPK9Zf51VPNW3eB9/xeb//P4dsQW56YwoHCuFr2C99tX
+k+Tf7FIwGr3DUNOz5JmorW3Uft4nmJrwes1bf6COYVuovyZb4IiQpzppquWra6yS
+1NAqg9FxyK/8WbqcJiNmcXq6TkEpBwvmchEeZvtTskPxnssdbrscPuQLGraE64A+
+jk5il4cU+RNZgZ8ecaweVkGVZbopWK7uKPvCzhXBlf13Kbcp+iI/Az619EDudMlo
+idmHFtDV1ITgexPUjFgIHALhkdzKhijBXeVEJWQao+bGOSs8exNq24ksAIemZpDF
+bhk1WBqHPMHvVFWBZXLSFQ1sJJskW6LDYMKjDM7+DbqSpIx1iOi57ZygUhfSspj0
+fITJe5WFOWyZ4YmfxU9KtGWgMPx3PGen/iaZm+Eze+mwQfBW/e+Zo7LeBAmHVdLA
+WIpHemjcMgw3yYKVDKUU
+=G9vX
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
