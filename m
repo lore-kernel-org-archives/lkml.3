@@ -1,75 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaBYKXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:23:25 -0500
-Received: from gproxy4-pub.mail.unifiedlayer.com ([69.89.23.142]:47890 "HELO
-	gproxy4-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750735AbaBYKXV (ORCPT
+	id S1752934AbaBYKYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:24:06 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:41274 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560AbaBYKVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:23:21 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Feb 2014 05:23:21 EST
-X-Authority-Analysis: v=2.1 cv=F57EKMRN c=1 sm=1 tr=0
- a=yEjhGPV9XlbPNRGz7jjbow==:117 a=yEjhGPV9XlbPNRGz7jjbow==:17 a=DsvgjBjRAAAA:8
- a=f5113yIGAAAA:8 a=G0W75ifUKZMA:10 a=neHJxMmKCwgA:10 a=IkcTkHD0fZMA:10
- a=wCmvBT1CAAAA:8 a=sXxnF9VgnFIA:10 a=djd9j7hWnewA:10 a=kEh0eDnLd4Op7i3ltIYA:9
- a=zaRNWtf9gus9lOs_:21 a=M6ogAZ9ZfiSDdC8R:21 a=QEXdDO2ut3YA:10
-Message-ID: <1393323379.2233.13.camel@slavad-CELSIUS-H720>
-Subject: Re: [PATCH 1/1] hfsplus: fix longname handling
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: sougata santra <sougata@tuxera.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Feb 2014 14:16:19 +0400
-In-Reply-To: <530C6AD5.90905@tuxera.com>
-References: <1393270107.27792.9.camel@ultrabook>
-	 <1393313845.2233.9.camel@slavad-CELSIUS-H720> <530C6AD5.90905@tuxera.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.92 authed with slava@dubeyko.com}
+	Tue, 25 Feb 2014 05:21:24 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v2 4/6] spi: sh-msiof: Move clock management to (un)prepare_message()
+Date: Tue, 25 Feb 2014 11:21:11 +0100
+Message-Id: <1393323673-2751-5-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
+References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 12:05 +0200, sougata santra wrote:
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-> 		return err;
-> >> +
-> >> +	len = be16_to_cpu(key->cat.name.length);
-> >>   	key->key_len = cpu_to_be16(6 + 2 * len);
-> >
-> > I think that maybe it is time to change hardcoded 6 on sensible named
-> > constant. What do you think?
-> 
-> I agree, although I think this should he done in a separate patch. Also 
-> there are other instances of hard-coding. We can clean them with a patch. ?
-> 
+Move clock management and pin configuration from the bitbang chipselect()
+method to the SPI core prepare_message() and unprepare_message() methods.
 
-Yes, I think so too. It will be great.
+As spi_master.{,un}prepare_message() is guaranteed to be called in
+matching pairs, the clock management synchronization is no longer needed.
 
-> >   62
-> >   63         ustrlen = be16_to_cpu(name->length);
-> >
-> > I suppose that it makes sense to check name->length here and return
-> > error. We can check possible volume corruption here.
-> 
-> I looked into it while writing the patch. I think this was already 
-> handled before. Please see. catalog.c#hfsplus_find_cat the only place it 
-> is called.
-> 
-> {code}
->          if (be16_to_cpu(tmp.thread.nodeName.length) > 255) {
->                  pr_err("catalog name length corrupted\n");
->                  return -EIO;
->          }
-> {code}
-> 
+As sh_msiof_spi_set_pin_regs() is no longer called at spi_master.setup()
+time (through spi_bitbang_setup() and the spi_bitbang.chipselect()
+callback), we now have to take care of that ourselves.
 
-OK. I agree that my suggestion is not necessary.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v2:
+  - Removed clock management synchronization,
+  - Configure pins in the .setup() routine.
 
-Thanks,
-Vyacheslav Dubeyko.
+ drivers/spi/spi-sh-msiof.c |   61 +++++++++++++++++++++++++++-----------------
+ 1 file changed, 38 insertions(+), 23 deletions(-)
 
+diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+index 3baef2bacaed..18e3a8d628e9 100644
+--- a/drivers/spi/spi-sh-msiof.c
++++ b/drivers/spi/spi-sh-msiof.c
+@@ -45,7 +45,6 @@ struct sh_msiof_spi_priv {
+ 	const struct sh_msiof_chipdata *chipdata;
+ 	struct sh_msiof_spi_info *info;
+ 	struct completion done;
+-	unsigned long flags;
+ 	int tx_fifo_size;
+ 	int rx_fifo_size;
+ };
+@@ -458,6 +457,7 @@ static int sh_msiof_spi_setup_transfer(struct spi_device *spi,
+ static int sh_msiof_spi_setup(struct spi_device *spi)
+ {
+ 	struct device_node	*np = spi->master->dev.of_node;
++	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
+ 
+ 	if (!np) {
+ 		/*
+@@ -467,12 +467,46 @@ static int sh_msiof_spi_setup(struct spi_device *spi)
+ 		spi->cs_gpio = (uintptr_t)spi->controller_data;
+ 	}
+ 
++	/* Configure pins before deasserting CS */
++	sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
++				  !!(spi->mode & SPI_CPHA),
++				  !!(spi->mode & SPI_3WIRE),
++				  !!(spi->mode & SPI_LSB_FIRST),
++				  !!(spi->mode & SPI_CS_HIGH));
++
+ 	return spi_bitbang_setup(spi);
+ }
+ 
++static int sh_msiof_prepare_message(struct spi_master *master,
++				    struct spi_message *msg)
++{
++	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
++	const struct spi_device *spi = msg->spi;
++
++	pm_runtime_get_sync(&p->pdev->dev);
++	clk_enable(p->clk);
++
++	/* Configure pins before asserting CS */
++	sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
++				  !!(spi->mode & SPI_CPHA),
++				  !!(spi->mode & SPI_3WIRE),
++				  !!(spi->mode & SPI_LSB_FIRST),
++				  !!(spi->mode & SPI_CS_HIGH));
++	return 0;
++}
++
++static int sh_msiof_unprepare_message(struct spi_master *master,
++				      struct spi_message *msg)
++{
++	struct sh_msiof_spi_priv *p = spi_master_get_devdata(master);
++
++	clk_disable(p->clk);
++	pm_runtime_put(&p->pdev->dev);
++	return 0;
++}
++
+ static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
+ {
+-	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
+ 	int value;
+ 
+ 	/* chip select is active low unless SPI_CS_HIGH is set */
+@@ -481,29 +515,8 @@ static void sh_msiof_spi_chipselect(struct spi_device *spi, int is_on)
+ 	else
+ 		value = (is_on == BITBANG_CS_ACTIVE) ? 0 : 1;
+ 
+-	if (is_on == BITBANG_CS_ACTIVE) {
+-		if (!test_and_set_bit(0, &p->flags)) {
+-			pm_runtime_get_sync(&p->pdev->dev);
+-			clk_enable(p->clk);
+-		}
+-
+-		/* Configure pins before asserting CS */
+-		sh_msiof_spi_set_pin_regs(p, !!(spi->mode & SPI_CPOL),
+-					  !!(spi->mode & SPI_CPHA),
+-					  !!(spi->mode & SPI_3WIRE),
+-					  !!(spi->mode & SPI_LSB_FIRST),
+-					  !!(spi->mode & SPI_CS_HIGH));
+-	}
+-
+ 	if (spi->cs_gpio >= 0)
+ 		gpio_set_value(spi->cs_gpio, value);
+-
+-	if (is_on == BITBANG_CS_INACTIVE) {
+-		if (test_and_clear_bit(0, &p->flags)) {
+-			clk_disable(p->clk);
+-			pm_runtime_put(&p->pdev->dev);
+-		}
+-	}
+ }
+ 
+ static int sh_msiof_spi_txrx_once(struct sh_msiof_spi_priv *p,
+@@ -810,6 +823,8 @@ static int sh_msiof_spi_probe(struct platform_device *pdev)
+ 	master->num_chipselect = p->info->num_chipselect;
+ 	master->setup = sh_msiof_spi_setup;
+ 	master->cleanup = spi_bitbang_cleanup;
++	master->prepare_message = sh_msiof_prepare_message;
++	master->unprepare_message = sh_msiof_unprepare_message;
+ 
+ 	p->bitbang.master = master;
+ 	p->bitbang.chipselect = sh_msiof_spi_chipselect;
+-- 
+1.7.9.5
 
