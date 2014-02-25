@@ -1,264 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaBXXwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 18:52:51 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43997 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955AbaBXXwt (ORCPT
+	id S1753344AbaBXXw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 18:52:56 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64167 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753326AbaBXXww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 18:52:49 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-f7-530bdb4fda1e
-Date: Tue, 25 Feb 2014 08:53:15 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 5/6] zram: enalbe multi stream compression support in
- zram
-Message-ID: <20140224235315.GE24325@bbox>
-References: <1392983443-9807-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1392983443-9807-6-git-send-email-sergey.senozhatsky@gmail.com>
+	Mon, 24 Feb 2014 18:52:52 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of suspended devices
+Date: Tue, 25 Feb 2014 01:07:49 +0100
+Message-ID: <10187724.x3fLnu1cYV@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1402241124350.1427-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1402241124350.1427-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392983443-9807-6-git-send-email-sergey.senozhatsky@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:50:42PM +0300, Sergey Senozhatsky wrote:
-> 1) Add ZRAM_MULTI_STREAM configuration option and make multi stream
-> zcomp support available.
+On Monday, February 24, 2014 02:36:02 PM Alan Stern wrote:
+> On Mon, 24 Feb 2014, Rafael J. Wysocki wrote:
 > 
-> 2) Introduce zram device attribute max_comp_streams to show and store
-> current zcomp's max number of zcomp streams (num_strm).
+> > Also, it may not do that today and I'd like to introduce a mechanism by which
+> > that optimizatiom may be enabled by subsystems/drivers when ready.
+> > 
+> > So for example today there is no guarantee that each device will be resumed
+> > as appropriate by whoever handles its children when necessary, because that
+> > code may expect the device to be operational when it is running (precisely
+> > because we used to resume that device in .prepare()).
 > 
-> 3) Extend zcomp zcomp_create() with `num_strm' parameter. `num_strm'
-> limits the number of zcomp_strm structs in compression backend's idle
-> list (max_comp_streams).
+> > Yes.  In particular, I'd like the "child" subsystem to be able to let the
+> > core know that it is fine to leave the parent suspended.
 > 
-> If ZRAM_MULTI_STREAM option selected:
-> -- user can change max number of compression streams (max_comp_streams),
->    otherwise, attempt to change its default value (1) will be ignored.
-> -- passing to zcomp_create() num_strm equals to 1 will initialise zcomp
->    using single compression stream zcomp_strm_single (mutex-based locking)
-> -- passing to zcomp_create() num_strm greater than 1 will initialise zcomp
->    using multi compression stream zcomp_strm_multi (spinlock-based locking)
+> > That said the patchset doesn't really do both.  It only really is about
+> > skipping the ->suspend callbacks if possible, but the *consequence* of that
+> > is that *system* resume ->resume callbacks cannot be used to resume the
+> > device any more in general.  That's because ->resume_early may try to
+> > reverse the ->suspend_late's actions and so on, so if ->suspend_late hasn't
+> > run, it would be a bug to run ->resume_early for that device.
 > 
-> If ZRAM_MULTI_STREAM has not been selected, only single compression stream
-> support available.
+> > I agree.  For this reason, I think that the core has no choice but to treat
+> > power.ignore_children set as "well, that device may need to be operational
+> > going forward".
 > 
-> iozone -t 3 -R -r 16K -s 60M -I +Z
+> This discussion is getting a little messy.  Let's try to clarify it.
+> Here is the major point:
 > 
->        test           base       1 strm (mutex)     3 strm (spinlock)
-> -----------------------------------------------------------------------
->  Initial write      589286.78       583518.39          718011.05
->        Rewrite      604837.97       596776.38         1515125.72
->   Random write      584120.11       595714.58         1388850.25
->         Pwrite      535731.17       541117.38          739295.27
->         Fwrite     1418083.88      1478612.72         1484927.06
-> 
-> Usage example:
-> set max_comp_streams to 4
->         echo 4 > /sys/block/zram0/max_comp_streams
-> 
-> show current max_comp_streams (default value is 1).
->         cat /sys/block/zram0/max_comp_streams
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> ---
->  drivers/block/zram/Kconfig    | 10 ++++++++++
->  drivers/block/zram/zcomp.c    | 13 +++++++++++--
->  drivers/block/zram/zcomp.h    |  2 +-
->  drivers/block/zram/zram_drv.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
->  drivers/block/zram/zram_drv.h |  2 +-
->  5 files changed, 65 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
-> index 3450be8..a2ba9a9 100644
-> --- a/drivers/block/zram/Kconfig
-> +++ b/drivers/block/zram/Kconfig
-> @@ -15,6 +15,16 @@ config ZRAM
->  
->  	  See zram.txt for more information.
->  
-> +config ZRAM_MULTI_STREAM
-> +	bool "Multi stream compression support"
-> +	depends on ZRAM
-> +	default n
-> +	help
-> +	  This option adds additional functionality to ZRAM, that enables
-> +	  multi compression stream support and provides ability to control
-> +	  maximum number of parallel compressions using max_comp_streams
-> +	  device attribute.
-> +
->  config ZRAM_DEBUG
->  	bool "Compressed RAM block device debug support"
->  	depends on ZRAM
-> diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-> index 41325ed..7faa6bd 100644
-> --- a/drivers/block/zram/zcomp.c
-> +++ b/drivers/block/zram/zcomp.c
-> @@ -240,8 +240,9 @@ void zcomp_destroy(struct zcomp *comp)
->   * if requested algorithm is not supported or in case
->   * of init error
->   */
-> -struct zcomp *zcomp_create(const char *compress)
-> +struct zcomp *zcomp_create(const char *compress, int num_strm)
->  {
-> +	int ret;
->  	struct zcomp *comp;
->  	struct zcomp_backend *backend;
->  
-> @@ -254,7 +255,15 @@ struct zcomp *zcomp_create(const char *compress)
->  		return NULL;
->  
->  	comp->backend = backend;
-> -	if (zcomp_strm_single_create(comp) != 0) {
-> +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> +	if (num_strm > 1)
-> +		ret = zcomp_strm_multi_create(comp, num_strm);
-> +	else
-> +		ret = zcomp_strm_single_create(comp);
-> +#else
-> +	ret = zcomp_strm_single_create(comp);
-> +#endif
-> +	if (ret != 0) {
->  		zcomp_destroy(comp);
->  		return NULL;
->  	}
-> diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-> index 8dc1d7f..d7e1229 100644
-> --- a/drivers/block/zram/zcomp.h
-> +++ b/drivers/block/zram/zcomp.h
-> @@ -42,7 +42,7 @@ struct zcomp {
->  	void (*destroy)(struct zcomp *comp);
->  };
->  
-> -struct zcomp *zcomp_create(const char *comp);
-> +struct zcomp *zcomp_create(const char *comp, int num_strm);
->  void zcomp_destroy(struct zcomp *comp);
->  
->  struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 200c12a..c147e6f 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -107,6 +107,42 @@ static ssize_t mem_used_total_show(struct device *dev,
->  	return sprintf(buf, "%llu\n", val);
->  }
->  
-> +static ssize_t max_comp_streams_show(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	long val;
+> 	We would like to save time during system suspend/resume by
 
-Why 'long'?
+Actually, that's not only about saving time, but also about saving energy.
 
-> +	struct zram *zram = dev_to_zram(dev);
-> +
-> +	down_read(&zram->init_lock);
-> +	val = zram->max_comp_streams;
-> +	up_read(&zram->init_lock);
-> +
-> +	return sprintf(buf, "%ld\n", val);
-> +}
-> +
-> +static ssize_t max_comp_streams_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +#ifdef CONFIG_ZRAM_MULTI_STREAM
-> +	long num;
-> +	struct zram *zram = dev_to_zram(dev);
-> +
-> +	if (kstrtol(buf, 0, &num))
-> +		return -EINVAL;
-> +	if (num < 1)
-> +		return -EINVAL;
-> +	down_write(&zram->init_lock);
-> +	if (init_done(zram)) {
-> +		up_write(&zram->init_lock);
-> +		pr_info("Can't set max_comp_streams for initialized device\n");
-> +		return -EBUSY;
-> +	}
-> +	zram->max_comp_streams = num;
-> +	up_write(&zram->init_lock);
-
-If user decrease max stream in runtime, who care of freeing streams?
-
-> +#endif
-> +	return len;
-> +}
-> +
->  /* flag operations needs meta->tb_lock */
->  static int zram_test_flag(struct zram_meta *meta, u32 index,
->  			enum zram_pageflags flag)
-> @@ -503,6 +539,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  
->  	zcomp_destroy(zram->comp);
->  	zram->comp = NULL;
-> +	zram->max_comp_streams = 1;
->  
->  	zram_meta_free(zram->meta);
->  	zram->meta = NULL;
-> @@ -532,7 +569,7 @@ static ssize_t disksize_store(struct device *dev,
->  		return -EBUSY;
->  	}
->  
-> -	zram->comp = zcomp_create(default_compressor);
-> +	zram->comp = zcomp_create(default_compressor, zram->max_comp_streams);
->  	if (!zram->comp) {
->  		up_write(&zram->init_lock);
->  		pr_info("Cannot initialise compressing backend\n");
-> @@ -695,6 +732,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
->  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> +static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> +		max_comp_streams_show, max_comp_streams_store);
->  
->  ZRAM_ATTR_RO(num_reads);
->  ZRAM_ATTR_RO(num_writes);
-> @@ -719,6 +758,7 @@ static struct attribute *zram_disk_attrs[] = {
->  	&dev_attr_orig_data_size.attr,
->  	&dev_attr_compr_data_size.attr,
->  	&dev_attr_mem_used_total.attr,
-> +	&dev_attr_max_comp_streams.attr,
->  	NULL,
->  };
->  
-> @@ -782,6 +822,7 @@ static int create_device(struct zram *zram, int device_id)
->  
->  	zram->meta = NULL;
->  	zram->comp = NULL;
-> +	zram->max_comp_streams = 1;
->  	return 0;
->  
->  out_free_disk:
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 45e04f7..8dccb22 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -99,7 +99,7 @@ struct zram {
->  	 * we can store in a disk.
->  	 */
->  	u64 disksize;	/* bytes */
-> -
-> +	long max_comp_streams;
->  	struct zram_stats stats;
->  };
->  #endif
-> -- 
-> 1.9.0.291.g027825b
+> 	skipping over devices that are already in runtime suspend,
+> 	whenever it is safe to do so.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Of course, the "it is safe to do so" part is what makes this difficult.  
+> It boils down to three characteristics for each device.
+> 
+>     (a) The device uses the same power state for runtime suspend and
+> 	system suspend.  Therefore, if the device is already in runtime
+> 	suspend and the wakeup settings are correct, there is no need
+> 	for the PM core to invoke the device's ->suspend callbacks.
+> 
+> This requires a few comments.  The matter of whether the same power
+> state is used for both types of suspend is generally known beforehand,
+> because it is decided by the subsystem or driver.  The matter of
+> whether the wakeup settings are correct often can't be known until the
+> system suspend starts, because userspace can select whether or not
+> wakeup should be enabled during a system sleep.
+> 
+> Also, if the PM core is going to skip the ->suspend callbacks then it 
+> is obliged to skip the ->resume callbacks as well (we mustn't call one 
+> without the other).  Therefore, in cases where (a) holds, the device 
+> will necessarily emerge from the system resume in a runtime-suspended 
+> state.
 
--- 
-Kind regards,
-Minchan Kim
+The "emerge from system resume" requires a bit of clarification in my
+opinion.  Do you refer to the status of the device when user space is
+thawed or earlier?  If earlier, then when exactly?
+
+> This may or may not cause problems for the device's children; 
+> see below.
+> 
+>     (b) It's okay for the device's parent to be in runtime suspend
+> 	when the device's ->suspend callbacks are invoked.
+> 
+> I included this just to be thorough.  In fact, I expect (b) to be true 
+> for pretty much every device already.
+
+I don't quite understand this.  What if the parent is a bridge and the
+child's ->suspend tries to access the child's registers?  That surely won't
+work if the parent is in a low-power state at that point.
+
+> Or if it isn't true for some 
+> devices, this is because of a special arrangement between the device's 
+> subsystem and the parent's subsystem.  For example, the parent might 
+> always be runtime-resumed by its subsystem at the start of a system 
+> suspend (which is what PCI does now; I don't know if it is necessary).
+> 
+> In the absence of any sort of special arrangement, if (b) wasn't true 
+> for some device then that device would already be experiencing problems 
+> going into system suspend.
+
+Unless, of course, its parent is a PCI device, because in that case it will
+always be resumed by the PCI bus type.  And if the "always resumed" is going
+to be changed to "only resumed if the parent's configuration needs to change",
+there may be some regressions here and there.
+
+> So (b) should not cause much difficulty.
+
+I disagree.
+
+> And if a special arrangement is present, it is a private matter between 
+> the two subsystems, not involving the PM core.
+> 
+>     (c) It's okay for the device's parent to be in runtime suspend
+> 	when the device's ->resume callbacks are invoked.
+> 
+> Unlike (b), I expect that (c) does _not_ hold for quite a few devices
+> currently.  The reason is historical: When runtime PM was first
+> implemented, we decided that all devices should emerge from system
+> resume in the RPM_ACTIVE state, even if they were in runtime suspend
+> when the system suspend started.  Therefore drivers could depend on the
+> parent not being in runtime suspend while the device's ->resume
+> callback was running.
+
+That's correct.
+
+> I don't think it is a good idea to perpetuate an accident of history.  
+> Instead of adding a special mechanism to the PM core for accomodating 
+> devices where (c) doesn't hold, I think we should fix up the drivers 
+> so that (c) _does_ hold everywhere.  Maybe you disagree.
+
+I agree with the idea, but I have a certain view on how to achieve it.
+Which is by allowing the "good" ones to mark themselves as "good", then
+go through the ones that aren't marked as "good" yet, fix them up and
+mark them as "good".  Finally, when everyone is marked "good", we can
+drop the marking.
+
+> Anyway, let's assume first that things are all fixed up, and (b) and
+> (c) hold for every device.  This means we can go back and consider (a).
+> 
+> Since the "same power state for both types of suspend" answer is known 
+> beforehand, let's concentrate on devices where it is true (other 
+> devices will simply continue to operate as they do today).  For these 
+> devices, the driver or subsystem will have to compute a flag value --
+> let's call it "same_wakeup_setting".  The PM core can't do this because 
+> it doesn't understand the device-specific details of wakeup settings.
+> 
+> Then your proposal comes down to this:
+> 
+> 	If ->prepare returns > 0, the PM core sets the
+> 	same_wakeup_setting flag.
+> 
+> 	If same_wakeup_setting is on and the device is in runtime
+> 	suspend, the PM core skips the various ->suspend and ->resume 
+> 	callbacks.
+> 
+> My proposal was never made explicit, but it would take a form something 
+> like this:
+> 
+> 	During ->prepare, the subsystem sets the same_wakeup_setting
+> 	flag appropriately.
+> 
+> 	If same_wakeup_setting is on and the device is in runtime
+> 	suspend, the subsystem's ->suspend and ->resume callbacks
+> 	return immediately.
+> 
+> There isn't very much difference between the two proposals.  Mine is a 
+> little more flexible; for example, it allows the subsystem to return 
+> immediately from ->suspend but have ->resume put the device back in the 
+> RPM_ACTIVE state.
+
+Your version is fine by me, I only made the PM core set the flag, because it
+would clear that flag afterward in some cases.
+
+> Now let's change course and suppose that (c) _doesn't_ hold for a large
+> selection of devices.  As a simple consequence, if (c) doesn't hold for
+> some device then (a) can't be allowed to hold for any ancestor of that
+> device.  (I'm disregarding the power.ignore_children flag.)
+> 
+> Your proposal would take the same_wakeup_setting flag (you called it
+> "fast_suspend"), used for answering (a), and combine it with the answer
+> to (c).  That is, you would have ->prepare return > 0 only if (a) and
+> (c) both hold -- and in addition, you turn off the flag if it is off in
+> any child.
+> 
+> In practice, I suspect this means fast_suspend will end up affecting
+> only leaf devices: those with no children.  This is partly because many
+> devices don't have a .prepare method; there are plenty of entries in
+> the device tree that don't correspond to physical devices (e.g., class
+> devices, or devices present only for their sysfs attributes) and hence
+> have no PM support at all.  Even though (c) does hold for such devices,
+> the PM core won't realize it.
+> 
+> In addition, I don't like the way your proposal mixes together the
+> answers to (a) and (c).
+
+It really doesn't and I tried to explain that in my previous message, but
+that apparently wasn't clear enough.
+
+The reasoning was basically to set fast_suspend for a device if your condition
+(a) held *and* if fast_suspend was set for all of the device's children.  Then
+we would know that all those children would be RPM_SUSPENDED during system
+resume as well and the resume part might be "streamlined" as well.  There was
+nothing about (c) anywhere in that patchset. :-)
+
+> If they could be kept separate, I think you could do a better job.
+> 
+> For instance, suppose (a) is true for some device, but (c) is false for
+> one of its children.  Then the PM core could skip the ->suspend and
+> ->resume callbacks for that device, and it could do a pm_runtime_resume
+> on the device before resuming the child.  The end result would be a
+> single ->runtime_resume call, instead of ->runtime_resume followed by
+> ->suspend and then ->resume.
+
+That would be a different optimization from the one I'm thinking about.
+
+For now, I'm focusing on one problem, which is when resuming runtime-suspended
+devices during system suspend may be avoided and how to make that generally
+work for different parent-child arrangements.
+
+The resume part changes in my patchset were consequences of that only.
+
+Rafael
+
