@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaBYJKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:10:43 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:45879 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750708AbaBYJKj convert rfc822-to-8bit (ORCPT
+	id S1751574AbaBYJNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:13:06 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:33356 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaBYJNA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:10:39 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Joe Perches'" <joe@perches.com>
-CC: Thomas Winischhofer <thomas@winischhofer.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: sisusb: Use static const, fix typo
-Thread-Topic: sisusb: Use static const, fix typo
-Thread-Index: AQHPL3HCyEctK09QYUO12nIH2aQdjprENdvAgACAFACAAPzP8A==
-Date: Tue, 25 Feb 2014 09:09:38 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6CA653@AcuExch.aculab.com>
-References: <1393034412.3627.11.camel@joe-AO722>
-	 <063D6719AE5E284EB5DD2968C1650D6D0F6C9771@AcuExch.aculab.com>
- <1393264876.11020.38.camel@joe-AO722>
-In-Reply-To: <1393264876.11020.38.camel@joe-AO722>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 Feb 2014 04:13:00 -0500
 MIME-Version: 1.0
+In-Reply-To: <1393318071-13524-1-git-send-email-philippe.retornaz@epfl.ch>
+References: <CAK9yfHyAK+LtQLr_b-OLHa63dSNT5KN7MBHxqVoTbiHVb4-7DA@mail.gmail.com>
+	<1393318071-13524-1-git-send-email-philippe.retornaz@epfl.ch>
+Date: Tue, 25 Feb 2014 14:42:59 +0530
+Message-ID: <CAK9yfHx9FnQxQOmHcMzc8dQa+mSryPRo=63FL=8tg1JGqe4jNQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] regulator: mc13xxx: check if DT is enabled
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: =?ISO-8859-1?Q?Philippe_R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Cc: Mark Brown <broonie@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches [ 
-> On Mon, 2014-02-24 at 10:26 +0000, David Laight wrote:
-> > From: Joe Perches
-> > > Reduce text a bit by using static const.
-> >
-> > If you want to save a few bytes remove the pointers.
-> > (and the fixed RAM text to get below 7 chars).
-> 
-> Hi David.
-> 
-> > eg:
-> >
-> > > -	const char *ramtypetext2[] = {	"SDR SDRAM", "SDR SGRAM",
-> > > -					"DDR SDRAM", "DDR SGRAM" };
-> 
-> The idea was use static to avoid the array reload
-> on each function entry.
-> 
-> > 	static const char ramtypetext2[8][] = {
-> > 		"SDR SD", "SDR SG", "DDR SD", "DDR SG"
-> 
-> 8 is an odd number here.
+On 25 February 2014 14:17, Philippe Rétornaz <philippe.retornaz@epfl.ch> wrote:
+> This fix a regression on non-DT board booted with a DT enabled kernel
+>
+> Signed-off-by: Philippe Rétornaz <philippe.retornaz@epfl.ch>
+> ---
+>  drivers/regulator/mc13xxx-regulator-core.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/drivers/regulator/mc13xxx-regulator-core.c b/drivers/regulator/mc13xxx-regulator-core.c
+> index 4498a3f..a10c999 100644
+> --- a/drivers/regulator/mc13xxx-regulator-core.c
+> +++ b/drivers/regulator/mc13xxx-regulator-core.c
+> @@ -167,6 +167,9 @@ int mc13xxx_get_num_regulators_dt(struct platform_device *pdev)
+>         struct device_node *parent;
+>         int num;
+>
+> +       if(!pdev->dev.parent->of_node)
+> +               return -ENODEV;
+> +
+>         of_node_get(pdev->dev.parent->of_node);
+>         parent = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
+>         if (!parent)
+> @@ -187,6 +190,9 @@ struct mc13xxx_regulator_init_data *mc13xxx_parse_regulators_dt(
+>         struct device_node *parent, *child;
+>         int i, parsed = 0;
+>
+> +       if(!pdev->dev.parent->of_node)
+> +               return NULL;
+> +
+>         of_node_get(pdev->dev.parent->of_node);
+>         parent = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
+>         if (!parent)
+> --
+> 1.7.9.5
+>
 
-Brain fade - not enough coffee.
-I meant 'char ramtypetext2[][8]' so that you avoid the pointers as well.
+Thanks for the patch. I was about to send a similar patch which also
+does a little more cleanup.
+If you could test it in DT and non-DT modes that would be great. I
+attach the diff below. You can
+even fold it into your patch if you wish.
 
-	David
+------------------
+diff --git a/drivers/regulator/mc13xxx-regulator-core.c
+b/drivers/regulator/mc13xxx-regulator-core.c
+index 4498a3f0733d..bf75fcabfa3c 100644
+--- a/drivers/regulator/mc13xxx-regulator-core.c
++++ b/drivers/regulator/mc13xxx-regulator-core.c
+@@ -167,8 +167,10 @@ int mc13xxx_get_num_regulators_dt(struct
+platform_device *pdev)
+        struct device_node *parent;
+        int num;
+
+-       of_node_get(pdev->dev.parent->of_node);
+-       parent = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
++       if (!pdev->dev.of_node)
++               return -ENODEV;
++
++       parent = of_get_child_by_name(pdev->dev.of_node, "regulators");
+        if (!parent)
+                return -ENODEV;
+
+@@ -187,8 +189,10 @@ struct mc13xxx_regulator_init_data
+*mc13xxx_parse_regulators_dt(
+        struct device_node *parent, *child;
+        int i, parsed = 0;
+
+-       of_node_get(pdev->dev.parent->of_node);
+-       parent = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
++       if (!pdev->dev.of_node)
++               return NULL;
++
++       parent = of_get_child_by_name(pdev->dev.of_node, "regulators");
+        if (!parent)
+                return NULL;
 
 
-
+-- 
+With warm regards,
+Sachin
