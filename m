@@ -1,51 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaBYGCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:02:01 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:65262 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaBYGCA (ORCPT
+	id S1752617AbaBYGCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:02:07 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:41049 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439AbaBYGCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:02:00 -0500
-Date: Tue, 25 Feb 2014 13:01:47 +0700
-From: Chris Bainbridge <chris.bainbridge@gmail.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140225060146.GA4339@debian.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 25 Feb 2014 01:02:04 -0500
+Message-ID: <1393308311.12334.14.camel@haakon3.risingtidesystems.com>
+Subject: Re: [RFC 0/6] vhost/scsi: Add T10 PI SGL passthrough support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>
+Date: Mon, 24 Feb 2014 22:05:11 -0800
+In-Reply-To: <530B1DAF.7010702@redhat.com>
+References: <1393219950-18613-1-git-send-email-nab@daterainc.com>
+	 <530B1DAF.7010702@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pentium M is PAE capable but does not indicate so in the CPUID response.
-This is an issue now that some distributions are no longer shipping
-non-PAE kernels (those distributions no longer boot on Pentium M). This
-small patch fixes the issue by forcing the PAE capability on Pentium M.
+On Mon, 2014-02-24 at 11:23 +0100, Paolo Bonzini wrote:
+> Il 24/02/2014 06:32, Nicholas A. Bellinger ha scritto:
+> > AFAICT up until this point the ->prio field has been unused, but
+> > I'm certainly open to better ways of signaling (to vhost) that some
+> > number of metadata iovs are to be expected..  Any thoughts..?
+> 
+> Hi nab,
+> 
+> the virtio-scsi side of the patch is nice and readable.  As requested, 
+> here are my thoughts on how to add it to the standard.
+> 
+> The ->prio field is there to mimic SAM's command priority field (8.7 in 
+> my copy of the standard).  I'd rather leave it alone; I understand this 
+> is the main reason why this patch is RFC.
 
-For more discussion see https://bugs.launchpad.net/baltix/+bug/930447
+Yes.  ;)
 
-Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
+> 
+> Since we have a new feature bit, we can add a new element before the 
+> cdb.  It could be a count of scatter/gather list like you did here, or 
+> it could be a byte count.  Even better, we can add _two_ new fields, one 
+> for protection data out and one for protection data in.
+> 
 
----
+Having two 16-bit fields for data out / data in protection count in the
+command header should be fine.
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index bbe1b8b..97996aa 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -226,6 +226,12 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
- 		clear_cpu_cap(c, X86_FEATURE_SEP);
- 
- 	/*
-+	 * PAE CPUID bug: Pentium M reports no PAE but has PAE
-+	 */
-+	if ((c->x86 == 6) && ((c->x86_model == 9) || (c->x86_model == 13)))
-+		set_cpu_cap(c, X86_FEATURE_PAE);
-+
-+	/*
- 	 * P4 Xeon errata 037 workaround.
- 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
- 	 */
+So that said, adding a new virtio_scsi_cmd_req_pi definition per your
+recommendation, and will update the series to use this when the
+VIRTIO_SCSI_F_T10_PI feature bit has been negotiated on both ends.
+
+> Also, do we need an equivalent of the residual field, but for metadata?
+> 
+
+Mmm, at least for PI I don't think a residual field is necessary.
+
+Any time the metadata is not fully read on outgoing WRITEs, or written
+on incoming READs the next hop performing a VERIFY operation will end up
+failing with a GUARD or REFERENCE TAG failure.
+
+MKP..?
+
+> Finally, any reason why you put the data sg elements before the metadata 
+> sg elements?
+
+Nope, no particular reason for this.
+
+>  I would have thought that processing is a bit simpler if 
+> either the metadata comes first, or you store in the command header the 
+> data count (either sg or byte).  Because the virtio buffers form a 
+> linked list, it's a bit backwards to put metadata last, and store 
+> metadata count in the command header; it prevents you from processing 
+> the buffers online because you don't know when the metadata starts. 
+> Even though the Linux virtio layer always gives you a buffer count, this 
+> need not be the case in general.
+> 
+
+No objection here.  Updating the patch series to place protection
+information ahead of the actual data payload.
+
+--nab
+
