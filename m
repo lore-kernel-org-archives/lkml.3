@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaBYMgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:36:42 -0500
-Received: from asav21.altibox.net ([109.247.116.8]:48790 "EHLO
-	asav21.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaBYMgj (ORCPT
+	id S1753179AbaBYMhj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:37:39 -0500
+Received: from asav4.altibox.net ([81.167.36.153]:49841 "EHLO
+	asav4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaBYMgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:36:39 -0500
+	Tue, 25 Feb 2014 07:36:41 -0500
 From: Henrik Austad <henrik@austad.us>
 To: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linuxtronix.de>
-Cc: Henrik Austad <henrik@austad.us>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Henrik Austad <haustad@cisco.com>, Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         John Stultz <john.stultz@linaro.org>,
-        Henrik Austad <haustad@cisco.com>
-Subject: [PATCH 1/6] Expose do_timer CPU from tick-common
-Date: Tue, 25 Feb 2014 13:33:56 +0100
-Message-Id: <1393331641-14016-2-git-send-email-henrik@austad.us>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 6/6] Expose tick_set_forced_cpu() via sysfs
+Date: Tue, 25 Feb 2014 13:34:01 +0100
+Message-Id: <1393331641-14016-7-git-send-email-henrik@austad.us>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1393331641-14016-1-git-send-email-henrik@austad.us>
 References: <1393331641-14016-1-git-send-email-henrik@austad.us>
@@ -24,66 +24,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows other parts of the kernel access to the tick_do_timer_cpu
-variable in a controlled manner. The values will differ depending on
-which mode is compiled in:
+From: Henrik Austad <haustad@cisco.com>
 
-* CONFIG_HZ_PERIODIC: One (normally boot-cpu) is responsible for the
-  time update. This will never change unless the CPU is removed
-  (hotplugging). You will normally see a 0 returned every time here.
-
-* CONFIG_NO_HZ_IDLE: system will disable periodic timer-interrupts on
-  the cpu if only the idle-task is running. This means that the timer
-  cpu will change often.
-
-* CONFIG_NO_HZ_FULL: any CPU running only a single task can have
-  timer-interrupts disabled. As for NO_HZ_IDLE, timer CPU will change
-  often.
+This allows userspace to set the forced CPU via sysfs in
+/sys/kernel/timekeeping/forced_cpu.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Peter Zijlstra <peterz@infradead.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: John Stultz <john.stultz@linaro.org>
+CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Henrik Austad <haustad@cisco.com>
 ---
- kernel/time/tick-common.c   |   12 ++++++++++++
- kernel/time/tick-internal.h |    1 +
- 2 files changed, 13 insertions(+)
+ kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++------
+ 1 file changed, 30 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 20b2fe3..1729b4b 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -348,6 +348,18 @@ void tick_handover_do_timer(int *cpup)
- }
- 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 4bdfa11..b148062 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -44,23 +44,47 @@ int expose_tick_forced_timer_cpu = -1;
  /*
-+ * Return the current timer-CPU (RO)
-+ *
-+ * Warning! this value can (and will) change depending on how timer-ticks are
-+ * handled, the value returned could be outdated the moment it is read by
-+ * userspace.
-+ */
-+int tick_expose_cpu(void)
+  * sysfs interface to timer-cpu
+  */
+-static ssize_t current_cpu_show(struct kobject *kobj,
+-				struct kobj_attribute *attr,
+-				char *buf)
+-{
+-	return sprintf(buf, "%d\n", tick_expose_cpu());
++static ssize_t cpu_show(struct kobject *kobj,
++			struct kobj_attribute *attr,
++			char *buf)
 +{
-+	return tick_do_timer_cpu;
++	int var = -EINVAL;
++	if (strcmp(attr->attr.name, "current_cpu") == 0)
++		var = sprintf(buf, "%d\n", tick_expose_cpu());
++	else if (strcmp(attr->attr.name, "forced_cpu") == 0)
++		var = sprintf(buf, "%d\n", tick_get_forced_cpu());
++	return var;
 +}
 +
-+/*
-  * Shutdown an event device on a given cpu:
-  *
-  * This is called on a life CPU, when a CPU is dead. So we cannot
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 8329669..5051dbd 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -154,5 +154,6 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
++static ssize_t cpu_store(struct kobject *kobj,
++			struct kobj_attribute *attr,
++			const char * buf,
++			size_t count)
++{
++	int var = 0;
++	if (strcmp(attr->attr.name, "forced_cpu") == 0) {
++		sscanf(buf, "%du", &var);
++		if ((var = tick_set_forced_cpu(var)) != 0) {
++			pr_err("trouble setting forced CPU (%d)\n", var);
++		}
++	}
++	return count;
+ }
  
- #endif
+ static struct kobj_attribute current_cpu_attribute =
+-	__ATTR_RO(current_cpu);
++	__ATTR(current_cpu, 0444, cpu_show, NULL);
++static struct kobj_attribute forced_cpu_attribute =
++	__ATTR(forced_cpu, 0644, cpu_show, cpu_store);
  
-+extern int tick_expose_cpu(void);
- extern void do_timer(unsigned long ticks);
- extern void update_wall_time(void);
+ static struct attribute *timekeeping_attrs[] = {
+ 	&current_cpu_attribute.attr,
++	&forced_cpu_attribute.attr,
+ 	NULL,
+ };
+ static struct attribute_group timekeeping_ag = {
+ 	.attrs = timekeeping_attrs,
+ };
++
+ static struct kobject *timekeeping_kobj;
+ 
+ static __init int timekeeping_sysfs_init(void)
 -- 
 1.7.9.5
 
