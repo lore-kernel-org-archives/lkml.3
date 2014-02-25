@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaBYA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:28:25 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53323 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884AbaBYA1u (ORCPT
+	id S1753366AbaBYAaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:30:25 -0500
+Received: from yotta.elopez.com.ar ([31.220.24.173]:45831 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463AbaBYAaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:27:50 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Cc: Russ Dill <Russ.Dill@ti.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>, Robin Holt <robin.m.holt@gmail.com>
-Subject: [PATCH v2 1/3] ARM: Add irq disabled version of soft_restart.
-Date: Mon, 24 Feb 2014 16:27:37 -0800
-Message-Id: <1393288059-18174-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393288059-18174-1-git-send-email-sebastian.capella@linaro.org>
-References: <1393288059-18174-1-git-send-email-sebastian.capella@linaro.org>
+	Mon, 24 Feb 2014 19:30:21 -0500
+Message-ID: <530BE40D.8080506@elopez.com.ar>
+Date: Mon, 24 Feb 2014 21:30:05 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com, dmaengine@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, rjw@sisk.pl
+Subject: Re: [PATCH 1/5] clk: sun6i: Protect CPU clock
+References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com> <1393258967-4843-2-git-send-email-maxime.ripard@free-electrons.com> <20140224163034.GN21483@n2100.arm.linux.org.uk> <530BD804.5090806@elopez.com.ar> <20140225000154.GR21483@n2100.arm.linux.org.uk>
+In-Reply-To: <20140225000154.GR21483@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russ Dill <Russ.Dill@ti.com>
+Hi Russell,
 
-This adds the ability to run soft_restart with local_irq/fiq_disable
-already called. This is helpful for the hibernation code paths.
+El 24/02/14 21:01, Russell King - ARM Linux escribió:
+> Hi Emilio.
+>
+> On Mon, Feb 24, 2014 at 08:38:44PM -0300, Emilio López wrote:
+>> Why is this so? Can't a clock be left enabled while nobody has a
+>> reference to it? I have looked around in Documentation/ (rather quickly
+>> I must say) and have not found any explicit mention that it is required
+>> to keep a reference to the clock while it's enabled. I'd appreciate it
+>> if you could explain this a bit more verbosely or point me to the
+>> relevant documents.
+>
+> First up, if you have a requirement that a clock be enabled, then is it
+> not unreasonable to ensure that the clock is referenced?
 
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Robin Holt <robin.m.holt@gmail.com>
----
- arch/arm/include/asm/system_misc.h |    1 +
- arch/arm/kernel/process.c          |   15 ++++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+I was under the impression that the reference count was orthogonal to 
+the clock status, but after getting that clarified, I can see your point.
 
-diff --git a/arch/arm/include/asm/system_misc.h b/arch/arm/include/asm/system_misc.h
-index a3d61ad..eca8dd4 100644
---- a/arch/arm/include/asm/system_misc.h
-+++ b/arch/arm/include/asm/system_misc.h
-@@ -10,6 +10,7 @@
- 
- extern void cpu_init(void);
- 
-+void soft_restart_noirq(unsigned long);
- void soft_restart(unsigned long);
- extern void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
- extern void (*arm_pm_idle)(void);
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 92f7b15..685bc4a 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -95,14 +95,10 @@ static void __soft_restart(void *addr)
- 	BUG();
- }
- 
--void soft_restart(unsigned long addr)
-+void soft_restart_noirq(unsigned long addr)
- {
- 	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
- 
--	/* Disable interrupts first */
--	local_irq_disable();
--	local_fiq_disable();
--
- 	/* Disable the L2 if we're the last man standing. */
- 	if (num_online_cpus() == 1)
- 		outer_disable();
-@@ -114,6 +110,15 @@ void soft_restart(unsigned long addr)
- 	BUG();
- }
- 
-+void soft_restart(unsigned long addr)
-+{
-+	/* Disable interrupts first */
-+	local_irq_disable();
-+	local_fiq_disable();
-+
-+	soft_restart_noirq(addr);
-+}
-+
- static void null_restart(enum reboot_mode reboot_mode, const char *cmd)
- {
- }
--- 
-1.7.9.5
+> Secondly, what if we have code which scans the clocks in the system,
+> shutting down those leaf clocks which appear to be unreferenced?
 
+Indeed, that would break things.
+
+> Thirdly, the API (as I designed it) says so:
+>
+> /**
+>   * clk_put      - "free" the clock source
+>   * @clk: clock source
+>   *
+>   * Note: drivers must ensure that all clk_enable calls made on this
+>   * clock source are balanced by clk_disable calls prior to calling
+>   * this function.
+>   *
+>   * clk_put should not be called from within interrupt context.
+>   */
+> void clk_put(struct clk *clk);
+>
+> which has been there since the API was first created - it's part of the
+> contract between drivers using the API and implementers creating something
+> which conforms to the API - which today means CCF.
+
+That's enough of a reason on its own :) I should have checked clk.h
+
+> The intention here is that while there are any users holding a clk_get()
+> reference on a clock, the clock is assumed to be required for some
+> device, and the struct clk may not be kfree'd, nor may its state be
+> changed in an unpredictable way to those drivers holding a reference
+> to it.
+
+I understand now, thanks for the insight. I'll talk with Maxime and get 
+this sorted out.
+
+As a side note, should drivers/base/power/clock_ops.c be fixed too? I 
+have added Rafael to Cc.
+
+Cheers,
+
+Emilio
