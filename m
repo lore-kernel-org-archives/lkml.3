@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835AbaBYShz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:37:55 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:37531 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796AbaBYShy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:37:54 -0500
-Message-ID: <1393353454.2577.42.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Feb 2014 10:37:34 -0800
-In-Reply-To: <20140225183522.GU6835@laptop.programming.kicks-ass.net>
-References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-	 <20140225183522.GU6835@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1753653AbaBYSjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 13:39:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58542 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753593AbaBYSjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 13:39:13 -0500
+Message-ID: <530CE320.6000808@zytor.com>
+Date: Tue, 25 Feb 2014 10:38:24 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org
+CC: ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        jkosina@suse.cz
+Subject: Re: [PATCH 08/11] kexec-bzImage: Support for loading bzImage using
+ 64bit entry
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com> <1390849071-21989-9-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1390849071-21989-9-git-send-email-vgoyal@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 19:35 +0100, Peter Zijlstra wrote:
-> On Tue, Feb 25, 2014 at 10:16:46AM -0800, Davidlohr Bueso wrote:
-> > +void vmacache_update(struct mm_struct *mm, unsigned long addr,
-> > +		     struct vm_area_struct *newvma)
-> > +{
-> > +	/*
-> > +	 * Hash based on the page number. Provides a good
-> > +	 * hit rate for workloads with good locality and
-> > +	 * those with random accesses as well.
-> > +	 */
-> > +	int idx = (addr >> PAGE_SHIFT) & 3;
-> 
->  % VMACACHE_SIZE
-> 
-> perhaps? GCC should turn that into a mask for all sensible values I
-> would think.
-> 
-> Barring that I think something like:
-> 
-> #define VMACACHE_BITS	2
-> #define VMACACHE_SIZE	(1U << VMACACHE_BITS)
-> #define VMACACHE_MASK	(VMACACHE_SIZE - 1)
+On 01/27/2014 10:57 AM, Vivek Goyal wrote:
+> This is loader specific code which can load bzImage and set it up for
+> 64bit entry. This does not take care of 32bit entry or real mode entry
+> yet.
 
-Hmm all that seems like an overkill.
+Is there any use in that?  Real mode entry especially is more than a bit
+scary when coming from another kernel already...
+
+	-hpa
+
 
