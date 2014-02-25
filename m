@@ -1,100 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaBYQmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:42:24 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:33415 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaBYQmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:42:22 -0500
+	id S1753373AbaBYQoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:44:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908AbaBYQoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 11:44:13 -0500
+Date: Tue, 25 Feb 2014 11:43:42 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        jkosina@suse.cz
+Subject: Re: [PATCH 07/11] kexec: Create a relocatable object called purgatory
+Message-ID: <20140225164342.GC2701@redhat.com>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+ <1390849071-21989-8-git-send-email-vgoyal@redhat.com>
+ <530B989B.8010507@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKedQu30rX=k8U5Harzki1jAzKhG3OyPT75y=K+by7pVw@mail.gmail.com>
-References: <1392956661-28787-1-git-send-email-joelf@ti.com>
-	<20140221121548.GF8783@e106331-lin.cambridge.arm.com>
-	<53078E9B.5010806@ti.com>
-	<CAL_JsqKedQu30rX=k8U5Harzki1jAzKhG3OyPT75y=K+by7pVw@mail.gmail.com>
-Date: Tue, 25 Feb 2014 10:42:09 -0600
-Message-ID: <CAD=GYpaTypACGGvf5twNa2J0Ngr3X1yMFvTaEFuYuagFdkjfpw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EDMA: Use platform_get_resource functions for DT
-From: Joel Fernandes <agnel.joel@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Joel Fernandes <joelf@ti.com>, Mark Rutland <mark.rutland@arm.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        "nsekhar@ti.com" <nsekhar@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530B989B.8010507@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your suggestions.
+On Mon, Feb 24, 2014 at 11:08:11AM -0800, H. Peter Anvin wrote:
+> On 01/27/2014 10:57 AM, Vivek Goyal wrote:
+> > +
+> > +/**
+> > + * memcpy - Copy one area of memory to another
+> > + * @dest: Where to copy to
+> > + * @src: Where to copy from
+> > + * @count: The size of the area.
+> > + */
+> > +static void *memcpy(void *dest, const void *src, unsigned long count)
+> > +{
+> > +	char *tmp = dest;
+> > +	const char *s = src;
+> > +
+> > +	while (count--)
+> > +		*tmp++ = *s++;
+> > +	return dest;
+> > +}
+> > +
+> > +static int memcmp(const void *cs, const void *ct, size_t count)
+> > +{
+> > +	const unsigned char *su1, *su2;
+> > +	int res = 0;
+> > +
+> > +	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
+> > +		if ((res = *su1 - *su2) != 0)
+> > +			break;
+> > +	return res;
+> > +}
+> > +
+> 
+> <bikeshed>
+> 
+> There multiple implementations of memcpy(), memcmp() and memset() in
+> this patchset, and they make my eyes want to bleed (especially
+> memcmp()).  Can we centralize there, and perhaps even share code with
+> the stuff in arch/x86/boot already?
+> 
+> </bikeshed>
 
-On Tue, Feb 25, 2014 at 10:22 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On Fri, Feb 21, 2014 at 11:36 AM, Joel Fernandes <joelf@ti.com> wrote:
->> On 02/21/2014 06:15 AM, Mark Rutland wrote:
->>>> Also, while at it get rid of the assumption in the code that "CC" is at reg
->>>> index 0 in the DT and xbar is at offset 1. Instead use reg-names to get the
->>>> memory resource in concern keeping things much cleaner and simpler. This also
->>>> makes it possible to have multiple channel controllers.
->>>
->>> While this is nice I think we have to have a fallback to the existing
->>> behaviour if there's no reg-names property present, unless we know for
->>> certain no-one is possibly using an existing DTB.
->>
->> Yes, its true it break existing DTBs but currently only 2 TI SoCs use EDMA this
->> way, the vast majority of EDMA users are yet to follow where we can do it right.
->>  Further, the old bindings are really limiting specially the 2 CC case and if
->> additionally memory maps are used in the future. So keeping the old binding is
->> limiting in this regard.
->>
->> Here is what the platform_data used to look like when used by mach-davinci:
->>
->> static struct resource da850_edma_resources[] = {
->>         {
->>                 .name   = "edma_cc0",
->>                 .start  = DA8XX_TPCC_BASE,
->>                 .end    = DA8XX_TPCC_BASE + SZ_32K - 1,
->>                 .flags  = IORESOURCE_MEM,
->>         },
->>         {
->>                 .name   = "edma_tc0",
->>                 .start  = DA8XX_TPTC0_BASE,
->>                 .end    = DA8XX_TPTC0_BASE + SZ_1K - 1,
->>                 .flags  = IORESOURCE_MEM,
->>         },
->>         {
->>                 .name   = "edma_tc1",
->>                 .start  = DA8XX_TPTC1_BASE,
->>                 .end    = DA8XX_TPTC1_BASE + SZ_1K - 1,
->>                 .flags  = IORESOURCE_MEM,
->>         },
->>         {
->>                 .name   = "edma_cc1",
->>                 .start  = DA850_TPCC1_BASE,
->>                 .end    = DA850_TPCC1_BASE + SZ_32K - 1,
->>                 .flags  = IORESOURCE_MEM,
->>         },
->>
->> As you can see, there are several memory maps and different interpretations.
->> Considering this, IMO- it makes sense to pay a small price to keep the semantics
->> sane.
->
-> Then do 1 compatible string per interpretation. That can then define
-> the number of CCs and TCs.
+Hi hpa,
 
-Ok.
+There is multiple implementation of memcpy() only (sha256.c and
+purgatory.c). I will merge the two and make them use single definition of
+memcpy().
 
->>
->> On the other hand, the other 2 options are:
->> 1. We add a fallback if reg-names look up fails.
->
-> reg-names is supposed to be optional, so you should already have that fallback.
+I can't see multiple implementation of memcpy() and memcmp() in purgatory
+code.
 
-With the new binding, without reg-names not sure how to fall back
-there can variable number of different reg entries of different types.
-There's no way to know when one ends and the other begins. The fall
-back I mentioned can only work for old dtbs that only specify 1 CC.
+W.r.t sharing the code with arch/x86/boot/, I am not sure how to do it.
 
-Thanks,
--Joel
+I see two implementations of memcpy() under arch/x86/boot.
+
+One is in copy.S. This is assembly code and looks like is supposed to
+run in 16bit mode. (code16).
+
+Other one is in compressed/misc.c and there are two definitions, one
+for 32bit and one fore 64bit.
+
+I am not sure why there is a need to write memcpy() in assembly when
+C will do just fine for my case. I don't have to write two versions of
+memcpy() and use it both for 32bit and 64bit.
+
+So I can just make all the purgatory code share same version of memcpy(),
+memcmp() and memset(), is that fine. I have taken implementations of
+these functions from lib/string.c
+
+Thanks
+Vivek
+
+> 
+> 	-hpa
