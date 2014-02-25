@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaBYExs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:53:48 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49914 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaBYExr (ORCPT
+	id S1752871AbaBYEya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:54:30 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58268 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaBYEyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:53:47 -0500
-Date: Mon, 24 Feb 2014 23:53:43 -0500 (EST)
-Message-Id: <20140224.235343.1936318499491821387.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: mcgrof@do-not-panic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mcgrof@suse.com
-Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk>
-References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
-	<1393294265.6823.154.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 24 Feb 2014 23:54:08 -0500
+Message-ID: <530C21E6.5020106@linux.vnet.ibm.com>
+Date: Tue, 25 Feb 2014 10:23:58 +0530
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Olof Johansson <olof@lixom.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Wang Dongsheng <dongsheng.wang@freescale.com>
+CC: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: warn users of smt-snooze-delay that the API
+ isn't there anymore
+References: <1393028074-26797-1-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1393028074-26797-1-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Feb 2014 20:53:47 -0800 (PST)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022504-5564-0000-0000-00000C2F60FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Tue, 25 Feb 2014 02:11:05 +0000
-
-> On Mon, 2014-02-24 at 16:14 -0800, Luis R. Rodriguez wrote:
->> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->> 
->> ---
->>  include/uapi/linux/if.h | 201 +++++++++++++++++++++++++++++++++++-------------
->>  1 file changed, 149 insertions(+), 52 deletions(-)
->> 
->> diff --git a/include/uapi/linux/if.h b/include/uapi/linux/if.h
->> index d758163..1555623 100644
->> --- a/include/uapi/linux/if.h
->> +++ b/include/uapi/linux/if.h
-> [...]
->> +/**
->> + * enum net_device_priv_flags - &struct net_device priv_flags
->> + *
->> + * These are the &struct net_device, they are only set internally
->> + * by drivers and used in the kernel but are invisible to userspace.
-> [...]
+On Saturday 22 February 2014 05:44 AM, Cody P Schafer wrote:
+> /sys/devices/system/cpu/cpu*/smt-snooze-delay was converted into a NOP
+> in commit 3fa8cad82b94d0bed002571bd246f2299ffc876b, and now does
+> nothing. Add a pr_warn() to convince any users that they should stop
+> using it.
 > 
-> Indeed, I wonder why they are in the UAPI header.  As userland doesn't
-> have a legitimate use for them, maybe you could move them back to
-> include/linux/if.h instead of bothering with adding macros?
+> The commit message from the removing commit notes that this
+> functionality should move into the cpuidle driver, essentially by
 
-They are visible to userspace via sysfs.
+Would prefer to cleanup the code since the functionality is moved,
+instead of adding to it.
 
-My memory may be bad, but I believe this has been brought up before.
+> adjusting target_residency to the specified value. At the moment,
+> target_residency is not exposed by cpuidle's sysfs, so there isn't a
+> drop in replacement for this.
+> 
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/kernel/sysfs.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
+> index 97e1dc9..84097b4 100644
+> --- a/arch/powerpc/kernel/sysfs.c
+> +++ b/arch/powerpc/kernel/sysfs.c
+> @@ -50,6 +50,9 @@ static ssize_t store_smt_snooze_delay(struct device *dev,
+>  	if (ret != 1)
+>  		return -EINVAL;
+>  
+> +	pr_warn_ratelimited("%s (%d): /sys/devices/system/cpu/cpu%d/smt-snooze-delay is deprecated and is a NOP\n",
+> +		  current->comm, task_pid_nr(current), cpu->dev.id);
+> +
+>  	per_cpu(smt_snooze_delay, cpu->dev.id) = snooze;
+>  	return count;
+>  }
+> @@ -60,6 +63,9 @@ static ssize_t show_smt_snooze_delay(struct device *dev,
+>  {
+>  	struct cpu *cpu = container_of(dev, struct cpu, dev);
+>  
+> +	pr_warn_ratelimited("%s (%d): /sys/devices/system/cpu/cpu%d/smt-snooze-delay is deprecated and is a NOP\n",
+> +		  current->comm, task_pid_nr(current), cpu->dev.id);
+> +
+>  	return sprintf(buf, "%ld\n", per_cpu(smt_snooze_delay, cpu->dev.id));
+>  }
+>  
+> 
+
