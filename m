@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaBYArl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 19:47:41 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:45422 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaBYAri (ORCPT
+	id S1752810AbaBYAuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 19:50:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52575 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaBYAuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 19:47:38 -0500
+	Mon, 24 Feb 2014 19:50:21 -0500
+Date: Mon, 24 Feb 2014 16:51:54 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Todza Louina <lidza.louina@gmail.com>, devel@driverdev.osuosl.org,
+        ldv-project@linuxtesting.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] staging: dgap: remove unneeded status variables
+Message-ID: <20140225005154.GA22937@kroah.com>
+References: <1393186913-4687-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-In-Reply-To: <1393199401-27197-2-git-send-email-sre@debian.org>
-References: <1393199401-27197-1-git-send-email-sre@debian.org>
-	<1393199401-27197-2-git-send-email-sre@debian.org>
-Date: Mon, 24 Feb 2014 18:47:37 -0600
-Message-ID: <CAL_JsqJ5eHLSztBgjvi1TAEVeM6dfwnLwm4ygLnD+H0xrNXMfA@mail.gmail.com>
-Subject: Re: [PATCHv1 1/6] HSI: add Device Tree support for HSI clients
-From: Rob Herring <robherring2@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393186913-4687-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 23, 2014 at 5:49 PM, Sebastian Reichel <sre@debian.org> wrote:
-> Add new method hsi_add_clients_from_dt, which can be used
-> to initialize HSI clients from a device tree node.
->
-> The patch also documents the DT binding for trivial HSI
-> clients.
->
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
+On Mon, Feb 24, 2014 at 12:21:51AM +0400, Alexey Khoroshilov wrote:
+> dgap_driver_start and dgap_Major_Control_Registered are used
+> to keep status of initialization of the driver as a whole and its "Major Control".
+> But the code that checks them is executed once on module init/unload.
+> That makes no sense in these variables as far as their values are predictable
+> at any time.
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 > ---
->  .../devicetree/bindings/hsi/trivial-devices.txt    | 36 +++++++++++
->  drivers/hsi/hsi.c                                  | 70 +++++++++++++++++++++-
->  include/dt-bindings/hsi/hsi.h                      | 17 ++++++
->  include/linux/hsi/hsi.h                            |  2 +
->  4 files changed, 124 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/hsi/trivial-devices.txt
->  create mode 100644 include/dt-bindings/hsi/hsi.h
->
-> diff --git a/Documentation/devicetree/bindings/hsi/trivial-devices.txt b/Documentation/devicetree/bindings/hsi/trivial-devices.txt
-> new file mode 100644
-> index 0000000..1ace14a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hsi/trivial-devices.txt
-> @@ -0,0 +1,36 @@
-> +This is a list of trivial hsi client devices that have simple
-> +device tree bindings, consisting only of a compatible field
-> +and the optional hsi configuration.
-> +
-> +If a device needs more specific bindings, such as properties to
-> +describe some aspect of it, there needs to be a specific binding
-> +document for it just like any other devices.
-> +
-> +Optional HSI configuration properties:
-> +
-> +- hsi,mode             Bit transmission mode (STREAM or FRAME)
+>  drivers/staging/dgap/dgap_driver.c | 105 ++++++++++++++++---------------------
+>  1 file changed, 46 insertions(+), 59 deletions(-)
 
-hsi is not a vendor prefix, so all these properties should be hsi-*.
+This file is no longer in my tree, as the driver has been merged to one
+file.  Can you please redo it against my latest staging-next branch of
+my staging.git tree and resend the series so that I can apply them?
 
-> +                       The first value is used for RX and the second one for
-> +                       TX configuration. If only one value is provided it will
-> +                       be used for RX and TX.
-> +                       The assignments may be found in header file
-> +                       <dt-bindings/hsi/hsi.h>.
-> +- hsi,channels         Number of channels to use [1..16]
-> +                       The first value is used for RX and the second one for
-> +                       TX configuration. If only one value is provided it will
-> +                       be used for RX and TX.
-> +- hsi,speed            Max bit transmission speed (Kbit/s)
+thanks,
 
-Include the units in the prop name: hsi-speed-kbps
-
-> +                       The first value is used for RX and the second one for
-> +                       TX configuration. If only one value is provided it will
-> +                       be used for RX and TX.
-> +- hsi,flow             RX flow type (SYNCHRONIZED or PIPELINE)
-> +                       The assignments may be found in header file
-> +                       <dt-bindings/hsi/hsi.h>.
-> +- hsi,arb_mode         Arbitration mode for TX frame (Round robin, priority)
-> +                       The assignments may be found in header file
-> +                       <dt-bindings/hsi/hsi.h>.
-> +
-> +This is the list of trivial client devices:
-> +
-> +Compatible             Description
-> +==========             =============
-> +hsi-char               HSI character device
-
-
-I've gotten this far and still have no idea what HSI is.
-
-Rob
+greg k-h
