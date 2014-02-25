@@ -1,147 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaBYCA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:00:57 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:61983 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaBYCAy (ORCPT
+	id S1752934AbaBYCCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 21:02:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36731 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752000AbaBYCCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:00:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140225001748.GS21483@n2100.arm.linux.org.uk>
-References: <201402241200.21944.arnd@arndb.de>
-	<CANqRtoTLUfK7bjhmUbTdBi7r7OzrmwdAg_wnRbGHN7EUjGtouQ@mail.gmail.com>
-	<20140225001748.GS21483@n2100.arm.linux.org.uk>
-Date: Tue, 25 Feb 2014 11:00:52 +0900
-Message-ID: <CANqRtoSsra-NQF_4dz1iBjzEvdaUco9o3gbPi_6rEgswV=maCw@mail.gmail.com>
-Subject: Re: DMABOUNCE in pci-rcar
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
-        linux-pci@vger.kernel.org, Simon Horman <horms+renesas@verge.net.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Feb 2014 21:02:20 -0500
+Message-ID: <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: dcbw@redhat.com, mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
+        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+Date: Tue, 25 Feb 2014 02:01:59 +0000
+In-Reply-To: <20140224.191238.921310808350170272.davem@davemloft.net>
+References: <1393266120.8041.19.camel@dcbw.local>
+	 <20140224.180426.411052665068255886.davem@davemloft.net>
+	 <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk>
+	 <20140224.191238.921310808350170272.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-YYrQ2oDAg0I7CCTJmDT8"
+X-Mailer: Evolution 3.8.5-2+b2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.242
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
 
-On Tue, Feb 25, 2014 at 9:17 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Feb 25, 2014 at 08:49:28AM +0900, Magnus Damm wrote:
->> On Mon, Feb 24, 2014 at 8:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> >From my point of view we need some kind of bounce buffer unless we
->> have IOMMU support. I understand that an IOMMU would be much better
->> than a software-based implementation. If it is possible to use an
->> IOMMU with these devices remain to be seen.
->>
->> I didn't know about the SWIOTLB code, neither did I know that
->> DMABOUNCE was supposed to be avoided. Now I do!
->
-> The reason DMABOUNCE should be avoided is because it is a known source
-> of OOMs, and that has never been investigated and fixed.  You can read
-> about some of the kinds of problems this code creates here:
->
-> http://webcache.googleusercontent.com/search?q=cache:jwl4g8hqWa8J:comments.gmane.org/gmane.linux.ports.arm.kernel/15850+&cd=2&hl=en&ct=clnk&gl=uk&client=firefox-a
->
-> That was never got to the bottom of.  I could harp on about not having
-> the hardware, the people with the hardware not being capable of debugging
-> it, or not willing to litter their kernels with printks when they've
-> found a reproducable way to trigger it, etc - but none of that really
-> matters.
->
-> What matters is the end result is nothing was ever done to investigate
-> the causes, so it remains "unsafe" to use.
+--=-YYrQ2oDAg0I7CCTJmDT8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the pointer! It is good to know.
+On Mon, 2014-02-24 at 19:12 -0500, David Miller wrote:
+> From: Ben Hutchings <ben@decadent.org.uk>
+> Date: Tue, 25 Feb 2014 00:02:00 +0000
+>=20
+> > You can run an internal network, or access network, as v6-only with
+> > NAT64 and DNS64 at the border.  I believe some mobile networks are doin=
+g
+> > this; it was also done on the main FOSDEM wireless network this year.
+>=20
+> This seems to be bloating up the networking headers of the internal
+> network, for what purpose?
+>=20
+> For mobile that's doubly inadvisable.
 
->> I do realize that my following patches madly mix potential bus code
->> and actual device support, however..
->>
->> [PATCH v2 06/08] PCI: rcar: Add DMABOUNCE support
->> [PATCH 07/08] PCI: rcar: Enable BOUNCE in case of HIGHMEM
->>
->> .. without my patches the driver does not handle CONFIG_BOUNCE and
->> CONFIG_VMSPLIT_2G.
->
-> Can we please kill the idea that CONFIG_VMSPLIT_* has something to do
-> with DMA?  It doesn't.  VMSPLIT sets where the boundary between userspace
-> and kernel space is placed in virtual memory.  It doesn't really change
-> which memory is DMA-able.
->
-> There is the BLK_BOUNCE_HIGH option, but that's more to do with drivers
-> saying "I don't handle highmem pages because I'm old and no one's updated
-> me".
+I don't know what the reasoning is for the mobile network operators.
+They're forced to do NAT for v4 somewhere, and maybe v6-only makes the
+access network easier to manage.
 
-Spot on! =)
+I doubt the extra header length hurts that much on a 3G or 4G network.
 
->From my observations drivers saying that they don't support HIGHMEM
-may actually mean that they have a certain physical address
-limitation. For instance, if you want to misuse the zones then on a
-32-bit system not supporting HIGHMEM will guarantee that your memory
-is within 32-bits. I'm not saying anyone should do that, but I'm sure
-that kind of stuff is all over the place. =)
+Ben.
 
-> The same is true of highmem vs bouncing for DMA.  Highmem is purely a
-> virtual memory concept and has /nothing/ to do with whether the memory
-> can be DMA'd to.
->
-> Let's take an extreme example.  Let's say I set a 3G VM split, so kernel
-> memory starts at 0xc0000000.  I then set the vmalloc space to be 1024M -
-> but the kernel strinks that down to the maximum that can be accomodated,
-> which leaves something like 16MB of lowmem.  Let's say I have 512MB of
-> RAM in the machine.
->
-> Now let's consider I do the same thing, but with a 2G VM split.  Has the
-> memory pages which can be DMA'd to changed at all?  Yes, the CPU's view
-> of pages has changed, but the DMA engine's view hasn't changed /one/ /bit/.
->
-> Now consider when vmalloc space isn't expanded to maximum and all that
-> RAM is mapped into the kernel direct mapped region.  Again, any
-> difference as far as the DMA engine goes?  No there isn't.
->
-> So, the idea that highmem or vmsplit has any kind of impact on whether
-> memory can be DMA'd to by the hardware is absolutely absurd.
->
-> VMsplit and highmem are a CPU visible concept, and has very little to do
-> with whether the memory is DMA-able.
+--=20
+Ben Hutchings
+Everything should be made as simple as possible, but not simpler.
+                                                           - Albert Einstei=
+n
 
-I totally agree with what you are saying. If the memory is arranged as
-DMA zone or lowmem or HIGHMEM does not matter much from a hardware
-point or view. The hardware addressing limitation and the software
-concepts of memory zones are often mixed together - I suppose the DMA
-zone is the only case where they may have any relation.
+--=-YYrQ2oDAg0I7CCTJmDT8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-The most basic hardware limitation we have with this particular PCI
-bridge is that it can only do bus master memory access within the
-lowest 32-bits of physical address space (no high LPAE memory banks).
-And to make it more complicated, the hardware is even more restriced
-than that - the physical address space where bus mastering can happen
-is limited to 1 GiB. (The PCI bridge hardware itself can do 2 GiB
-window but it must be mapped a 0x8... The on-board memory banks are
-designed with 2 GiB memory starting from 0x4.. so out of that only
-1GiB remains useful)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The reason why the VMSPLIT was brought up was that the existing
-hard-coded 1GiB window happens to work with the common 3G VM split
-because lowmem also happens to be within 1 GiB. I suppose the code was
-written with "luck" so to say.
+iQIVAwUAUwv5l+e/yOyVhhEJAQpXUA/9HUG2G2LIDPmo09FoOGCUKQ3ak6vf9ZgB
+WCkn4sqbfANNxloU8AZT/rnWzcaU5GwlTm4b3XCEmiU9pDCOfZDDa81a2j20MnqI
+MHY61c19Vg7SIeQ46TbVGlUOvn13XkHeqYulQIfgW6EvUnVugVog1/MHdagsTpjM
+wJSHN1y8NegK07aO9KkEMM16APT6nE1bZ8tVTB5iwaX3b23ZBY/Z5P7Zk70gcbLt
+4VoaNmzv76O5SQJ82KQjbpuI+ZNYYXstG6ZIfRUEcFbBEZc0+6LQoEkEK9LOJcSk
+4khGycBNemZlQleyhs35WdYde9ZCHkOhHOBzYmmBiuVdy8wwm+rYSEr0RNpBnMji
+6cltOYeIX0pXC0FVf7ooeQLrZhYhEmo2AM0qCOqsOt6waTQ54zBmb/PNK2aJUKhJ
+Gvkb/5aNQrAiOV5XWkrzT+jXRAVd8JYHQYE/nSBHwtdk+mdukXLdlBz4FaB8o5I/
+peG/3Xvo+J74WEHLOGJhvKRgS6N6WZ7rurLUX4O4EiSZD90HoSdQBp7yhaasjfEw
+65x2pf+ZM99XwS+41dVj9TCc14KjRdbt13FeJaSbz2GD+WpcOIRRdR2/0LL7/Swl
+lYpVB21XTFhrERBL9qRt1X43sHnqCHgDL1+UfJLmCZ9JXHaQ1vqdkTv9BTTgkeee
+zdXHXl0KAsg=
+=rbWU
+-----END PGP SIGNATURE-----
 
-The issue is when VMSPLIT is changed to 2G then the 1GiB PCI bus
-master limitation will be visible and things will bomb out. I solve
-that by using DMABOUNCE to support any VMSPLIT configuration with 1GiB
-of bus mastering ability.
-
-And the DMABOUNCE code does not support HIGHMEM, so because of that
-the block layer BOUNCE is also used.
-
-Thanks for your help.
-
-Cheers,
-
-/ magnus
+--=-YYrQ2oDAg0I7CCTJmDT8--
