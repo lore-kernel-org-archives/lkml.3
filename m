@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaBYVGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 16:06:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635AbaBYVGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 16:06:14 -0500
-Message-ID: <1393362420.3032.8.camel@dcbw.local>
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-From: Dan Williams <dcbw@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: mcgrof@do-not-panic.com, zoltan.kiss@citrix.com, netdev@vger.kernel.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Date: Tue, 25 Feb 2014 15:07:00 -0600
-In-Reply-To: <20140224.180426.411052665068255886.davem@davemloft.net>
-References: <1392857777.22693.14.camel@dcbw.local>
-	 <CAB=NE6Xvqcdje5OSxjzTRa3wv-vZHr+MJHY86ZCfFXU2Lpzi8Q@mail.gmail.com>
-	 <1393266120.8041.19.camel@dcbw.local>
-	 <20140224.180426.411052665068255886.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
+	id S1752027AbaBYVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 16:09:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60641 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaBYVJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 16:09:27 -0500
+Date: Tue, 25 Feb 2014 13:09:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Dwight Engen <dwight.engen@oracle.com>, Eric Paris <eparis@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Hocko <mhocko@suse.cz>,
+        Michal Marek <mmarek@suse.cz>, Mike Frysinger <vapier@gentoo.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rob Landley <rob@landley.net>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-doc@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kconfig: Make allnoconfig disable options behind
+ EMBEDDED and EXPERT
+Message-Id: <20140225130925.813f29105079cbd3d5a9ba30@linux-foundation.org>
+In-Reply-To: <20140224022021.GA12665@thin>
+References: <20140224022021.GA12665@thin>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 18:04 -0500, David Miller wrote:
-> From: Dan Williams <dcbw@redhat.com>
-> Date: Mon, 24 Feb 2014 12:22:00 -0600
-> 
-> > In the future I expect more people will want to disable IPv4 as
-> > they move to IPv6.
-> 
-> I definitely don't.
-> 
-> I've been lightly following this conversation and I have to say
-> a few things.
-> 
-> disable_ipv6 was added because people wanted to make sure their
-> machines didn't generate any ipv6 traffic because "ipv6 is not
-> mature", "we don't have our firewalls configured to handle that
-> kind of traffic" etc.
-> 
-> None of these things apply to ipv4.
-> 
-> And if you think people will go to ipv6 only, you are dreaming.
-> 
-> Name a provider of a major web sitewho will go to strictly only
-> providing an ipv6 facing site?
-> 
-> Only an idiot who wanted to lose significiant nunbers of page views
-> and traffic would do that, so ipv4 based connectivity will be
-> universally necessary forever.
-> 
-> I think disable_ipv4 is absolutely a non-starter.
+On Sun, 23 Feb 2014 18:20:26 -0800 Josh Triplett <josh@joshtriplett.org> wrote:
 
-Also, disable_ipv4 signals *intent*, which is distinct from current
-state.
+> "make allnoconfig" exists to ease testing of minimal configurations.
+> Documentation/SubmitChecklist includes a note to test with allnoconfig.
+> This helps catch missing dependencies on common-but-not-required
+> functionality, which might otherwise go unnoticed.
+> 
+> However, allnoconfig still leaves many symbols enabled, because they're
+> hidden behind CONFIG_EMBEDDED or CONFIG_EXPERT.  For instance,
+> allnoconfig still has CONFIG_PRINTK and CONFIG_BLOCK enabled, so drivers
+> don't typically get build-tested with those disabled.
+> 
+> To address this, introduce a new Kconfig option "allnoconfig_y", used on
+> symbols which only exist to hide other symbols.  Set it on
+> CONFIG_EMBEDDED (which then selects CONFIG_EXPERT).  allnoconfig will
+> then disable all the symbols hidden behind those.
 
-Does an interface without an IPv4 address mean that the user wished it
-not to have one?
+Now look what you've done!
 
-Or does it mean that DHCP hasn't started yet (but is supposed to), or
-failed, or something hasn't gotten around to assigning an address yet?
+kernel/sched/core.c: In function 'pick_next_task':
+kernel/sched/core.c:2613: warning: control reaches end of non-void function
 
-disable_ipv4 lets you distinguish between these two cases, the same way
-disable_ipv6 does.
+static inline struct task_struct *
+pick_next_task(struct rq *rq, struct task_struct *prev)
+{
+	const struct sched_class *class;
+	struct task_struct *p;
 
-Dan
+	/*
+	 * Optimization: we know that if all tasks are in
+	 * the fair class we can call that function directly:
+	 */
+	if (likely(prev->sched_class == &fair_sched_class &&
+		   rq->nr_running == rq->cfs.h_nr_running)) {
+		p = fair_sched_class.pick_next_task(rq, prev);
+		if (likely(p))
+			return p;
+	}
 
+	for_each_class(class) {
+		p = class->pick_next_task(rq, prev);
+		if (p)
+			return p;
+	}
 
+	BUG(); /* the idle class will always have a runnable task */
+}
+
+akpm3:/usr/src/25> grep CONFIG_BUG .config
+# CONFIG_BUG is not set
