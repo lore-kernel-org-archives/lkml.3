@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaBYSoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:44:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593AbaBYSoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:44:13 -0500
-Date: Tue, 25 Feb 2014 13:43:42 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        jkosina@suse.cz
-Subject: Re: [PATCH 08/11] kexec-bzImage: Support for loading bzImage using
- 64bit entry
-Message-ID: <20140225184342.GF2701@redhat.com>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-9-git-send-email-vgoyal@redhat.com>
- <530CE320.6000808@zytor.com>
+	id S1753849AbaBYSpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 13:45:54 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:62033 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609AbaBYSpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 13:45:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530CE320.6000808@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
+Date: Tue, 25 Feb 2014 10:45:51 -0800
+X-Google-Sender-Auth: x8gl9whW0k7NTHOHk1wUHsFE6c0
+Message-ID: <CA+55aFxdUOALfQketaSAA9B_Da+n=hSvC5XswV+5cpmnyLwiFw@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: per-thread vma caching
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 10:38:24AM -0800, H. Peter Anvin wrote:
-> On 01/27/2014 10:57 AM, Vivek Goyal wrote:
-> > This is loader specific code which can load bzImage and set it up for
-> > 64bit entry. This does not take care of 32bit entry or real mode entry
-> > yet.
-> 
-> Is there any use in that?  Real mode entry especially is more than a bit
-> scary when coming from another kernel already...
+On Tue, Feb 25, 2014 at 10:37 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>  - clear all the cache entries (of the new 'struct task_struct'! - so
+> not in dup_mmap, but make sure it's zeroed when allocating!)(
+>
+>  - set vmcache_seqnum to 0 in dup_mmap (since any sequence number is
+> fine when it got invalidated, and 0 is best for "avoid overflow").
 
-I think 64bit entry should be good for x86_64. When we start supporting
-this new system call on x86(32bit), then we can implement 32bit entry 
-support (which should not be hard).
+Btw, as far as I can tell, that also makes the per-thread vmacache
+automatically do the right thing for the non-MMU case, so that you
+could just remove the difference between CONFIG_MMU and NOMMU.
 
-I have no plans to implement 16bit entry support. I just wanted to mention
-explicitly what is currently supported.
+Basically, dup_mmap() should no longer have anything to do with the
+vmacache, since it is now per-thread, not per-mm.
 
-Thanks
-Vivek
+So :
+
+ - allocating a new "struct mm_struct" should clear the
+vmacache_seqnum for that new mm, to try to minimize unnecessary future
+overflow.
+
+ - thread allocation should just zero the cache entries, and set
+"tsk->vmacache_seqnum = mm->vmacache_seqnum" (after dup_mm()) to avoid
+future unnecessary flushes.
+
+and as far as I can tell, the logic would be exactly the same on NOMMU
+(the dup_mm just doesn't happen, since all forks are basically sharing
+mm).
+
+And maybe you'd want to make VMACACHE_SIZE be 1 on NOMMU (and make
+sure to change the "& 3" to "& (VMACACHE_SIZE-1)". Just to keep the
+size down on small systems that really don't need it.
+
+          Linus
