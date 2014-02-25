@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaBYDgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 22:36:08 -0500
-Received: from ozlabs.org ([203.10.76.45]:43201 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715AbaBYDd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 22:33:27 -0500
-In-Reply-To: <1392415338-16288-3-git-send-email-cody@linux.vnet.ibm.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 02/11] perf core: export swevent hrtimer helpers
-Message-Id: <20140225033326.7BB942C0228@ozlabs.org>
-Date: Tue, 25 Feb 2014 14:33:26 +1100 (EST)
+	id S1753078AbaBYDhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:37:33 -0500
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:54976 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619AbaBYDhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Feb 2014 22:37:31 -0500
+Message-ID: <530C0FDF.4000506@hp.com>
+Date: Mon, 24 Feb 2014 22:37:03 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v4 0/3] qspinlock: Introducing a 4-byte queue spinlock
+References: <1392669684-4807-1-git-send-email-Waiman.Long@hp.com> <53029167.4060109@zytor.com> <20140218073825.GY27965@twins.programming.kicks-ass.net> <20140222165613.GA30098@gmail.com>
+In-Reply-To: <20140222165613.GA30098@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-14-02 at 22:02:06 UTC, Cody P Schafer wrote:
-> Export the swevent hrtimer helpers currently only used in events/core.c
-> to allow the addition of architecture specific sw-like pmus.
+On 02/22/2014 11:56 AM, Ingo Molnar wrote:
+> * Peter Zijlstra<peterz@infradead.org>  wrote:
+>
+>> On Mon, Feb 17, 2014 at 02:47:03PM -0800, H. Peter Anvin wrote:
+>>> This is starting to look good, so I have pulled it into
+>>> tip:x86/spinlocks to start give it some testing mileage.
+>> Its still atrociously ugly code please drop it.
+> Fair enough - I've excluded it from tip:master for now, until the
+> uglies get resolved.
+>
+> Waiman: please address PeterZ's feedback.
+>
+> Thanks,
+>
+> 	Ingo
 
-Peter, Ingo, can we get your ACK on this please?
+I am trying to address PeterZ's feedback while adding 
+para-virtualization support right now. I will have a new version ready 
+sometime this week.
 
-cheers
-
-
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  include/linux/perf_event.h | 5 ++++-
->  kernel/events/core.c       | 8 ++++----
->  2 files changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 2702e91..24378a9 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -559,7 +559,10 @@ extern void perf_pmu_migrate_context(struct pmu *pmu,
->  				int src_cpu, int dst_cpu);
->  extern u64 perf_event_read_value(struct perf_event *event,
->  				 u64 *enabled, u64 *running);
-> -
-> +extern void perf_swevent_init_hrtimer(struct perf_event *event);
-> +extern void perf_swevent_start_hrtimer(struct perf_event *event);
-> +extern void perf_swevent_cancel_hrtimer(struct perf_event *event);
-> +extern int perf_swevent_event_idx(struct perf_event *event);
->  
->  struct perf_sample_data {
->  	u64				type;
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 56003c6..feb0347 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -5816,7 +5816,7 @@ static int perf_swevent_init(struct perf_event *event)
->  	return 0;
->  }
->  
-> -static int perf_swevent_event_idx(struct perf_event *event)
-> +int perf_swevent_event_idx(struct perf_event *event)
->  {
->  	return 0;
->  }
-> @@ -6045,7 +6045,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
->  	return ret;
->  }
->  
-> -static void perf_swevent_start_hrtimer(struct perf_event *event)
-> +void perf_swevent_start_hrtimer(struct perf_event *event)
->  {
->  	struct hw_perf_event *hwc = &event->hw;
->  	s64 period;
-> @@ -6067,7 +6067,7 @@ static void perf_swevent_start_hrtimer(struct perf_event *event)
->  				HRTIMER_MODE_REL_PINNED, 0);
->  }
->  
-> -static void perf_swevent_cancel_hrtimer(struct perf_event *event)
-> +void perf_swevent_cancel_hrtimer(struct perf_event *event)
->  {
->  	struct hw_perf_event *hwc = &event->hw;
->  
-> @@ -6079,7 +6079,7 @@ static void perf_swevent_cancel_hrtimer(struct perf_event *event)
->  	}
->  }
->  
-> -static void perf_swevent_init_hrtimer(struct perf_event *event)
-> +void perf_swevent_init_hrtimer(struct perf_event *event)
->  {
->  	struct hw_perf_event *hwc = &event->hw;
->  
-> -- 
-> 1.8.5.4
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-> 
+-Longman
