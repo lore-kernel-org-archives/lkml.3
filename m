@@ -1,43 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaBYEHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 23:07:17 -0500
-Received: from mail05-md.ns.itscom.net ([175.177.155.115]:33629 "EHLO
-	mail05-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbaBYEHP (ORCPT
+	id S1752723AbaBYENj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 23:13:39 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:55793 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaBYENh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 23:07:15 -0500
-From: "J. R. Okajima" <hooanon05g@gmail.com>
-Subject: Re: [PATCH 00/13] cross rename v4
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-In-Reply-To: <20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu> <19258.1392306854@warthog.procyon.org.uk> <20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu> <20106.1392309770@warthog.procyon.org.uk> <CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com> <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com> <16729.1392318161@warthog.procyon.org.uk> <CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com> <CAJfpegsDG-NoqvYog5PWqR=XOQgT0dSOTsjDwhd8v11T0kiEVA@mail.gmail.com> <20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-Date: Tue, 25 Feb 2014 13:07:10 +0900
-Message-ID: <13532.1393301230@jrobl>
+	Mon, 24 Feb 2014 23:13:37 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <530C186D.3050602@roeck-us.net>
+Date: Mon, 24 Feb 2014 20:13:33 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Huacai Chen <chenhuacai@gmail.com>
+CC: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries)
+ causing qemu hang with mips64 kernels
+References: <52F5A6EE.7020000@roeck-us.net> <CAAhV-H7GbarXPb2uye1jiH+caAL4vWTVBeGY77Yf0tvdpGJtiA@mail.gmail.com> <52F5B8CE.1000808@roeck-us.net>
+In-Reply-To: <52F5B8CE.1000808@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/07/2014 08:55 PM, Guenter Roeck wrote:
+> On 02/07/2014 07:57 PM, Huacai Chen wrote:
+>> Hi,
+>>
+>> Maybe you can try this:
+>> http://patchwork.linux-mips.org/patch/6506/
+>> http://patchwork.linux-mips.org/patch/6507/
+>>
+> With those two patches applied the problem is gone.
+>
 
-Miklos Szeredi:
-> As Linus' suggestion, a whiteout is represented as a dummy char device.
-> This patch uses the 0/0 device number, but the actual number doesn't matter
-> as long as it doesn't conflict with a real device.
+Any idea if and when those patches may find their way upstream ?
+3.14-rc4 still has the problem.
 
-I have no objection about the char device.
-But why do we need an inode for every whiteout? I'd suggest making a
-hardlink. For some filesystems which don't support hardlinks, we have to
-consume an inode per whiteout. But when the fs supports hardlinks, we
-can re-use the inode and consume a few inodes only.
+Thanks,
+Guenter
 
+> Thanks a lot!
+>
+> Guenter
+>
+>> On Sat, Feb 8, 2014 at 11:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>
+>>> Hi all,
+>>>
+>>> in 3.14-rc1, my mips64 qemu test fails. The image boots and then hangs.
+>>> Bisect points to commit 597ce1723 (MIPS: Support for 64-bit FP with O32
+>>> binaries).
+>>> Reverting this commit fixes the problem. Disabling MIPS_O32_FP64_SUPPORT
+>>> in my test image does _not_ solve the problem. The qemu version does not
+>>> seem
+>>> to make a difference; I tested with qemu 1.6.0 and 1.7.0.
+>>>
+>>> Console log output is available in
+>>> http://server.roeck-us.net:8010/builders/qemu-mips64-master/builds/34/steps/buildcommand/logs/stdio
+>>>
+>>> When the problem is seen, the emulation hangs as can be seen in the log,
+>>> and the qemu process consumes 100% CPU until it is killed.
+>>>
+>>> qemu command line is
+>>>
+>>> qemu-system-mips64 -kernel vmlinux -M malta -hda
+>>> core-image-minimal-qemumips64.ext3 \
+>>> -vga cirrus -usb -usbdevice wacom-tablet -no-reboot -m 128 --append
+>>> "root=/dev/hda \
+>>> rw mem=128M console=ttyS0 console=tty" -nographic
+>>>
+>>> The same configuration works fine with earlier kernels. I'll be happy to
+>>> provide
+>>> the detailed configuration as well as the root file system for testing if
+>>> needed.
+>>>
+>>> Obviously I have no idea if this is a problem with the patch or with qemu.
+>>> If there is anything I can do to help tracking down the problem further,
+>>> please let me know.
+>>>
+>>> Thanks,
+>>> Guenter
+>>>
+>>
+>>
+>
 
-J. R. Okajima
