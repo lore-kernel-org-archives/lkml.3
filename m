@@ -1,63 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbaBYTfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:35:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57597 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534AbaBYTfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:35:24 -0500
-Date: Tue, 25 Feb 2014 20:35:19 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, mjg59@srcf.ucam.org, jkosina@suse.cz,
-        greg@kroah.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH 06/11] kexec: A new system call, kexec_file_load, for in
- kernel kexec
-Message-ID: <20140225203519.77abfa8d@hananiah.suse.cz>
-In-Reply-To: <20140224164131.GJ4631@redhat.com>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
-	<1390849071-21989-7-git-send-email-vgoyal@redhat.com>
-	<20140221145910.GE11531@pd.tnic>
-	<20140224164131.GJ4631@redhat.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753312AbaBYTlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:41:14 -0500
+Received: from smtprelay0131.hostedemail.com ([216.40.44.131]:44270 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752430AbaBYTlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 14:41:11 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:800:960:966:973:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:1981:2194:2196:2199:2200:2393:2559:2562:2894:3138:3139:3140:3141:3142:3354:3865:3867:3868:4321:4385:4605:5007:6119:6261:8603:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:12679:13221:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shirt42_273e2160a4c3b
+X-Filterd-Recvd-Size: 4714
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH V2 1/8] security: Use a more current logging style
+Date: Tue, 25 Feb 2014 11:41:07 -0800
+Message-Id: <d7dea4f17b5d69997f5c8666e7594dbe845e883e.1393357067.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <20140225191003.GB22246@sergelap>
+References: <20140225191003.GB22246@sergelap>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 11:41:31 -0500
-Vivek Goyal <vgoyal@redhat.com> wrote:
+Convert printks to pr_<level>.
+Convert printk with single time guard to pr_info_once.
+Add pr_fmt to prefix output with "security: " or "capability: "
+Coalesce formats.
+Use a generic string for pr_debug to reduce object size.
 
-> On Fri, Feb 21, 2014 at 03:59:10PM +0100, Borislav Petkov wrote:
-> 
->[...]
-> > 
-> > ...
-> > 
-> > > diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-> > > index d6629d4..5fddb1b 100644
-> > > --- a/include/uapi/linux/kexec.h
-> > > +++ b/include/uapi/linux/kexec.h
-> > > @@ -13,6 +13,10 @@
-> > >  #define KEXEC_PRESERVE_CONTEXT	0x00000002
-> > >  #define KEXEC_ARCH_MASK		0xffff0000
-> > >  
-> > > +/* Kexec file load interface flags */
-> > > +#define KEXEC_FILE_UNLOAD	0x00000001
-> > > +#define KEXEC_FILE_ON_CRASH	0x00000002
-> > 
-> > BIT()
-> 
-> What's that?
+Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Reported-by: Serge Hallyn <serge.hallyn@ubuntu.com> (pr_info_once)
+---
+ security/capability.c | 16 +++++++++-------
+ security/commoncap.c  | 19 ++++++++-----------
+ security/security.c   |  4 +++-
+ 3 files changed, 20 insertions(+), 19 deletions(-)
 
-#define BIT(nr)                 (1UL << (nr))
+diff --git a/security/capability.c b/security/capability.c
+index 8b4f24a..086af9b 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -10,6 +10,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/security.h>
+ 
+ static int cap_syslog(int type)
+@@ -914,13 +916,13 @@ static void cap_audit_rule_free(void *lsmrule)
+ #endif /* CONFIG_AUDIT */
+ 
+ #define set_to_cap_if_null(ops, function)				\
+-	do {								\
+-		if (!ops->function) {					\
+-			ops->function = cap_##function;			\
+-			pr_debug("Had to override the " #function	\
+-				 " security operation with the default.\n");\
+-			}						\
+-	} while (0)
++do {									\
++	if (!ops->function) {						\
++		ops->function = cap_##function;				\
++		pr_debug("Had to override the %s security operation with the default\n", \
++			 #function);					\
++	}								\
++} while (0)
+ 
+ void __init security_fixup_ops(struct security_operations *ops)
+ {
+diff --git a/security/commoncap.c b/security/commoncap.c
+index b9d613e..09da086 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -7,6 +7,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) "capability: " fmt
++
+ #include <linux/capability.h>
+ #include <linux/audit.h>
+ #include <linux/module.h>
+@@ -44,13 +46,8 @@
+  */
+ static void warn_setuid_and_fcaps_mixed(const char *fname)
+ {
+-	static int warned;
+-	if (!warned) {
+-		printk(KERN_INFO "warning: `%s' has both setuid-root and"
+-			" effective capabilities. Therefore not raising all"
+-			" capabilities.\n", fname);
+-		warned = 1;
+-	}
++	pr_info_once("warning: `%s' has both setuid-root and effective capabilities, therefore not raising all capabilities\n",
++		     fname);
+ }
+ 
+ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
+@@ -448,8 +445,8 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
+ 	rc = get_vfs_caps_from_disk(dentry, &vcaps);
+ 	if (rc < 0) {
+ 		if (rc == -EINVAL)
+-			printk(KERN_NOTICE "%s: get_vfs_caps_from_disk returned %d for %s\n",
+-				__func__, rc, bprm->filename);
++			pr_notice("%s: get_vfs_caps_from_disk returned %d for %s\n",
++				  __func__, rc, bprm->filename);
+ 		else if (rc == -ENODATA)
+ 			rc = 0;
+ 		goto out;
+@@ -457,8 +454,8 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
+ 
+ 	rc = bprm_caps_from_vfs_caps(&vcaps, bprm, effective, has_cap);
+ 	if (rc == -EINVAL)
+-		printk(KERN_NOTICE "%s: cap_from_disk returned %d for %s\n",
+-		       __func__, rc, bprm->filename);
++		pr_notice("%s: cap_from_disk returned %d for %s\n",
++			  __func__, rc, bprm->filename);
+ 
+ out:
+ 	dput(dentry);
+diff --git a/security/security.c b/security/security.c
+index 15b6928..53d1885 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -11,6 +11,8 @@
+  *	(at your option) any later version.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/capability.h>
+ #include <linux/dcache.h>
+ #include <linux/module.h>
+@@ -64,7 +66,7 @@ static void __init do_security_initcalls(void)
+  */
+ int __init security_init(void)
+ {
+-	printk(KERN_INFO "Security Framework initialized\n");
++	pr_info("Security Framework initialized\n");
+ 
+ 	security_fixup_ops(&default_security_ops);
+ 	security_ops = &default_security_ops;
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-For my part I'm not convinced it's a better way to do it, unless
-Borislav also wanted to suggest adding an enum for the bit number
-values...
-
-Petr T
