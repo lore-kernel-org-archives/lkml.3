@@ -1,235 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaBYC7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:59:55 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58726 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaBYC7x (ORCPT
+	id S1752864AbaBYDBM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:01:12 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50555 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaBYDBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:59:53 -0500
-Message-ID: <1393297187.2001.3.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 3/8] security: integrity: Use a more current logging
- style
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module@vger.kernel.org
-Date: Mon, 24 Feb 2014 21:59:47 -0500
-In-Reply-To: <25bc41150cc3966f5c8dfcd028ad3652e19f5efa.1393279025.git.joe@perches.com>
-References: <cover.1393279025.git.joe@perches.com>
-	 <25bc41150cc3966f5c8dfcd028ad3652e19f5efa.1393279025.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Mon, 24 Feb 2014 22:01:10 -0500
+Message-ID: <530C076D.1050603@linux.vnet.ibm.com>
+Date: Tue, 25 Feb 2014 11:01:01 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: hang in migrate_swap
+References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net>
+In-Reply-To: <20140224121218.GR15586@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022502-7164-0000-0000-00000663DEA8
+x-cbid: 14022503-8256-0000-0000-00000BA15448
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 13:59 -0800, Joe Perches wrote: 
-> Convert printks to pr_<level>.
-> Add pr_fmt.
-> Remove embedded prefixes.
+On 02/24/2014 08:12 PM, Peter Zijlstra wrote:
+[snip]
+>>
+>> ...what about move idle_balance() back to it's old position?
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> I've always hated that, idle_balance() is very much a fair policy thing
+> and shouldn't live in the core code.
+> 
+>> pull_rt_task() logical could be after idle_balance() if still no FAIR
+>> and DL, then go into the pick loop, that may could make things more
+>> clean & clear, should we have a try?
+> 
+> So the reason pull_{rt,dl}_task() is before idle_balance() is that we
+> don't want to add the execution latency of idle_balance() to the rt/dl
+> task pulling.
 
-Thanks Joe, both this and the keys patch look good.
+Yeah, that make sense, just wondering... since RT also has balance
+stuff, may be we can use a new call back for each class in the old position?
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+The new idle_balance could like:
 
+	void idle_balance() {
+		for_each_class(class)
+			if class->idle_balance()
+				break
+	}
+
+> 
+> Anyway, the below seems to work; it avoids playing tricks with the idle
+> thread and instead uses a magic constant.
+> 
+> The comparison should be faster too; seeing how we avoid dereferencing
+> p->sched_class.
+
+Great, it once appeared in my mind but you achieved this without new
+parameter, now let's ignore my wondering above :)
+
+Regards,
+Michael Wang
+
+> 
 > ---
->  security/integrity/evm/evm_crypto.c   | 4 +++-
->  security/integrity/evm/evm_main.c     | 6 ++++--
->  security/integrity/evm/evm_secfs.c    | 6 ++++--
->  security/integrity/ima/ima_crypto.c   | 4 +++-
->  security/integrity/ima/ima_init.c     | 5 ++++-
->  security/integrity/ima/ima_queue.c    | 8 +++++---
->  security/integrity/ima/ima_template.c | 5 ++++-
->  7 files changed, 27 insertions(+), 11 deletions(-)
+> Subject: sched: Guarantee task priority in pick_next_task()
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Fri Feb 14 12:25:08 CET 2014
 > 
-> diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-> index 3bab89e..9bd329f 100644
-> --- a/security/integrity/evm/evm_crypto.c
-> +++ b/security/integrity/evm/evm_crypto.c
-> @@ -13,6 +13,8 @@
->   *	 Using root's kernel master key (kmk), calculate the HMAC
->   */
+> Michael spotted that the idle_balance() push down created a task
+> priority problem.
 > 
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/crypto.h>
->  #include <linux/xattr.h>
-> @@ -221,7 +223,7 @@ int evm_init_hmac(struct inode *inode, const struct xattr *lsm_xattr,
+> Previously, when we called idle_balance() before pick_next_task() it
+> wasn't a problem when -- because of the rq->lock droppage -- an rt/dl
+> task slipped in.
 > 
->  	desc = init_desc(EVM_XATTR_HMAC);
->  	if (IS_ERR(desc)) {
-> -		printk(KERN_INFO "init_desc failed\n");
-> +		pr_info("init_desc failed\n");
->  		return PTR_ERR(desc);
->  	}
+> Similarly for pre_schedule(), rt pre-schedule could have a dl task
+> slip in.
 > 
-> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-> index 336b3dd..996092f 100644
-> --- a/security/integrity/evm/evm_main.c
-> +++ b/security/integrity/evm/evm_main.c
-> @@ -14,6 +14,8 @@
->   *	evm_inode_removexattr, and evm_verifyxattr
->   */
+> But by pulling it into the pick_next_task() loop, we'll not try a
+> higher task priority again.
 > 
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/crypto.h>
->  #include <linux/audit.h>
-> @@ -432,7 +434,7 @@ static int __init init_evm(void)
+> Cure this by creating a re-start condition in pick_next_task(); and
+> triggering this from pick_next_task_{rt,fair}().
 > 
->  	error = evm_init_secfs();
->  	if (error < 0) {
-> -		printk(KERN_INFO "EVM: Error registering secfs\n");
-> +		pr_info("Error registering secfs\n");
->  		goto err;
->  	}
+> Fixes: 38033c37faab ("sched: Push down pre_schedule() and idle_balance()")
+> Cc: Juri Lelli <juri.lelli@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Reported-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/core.c  |   12 ++++++++----
+>  kernel/sched/fair.c  |   13 ++++++++++++-
+>  kernel/sched/rt.c    |   10 +++++++++-
+>  kernel/sched/sched.h |    5 +++++
+>  4 files changed, 34 insertions(+), 6 deletions(-)
 > 
-> @@ -449,7 +451,7 @@ static int __init evm_display_config(void)
->  	char **xattrname;
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2586,24 +2586,28 @@ static inline void schedule_debug(struct
+>  static inline struct task_struct *
+>  pick_next_task(struct rq *rq, struct task_struct *prev)
+>  {
+> -	const struct sched_class *class;
+> +	const struct sched_class *class = &fair_sched_class;
+>  	struct task_struct *p;
 > 
->  	for (xattrname = evm_config_xattrnames; *xattrname != NULL; xattrname++)
-> -		printk(KERN_INFO "EVM: %s\n", *xattrname);
-> +		pr_info("%s\n", *xattrname);
->  	return 0;
->  }
-> 
-> diff --git a/security/integrity/evm/evm_secfs.c b/security/integrity/evm/evm_secfs.c
-> index 30f670a..cf12a04 100644
-> --- a/security/integrity/evm/evm_secfs.c
-> +++ b/security/integrity/evm/evm_secfs.c
-> @@ -13,6 +13,8 @@
->   *	- Get the key and enable EVM
->   */
-> 
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/uaccess.h>
->  #include <linux/module.h>
->  #include "evm.h"
-> @@ -79,9 +81,9 @@ static ssize_t evm_write_key(struct file *file, const char __user *buf,
->  	error = evm_init_key();
->  	if (!error) {
->  		evm_initialized = 1;
-> -		pr_info("EVM: initialized\n");
-> +		pr_info("initialized\n");
->  	} else
-> -		pr_err("EVM: initialization failed\n");
-> +		pr_err("initialization failed\n");
->  	return count;
->  }
-> 
-> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-> index fdf60de..972df659 100644
-> --- a/security/integrity/ima/ima_crypto.c
-> +++ b/security/integrity/ima/ima_crypto.c
-> @@ -13,6 +13,8 @@
->   * 	Calculates md5/sha1 file hash, template hash, boot-aggreate hash
->   */
-> 
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/kernel.h>
->  #include <linux/file.h>
->  #include <linux/crypto.h>
-> @@ -205,7 +207,7 @@ static void __init ima_pcrread(int idx, u8 *pcr)
->  		return;
-> 
->  	if (tpm_pcr_read(TPM_ANY_NUM, idx, pcr) != 0)
-> -		pr_err("IMA: Error Communicating to TPM chip\n");
-> +		pr_err("Error Communicating to TPM chip\n");
->  }
-> 
->  /*
-> diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-> index 3712276..b3bc313 100644
-> --- a/security/integrity/ima/ima_init.c
-> +++ b/security/integrity/ima/ima_init.c
-> @@ -14,6 +14,9 @@
->   * File: ima_init.c
->   *             initialization and cleanup functions
->   */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/scatterlist.h>
->  #include <linux/slab.h>
-> @@ -93,7 +96,7 @@ int __init ima_init(void)
->  		ima_used_chip = 1;
-> 
->  	if (!ima_used_chip)
-> -		pr_info("IMA: No TPM chip found, activating TPM-bypass!\n");
-> +		pr_info("No TPM chip found, activating TPM-bypass!\n");
-> 
->  	rc = ima_init_crypto();
->  	if (rc)
-> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
-> index d85e997..91128b4 100644
-> --- a/security/integrity/ima/ima_queue.c
-> +++ b/security/integrity/ima/ima_queue.c
-> @@ -18,6 +18,9 @@
->   *       The measurement list is append-only. No entry is
->   *       ever removed or changed during the boot-cycle.
->   */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/rculist.h>
->  #include <linux/slab.h>
-> @@ -72,7 +75,7 @@ static int ima_add_digest_entry(struct ima_template_entry *entry)
-> 
->  	qe = kmalloc(sizeof(*qe), GFP_KERNEL);
->  	if (qe == NULL) {
-> -		pr_err("IMA: OUT OF MEMORY ERROR creating queue entry.\n");
-> +		pr_err("OUT OF MEMORY ERROR creating queue entry\n");
->  		return -ENOMEM;
->  	}
->  	qe->entry = entry;
-> @@ -95,8 +98,7 @@ static int ima_pcr_extend(const u8 *hash)
-> 
->  	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
->  	if (result != 0)
-> -		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
-> -		       result);
-> +		pr_err("Error Communicating to TPM chip, result: %d\n", result);
->  	return result;
->  }
-> 
-> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
-> index 635695f..9a4a0d1 100644
-> --- a/security/integrity/ima/ima_template.c
-> +++ b/security/integrity/ima/ima_template.c
-> @@ -12,6 +12,9 @@
->   * File: ima_template.c
->   *      Helpers to manage template descriptors.
->   */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <crypto/hash_info.h>
-> 
->  #include "ima.h"
-> @@ -58,7 +61,7 @@ static int __init ima_template_setup(char *str)
+>  	/*
+>  	 * Optimization: we know that if all tasks are in
+>  	 * the fair class we can call that function directly:
 >  	 */
->  	if (template_len == 3 && strcmp(str, IMA_TEMPLATE_IMA_NAME) == 0 &&
->  	    ima_hash_algo != HASH_ALGO_SHA1 && ima_hash_algo != HASH_ALGO_MD5) {
-> -		pr_err("IMA: template does not support hash alg\n");
-> +		pr_err("template does not support hash alg\n");
->  		return 1;
+> -	if (likely(prev->sched_class == &fair_sched_class &&
+> +	if (likely(prev->sched_class == class &&
+>  		   rq->nr_running == rq->cfs.h_nr_running)) {
+>  		p = fair_sched_class.pick_next_task(rq, prev);
+> -		if (likely(p))
+> +		if (likely(p && p != RETRY_TASK))
+>  			return p;
 >  	}
 > 
-
+> +again:
+>  	for_each_class(class) {
+>  		p = class->pick_next_task(rq, prev);
+> -		if (p)
+> +		if (p) {
+> +			if (unlikely(p == RETRY_TASK))
+> +				goto again;
+>  			return p;
+> +		}
+>  	}
+> 
+>  	BUG(); /* the idle class will always have a runnable task */
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4687,6 +4687,7 @@ pick_next_task_fair(struct rq *rq, struc
+>  	struct cfs_rq *cfs_rq = &rq->cfs;
+>  	struct sched_entity *se;
+>  	struct task_struct *p;
+> +	int new_tasks;
+> 
+>  again:
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> @@ -4785,7 +4786,17 @@ pick_next_task_fair(struct rq *rq, struc
+>  	return p;
+> 
+>  idle:
+> -	if (idle_balance(rq)) /* drops rq->lock */
+> +	/*
+> +	 * Because idle_balance() releases (and re-acquires) rq->lock, it is
+> +	 * possible for any higher priority task to appear. In that case we
+> +	 * must re-start the pick_next_entity() loop.
+> +	 */
+> +	new_tasks = idle_balance(rq);
+> +
+> +	if (rq->nr_running != rq->cfs.h_nr_running)
+> +		return RETRY_TASK;
+> +
+> +	if (new_tasks)
+>  		goto again;
+> 
+>  	return NULL;
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1360,8 +1360,16 @@ pick_next_task_rt(struct rq *rq, struct
+>  	struct task_struct *p;
+>  	struct rt_rq *rt_rq = &rq->rt;
+> 
+> -	if (need_pull_rt_task(rq, prev))
+> +	if (need_pull_rt_task(rq, prev)) {
+>  		pull_rt_task(rq);
+> +		/*
+> +		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
+> +		 * means a dl task can slip in, in which case we need to
+> +		 * re-start task selection.
+> +		 */
+> +		if (unlikely(rq->dl.dl_nr_running))
+> +			return RETRY_TASK;
+> +	}
+> 
+>  	if (!rt_rq->rt_nr_running)
+>  		return NULL;
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -1090,6 +1090,8 @@ static const u32 prio_to_wmult[40] = {
+> 
+>  #define DEQUEUE_SLEEP		1
+> 
+> +#define RETRY_TASK		((void *)-1UL)
+> +
+>  struct sched_class {
+>  	const struct sched_class *next;
+> 
+> @@ -1104,6 +1106,9 @@ struct sched_class {
+>  	 * It is the responsibility of the pick_next_task() method that will
+>  	 * return the next task to call put_prev_task() on the @prev task or
+>  	 * something equivalent.
+> +	 *
+> +	 * May return RETRY_TASK when it finds a higher prio class has runnable
+> +	 * tasks.
+>  	 */
+>  	struct task_struct * (*pick_next_task) (struct rq *rq,
+>  						struct task_struct *prev);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
