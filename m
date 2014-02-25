@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaBYWSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 17:18:06 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:4314 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530AbaBYWSE (ORCPT
+	id S1753501AbaBYWSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 17:18:20 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:13984 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbaBYWSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 17:18:04 -0500
+	Tue, 25 Feb 2014 17:18:18 -0500
 X-IronPort-AV: E=Sophos;i="4.97,542,1389772800"; 
-   d="scan'208";a="16790664"
+   d="scan'208";a="16363943"
 From: Markus Mayer <markus.mayer@linaro.org>
 To: Matt Porter <matt.porter@linaro.org>, Christian Daudt <bcm@fixthebug.org>
 CC: ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] ARM: bcm281xx: Move kona_l2_cache_init() so it can be shared
-Date: Tue, 25 Feb 2014 14:17:43 -0800
-Message-ID: <1393366666-28625-2-git-send-email-markus.mayer@linaro.org>
+Subject: [PATCH 2/4] ARM: bcm281xx: Consolidate reboot code
+Date: Tue, 25 Feb 2014 14:17:44 -0800
+Message-ID: <1393366666-28625-3-git-send-email-markus.mayer@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393366666-28625-1-git-send-email-markus.mayer@linaro.org>
 References: <1393366666-28625-1-git-send-email-markus.mayer@linaro.org>
@@ -25,129 +25,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for future SoCs, move kona_l2_cache_init() from board
-specific board_bcm281xx.c to shared kona.c, so multiple SoC families
-can make use of it. Also change the return type to "void", since we
-never look at the return code anyway.
+Consolidate reboot code and remove unnecessary functions.
 
 Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- arch/arm/mach-bcm/board_bcm281xx.c |   26 +-------------------------
- arch/arm/mach-bcm/kona.c           |   30 +++++++++++++++++++++++++++++-
- arch/arm/mach-bcm/kona.h           |    3 ++-
- 3 files changed, 32 insertions(+), 27 deletions(-)
+ arch/arm/mach-bcm/board_bcm281xx.c |   46 ++++++++++++++++++++++++---------
+ arch/arm/mach-bcm/kona.c           |   50 ------------------------------------
+ arch/arm/mach-bcm/kona.h           |    4 ---
+ 3 files changed, 34 insertions(+), 66 deletions(-)
 
 diff --git a/arch/arm/mach-bcm/board_bcm281xx.c b/arch/arm/mach-bcm/board_bcm281xx.c
-index cb3dc36..4874f56 100644
+index 4874f56..e0d0bc5e 100644
 --- a/arch/arm/mach-bcm/board_bcm281xx.c
 +++ b/arch/arm/mach-bcm/board_bcm281xx.c
-@@ -12,37 +12,13 @@
-  */
- 
- #include <linux/of_platform.h>
--#include <linux/init.h>
--#include <linux/device.h>
--#include <linux/platform_device.h>
-+#include <linux/of_address.h>
- #include <linux/clocksource.h>
- 
- #include <asm/mach/arch.h>
--#include <asm/mach/time.h>
--#include <asm/hardware/cache-l2x0.h>
- 
--#include "bcm_kona_smc.h"
- #include "kona.h"
- 
--static int __init kona_l2_cache_init(void)
--{
--	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
--		return 0;
--
--	if (bcm_kona_smc_init() < 0) {
--		pr_info("Kona secure API not available. Skipping L2 init\n");
--		return 0;
--	}
--
--	bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
--
--	/*
--	 * The aux_val and aux_mask have no effect since L2 cache is already
--	 * enabled.  Pass 0s for aux_val and 1s for aux_mask for default value.
--	 */
--	return l2x0_of_init(0, ~0);
--}
--
- static void bcm_board_setup_restart(void)
- {
- 	struct device_node *np;
-diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona.c
-index 6939d90..2f1db29 100644
---- a/arch/arm/mach-bcm/kona.c
-+++ b/arch/arm/mach-bcm/kona.c
 @@ -1,5 +1,5 @@
  /*
-- * Copyright (C) 2013 Broadcom Corporation
+- * Copyright (C) 2012-2013 Broadcom Corporation
 + * Copyright (C) 2012-2014 Broadcom Corporation
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License as
-@@ -12,10 +12,38 @@
-  */
+@@ -19,25 +19,47 @@
  
- #include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <asm/hardware/cache-l2x0.h>
- #include <asm/io.h>
- 
-+#include "bcm_kona_smc.h"
  #include "kona.h"
  
-+void __init kona_l2_cache_init(void)
-+{
-+	int ret;
+-static void bcm_board_setup_restart(void)
++#define SECWDOG_OFFSET			0x00000000
++#define SECWDOG_RESERVED_MASK		0xe2000000
++#define SECWDOG_WD_LOAD_FLAG_MASK	0x10000000
++#define SECWDOG_EN_MASK			0x08000000
++#define SECWDOG_SRSTEN_MASK		0x04000000
++#define SECWDOG_CLKS_SHIFT		20
++#define SECWDOG_COUNT_SHIFT		0
 +
-+	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
-+		return;
-+
-+	ret = bcm_kona_smc_init();
-+	if (ret) {
-+		pr_info("Secure API not available (%d). Skipping L2 init.\n",
-+			ret);
++static void bcm281xx_restart(enum reboot_mode mode, const char *cmd)
+ {
+-	struct device_node *np;
++	uint32_t val;
++	void __iomem *base;
++	struct device_node *np_wdog;
+ 
+-	np = of_find_compatible_node(NULL, NULL, "brcm,bcm11351");
+-	if (np) {
+-		if (of_device_is_available(np))
+-			bcm_kona_setup_restart();
+-		of_node_put(np);
++	np_wdog = of_find_compatible_node(NULL, NULL, "brcm,kona-wdt");
++	if (!np_wdog) {
++		pr_emerg("Couldn't find brcm,kona-wdt\n");
 +		return;
 +	}
++	base = of_iomap(np_wdog, 0);
++	if (!base) {
++		pr_emerg("Couldn't map brcm,kona-wdt\n");
++		return;
+ 	}
+-	/* Restart setup for other boards goes here */
 +
-+	bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
++	/* Enable watchdog with short timeout (244us). */
++	val = readl(base + SECWDOG_OFFSET);
++	val &= SECWDOG_RESERVED_MASK | SECWDOG_WD_LOAD_FLAG_MASK;
++	val |= SECWDOG_EN_MASK | SECWDOG_SRSTEN_MASK |
++		(0x15 << SECWDOG_CLKS_SHIFT) |
++		(0x8 << SECWDOG_COUNT_SHIFT);
++	writel(val, base + SECWDOG_OFFSET);
 +
-+	/*
-+	 * The aux_val and aux_mask have no effect since L2 cache is already
-+	 * enabled.  Pass 0s for aux_val and 1s for aux_mask for default value.
-+	 */
-+	ret = l2x0_of_init(0, ~0);
-+	if (ret)
-+		pr_err("Couldn't enable L2 cache: %d\n", ret);
-+}
-+
- static void __iomem *watchdog_base;
++	/* Wait for reset */
++	while (1);
+ }
  
- void bcm_kona_setup_restart(void)
+ static void __init board_init(void)
+ {
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL,
+ 		&platform_bus);
+-
+-	bcm_board_setup_restart();
+ 	kona_l2_cache_init();
+ }
+ 
+@@ -45,6 +67,6 @@ static const char * const bcm11351_dt_compat[] = { "brcm,bcm11351", NULL, };
+ 
+ DT_MACHINE_START(BCM11351_DT, "BCM281xx Broadcom Application Processor")
+ 	.init_machine = board_init,
+-	.restart = bcm_kona_restart,
++	.restart = bcm281xx_restart,
+ 	.dt_compat = bcm11351_dt_compat,
+ MACHINE_END
+diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona.c
+index 2f1db29..768bc28 100644
+--- a/arch/arm/mach-bcm/kona.c
++++ b/arch/arm/mach-bcm/kona.c
+@@ -11,10 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#include <linux/of_address.h>
+ #include <linux/of_platform.h>
+ #include <asm/hardware/cache-l2x0.h>
+-#include <asm/io.h>
+ 
+ #include "bcm_kona_smc.h"
+ #include "kona.h"
+@@ -43,51 +41,3 @@ void __init kona_l2_cache_init(void)
+ 	if (ret)
+ 		pr_err("Couldn't enable L2 cache: %d\n", ret);
+ }
+-
+-static void __iomem *watchdog_base;
+-
+-void bcm_kona_setup_restart(void)
+-{
+-	struct device_node *np_wdog;
+-
+-	/*
+-	 * The assumption is that whoever calls bcm_kona_setup_restart()
+-	 * also needs a Kona Watchdog Timer entry in Device Tree, i.e. we
+-	 * report an error if the DT entry is missing.
+-	 */
+-	np_wdog = of_find_compatible_node(NULL, NULL, "brcm,kona-wdt");
+-	if (!np_wdog) {
+-		pr_err("brcm,kona-wdt not found in DT, reboot disabled\n");
+-		return;
+-	}
+-	watchdog_base = of_iomap(np_wdog, 0);
+-	WARN(!watchdog_base, "failed to map watchdog base");
+-	of_node_put(np_wdog);
+-}
+-
+-#define SECWDOG_OFFSET			0x00000000
+-#define SECWDOG_RESERVED_MASK		0xE2000000
+-#define SECWDOG_WD_LOAD_FLAG_MASK	0x10000000
+-#define SECWDOG_EN_MASK			0x08000000
+-#define SECWDOG_SRSTEN_MASK		0x04000000
+-#define SECWDOG_CLKS_SHIFT		20
+-#define SECWDOG_LOCK_SHIFT		0
+-
+-void bcm_kona_restart(enum reboot_mode mode, const char *cmd)
+-{
+-	uint32_t val;
+-
+-	if (!watchdog_base)
+-		panic("Watchdog not mapped. Reboot failed.\n");
+-
+-	/* Enable watchdog2 with very short timeout. */
+-	val = readl(watchdog_base + SECWDOG_OFFSET);
+-	val &= SECWDOG_RESERVED_MASK | SECWDOG_WD_LOAD_FLAG_MASK;
+-	val |= SECWDOG_EN_MASK | SECWDOG_SRSTEN_MASK |
+-		(0x8 << SECWDOG_CLKS_SHIFT) |
+-		(0x8 << SECWDOG_LOCK_SHIFT);
+-	writel(val, watchdog_base + SECWDOG_OFFSET);
+-
+-	while (1)
+-		;
+-}
 diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
-index 291eca3..f42aef8 100644
+index f42aef8..3a7a017 100644
 --- a/arch/arm/mach-bcm/kona.h
 +++ b/arch/arm/mach-bcm/kona.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (C) 2013 Broadcom Corporation
-+ * Copyright (C) 2012-2014 Broadcom Corporation
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License as
-@@ -13,5 +13,6 @@
+@@ -11,8 +11,4 @@
+  * GNU General Public License for more details.
+  */
  
- #include <linux/reboot.h>
- 
-+void __init kona_l2_cache_init(void);
- void bcm_kona_setup_restart(void);
- void bcm_kona_restart(enum reboot_mode mode, const char *cmd);
+-#include <linux/reboot.h>
+-
+ void __init kona_l2_cache_init(void);
+-void bcm_kona_setup_restart(void);
+-void bcm_kona_restart(enum reboot_mode mode, const char *cmd);
 -- 
 1.7.9.5
 
