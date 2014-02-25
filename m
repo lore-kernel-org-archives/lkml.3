@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaBYKMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:12:10 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:36426 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaBYKMH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:12:07 -0500
+	id S1752922AbaBYKNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:13:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750818AbaBYKNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 05:13:52 -0500
+Date: Tue, 25 Feb 2014 11:13:46 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, pbonzini@redhat.com
+Subject: Re: [PATCH] x86: kvm: fix unstable_tsc boot
+Message-ID: <20140225101345.GA2292@hawk.usersys.redhat.com>
+References: <1393256549-7743-1-git-send-email-drjones@redhat.com>
+ <20140224211524.GC22025@amt.cnet>
 MIME-Version: 1.0
-In-Reply-To: <530C6BD2.5090209@epfl.ch>
-References: <CAK9yfHyAK+LtQLr_b-OLHa63dSNT5KN7MBHxqVoTbiHVb4-7DA@mail.gmail.com>
-	<1393318071-13524-1-git-send-email-philippe.retornaz@epfl.ch>
-	<CAK9yfHx9FnQxQOmHcMzc8dQa+mSryPRo=63FL=8tg1JGqe4jNQ@mail.gmail.com>
-	<530C6BD2.5090209@epfl.ch>
-Date: Tue, 25 Feb 2014 15:42:07 +0530
-Message-ID: <CAK9yfHyXot3xrOYkWum45tykq1Sb+3sHdoM_JePTpeOeURVTbg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] regulator: mc13xxx: check if DT is enabled
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: =?ISO-8859-1?Q?Philippe_R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Cc: Mark Brown <broonie@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140224211524.GC22025@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 February 2014 15:39, Philippe Rétornaz <philippe.retornaz@epfl.ch> wrote:
-> Le 25/02/2014 10:12, Sachin Kamat a écrit :
+On Mon, Feb 24, 2014 at 06:15:24PM -0300, Marcelo Tosatti wrote:
+> On Mon, Feb 24, 2014 at 04:42:29PM +0100, Andrew Jones wrote:
+> > When the tsc is marked unstable on the host it causes global clock
+> > updates to be requested each time a vcpu is loaded, nearly halting
+> > all progress on guests with a large number of vcpus.
+> > 
+> > Fix this by only requesting a local clock update unless the vcpu
+> > is migrating to another cpu.
+> > 
+> > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > ---
+> >  arch/x86/kvm/x86.c | 7 +++++--
+> >  1 file changed, 5 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index 6530019116b0d..ea716a162b4a3 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -2781,15 +2781,18 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> >  						vcpu->arch.last_guest_tsc);
+> >  			kvm_x86_ops->write_tsc_offset(vcpu, offset);
+> >  			vcpu->arch.tsc_catchup = 1;
+> > +			set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> >  		}
+> > +	}
+> > +
+> > +	if (unlikely(vcpu->cpu != cpu)) {
+> >  		/*
+> >  		 * On a host with synchronized TSC, there is no need to update
+> >  		 * kvmclock on vcpu->cpu migration
+> >  		 */
+> >  		if (!vcpu->kvm->arch.use_master_clock || vcpu->cpu == -1)
+> >  			kvm_make_request(KVM_REQ_GLOBAL_CLOCK_UPDATE, vcpu);
+> > -		if (vcpu->cpu != cpu)
+> > -			kvm_migrate_timers(vcpu);
+> > +		kvm_migrate_timers(vcpu);
+> >  		vcpu->cpu = cpu;
+> >  	}
+> >  
+> > -- 
+> > 1.8.1.4
+> 
+> Consider VCPU1 not doing kvm_arch_vcpu_load (guest not executing HLT,
+> not switching VCPUs, no exits to QEMU).
+> 
+> VCPU0 doing kvm_arch_vcpu_load (guest executing HLT, say).
+> 
+> The updates on VCPU0 must generate updates on VCPU1 as well, otherwise
+> NTP correction applies to VCPU0 but not VCPU1.
 >
->> On 25 February 2014 14:17, Philippe Rétornaz <philippe.retornaz@epfl.ch>
->> wrote:
->>
->> Thanks for the patch. I was about to send a similar patch which also
->> does a little more cleanup.
->> If you could test it in DT and non-DT modes that would be great. I
->> attach the diff below. You can
->> even fold it into your patch if you wish.
->
->
-> It does fix the regression on the non-DT board.
-> I don't have any DT-enabled board with mc13xxx PMIC so I cannot test the
-> DT case. I will let you test the DT case & submit the final patch.
 
-Thanks for the confirmation. I will post this patch.
+OK. So, as we discussed off-list, we need to bind the time that vcpu
+clocks are out of synch. When vcpu0 does its local clock update it
+may pick up an NTP correction. We can't wait an indeterminate amount of
+time for vcpu1 to pick up that correction, as the clocks will further
+diverge. However, we can't request a global clock update on every vcpu
+load either. The solution is to rate-limit the global clock updates.
+Marcelo calculates that we should delay the global clock updates no more
+than 0.1s as follows:
 
--- 
-With warm regards,
-Sachin
+Assume an NTP correction c is applied to one vcpu, but not the other,
+then in n seconds the delta of the vcpu system_timestamps will be
+c * n. If we assume a correction of 500ppm (worst-case), then the two
+vcpus will diverge 100us in 0.1s, which is a considerable amount.
+
+I have a patch prepared that will rate-limit global clock updates to a
+max frequency of 1/0.1s. This patch should be dropped, and I'll send
+the new one soon.
+
+drew
