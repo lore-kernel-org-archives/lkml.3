@@ -1,304 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaBYTJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:09:58 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39140 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259AbaBYTJ4 (ORCPT
+	id S1753453AbaBYTKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:10:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45778 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534AbaBYTKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:09:56 -0500
-Date: Tue, 25 Feb 2014 20:10:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: KY Srinivasan <kys@microsoft.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, x86 <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linuxdrivers <devel@linuxdriverproject.org>
-Subject: RE: [patch 25/26] x86: hyperv: Cleanup the irq mess
-In-Reply-To: <379403385de44bcab2ad8a676d9cd49b@BY2PR03MB299.namprd03.prod.outlook.com>
-Message-ID: <alpine.DEB.2.02.1402251959560.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212739.028307673@linutronix.de> <379403385de44bcab2ad8a676d9cd49b@BY2PR03MB299.namprd03.prod.outlook.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 25 Feb 2014 14:10:08 -0500
+Date: Tue, 25 Feb 2014 13:10:03 -0600
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/8] security: Use a more current logging style
+Message-ID: <20140225191003.GB22246@sergelap>
+References: <cover.1393279025.git.joe@perches.com>
+ <c90a7238c10c2b243b10bc19632d3428e5bbb1fb.1393279025.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c90a7238c10c2b243b10bc19632d3428e5bbb1fb.1393279025.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014, KY Srinivasan wrote:
-> > -----Original Message-----
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > Sent: Sunday, February 23, 2014 1:40 PM
-> > To: LKML
-> > Cc: Ingo Molnar; Peter Zijlstra; x86; KY Srinivasan; Greg Kroah-Hartman;
-> > linuxdrivers
-> > Subject: [patch 25/26] x86: hyperv: Cleanup the irq mess
-> > 
-> > The vmbus/hyperv interrupt handling is another complete trainwreck and
-> > probably the worst of all currently in tree.
-> > 
-> > If CONFIG_HYPERV=y then the interrupt delivery to the vmbus happens via
-> > the direct HYPERVISOR_CALLBACK_VECTOR. So far so good, but:
-> > 
-> >   The driver requests first a normal device interrupt. The only reason
-> >   to do so is to increment the interrupt stats of that device
-> >   interrupt.
-> > 
-> >   We have proper accounting mechanisms for direct vectors, but of
-> >   course it's too much effort to add that 5 lines of code.
-> > 
-> >   Aside of that the alloc_intr_gate() is not protected against
-> >   reallocation which makes module reload impossible.
-> > 
-> > If CONFIG_HYPERV=n then the vmbus request a regular device interrupt via
-> > request_irq() and installs it's own private flow handler. Of course this lacks
-> > any explanation why it can't use the standard flow handler or the existing
-> > handle_percpu_irq handler.
-> > 
-> > Solution to the problem is simple to rip out the whole mess and implement it
-> > correctly.
-> Thomas,
+Quoting Joe Perches (joe@perches.com):
+> Convert printks to pr_<level>.
+> Add pr_fmt to prefix output with "security: " or "capability: "
+> Coalesce formats.
+> Use a generic string for pr_debug to reduce object size.
 > 
-> Thank you for cleaning up this code. When CONFIG_HYPERV== n, none of
-> the VMBUS code is active.  The special case can go away as you have
-> noted.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
 
-So, if CONFIG_HYPERV=n then you do not need the request_irq() fallback
-at all, right? Somehow I missed the HYPERV dependency of the VMBUS stuff
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-That makes stuff even simpler as we can get rid of those extra cases
-including the extra flow handler.
+Though should warn_setuid_and_fcaps_mixed be using
+pr_info_once()?
 
-New patch below.
-
-Thanks,
-
-	tglx
----
-
- arch/x86/include/asm/mshyperv.h |    4 +-
- arch/x86/kernel/cpu/mshyperv.c  |   78 ++++++++++++++++++++--------------------
- drivers/hv/vmbus_drv.c          |   39 ++------------------
- 3 files changed, 47 insertions(+), 74 deletions(-)
-
-Index: tip/arch/x86/include/asm/mshyperv.h
-===================================================================
---- tip.orig/arch/x86/include/asm/mshyperv.h
-+++ tip/arch/x86/include/asm/mshyperv.h
-@@ -2,6 +2,7 @@
- #define _ASM_X86_MSHYPER_H
- 
- #include <linux/types.h>
-+#include <linux/interrupt.h>
- #include <asm/hyperv.h>
- 
- struct ms_hyperv_info {
-@@ -16,6 +17,7 @@ void hyperv_callback_vector(void);
- #define trace_hyperv_callback_vector hyperv_callback_vector
- #endif
- void hyperv_vector_handler(struct pt_regs *regs);
--void hv_register_vmbus_handler(int irq, irq_handler_t handler);
-+int hv_setup_vmbus_irq(int irq, irq_handler_t handler, void *dev_id);
-+void hv_remove_vmbus_irq(int irq, void *dev_id);
- 
- #endif
-Index: tip/arch/x86/kernel/cpu/mshyperv.c
-===================================================================
---- tip.orig/arch/x86/kernel/cpu/mshyperv.c
-+++ tip/arch/x86/kernel/cpu/mshyperv.c
-@@ -17,6 +17,7 @@
- #include <linux/hardirq.h>
- #include <linux/efi.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <asm/processor.h>
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
-@@ -30,6 +31,45 @@
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
- 
-+#ifdef CONFIG_HYPERV
-+static irq_handler_t *vmbus_handler;
-+
-+void hyperv_vector_handler(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+
-+	irq_enter();
-+	exit_idle();
-+
-+	inc_irq_stat(irq_hv_callback_count);
-+	if (vmbus_handler)
-+		vmbus_handler();
-+
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+}
-+
-+int hv_setup_vmbus_irq(int irq, irq_handler_t *handler, void *dev_id)
-+{
-+	vmbus_handler = handler;
-+	/*
-+	 * Setup the IDT for hypervisor callback. Prevent reallocation
-+	 * at module reload.
-+	 */
-+	if (!test_bit(HYPERVISOR_CALLBACK_VECTOR, used_vectors))
-+		alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR,
-+				hyperv_callback_vector);
-+}
-+
-+void hv_remove_vmbus_irq(unsigned int irq, void *dev_id)
-+{
-+	/* We have no way to deallocate the interrupt gate */
-+	vmbus_handler = NULL;
-+}
-+EXPORT_SYMBOL_GPL(hv_setup_vmbus_irq);
-+EXPORT_SYMBOL_GPL(hv_remove_vmbus_irq);
-+#endif
-+
- static uint32_t  __init ms_hyperv_platform(void)
- {
- 	u32 eax;
-@@ -113,41 +153,3 @@ const __refconst struct hypervisor_x86 x
- 	.init_platform		= ms_hyperv_init_platform,
- };
- EXPORT_SYMBOL(x86_hyper_ms_hyperv);
--
--#if IS_ENABLED(CONFIG_HYPERV)
--static int vmbus_irq = -1;
--static irq_handler_t vmbus_isr;
--
--void hv_register_vmbus_handler(int irq, irq_handler_t handler)
--{
--	/*
--	 * Setup the IDT for hypervisor callback.
--	 */
--	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
--
--	vmbus_irq = irq;
--	vmbus_isr = handler;
--}
--
--void hyperv_vector_handler(struct pt_regs *regs)
--{
--	struct pt_regs *old_regs = set_irq_regs(regs);
--	struct irq_desc *desc;
--
--	irq_enter();
--	exit_idle();
--
--	desc = irq_to_desc(vmbus_irq);
--
--	if (desc)
--		generic_handle_irq_desc(vmbus_irq, desc);
--
--	irq_exit();
--	set_irq_regs(old_regs);
--}
--#else
--void hv_register_vmbus_handler(int irq, irq_handler_t handler)
--{
--}
--#endif
--EXPORT_SYMBOL_GPL(hv_register_vmbus_handler);
-Index: tip/drivers/hv/vmbus_drv.c
-===================================================================
---- tip.orig/drivers/hv/vmbus_drv.c
-+++ tip/drivers/hv/vmbus_drv.c
-@@ -25,7 +25,6 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/device.h>
--#include <linux/irq.h>
- #include <linux/interrupt.h>
- #include <linux/sysctl.h>
- #include <linux/slab.h>
-@@ -558,9 +557,6 @@ static struct bus_type  hv_bus = {
- 	.dev_groups =		vmbus_groups,
- };
- 
--static const char *driver_name = "hyperv";
--
--
- struct onmessage_work_context {
- 	struct work_struct work;
- 	struct hv_message msg;
-@@ -677,19 +673,6 @@ static irqreturn_t vmbus_isr(int irq, vo
- }
- 
- /*
-- * vmbus interrupt flow handler:
-- * vmbus interrupts can concurrently occur on multiple CPUs and
-- * can be handled concurrently.
-- */
--
--static void vmbus_flow_handler(unsigned int irq, struct irq_desc *desc)
--{
--	kstat_incr_irqs_this_cpu(irq, desc);
--
--	desc->action->handler(irq, desc->action->dev_id);
--}
--
--/*
-  * vmbus_bus_init -Main vmbus driver initialization routine.
-  *
-  * Here, we
-@@ -715,26 +698,13 @@ static int vmbus_bus_init(int irq)
- 	if (ret)
- 		goto err_cleanup;
- 
--	ret = request_irq(irq, vmbus_isr, 0, driver_name, hv_acpi_dev);
-+	ret = hv_setup_vmbus_irq(irq, vmbus_isr, hv_acpi_dev);
- 
- 	if (ret != 0) {
--		pr_err("Unable to request IRQ %d\n",
--			   irq);
-+		pr_err("Unable to request IRQ %d\n", irq);
- 		goto err_unregister;
- 	}
- 
--	/*
--	 * Vmbus interrupts can be handled concurrently on
--	 * different CPUs. Establish an appropriate interrupt flow
--	 * handler that can support this model.
--	 */
--	irq_set_handler(irq, vmbus_flow_handler);
--
--	/*
--	 * Register our interrupt handler.
--	 */
--	hv_register_vmbus_handler(irq, vmbus_isr);
--
- 	ret = hv_synic_alloc();
- 	if (ret)
- 		goto err_alloc;
-@@ -753,7 +723,7 @@ static int vmbus_bus_init(int irq)
- 
- err_alloc:
- 	hv_synic_free();
--	free_irq(irq, hv_acpi_dev);
-+	hv_remove_vmbus_irq(irq, hv_acpi_dev);
- 
- err_unregister:
- 	bus_unregister(&hv_bus);
-@@ -978,8 +948,7 @@ cleanup:
- 
- static void __exit vmbus_exit(void)
- {
--
--	free_irq(irq, hv_acpi_dev);
-+	hv_remove_vmbus_irq(irq, hv_acpi_dev);
- 	vmbus_free_channels();
- 	bus_unregister(&hv_bus);
- 	hv_cleanup();
-
-
-
-
-
-
-
+>  security/capability.c | 16 +++++++++-------
+>  security/commoncap.c  | 15 ++++++++-------
+>  security/security.c   |  4 +++-
+>  3 files changed, 20 insertions(+), 15 deletions(-)
+> 
+> diff --git a/security/capability.c b/security/capability.c
+> index 8b4f24a..086af9b 100644
+> --- a/security/capability.c
+> +++ b/security/capability.c
+> @@ -10,6 +10,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/security.h>
+>  
+>  static int cap_syslog(int type)
+> @@ -914,13 +916,13 @@ static void cap_audit_rule_free(void *lsmrule)
+>  #endif /* CONFIG_AUDIT */
+>  
+>  #define set_to_cap_if_null(ops, function)				\
+> -	do {								\
+> -		if (!ops->function) {					\
+> -			ops->function = cap_##function;			\
+> -			pr_debug("Had to override the " #function	\
+> -				 " security operation with the default.\n");\
+> -			}						\
+> -	} while (0)
+> +do {									\
+> +	if (!ops->function) {						\
+> +		ops->function = cap_##function;				\
+> +		pr_debug("Had to override the %s security operation with the default\n", \
+> +			 #function);					\
+> +	}								\
+> +} while (0)
+>  
+>  void __init security_fixup_ops(struct security_operations *ops)
+>  {
+> diff --git a/security/commoncap.c b/security/commoncap.c
+> index b9d613e..b5c3bc4 100644
+> --- a/security/commoncap.c
+> +++ b/security/commoncap.c
+> @@ -7,6 +7,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) "capability: " fmt
+> +
+>  #include <linux/capability.h>
+>  #include <linux/audit.h>
+>  #include <linux/module.h>
+> @@ -46,9 +48,8 @@ static void warn_setuid_and_fcaps_mixed(const char *fname)
+>  {
+>  	static int warned;
+>  	if (!warned) {
+> -		printk(KERN_INFO "warning: `%s' has both setuid-root and"
+> -			" effective capabilities. Therefore not raising all"
+> -			" capabilities.\n", fname);
+> +		pr_info("warning: `%s' has both setuid-root and effective capabilities, therefore not raising all capabilities\n",
+> +			fname);
+>  		warned = 1;
+>  	}
+>  }
+> @@ -448,8 +449,8 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
+>  	rc = get_vfs_caps_from_disk(dentry, &vcaps);
+>  	if (rc < 0) {
+>  		if (rc == -EINVAL)
+> -			printk(KERN_NOTICE "%s: get_vfs_caps_from_disk returned %d for %s\n",
+> -				__func__, rc, bprm->filename);
+> +			pr_notice("%s: get_vfs_caps_from_disk returned %d for %s\n",
+> +				  __func__, rc, bprm->filename);
+>  		else if (rc == -ENODATA)
+>  			rc = 0;
+>  		goto out;
+> @@ -457,8 +458,8 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
+>  
+>  	rc = bprm_caps_from_vfs_caps(&vcaps, bprm, effective, has_cap);
+>  	if (rc == -EINVAL)
+> -		printk(KERN_NOTICE "%s: cap_from_disk returned %d for %s\n",
+> -		       __func__, rc, bprm->filename);
+> +		pr_notice("%s: cap_from_disk returned %d for %s\n",
+> +			  __func__, rc, bprm->filename);
+>  
+>  out:
+>  	dput(dentry);
+> diff --git a/security/security.c b/security/security.c
+> index 15b6928..53d1885 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -11,6 +11,8 @@
+>   *	(at your option) any later version.
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/capability.h>
+>  #include <linux/dcache.h>
+>  #include <linux/module.h>
+> @@ -64,7 +66,7 @@ static void __init do_security_initcalls(void)
+>   */
+>  int __init security_init(void)
+>  {
+> -	printk(KERN_INFO "Security Framework initialized\n");
+> +	pr_info("Security Framework initialized\n");
+>  
+>  	security_fixup_ops(&default_security_ops);
+>  	security_ops = &default_security_ops;
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
