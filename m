@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567AbaBYTpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:45:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59179 "EHLO mail.zytor.com"
+	id S1753656AbaBYTqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:46:00 -0500
+Received: from mail.efficios.com ([78.47.125.74]:37942 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936AbaBYTpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:45:46 -0500
-Message-ID: <530CF21E.1020603@zytor.com>
-Date: Tue, 25 Feb 2014 11:42:22 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753607AbaBYTp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 14:45:58 -0500
+Date: Tue, 25 Feb 2014 19:46:01 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <1332921457.30140.1393357561516.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1164803689.30103.1393357052243.JavaMail.zimbra@efficios.com>
+Subject: [BUG kretprobes] kretprobe triggers General Protection Faults
 MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>, Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Dave Young <dyoung@redhat.com>, Rob Herring <robherring2@gmail.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v4 0/6] generic early_ioremap support
-References: <1392238575-10000-1-git-send-email-msalter@redhat.com>	 <1393337404.7307.51.camel@deneb.redhat.com>	 <20140225183012.GA27164@mudshark.cambridge.arm.com> <1393353942.26583.10.camel@deneb.redhat.com>
-In-Reply-To: <1393353942.26583.10.camel@deneb.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: kretprobe triggers General Protection Faults
+Thread-Index: F5LUODDQbD0wZXfS+BkP9/PRTtR17w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 10:45 AM, Mark Salter wrote:
-> On Tue, 2014-02-25 at 18:30 +0000, Will Deacon wrote:
->> I'd suggest spitting the core part out from the arch-specific parts. That
->> way, the core part can merged independently and architectures can move over
->> as they see fit. It also signals (at least to me) that, "hey, I should
->> probably review this" whilst my current stance is "there's a whole load of
->> stuff under mm/ that needs to be acked first".
->>
->> If you put the whole thing into next, you just run the risk of conflicts
->> with all the arch trees.
-> 
-> I've been thinking of breaking out the common bits and x86 bits and just
-> going with that for now. There's no point in just doing the common bits
-> because it won't get tested without at least one architecture using it.
-> 
+Hi,
 
-If you think it makes sense we could take the common bits + x86 and put
-them through the -tip tree.  The other option would be to put the whole
-thread in linux-next with Acks.
+I had a bug report[1] from a user trying to add a kretprobe on the system
+call entry code path:
 
-As far as x86 is concerned it looks like it is mostly just code
-movement, so I'm happy giving my:
+arch/x86/kernel/entry_64.S:
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+ffffffff813dffe2 <system_call_fastpath+0x16>:
+        cmpl $__NR_syscall_max,%eax
+#endif
+        ja badsys
+        movq %r10,%rcx
+        call *sys_call_table(,%rax,8)  # XXX:    rip relative
+        movq %rax,RAX-ARGOFFSET(%rsp)   <--- return address pointing here
 
+And all hell breaks loose (various types of faults, machine reboots,
+applications exit randomly, etc.). I understand that this code path
+is not marked as unsafe against kprobes, and I tested that a kprobes
+indeed works fine there. However, kretprobes probably presumes a function
+stack layout that is just not valid for the syscall entry routine.
+
+Any thoughts on how kretprobes should handle this ?
+
+Thanks,
+
+Mathieu
+
+[1] http://bugs.lttng.org/issues/687
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
