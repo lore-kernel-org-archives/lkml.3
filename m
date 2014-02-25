@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbaBYKqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:46:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52720 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735AbaBYKqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:46:08 -0500
-Message-ID: <530C7465.2080600@zytor.com>
-Date: Tue, 25 Feb 2014 02:45:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752586AbaBYKta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:49:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37705 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaBYKt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 05:49:29 -0500
+Date: Tue, 25 Feb 2014 11:49:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: hang in migrate_swap
+Message-ID: <20140225104924.GK9987@twins.programming.kicks-ass.net>
+References: <5305856F.3000109@linux.vnet.ibm.com>
+ <53078241.3060201@oracle.com>
+ <53080122.609@linux.vnet.ibm.com>
+ <530ABB44.5000601@oracle.com>
+ <530AD653.3000808@linux.vnet.ibm.com>
+ <20140224071028.GW9987@twins.programming.kicks-ass.net>
+ <530B1B80.4000307@linux.vnet.ibm.com>
+ <20140224121218.GR15586@twins.programming.kicks-ass.net>
+ <20140224131025.GG3104@twins.programming.kicks-ass.net>
+ <530C2045.1090704@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Chris Bainbridge <chris.bainbridge@gmail.com>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-References: <20140225060146.GA4339@debian.local>
-In-Reply-To: <20140225060146.GA4339@debian.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530C2045.1090704@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 10:01 PM, Chris Bainbridge wrote:
-> Pentium M is PAE capable but does not indicate so in the CPUID response.
-> This is an issue now that some distributions are no longer shipping
-> non-PAE kernels (those distributions no longer boot on Pentium M). This
-> small patch fixes the issue by forcing the PAE capability on Pentium M.
->
-> For more discussion see https://bugs.launchpad.net/baltix/+bug/930447
->
+On Tue, Feb 25, 2014 at 12:47:01PM +0800, Michael wang wrote:
+> On 02/24/2014 09:10 PM, Peter Zijlstra wrote:
+> > On Mon, Feb 24, 2014 at 01:12:18PM +0100, Peter Zijlstra wrote:
+> >> +		if (p) {
+> >> +			if (unlikely(p == RETRY_TASK))
+> >> +				goto again;
+> > 
+> > We could even make that: unlikely(p & 1), I think most CPUs can encode
+> > that far better than the full pointer immediate.
+> 
+> Agree, unless odd-align stuff appeared...
 
-1. This patch doesn't match the discussion in the link.
-2. You would have to also enable this in the cpu testing code in
-    arch/x86/boot.
-3. At the very least we need to print a serious warning that the CPU
-    is being run outside its specifications.  I have no personal
-    information about why this CPUID bit was disabled, but it could be
-    that it was discovered in testing that it didn't work correctly in
-    all circumstances (e.g. high temperature.)  This is very much "use
-    at your own risk..."; you could get data corruption or even
-    hardware damage.
-
-    We should probably also taint the kernel.
-
-	-hpa
-
-
+That shouldn't happen; we rely on u32 alignment all over the place. So
+for general objects we should have at least the lower two bits free to
+play with.
