@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaBYTzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:55:23 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50812 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980AbaBYTzU (ORCPT
+	id S1753829AbaBYTzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:55:55 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:33863 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330AbaBYTzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:55:20 -0500
-Date: Tue, 25 Feb 2014 11:54:59 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: sougata <sougata@tuxera.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Vyacheslav Dubeyko <slava@dubeyko.com>, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] hfsplus: fix longname handling
-Message-ID: <20140225195459.GA14147@infradead.org>
-References: <1393270107.27792.9.camel@ultrabook>
- <20140224134832.d64b1e76e2d6d8fe5b25598d@linux-foundation.org>
- <530CDA6C.9010008@tuxera.com>
+	Tue, 25 Feb 2014 14:55:53 -0500
+From: bsegall@google.com
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        pjt@google.com
+Subject: Re: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
+References: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com>
+	<20140225131642.GA3265@linux.vnet.ibm.com> <530CD71F.9030908@arm.com>
+Date: Tue, 25 Feb 2014 11:55:50 -0800
+In-Reply-To: <530CD71F.9030908@arm.com> (Dietmar Eggemann's message of "Tue,
+	25 Feb 2014 17:47:11 +0000")
+Message-ID: <xm26lhwzhsqh.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530CDA6C.9010008@tuxera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:01:16PM +0200, sougata wrote:
-> ====> snip <=====
-> #define hfs_btree_open hfsplus_btree_open
-> #define hfs_btree_close hfsplus_btree_close
-> #define hfs_btree_write hfsplus_btree_write
-> #define hfs_bmap_alloc hfsplus_bmap_alloc
-> #define hfs_bmap_free hfsplus_bmap_free
-> #define hfs_bnode_read hfsplus_bnode_read
+Dietmar Eggemann <dietmar.eggemann@arm.com> writes:
 
-As far as I understand the history is that some code was at some point
-mostly identical between hfsplus and hfs and this made diffing easier,
-but Brad would have to answert that.  I don't think there's much point
-today where hfs is basically stale legacy code and hfsplus gets all the
-development.
+> On 25/02/14 13:16, Srikar Dronamraju wrote:
+>>> The struct sched_avg of struct rq is only used in case group
+>>> scheduling is enabled inside __update_tg_runnable_avg() to update
+>>> per-cpu representation of a task group.  I.e. that there is no need to
+>>> maintain the runnable avg of a rq in the !CONFIG_FAIR_GROUP_SCHED case.
+>>>
+>>> This patch guards struct sched_avg of struct rq and
+>>> update_rq_runnable_avg() with CONFIG_FAIR_GROUP_SCHED.
+>>>
 
+Reviewed-by: Ben Segall <bsegall@google.com>
+
+If we ever decide to use runnable_avg_sum/period in balance or
+something, it's trivial enough to move it back, and there is no point in
+calculating unusued stats until then.
+
+>> 
+>> While this patch looks good, I see fields in sched_avg viz decay_count,
+>> last_runnable_update, load_avg_contrib  only relevant to sched_entity.
+>> i.e they don't seem to be updated or used for rq->avg. Should we look at
+>> splitting sched_avg so that rq->avg doesn't have unwanted fields?
+>
+> Yes, AFAICS at least load_avg_contrib and decay_count are only relevant
+> for struct sched_entity whereas last_runnable_update is used in
+> __update_entity_runnable_avg() itself.
+>
+> By having struct sched_avg embedded into struct sched_entity and struct
+> rq, __update_entity_runnable_avg() and __update_tg_runnable_avg() can be
+> used on both and moreover, all current members of struct sched_avg
+> belong logically together.
+>
+> With this patch I was more interested in the fact that we do not have to
+> maintain the load avg for struct rq in a !CONFIG_FAIR_GROUP_SCHED system.
+>
+
+Yeah, last_runnable_update and runnable_avg_sum/period are used,
+decay_count and load_avg_contrib could be moved to the se just fine, and
+won't cause any problems.
