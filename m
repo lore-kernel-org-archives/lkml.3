@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbaBYGIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:08:17 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:44792 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaBYGIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:08:15 -0500
+	id S1752748AbaBYGJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:09:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43173 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655AbaBYGJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 01:09:52 -0500
+Date: Tue, 25 Feb 2014 07:09:51 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: David Miller <davem@davemloft.net>, ben@decadent.org.uk,
+        mcgrof@do-not-panic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
+Message-ID: <20140225060951.GA8299@wotan.suse.de>
+References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com> <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk> <20140224.235343.1936318499491821387.davem@davemloft.net> <2446186.I4KkJ8Hjdb@lenovo>
 MIME-Version: 1.0
-In-Reply-To: <530C2FD7.4000105@linux.vnet.ibm.com>
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
-	<CAKohpo=mQWxoKTduR8FrrB4Qz45qXQrJjSudq=FkCJtHBTbo2Q@mail.gmail.com>
-	<5301CE86.9020105@linux.vnet.ibm.com>
-	<1489022.1IbaesBAQQ@vostro.rjw.lan>
-	<CAKohpokGtcJbdzt0FPZnKjSFi54Np+Ss7--Z83UEZp8FMY94pQ@mail.gmail.com>
-	<CAKohpokk5-6vGV93fZDob8Q=xZXsd7E4OkMUAC1M6Z71G=d1Ow@mail.gmail.com>
-	<530C2FD7.4000105@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 11:38:14 +0530
-Message-ID: <CAKohponr5b8nBaV9TFiiFkvyg8Qb6qz_0UXbYCaFRPG=XP28rA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pierre Ossman <pierre-list@ossman.eu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2446186.I4KkJ8Hjdb@lenovo>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 February 2014 11:23, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Hmm, that's a good point. However, lets first think about the simple scenario
-> that the driver _is_ able to detect the current frequency from the hardware
-> (a non-zero, sane value) say X KHz, and that frequency is different from what
-> the cpufreq subsystem thinks it is (Y KHz).
->
-> In the current code, when we observe this, we send out a notification and try
-> to adjust to X KHz. Instead, what I'm suggesting is to invoke the driver to
-> set the frequency to Y KHz, since that's what the cpufreq subsystems wants the
-> frequency to be at.
+On Mon, Feb 24, 2014 at 09:37:34PM -0800, Florian Fainelli wrote:
+> Le lundi 24 février 2014, 23:53:43 David Miller a écrit :
+> > From: Ben Hutchings <ben@decadent.org.uk>
+> > Date: Tue, 25 Feb 2014 02:11:05 +0000
+> > 
+> > > On Mon, 2014-02-24 at 16:14 -0800, Luis R. Rodriguez wrote:
+> > >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > >> 
+> > >> ---
+> > >> 
+> > >>  include/uapi/linux/if.h | 201
+> > >>  +++++++++++++++++++++++++++++++++++------------- 1 file changed, 149
+> > >>  insertions(+), 52 deletions(-)
+> > >> 
+> > >> diff --git a/include/uapi/linux/if.h b/include/uapi/linux/if.h
+> > >> index d758163..1555623 100644
+> > >> --- a/include/uapi/linux/if.h
+> > >> +++ b/include/uapi/linux/if.h
+> > > 
+> > > [...]
+> > > 
+> > >> +/**
+> > >> + * enum net_device_priv_flags - &struct net_device priv_flags
+> > >> + *
+> > >> + * These are the &struct net_device, they are only set internally
+> > >> + * by drivers and used in the kernel but are invisible to userspace.
+> > > 
+> > > [...]
+> > > 
+> > > Indeed, I wonder why they are in the UAPI header.  As userland doesn't
+> > > have a legitimate use for them, maybe you could move them back to
+> > > include/linux/if.h instead of bothering with adding macros?
+> > 
+> > They are visible to userspace via sysfs.
+> 
+> In /sys/class/net/*/flags, although we are lacking quite a lot of documentation 
+> for the exported attributes there.
+> 
+> The only attributes for which there is some sort of documentation are 
+> "operstate" and the XPS/RFS/RPS attributes, maybe that could be fixed too as 
+> part of this documentation patch?
 
-Actually we don't know at this point what cpufreq wants :)
-Governor will decide what frequency to run CPU at and lets leave it to
-that point.
-As the transition that we might end up doing here would be simply overridden
-very soon. And to be honest this decision must be taken by governor and not
-core. We just want to make sure core is in sync with hardware.
+Sure, but how about we take it one step at a time? I wanted to do this first
+so I can extend the documentation of some flags private flags I'm reviewing
+right now, so figured we'd start with the basic, non contravertial simple
+documentation and then we can start piling up new shiny documentation.
 
-> As for the case where the driver reports the frequency to be 0 KHz, we can
-> print a WARN() and try to force set the frequency to Y KHz. But if that turns
-> out to be too tricky to handle, we can just put a WARN() and error out, as you
-> proposed earlier.
-
-Ok..
+  Luis
