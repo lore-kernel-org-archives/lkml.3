@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaBYLrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:47:49 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45971 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbaBYLrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:47:48 -0500
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ben Segall <bsegall@google.com>
-Cc: linux-kernel@vger.kernel.org, Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
-Date: Tue, 25 Feb 2014 11:47:42 +0000
-Message-Id: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 25 Feb 2014 11:47:50.0755 (UTC) FILETIME=[6935EB30:01CF321F]
-X-MC-Unique: 114022511474639601
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1753060AbaBYLr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:47:57 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:33632 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752664AbaBYLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 06:47:53 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: [PATCH v8 3/6] ARM: rockchip: add snoop-control-unit
+Date: Tue, 25 Feb 2014 12:47:06 +0100
+Message-ID: <1830191.ln1GpHdqLv@phil>
+User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <21117503.1c6iOkvYSr@phil>
+References: <21117503.1c6iOkvYSr@phil>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s1PBls8i022328
 
-From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+This adds the device-node and config select to enable the
+scu in all Rockchip Cortex-A9 SoCs.
 
-The struct sched_avg of struct rq is only used in case group
-scheduling is enabled inside __update_tg_runnable_avg() to update
-per-cpu representation of a task group.  I.e. that there is no need to
-maintain the runnable avg of a rq in the !CONFIG_FAIR_GROUP_SCHED case.
-
-This patch guards struct sched_avg of struct rq and
-update_rq_runnable_avg() with CONFIG_FAIR_GROUP_SCHED.
-
-There is an extra empty definition for update_rq_runnable_avg()
-necessary for the !CONFIG_FAIR_GROUP_SCHED && CONFIG_SMP case.
-
-The function print_cfs_group_stats() which prints out struct sched_avg
-of struct rq is already guarded with CONFIG_FAIR_GROUP_SCHED.
-
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
 ---
+ arch/arm/boot/dts/rk3xxx.dtsi  | 5 +++++
+ arch/arm/mach-rockchip/Kconfig | 1 +
+ 2 files changed, 6 insertions(+)
 
-Hi,
-
-I was just wondering what the overall policy is when it comes to guard
-specific functionality in the scheduler code?  Do we want to to guard
-something like the fair group scheduling support completely?
-
-The patch is against tip/master .
-
- kernel/sched/fair.c  |   13 +++++++------
- kernel/sched/sched.h |    2 ++
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5f6ddbef80af..76c6513b6889 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2376,12 +2376,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
- 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
- 	}
- }
+diff --git a/arch/arm/boot/dts/rk3xxx.dtsi b/arch/arm/boot/dts/rk3xxx.dtsi
+index 0fcbcfd..0a3d5b1 100644
+--- a/arch/arm/boot/dts/rk3xxx.dtsi
++++ b/arch/arm/boot/dts/rk3xxx.dtsi
+@@ -26,6 +26,11 @@
+ 		compatible = "simple-bus";
+ 		ranges;
+ 
++		scu@1013c000 {
++			compatible = "arm,cortex-a9-scu";
++			reg = <0x1013c000 0x100>;
++		};
 +
-+static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-+{
-+	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
-+	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
-+}
- #else /* CONFIG_FAIR_GROUP_SCHED */
- static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 						 int force_update) {}
- static inline void __update_tg_runnable_avg(struct sched_avg *sa,
- 						  struct cfs_rq *cfs_rq) {}
- static inline void __update_group_entity_contrib(struct sched_entity *se) {}
-+static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
- static inline void __update_task_entity_contrib(struct sched_entity *se)
-@@ -2480,12 +2487,6 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
- }
- 
--static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
--{
--	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
--	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
--}
--
- /* Add the load generated by se into cfs_rq's child load-average */
- static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 						  struct sched_entity *se,
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4be68da1fe00..63beab7512e7 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -630,7 +630,9 @@ struct rq {
- 	struct llist_head wake_list;
- #endif
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct sched_avg avg;
-+#endif
- };
- 
- static inline int cpu_of(struct rq *rq)
+ 		gic: interrupt-controller@1013d000 {
+ 			compatible = "arm,cortex-a9-gic";
+ 			interrupt-controller;
+diff --git a/arch/arm/mach-rockchip/Kconfig b/arch/arm/mach-rockchip/Kconfig
+index cf073de..133410e 100644
+--- a/arch/arm/mach-rockchip/Kconfig
++++ b/arch/arm/mach-rockchip/Kconfig
+@@ -5,6 +5,7 @@ config ARCH_ROCKCHIP
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_GIC
+ 	select CACHE_L2X0
++	select HAVE_ARM_SCU if SMP
+ 	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
+ 	select COMMON_CLK
 -- 
-1.7.9.5
+1.8.5.3
 
 
