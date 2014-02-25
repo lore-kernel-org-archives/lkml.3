@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaBYPPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:15:55 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:54635 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaBYPPx (ORCPT
+	id S1753236AbaBYPRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:17:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58011 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaBYPRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:15:53 -0500
-Message-ID: <1393341342.4170.9.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCHv2 1/5] ARM: tegra: remove obsolete gpio entries
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>
-Date: Tue, 25 Feb 2014 16:15:42 +0100
-In-Reply-To: <1393330950-7283-2-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
-	 <1393330950-7283-2-git-send-email-heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 10:17:02 -0500
+Date: Tue, 25 Feb 2014 07:19:55 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v3] sysfs: fix namespace refcnt leak
+Message-ID: <20140225151955.GA8322@kroah.com>
+References: <530C7E6C.2020500@huawei.com>
+ <20140225144256.GB26788@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140225144256.GB26788@htj.dyndns.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 14:22 +0200, Heikki Krogerus wrote:
-> After moving to description based gpio interface in
-> rfkill-gpio, the gpio numbers are not used any more.
+On Tue, Feb 25, 2014 at 09:42:56AM -0500, Tejun Heo wrote:
+> On Tue, Feb 25, 2014 at 07:28:44PM +0800, Li Zefan wrote:
+> > As mount() and kill_sb() is not a one-to-one match, we shoudn't get
+> > ns refcnt unconditionally in sysfs_mount(), and instead we should
+> > get the refcnt only when kernfs_mount() allocated a new superblock.
+> > 
+> > v2:
+> > - Changed the name of the new argument, suggested by Tejun.
+> > - Made the argument optional, suggested by Tejun.
+> > 
+> > v3:
+> > - Make the new argument as second-to-last arg, suggested by Tejun.
+> > 
+> > Reviewed-by: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Li Zefan <lizefan@huawei.com>
 > 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  arch/arm/mach-tegra/board-paz00.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  Acked-by: Tejun Heo <tj@kernel.org>
 
-Hm, ok, I'm not sure I should take a tegra patch through the mac80211 ->
-wireless -> networking trees. OTOH, I suppose that the second patch
-depends on this. I can take it all I suppose, Thierry? Stephen?
+Is this needed for 3.14-final or 3.15?
 
-johannes
+thanks,
 
+greg k-h
