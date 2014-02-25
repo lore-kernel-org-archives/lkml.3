@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849AbaBYSpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:45:54 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:62033 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaBYSpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:45:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
-References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
-Date: Tue, 25 Feb 2014 10:45:51 -0800
-X-Google-Sender-Auth: x8gl9whW0k7NTHOHk1wUHsFE6c0
-Message-ID: <CA+55aFxdUOALfQketaSAA9B_Da+n=hSvC5XswV+5cpmnyLwiFw@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: per-thread vma caching
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753940AbaBYSqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 13:46:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52593 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752534AbaBYSqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 13:46:31 -0500
+Message-ID: <1393353942.26583.10.camel@deneb.redhat.com>
+Subject: Re: [PATCH v4 0/6] generic early_ioremap support
+From: Mark Salter <msalter@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Dave Young <dyoung@redhat.com>, Rob Herring <robherring2@gmail.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>
+Date: Tue, 25 Feb 2014 13:45:42 -0500
+In-Reply-To: <20140225183012.GA27164@mudshark.cambridge.arm.com>
+References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
+	 <1393337404.7307.51.camel@deneb.redhat.com>
+	 <20140225183012.GA27164@mudshark.cambridge.arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 10:37 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->  - clear all the cache entries (of the new 'struct task_struct'! - so
-> not in dup_mmap, but make sure it's zeroed when allocating!)(
->
->  - set vmcache_seqnum to 0 in dup_mmap (since any sequence number is
-> fine when it got invalidated, and 0 is best for "avoid overflow").
+On Tue, 2014-02-25 at 18:30 +0000, Will Deacon wrote:
+> I'd suggest spitting the core part out from the arch-specific parts. That
+> way, the core part can merged independently and architectures can move over
+> as they see fit. It also signals (at least to me) that, "hey, I should
+> probably review this" whilst my current stance is "there's a whole load of
+> stuff under mm/ that needs to be acked first".
+> 
+> If you put the whole thing into next, you just run the risk of conflicts
+> with all the arch trees.
 
-Btw, as far as I can tell, that also makes the per-thread vmacache
-automatically do the right thing for the non-MMU case, so that you
-could just remove the difference between CONFIG_MMU and NOMMU.
+I've been thinking of breaking out the common bits and x86 bits and just
+going with that for now. There's no point in just doing the common bits
+because it won't get tested without at least one architecture using it.
 
-Basically, dup_mmap() should no longer have anything to do with the
-vmacache, since it is now per-thread, not per-mm.
 
-So :
-
- - allocating a new "struct mm_struct" should clear the
-vmacache_seqnum for that new mm, to try to minimize unnecessary future
-overflow.
-
- - thread allocation should just zero the cache entries, and set
-"tsk->vmacache_seqnum = mm->vmacache_seqnum" (after dup_mm()) to avoid
-future unnecessary flushes.
-
-and as far as I can tell, the logic would be exactly the same on NOMMU
-(the dup_mm just doesn't happen, since all forks are basically sharing
-mm).
-
-And maybe you'd want to make VMACACHE_SIZE be 1 on NOMMU (and make
-sure to change the "& 3" to "& (VMACACHE_SIZE-1)". Just to keep the
-size down on small systems that really don't need it.
-
-          Linus
