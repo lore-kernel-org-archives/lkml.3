@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaBYMWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:22:46 -0500
+	id S1753411AbaBYMYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:24:33 -0500
 Received: from mga14.intel.com ([143.182.124.37]:35456 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164AbaBYMWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:22:44 -0500
+	id S1752657AbaBYMWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 07:22:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,540,1389772800"; 
-   d="scan'208";a="481424919"
+   d="scan'208";a="481424953"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Johannes Berg <johannes@sipsolutions.net>,
         "David S. Miller" <davem@davemloft.net>
@@ -20,40 +20,108 @@ Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org
-Subject: [PATCHv2 0/5] net: rfkill: gpio: cleanup and a few new acpi ids
-Date: Tue, 25 Feb 2014 14:22:25 +0200
-Message-Id: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv2 2/5] net: rfkill: gpio: remove unused and obsolete platform parameters
+Date: Tue, 25 Feb 2014 14:22:27 +0200
+Message-Id: <1393330950-7283-3-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-- Removed the gpio entries from arch/arm/mach-tegra/board-paz00.c
+After upgrading to descriptor based gpios, the gpio numbers
+are not used anymore. The power_clk_name and the platform
+specific setup and close hooks are not used by anybody, and
+we should not encourage use of such things, so removing them.
 
-Hi,
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ include/linux/rfkill-gpio.h | 10 ----------
+ net/rfkill/rfkill-gpio.c    | 15 +--------------
+ 2 files changed, 1 insertion(+), 24 deletions(-)
 
-I was waiting for the DT support from Chen-Yu before sending these,
-but decided it makes no difference when I send them. I'm dropping the
-con ID in the second patch because Dan noticed the warning, but of
-course it will mean the "gpios" property can be used with DT.
-
-The two last patches just add ACPI IDs for some new Baytrail based
-boards.
-
-
-Heikki Krogerus (5):
-  ARM: tegra: remove obsolete gpio entries
-  net: rfkill: gpio: remove unused and obsolete platform parameters
-  net: rfkill: gpio: remove gpio names
-  net: rfkill: gpio: add ACPI ID for GPS module on Lenove Miix2
-  net: rfkill: gpio: add ACPI IDs for a Broadcom bluetooth chip
-
- arch/arm/mach-tegra/board-paz00.c |  4 +---
- include/linux/rfkill-gpio.h       | 10 ----------
- net/rfkill/rfkill-gpio.c          | 40 +++++++++------------------------------
- 3 files changed, 10 insertions(+), 44 deletions(-)
-
+diff --git a/include/linux/rfkill-gpio.h b/include/linux/rfkill-gpio.h
+index 4d09f6e..20bcb55 100644
+--- a/include/linux/rfkill-gpio.h
++++ b/include/linux/rfkill-gpio.h
+@@ -27,21 +27,11 @@
+  * struct rfkill_gpio_platform_data - platform data for rfkill gpio device.
+  * for unused gpio's, the expected value is -1.
+  * @name:		name for the gpio rf kill instance
+- * @reset_gpio:		GPIO which is used for reseting rfkill switch
+- * @shutdown_gpio:	GPIO which is used for shutdown of rfkill switch
+- * @power_clk_name:	[optional] name of clk to turn off while blocked
+- * @gpio_runtime_close:	clean up platform specific gpio configuration
+- * @gpio_runtime_setup:	set up platform specific gpio configuration
+  */
+ 
+ struct rfkill_gpio_platform_data {
+ 	char			*name;
+-	int			reset_gpio;
+-	int			shutdown_gpio;
+-	const char		*power_clk_name;
+ 	enum rfkill_type	type;
+-	void	(*gpio_runtime_close)(struct platform_device *);
+-	int	(*gpio_runtime_setup)(struct platform_device *);
+ };
+ 
+ #endif /* __RFKILL_GPIO_H */
+diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+index bd2a5b9..0adda44 100644
+--- a/net/rfkill/rfkill-gpio.c
++++ b/net/rfkill/rfkill-gpio.c
+@@ -87,7 +87,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+ 	struct rfkill_gpio_data *rfkill;
+-	const char *clk_name = NULL;
+ 	struct gpio_desc *gpio;
+ 	int ret;
+ 	int len;
+@@ -101,7 +100,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 		if (ret)
+ 			return ret;
+ 	} else if (pdata) {
+-		clk_name = pdata->power_clk_name;
+ 		rfkill->name = pdata->name;
+ 		rfkill->type = pdata->type;
+ 	} else {
+@@ -120,7 +118,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 	snprintf(rfkill->reset_name, len + 6 , "%s_reset", rfkill->name);
+ 	snprintf(rfkill->shutdown_name, len + 9, "%s_shutdown", rfkill->name);
+ 
+-	rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
++	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
+ 
+ 	gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+ 	if (!IS_ERR(gpio)) {
+@@ -146,14 +144,6 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (pdata && pdata->gpio_runtime_setup) {
+-		ret = pdata->gpio_runtime_setup(pdev);
+-		if (ret) {
+-			dev_err(&pdev->dev, "can't set up gpio\n");
+-			return ret;
+-		}
+-	}
+-
+ 	rfkill->rfkill_dev = rfkill_alloc(rfkill->name, &pdev->dev,
+ 					  rfkill->type, &rfkill_gpio_ops,
+ 					  rfkill);
+@@ -174,10 +164,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ static int rfkill_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct rfkill_gpio_data *rfkill = platform_get_drvdata(pdev);
+-	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+ 
+-	if (pdata && pdata->gpio_runtime_close)
+-		pdata->gpio_runtime_close(pdev);
+ 	rfkill_unregister(rfkill->rfkill_dev);
+ 	rfkill_destroy(rfkill->rfkill_dev);
+ 
 -- 
 1.9.0.rc3
 
