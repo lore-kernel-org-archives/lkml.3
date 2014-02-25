@@ -1,48 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaBYLLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:11:52 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:44892 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaBYLLv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:11:51 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH] mtd: m25p80: Enable Dual and Quad SPI read transfers for s25sl032p
-Date: Tue, 25 Feb 2014 12:11:46 +0100
-Message-Id: <1393326706-17979-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752616AbaBYLOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:14:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164AbaBYLOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 06:14:39 -0500
+From: Gerd Hoffmann <kraxel@redhat.com>
+Cc: Gerd Hoffmann <kraxel@redhat.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org (open list:DRM DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] drm: cirrus: add power management support
+Date: Tue, 25 Feb 2014 12:14:19 +0100
+Message-Id: <1393326860-28235-1-git-send-email-kraxel@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+cirrus kms driver lacks power management support, thus
+the vga display doesn't work any more after S3 resume.
 
-Spansion s25sl032p supports Dual and Quad SPI transfers, hence set the
-M25P80_DUAL_READ and M25P80_QUAD_READ flags.
+Fix this by adding suspend and resume functions.
+Also make the mode_set function unblank the screen.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/mtd/devices/m25p80.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/cirrus/cirrus_drv.c  | 42 ++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/cirrus/cirrus_mode.c |  3 +++
+ 2 files changed, 45 insertions(+)
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 0b9a3ca310f7..1b2ec49cceea 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -957,7 +957,7 @@ static const struct spi_device_id m25p_ids[] = {
- 	/* Spansion -- single (large) sector size only, at least
- 	 * for the chips listed here (without boot sectors).
- 	 */
--	{ "s25sl032p",  INFO(0x010215, 0x4d00,  64 * 1024,  64, 0) },
-+	{ "s25sl032p",  INFO(0x010215, 0x4d00,  64 * 1024,  64, M25P80_DUAL_READ | M25P80_QUAD_READ) },
- 	{ "s25sl064p",  INFO(0x010216, 0x4d00,  64 * 1024, 128, 0) },
- 	{ "s25fl256s0", INFO(0x010219, 0x4d00, 256 * 1024, 128, 0) },
- 	{ "s25fl256s1", INFO(0x010219, 0x4d01,  64 * 1024, 512, M25P80_DUAL_READ | M25P80_QUAD_READ) },
+diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
+index 953fc8a..08ce520 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/console.h>
+ #include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
+ 
+ #include "cirrus_drv.h"
+ 
+@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci_dev *pdev)
+ 	drm_put_dev(dev);
+ }
+ 
++static int cirrus_pm_suspend(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_kms_helper_poll_disable(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
++		console_unlock();
++	}
++
++	return 0;
++}
++
++static int cirrus_pm_resume(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_helper_resume_force_mode(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
++		console_unlock();
++	}
++
++	drm_kms_helper_poll_enable(drm_dev);
++	return 0;
++}
++
+ static const struct file_operations cirrus_driver_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = drm_open,
+@@ -103,11 +139,17 @@ static struct drm_driver driver = {
+ 	.dumb_destroy = drm_gem_dumb_destroy,
+ };
+ 
++static const struct dev_pm_ops cirrus_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
++				cirrus_pm_resume)
++};
++
+ static struct pci_driver cirrus_pci_driver = {
+ 	.name = DRIVER_NAME,
+ 	.id_table = pciidlist,
+ 	.probe = cirrus_pci_probe,
+ 	.remove = cirrus_pci_remove,
++	.driver.pm = &cirrus_pm_ops,
+ };
+ 
+ static int __init cirrus_init(void)
+diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
+index 530f78f..e9c89df 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
+ 
+ 	WREG_HDR(hdr);
+ 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
++
++	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
++	outb(0x20, 0x3c0);
+ 	return 0;
+ }
+ 
 -- 
-1.7.9.5
+1.8.3.1
 
