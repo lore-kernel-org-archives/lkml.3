@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaBYOVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 09:21:15 -0500
+	id S1753813AbaBYOVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 09:21:43 -0500
 Received: from mga02.intel.com ([134.134.136.20]:18829 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531AbaBYOTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 09:19:24 -0500
+	id S1753523AbaBYOTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 09:19:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,540,1389772800"; 
-   d="scan'208";a="481478529"
+   d="scan'208";a="481478506"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-fsdevel@vger.kernel.org, willy@linux.intel.com
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v6 22/22] dax: Add reporting of major faults
-Date: Tue, 25 Feb 2014 09:18:38 -0500
-Message-Id: <1393337918-28265-23-git-send-email-matthew.r.wilcox@intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: [PATCH v6 18/22] xip: Add xip_zero_page_range
+Date: Tue, 25 Feb 2014 09:18:34 -0500
+Message-Id: <1393337918-28265-19-git-send-email-matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
 References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
@@ -23,65 +24,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have to call get_block with the create argument set to 1, then
-the filesystem almost certainly had to zero the block. which is an I/O,
-which should be reported as a major fault.
-
-Note that major faults on DAX files happen for different reasons than
-major faults on non-DAX files.  DAX files behave as if everything except
-file holes is already cached.  That's all the more reason to report
-major faults when we do have to do I/O; it may be a valuable resource
-for sysadmins trying to diagnose performance problems.
+This new function allows us to support hole-punch for XIP files by zeroing
+a partial page, as opposed to the xip_truncate_page() function which can
+only truncate to the end of the page.  Reimplement xip_truncate_page() as
+a macro that calls xip_zero_page_range().
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+[ported to 3.13-rc2]
+Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
 ---
- fs/dax.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ Documentation/filesystems/dax.txt |  1 +
+ fs/dax.c                          | 22 +++++++++++++++-------
+ include/linux/fs.h                |  9 ++++++++-
+ 3 files changed, 24 insertions(+), 8 deletions(-)
 
+diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
+index 06f84e5..e5706cc 100644
+--- a/Documentation/filesystems/dax.txt
++++ b/Documentation/filesystems/dax.txt
+@@ -55,6 +55,7 @@ Filesystem support consists of
+   for fault and page_mkwrite (which should probably call dax_fault() and
+   dax_mkwrite(), passing the appropriate get_block() callback)
+ - calling dax_truncate_page() instead of block_truncate_page() for DAX files
++- calling dax_zero_page_range() instead of zero_user() for DAX files
+ - ensuring that there is sufficient locking between reads, writes,
+   truncates and page faults
+ 
 diff --git a/fs/dax.c b/fs/dax.c
-index cdc8012..79a67c5 100644
+index 75328bf..cdc8012 100644
 --- a/fs/dax.c
 +++ b/fs/dax.c
-@@ -20,10 +20,12 @@
- #include <linux/fs.h>
- #include <linux/genhd.h>
- #include <linux/highmem.h>
-+#include <linux/memcontrol.h>
- #include <linux/mm.h>
- #include <linux/mutex.h>
- #include <linux/sched.h>
- #include <linux/uio.h>
-+#include <linux/vmstat.h>
- 
- int dax_clear_blocks(struct inode *inode, sector_t block, long size)
- {
-@@ -286,6 +288,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	pgoff_t size;
- 	unsigned long pfn;
- 	int error;
-+	int major = 0;
- 
- 	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	if (vmf->pgoff >= size)
-@@ -301,6 +304,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	if (!buffer_written(&bh) && !vmf->cow_page) {
- 		if (vmf->flags & FAULT_FLAG_WRITE) {
- 			error = get_block(inode, block, &bh, 1);
-+			count_vm_event(PGMAJFAULT);
-+			mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
-+			major = VM_FAULT_MAJOR;
- 			if (error || bh.b_size < PAGE_SIZE)
- 				return VM_FAULT_SIGBUS;
- 		} else {
-@@ -332,7 +338,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	/* -EBUSY is fine, somebody else faulted on the same PTE */
- 	if (error != -EBUSY)
- 		BUG_ON(error);
--	return VM_FAULT_NOPAGE;
-+	return VM_FAULT_NOPAGE | major;
- }
+@@ -393,13 +393,16 @@ int dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ EXPORT_SYMBOL_GPL(dax_mkwrite);
  
  /**
+- * dax_truncate_page - handle a partial page being truncated in a DAX file
++ * dax_zero_page_range - zero a range within a page of a DAX file
+  * @inode: The file being truncated
+  * @from: The file offset that is being truncated to
++ * @length: The number of bytes to zero
+  * @get_block: The filesystem method used to translate file offsets to blocks
+  *
+- * Similar to block_truncate_page(), this function can be called by a
+- * filesystem when it is truncating an DAX file to handle the partial page.
++ * This function can be called by a filesystem when it is zeroing part of a
++ * page in a DAX file.  This is intended for hole-punch operations.  If
++ * you are truncating a file, the helper function dax_truncate_page() may be
++ * more convenient.
+  *
+  * We work in terms of PAGE_CACHE_SIZE here for commonality with
+  * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
+@@ -407,12 +410,12 @@ EXPORT_SYMBOL_GPL(dax_mkwrite);
+  * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
+  * since the file might be mmaped.
+  */
+-int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
++							get_block_t get_block)
+ {
+ 	struct buffer_head bh;
+ 	pgoff_t index = from >> PAGE_CACHE_SHIFT;
+ 	unsigned offset = from & (PAGE_CACHE_SIZE-1);
+-	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+ 	int err;
+ 
+ 	/* Block boundary? Nothing to do */
+@@ -427,11 +430,16 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+ 	if (buffer_written(&bh)) {
+ 		void *addr;
+ 		err = dax_get_addr(inode, &bh, &addr);
+-		if (err)
++		if (err < 0)
+ 			return err;
++		/*
++		 * ext4 sometimes asks to zero past the end of a block.  It
++		 * really just wants to zero to the end of the block.
++		 */
++		length = min_t(unsigned, length, PAGE_CACHE_SIZE - offset);
+ 		memset(addr + offset, 0, length);
+ 	}
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(dax_truncate_page);
++EXPORT_SYMBOL_GPL(dax_zero_page_range);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 19abdb1..6a5091a 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2517,6 +2517,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+ #ifdef CONFIG_FS_DAX
+ int dax_clear_blocks(struct inode *, sector_t block, long size);
++int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
+ int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
+ 		loff_t, unsigned segs, get_block_t, dio_iodone_t, int flags);
+@@ -2528,7 +2529,8 @@ static inline int dax_clear_blocks(struct inode *i, sector_t blk, long sz)
+ 	return 0;
+ }
+ 
+-static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
++static inline int dax_zero_page_range(struct inode *inode, loff_t from,
++						unsigned len, get_block_t gb)
+ {
+ 	return 0;
+ }
+@@ -2541,6 +2543,11 @@ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
+ }
+ #endif
+ 
++/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
++#define dax_truncate_page(inode, from, get_block)	\
++	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
++
++
+ #ifdef CONFIG_BLOCK
+ typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
+ 			    loff_t file_offset);
 -- 
 1.8.5.3
 
