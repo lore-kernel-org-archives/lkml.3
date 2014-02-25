@@ -1,285 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaBYKjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 05:39:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30955 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaBYKjx (ORCPT
+	id S1752954AbaBYKk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:40:28 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:39804 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319AbaBYKkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 05:39:53 -0500
-Message-ID: <530C72E2.3040409@oracle.com>
-Date: Tue, 25 Feb 2014 18:39:30 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Seth Jennings <sjennings@variantweb.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, cai.liu@samsung.com,
-        weijie.yang.kh@gmail.com
-Subject: Re: [PATCH] mm/zswap: support multiple swap devices
-References: <1393218805-24924-1-git-send-email-minchan@kernel.org> <20140224162249.GA9363@cerebellum.variantweb.net> <20140225000936.GF24325@bbox>
-In-Reply-To: <20140225000936.GF24325@bbox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 25 Feb 2014 05:40:24 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v2 2/4] spi: spidev: Add support for Dual/Quad SPI Transfers
+Date: Tue, 25 Feb 2014 11:40:17 +0100
+Message-Id: <1393324819-3810-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393324819-3810-1-git-send-email-geert@linux-m68k.org>
+References: <1393324819-3810-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-On 02/25/2014 08:09 AM, Minchan Kim wrote:
-> ================= &< ================
-> 
-> From 032297579ee407ca3aacf509b7bd4e9b553f0b34 Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Thu, 23 Jan 2014 12:02:42 +0900
-> Subject: [PATCH] mm/zswap: support multiple swap devices
-> 
-> Cai Liu reporeted that now zbud pool pages counting has a problem
-> when multiple swap is used because it just counts only one swap
-> intead of all of swap so zswap cannot control writeback properly.
-> The result is unnecessary writeback or no writeback when we should
-> really writeback.
-> 
-> IOW, it made zswap crazy.
-> 
-> Another problem in zswap is following as.
-> For example, let's assume we use two swap A and B with different
-> priority and A already has charged 19% long time ago and let's assume
-> that A swap is full now so VM start to use B so that B has charged 1%
-> recently. It menas zswap charged (19% + 1%) is full by default.
-> Then, if VM want to swap out more pages into B, zbud_reclaim_page
-> would be evict one of pages in B's pool and it would be repeated
-> continuously. It's totally LRU reverse problem and swap thrashing
-> in B would happen.
-> 
-> This patch makes zswap consider mutliple swap by creating *a* zbud
-> pool which will be shared by multiple swap so all of zswap pages
-> in multiple swap keep order by LRU so it can prevent above two
-> problems.
-> 
-> * From v1
->  * change variable name - Seth
->  * remove unnecessary BUG_ON and white space - Seth
-> 
-> Reported-by: Cai Liu <cai.liu@samsung.com>
-> Suggested-by: Weijie Yang <weijie.yang.kh@gmail.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+Add support for Dual/Quad SPI Transfers to the spidev API.
+As this uses SPI mode bits that don't fit in a single byte, two new
+ioctls (SPI_IOC_RD_MODE32 and SPI_IOC_WR_MODE32) are introduced.
 
-Looks good to me, thanks.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v2:
+  - Introduce SPI_IOC_{RD,WR}_MODE32 to avoid breaking backwards
+    compatibility,
+  - Split off the spidev_test changes in a separate patch
+  - Update documentation.
 
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
+ Documentation/spi/spidev        |    6 ++++++
+ drivers/spi/spidev.c            |   19 +++++++++++++++----
+ include/uapi/linux/spi/spidev.h |   14 ++++++++++++--
+ 3 files changed, 33 insertions(+), 6 deletions(-)
 
-> ---
->  mm/zswap.c | 64 ++++++++++++++++++++++++++++++++------------------------------
->  1 file changed, 33 insertions(+), 31 deletions(-)
-> 
-> diff --git a/mm/zswap.c b/mm/zswap.c
-> index 25312eb373a0..c0c9b7c80c05 100644
-> --- a/mm/zswap.c
-> +++ b/mm/zswap.c
-> @@ -89,6 +89,9 @@ static unsigned int zswap_max_pool_percent = 20;
->  module_param_named(max_pool_percent,
->  			zswap_max_pool_percent, uint, 0644);
->  
-> +/* zbud_pool is shared by all of zswap backend  */
-> +static struct zbud_pool *zswap_pool;
-> +
->  /*********************************
->  * compression functions
->  **********************************/
-> @@ -189,7 +192,6 @@ struct zswap_header {
->  struct zswap_tree {
->  	struct rb_root rbroot;
->  	spinlock_t lock;
-> -	struct zbud_pool *pool;
->  };
->  
->  static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
-> @@ -285,13 +287,12 @@ static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
->   * Carries out the common pattern of freeing and entry's zbud allocation,
->   * freeing the entry itself, and decrementing the number of stored pages.
->   */
-> -static void zswap_free_entry(struct zswap_tree *tree,
-> -			struct zswap_entry *entry)
-> +static void zswap_free_entry(struct zswap_entry *entry)
->  {
-> -	zbud_free(tree->pool, entry->handle);
-> +	zbud_free(zswap_pool, entry->handle);
->  	zswap_entry_cache_free(entry);
->  	atomic_dec(&zswap_stored_pages);
-> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> +	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
->  }
->  
->  /* caller must hold the tree lock */
-> @@ -311,7 +312,7 @@ static void zswap_entry_put(struct zswap_tree *tree,
->  	BUG_ON(refcount < 0);
->  	if (refcount == 0) {
->  		zswap_rb_erase(&tree->rbroot, entry);
-> -		zswap_free_entry(tree, entry);
-> +		zswap_free_entry(entry);
->  	}
->  }
->  
-> @@ -545,7 +546,6 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
->  	zbud_unmap(pool, handle);
->  	tree = zswap_trees[swp_type(swpentry)];
->  	offset = swp_offset(swpentry);
-> -	BUG_ON(pool != tree->pool);
->  
->  	/* find and ref zswap entry */
->  	spin_lock(&tree->lock);
-> @@ -573,13 +573,13 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
->  	case ZSWAP_SWAPCACHE_NEW: /* page is locked */
->  		/* decompress */
->  		dlen = PAGE_SIZE;
-> -		src = (u8 *)zbud_map(tree->pool, entry->handle) +
-> +		src = (u8 *)zbud_map(zswap_pool, entry->handle) +
->  			sizeof(struct zswap_header);
->  		dst = kmap_atomic(page);
->  		ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
->  				entry->length, dst, &dlen);
->  		kunmap_atomic(dst);
-> -		zbud_unmap(tree->pool, entry->handle);
-> +		zbud_unmap(zswap_pool, entry->handle);
->  		BUG_ON(ret);
->  		BUG_ON(dlen != PAGE_SIZE);
->  
-> @@ -652,7 +652,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  	/* reclaim space if needed */
->  	if (zswap_is_full()) {
->  		zswap_pool_limit_hit++;
-> -		if (zbud_reclaim_page(tree->pool, 8)) {
-> +		if (zbud_reclaim_page(zswap_pool, 8)) {
->  			zswap_reject_reclaim_fail++;
->  			ret = -ENOMEM;
->  			goto reject;
-> @@ -679,7 +679,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  
->  	/* store */
->  	len = dlen + sizeof(struct zswap_header);
-> -	ret = zbud_alloc(tree->pool, len, __GFP_NORETRY | __GFP_NOWARN,
-> +	ret = zbud_alloc(zswap_pool, len, __GFP_NORETRY | __GFP_NOWARN,
->  		&handle);
->  	if (ret == -ENOSPC) {
->  		zswap_reject_compress_poor++;
-> @@ -689,11 +689,11 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  		zswap_reject_alloc_fail++;
->  		goto freepage;
->  	}
-> -	zhdr = zbud_map(tree->pool, handle);
-> +	zhdr = zbud_map(zswap_pool, handle);
->  	zhdr->swpentry = swp_entry(type, offset);
->  	buf = (u8 *)(zhdr + 1);
->  	memcpy(buf, dst, dlen);
-> -	zbud_unmap(tree->pool, handle);
-> +	zbud_unmap(zswap_pool, handle);
->  	put_cpu_var(zswap_dstmem);
->  
->  	/* populate entry */
-> @@ -716,7 +716,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
->  
->  	/* update stats */
->  	atomic_inc(&zswap_stored_pages);
-> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> +	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
->  
->  	return 0;
->  
-> @@ -752,13 +752,13 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
->  
->  	/* decompress */
->  	dlen = PAGE_SIZE;
-> -	src = (u8 *)zbud_map(tree->pool, entry->handle) +
-> +	src = (u8 *)zbud_map(zswap_pool, entry->handle) +
->  			sizeof(struct zswap_header);
->  	dst = kmap_atomic(page);
->  	ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
->  		dst, &dlen);
->  	kunmap_atomic(dst);
-> -	zbud_unmap(tree->pool, entry->handle);
-> +	zbud_unmap(zswap_pool, entry->handle);
->  	BUG_ON(ret);
->  
->  	spin_lock(&tree->lock);
-> @@ -804,11 +804,9 @@ static void zswap_frontswap_invalidate_area(unsigned type)
->  	/* walk the tree and free everything */
->  	spin_lock(&tree->lock);
->  	rbtree_postorder_for_each_entry_safe(entry, n, &tree->rbroot, rbnode)
-> -		zswap_free_entry(tree, entry);
-> +		zswap_free_entry(entry);
->  	tree->rbroot = RB_ROOT;
->  	spin_unlock(&tree->lock);
-> -
-> -	zbud_destroy_pool(tree->pool);
->  	kfree(tree);
->  	zswap_trees[type] = NULL;
->  }
-> @@ -822,20 +820,14 @@ static void zswap_frontswap_init(unsigned type)
->  	struct zswap_tree *tree;
->  
->  	tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
-> -	if (!tree)
-> -		goto err;
-> -	tree->pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
-> -	if (!tree->pool)
-> -		goto freetree;
-> +	if (!tree) {
-> +		pr_err("alloc failed, zswap disabled for swap type %d\n", type);
-> +		return;
-> +	}
-> +
->  	tree->rbroot = RB_ROOT;
->  	spin_lock_init(&tree->lock);
->  	zswap_trees[type] = tree;
-> -	return;
-> -
-> -freetree:
-> -	kfree(tree);
-> -err:
-> -	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
->  }
->  
->  static struct frontswap_ops zswap_frontswap_ops = {
-> @@ -907,9 +899,16 @@ static int __init init_zswap(void)
->  		return 0;
->  
->  	pr_info("loading zswap\n");
-> +
-> +	zswap_pool = zbud_create_pool(GFP_KERNEL, &zswap_zbud_ops);
-> +	if (!zswap_pool) {
-> +		pr_err("zbud pool creation failed\n");
-> +		goto error;
-> +	}
-> +
->  	if (zswap_entry_cache_create()) {
->  		pr_err("entry cache creation failed\n");
-> -		goto error;
-> +		goto cachefail;
->  	}
->  	if (zswap_comp_init()) {
->  		pr_err("compressor initialization failed\n");
-> @@ -919,6 +918,7 @@ static int __init init_zswap(void)
->  		pr_err("per-cpu initialization failed\n");
->  		goto pcpufail;
->  	}
-> +
->  	frontswap_register_ops(&zswap_frontswap_ops);
->  	if (zswap_debugfs_init())
->  		pr_warn("debugfs initialization failed\n");
-> @@ -927,6 +927,8 @@ pcpufail:
->  	zswap_comp_exit();
->  compfail:
->  	zswap_entry_cache_destory();
-> +cachefail:
-> +	zbud_destroy_pool(zswap_pool);
->  error:
->  	return -ENOMEM;
->  }
-> 
-
+diff --git a/Documentation/spi/spidev b/Documentation/spi/spidev
+index ed2da5e5b28a..3d14035b1766 100644
+--- a/Documentation/spi/spidev
++++ b/Documentation/spi/spidev
+@@ -85,6 +85,12 @@ settings for data transfer parameters:
+ 	SPI_MODE_0..SPI_MODE_3; or if you prefer you can combine SPI_CPOL
+ 	(clock polarity, idle high iff this is set) or SPI_CPHA (clock phase,
+ 	sample on trailing edge iff this is set) flags.
++	Note that this request is limited to SPI mode flags that fit in a
++	single byte.
++
++    SPI_IOC_RD_MODE32, SPI_IOC_WR_MODE32 ... pass a pointer to a uin32_t
++	which will return (RD) or assign (WR) the full SPI transfer mode,
++	not limited to the bits that fit in one byte.
+ 
+     SPI_IOC_RD_LSB_FIRST, SPI_IOC_WR_LSB_FIRST ... pass a pointer to a byte
+ 	which will return (RD) or assign (WR) the bit justification used to
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 2abc0f5a82be..e3bc23bb5883 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -73,7 +73,8 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
+  */
+ #define SPI_MODE_MASK		(SPI_CPHA | SPI_CPOL | SPI_CS_HIGH \
+ 				| SPI_LSB_FIRST | SPI_3WIRE | SPI_LOOP \
+-				| SPI_NO_CS | SPI_READY)
++				| SPI_NO_CS | SPI_READY | SPI_TX_DUAL \
++				| SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD)
+ 
+ struct spidev_data {
+ 	dev_t			devt;
+@@ -265,6 +266,8 @@ static int spidev_message(struct spidev_data *spidev,
+ 		buf += k_tmp->len;
+ 
+ 		k_tmp->cs_change = !!u_tmp->cs_change;
++		k_tmp->tx_nbits = u_tmp->tx_nbits;
++		k_tmp->rx_nbits = u_tmp->rx_nbits;
+ 		k_tmp->bits_per_word = u_tmp->bits_per_word;
+ 		k_tmp->delay_usecs = u_tmp->delay_usecs;
+ 		k_tmp->speed_hz = u_tmp->speed_hz;
+@@ -359,6 +362,10 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		retval = __put_user(spi->mode & SPI_MODE_MASK,
+ 					(__u8 __user *)arg);
+ 		break;
++	case SPI_IOC_RD_MODE32:
++		retval = __put_user(spi->mode & SPI_MODE_MASK,
++					(__u32 __user *)arg);
++		break;
+ 	case SPI_IOC_RD_LSB_FIRST:
+ 		retval = __put_user((spi->mode & SPI_LSB_FIRST) ?  1 : 0,
+ 					(__u8 __user *)arg);
+@@ -372,7 +379,11 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 
+ 	/* write requests */
+ 	case SPI_IOC_WR_MODE:
+-		retval = __get_user(tmp, (u8 __user *)arg);
++	case SPI_IOC_WR_MODE32:
++		if (cmd == SPI_IOC_WR_MODE)
++			retval = __get_user(tmp, (u8 __user *)arg);
++		else
++			retval = __get_user(tmp, (u32 __user *)arg);
+ 		if (retval == 0) {
+ 			u32	save = spi->mode;
+ 
+@@ -382,12 +393,12 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			}
+ 
+ 			tmp |= spi->mode & ~SPI_MODE_MASK;
+-			spi->mode = (u8)tmp;
++			spi->mode = (u16)tmp;
+ 			retval = spi_setup(spi);
+ 			if (retval < 0)
+ 				spi->mode = save;
+ 			else
+-				dev_dbg(&spi->dev, "spi mode %02x\n", tmp);
++				dev_dbg(&spi->dev, "spi mode %x\n", tmp);
+ 		}
+ 		break;
+ 	case SPI_IOC_WR_LSB_FIRST:
+diff --git a/include/uapi/linux/spi/spidev.h b/include/uapi/linux/spi/spidev.h
+index 52d9ed01855f..dd5f21e75805 100644
+--- a/include/uapi/linux/spi/spidev.h
++++ b/include/uapi/linux/spi/spidev.h
+@@ -42,6 +42,10 @@
+ #define SPI_LOOP		0x20
+ #define SPI_NO_CS		0x40
+ #define SPI_READY		0x80
++#define SPI_TX_DUAL		0x100
++#define SPI_TX_QUAD		0x200
++#define SPI_RX_DUAL		0x400
++#define SPI_RX_QUAD		0x800
+ 
+ /*---------------------------------------------------------------------------*/
+ 
+@@ -92,7 +96,9 @@ struct spi_ioc_transfer {
+ 	__u16		delay_usecs;
+ 	__u8		bits_per_word;
+ 	__u8		cs_change;
+-	__u32		pad;
++	__u8		tx_nbits;
++	__u8		rx_nbits;
++	__u16		pad;
+ 
+ 	/* If the contents of 'struct spi_ioc_transfer' ever change
+ 	 * incompatibly, then the ioctl number (currently 0) must change;
+@@ -110,7 +116,7 @@ struct spi_ioc_transfer {
+ #define SPI_IOC_MESSAGE(N) _IOW(SPI_IOC_MAGIC, 0, char[SPI_MSGSIZE(N)])
+ 
+ 
+-/* Read / Write of SPI mode (SPI_MODE_0..SPI_MODE_3) */
++/* Read / Write of SPI mode (SPI_MODE_0..SPI_MODE_3) (limited to 8 bits) */
+ #define SPI_IOC_RD_MODE			_IOR(SPI_IOC_MAGIC, 1, __u8)
+ #define SPI_IOC_WR_MODE			_IOW(SPI_IOC_MAGIC, 1, __u8)
+ 
+@@ -126,6 +132,10 @@ struct spi_ioc_transfer {
+ #define SPI_IOC_RD_MAX_SPEED_HZ		_IOR(SPI_IOC_MAGIC, 4, __u32)
+ #define SPI_IOC_WR_MAX_SPEED_HZ		_IOW(SPI_IOC_MAGIC, 4, __u32)
+ 
++/* Read / Write of the SPI mode field */
++#define SPI_IOC_RD_MODE32		_IOR(SPI_IOC_MAGIC, 5, __u32)
++#define SPI_IOC_WR_MODE32		_IOW(SPI_IOC_MAGIC, 5, __u32)
++
+ 
+ 
+ #endif /* SPIDEV_H */
 -- 
-Regards,
--Bob
+1.7.9.5
+
