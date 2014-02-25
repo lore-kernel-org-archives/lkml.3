@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaBYJ7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:59:34 -0500
-Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:37449 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751611AbaBYJ72 (ORCPT
+	id S1752923AbaBYKC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 05:02:27 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62549 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaBYKCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:59:28 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:4037:4321:5007:7652:7903:8957:9010:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12663:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bikes24_355aa11147732
-X-Filterd-Recvd-Size: 2003
-Message-ID: <1393322365.8716.3.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: comedi: Fix line length exceeding 80 characters
-From: Joe Perches <joe@perches.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Monam Agarwal <monamagarwal123@gmail.com>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 25 Feb 2014 01:59:25 -0800
-In-Reply-To: <530C666B.6080900@mev.co.uk>
-References: <1393260582-10234-1-git-send-email-monamagarwal123@gmail.com>
-	 <530C666B.6080900@mev.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 05:02:23 -0500
+Date: Tue, 25 Feb 2014 10:02:16 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, gregkh@linuxfoundation.org, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 3/3] mfd: arizona: Use new regmap features for manual
+ register patch
+Message-ID: <20140225100216.GA13246@lee--X1>
+References: <1393011432-28909-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1393011432-28909-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20140224161042.GF15847@lee--X1>
+ <20140225093723.GE5438@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140225093723.GE5438@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 09:46 +0000, Ian Abbott wrote:
-> On 2014-02-24 16:49, Monam Agarwal wrote:
-[]
-> > diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-[]
-> > @@ -1481,7 +1481,8 @@ static int do_cmd_ioctl(struct comedi_device *dev,
-> >   	async->cmd.data = NULL;
-> >   	/* load channel/gain list */
-> >   	async->cmd.chanlist = memdup_user(user_chanlist,
-> > -					  async->cmd.chanlist_len * sizeof(int));
-> > +					  async->cmd.chanlist_len
-> > +					  * sizeof(int));
+> > > On the wm5102 the register patches are applied manually, rather than by
+> > > the regmap core. This application is wrapped in calls to
+> > > regcache_cache_bypass. However, this is dangerous as other threads may
+> > > be accessing the hardware at the same time as the pm_runtime operations
+> > > and if they do so during the period whilst cache_bypass is enabled those
+> > > writes will miss the cache when they shouldn't.
+> > > 
+> > > Apply the register patch using the new regmap_apply_patch function to
+> > > avoid this problem. Also remove the call to regcache_cache_bypass from
+> > > the hardware patch application as it is unneeded there and creates a
+> > > similar window for writes to miss the cache.
+> > > 
+> > > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > > ---
+> > >  drivers/mfd/arizona-core.c  |    4 ----
+> > >  drivers/mfd/wm5102-tables.c |   19 ++-----------------
+> > >  2 files changed, 2 insertions(+), 21 deletions(-)
+> > 
+> > Applied, thanks.
 > 
-> The `*` operator should go at the end of the line according to the 
-> CodingStyle.
+> Apologies this patch depends on the previous patch I am still
+> working Mark's comments for. So this can't really be applied at
+> the moment.
 
-I don't believe there's a CodingStyle guide for this.
+It's a good idea to let us know about any inter-patch dependencies, so
+we may act accordingly. I'll remove this from my -next branch for now.
 
-Another way to do this is to move the memdup_user to
-a separate line like:
-
-	async->cmd_chanlist =
-		memdup_user(user_chanlist,
-			    async->cmd.chanlist_len * sizeof(int));
-
-but I'm not bothered by the existing > 80 column use.
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
