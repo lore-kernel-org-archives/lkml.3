@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaBYTc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 14:32:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21036 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430AbaBYTc4 (ORCPT
+	id S1753729AbaBYTeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:34:20 -0500
+Received: from smtprelay0220.hostedemail.com ([216.40.44.220]:47190 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753307AbaBYTeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 14:32:56 -0500
-Message-ID: <530CEFE2.9090909@oracle.com>
-Date: Tue, 25 Feb 2014 14:32:50 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mm: NULL ptr deref in balance_dirty_pages_ratelimited
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 25 Feb 2014 14:34:18 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2894:3138:3139:3140:3141:3142:3352:3622:3867:3868:3871:3874:4321:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: place23_7c61396d4a041
+X-Filterd-Recvd-Size: 1998
+Message-ID: <1393356852.8716.33.camel@joe-AO722>
+Subject: Re: [PATCH 1/8] security: Use a more current logging style
+From: Joe Perches <joe@perches.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Date: Tue, 25 Feb 2014 11:34:12 -0800
+In-Reply-To: <20140225191003.GB22246@sergelap>
+References: <cover.1393279025.git.joe@perches.com>
+	 <c90a7238c10c2b243b10bc19632d3428e5bbb1fb.1393279025.git.joe@perches.com>
+	 <20140225191003.GB22246@sergelap>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, 2014-02-25 at 13:10 -0600, Serge Hallyn wrote:
+> Quoting Joe Perches (joe@perches.com):
+> > Convert printks to pr_<level>.
+[]
+> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> 
+> Though should warn_setuid_and_fcaps_mixed be using
+> pr_info_once()?
 
-While fuzzing with trinity inside a KVM tools running latest -next kernel I've stumbled on the 
-following spew:
+Yup, thanks.  I'll send a follow-on with your reported-by
+if/after this is applied and I'll send a V2 now so James
+could apply that instead if that's what he prefers.
 
-[  232.869443] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-[  232.870230] IP: [<mm/page-writeback.c:1612>] balance_dirty_pages_ratelimited+0x1e/0x150
-[  232.870230] PGD 586e1d067 PUD 586e1e067 PMD 0
-[  232.870230] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  232.870230] Dumping ftrace buffer:
-[  232.870230]    (ftrace buffer empty)
-[  232.870230] Modules linked in:
-[  232.870230] CPU: 36 PID: 9707 Comm: trinity-c36 Tainted: G        W 
-3.14.0-rc4-next-20140225-sasha-00010-ga117461 #42
-[  232.870230] task: ffff880586dfb000 ti: ffff880586e34000 task.ti: ffff880586e34000
-[  232.870230] RIP: 0010:[<mm/page-writeback.c:1612>]  [<mm/page-writeback.c:1612>] 
-balance_dirty_pages_ratelimited+0x1e/0x150
-[  232.870230] RSP: 0000:ffff880586e35c58  EFLAGS: 00010282
-[  232.870230] RAX: 0000000000000000 RBX: ffff880582831361 RCX: 0000000000000007
-[  232.870230] RDX: 0000000000000007 RSI: ffff880586dfbcc0 RDI: ffff880582831361
-[  232.870230] RBP: ffff880586e35c78 R08: 0000000000000000 R09: 0000000000000000
-[  232.870230] R10: 0000000000000001 R11: 0000000000000001 R12: 00007f58007ee000
-[  232.870230] R13: ffff880c8d6d4f70 R14: 0000000000000200 R15: ffff880c8dcce710
-[  232.870230] FS:  00007f58018bb700(0000) GS:ffff880c8e800000(0000) knlGS:0000000000000000
-[  232.870230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  232.870230] CR2: 0000000000000020 CR3: 0000000586e1c000 CR4: 00000000000006e0
-[  232.870230] Stack:
-[  232.870230]  ffff880586e35c78 ffff880586e33400 00007f58007ee000 ffff880c8d6d4f70
-[  232.870230]  ffff880586e35cd8 ffffffff8127d241 0000000000000001 0000000000000001
-[  232.870230]  0000000000000000 ffffea0032337080 0000000080000000 ffff880586e33400
-[  232.870230] Call Trace:
-[  232.870230]  [<mm/memory.c:3467>] do_shared_fault+0x1a1/0x1f0
-[  232.870230]  [<mm/memory.c:3487>] handle_pte_fault+0xc8/0x230
-[  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ? delay_tsc+0xea/0x110
-[  232.870230]  [<mm/memory.c:3770>] __handle_mm_fault+0x36e/0x3a0
-[  232.870230]  [<include/linux/rcupdate.h:829>] ? rcu_read_unlock+0x5d/0x60
-[  232.870230]  [<include/linux/memcontrol.h:148>] handle_mm_fault+0x10b/0x1b0
-[  232.870230]  [<arch/x86/mm/fault.c:1147>] ? __do_page_fault+0x2e2/0x590
-[  232.870230]  [<arch/x86/mm/fault.c:1214>] __do_page_fault+0x551/0x590
-[  232.870230]  [<kernel/sched/cputime.c:681>] ? vtime_account_user+0x91/0xa0
-[  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ? context_tracking_user_exit+0xa8/0x1c0
-[  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ? _raw_spin_unlock+0x30/0x50
-[  232.870230]  [<kernel/sched/cputime.c:681>] ? vtime_account_user+0x91/0xa0
-[  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ? context_tracking_user_exit+0xa8/0x1c0
-[  232.870230]  [<arch/x86/include/asm/atomic.h:26>] do_page_fault+0x3d/0x70
-[  232.870230]  [<arch/x86/kernel/kvm.c:263>] do_async_page_fault+0x35/0x100
-[  232.870230]  [<arch/x86/kernel/entry_64.S:1496>] async_page_fault+0x28/0x30
-[  232.870230] Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48 83 ec 20 48 89 5d e8 4c 
-89 65 f0 4c 89 6d f8 48 89 fb 48 8b 87 50 01 00 00 <f6> 40 20 01 0f 85 18 01 00 00 65 48 8b 14 25 40 
-da 00 00 44 8b
-[  232.870230] RIP  [<mm/page-writeback.c:1612>] balance_dirty_pages_ratelimited+0x1e/0x150
-[  232.870230]  RSP <ffff880586e35c58>
-[  232.870230] CR2: 0000000000000020
+> > diff --git a/security/commoncap.c b/security/commoncap.c
+[]
+> > @@ -46,9 +48,8 @@ static void warn_setuid_and_fcaps_mixed(const char *fname)
+> >  {
+> >  	static int warned;
+> >  	if (!warned) {
+> > -		printk(KERN_INFO "warning: `%s' has both setuid-root and"
+> > -			" effective capabilities. Therefore not raising all"
+> > -			" capabilities.\n", fname);
+> > +		pr_info("warning: `%s' has both setuid-root and effective capabilities, therefore not raising all capabilities\n",
+> > +			fname);
+
+	pr_info_once(etc...
+
+> >  		warned = 1;
+> >  	}
+> >  }
 
 
-Thanks,
-Sasha
