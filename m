@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaBYH55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 02:57:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55567 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708AbaBYH5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 02:57:55 -0500
-Message-ID: <530C4CAE.5000202@ti.com>
-Date: Mon, 24 Feb 2014 23:56:30 -0800
-From: Russ Dill <Russ.Dill@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752553AbaBYH6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 02:58:55 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:58324 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751343AbaBYH6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 02:58:53 -0500
+Message-ID: <530C4D13.7000000@free-electrons.com>
+Date: Tue, 25 Feb 2014 08:58:11 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Sebastian Capella <sebastian.capella@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linaro-kernel@lists.linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>, Robin Holt <holt@sgi.com>
-Subject: Re: [PATCH RFC v1 1/3] ARM: Add irq disabled version of soft_restart.
-References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org> <1392774729-3235-2-git-send-email-sebastian.capella@linaro.org> <20140222102616.GG21483@n2100.arm.linux.org.uk> <20140224231345.10580.62916@capellas-linux>
-In-Reply-To: <20140224231345.10580.62916@capellas-linux>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        linux-media <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RESEND] [media] davinci: vpfe: remove deprecated IRQF_DISABLED
+References: <CA+V-a8tn54CcaFEBMM48GMnTuG=OhQtxm7=od_4OZm6Xo_S9qA@mail.gmail.com> <1386584182-5400-1-git-send-email-michael.opdenacker@free-electrons.com> <4210530.AR5GZgidVz@avalon> <53060055.2010408@free-electrons.com> <CA+V-a8s2RFiqENVk2mR4dQ92ZhvB93BcyMLy0cX3eZkns5HRaQ@mail.gmail.com> <CA+V-a8sQk8oRiTWpLhfQQCkibe2FCOz=opb+Ge1R-ig4ZqrdFw@mail.gmail.com>
+In-Reply-To: <CA+V-a8sQk8oRiTWpLhfQQCkibe2FCOz=opb+Ge1R-ig4ZqrdFw@mail.gmail.com>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 03:13 PM, Sebastian Capella wrote:
-> Quoting Russell King - ARM Linux (2014-02-22 02:26:17)
->> On Tue, Feb 18, 2014 at 05:52:07PM -0800, Sebastian Capella wrote:
->>> From: Russ Dill <Russ.Dill@ti.com>
->>>
->>> This adds the ability to run soft_restart with local_irq/fiq_disable
->>> already called. This is helpful for the hibernation code paths.
->>
->> I'd rather keep this simple.  There's no problem with calling soft_restart
->> with interrupts already disabled.  local_irq_disable()/local_fiq_disable()
->> there should be harmless.
-> 
-> Hi Russell,
-> 
-> I'm observing a data abort loop when I replace this call:
-> 
-> In the local_irq_disable, it ends up calling trace_hardirqs_off
-> (CONFIG_TRACE_IRQFLAGS_SUPPORT is enabled), which calls
-> trace_hardirqs_off_caller which checks lockdep_recursion in the
-> current task, but we've switched to a temporary stack with the
-> call_with_stack, and get_current is returning NULL.  This
-> triggers a data abort, which calls trace_hardirqs_off
-> again and so on.
-> 
-> Do you have any suggestions here?
-> 
-> Thanks,
-> 
-> Sebastian
-> 
+Hi Prabhakar
 
-So the alternative is to have a version of the call that calls a special
-no trace version of local_irq_disable()/local_fiq_disable(). Which would
-be preferable? Having a noirq version of soft_restart seems much simpler
-to me.
+On 02/25/2014 07:02 AM, Prabhakar Lad wrote:
+> Hi Michael,
+>
+> On Mon, Feb 24, 2014 at 11:01 AM, Prabhakar Lad
+> <prabhakar.csengg@gmail.com> wrote:
+>> Hi Michael,
+>>
+>> On Thu, Feb 20, 2014 at 6:47 PM, Michael Opdenacker
+>> <michael.opdenacker@free-electrons.com> wrote:
+>>> Hi Laurent,
+>>>
+>>> On 02/20/2014 12:36 PM, Laurent Pinchart wrote:
+>>>> Hi Michael,
+>>>>
+>>>> What's the status of this patch ? Do expect Prabhakar to pick it up, or do you
+>>>> plan to push all your IRQF_DISABLED removal patches in one go ?
+>>> It's true a good number of my patches haven't been picked up yet, even
+>>> after multiple resends.
+>>>
+>>> I was planning to ask the community tomorrow about what to do to finally
+>>> get rid of IRQF_DISABLED. Effectively, pushing all the remaining changes
+>>> in one go (or removing the definition of IRQF_DISABLED) may be the final
+>>> solution.
+>>>
+>>> I hope to be able to answer your question by the end of the week.
+>>>
+>> gentle ping. should I pick it up ?
+>>
+> I've picked it up.
+>
+> Thanks,
+> --Prabhakar Lad
+
+Thanks a lot! Yes, I was planning to wait for another cycle before
+sending a treewide patch.
+
+Cheers,
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
