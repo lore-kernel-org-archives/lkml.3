@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaBYCXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 21:23:13 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:50583 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaBYCXM (ORCPT
+	id S1753008AbaBYCZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 21:25:14 -0500
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:28712
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751422AbaBYCZM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 21:23:12 -0500
-Date: Tue, 25 Feb 2014 03:23:10 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: David Miller <davem@davemloft.net>, dcbw@redhat.com,
-        mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
-        netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net
-Subject: Re: [RFC v2 2/4] net: enables interface option to skip IP
-Message-ID: <20140225022310.GH6598@order.stressinduktion.org>
-Mail-Followup-To: Ben Hutchings <ben@decadent.org.uk>,
-	David Miller <davem@davemloft.net>, dcbw@redhat.com,
-	mcgrof@do-not-panic.com, zoltan.kiss@citrix.com,
-	netdev@vger.kernel.org, xen-devel@lists.xenproject.org,
-	kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-	kaber@trash.net
-References: <1393266120.8041.19.camel@dcbw.local> <20140224.180426.411052665068255886.davem@davemloft.net> <1393286520.6823.123.camel@deadeye.wl.decadent.org.uk> <20140224.191238.921310808350170272.davem@davemloft.net> <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1393293719.6823.148.camel@deadeye.wl.decadent.org.uk>
+	Mon, 24 Feb 2014 21:25:12 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Subject: RE: [PATCHv9 Resend 0/4] Add Freescale FTM PWM driver
+Thread-Topic: [PATCHv9 Resend 0/4] Add Freescale FTM PWM driver
+Thread-Index: AQHPLVcK2a4W4I0fkU+aRxqqqXzxxZrFRntA
+Date: Tue, 25 Feb 2014 02:25:09 +0000
+Message-ID: <beb8e719664148948f31026aaa01fb40@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01334458E5
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(13464003)(377454003)(51704005)(199002)(189002)(74316001)(51856001)(4396001)(74366001)(87266001)(69226001)(87936001)(80022001)(49866001)(81816001)(85852003)(31966008)(81342001)(76482001)(66066001)(65816001)(54316002)(2656002)(47446002)(92566001)(47976001)(85306002)(56776001)(47736001)(59766001)(56816005)(63696002)(90146001)(81542001)(79102001)(50986001)(74662001)(46102001)(77982001)(53806001)(83072002)(54356001)(74502001)(83322001)(93516002)(80976001)(94316002)(74706001)(74876001)(93136001)(86362001)(33646001)(19580405001)(19580395003)(76786001)(76796001)(76576001)(95416001)(81686001)(94946001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:BA5D3C86.2033BC1E.7D714DE3.5CD68A53.2019C;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 02:01:59AM +0000, Ben Hutchings wrote:
-> On Mon, 2014-02-24 at 19:12 -0500, David Miller wrote:
-> > From: Ben Hutchings <ben@decadent.org.uk>
-> > Date: Tue, 25 Feb 2014 00:02:00 +0000
-> > 
-> > > You can run an internal network, or access network, as v6-only with
-> > > NAT64 and DNS64 at the border.  I believe some mobile networks are doing
-> > > this; it was also done on the main FOSDEM wireless network this year.
-> > 
-> > This seems to be bloating up the networking headers of the internal
-> > network, for what purpose?
-> > 
-> > For mobile that's doubly inadvisable.
+Thierry, Ping ? :)
+
+
+
+> -----Original Message-----
+> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
+> Sent: Wednesday, February 19, 2014 4:39 PM
+> To: thierry.reding@gmail.com; linux-pwm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Xiubo Li-B47053
+> Subject: [PATCHv9 Resend 0/4] Add Freescale FTM PWM driver
 > 
-> I don't know what the reasoning is for the mobile network operators.
-> They're forced to do NAT for v4 somewhere, and maybe v6-only makes the
-> access network easier to manage.
-
-Yes, it seems the way to go:
-<http://www.dslreports.com/shownews/TMobile-Goes-IPv6-Only-on-Android-44-Devices-126506>
-
-I can't comment on the 464xlat that much because I haven't looked at an
-implementation yet, but it can very well be the case it still needs IPv4
-on the outgoing interface, I don't know (from the spec pov it doesn't
-look like that).
-
-Greetings,
-
-  Hannes
+> Resend this patch series, just adding the missing and new Reviewed-by and
+> Acked-by infomation of this patch series.
+> 
+> 
+> Xiubo Li (4):
+>   pwm: Add Freescale FTM PWM driver support
+>   ARM: dts: vf610: Add Freescale FTM PWM node.
+>   ARM: dts: vf610-twr: Enables FTM PWM device.
+>   Documentation: Add device tree bindings for Freescale FTM PWM.
+> 
+>  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        |  34 ++
+>  arch/arm/boot/dts/vf610-twr.dts                    |   6 +
+>  arch/arm/boot/dts/vf610.dtsi                       |  13 +
+>  drivers/pwm/Kconfig                                |  10 +
+>  drivers/pwm/Makefile                               |   1 +
+>  drivers/pwm/pwm-fsl-ftm.c                          | 479
+> +++++++++++++++++++++
+>  6 files changed, 543 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+>  create mode 100644 drivers/pwm/pwm-fsl-ftm.c
+> 
+> --
+> 1.8.4
+> 
 
