@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaBYJQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 04:16:15 -0500
-Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:48077 "EHLO
-	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750818AbaBYJQM (ORCPT
+	id S1752746AbaBYJQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 04:16:26 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:46028 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750818AbaBYJQU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 04:16:12 -0500
-Message-ID: <530C5D8C.1080809@st.com>
-Date: Tue, 25 Feb 2014 09:08:28 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 25 Feb 2014 04:16:20 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Keith Packard'" <keithp@keithp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH] net/usb: Add Lenovo ThinkPad OneLink GigaLAN USB ID to
+ ax88179 driver
+Thread-Topic: [PATCH] net/usb: Add Lenovo ThinkPad OneLink GigaLAN USB ID to
+ ax88179 driver
+Thread-Index: AQHPMbbzcTimAiTUIEqjyghnqZZkM5rFsCBQ
+Date: Tue, 25 Feb 2014 09:15:18 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6CA667@AcuExch.aculab.com>
+References: <1393283629-25396-1-git-send-email-keithp@keithp.com>
+In-Reply-To: <1393283629-25396-1-git-send-email-keithp@keithp.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, <kernel@stlinux.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Olof Johansson <olof@lixom.net>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stephen.gallimore@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/6] ARM: STi reset controller support
-References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>				<1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>			<1391592486.11239.4.camel@pizza.hi.pengutronix.de>		 <52F4D76F.8070301@st.com> <5304B849.2080806@st.com>	 <1393237988.3091.14.camel@pizza.hi.pengutronix.de>	 <530B514A.4070209@st.com> <1393254982.3091.44.camel@pizza.hi.pengutronix.de>
-In-Reply-To: <1393254982.3091.44.camel@pizza.hi.pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/02/14 15:16, Philipp Zabel wrote:
-> Hi Srinivas,
+From: Keith Packard
+> The Lenovo OneLink dock includes a USB ethernet adapter using the
+> AX88179 chip, but with a different USB ID. Add this new USB id to the
+> driver so that it will autodetect the adapter correctly.
 > 
-> Am Montag, den 24.02.2014, 14:03 +0000 schrieb srinivas kandagatla:
->> Thanks Philipp for your comments,
->>
->> On 24/02/14 10:33, Philipp Zabel wrote:
->>>>> Did Srini's explanations convinced you?
->>>>>
->>>>> If so, could you queue the series for v3.15?
->>> to be honest, I'm not comfortable with this explanation. If the
->>> "powerdown" bits only gate the clocks to those modules, calling it a
->>> reset control is clearly the wrong abstraction. If that is the case,
->>> couldn't you handle those bits via the clock framework?
->> I just had a re-look at the IPs specs for more information on where
->> these power-down signals are actually terminating on the IP side.
->>
->> For example: ST-Synopsis Ethernet GMAC IP has two pins
->> power_down_req[IN] and power_down_ack[OUT]. power_down_req is used by
->> the software to either put the IP in powerdown or bring it out of
->> powerdown state.
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> Tested-by: Carl Worth <cworth@cworth.org>
+> ---
+>  drivers/net/usb/ax88179_178a.c | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 > 
-> Now I'm a bit confused. There is no mention of GMAC in your patches,
-> and for ETH[01] they contain only the SOFTRESET bits. I have no issue
-> with the SOFTRESETs.
-Yes, GMAC was a bad example indeed. However this same logic applies to
-the USB IP as well.
+> diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+> index 8e8d0fc..dcf974f 100644
+> --- a/drivers/net/usb/ax88179_178a.c
+> +++ b/drivers/net/usb/ax88179_178a.c
+> @@ -1418,6 +1418,19 @@ static const struct driver_info samsung_info = {
+>  	.tx_fixup = ax88179_tx_fixup,
+>  };
+> 
+> +static const struct driver_info lenovo_info = {
+> +	.description = "ThinkPad OneLink Dock USB GigaLAN",
+> +	.bind = ax88179_bind,
+> +	.unbind = ax88179_unbind,
+> +	.status = ax88179_status,
+> +	.link_reset = ax88179_link_reset,
+> +	.reset = ax88179_reset,
+> +	.stop = ax88179_stop,
+> +	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
+> +	.rx_fixup = ax88179_rx_fixup,
+> +	.tx_fixup = ax88179_tx_fixup,
+> +};
+> +
+>  static const struct usb_device_id products[] = {
+>  {
+>  	/* ASIX AX88179 10/100/1000 */
+> @@ -1435,6 +1448,10 @@ static const struct usb_device_id products[] = {
+>  	/* Samsung USB Ethernet Adapter */
+>  	USB_DEVICE(0x04e8, 0xa100),
+>  	.driver_info = (unsigned long)&samsung_info,
+> +}, {
+> +	/* Lenovo ThinkPad OneLink GigaLAN */
+> +	USB_DEVICE(0x17ef, 0x304b),
+> +	.driver_info = (unsigned long)&samsung_info,
+                                     ^^^^^^^^^^^^
+I think you meant lenovo_info.
 
-GMAC power-down-reset can be added to the power-down-reset list for
-consistency.
+Actually it looks like the initialiser should be factored somehow
+to that the list of functions and flags doesn't need repeating for
+every clone.
 
-We did not define the power-down-reset for GMAC because the reset state
-of GMAC will not be in power down. softreset should be enough to bring
-the IP in to a usable state. So the software never drives the power
-down-request but instead uses softreset in this particular case.
+	David
 
-> 
->> The IP itself drives power_down_ack to indicate when the power down
->> request is successfully finished. For power_down/power_up request the IP
->> will change the internal state accordingly including powering up/down
->> its internal blocks and/or clock gating.
->>
->>> If on the other hand these powerdown bits also trigger reset machinery,
->>> such that asserting and deasserting that bit will change the module's
->>> internal state, I could be convinced to queue them like this.
->> This is true with ST IPs, these lines change the state of the IP as
->> described above. Reset framework seems to fits in very well with this
->> behavior rather than power-domains or clock framework.
-> 
-> If you put the IP in power down when it is idle, and then power it up
-> again, will the IP registers have kept their previous state?
-No, the context is lost, the IP needs re-initialization.
 
-Thanks,
-srini
-> 
-> regards
-> Philipp
-> 
-> 
-> 
 
