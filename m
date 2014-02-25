@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaBYLup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 06:50:45 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39854 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaBYLuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 06:50:44 -0500
-Date: Tue, 25 Feb 2014 11:50:36 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [PATCH V1 2/3] MFD: da9052: Add new DA9053 BC chip variant
-Message-ID: <20140225115036.GF13246@lee--X1>
-References: <201402191637.s1JGb45N017694@swsrvapps-02.lan>
- <20140225085701.GD19099@lee--X1>
- <24DF37198A1E704D9811D8F72B87EB51BCFDB5D2@NB-EX-MBX02.diasemi.com>
+	id S1752902AbaBYLv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 06:51:56 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44501 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744AbaBYLvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 06:51:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,539,1389772800"; 
+   d="scan'208";a="461870577"
+Date: Tue, 25 Feb 2014 17:21:47 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
+Message-ID: <20140225115147.GB20856@jenny-desktop>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-5-git-send-email-jenny.tc@intel.com>
+ <20140204113621.GB2450@amd.pavel.ucw.cz>
+ <20140220050310.GA2498@jenny-desktop>
+ <20140221144400.GA5238@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB51BCFDB5D2@NB-EX-MBX02.diasemi.com>
+In-Reply-To: <20140221144400.GA5238@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Add support for a new BC variant of the DA9053 PMIC.
-> > > There is one difference between it and the AA, BA and BB.
-> > > This patch also corrects a typing mistake in one of the BA name
-> > > strings that was incorrectly typed as "ab".
-> > > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > > ---
-> > >
-> > > This patch is relative to linux-next repository tag next-20140219
+On Fri, Feb 21, 2014 at 03:44:00PM +0100, Pavel Machek wrote:
+> Hi!
+> 
+> > > > +static inline int bq24261_set_cv(struct bq24261_charger *chip, int cv)
+> > > > +{
+> > > > +	int bat_volt;
+> > > > +	int ret;
+> > > > +	u8 reg_val;
+> > > > +	u8 vindpm_val = 0x0;
+> > > > +
+> > > > +	/*
+> > > > +	* Setting VINDPM value as per the battery voltage
+> > > > +	*  VBatt           Vindpm     Register Setting
+> > > > +	*  < 3.7v           4.2v       0x0 (default)
+> > > > +	*  3.71v - 3.96v    4.36v      0x2
+> > > > +	*  > 3.96v          4.6v       0x5
+> > > > +	*/
+> > > > +	ret = get_battery_voltage(&bat_volt);
+> > > > +	if (ret) {
+> > > > +		dev_err(&chip->client->dev,
+> > > > +			"Error getting battery voltage!!\n");
+> > > > +	} else {
+> > > 
+> > > You forget the error value and continue anyway.
 > > 
-> > That's not generally a good idea.
-> > Please use a Mainline version (inc. -rcs).
+> > On error, throw the error and program default VINDPM value.
 > 
-> Hi Lee,
-> 
-> thanks for applying the patch.
-> 
-> I can rebase against any tagged version in a public git repository, but in the past
-> I was advised to use linux-next instead of the mainline. At this moment in time
-> the latest tag in git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> is 'v3.14-rc4'
-> 
-> Are you recommending that tag as the one to rebase (and test of course) against?
+> Is it good idea to attempt charging when we can't read battery
+> voltage?
 
-I am. The trouble with basing your patches against -next is that it's
-not stable, in that it is rebuilt every day. If your patches are
-dependant on commits which haven't reached Mainline yet, then you
-should rebase on the subsystem tree which they are contained in. All
-patches in -next should be based on an -rc or a released kernel version.
+This function decides the VINDPM setting and doesn't enable charging.
+VINDPM setting is used to ensure minimum input voltage and thereby allow to
+charge with low power charging source. If the voltage read fails, then the
+default VINDPM value 0x0 will be programmed and the input voltage may go down
+as low as 4.2V. The charging/not charging decision is taken by power supply
+charger driver and not by the chip driver. The worst case impact would be that
+charging may happen with a low charge current at high battery voltages,
+but doesn't compromise safety at all. 
 
-> > > This patch depends on patch number 1 of this patch series being
-> > > applied first or it will not compile.
-> > >
-> > >  drivers/mfd/da9052-i2c.c |    5 ++++-
-> > >  drivers/mfd/da9052-spi.c |    1 +
-> > >  2 files changed, 5 insertions(+), 1 deletion(-)
-> > 
-> > Applied, thanks.
-> > 
-
---
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+-Jenny
