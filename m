@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaBYMxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 07:53:32 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55106 "HELO
+	id S1752980AbaBYMzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 07:55:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54235 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752680AbaBYMx3 (ORCPT
+	with SMTP id S1752922AbaBYMzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 07:53:29 -0500
+	Tue, 25 Feb 2014 07:55:24 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug online work is done
-Date: Tue, 25 Feb 2014 14:04:16 +0100
-Message-ID: <15001517.xLHO8lGdWr@vostro.rjw.lan>
+        Pierre Ossman <pierre-list@ossman.eu>
+Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+Date: Tue, 25 Feb 2014 14:10:23 +0100
+Message-ID: <3894986.dK3STNSG71@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
-References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org> <530BAA31.4050701@codeaurora.org> <CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
+In-Reply-To: <CAKohponr5b8nBaV9TFiiFkvyg8Qb6qz_0UXbYCaFRPG=XP28rA@mail.gmail.com>
+References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org> <530C2FD7.4000105@linux.vnet.ibm.com> <CAKohponr5b8nBaV9TFiiFkvyg8Qb6qz_0UXbYCaFRPG=XP28rA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,56 +28,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 25, 2014 02:20:57 PM Viresh Kumar wrote:
-> On 25 February 2014 01:53, Saravana Kannan <skannan@codeaurora.org> wrote:
-> > I was simplifying the scenario that causes it. We change the min/max using
-> > ADJUST notifiers for multiple reasons -- thermal being one of them.
+On Tuesday, February 25, 2014 11:38:14 AM Viresh Kumar wrote:
+> On 25 February 2014 11:23, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > Hmm, that's a good point. However, lets first think about the simple scenario
+> > that the driver _is_ able to detect the current frequency from the hardware
+> > (a non-zero, sane value) say X KHz, and that frequency is different from what
+> > the cpufreq subsystem thinks it is (Y KHz).
 > >
-> > thermal/cpu_cooling is one example of it.
+> > In the current code, when we observe this, we send out a notification and try
+> > to adjust to X KHz. Instead, what I'm suggesting is to invoke the driver to
+> > set the frequency to Y KHz, since that's what the cpufreq subsystems wants the
+> > frequency to be at.
 > 
-> Just to understand the clear picture, you are actually hitting this bug? Or
-> is this only a theoretical bug?
-> 
-> > So, cpufreq_update_policy() can be called on any CPU. If that races with
-> > someone offlining a CPU and onlining it, you'll get this crash.
-> 
-> Then shouldn't that be fixed by locks? I think yes. That makes me agree with
-> Srivatsa more here.
-> 
-> Though I would say that your argument was also valid that 'policy' shouldn't be
-> up for sale unless it is prepared to. And for that reason only I
-> floated that question
-> earlier: What exactly we need to make sure is initialized in policy? Because
-> policy might keep changing in future as well and that needs locks to protect
-> that stuff. Like min/max/governor/ etc..
+> Actually we don't know at this point what cpufreq wants :)
+> Governor will decide what frequency to run CPU at and lets leave it to
+> that point.
+> As the transition that we might end up doing here would be simply overridden
+> very soon. And to be honest this decision must be taken by governor and not
+> core. We just want to make sure core is in sync with hardware.
 
-Well, that depends on what the current users expect it to look like initially.
-It should be initialized to the point in which all of them can handle it
-correctly.
+Well, why exactly does the core need to operate "current frequency" at all?
 
-> So, probably a solution here might be a mix of both. Initialize policy to this
-> minimum level and then make sure locking is used correctly..
+Rafael
 
-Yes.
-
-> > The idea would exist, but we can just call cpufreq_generic_get() and pass it
-> > policy->clk if it is not NULL. Does that work for you?
-> 
-> No. Not all drivers implement clk interface. And so clk doesn't look to be the
-> right parameter. I thought maybe 'policy' can be the right parameter and
-> then people can get use policy->cpu to get cpu id out of it.
-> 
-> But even that doesn't look to be a great idea. X86 drivers may share policy
-> structure for CPUs that don't actually share a clock line. And so they do need
-> right CPU number as parameter instead of policy. As they might be doing
-> some tricky stuff there. Also, we need to make sure that ->get() returns
-> the frequency at which CPU x is running.
-
-That's not going to work in at least some cases anyway, because for some types
-of HW we simply can't retrieve the current frequency in a non-racy way.
-
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
