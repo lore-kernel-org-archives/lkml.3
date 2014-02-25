@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaBYGX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 01:23:29 -0500
-Received: from exprod5og101.obsmtp.com ([64.18.0.141]:55499 "HELO
-	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752329AbaBYGW0 (ORCPT
+	id S1752040AbaBYGdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 01:33:04 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:53332 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaBYGdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 01:22:26 -0500
-From: Loc Ho <lho@apm.com>
-To: kishon@ti.com, tj@kernel.org
-Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: [PATCH RESEND v10 4/4] arm64: Add APM X-Gene SoC 15Gbps Multi-purpose PHY DTS entries
-Date: Mon, 24 Feb 2014 23:16:47 -0700
-Message-Id: <1393309007-4012-1-git-send-email-lho@apm.com>
-X-Mailer: git-send-email 1.5.5
+	Tue, 25 Feb 2014 01:33:02 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <530C391B.5090206@roeck-us.net>
+Date: Mon, 24 Feb 2014 22:32:59 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Wei Ni <wni@nvidia.com>, khali@linux-fr.org
+CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] hwmon: (lm90) split set&show temp as common codes
+References: <1393309301-28337-1-git-send-email-wni@nvidia.com> <1393309301-28337-2-git-send-email-wni@nvidia.com>
+In-Reply-To: <1393309301-28337-2-git-send-email-wni@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the DTS entries for the APM X-Gene SoC 15Gbps Multi-purpose
-PHY driver. The PHY for SATA controller 2 and 3 are enabled by default.
+On 02/24/2014 10:21 PM, Wei Ni wrote:
+> Split set&show temp codes as common functions, so we can use it
+> directly when implement linux thermal framework.
+> And handle error return value for the lm90_select_remote_channel
+> and write_tempx, then set_temp8 and set_temp11 could return it
+> to user-space.
+>
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> ---
+>   drivers/hwmon/lm90.c |  170 ++++++++++++++++++++++++++++++++++----------------
+>   1 file changed, 115 insertions(+), 55 deletions(-)
+>
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index c9ff08d..fb9e224 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -473,20 +473,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+>    * various registers have different meanings as a result of selecting a
+>    * non-default remote channel.
+>    */
+> -static inline void lm90_select_remote_channel(struct i2c_client *client,
+> -					      struct lm90_data *data,
+> -					      int channel)
+> +static inline int lm90_select_remote_channel(struct i2c_client *client,
+> +					     struct lm90_data *data,
+> +					     int channel)
+>   {
+>   	u8 config;
+> +	int err;
+>
+>   	if (data->kind == max6696) {
+>   		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+>   		config &= ~0x08;
+>   		if (channel)
+>   			config |= 0x08;
+> -		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+> -					  config);
+> +		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+> +						config);
+> +		if (err < 0) {
+> +			dev_err(&client->dev,
+> +				"Failed to select remote channel %d, err %d\n",
+> +				channel, err);
+> +			return err;
 
-Signed-off-by: Loc Ho <lho@apm.com>
-Signed-off-by: Tuan Phan <tphan@apm.com>
-Signed-off-by: Suman Tripathi <stripathi@apm.com>
----
- arch/arm64/boot/dts/apm-storm.dtsi |   75 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
+Not my call to make, but I really dislike all that new noisiness.
+Sure, it is ok to pass the error back, but in my opinion that is
+good enough. If every driver in the kernel would be that noisy,
+the log would be all but useless.
 
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index d37d736..c78ddcf 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -176,6 +176,51 @@
- 				reg-names = "csr-reg";
- 				clock-output-names = "eth8clk";
- 			};
-+
-+			sataphy1clk: sataphy1clk@1f21c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f21c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy1clk";
-+				status = "disabled";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x00>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
-+
-+			sataphy2clk: sataphy1clk@1f22c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f22c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy2clk";
-+				status = "ok";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x3a>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
-+
-+			sataphy3clk: sataphy1clk@1f23c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f23c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy3clk";
-+				status = "ok";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x3a>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
- 		};
- 
- 		serial0: serial@1c020000 {
-@@ -187,5 +232,35 @@
- 			interrupt-parent = <&gic>;
- 			interrupts = <0x0 0x4c 0x4>;
- 		};
-+
-+		phy1: phy@1f21a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f21a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy1clk 0>;
-+			status = "disabled";
-+			apm,tx-boost-gain = <30 30 30 30 30 30>;
-+			apm,tx-eye-tuning = <2 10 10 2 10 10>;
-+		};
-+
-+		phy2: phy@1f22a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f22a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy2clk 0>;
-+			status = "ok";
-+			apm,tx-boost-gain = <30 30 30 30 30 30>;
-+			apm,tx-eye-tuning = <1 10 10 2 10 10>;
-+		};
-+
-+		phy3: phy@1f23a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f23a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy3clk 0>;
-+			status = "ok";
-+			apm,tx-boost-gain = <31 31 31 31 31 31>;
-+			apm,tx-eye-tuning = <2 10 10 2 10 10>;
-+		};
- 	};
- };
--- 
-1.5.5
+Guenter
 
