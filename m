@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaBYQcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 11:32:00 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59104 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaBYQb7 (ORCPT
+	id S1753437AbaBYQdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 11:33:16 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:45559 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999AbaBYQdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:31:59 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: tglx@linutronix.de, linus.walleij@linaro.org
-Cc: grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH] irq: Consider a negative return value of irq_startup() as an error
-Date: Tue, 25 Feb 2014 17:28:39 +0100
-Message-Id: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.9.0
+	Tue, 25 Feb 2014 11:33:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140225163010.GG24636@pd.tnic>
+References: <20140224162400.GE16457@pd.tnic>
+	<20140224201943.GA4397@pd.tnic>
+	<530CBB3D.3080604@zytor.com>
+	<CABPqkBR4bR9U1bhTtA02gDVR0aZ7iXBfg87jPLHfhrZVeFF8_g@mail.gmail.com>
+	<20140225163010.GG24636@pd.tnic>
+Date: Tue, 25 Feb 2014 17:33:13 +0100
+Message-ID: <CABPqkBT3O2VwV48OC9TgCLKrEnC_qokxU8_odMZQ+d+55wdKgA@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Stephane Eranian <eranian@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq_startup() function returns the return value of the irq_startup callback
-of the underlying irq_chip. Currently this value only tells if the interrupt is
-pending, but we can make it also return an error code when it fails.
+On Tue, Feb 25, 2014 at 5:30 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Feb 25, 2014 at 05:14:01PM +0100, Stephane Eranian wrote:
+>> I am trying to understand your test case.
+>> Were you actually measure uncore_imc events at the time you suspended?
+>
+> No test case, just the machine booting; look at the printk timestamps.
+>
+>> I tried on my IvyBridge Lenovo and it works fine with 3.14-rc4+
+>> (tip.git). I used: echo -n disk >/sys/power/state
+>
+> That's an x230 too, right? What I do is, I take linus/master, merge
+> tip/master, Matt's efi/next tree and my edac/for-next tree into it and
+> then boot that.
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
+No, it's a T430s. What happens if you boot vanilla tip.git?
 
-Hi Thomas,
-
-This patch updates the semantic of the return value of the irq_startup()
-callback of an irq_chip : a negative value indicates an error. The purpose is
-to make __setup_irq() fail if the irq_chip can't startup the interrupt.
-I checked in the kernel for drivers impacted by this. It turns out that most
-of the implementation of irq_startup() return 0. The only drivers that return
-non-zero values are:
- * arch/x86/kernel/apic/io_apic.c: returns 1 when an interrupt is pending
- * drivers/pinctrl/pinctrl-adi2.c: may return -ENODEV.
-
-GPIO-based irq_chip could use this feature because an output gpio can't be used
-as an interrupt, and thus a call to irq_startup() is likely to fail. You can
-check out http://www.spinics.net/lists/arm-kernel/msg302713.html for a
-reference.
-
-Regards,
-
-Jean-Jacques
-
- include/linux/irq.h    | 2 ++
- kernel/irq/autoprobe.c | 2 +-
- kernel/irq/manage.c    | 4 +++-
- 3 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 7dc1003..d566855 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -282,6 +282,8 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
-  *
-  * @name:		name for /proc/interrupts
-  * @irq_startup:	start up the interrupt (defaults to ->enable if NULL)
-+ *			negative return values indicate an error, otherwise the
-+ *			return values indicates if an interrupt is pending
-  * @irq_shutdown:	shut down the interrupt (defaults to ->disable if NULL)
-  * @irq_enable:		enable the interrupt (defaults to chip->unmask if NULL)
-  * @irq_disable:	disable the interrupt
-diff --git a/kernel/irq/autoprobe.c b/kernel/irq/autoprobe.c
-index 0119b9d..64794fa 100644
---- a/kernel/irq/autoprobe.c
-+++ b/kernel/irq/autoprobe.c
-@@ -70,7 +70,7 @@ unsigned long probe_irq_on(void)
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && irq_settings_can_probe(desc)) {
- 			desc->istate |= IRQS_AUTODETECT | IRQS_WAITING;
--			if (irq_startup(desc, false))
-+			if (irq_startup(desc, false) > 0)
- 				desc->istate |= IRQS_PENDING;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 481a13c..58c6be0 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1116,7 +1116,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			desc->istate |= IRQS_ONESHOT;
- 
- 		if (irq_settings_can_autoenable(desc))
--			irq_startup(desc, true);
-+			ret = irq_startup(desc, true);
-+			if (ret < 0)
-+				goto out_mask;
- 		else
- 			/* Undo nested disables: */
- 			desc->depth = 1;
--- 
-1.9.0
-
+>
+> I don't think that the edac and efi trees interfere though. I'll do a
+> fresh merge of only current tip/master into linus/master to test hpa's
+> suggestion in the other mail.
+>
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
