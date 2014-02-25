@@ -1,68 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbaBYUCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 15:02:14 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:52449 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132AbaBYUCM (ORCPT
+	id S1753117AbaBYUFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 15:05:01 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10688 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaBYUE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 15:02:12 -0500
-Date: Tue, 25 Feb 2014 21:02:09 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.14 (take 2)
-Message-ID: <alpine.DEB.2.02.1402252058290.9497@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 25 Feb 2014 15:04:59 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+spdmbOTU8qJWiQkBojNoyPWl8RgfxXCs=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 3F82E533CE6
+Date: Tue, 25 Feb 2014 15:04:47 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
+ Dove pinctrl
+Message-ID: <20140225200447.GA1872@titan.lakedaemon.net>
+References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140224181023.GA1010@titan.lakedaemon.net>
+ <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
+ <20140225151656.GI1010@titan.lakedaemon.net>
+ <530CB725.5070904@gmail.com>
+ <20140225154347.GJ1010@titan.lakedaemon.net>
+ <530CEDB7.2070103@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530CEDB7.2070103@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+Sebastian,
 
-The following changes since commit b28a960c42fcd9cfc987441fa6d1c1a471f0f9ed:
+On Tue, Feb 25, 2014 at 08:23:35PM +0100, Sebastian Hesselbarth wrote:
+> [Cooked down Cc list to relevant people and added Ezequiel who agreed
+> to test on Armada 375/38x.]
+> 
+> On 02/25/2014 04:43 PM, Jason Cooper wrote:
+> >On Tue, Feb 25, 2014 at 04:30:45PM +0100, Sebastian Hesselbarth wrote:
+> >>On 02/25/14 16:16, Jason Cooper wrote:
+> >>>On Tue, Feb 25, 2014 at 10:36:54AM +0100, Linus Walleij wrote:
+> >>>>On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> >>>>>I've now created mvebu/pinctrl-dove for this series.  It's based on
+> >>>>>v3.14-rc1, and depends on mvebu/pinctrl (which depends on
+> >>>>>mvebu/pinctrl-3xx).
+> >>>>>
+> >>>>>I've kept this series in a separate branch in case we encounter an
+> >>>>>unforeseen problem with something in here.  Then this branch can be
+> >>>>>dropped, and /pinctrl-3xx and /pinctrl will still make it in.
+> >>>>>
+> >>>>>So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
+> >>>>>in mvebu/dt.
+> >>>>
+> >>>>OK so what should I be pulling in first now?
+> >>>
+> >>>Of course I woke up this morning not happy with this :-/  Here's what it
+> >>>looks like currently:
+> >>>
+> >>>   /v3.14-rc1
+> >>>   |
+> >>>--+---+---+---+---+ mvebu/pinctrl-3xx
+> >>>   |               \
+> >>>   |---+---+---+---+---+---+---+ mvebu/pinctrl
+> >>>   \                           \
+> >>>    \---------------------------+---+---+---+ mvebu/pinctrl-dove
+> >>>
+> >>>Not to scale.
+> >>>
+> >>>
+> >>>I would prefer to do:
+> >>>
+> >>>   /v3.14-rc1
+> >>>   |
+> >>>--+---+---+---+---+ mvebu/pinctrl-cleanup
+> >>>   |               \
+> >>>   |----------------+--+---+---+ mvebu/pinctrl-3xx
+> >>>   \                \
+> >>>    \----------------+---+---+--+---+---+---+ mvebu/pinctrl-dove
+> >>>
+> >>>But this would mean moving some patches to branches other than what they
+> >>>were sent with.  The advantage is that /pinctrl-3xx and /pinctrl-dove
+> >>>don't depend on each other, and only depend on -cleanup.  Which is great
+> >>>if there is something wrong in either branch.
+> >>>
+> >>>Sebastian, I can cherry-pick the patches around, but you know the code
+> >>>better than any of us, do you foresee any problems with this scenario?
+> >>
+> >>If Thomas agrees, I can rework Armada 375/38x pinctrl stubs to fit on
+> >>mvebu/pinctrl. That should allow you to have mvebu/pinctrl-dove
+> >>independent of mvebu/pinctrl-3xx.
+> >>
+> >>Not a big deal, I'd just pick 375/38x patches from mvebu/pinctrl and
+> >>squash them into mvebu/pinctrl-3xx. The only "issue" is that DT
+> >>documentation update patches from mvebu/pinctrl-dove have to be split
+> >>too.
+> >>
+> >>I'll prepare the three new branches for you and Thomas to look at
+> >>today.
+> >
+> >Ok, great.  Thanks Sebastian!
+> 
+> Ok, branches based on v3.14-rc1 with above dependencies can be found on:
+> 
+> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-cleanup
+> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-3xx
+> https://github.com/shesselba/linux-dove.git for-mvebu/pinctrl-dove
+> 
+> and an a-i-o branch to ease testing:
+> 
+> https://github.com/shesselba/linux-dove.git for-mvebu/all-merged-in
+> 
+> @Jason: I guess we should resend all three branches as individual
+> patches on list somehow.
 
-  Linux 3.14-rc2 (2014-02-09 18:15:47 -0800)
+Damn!  So close!
 
-are available in the git repository at:
+$ git diff mvebu/pinctrl-dove shesselba/for-mvebu/all-merged-in
+diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+index 2b76524f4aa7..eeb08edb67ac 100644
+--- a/arch/arm/boot/dts/dove.dtsi
++++ b/arch/arm/boot/dts/dove.dtsi
+@@ -390,7 +390,9 @@
+ 
+ 			pinctrl: pin-ctrl@d0200 {
+ 				compatible = "marvell,dove-pinctrl";
+-				reg = <0xd0200 0x10>;
++				reg = <0xd0200 0x14>,
++				      <0xd0440 0x04>,
++				      <0xd802c 0x08>;
+ 				clocks = <&gate_clk 22>;
+ 
+ 				pmx_gpio_0: pmx-gpio-0 {
+@@ -614,6 +616,12 @@
+ 				interrupts = <5>;
+ 			};
+ 
++			gconf: global-config@e802c {
++				compatible = "marvell,dove-global-config",
++				             "syscon";
++				reg = <0xe802c 0x14>;
++			};
++
+ 			gpio2: gpio-ctrl@e8400 {
+ 				compatible = "marvell,orion-gpio";
+ 				#gpio-cells = <2>;
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
+index 322ca8cb63eb..1049f82fb62f 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-38x.c
+@@ -428,7 +428,6 @@ static int armada_38x_pinctrl_probe(struct platform_device *pdev)
+ 		return PTR_ERR(mpp_base);
+ 
+ 	soc->variant = (unsigned) match->data & 0xff;
+-
+ 	soc->controls = armada_38x_mpp_controls;
+ 	soc->ncontrols = ARRAY_SIZE(armada_38x_mpp_controls);
+ 	soc->gpioranges = armada_38x_mpp_gpio_ranges;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-for you to fetch changes up to 7247f55381d54645a1eb47588de51bb26fa7cb7a:
+If you can drop the dtsi changes (I have them in mvebu/dt), and fix the
+whitespace change, then we can merge them as is.
 
-  m68k: Wire up sched_setattr and sched_getattr (2014-02-10 20:10:20 +0100)
+Thanks a ton for handling this!
 
-Summary:
-  - More barrier.h consolidation,
-  - Sched_[gs]etattr() syscalls.
+thx,
 
-Thanks for pulling!
+Jason.
 
-----------------------------------------------------------------
-Geert Uytterhoeven (3):
-      m68k: Sort arch/m68k/include/asm/Kbuild
-      m68k: Switch to asm-generic/barrier.h
-      m68k: Wire up sched_setattr and sched_getattr
-
- arch/m68k/include/asm/Kbuild        |    6 +++---
- arch/m68k/include/asm/barrier.h     |    8 --------
- arch/m68k/include/asm/unistd.h      |    2 +-
- arch/m68k/include/uapi/asm/unistd.h |    2 ++
- arch/m68k/kernel/syscalltable.S     |    2 ++
- 5 files changed, 8 insertions(+), 12 deletions(-)
- delete mode 100644 arch/m68k/include/asm/barrier.h
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
