@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaBYRSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 12:18:47 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37403 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaBYRSq (ORCPT
+	id S1753198AbaBYRTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 12:19:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47827 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634AbaBYRTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 12:18:46 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 1/2] pinctrl: sh-pfc: r8a7790: Add alternative MSIOF pin groups
-Date: Tue, 25 Feb 2014 18:20:04 +0100
-Message-ID: <2508038.ktyFeuzzul@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CACRpkdbYh2LKBW-qG7EiccF7D4cXEcrWv0hiH1PY5jiW3XY1Zw@mail.gmail.com>
-References: <1392926021-19526-1-git-send-email-geert@linux-m68k.org> <CACRpkdbYh2LKBW-qG7EiccF7D4cXEcrWv0hiH1PY5jiW3XY1Zw@mail.gmail.com>
+	Tue, 25 Feb 2014 12:19:51 -0500
+Date: Tue, 25 Feb 2014 18:19:40 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Alexander Graf <agraf@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] ksm: Expose configuration via sysctl
+Message-ID: <20140225171940.GS6835@laptop.programming.kicks-ass.net>
+References: <1393284484-27637-1-git-send-email-agraf@suse.de>
+ <20140225171528.GJ4407@cmpxchg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140225171528.GJ4407@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Tuesday 25 February 2014 09:53:37 Linus Walleij wrote:
-> On Thu, Feb 20, 2014 at 8:53 PM, Geert Uytterhoeven wrote:
-> > From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+On Tue, Feb 25, 2014 at 12:15:28PM -0500, Johannes Weiner wrote:
+> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
+> > Configuration of tunables and Linux virtual memory settings has traditionally
+> > happened via sysctl. Thanks to that there are well established ways to make
+> > sysctl configuration bits persistent (sysctl.conf).
 > > 
-> > Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> > KSM introduced a sysfs based configuration path which is not covered by user
+> > space persistent configuration frameworks.
+> > 
+> > In order to make life easy for sysadmins, this patch adds all access to all
+> > KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
+> > giving us a streamlined way to make KSM configuration persistent.
+> > 
+> > Reported-by: Sasche Peilicke <speilicke@suse.com>
+> > Signed-off-by: Alexander Graf <agraf@suse.de>
+> > ---
+> >  kernel/sysctl.c |   10 +++++++
+> >  mm/ksm.c        |   78 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 88 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> > index 332cefc..2169a00 100644
+> > --- a/kernel/sysctl.c
+> > +++ b/kernel/sysctl.c
+> > @@ -217,6 +217,9 @@ extern struct ctl_table random_table[];
+> >  #ifdef CONFIG_EPOLL
+> >  extern struct ctl_table epoll_table[];
+> >  #endif
+> > +#ifdef CONFIG_KSM
+> > +extern struct ctl_table ksm_table[];
+> > +#endif
+> >  
+> >  #ifdef HAVE_ARCH_PICK_MMAP_LAYOUT
+> >  int sysctl_legacy_va_layout;
+> > @@ -1279,6 +1282,13 @@ static struct ctl_table vm_table[] = {
+> >  	},
+> >  
+> >  #endif /* CONFIG_COMPACTION */
+> > +#ifdef CONFIG_KSM
+> > +	{
+> > +		.procname	= "ksm",
+> > +		.mode		= 0555,
+> > +		.child		= ksm_table,
+> > +	},
+> > +#endif
 > 
-> Laurent, can I have your ACK/review on Geert's patches?
+> ksm can be a module, so this won't work.
+> 
+> Can we make those controls proper module parameters instead?
 
-Done. I've acked 1/2, 2/2 has two small errors. I trust Geert to resubmit it 
-with them fixed, you can then apply the patch with my ack.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+You can do dynamic sysctl registration and removal. Its its own little
+filesystem of sorts.
