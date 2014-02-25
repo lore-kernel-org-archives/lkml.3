@@ -1,39 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaBYS4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 13:56:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39068 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194AbaBYS4X (ORCPT
+	id S1753193AbaBYTEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 14:04:05 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:44778 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaBYTED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 13:56:23 -0500
-Date: Tue, 25 Feb 2014 19:56:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+	Tue, 25 Feb 2014 14:04:03 -0500
+Message-ID: <1393355040.2577.52.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] mm: per-thread vma caching
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        metag <linux-metag@vger.kernel.org>
-Subject: Re: [patch 06/26] metag: Use irq_set_affinity instead of homebrewn
- code
-In-Reply-To: <alpine.DEB.2.02.1402241432360.21251@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1402251955390.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de> <20140223212736.887575774@linutronix.de> <530B47FD.80608@imgtec.com> <alpine.DEB.2.02.1402241432360.21251@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 25 Feb 2014 11:04:00 -0800
+In-Reply-To: <CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFzPYZnkSQa=Y4Uo3zMVUVdchVxN2S266KyZLu-yJ314pw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014, Thomas Gleixner wrote:
-> On Mon, 24 Feb 2014, James Hogan wrote:
-> Delta patch below.
+On Tue, 2014-02-25 at 10:37 -0800, Linus Torvalds wrote:
+> On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > index a17621c..14396bf 100644
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -363,7 +363,12 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+> >
+> >         mm->locked_vm = 0;
+> >         mm->mmap = NULL;
+> > -       mm->mmap_cache = NULL;
+> > +       mm->vmacache_seqnum = oldmm->vmacache_seqnum + 1;
+> > +
+> > +       /* deal with overflows */
+> > +       if (unlikely(mm->vmacache_seqnum == 0))
+> > +               vmacache_invalidate_all();
+> 
+> Correct me if I'm wrong, but this can not possibly be correct.
+> 
+> vmacache_invalidate_all() walks over all the threads of the current
+> process, but "mm" here is the mm of the *new* process that is getting
+> created, and is unrelated in all ways to the threads of the old
+> process.
 
-Does that fix your issue?
+vmacache_invalidate_all() is actually a misleading name since we really
+aren't invalidating but just clearing the cache. I'll rename it.
+Anyways...
+
+> So it walks completely the wrong list of threads.
+
+But we still need to deal with the rest of the tasks in the system, so
+anytime there's an overflow we need to nullify all cached vmas, not just
+current's. Am I missing something special about fork?
+
+> In fact, the sequence number of the old vm and the sequence number of
+> the new vm cannot in any way be related.
+> 
+> As far as I can tell, the only sane thing to do at fork/clone() time is to:
+> 
+>  - clear all the cache entries (of the new 'struct task_struct'! - so
+> not in dup_mmap, but make sure it's zeroed when allocating!)(
+
+Right, but that's done upon the first lookup, when vmacache_valid() is
+false.
+
+>  - set vmcache_seqnum to 0 in dup_mmap (since any sequence number is
+> fine when it got invalidated, and 0 is best for "avoid overflow").
+
+Assuming your referring to curr->vmacache_seqnum (since mm's is already
+set).. isn't it irrelevant since we set it anyways when the first lookup
+fails?
 
 Thanks,
+Davidlohr
 
-	tglx
