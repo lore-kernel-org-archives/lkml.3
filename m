@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaBYPRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 10:17:34 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63045 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaBYPRc (ORCPT
+	id S1753421AbaBYPSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 10:18:00 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:47589 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbaBYPR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 10:17:32 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Q1+qrZyKH9mzeZbwmWlLF6/F4Xz3k5NY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 66A2853368D
-Date: Tue, 25 Feb 2014 10:16:56 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140225151656.GI1010@titan.lakedaemon.net>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
+	Tue, 25 Feb 2014 10:17:59 -0500
+Date: Tue, 25 Feb 2014 10:17:55 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v3] sysfs: fix namespace refcnt leak
+Message-ID: <20140225151755.GG26788@htj.dyndns.org>
+References: <530C7E6C.2020500@huawei.com>
+ <20140225144256.GB26788@htj.dyndns.org>
+ <20140225151955.GA8322@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140225151955.GA8322@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 10:36:54AM +0100, Linus Walleij wrote:
-> On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+On Tue, Feb 25, 2014 at 07:19:55AM -0800, Greg Kroah-Hartman wrote:
+> On Tue, Feb 25, 2014 at 09:42:56AM -0500, Tejun Heo wrote:
+> > On Tue, Feb 25, 2014 at 07:28:44PM +0800, Li Zefan wrote:
+> > > As mount() and kill_sb() is not a one-to-one match, we shoudn't get
+> > > ns refcnt unconditionally in sysfs_mount(), and instead we should
+> > > get the refcnt only when kernfs_mount() allocated a new superblock.
+> > > 
+> > > v2:
+> > > - Changed the name of the new argument, suggested by Tejun.
+> > > - Made the argument optional, suggested by Tejun.
+> > > 
+> > > v3:
+> > > - Make the new argument as second-to-last arg, suggested by Tejun.
+> > > 
+> > > Reviewed-by: Tejun Heo <tj@kernel.org>
+> > > Signed-off-by: Li Zefan <lizefan@huawei.com>
+> > 
+> >  Acked-by: Tejun Heo <tj@kernel.org>
 > 
-> > Sebastian, Linus,
-> >
-> > I've now created mvebu/pinctrl-dove for this series.  It's based on
-> > v3.14-rc1, and depends on mvebu/pinctrl (which depends on
-> > mvebu/pinctrl-3xx).
-> >
-> > I've kept this series in a separate branch in case we encounter an
-> > unforeseen problem with something in here.  Then this branch can be
-> > dropped, and /pinctrl-3xx and /pinctrl will still make it in.
-> >
-> > So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
-> > in mvebu/dt.
-> 
-> OK so what should I be pulling in first now?
+> Is this needed for 3.14-final or 3.15?
 
-Of course I woke up this morning not happy with this :-/  Here's what it
-looks like currently:
+It also fixes sysfs refcnting, so should also be applied to 3.14, I
+think.
 
-  /v3.14-rc1
-  |
---+---+---+---+---+ mvebu/pinctrl-3xx
-  |               \
-  |---+---+---+---+---+---+---+ mvebu/pinctrl
-  \                           \
-   \---------------------------+---+---+---+ mvebu/pinctrl-dove
+Thanks.
 
-Not to scale.
-
-
-I would prefer to do:
-
-  /v3.14-rc1
-  |
---+---+---+---+---+ mvebu/pinctrl-cleanup
-  |               \
-  |----------------+--+---+---+ mvebu/pinctrl-3xx
-  \                \
-   \----------------+---+---+--+---+---+---+ mvebu/pinctrl-dove
-
-But this would mean moving some patches to branches other than what they
-were sent with.  The advantage is that /pinctrl-3xx and /pinctrl-dove
-don't depend on each other, and only depend on -cleanup.  Which is great
-if there is something wrong in either branch.
-
-Sebastian, I can cherry-pick the patches around, but you know the code
-better than any of us, do you foresee any problems with this scenario?
-
-thx,
-
-Jason.
+-- 
+tejun
