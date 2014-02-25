@@ -1,88 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaBYDKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Feb 2014 22:10:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51272 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbaBYDKW (ORCPT
+	id S1752946AbaBYDKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Feb 2014 22:10:32 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53053 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaBYDK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Feb 2014 22:10:22 -0500
-Date: Tue, 25 Feb 2014 12:09:47 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: "Austin, Brian" <Brian.Austin@cirrus.com>,
-        "Handrigan, Paul" <Paul.Handrigan@cirrus.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Message-ID: <20140225030947.GO25940@sirena.org.uk>
-References: <1393224929-7555-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140224113011.GE25940@sirena.org.uk>
- <B745DBDD-8A64-4B98-819B-72F8AFF602DE@cirrus.com>
- <20140224160648.GC6132@MrMyself>
- <20140225000027.GI25940@sirena.org.uk>
- <20140225023840.GB7229@MrMyself>
+	Mon, 24 Feb 2014 22:10:29 -0500
+Message-ID: <530C0996.3070405@linaro.org>
+Date: Tue, 25 Feb 2014 11:10:14 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BvHHjgBzqS6ETPrS"
-Content-Disposition: inline
-In-Reply-To: <20140225023840.GB7229@MrMyself>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: cs42888: Add codec driver support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [sched/balance] 7511dd0a7: +2.1e+05% context switches
+References: <20140219130028.GB8169@localhost> <5305ACF9.60403@linaro.org> <20140225013314.GA8148@localhost>
+In-Reply-To: <20140225013314.GA8148@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/25/2014 09:33 AM, Fengguang Wu wrote:
+> On Thu, Feb 20, 2014 at 03:21:29PM +0800, Alex Shi wrote:
+>> On 02/19/2014 09:00 PM, Fengguang Wu wrote:
+>>> bc575710efe937e  7511dd0a73aaf2ca4bcd829f9
+>>> ---------------  -------------------------
+>>>       2029 ~ 0%    +222.9%       6551 ~17%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>>>     143678 ~42%  +4.8e+05%  6.927e+08 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+>>>     145708 ~42%  +4.8e+05%  6.927e+08 ~ 0%  TOTAL time.involuntary_context_switches
+>>
+>>
+>> Thanks for testing, Fengguang!
+>>
+>> Does the context switch increasing happen on whole patchset? or just
+>> happens on this patch?
+> 
+> Only this patch. Some other patches actually reduce the context switches.
+> This is all the changes for branch alexshi/topdown:
 
---BvHHjgBzqS6ETPrS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks a lot for great testing!
 
-On Tue, Feb 25, 2014 at 10:38:41AM +0800, Nicolin Chen wrote:
+Would you like sharing the every benchmarks run on each of testing
+machine, then we not only know the benchmark change on the machine, but
+also know what benchmark was not effected on the machine?
 
-> Hmm...my words might not be so clear last time: we have to handle the dividers
-> of ESAI in ESAI driver because the dividers is in the ESAI's IP, not in the SoC
-> clock controlling unit. So it's hard to get them visible in the clock tree.
+And it will be perfect if you like to give a URL for benchmarks which
+you are using. :)
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>     111372 ~ 1%     +60.1%     178267 ~ 1%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>     111372 ~ 1%     +60.1%     178267 ~ 1%  TOTAL hackbench.throughput
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>   11862017 ~10%    +769.1%  1.031e+08 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>   11862017 ~10%    +769.1%  1.031e+08 ~ 9%  TOTAL numa-numastat.node0.numa_hit
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>   11862016 ~10%    +769.1%  1.031e+08 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>   11862016 ~10%    +769.1%  1.031e+08 ~ 9%  TOTAL numa-numastat.node0.local_node
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>    4629280 ~ 9%    +714.0%   37683303 ~ 9%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>    4629280 ~ 9%    +714.0%   37683303 ~ 9%  TOTAL proc-vmstat.pgalloc_dma32
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>    6476588 ~11%    +751.1%   55123483 ~ 7%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>    6476588 ~11%    +751.1%   55123483 ~ 7%  TOTAL numa-vmstat.node0.numa_hit
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>    6380486 ~11%    +761.9%   54995307 ~ 7%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>    6380486 ~11%    +761.9%   54995307 ~ 7%  TOTAL numa-vmstat.node0.numa_local
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>      24214 ~ 1%     -71.8%       6824 ~ 7%  lkp-a03/micro/will-it-scale/sched_yield
+>      55173 ~ 0%     -76.9%      12720 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>      55292 ~ 0%     -78.9%      11653 ~ 3%  lkp-snb01/micro/will-it-scale/sched_yield
+>     134680 ~ 0%     -76.8%      31198 ~ 3%  TOTAL interrupts.RES
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>      25891 ~ 1%     +99.5%      51664 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
+>      25891 ~ 1%     +99.5%      51664 ~ 0%  TOTAL softirqs.SCHED
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>    4282244 ~ 1%     -46.6%    2284599 ~ 8%  lkp-ws02/micro/hackbench/1600%-threads-pipe
+>    4282244 ~ 1%     -46.6%    2284599 ~ 8%  TOTAL proc-vmstat.pgfault
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>     105276 ~ 0%     -43.3%      59659 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>     105799 ~ 1%     -38.0%      65577 ~ 1%  lkp-snb01/micro/will-it-scale/sched_yield
+>     211075 ~ 0%     -40.7%     125236 ~ 0%  TOTAL cpuidle.C7-SNB.usage
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>  4.174e+08 ~ 0%     +31.2%  5.478e+08 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
+>  4.174e+08 ~ 0%     +31.2%  5.478e+08 ~ 0%  TOTAL cpuidle.C4.time
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>      20.64 ~ 0%     +23.9%      25.57 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+>      20.64 ~ 0%     +23.9%      25.57 ~ 0%  TOTAL turbostat.%c1
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>     214235 ~ 0%     -13.4%     185581 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
+>     214235 ~ 0%     -13.4%     185581 ~ 0%  TOTAL interrupts.LOC
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>     133373 ~ 0%     -10.8%     119020 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
+>     133373 ~ 0%     -10.8%     119020 ~ 0%  TOTAL softirqs.TIMER
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>       1109 ~ 8%   +9292.8%     104250 ~ 1%  lkp-a03/micro/will-it-scale/sched_yield
+>       4060 ~38%  +1.2e+05%    4868923 ~ 2%  lkp-snb01/micro/will-it-scale/sched_yield
+>       5169 ~32%  +96094.8%    4973173 ~ 2%  TOTAL vmstat.system.cs
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>       2045 ~ 1%    +221.7%       6578 ~ 2%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>       2045 ~ 1%    +221.7%       6578 ~ 2%  TOTAL time.involuntary_context_switches
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>        800 ~ 0%     -18.8%        650 ~ 0%  lkp-a03/micro/will-it-scale/sched_yield
+>        800 ~ 0%     -18.8%        650 ~ 0%  TOTAL vmstat.system.in
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>      50.56 ~ 0%      -1.8%      49.64 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>      50.55 ~ 0%      -9.4%      45.80 ~ 0%  lkp-snb01/micro/will-it-scale/sched_yield
+>     101.11 ~ 0%      -5.6%      95.44 ~ 0%  TOTAL turbostat.%c0
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>       1518 ~ 0%      -4.9%       1443 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>       1518 ~ 0%      -4.9%       1443 ~ 0%  TOTAL time.user_time
+> 
+>       v3.14-rc2  d2f8e017fdd913fc150160508  
+> ---------------  -------------------------  
+>        488 ~ 0%      -4.8%        465 ~ 0%  lkp-snb01/micro/will-it-scale/pthread_mutex2
+>        488 ~ 0%      -4.8%        465 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+> 
+> Thanks,
+> Fengguang
+> 
 
-We should be able to arrange to have the ESAI be a clock provider
-shouldn't we?  If the clocks need to interface to other things (and they
-do) then we should be able to use the standard interface we have to
-clocks.
 
---BvHHjgBzqS6ETPrS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTDAl4AAoJELSic+t+oim9GP8P/imLCGxvTsElxeKwyG2MnRVl
-8HvcyXUwrDBUrHU16QGBiGeVVQkr6JdNIHR1W4AGy7ZB0WzXrYY9V2wXx9A7zuLx
-qGw4bS1hoDldaVQNcIeoa7OEUDiq0nm+D784fGjWLo5IQGJUUkH3NpQzzCFDIVem
-CUTnqUuZmJ45uI9bBR91okGScso+cN0/lUzJE33tAHRYj7a+WKT9IHsri8+nttJd
-+1ruSmfDBxXS3PkiRg9fPt1kX+7M4bt3bVM3zsp4HHokOWYmdkqfJKVRbVXJYmhs
-hZoxR7CXhO2IKFKUI5cBO5uH4ctZT8gihwxJWzBi0dayUiFjSUdveSRdw6uJ+ioG
-IHbauLHERnQC3XxdBV/bzRIbXMC7bJsjrgW9yMBMAjFbWe9l3I1+Tm5VQF1fVVta
-HZACr7moMDUAgBmumdg+rt/cRlugzEBy/yykIsTxWCAY/1qV0Kw6aP2YKk1gOfCM
-cZW+SoZr3tn5xjSikPwpnvXaxp1ONh249pwcmuscd7MXPmTxm7h3lRcpeekqIhOe
-BbxQDble+SkYT6ACky/lJGwc9IUaeK15jorgw6RdQ004c2xzcs9qRSpoYHsgENYi
-mtEyVOCdOfCsu7F9mVeFYNQVy19lJlMIpHfh0LwEGNqjzBUXFN1LojmInlsrhrMZ
-2Yl1fsi/4ti1AoMR9LJm
-=3ZVy
------END PGP SIGNATURE-----
-
---BvHHjgBzqS6ETPrS--
+-- 
+Thanks
+    Alex
