@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749AbaBYWTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 17:19:54 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50264 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722AbaBYWTv convert rfc822-to-8bit (ORCPT
+	id S1753780AbaBYWUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 17:20:08 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48738 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762AbaBYWUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 17:19:51 -0500
+	Tue, 25 Feb 2014 17:20:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <2446186.I4KkJ8Hjdb@lenovo>
-References: <1393287245-4549-1-git-send-email-mcgrof@do-not-panic.com>
- <1393294265.6823.154.camel@deadeye.wl.decadent.org.uk> <20140224.235343.1936318499491821387.davem@davemloft.net>
- <2446186.I4KkJ8Hjdb@lenovo>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 25 Feb 2014 14:19:29 -0800
-X-Google-Sender-Auth: YBQLLWK6jJNDngF0aqA-83_1Zi8
-Message-ID: <CAB=NE6WAmHqAYsh6rwyHdvZy3J6ck-uD_Kavk3qqy02vML359g@mail.gmail.com>
-Subject: Re: [PATCH] net: kdoc struct net_device flags and priv_flags
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Ben Hutchings <ben@decadent.org.uk>,
+In-Reply-To: <alpine.LNX.2.00.1402252307130.5180@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402211450410.1192@pobox.suse.cz>
+	<CAJZOPZK4Ah+nKPWnX3=yM43jbf586GYJ+fh0-OL4bOnqKK8v8A@mail.gmail.com>
+	<alpine.LNX.2.00.1402252307130.5180@pobox.suse.cz>
+Date: Wed, 26 Feb 2014 00:20:04 +0200
+Message-ID: <CAJZOPZJpRYKw7Dskr21QP_d6c7ySS+mi-g_19pNJYm0Gq=ZY+g@mail.gmail.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Roland Dreier <roland@kernel.org>, Amir Vadai <amirv@mellanox.com>,
+        Eli Cohen <eli@dev.mellanox.co.il>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 9:37 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> Le lundi 24 février 2014, 23:53:43 David Miller a écrit :
->> They are visible to userspace via sysfs.
->
-> In /sys/class/net/*/flags, although we are lacking quite a lot of documentation
-> for the exported attributes there.
+On Wed, Feb 26, 2014 at 12:11 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 25 Feb 2014, Or Gerlitz wrote:
 
-I only see dev->flags there, I don't see any toggle capability for
-priv_flags. Let me know if you find anywhere that userspace lets a
-user toggle private flags, I just don't see it.
+>> And what happens if you use IPoIB datagram mode, is/why the patch is
+>> needed there?
 
-I'll extend the documentation for a v2 with the sysfs attribute stuff.
+> I admittedly am no infiniband expert, but my understanding is that in
+> principle Connected/Datagram mode is about MTU and checksum offloading,
 
-  Luis
+yes, the differences between the mode relate to these aspects, however
+
+> but the TX path is the same. Please correct me if I am wrong.
+
+no, note that your patch only touched drivers/infiniband/ulp/ipoib/ipoib_cm.c
+which is basically compiled out if you set CONFIG_INFINIBAND_IPOIB_CM,
+so surely the TX path for the datagram vs. connected modes are
+different.
