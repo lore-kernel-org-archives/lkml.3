@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaBZPqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:46:45 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:49014 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaBZPqm (ORCPT
+	id S1751495AbaBZPrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:47:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49874 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaBZPrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:46:42 -0500
-Date: Wed, 26 Feb 2014 21:16:25 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH] drivers: cpufreq: Remove unused function in cpufreq.c
-Message-ID: <20140226154625.GA10701@rashika>
+	Wed, 26 Feb 2014 10:47:51 -0500
+Date: Wed, 26 Feb 2014 16:47:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Bob Liu <lliubbo@gmail.com>, Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
+Message-ID: <20140226154736.GV9987@twins.programming.kicks-ass.net>
+References: <530CEFE2.9090909@oracle.com>
+ <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+ <20140226140941.GA31230@node.dhcp.inet.fi>
+ <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
+ <20140226152051.GA31115@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140226152051.GA31115@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused function show_boost() in drivers/cpufreq/cpufreq.c.
+On Wed, Feb 26, 2014 at 05:20:51PM +0200, Kirill A. Shutemov wrote:
+> On Wed, Feb 26, 2014 at 10:48:30PM +0800, Bob Liu wrote:
+> > > Do you relay on unlock_page() to have a compiler barrier?
+> > >
+> > 
+> > Before your commit mapping is a local variable and be assigned before
+> > unlock_page():
+> > struct address_space *mapping = page->mapping;
+> > unlock_page(dirty_page);
+> > put_page(dirty_page);
+> > if ((dirtied || page_mkwrite) && mapping) {
+> > 
+> > 
+> > I'm afraid now "fault_page->mapping" might be changed to NULL after
+> > "if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {"
+> > and then passed down to balance_dirty_pages_ratelimited(NULL).
+> 
+> I see what you try to fix. I wounder if we need to do
+> 
+> mapping = ACCESS_ONCE(fault_page->mapping);
+> 
+> instead.
+> 
+> The question is if compiler on its own can eliminate intermediate variable
+> and dereference fault_page->mapping twice, as code with my patch does.
+> I ask because smp_mb__after_clear_bit() in unlock_page() does nothing on
+> some architectures.
 
-This eliminates the following warning in drivers/cpufreq/cpufreq.c:
-drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for ‘show_boost’ [-Wmissing-prototypes]
+That's a bug, and I have patches for that. That said; this is only ia64
+and sparc32. ia64 has an actual full memory barrier in there very much
+including a compiler fence. And sparc32 atomics do too.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
----
- drivers/cpufreq/cpufreq.c |    6 ------
- 1 file changed, 6 deletions(-)
+In general, any atomic RMW op also implies a compiler fence. This
+includes clear_bit().
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 08ca8c9..6dce474 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -352,12 +352,6 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
- /*********************************************************************
-  *                          SYSFS INTERFACE                          *
-  *********************************************************************/
--ssize_t show_boost(struct kobject *kobj,
--				 struct attribute *attr, char *buf)
--{
--	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
--}
--
- static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
- 				  const char *buf, size_t count)
- {
--- 
-1.7.9.5
-
+That said; unlock_page() should have RELEASE semantics, this too
+enforces that the read of page->mapping stay before the unlock_page().
+The second usage of mapping may leak into the locked region, but it may
+not re-read after.
