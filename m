@@ -1,87 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaBZO0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:26:35 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51103 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019AbaBZO0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:26:33 -0500
-Message-ID: <530DF992.1090106@ti.com>
-Date: Wed, 26 Feb 2014 09:26:26 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751368AbaBZOcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:32:17 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:64395 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaBZOcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:32:15 -0500
+Date: Wed, 26 Feb 2014 11:32:08 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, eranian@google.com
+Subject: Re: [PATCH 3/3] perf: fix synthesizing mmaps for threads
+Message-ID: <20140226143208.GC7552@ghostprotocols.net>
+References: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
+ <1393386227-149412-4-git-send-email-dzickus@redhat.com>
+ <20140226141726.GA7552@ghostprotocols.net>
 MIME-Version: 1.0
-To: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mike Turquette <mturquette@linaro.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>
-Subject: Re: linux-next: manual merge of the clk tree with the keystone tree
-References: <20140226181521.e8cecdff21d892ea1f037bff@canb.auug.org.au> <530DD2CD.7000302@ti.com>
-In-Reply-To: <530DD2CD.7000302@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226141726.GA7552@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 February 2014 06:41 AM, Khoronzhuk, Ivan wrote:
+Em Wed, Feb 26, 2014 at 11:17:26AM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Tue, Feb 25, 2014 at 10:43:47PM -0500, Don Zickus escreveu:
+> > Currently if a process creates a bunch of threads using pthread_create
+> > and then perf is run in system_wide mode, the mmaps for those threads
+> > are not captured with a synthesized mmap event.
+> > 
+> > The reason is those threads are not visible when walking the /proc/
+> > directory looking for /proc/<pid>/maps files.  Instead they are discovered
+> > using the /proc/<pid>/tasks file (which the synthesized comm event uses).
+> > 
+> > This causes problems when a program is trying to map a data address to a
+> > tid.  Because the tid has no maps, the event is dropped.  Changing the program
+> > to look up using the pid instead of the tid, finds the correct maps but creates
+> > ugly hacks in the program to carry the correct tid around.
+> > 
+> > Fix this by synthesizing mmap events for each tid found in the /proc/<pid>/tasks
+> > file.
 > 
-> On 02/26/2014 09:15 AM, Stephen Rothwell wrote:
->> Hi Mike,
->>
->> Today's linux-next merge of the clk tree got a conflict in
->> arch/arm/boot/dts/keystone-clocks.dtsi between commit 0cfc9ccec2a8 ("ARM:
->> dts: keystone: preparatory patch to support K2L and K2E SOCs") from the
->> keystone tree and commit 565bbdcd3b91 ("ARM: keystone: dts: fix clkvcp3
->> control register address") from the clk tree.
->>
->> I fixed it up (by adding the following merge fix patch) and can carry the
->> fix as necessary (no action is required).
->>
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Wed, 26 Feb 2014 18:12:55 +1100
->> Subject: [PATCH] ARM: keystone: dts: fix for code movement
->>
->> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> ---
->>   arch/arm/boot/dts/k2hk-clocks.dtsi | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/k2hk-clocks.dtsi b/arch/arm/boot/dts/k2hk-clocks.dtsi
->> index 4eed84feb761..a71aa2996321 100644
->> --- a/arch/arm/boot/dts/k2hk-clocks.dtsi
->> +++ b/arch/arm/boot/dts/k2hk-clocks.dtsi
->> @@ -339,7 +339,7 @@ clocks {
->>   		compatible = "ti,keystone,psc-clock";
->>   		clocks = <&chipclk13>;
->>   		clock-output-names = "vcp-3";
->> -		reg = <0x0235000a8 0xb00>, <0x02350060 0x400>;
->> +		reg = <0x023500a8 0xb00>, <0x02350060 0x400>;
->>   		reg-names = "control", "domain";
->>   		domain-id = <24>;
->>   	};
+> This seems to cover two problems, the first is for mmap/mmap2 event
+> processing to lookup pid/tid instead of pid/pid, the other one is to
+> iterate thru /proc/pid/tasks/, so this needes spliting up.
 > 
-> The patch "ARM: dts: keystone: preparatory patch to support K2L and K2E 
-> SOCs"
-> is from "[PATCH 0/4] ARM: dts: keystone: Add support for K2H and K2E 
-> SOCs/EVMs"
-> series (http://www.spinics.net/lists/arm-kernel/msg310946.html).
-> 
-> As I understand, this series splits keystone clock tree into tree boards.
-Not boards but SOCs.
+> Now looking at the /tasks/ part...
 
-> As result clock "clkvcp3" (for wich reg is corrected) is moved to the 
-> following two dts:
-> 
-> k2hk-clocks.dtsi
-> k2l-clocks.dtsi
-> 
-> So probably you should apply this change to k2l-clocks.dtsi too.
-> 
-I will fix my tree. Thanks for spotting it Ivan !!
+Agreed we need to synthesize the mmap events for the threads in
+/proc/pid/task/, but that need to be done in
+perf_event__synthesize_mmap_events, not in
+perf_event__synthesize_comm_events, that should remain just for
+synthesizing comm events .
 
-Regards,
-Santosh
+I.e. we should move that /tasks/ traversal from synthesize_comm to its
+caller and from there synthesize the mmaps too.
+
+I can do that if you don't beat me to it. :-)
+
+- Arnaldo
+
+> > This may not be entirely clean but it seems to work.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  tools/perf/util/event.c   | 15 +++++++++++----
+> >  tools/perf/util/machine.c |  4 ++--
+> >  2 files changed, 13 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> > index 086c7c8..09c53bb 100644
+> > --- a/tools/perf/util/event.c
+> > +++ b/tools/perf/util/event.c
+> > @@ -93,10 +93,13 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+> >  }
+> >  
+> >  static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+> > -					 union perf_event *event, pid_t pid,
+> > +					 union perf_event *event,
+> > +					 union perf_event *mmap_event,
+> > +					 pid_t pid,
+> >  					 int full,
+> >  					 perf_event__handler_t process,
+> > -					 struct machine *machine)
+> > +					 struct machine *machine,
+> > +					 bool mmap_data)
+> >  {
+> >  	char filename[PATH_MAX];
+> >  	size_t size;
+> > @@ -168,6 +171,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+> >  			tgid = -1;
+> >  			break;
+> >  		}
+> > +
+> > +		/* process the thread's maps too */
+> > +		perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+> > +						  process, machine, mmap_data);
+> >  	}
+> >  
+> >  	closedir(tasks);
+> > @@ -331,8 +338,8 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+> >  				      struct perf_tool *tool,
+> >  				      struct machine *machine, bool mmap_data)
+> >  {
+> > -	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+> > -						 process, machine);
+> > +	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, mmap_event, pid,
+> > +						 full, process, machine, mmap_data);
+> >  	if (tgid == -1)
+> >  		return -1;
+> >  	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+> > diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> > index 813e94e..eb26544 100644
+> > --- a/tools/perf/util/machine.c
+> > +++ b/tools/perf/util/machine.c
+> > @@ -1026,7 +1026,7 @@ int machine__process_mmap2_event(struct machine *machine,
+> >  	}
+> >  
+> >  	thread = machine__findnew_thread(machine, event->mmap2.pid,
+> > -					event->mmap2.pid);
+> > +					event->mmap2.tid);
+> >  	if (thread == NULL)
+> >  		goto out_problem;
+> >  
+> > @@ -1074,7 +1074,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+> >  	}
+> >  
+> >  	thread = machine__findnew_thread(machine, event->mmap.pid,
+> > -					 event->mmap.pid);
+> > +					 event->mmap.tid);
+> >  	if (thread == NULL)
+> >  		goto out_problem;
+> >  
+> > -- 
+> > 1.7.11.7
