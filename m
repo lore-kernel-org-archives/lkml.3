@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaBZNc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:32:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60176 "HELO
+	id S1751500AbaBZNmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:42:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55375 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751224AbaBZNc5 (ORCPT
+	with SMTP id S1751114AbaBZNmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:32:57 -0500
+	Wed, 26 Feb 2014 08:42:15 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Alan Cox <alan.cox@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] gpiolib: Allow GPIO chips to request their own GPIOs
-Date: Wed, 26 Feb 2014 14:47:58 +0100
-Message-ID: <1566118.4zS0BNjL3A@vostro.rjw.lan>
+To: Borislav Petkov <bp@alien8.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Date: Wed, 26 Feb 2014 14:57:16 +0100
+Message-ID: <2875232.vjGVheuNuC@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140226090542.GT5018@intel.com>
-References: <1393257611-18031-1-git-send-email-mika.westerberg@linux.intel.com> <1491992.y6nTRlJ009@vostro.rjw.lan> <20140226090542.GT5018@intel.com>
+In-Reply-To: <20140224162400.GE16457@pd.tnic>
+References: <20140224162400.GE16457@pd.tnic>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,77 +30,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 26, 2014 11:05:42 AM Mika Westerberg wrote:
-> On Tue, Feb 25, 2014 at 03:10:24PM +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 24, 2014 06:00:06 PM Mika Westerberg wrote:
-> > > Sometimes it is useful to allow GPIO chips themselves to request GPIOs they
-> > > own through gpiolib API. One usecase is ACPI ASL code that should be able
-> > > to toggle GPIOs through GPIO operation regions.
-> > > 
-> > > We can't really use gpio_request() and its counterparts because it will pin
-> > > the module to the kernel forever (as it calls module_get()). Instead we
-> > > provide a gpiolib internal functions gpiochip_request/free_own_desc() that
-> > > work the same as gpio_request() but don't manipulate module refrence count.
-> > > 
-> > > Since it's the GPIO chip driver who requests the GPIOs in the first place
-> > > we can be sure that it cannot be unloaded without the driver knowing about
-> > > that. Furthermore we only limit this functionality to be available only
-> > > inside gpiolib.
-> > > 
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > ---
-> > >  drivers/gpio/gpiolib.c | 57 +++++++++++++++++++++++++++++++++++++++++++-------
-> > >  drivers/gpio/gpiolib.h |  3 +++
-> > >  2 files changed, 53 insertions(+), 7 deletions(-)
-> > > 
-> > > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> > > index f60d74bc2fce..489a63524eb6 100644
-> > > --- a/drivers/gpio/gpiolib.c
-> > > +++ b/drivers/gpio/gpiolib.c
-> > > @@ -1458,7 +1458,8 @@ EXPORT_SYMBOL_GPL(gpiochip_remove_pin_ranges);
-> > >   * on each other, and help provide better diagnostics in debugfs.
-> > >   * They're called even less than the "set direction" calls.
-> > >   */
-> > > -static int gpiod_request(struct gpio_desc *desc, const char *label)
-> > > +static int __gpiod_request(struct gpio_desc *desc, const char *label,
-> > > +			   bool module_refcount)
-> > >  {
-> > >  	struct gpio_chip	*chip;
-> > >  	int			status = -EPROBE_DEFER;
-> > > @@ -1475,8 +1476,10 @@ static int gpiod_request(struct gpio_desc *desc, const char *label)
-> > >  	if (chip == NULL)
-> > >  		goto done;
-> > >  
-> > > -	if (!try_module_get(chip->owner))
-> > > -		goto done;
-> > > +	if (module_refcount) {
-> > > +		if (!try_module_get(chip->owner))
-> > > +			goto done;
-> > > +	}
-> > 
-> > I'm wondering why you're not moving the module refcount manipulation entirely
-> > to gpiod_request()?
-> > 
-> > I guess that's because of the locking, but I suppose that desc->chip will never
-> > be NULL in gpiochip_request_own_desc(), so you don't even need to check it there?
-> > 
-> > So it looks like gpiochip_request_own_desc() can do something like
-> > 
-> > 	lock
-> > 	__gpiod_request(stuff)
-> > 	unlock
-> > 
-> > where __gpiod_request() is just the internal part starting at the "NOTE" comment.
+On Monday, February 24, 2014 05:24:00 PM Borislav Petkov wrote:
+> This started happening this morning after booting -rc4+tip, let's
+> add *everybody* to CC :-)
+
+What about -rc4 without tip?
+
+> We have intel_uncore_init, snb_uncore_imc_init_box, uncore_pci_probe and
+> other goodies on the stack.
 > 
-> Sounds good. Only thing I'm not sure about is the fact that
-> __gpiod_request() releases the lock when it calls chip driver callbacks
-> (and takes it back of course). Is that acceptable practice to take the lock
-> outside of a function and release it inside for a while?
-
-Yes, you can do that.
-
-There even are sparse annotations for that: __releases() and __acquires()
-(__rpm_callback() in drivers/base/power/runtime.c uses them among other things).
+> ...
+> [    0.488998] software IO TLB [mem 0xcac30000-0xcec30000] (64MB) mapped at [ffff8800cac30000-ffff8800cec2ffff]
+> [    0.489975] resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+> [    0.490079] ------------[ cut here ]------------
+> [    0.490204] WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171 __ioremap_caller+0x372/0x380()
+> [    0.490306] Info: mapping multiple BARs. Your kernel is fine.
+> [    0.490371] Modules linked in:
+> [    0.490558] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+ #1
+> [    0.490642] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW (2.06 ) 11/13/2012
+> [    0.490742]  00000000000000ab ffff880213d01ad8 ffffffff816112e3 0000000000000006
+> [    0.491032]  ffff880213d01b28 ffff880213d01b18 ffffffff8104e9bc ffff880213d01b08
+> [    0.491343]  ffffc90000c58000 00000000fed10000 00000000fed10000 0000000000006000
+> [    0.491631] Call Trace:
+> [    0.493337]  [<ffffffff816112e3>] dump_stack+0x4f/0x7c
+> [    0.493420]  [<ffffffff8104e9bc>] warn_slowpath_common+0x8c/0xc0
+> [    0.493503]  [<ffffffff8104eaa6>] warn_slowpath_fmt+0x46/0x50
+> [    0.493588]  [<ffffffff8103f1e2>] __ioremap_caller+0x372/0x380
+> [    0.493674]  [<ffffffff810211a2>] ? snb_uncore_imc_init_box+0x62/0x90
+> [    0.493761]  [<ffffffff8103f247>] ioremap_nocache+0x17/0x20
+> [    0.493846]  [<ffffffff810211a2>] snb_uncore_imc_init_box+0x62/0x90
+> [    0.493933]  [<ffffffff81022925>] uncore_pci_probe+0xe5/0x1e0
+> [    0.494020]  [<ffffffff812d487e>] local_pci_probe+0x4e/0xa0
+> [    0.494104]  [<ffffffff81418a59>] ? get_device+0x19/0x20
+> [    0.494213]  [<ffffffff812d5cd1>] pci_device_probe+0xe1/0x130
+> [    0.494300]  [<ffffffff8141d3cb>] driver_probe_device+0x7b/0x240
+> [    0.494385]  [<ffffffff8141d63b>] __driver_attach+0xab/0xb0
+> [    0.494469]  [<ffffffff8141d590>] ? driver_probe_device+0x240/0x240
+> [    0.494551]  [<ffffffff8141b71e>] bus_for_each_dev+0x5e/0x90
+> [    0.494634]  [<ffffffff8141cede>] driver_attach+0x1e/0x20
+> [    0.494718]  [<ffffffff8141ca57>] bus_add_driver+0x117/0x230
+> [    0.494802]  [<ffffffff8141dd34>] driver_register+0x64/0xf0
+> [    0.494884]  [<ffffffff812d4c14>] __pci_register_driver+0x64/0x70
+> [    0.494972]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+> [    0.495056]  [<ffffffff81d03312>] intel_uncore_init+0x177/0x41c
+> [    0.495155]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+> [    0.495242]  [<ffffffff8100029e>] do_one_initcall+0x4e/0x170
+> [    0.495326]  [<ffffffff81071100>] ? parse_args+0x60/0x360
+> [    0.495411]  [<ffffffff81cfbfb8>] kernel_init_freeable+0x106/0x19a
+> [    0.495497]  [<ffffffff81cfb83b>] ? do_early_param+0x86/0x86
+> [    0.495582]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+> [    0.495666]  [<ffffffff81607efe>] kernel_init+0xe/0xf0
+> [    0.495749]  [<ffffffff81621f6c>] ret_from_fork+0x7c/0xb0
+> [    0.495831]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+> [    0.495921] ---[ end trace 428f365c054d9a01 ]---
+> [    0.496196] RAPL PMU detected, hw unit 2^-16 Joules, API unit is 2^-32 Joules, 3 fixed counters 163840 ms ovfl timer
+> [    0.498598] futex hash table entries: 1024 (order: 5, 131072 bytes)
+> [    0.498833] audit: initializing netlink subsys (disabled)
+> [    0.499024] audit: type=2000 audit(1393259866.477:1): initialized
+> ...
+> 
+> 
 
 -- 
 I speak only for myself.
