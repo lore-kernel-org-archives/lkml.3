@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaBZN24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:28:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45553 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaBZN2z (ORCPT
+	id S1752776AbaBZN3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:29:17 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:51745 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaBZN3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:28:55 -0500
-Date: Wed, 26 Feb 2014 14:28:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: George McCollister <george.mccollister@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: fix double normalization of vruntime
-Message-ID: <20140226132852.GB30956@twins.programming.kicks-ass.net>
-References: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
+	Wed, 26 Feb 2014 08:29:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH v2 5/5] bug: Make BUG() call unreachable()
+Date: Wed, 26 Feb 2014 14:29:06 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org> <d97712e037ea4c90e9cb30c56229383d257831de.1393385236.git.josh@joshtriplett.org>
+In-Reply-To: <d97712e037ea4c90e9cb30c56229383d257831de.1393385236.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402261429.06553.arnd@arndb.de>
+X-Provags-ID: V02:K0:MoHps+a93M4Vq1hTeBysxW2B71SGW2dC5xJDo4Ft5Nz
+ QB1xUYAEJ4Ru2bjULfn165KwKmPLQ3KBxqMaP5d4D6FTDVi701
+ sP+7PdgioXYlmAmYJ49KCofm00waxx6f7NRs5pHequngDOG2jm
+ fNsPxuJ02czJ6ALmj/Wg9lVICzjzDPiAx9hNwlcUJAIBYaL16l
+ hewSuttmfz5cvJJV0aLgG0OMN0rWWIKn6gFi2gHd3Xs+qs1e12
+ wFWAeq/0htU0e35zTKYpVQQ8WoaZazPx9+4G7DuJ4XVT5rvqJ3
+ eTzVAREhqeml8RZI/zcxDjFdqZr9h0kLem5+Is6FBHeT1KiKpJ
+ G66lA3vLOSZk5LOEPMco=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 05:56:51PM -0600, George McCollister wrote:
-> dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
-> which appears to guarentee that the !se->on_rq condition is met.
-> If the task has done set_current_state(TASK_INTERRUPTIBLE) without
-> schedule() the second condition will be met and vruntime will be
-> incorrectly adjusted twice.
-> 
-> In certain cases this can result in the task's vruntime never increasing
-> past the vruntime of other tasks on the CFS' run queue, starving them of
-> CPU time.
-> 
-> This patch changes switched_from_fair() to use !p->on_rq instead of
-> !se->on_rq.
-> 
-> I'm able to cause a task with a priority of 120 to starve all other
-> tasks with the same priority on an ARM platform running 3.2.51-rt72
-> PREEMPT RT by writing one character at time to a serial tty (16550 UART)
-> in a tight loop. I'm also able to verify making this change corrects the
-> problem on that platform and kernel version.
-> 
-> I haven't and not sure I will have an opportunity to get a newer kernel
-> version running on the platform mentioned above and have yet to
-> reproduce the problem on another platform.
+On Wednesday 26 February 2014, Josh Triplett wrote:
+> @@ -134,7 +134,7 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  
+>  #else /* !CONFIG_BUG */
+>  #ifndef HAVE_ARCH_BUG
+> -#define BUG() do {} while (0)
+> +#define BUG() do { unreachable(); } while (0)
+>  #endif
 
-Yes, I think you're quite right. Another way to look at this is that
-p->on_rq is the one matching p->state.
+I disagree with this one. As Alan said, we really want to use an
+arch specific BUG() even in the !CONFIG_BUG case.
 
-Can I have (or add) your Signed-off-by for this patch?
+For the cases where this is not yet possible, I'd suggest using
+
+#define BUG() do { } while (1)
+
+
+For older gcc versions, this is actually the same as unreachable(), but
+it is not the same as __builtin_unreachable, because it causes undefined
+behavior.
+
+	Arnd
