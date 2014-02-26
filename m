@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaBZQf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:35:28 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:39627 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752249AbaBZQf0 (ORCPT
+	id S1752287AbaBZQjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:39:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:62878 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaBZQi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:35:26 -0500
-Message-ID: <530E17C7.1030504@free-electrons.com>
-Date: Wed, 26 Feb 2014 17:35:19 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Feb 2014 11:38:59 -0500
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org
+Subject: =?UTF-8?q?=5BPATCH=20v2=5D=20drivers=3A=20cpufreq=3A=20Mark=20function=20as=20static=20in=20cpufreq=2Ec?=
+Date: Wed, 26 Feb 2014 22:08:26 +0530
+Message-Id: <1393432706-25708-1-git-send-email-rashika.kheria@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <linux-pm@vger.kernel.org20140226154625.GA10701@rashika>
+References: <linux-pm@vger.kernel.org20140226154625.GA10701@rashika>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Regression with wait_event_timeout in next-20140226
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mark function as static in cpufreq.c because it is not
+used outside this file.
 
-while testing next-20140226 I got an issue with the function
-wait_event_timeout. When this function timed out instead of returning
-0, it returned the value of the timeout passed in parameter. I found
-that reverting "sched/wait: Suppress Sparse 'variable shadowing'
-warning" fixed this regression.
+This eliminates the following warning in cpufreq.c:
+drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for ‘show_boost’ [-Wmissing-prototypes]
 
-I got this issue in the driver drivers/i2c/busses/i2c-mv64xxx.c.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/cpufreq/cpufreq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-Thanks,
-
-Gregory
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 08ca8c9..54fd670 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+ /*********************************************************************
+  *                          SYSFS INTERFACE                          *
+  *********************************************************************/
+-ssize_t show_boost(struct kobject *kobj,
++static ssize_t show_boost(struct kobject *kobj,
+ 				 struct attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+1.7.9.5
+
