@@ -1,32 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaBZNRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:17:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45153 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbaBZNRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:17:03 -0500
-Date: Wed, 26 Feb 2014 14:16:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Ben Segall <bsegall@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
-Message-ID: <20140226131658.GA30956@twins.programming.kicks-ass.net>
-References: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com>
- <20140225205253.GB18404@twins.programming.kicks-ass.net>
- <530DCDC5.1060406@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530DCDC5.1060406@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1752677AbaBZNQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:16:55 -0500
+Received: from sh.osrg.net ([192.16.179.4]:45077 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356AbaBZNQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:16:52 -0500
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-nilfs <linux-nilfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [PATCH 2/2] nilfs2: update project's web site in nilfs2.txt
+Date: Wed, 26 Feb 2014 22:12:03 +0900
+Message-Id: <1393420323-18255-3-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1393420323-18255-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1393420323-18255-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Dispatcher: imput version 20100215(IM150)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (sh.osrg.net [192.16.179.4]); Wed, 26 Feb 2014 22:16:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 11:19:33AM +0000, Dietmar Eggemann wrote:
-> I changed the patch accordingly.
+Project's web site was moved to nilfs.sourceforge.net from
+www.nilfs.org.  This updates the site information in
+Documentation/filesystems/nilfs2.txt with the new location.
 
-Thanks!
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+---
+ Documentation/filesystems/nilfs2.txt |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/filesystems/nilfs2.txt b/Documentation/filesystems/nilfs2.txt
+index 8b887ae..41c3d33 100644
+--- a/Documentation/filesystems/nilfs2.txt
++++ b/Documentation/filesystems/nilfs2.txt
+@@ -25,9 +25,8 @@ available from the following download page.  At least "mkfs.nilfs2",
+ cleaner or garbage collector) are required.  Details on the tools are
+ described in the man pages included in the package.
+ 
+-Project web page:    http://www.nilfs.org/en/
+-Download page:       http://www.nilfs.org/en/download.html
+-Git tree web page:   http://www.nilfs.org/git/
++Project web page:    http://nilfs.sourceforge.net/
++Download page:       http://nilfs.sourceforge.net/en/download.html
+ List info:           http://vger.kernel.org/vger-lists.html#linux-nilfs
+ 
+ Caveats
+-- 
+1.7.9.3
+
