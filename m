@@ -1,49 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaBZNQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:16:56 -0500
-Received: from sh.osrg.net ([192.16.179.4]:45078 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433AbaBZNQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:16:52 -0500
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-nilfs <linux-nilfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 1/2] nilfs2: update MAINTAINERS file entries fix
-Date: Wed, 26 Feb 2014 22:12:02 +0900
-Message-Id: <1393420323-18255-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1393420323-18255-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-References: <1393420323-18255-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Dispatcher: imput version 20100215(IM150)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (sh.osrg.net [192.16.179.4]); Wed, 26 Feb 2014 22:16:48 +0900 (JST)
+	id S1752741AbaBZNRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:17:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45153 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433AbaBZNRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:17:03 -0500
+Date: Wed, 26 Feb 2014 14:16:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Ben Segall <bsegall@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
+Message-ID: <20140226131658.GA30956@twins.programming.kicks-ass.net>
+References: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com>
+ <20140225205253.GB18404@twins.programming.kicks-ass.net>
+ <530DCDC5.1060406@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530DCDC5.1060406@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also, web-page entry is updated according to relocation of project's
-web site.
+On Wed, Feb 26, 2014 at 11:19:33AM +0000, Dietmar Eggemann wrote:
+> I changed the patch accordingly.
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
----
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 971dcb7..c4ef32c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6087,7 +6087,7 @@ F:	include/uapi/linux/sunrpc/
- NILFS2 FILESYSTEM
- M:	Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
- L:	linux-nilfs@vger.kernel.org
--W:	http://www.nilfs.org/en/
-+W:	http://nilfs.sourceforge.net/
- T:	git git://github.com/konis/nilfs2.git
- S:	Supported
- F:	Documentation/filesystems/nilfs2.txt
--- 
-1.7.9.3
-
+Thanks!
