@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaBZPpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:45:42 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:32854 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaBZPpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:45:39 -0500
-Date: Wed, 26 Feb 2014 07:45:34 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Bob Liu <lliubbo@gmail.com>, Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
-Message-ID: <20140226154534.GJ8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <530CEFE2.9090909@oracle.com>
- <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
- <20140226140941.GA31230@node.dhcp.inet.fi>
- <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
- <20140226152051.GA31115@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226152051.GA31115@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022615-3532-0000-0000-000006094781
+	id S1753289AbaBZPpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:45:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753283AbaBZPpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:45:44 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: acme@ghostprotocols.net, jolsa@redhat.com, eranian@google.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 2/2] perf: Use tid in mmap/mmap2 events to find maps
+Date: Wed, 26 Feb 2014 10:45:27 -0500
+Message-Id: <1393429527-167840-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
+References: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 05:20:51PM +0200, Kirill A. Shutemov wrote:
-> On Wed, Feb 26, 2014 at 10:48:30PM +0800, Bob Liu wrote:
-> > > Do you relay on unlock_page() to have a compiler barrier?
-> > >
-> > 
-> > Before your commit mapping is a local variable and be assigned before
-> > unlock_page():
-> > struct address_space *mapping = page->mapping;
-> > unlock_page(dirty_page);
-> > put_page(dirty_page);
-> > if ((dirtied || page_mkwrite) && mapping) {
-> > 
-> > 
-> > I'm afraid now "fault_page->mapping" might be changed to NULL after
-> > "if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {"
-> > and then passed down to balance_dirty_pages_ratelimited(NULL).
-> 
-> I see what you try to fix. I wounder if we need to do
-> 
-> mapping = ACCESS_ONCE(fault_page->mapping);
-> 
-> instead.
-> 
-> The question is if compiler on its own can eliminate intermediate variable
-> and dereference fault_page->mapping twice, as code with my patch does.
-> I ask because smp_mb__after_clear_bit() in unlock_page() does nothing on
-> some architectures.
+Now that we can properly synthesize threads system-wide, make sure
+the mmap and mmap2 events use tids instead of pids to locate their
+maps.
 
-The compiler is most definitely within its rights to eliminate intermediate
-variables if you don't use something like ACCESS_ONCE().  For more info,
-see the LWN writeup:  http://lwn.net/Articles/508991/
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/util/machine.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-							Thanx, Paul
-
-> > >>
-> > >> diff --git a/mm/memory.c b/mm/memory.c
-> > >> index 548d97e..90cea22 100644
-> > >> --- a/mm/memory.c
-> > >> +++ b/mm/memory.c
-> > >> @@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
-> > >> struct vm_area_struct *vma,
-> > >>   pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
-> > >>  {
-> > >>   struct page *fault_page;
-> > >> + struct address_space *mapping;
-> > >>   spinlock_t *ptl;
-> > >>   pte_t *pte;
-> > >>   int dirtied = 0;
-> > >> @@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
-> > >> *mm, struct vm_area_struct *vma,
-> > >>
-> > >>   if (set_page_dirty(fault_page))
-> > >>   dirtied = 1;
-> > >> + mapping = fault_page->mapping;
-> > >>   unlock_page(fault_page);
-> > >> - if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
-> > >> + if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
-> > >>   /*
-> > >>   * Some device drivers do not set page.mapping but still
-> > >>   * dirty their pages
-> > >>   */
-> > >> - balance_dirty_pages_ratelimited(fault_page->mapping);
-> > >> + balance_dirty_pages_ratelimited(mapping);
-> > >>   }
-> > >>
-> > >>   /* file_update_time outside page_lock */
-> > >> --
-> > >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > >> the body of a message to majordomo@vger.kernel.org
-> > >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >> Please read the FAQ at  http://www.tux.org/lkml/
-> > >
-> > > --
-> > >  Kirill A. Shutemov
-> > 
-> > -- 
-> > Regards,
-> > --Bob
-> 
-> -- 
->  Kirill A. Shutemov
-> 
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 813e94e..eb26544 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1026,7 +1026,7 @@ int machine__process_mmap2_event(struct machine *machine,
+ 	}
+ 
+ 	thread = machine__findnew_thread(machine, event->mmap2.pid,
+-					event->mmap2.pid);
++					event->mmap2.tid);
+ 	if (thread == NULL)
+ 		goto out_problem;
+ 
+@@ -1074,7 +1074,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 	}
+ 
+ 	thread = machine__findnew_thread(machine, event->mmap.pid,
+-					 event->mmap.pid);
++					 event->mmap.tid);
+ 	if (thread == NULL)
+ 		goto out_problem;
+ 
+-- 
+1.7.11.7
 
