@@ -1,182 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaBZBrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:47:09 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:42171 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088AbaBZBrG (ORCPT
+	id S1751958AbaBZBsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:48:25 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35744 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750888AbaBZBsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:47:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140225060021.GM8264@linux.vnet.ibm.com>
-References: <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
-	<20140223063426.GT4250@linux.vnet.ibm.com>
-	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
-	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
-	<20140224172110.GO8264@linux.vnet.ibm.com>
-	<CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
-	<20140224185341.GU8264@linux.vnet.ibm.com>
-	<CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
-	<20140224223701.GC8264@linux.vnet.ibm.com>
-	<CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
-	<20140225060021.GM8264@linux.vnet.ibm.com>
-Date: Tue, 25 Feb 2014 17:47:03 -0800
-X-Google-Sender-Auth: tjzwSRKU6YhQEZLjiRtvBZHjaZc
-Message-ID: <CA+55aFx18K=kQR-wwv-cZHnQeiP18zrsD_gwXUByeQP+-Tp=xw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	Tue, 25 Feb 2014 20:48:24 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: "balbi@ti.com" <balbi@ti.com>, Peter Chen <Peter.Chen@freescale.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Content-Type: text/plain; charset=UTF-8
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Date: Tue, 25 Feb 2014 17:48:17 -0800
+Subject: RE: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Topic: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Index: Ac8yVVzVNfgWWPIpSNGF0lzXwDG2nwAPwkZg
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC413885@SC-VEXCH4.marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+ <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
+ <20140225011839.GD7540@shlinux1.ap.freescale.net>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
+ <6ad74d797ecc473f922ffdb58c3e9c70@BN1PR03MB235.namprd03.prod.outlook.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A5@SC-VEXCH4.marvell.com>
+ <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
+ <20140225181234.GF23275@saruman.home>
+In-Reply-To: <20140225181234.GF23275@saruman.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-26_01:2014-02-26,2014-02-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402250147
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1Q1mXmI027101
 
-On Mon, Feb 24, 2014 at 10:00 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> So let me see if I understand your reasoning.  My best guess is that it
-> goes something like this:
->
-> 1.      The Linux kernel contains code that passes pointers from
->         rcu_dereference() through external functions.
 
-No, actually, it's not so much Linux-specific at all.
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: 2014Äê2ÔÂ26ÈÕ 2:13
+> To: Peter Chen
+> Cc: Neil Zhang; balbi@ti.com; gregkh@linuxfoundation.org;
+> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Alexander Shishkin
+> Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+> 
+> Hi,
+> 
+> On Tue, Feb 25, 2014 at 07:46:08AM +0000, Peter Chen wrote:
+> > > > > > > Hardware zlt will try to send the zero length packet
+> > > > > > > automatically when the data transferd is multiple times of
+> > > > > > > max packet, this will cause issues on Windows.
+> > > > > > > So let's disable HW zlt by default.
+> > > > > >
+> > > > > > Would you have description that what kinds of issue on Windows
+> > > > > > if zlt is is selected?
+> > > > > >
+> > > > >
+> > > > > Enumeration will fail.
+> > > > >
+> > > >
+> > > > What causes enumeration fail, why it does not occur before?
+> > > >
+> > > A unexpected zero packet cause enumeration fail.
+> > > It's not easy that the descriptor is actually 1024 bytes, so not
+> > > easy to be found.
+> > >
+> >
+> > Chipidea bug too? Does it follow ch 8.5.3.2 Variable-length Data Stage, USB
+> 2.0 spec?
+> 
+> wait, this is a chipidea core ? Why aren't you guys using the chipidea driver
+> yet ? You need to switch over to that driver dude, we can't have duplicated
+> code in the tree.
+> 
+> I'm sorry, but I won't be taking this series, please use chipidea driver, it should
+> be very simple to add a glue layer for your core to the chipidea driver.
+> 
 
-I'm actually thinking about what I'd do as a compiler writer, and as a
-defender the "C is a high-level assembler" concept.
+Yes, it use chipidea IP.
+But the driver is earlier than the chipidea one and we use it for our products.
+So it may be not that easy to switch to chipidea driver due to the stability.
 
-I love C. I'm a huge fan. I think it's a great language, and I think
-it's a great language not because of some theoretical issues, but
-because it is the only language around that actually maps fairly well
-to what machines really do.
+> --
+> Balbi
 
-And it's a *simple* language. Sure, it's not quite as simple as it
-used to be, but look at how thin the "K&R book" is. Which pretty much
-describes it - still.
-
-That's the real strength of C, and why it's the only language serious
-people use for system programming.  Ignore C++ for a while (Jesus
-Xavier Christ, I've had to do C++ programming for subsurface), and
-just think about what makes _C_ a good language.
-
-I can look at C code, and I can understand what the code generation
-is, and what it will really *do*. And I think that's important.
-Abstractions that hide what the compiler will actually generate are
-bad abstractions.
-
-And ok, so this is obviously Linux-specific in that it's generally
-only Linux where I really care about the code generation, but I do
-think it's a bigger issue too.
-
-So I want C features to *map* to the hardware features they implement.
-The abstractions should match each other, not fight each other.
-
-> Actually, the fact that there are more potential optimizations than I can
-> think of is a big reason for my insistence on the carries-a-dependency
-> crap.  My lack of optimization omniscience makes me very nervous about
-> relying on there never ever being a reasonable way of computing a given
-> result without preserving the ordering.
-
-But if I can give two clear examples that are basically identical from
-a syntactic standpoint, and one clearly can be trivially optimized to
-the point where the ordering guarantee goes away, and the other
-cannot, and you cannot describe the difference, then I think your
-description is seriously lacking.
-
-And I do *not* think the C language should be defined by how it can be
-described. Leave that to things like Haskell or LISP, where the goal
-is some kind of completeness of the language that is about the
-language, not about the machines it will run on.
-
->> So the code sequence I already mentioned is *not* ordered:
->>
->> Litmus test 1:
->>
->>     p = atomic_read(pp, consume);
->>     if (p == &variable)
->>         return p->val;
->>
->>    is *NOT* ordered, because the compiler can trivially turn this into
->> "return variable.val", and break the data dependency.
->
-> Right, given your model, the compiler is free to produce code that
-> doesn't order the load from pp against the load from p->val.
-
-Yes. Note also that that is what existing compilers would actually do.
-
-And they'd do it "by mistake": they'd load the address of the variable
-into a register, and then compare the two registers, and then end up
-using _one_ of the registers as the base pointer for the "p->val"
-access, but I can almost *guarantee* that there are going to be
-sequences where some compiler will choose one register over the other
-based on some random detail.
-
-So my model isn't just a "model", it also happens to descibe reality.
-
-> Indeed, it won't work across different compilation units unless
-> the compiler is told about it, which is of course the whole point of
-> [[carries_dependency]].  Understood, though, the Linux kernel currently
-> does not have anything that could reasonably automatically generate those
-> [[carries_dependency]] attributes.  (Or are there other reasons why you
-> believe [[carries_dependency]] is problematic?)
-
-So I think carries_dependency is problematic because:
-
- - it's not actually in C11 afaik
-
- - it requires the programmer to solve the problem of the standard not
-matching the hardware.
-
- - I think it's just insanely ugly, *especially* if it's actually
-meant to work so that the current carries-a-dependency works even for
-insane expressions like "a-a".
-
-in practice, it's one of those things where I guess nobody actually
-would ever use it.
-
-> Of course, I cannot resist putting forward a third litmus test:
->
->         static struct foo variable1;
->         static struct foo variable2;
->         static struct foo *pp = &variable1;
->
-> T1:     initialize_foo(&variable2);
->         atomic_store_explicit(&pp, &variable2, memory_order_release);
->         /* The above is the only store to pp in this translation unit,
->          * and the address of pp is not exported in any way.
->          */
->
-> T2:     if (p == &variable1)
->                 return p->val1; /* Must be variable1.val1. */
->         else
->                 return p->val2; /* Must be variable2.val2. */
->
-> My guess is that your approach would not provide ordering in this
-> case, either.  Or am I missing something?
-
-I actually agree.
-
-If you write insane code to "trick" the compiler into generating
-optimizations that break the dependency, then you get what you
-deserve.
-
-Now, realistically, I doubt a compiler will notice, but if it does,
-I'd go "well, that's your own fault for writing code that makes no
-sense".
-
-Basically, the above uses a pointer as a boolean flag.  The compiler
-noticed it was really a boolean flag, and "consume" doesn't work on
-boolean flags. Tough.
-
-             Linus
-
-              Linus
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
