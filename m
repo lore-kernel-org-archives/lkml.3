@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaBZCql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:46:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5619 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114AbaBZCqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:46:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,544,1389772800"; 
-   d="scan'208";a="481843424"
-Message-ID: <530D558D.6090607@linux.intel.com>
-Date: Wed, 26 Feb 2014 10:46:37 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752168AbaBZCsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:48:23 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49642 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaBZCsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 21:48:22 -0500
+Message-ID: <530D55ED.4060903@hitachi.com>
+Date: Wed, 26 Feb 2014 11:48:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len.Brown@intel.com, rjw@rjwysocki.net,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Raj, Ashok" <ashok.raj@intel.com>
-Subject: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be installed
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG kretprobes] kretprobe triggers General Protection Faults
+References: <1332921457.30140.1393357561516.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1332921457.30140.1393357561516.JavaMail.zimbra@efficios.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sleep control and status registers need santity check before ACPI
-install acpi_power_off to pm_power_off hook. The checking code in
-acpi_enter_sleep_state() is too late, we should not allow a not-working
-pm_power_off function hooked.
+Hi Mathieu,
 
-Signed-off-by: Aubrey Li <aubrey.li@intel.com>
----
- drivers/acpi/sleep.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+(2014/02/26 4:46), Mathieu Desnoyers wrote:
+> Hi,
+> 
+> I had a bug report[1] from a user trying to add a kretprobe on the system
+> call entry code path:
+> 
+> arch/x86/kernel/entry_64.S:
+> 
+> ffffffff813dffe2 <system_call_fastpath+0x16>:
+>         cmpl $__NR_syscall_max,%eax
+> #endif
+>         ja badsys
+>         movq %r10,%rcx
+>         call *sys_call_table(,%rax,8)  # XXX:    rip relative
+>         movq %rax,RAX-ARGOFFSET(%rsp)   <--- return address pointing here
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index b718806..0284d22 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -809,8 +809,11 @@ int __init acpi_sleep_init(void)
- 	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
- 	if (ACPI_SUCCESS(status)) {
- 		sleep_states[ACPI_STATE_S5] = 1;
--		pm_power_off_prepare = acpi_power_off_prepare;
--		pm_power_off = acpi_power_off;
-+		if (acpi_gbl_FADT.sleep_control.address &&
-+			acpi_gbl_FADT.sleep_status.address) {
-+			pm_power_off_prepare = acpi_power_off_prepare;
-+			pm_power_off = acpi_power_off;
-+		}
- 	}
+Hm, I guess you put kretprobes on the functions on the sys_call_table,
+right?
 
- 	supported[0] = 0;
+> And all hell breaks loose (various types of faults, machine reboots,
+> applications exit randomly, etc.). I understand that this code path
+> is not marked as unsafe against kprobes, and I tested that a kprobes
+> indeed works fine there. However, kretprobes probably presumes a function
+> stack layout that is just not valid for the syscall entry routine.
+
+All the syscall entry functions caused this issue? or some
+specific function(s) ?
+And could you tell me the kernel version you used?
+
+> Any thoughts on how kretprobes should handle this ?
+
+I'll try to reproduce it in kvm environment.
+
+Thank you!
+
 -- 
-1.7.10.4
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
