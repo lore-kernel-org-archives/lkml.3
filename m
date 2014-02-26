@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaBZRUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:20:37 -0500
-Received: from mail.efficios.com ([78.47.125.74]:42573 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870AbaBZRUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:20:34 -0500
-Date: Wed, 26 Feb 2014 17:20:34 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <118766423.31006.1393435234610.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140226110313.4d92fb83@gandalf.local.home>
-References: <20140226110313.4d92fb83@gandalf.local.home>
-Subject: Re: [RFC][PATCH] tracepoint: Do not waste memory on mods with no
- tracepoints
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracepoint: Do not waste memory on mods with no tracepoints
-Thread-Index: LTsaphPvdgIJ43Hd5uzripCXD0PlqQ==
+	id S1753543AbaBZRWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:22:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43869 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913AbaBZRWw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:22:52 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH 2/4] arm: qcom: Split Qualcomm support into legacy and multiplatform
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <7hha7m0x9w.fsf@paris.lan>
+Date: Wed, 26 Feb 2014 11:22:47 -0600
+Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FF42247A-A4E8-4AA2-9C3B-BEEFC2F61714@codeaurora.org>
+References: <1391107002-21470-1-git-send-email-galak@codeaurora.org> <1391107002-21470-3-git-send-email-galak@codeaurora.org> <7hha7m0x9w.fsf@paris.lan>
+To: Kevin Hilman <khilman@linaro.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "LKML" <linux-kernel@vger.kernel.org>
-> Cc: "Ingo Molnar" <mingo@kernel.org>, "Rusty Russell" <rusty@rustcorp.com.au>, "Peter Zijlstra"
-> <peterz@infradead.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Andrew Morton"
-> <akpm@linux-foundation.org>
-> Sent: Wednesday, February 26, 2014 11:03:13 AM
-> Subject: [RFC][PATCH] tracepoint: Do not waste memory on mods with no tracepoints
-> 
-> 
-> No reason to allocate tp_module structures for modules that have no
-> tracepoints. This just wastes memory.
 
-Good catch! Thanks!
+On Feb 26, 2014, at 8:22 AM, Kevin Hilman <khilman@linaro.org> wrote:
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Kumar Gala <galak@codeaurora.org> writes:
+> 
+>> Introduce a new mach-qcom that will support SoCs that intend to be
+>> multiplatform compatiable while keeping mach-msm to legacy SoC/board
+>> support that will not transition over to multiplatform.
+>> 
+>> As part of this, we move support for MSM8X60, MSM8960 and MSM8974 over
+>> to mach-qcom.
+>> 
+>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> 
+> Having a closer look at this after seeing the multi_v7_defconfig change,
+> I have a minor nit on the new ARCH_QCOM name.
+> 
+> For new additions, we've been trying to move towards using SOC_foo
+> instead of ARCH_foo.  Any reason not to do that here also?
+> 
+> Kevin
 
-> 
-> Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
-> Cc: stable@vger.kernel.org # 3.2+
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/tracepoint.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index 29f2654..0d4ef26 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -636,6 +636,9 @@ static int tracepoint_module_coming(struct module *mod)
->  	struct tp_module *tp_mod, *iter;
->  	int ret = 0;
->  
-> +	if (!mod->num_tracepoints)
-> +		return 0;
-> +
->  	/*
->  	 * We skip modules that taint the kernel, especially those with different
->  	 * module headers (for forced load), to make sure we don't cause a crash.
-> @@ -679,6 +682,9 @@ static int tracepoint_module_going(struct module *mod)
->  {
->  	struct tp_module *pos;
->  
-> +	if (!mod->num_tracepoints)
-> +		return 0;
-> +
->  	mutex_lock(&tracepoints_mutex);
->  	tracepoint_update_probe_range(mod->tracepoints_ptrs,
->  		mod->tracepoints_ptrs + mod->num_tracepoints);
-> --
-> 1.8.1.4
-> 
-> 
+No reason, just wasn’t aware and no one said anything til now.  Hmm, how to handle this now, can we do this as a 3.16 cleanup?
+
+- k
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
