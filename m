@@ -1,62 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaBZJfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 04:35:53 -0500
-Received: from forward2h.mail.yandex.net ([84.201.187.147]:60369 "EHLO
-	forward2h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaBZJfu (ORCPT
+	id S1751393AbaBZJhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 04:37:17 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48676 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaBZJhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 04:35:50 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>
-Cc: Juri Lelli <juri.lelli@gmail.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140226090700.GG18404@twins.programming.kicks-ass.net>
-References: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
- <1393361805.12438.6.camel@HP-250-G1-Notebook-PC>
- <1393382258.5142.4.camel@marge.simpson.net> <20140226090700.GG18404@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched/rt: fix rt timer activation/deactivation
+	Wed, 26 Feb 2014 04:37:11 -0500
+Date: Wed, 26 Feb 2014 09:38:59 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Salter <msalter@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v4 4/6] arm: add early_ioremap support
+Message-ID: <20140226093859.GB12169@bivouac.eciton.net>
+References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
+ <1392238575-10000-5-git-send-email-msalter@redhat.com>
+ <CAL_JsqLi=GhGy7dNf2BiAGd4EtzfqqYfbo0YhRhyhuwEp0w8HQ@mail.gmail.com>
 MIME-Version: 1.0
-Message-Id: <341791393407342@web8h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 26 Feb 2014 13:35:42 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqLi=GhGy7dNf2BiAGd4EtzfqqYfbo0YhRhyhuwEp0w8HQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Rob,
 
+Thanks for having a look.
+Since I'm at least partially responsible for the below, I'll respond
+before Mark wakes up.
 
-26.02.2014, 13:07, "Peter Zijlstra" <peterz@infradead.org>:
-> On Wed, Feb 26, 2014 at 03:37:38AM +0100, Mike Galbraith wrote:
->
->> šBTW, I noticed you can no longer turn the turn the noisy thing off since
->> šwe grew DL. šI added an old SGI boot parameter to tell it to go away.
->
-> You're talking about the rt badnwidth timer, right?
->
-> š1) why won't it go away with DL added?
+On Tue, Feb 25, 2014 at 11:48:19PM -0600, Rob Herring wrote:
+> On Wed, Feb 12, 2014 at 2:56 PM, Mark Salter <msalter@redhat.com> wrote:
+> > This patch uses the generic early_ioremap code to implement
+> > early_ioremap for ARM. The ARM-specific bits come mostly from
+> > an earlier patch from Leif Lindholm <leif.lindholm@linaro.org>
+> > here:
+> 
+> This doesn't actually work for me. The PTE flags are not correct and
+> accesses to a device fault. See below.
 
-We know nothing about rt_time and rt_runtime values, when we are doing
-update_curr_dl().
+Do they fault before paging_init()?
+If not, see below.
 
-rt_time maybe not zero, so we increment rt_time.
+> >
+> >   https://lkml.org/lkml/2013/10/3/279
+> >
+> > Signed-off-by: Mark Salter <msalter@redhat.com>
+> > Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> > ---
+> >  arch/arm/Kconfig              | 10 +++++
+> >  arch/arm/include/asm/Kbuild   |  1 +
+> >  arch/arm/include/asm/fixmap.h | 20 ++++++++++
+> >  arch/arm/include/asm/io.h     |  1 +
+> >  arch/arm/kernel/setup.c       |  2 +
+> >  arch/arm/mm/Makefile          |  4 ++
+> >  arch/arm/mm/early_ioremap.c   | 93 +++++++++++++++++++++++++++++++++++++++++++
+> >  arch/arm/mm/mmu.c             |  2 +
+> >  8 files changed, 133 insertions(+)
+> >  create mode 100644 arch/arm/mm/early_ioremap.c
+> >
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index e254198..7a35ef6 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -1874,6 +1874,16 @@ config UACCESS_WITH_MEMCPY
+> >           However, if the CPU data cache is using a write-allocate mode,
+> >           this option is unlikely to provide any performance gain.
+> >
+> > +config EARLY_IOREMAP
+> > +       bool "Provide early_ioremap() support for kernel initialization"
+> > +       select GENERIC_EARLY_IOREMAP
+> > +       help
+> > +         Provide a mechanism for kernel initialisation code to temporarily
+> > +         map, in a highmem-agnostic way, memory pages in before ioremap()
+> > +         and friends are available (before paging_init() has run). It uses
+> > +         the same virtual memory range as kmap so all early mappings must
+> > +         be unmapped before paging_init() is called.
+> > +
 
-rt_rq->rt_runtime maybe less than maximum available for RT(and for dl too),
-because someone could borrow a part of rt_runtime during previous
-balance_runtime().
+^^
 
-If dl task uses all available runtime, we always will have "idle = 0"
+> >  config SECCOMP
+> >         bool
+> >         prompt "Enable seccomp to safely compute untrusted bytecode"
+> > diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
+> > index 3278afe..6fcfd7d 100644
+> > --- a/arch/arm/include/asm/Kbuild
+> > +++ b/arch/arm/include/asm/Kbuild
+> > @@ -4,6 +4,7 @@ generic-y += auxvec.h
+> >  generic-y += bitsperlong.h
+> >  generic-y += cputime.h
+> >  generic-y += current.h
+> > +generic-y += early_ioremap.h
+> >  generic-y += emergency-restart.h
+> >  generic-y += errno.h
+> >  generic-y += exec.h
+> > diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+> > index 68ea615..ff8fa3e 100644
+> > --- a/arch/arm/include/asm/fixmap.h
+> > +++ b/arch/arm/include/asm/fixmap.h
+> > @@ -21,8 +21,28 @@ enum fixed_addresses {
+> >         FIX_KMAP_BEGIN,
+> >         FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
+> >         __end_of_fixed_addresses
+> > +/*
+> > + * 224 temporary boot-time mappings, used by early_ioremap(),
+> > + * before ioremap() is functional.
+> > + *
+> > + * (P)re-using the FIXADDR region, which is used for highmem
+> > + * later on, and statically aligned to 1MB.
+> > + */
+> > +#define NR_FIX_BTMAPS          32
+> > +#define FIX_BTMAPS_SLOTS       7
+> > +#define TOTAL_FIX_BTMAPS       (NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
+> > +#define FIX_BTMAP_END          FIX_KMAP_BEGIN
+> > +#define FIX_BTMAP_BEGIN                (FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1)
+> 
+> Why the different logic from arm64? Specifically, it doesn't make
+> adding a permanent mapping simple.
 
-        if (rt_rq->rt_time || rt_rq->rt_nr_running)
-                idle = 0;
+Making a permanent mapping using this would require either:
+- Not using the fixmap region.
+- Rewriting arm kmap.
 
-in do_sched_rt_period_timer(). Timer will be restarted.
+> >  };
+> >
+> > +#define FIXMAP_PAGE_COMMON (L_PTE_YOUNG | L_PTE_PRESENT | L_PTE_XN)
+> > +
+> > +#define FIXMAP_PAGE_NORMAL (FIXMAP_PAGE_COMMON | L_PTE_MT_WRITEBACK)
+> > +#define FIXMAP_PAGE_IO    (FIXMAP_PAGE_COMMON | L_PTE_MT_DEV_NONSHARED)
+> 
+> This should be L_PTE_MT_DEV_SHARED and also needs L_PTE_DIRTY and
+> L_PTE_SHARED as we want this to match MT_DEVICE.
+> 
+> These should also be wrapped with __pgprot().
 
-This is boundary case, of course.
+Ok.
 
-> š2) it should never appear when !rt_bandwidth_enabled(), so if you set
-> šsysctl_sched_rt_runtime to -1 all this should go away already, no extra
-> špatches required.
+> > +
+> > +extern void __early_set_fixmap(enum fixed_addresses idx,
+> > +                              phys_addr_t phys, pgprot_t flags);
+> > +
+> >  #include <asm-generic/fixmap.h>
+> >
+> >  #endif
+> > diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+> > index 8aa4cca..637e0cd 100644
+> > --- a/arch/arm/include/asm/io.h
+> > +++ b/arch/arm/include/asm/io.h
+> > @@ -28,6 +28,7 @@
+> >  #include <asm/byteorder.h>
+> >  #include <asm/memory.h>
+> >  #include <asm-generic/pci_iomap.h>
+> > +#include <asm/early_ioremap.h>
+> >  #include <xen/xen.h>
+> >
+> >  /*
+> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> > index b0df976..9c8b751 100644
+> > --- a/arch/arm/kernel/setup.c
+> > +++ b/arch/arm/kernel/setup.c
+> > @@ -30,6 +30,7 @@
+> >  #include <linux/bug.h>
+> >  #include <linux/compiler.h>
+> >  #include <linux/sort.h>
+> > +#include <linux/io.h>
+> >
+> >  #include <asm/unified.h>
+> >  #include <asm/cp15.h>
+> > @@ -880,6 +881,7 @@ void __init setup_arch(char **cmdline_p)
+> >         const struct machine_desc *mdesc;
+> >
+> >         setup_processor();
+> > +       early_ioremap_init();
+> >         mdesc = setup_machine_fdt(__atags_pointer);
+> >         if (!mdesc)
+> >                 mdesc = setup_machine_tags(__atags_pointer, __machine_arch_type);
+> > diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+> > index 7f39ce2..501af98 100644
+> > --- a/arch/arm/mm/Makefile
+> > +++ b/arch/arm/mm/Makefile
+> > @@ -12,6 +12,10 @@ ifneq ($(CONFIG_MMU),y)
+> >  obj-y                          += nommu.o
+> >  endif
+> >
+> > +ifeq ($(CONFIG_MMU),y)
+> > +obj-$(CONFIG_EARLY_IOREMAP)    += early_ioremap.o
+> > +endif
+> > +
+> >  obj-$(CONFIG_ARM_PTDUMP)       += dump.o
+> >  obj-$(CONFIG_MODULES)          += proc-syms.o
+> >
+> > diff --git a/arch/arm/mm/early_ioremap.c b/arch/arm/mm/early_ioremap.c
+> > new file mode 100644
+> > index 0000000..c3e2bf2
+> > --- /dev/null
+> > +++ b/arch/arm/mm/early_ioremap.c
+> > @@ -0,0 +1,93 @@
+> > +/*
+> > + * early_ioremap() support for ARM
+> > + *
+> > + * Based on existing support in arch/x86/mm/ioremap.c
+> > + *
+> > + * Restrictions: currently only functional before paging_init()
+> > + */
+> > +
+> > +#include <linux/init.h>
+> > +#include <linux/io.h>
+> 
+> io.h doesn't appear to be needed.
+
+No, not in this version.
+
+> > +
+> > +#include <asm/fixmap.h>
+> > +#include <asm/pgalloc.h>
+> > +#include <asm/pgtable.h>
+> > +#include <asm/tlbflush.h>
+> > +
+> > +#include <asm/mach/map.h>
+> > +
+> > +static pte_t bm_pte[PTRS_PER_PTE] __aligned(PTE_HWTABLE_SIZE) __initdata;
+> > +
+> > +static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
+> > +{
+> > +       unsigned int index = pgd_index(addr);
+> > +       pgd_t *pgd = cpu_get_pgd() + index;
+> > +       pud_t *pud = pud_offset(pgd, addr);
+> > +       pmd_t *pmd = pmd_offset(pud, addr);
+> > +
+> > +       return pmd;
+> > +}
+> > +
+> > +static inline pte_t * __init early_ioremap_pte(unsigned long addr)
+> > +{
+> > +       return &bm_pte[pte_index(addr)];
+> > +}
+> > +
+> > +void __init early_ioremap_init(void)
+> > +{
+> > +       pmd_t *pmd;
+> > +
+> > +       pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
+> > +
+> > +       pmd_populate_kernel(NULL, pmd, bm_pte);
+> > +
+> > +       /*
+> > +        * Make sure we don't span multiple pmds.
+> > +        */
+> > +       BUILD_BUG_ON((__fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT)
+> > +                    != (__fix_to_virt(FIX_BTMAP_END) >> PMD_SHIFT));
+> > +
+> > +       if (pmd != early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END))) {
+> > +               WARN_ON(1);
+> > +               pr_warn("pmd %p != %p\n",
+> > +                       pmd, early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END)));
+> > +               pr_warn("fix_to_virt(FIX_BTMAP_BEGIN): %08lx\n",
+> > +                       fix_to_virt(FIX_BTMAP_BEGIN));
+> > +               pr_warn("fix_to_virt(FIX_BTMAP_END):   %08lx\n",
+> > +                       fix_to_virt(FIX_BTMAP_END));
+> > +               pr_warn("FIX_BTMAP_END:       %d\n", FIX_BTMAP_END);
+> > +               pr_warn("FIX_BTMAP_BEGIN:     %d\n", FIX_BTMAP_BEGIN);
+> > +       }
+> > +
+> > +       early_ioremap_setup();
+> > +}
+> > +
+> > +void __init __early_set_fixmap(enum fixed_addresses idx,
+> > +                              phys_addr_t phys, pgprot_t flags)
+> > +{
+> > +       unsigned long addr = __fix_to_virt(idx);
+> > +       pte_t *pte;
+> > +       u64 desc;
+> > +
+> > +       if (idx > FIX_KMAP_END) {
+> > +               BUG();
+> > +               return;
+> > +       }
+> > +       pte = early_ioremap_pte(addr);
+> > +
+> > +       if (pgprot_val(flags))
+> > +               set_pte_at(NULL, 0xfff00000, pte,
+> 
+> Couldn't you use addr here instead of 0xfff00000? It's not really used
+> other than a check against TASK_SIZE.
+
+Sure.
+
+> > +                          pfn_pte(phys >> PAGE_SHIFT, flags));
+> 
+> phys_to_pfn(phys)
+
+Stolen like that from x86 :)
+Sure.
+
+> > +       else
+> > +               pte_clear(NULL, addr, pte);
+> > +       flush_tlb_kernel_range(addr, addr + PAGE_SIZE);
+> > +       desc = *pte;
+> > +}
+> > +
+> > +void __init
+> > +early_ioremap_shutdown(void)
+> > +{
+> > +       pmd_t *pmd;
+> > +       pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
+> > +       pmd_clear(pmd);
+> 
+> This is redundant with the clearing done in devicemaps_init. Not a big
+> deal but this is probably something we don't want with permanent
+> mappings. I'm still trying to figure out how to do those. Leaving this
+> page table in place doesn't seem to work, so I think we'll have to
+> copy mappings to the new page tables.
+
+As described in the Kconfig option, and more explicitly in the
+documentation included with my last submission (last summer), these
+mappings don't stick around.
+
+/
+    Leif
