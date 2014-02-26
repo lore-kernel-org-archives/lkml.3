@@ -1,189 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaBZQQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:16:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4251 "EHLO mx1.redhat.com"
+	id S1752854AbaBZQRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:17:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47169 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172AbaBZQQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:16:46 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: acme@ghostprotocols.net, jolsa@redhat.com, eranian@google.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 1/2] perf: fix synthesizing mmaps for threads
-Date: Wed, 26 Feb 2014 10:45:26 -0500
-Message-Id: <1393429527-167840-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
-References: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
+	id S1751319AbaBZQRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 11:17:22 -0500
+Message-ID: <530E2518.5090102@suse.de>
+Date: Wed, 26 Feb 2014 18:32:08 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Sven-Haegar Koch <haegar@sdinet.de>
+CC: Dave Hansen <dave.hansen@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] ksm: Expose configuration via sysctl
+References: <1393284484-27637-1-git-send-email-agraf@suse.de> <530CD443.7010400@intel.com> <4B3C0B08-45E1-48EF-8030-A3365F0E7CF6@suse.de> <530D3102.60504@intel.com> <alpine.DEB.2.10.1402261634010.31425@aurora64.sdinet.de>
+In-Reply-To: <alpine.DEB.2.10.1402261634010.31425@aurora64.sdinet.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if a process creates a bunch of threads using pthread_create
-and then perf is run in system_wide mode, the mmaps for those threads
-are not captured with a synthesized mmap event.
+Sven-Haegar Koch wrote:
+> On Tue, 25 Feb 2014, Dave Hansen wrote:
+>
+>   
+>> On 02/25/2014 03:09 PM, Alexander Graf wrote:
+>>     
+>>>> Couldn't we also (maybe in parallel) just teach the sysctl userspace
+>>>> about sysfs?  This way we don't have to do parallel sysctls and sysfs
+>>>> for *EVERYTHING* in the kernel:
+>>>>
+>>>>    sysfs.kernel.mm.transparent_hugepage.enabled=enabled
+>>>>         
+>>> It's pretty hard to filter this. We definitely do not want to expose all of sysfs through /proc/sys. But how do we know which files are actual configuration and which ones are dynamic system introspection data?
+>>>
+>>> We could add a filter, but then we can just as well stick with the manual approach I followed here :).
+>>>       
+>> Maybe not stick it under /proc/sys, but teach sysctl(8) about them.  I
+>> guess at the moment, sysctl says that it's tied to /proc/sys:
+>>
+>>     
+>>> DESCRIPTION
+>>>        sysctl  is  used to modify kernel parameters at runtime.  The parameters available are those listed under /proc/sys/.  Procfs is required
+>>>        for sysctl support in Linux.  You can use sysctl to both read and write sysctl data.
+>>>       
+>> But surely that's not set in stone just because the manpage says so. :)
+>>     
+>
+> What I still don't get is why you need this?
+>
+> My distribution (Debian) has a sysfsutils package which provides a 
+> /etc/sysfs.conf / /etc/sysfs.d/foo exactly like /etc/sysctl.conf.
+>
+> Don't other distributions have something like this?
+>   
 
-The reason is those threads are not visible when walking the /proc/
-directory looking for /proc/<pid>/maps files.  Instead they are discovered
-using the /proc/<pid>/tasks file (which the synthesized comm event uses).
+Maybe that's the right answer to the problem, but I still don't
+understand why these properties were put into sysfs in the first place.
+We're not configuring a dynamic device here, are we?
 
-This causes problems when a program is trying to map a data address to a
-tid.  Because the tid has no maps, the event is dropped.  Changing the program
-to look up using the pid instead of the tid, finds the correct maps but creates
-ugly hacks in the program to carry the correct tid around.
+Also if we do want something like a sysfs.conf and sysfs.d, that should
+probably be something that gets properly coordinated between
+distributions so that users don't get completely confused. Today
+openSUSE does not have a sysfs.conf/.d provided by the sysfsutils
+package. Maybe it's something homegrown?
 
-Fix this by moving the walking of the /proc/<pid>/tasks up a level (out of the
-comm function) based on Arnaldo's suggestion.
 
-Tweaked things a bit to special case the 'full' bit and 'guest' check.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/util/event.c | 111 ++++++++++++++++++++++++------------------------
- 1 file changed, 56 insertions(+), 55 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 086c7c8..82fb890 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -94,14 +94,10 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
- 
- static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 					 union perf_event *event, pid_t pid,
--					 int full,
- 					 perf_event__handler_t process,
- 					 struct machine *machine)
- {
--	char filename[PATH_MAX];
- 	size_t size;
--	DIR *tasks;
--	struct dirent dirent, *next;
- 	pid_t tgid;
- 
- 	memset(&event->comm, 0, sizeof(event->comm));
-@@ -124,53 +120,11 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 	event->comm.header.size = (sizeof(event->comm) -
- 				(sizeof(event->comm.comm) - size) +
- 				machine->id_hdr_size);
--	if (!full) {
--		event->comm.tid = pid;
--
--		if (process(tool, event, &synth_sample, machine) != 0)
--			return -1;
-+	event->comm.tid = pid;
- 
--		goto out;
--	}
--
--	if (machine__is_default_guest(machine))
--		return 0;
--
--	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
--		 machine->root_dir, pid);
--
--	tasks = opendir(filename);
--	if (tasks == NULL) {
--		pr_debug("couldn't open %s\n", filename);
--		return 0;
--	}
--
--	while (!readdir_r(tasks, &dirent, &next) && next) {
--		char *end;
--		pid = strtol(dirent.d_name, &end, 10);
--		if (*end)
--			continue;
--
--		/* already have tgid; jut want to update the comm */
--		(void) perf_event__get_comm_tgid(pid, event->comm.comm,
--					 sizeof(event->comm.comm));
--
--		size = strlen(event->comm.comm) + 1;
--		size = PERF_ALIGN(size, sizeof(u64));
--		memset(event->comm.comm + size, 0, machine->id_hdr_size);
--		event->comm.header.size = (sizeof(event->comm) -
--					  (sizeof(event->comm.comm) - size) +
--					  machine->id_hdr_size);
--
--		event->comm.tid = pid;
--
--		if (process(tool, event, &synth_sample, machine) != 0) {
--			tgid = -1;
--			break;
--		}
--	}
-+	if (process(tool, event, &synth_sample, machine) != 0)
-+		return -1;
- 
--	closedir(tasks);
- out:
- 	return tgid;
- }
-@@ -331,12 +285,59 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 				      struct perf_tool *tool,
- 				      struct machine *machine, bool mmap_data)
- {
--	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
--						 process, machine);
--	if (tgid == -1)
--		return -1;
--	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
--						  process, machine, mmap_data);
-+	char filename[PATH_MAX];
-+	DIR *tasks;
-+	struct dirent dirent, *next;
-+	pid_t tgid;
-+
-+	/* special case: only send one comm event using passed in pid */
-+	if (!full) {
-+		tgid = perf_event__synthesize_comm(tool, comm_event, pid,
-+						   process, machine);
-+
-+		if (tgid == -1)
-+			return -1;
-+
-+		return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
-+							  process, machine, mmap_data);
-+	}
-+
-+	if (machine__is_default_guest(machine))
-+		return 0;
-+
-+	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
-+		 machine->root_dir, pid);
-+
-+	tasks = opendir(filename);
-+	if (tasks == NULL) {
-+		pr_debug("couldn't open %s\n", filename);
-+		return 0;
-+	}
-+
-+	while (!readdir_r(tasks, &dirent, &next) && next) {
-+		char *end;
-+		int rc = 0;
-+		pid_t _pid;
-+
-+		_pid = strtol(dirent.d_name, &end, 10);
-+		if (*end)
-+			continue;
-+
-+		tgid = perf_event__synthesize_comm(tool, comm_event, _pid,
-+						   process, machine);
-+		if (tgid == -1)
-+			return -1;
-+
-+		/* process the thread's maps too */
-+		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
-+							process, machine, mmap_data);
-+
-+		if (rc)
-+			return rc;
-+	}
-+
-+	closedir(tasks);
-+	return 0;
- }
- 
- int perf_event__synthesize_thread_map(struct perf_tool *tool,
--- 
-1.7.11.7
+Alex
 
