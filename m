@@ -1,177 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaBZKaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:30:19 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:48246 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329AbaBZK34 (ORCPT
+	id S1752477AbaBZKap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:30:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41010 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaBZKam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:29:56 -0500
-From: Marc Carino <marc.ceeeee@gmail.com>
-To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>,
-        Matt Porter <mporter@linaro.org>
-Subject: [PATCH v7 9/9] ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
-Date: Wed, 26 Feb 2014 02:29:12 -0800
-Message-Id: <1393410552-21497-10-git-send-email-marc.ceeeee@gmail.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
+	Wed, 26 Feb 2014 05:30:42 -0500
+Date: Wed, 26 Feb 2014 11:30:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        Robert Richter <rric@kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: OS boot failed when set command-line kmemcheck=1
+Message-ID: <20140226103033.GI18404@twins.programming.kicks-ass.net>
+References: <5304558F.9050605@huawei.com>
+ <alpine.DEB.2.02.1402182344001.3551@chino.kir.corp.google.com>
+ <53047AE6.4060403@huawei.com>
+ <alpine.DEB.2.02.1402191422240.31921@chino.kir.corp.google.com>
+ <20140226084304.GD18404@twins.programming.kicks-ass.net>
+ <CAOMGZ=F66ysRvvPKiCNDRtjDjgAZUV+KBcgjS+G0Yho5quBFPw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMGZ=F66ysRvvPKiCNDRtjDjgAZUV+KBcgjS+G0Yho5quBFPw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a sample DTS which will allow bootup of a board populated
-with the BCM7445 chip.
+On Wed, Feb 26, 2014 at 11:14:41AM +0100, Vegard Nossum wrote:
+> On 26 February 2014 09:43, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, Feb 19, 2014 at 02:24:41PM -0800, David Rientjes wrote:
+> >> On Wed, 19 Feb 2014, Xishi Qiu wrote:
+> >>
+> >> > Here is a warning, I don't whether it is relative to my hardware.
+> >> > If set "kmemcheck=1 nowatchdog", it can boot.
+> >> >
+> >> > code:
+> >> >     ...
+> >> >     pte = kmemcheck_pte_lookup(address);
+> >> >     if (!pte)
+> >> >             return false;
+> >> >
+> >> >     WARN_ON_ONCE(in_nmi());
+> >> >
+> >> >     if (error_code & 2)
+> >> >     ...
+> >
+> > That code seems to assume NMI context cannot fault; this is false since
+> > a while back (v3.9 or thereabouts).
+> >
+> >> > [   10.920757]  [<ffffffff810452c1>] kmemcheck_fault+0xb1/0xc0
+> >> > [   10.920760]  [<ffffffff814d262b>] __do_page_fault+0x39b/0x4c0
+> >> > [   10.920763]  [<ffffffff814d2829>] do_page_fault+0x9/0x10
+> >> > [   10.920765]  [<ffffffff814cf222>] page_fault+0x22/0x30
+> >> > [   10.920774]  [<ffffffff8101eb02>] intel_pmu_handle_irq+0x142/0x3a0
+> >> > [   10.920777]  [<ffffffff814d0655>] perf_event_nmi_handler+0x35/0x60
+> >> > [   10.920779]  [<ffffffff814cfe83>] nmi_handle+0x63/0x150
+> >> > [   10.920782]  [<ffffffff814cffd3>] default_do_nmi+0x63/0x290
+> >> > [   10.920784]  [<ffffffff814d02a8>] do_nmi+0xa8/0xe0
+> >> > [   10.920786]  [<ffffffff814cf527>] end_repeat_nmi+0x1e/0x2e
+> >
+> > And this does indeed show a fault from NMI context; which is totally
+> > expected.
+> >
+> > kmemcheck needs to be fixed; but I've no clue how any of that works.
+> 
+> IIRC the reason we don't support page faults in NMI context is that we
+> may already be handling an existing fault (or trap) when the NMI hits.
+> So that would mess up kmemcheck's working state. I don't really see
+> that anything has changed in this respect lately, so it could always
+> have been broken.
+> 
+> I think the way we dealt with this before was just to make sure than
+> NMI handlers don't access any kmemcheck-tracked memory (i.e. to make
+> sure that all memory touched by NMI handlers has been marked NOTRACK).
+> And the purpose of this warning is just to tell us that something
+> inside an NMI triggered a page fault (in this specific case, it seems
+> to be intel_pmu_handle_irq).
+> 
+> I guess there are two ways forward:
+> 
+>  - create a stack of things that kmemcheck is working on, so that we
+> handle recursive page faults
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Matt Porter <mporter@linaro.org>
----
- arch/arm/boot/dts/bcm7445-bcm97445svmb.dts |   14 ++++
- arch/arm/boot/dts/bcm7445.dtsi             |  107 ++++++++++++++++++++++++++++
- 2 files changed, 121 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/bcm7445-bcm97445svmb.dts
- create mode 100644 arch/arm/boot/dts/bcm7445.dtsi
+That's what perf and ftrace do. We keep a 4 layer stack using things
+like:
 
-diff --git a/arch/arm/boot/dts/bcm7445-bcm97445svmb.dts b/arch/arm/boot/dts/bcm7445-bcm97445svmb.dts
-new file mode 100644
-index 0000000..9eec2ac
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm7445-bcm97445svmb.dts
-@@ -0,0 +1,14 @@
-+/dts-v1/;
-+#include "bcm7445.dtsi"
-+
-+/ {
-+	model = "Broadcom STB (bcm7445), SVMB reference board";
-+	compatible = "brcm,bcm7445", "brcm,brcmstb";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00 0x00000000 0x00 0x40000000>,
-+		      <0x00 0x40000000 0x00 0x40000000>,
-+		      <0x00 0x80000000 0x00 0x40000000>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/bcm7445.dtsi b/arch/arm/boot/dts/bcm7445.dtsi
-new file mode 100644
-index 0000000..f9c9633
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm7445.dtsi
-@@ -0,0 +1,107 @@
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+	model = "Broadcom STB (bcm7445)";
-+	compatible = "brcm,bcm7445", "brcm,brcmstb";
-+	interrupt-parent = <&gic>;
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk";
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			compatible = "brcm,brahma-b15";
-+			device_type = "cpu";
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "brcm,brahma-b15";
-+			device_type = "cpu";
-+			reg = <1>;
-+		};
-+
-+		cpu@2 {
-+			compatible = "brcm,brahma-b15";
-+			device_type = "cpu";
-+			reg = <2>;
-+		};
-+
-+		cpu@3 {
-+			compatible = "brcm,brahma-b15";
-+			device_type = "cpu";
-+			reg = <3>;
-+		};
-+	};
-+
-+	gic: interrupt-controller@ffd00000 {
-+		compatible = "brcm,brahma-b15-gic", "arm,cortex-a15-gic";
-+		reg = <0x00 0xffd01000 0x00 0x1000>,
-+		      <0x00 0xffd02000 0x00 0x2000>,
-+		      <0x00 0xffd04000 0x00 0x2000>,
-+		      <0x00 0xffd06000 0x00 0x2000>;
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+	};
-+
-+	timer {
-+		compatible = "arm,armv7-timer";
-+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_RAW(15) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 14 (GIC_CPU_MASK_RAW(15) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 11 (GIC_CPU_MASK_RAW(15) | IRQ_TYPE_LEVEL_LOW)>,
-+			     <GIC_PPI 10 (GIC_CPU_MASK_RAW(15) | IRQ_TYPE_LEVEL_LOW)>;
-+	};
-+
-+	rdb {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		ranges = <0 0x00 0xf0000000 0x1000000>;
-+
-+		serial@406b00 {
-+			compatible = "ns16550a";
-+			reg = <0x406b00 0x20>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
-+			clock-frequency = <0x4d3f640>;
-+		};
-+
-+		sun_top_ctrl: syscon@404000 {
-+			compatible = "brcm,bcm7445-sun-top-ctrl",
-+				     "syscon";
-+			reg = <0x404000 0x51c>;
-+		};
-+
-+		hif_cpubiuctrl: syscon@3e2400 {
-+			compatible = "brcm,bcm7445-hif-cpubiuctrl",
-+				     "syscon";
-+			reg = <0x3e2400 0x5b4>;
-+		};
-+
-+		hif_continuation: syscon@452000 {
-+			compatible = "brcm,bcm7445-hif-continuation",
-+				     "syscon";
-+			reg = <0x452000 0x100>;
-+		};
-+	};
-+
-+	smpboot {
-+		compatible = "brcm,brcmstb-smpboot";
-+		syscon-cpu = <&hif_cpubiuctrl 0x88 0x178>;
-+		syscon-cont = <&hif_continuation>;
-+	};
-+
-+	reboot {
-+		compatible = "brcm,brcmstb-reboot";
-+		syscon = <&sun_top_ctrl 0x304 0x308>;
-+	};
-+};
--- 
-1.7.1
+static inline int get_recursion_context(int *recursion)
+{
+	int rctx;
+
+	if (in_nmi())
+		rctx = 3;
+	else if (in_irq())
+		rctx = 2;
+	else if (in_softirq())
+		rctx = 1;
+	else
+		rctx = 0;
+
+	if (recursion[rctx])
+		return -1;
+
+	recursion[rctx]++;
+	barrier();
+
+	return rctx;
+}
+
+>  - try to figure out why intel_pmu_handle_irq() faults and add a
+> (kmemcheck-specific) workaround for it
+
+Well, that's easy, we access user memory, which might or might not be
+there.
+
+We do this for a number of reasons; one is to read the code and decode
+the current basic block to find the previous instruction; see
+intel_pmu_pebs_fixup_ip() another is to try and walk the userspace
+framepointers, see perf_callchain_user().
+
+In all cases we use 'atomic' accesses which return short copies in case
+of failure; we take the fault handler exception path, and we abort the
+operation.
+
+> Incidentally, do you remember what exactly changed wrt page faults in
+> NMI context?
+
+Sure; commit 3f3c8b8c4b2a34776c3470142a7c8baafcda6eb0 and a fair number
+of 'fixes', in particular: 7fbb98c5cb07563d3ee08714073a8e5452a96be2.
+
+These patches made it possible to take faults from NMI context.
+Previously this was not possible because we return from the fault using
+IRET and IRET unconditionally re-enables NMIs, which is a bit of a
+problem when you're still running the NMI handler.
+
 
