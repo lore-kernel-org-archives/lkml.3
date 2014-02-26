@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaBZAjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:39:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33965 "EHLO mail.zytor.com"
+	id S1751485AbaBZAq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:46:27 -0500
+Received: from ring0.de ([5.45.105.125]:47355 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaBZAjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:39:08 -0500
-Message-ID: <530D3790.301@zytor.com>
-Date: Tue, 25 Feb 2014 16:38:40 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Rob Landley <rob@landley.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jianguo Wu <wujianguo@huawei.com>,
-        Andy Honig <ahonig@google.com>, David Rientjes <rientjes@google.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] x86, kaslr: randomize module base load address
-References: <20140226003403.GA26737@www.outflux.net>
-In-Reply-To: <20140226003403.GA26737@www.outflux.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750728AbaBZAqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 19:46:24 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: Jonathan Cameron <jic23@kernel.org>, Marek Belisko <marek@goldelico.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv1 0/2] Convert rx51-battery to IIO API and add DT support
+Date: Wed, 26 Feb 2014 01:46:07 +0100
+Message-Id: <1393375569-21751-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 04:34 PM, Kees Cook wrote:
-> Randomize the load address of modules in the kernel to make kASLR
-> effective for modules.  Modules can only be loaded within a particular
-> range of virtual address space.  This patch adds 10 bits of entropy to
-> the load address by adding 1-1024 * PAGE_SIZE to the beginning range
-> where modules are loaded.
+Hi,
 
-So the question still remains: why not randomize for each module?
+This is PATCHv1 for converting rx51-battery to the IIO API
+and adding DT support. The patchset compiles and has been
+tested on my Nokia N900. It depends on another patchset
+converting twl4030-madc to the IIO API:
 
-	-hpa
+https://lkml.org/lkml/2014/2/25/627
 
+-- Sebastian
+
+Sebastian Reichel (2):
+  rx51_battery: convert to iio consumer
+  Documentation: DT: Document rx51-battery binding
+
+ .../devicetree/bindings/power/rx51-battery.txt     | 25 ++++++++
+ drivers/power/rx51_battery.c                       | 68 ++++++++++++++--------
+ 2 files changed, 70 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/rx51-battery.txt
+
+-- 
+1.8.5.3
 
