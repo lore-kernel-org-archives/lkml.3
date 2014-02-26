@@ -1,137 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245AbaBZHnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:43:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:37566 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaBZHnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:43:51 -0500
-Date: Wed, 26 Feb 2014 18:43:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: linux-next: manual merge of the akpm-current tree with the cgroup
- tree
-Message-Id: <20140226184346.d459564165b30a9f1f42807d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW"
+	id S1751393AbaBZHwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:52:36 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:38599 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaBZHwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 02:52:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393387473.7655.28.camel@buesod1.americas.hpqcorp.net>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+	<CANN689HfCT8uHKBeMHF-2Xa_eW9y9=UY7WdD1gW2EetqpcVSMw@mail.gmail.com>
+	<1393387473.7655.28.camel@buesod1.americas.hpqcorp.net>
+Date: Tue, 25 Feb 2014 23:52:22 -0800
+Message-ID: <CANN689GNfGLKkHAz9R6BC=E4b6ueMWcS0Ba_qZfCnW7NjnBs9A@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: per-thread vma caching
+From: Michel Lespinasse <walken@google.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 25, 2014 at 8:04 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> On Tue, 2014-02-25 at 18:04 -0800, Michel Lespinasse wrote:
+>> On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>> > This patch is a continuation of efforts trying to optimize find_vma(),
+>> > avoiding potentially expensive rbtree walks to locate a vma upon faults.
+>> > The original approach (https://lkml.org/lkml/2013/11/1/410), where the
+>> > largest vma was also cached, ended up being too specific and random, thus
+>> > further comparison with other approaches were needed. There are two things
+>> > to consider when dealing with this, the cache hit rate and the latency of
+>> > find_vma(). Improving the hit-rate does not necessarily translate in finding
+>> > the vma any faster, as the overhead of any fancy caching schemes can be too
+>> > high to consider.
+>>
+>> Actually there is also the cost of keeping the cache up to date. I'm
+>> not saying that it's an issue in your proposal - I like the proposal,
+>> especially now that you are replacing the per-mm cache rather than
+>> adding something on top - but it is a factor to consider.
+>
+> True, although numbers show that the cost of maintaining the cache is
+> quite minimal. Invalidations are a free lunch (except in the rare event
+> of a seqnum overflow), so the updating part would consume the most
+> cycles, but then again, the hit rate is quite good so I'm not worried
+> about that either.
 
-Hi Andrew,
+Yes. I like your patch precisely because it keeps maintainance costs low.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-mm/memcontrol.c between commits e61734c55c24 ("cgroup: remove
-cgroup->name") from the cgroup tree and commits a89db06ab1b4 ("memcg:
-change oom_info_lock to mutex") and c78e84121972 ("memcg, slab: cleanup
-memcg cache creation") from the akpm-current tree.
+>> > +void vmacache_invalidate_all(void)
+>> > +{
+>> > +       struct task_struct *g, *p;
+>> > +
+>> > +       rcu_read_lock();
+>> > +       for_each_process_thread(g, p) {
+>> > +               /*
+>> > +                * Only flush the vmacache pointers as the
+>> > +                * mm seqnum is already set and curr's will
+>> > +                * be set upon invalidation when the next
+>> > +                * lookup is done.
+>> > +                */
+>> > +               memset(p->vmacache, 0, sizeof(p->vmacache));
+>> > +       }
+>> > +       rcu_read_unlock();
+>> > +}
+>>
+>> Two things:
+>>
+>> - I believe we only need to invalidate vma caches for threads that
+>> share a given mm ? we should probably pass in that mm in order to
+>> avoid over-invalidation
+>
+> I think you're right, since the overflows will always occur on
+> mm->seqnum, tasks that do not share the mm shouldn't be affected.
+>
+> So the danger here is that when a lookup occurs, vmacache_valid() will
+> return true, having:
+>
+> mm == curr->mm && mm->vmacache_seqnum == curr->vmacache_seqnum (both 0).
+>
+> Then we just iterate the cache and potentially return some bugus vma.
+>
+> However, since we're now going to reset the seqnum on every fork/clone
+> (before it was just the oldmm->seqnum + 1 thing), I doubt we'll ever
+> overflow.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I'm concerned about it *precisely* because it won't happen often, and
+so it'd be hard to debug if we had a problem there. 64 bits would be
+safe, but a 32-bit counter doesn't take that long to overflow, and I'm
+sure it will happen once in a while in production.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Actually, I think there is a case for masking the seqnum with a
+constant (all ones in production builds, but something shorter when
+CONFIG_DEBUG_VM is enabled) so that this code is easier to exercise.
 
-diff --cc mm/memcontrol.c
-index d9c6ac1532e6,452f45087566..000000000000
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@@ -1683,25 -1683,54 +1683,25 @@@ static void move_unlock_mem_cgroup(stru
-   */
-  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_stru=
-ct *p)
-  {
- -	/*
- -	 * protects memcg_name and makes sure that parallel ooms do not
- -	 * interleave
- -	 */
- +	/* oom_info_lock ensures that parallel ooms do not interleave */
-- 	static DEFINE_SPINLOCK(oom_info_lock);
-+ 	static DEFINE_MUTEX(oom_info_lock);
- -	struct cgroup *task_cgrp;
- -	struct cgroup *mem_cgrp;
- -	static char memcg_name[PATH_MAX];
- -	int ret;
-  	struct mem_cgroup *iter;
-  	unsigned int i;
- =20
-  	if (!p)
-  		return;
- =20
-- 	spin_lock(&oom_info_lock);
-+ 	mutex_lock(&oom_info_lock);
-  	rcu_read_lock();
- =20
- -	mem_cgrp =3D memcg->css.cgroup;
- -	task_cgrp =3D task_cgroup(p, mem_cgroup_subsys_id);
- +	pr_info("Task in ");
- +	pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));
- +	pr_info(" killed as a result of limit of ");
- +	pr_cont_cgroup_path(memcg->css.cgroup);
- +	pr_info("\n");
- =20
- -	ret =3D cgroup_path(task_cgrp, memcg_name, PATH_MAX);
- -	if (ret < 0) {
- -		/*
- -		 * Unfortunately, we are unable to convert to a useful name
- -		 * But we'll still print out the usage information
- -		 */
- -		rcu_read_unlock();
- -		goto done;
- -	}
-  	rcu_read_unlock();
- =20
- -	pr_info("Task in %s killed", memcg_name);
- -
- -	rcu_read_lock();
- -	ret =3D cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
- -	if (ret < 0) {
- -		rcu_read_unlock();
- -		goto done;
- -	}
- -	rcu_read_unlock();
- -
- -	/*
- -	 * Continues from above, so we don't need an KERN_ level
- -	 */
- -	pr_cont(" as a result of limit of %s\n", memcg_name);
- -done:
- -
-  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
-  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
-  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
+>> - My understanding is that the operation is safe because the caller
+>> has the mm's mmap_sem held for write, and other threads accessing the
+>> vma cache will have mmap_sem held at least for read, so we don't need
+>> extra locking to maintain the vma cache.
+>
+> Yes, that's how I see things as well.
+>
+>> Please 1- confirm this is the
+>> intention, 2- document this, and 3- only invalidate vma caches for
+>> threads that match the caller's mm so that mmap_sem locking can
+>> actually apply.
+>
+> Will do.
 
---Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW
-Content-Type: application/pgp-signature
+Thanks :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>> > +struct vm_area_struct *vmacache_find(struct mm_struct *mm,
+>> > +                                    unsigned long addr)
+>> > +
+>> > +{
+>> > +       int i;
+>> > +
+>> > +       if (!vmacache_valid(mm))
+>> > +               return NULL;
+>> > +
+>> > +       for (i = 0; i < VMACACHE_SIZE; i++) {
+>> > +               struct vm_area_struct *vma = current->vmacache[i];
+>> > +
+>> > +               if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+>> > +                       return vma;
+>> > +       }
+>> > +
+>> > +       return NULL;
+>> > +}
+>> > +
+>> > +void vmacache_update(struct mm_struct *mm, unsigned long addr,
+>> > +                    struct vm_area_struct *newvma)
+>> > +{
+>> > +       /*
+>> > +        * Hash based on the page number. Provides a good
+>> > +        * hit rate for workloads with good locality and
+>> > +        * those with random accesses as well.
+>> > +        */
+>> > +       int idx = (addr >> PAGE_SHIFT) & 3;
+>> > +       current->vmacache[idx] = newvma;
+>> > +}
+>>
+>> I did read the previous discussion about how to compute idx here. I
+>> did not at the time realize that you are searching all 4 vmacache
+>> entries on lookup - that is, we are only talking about eviction policy
+>> here, not a lookup hash policy.
+>
+> Right.
+>
+>> My understanding is that the reason both your current and your
+>> previous idx computations work, is that a random eviction policy would
+>> work too. Basically, what you do is pick some address bits that are
+>> 'random enough' to use as an eviction policy.
+>
+> What do you mean by random enough? I assume that would be something like
+> my original scheme were I used the last X bits of the offset within the
+> page.
 
-iQIcBAEBCAAGBQJTDZs2AAoJEMDTa8Ir7ZwV++UP/Az8172jyQkEQsOJ5brZWTnq
-98EhHaGbGdihrn/vHiyj8azr5aZ6DL7Xr634hwLJggC+RgDS/u1bTIlTF6Q58Cix
-r0oXFzKAlL4DQxRBAyOa1WGHgwEnKn5VpiIWAXQcUjvRpjoo8SA+q2Aj6H749xPY
-pdNi7CotbyGhWxqHSBynthp6PgYcARJqvHJWoT39iTi2nyRmnjZ1YUsFFRc02p+y
-9vg6wLD02CaIg4VCGMyRU39GCj/fqASkqaktdrJJyeUU2qz5waVuDBSEdbuTR/kq
-ksUaI9HrsFMi7j4kMnvUDgm19XQSVw0v0msYpyspJHQrjrsIk8g5fCpxOPAM+hhA
-BgGDrDpjy3v2IeItzUxAnIPi/10Qm6zY01rOgIa5I0/tRhjsB+Rvt7UTOtpg/qgR
-jcFP3Rj4amtFP97gOcMmH3brfciOG8CQf66wArphP86pX5yHxwzKVhfIySdKLbce
-UwxGiioWOuhoM5+2kRoQSgBICaBXcVzMSL6Ccr9yk9ovMthzF2e3fPKaqzWN/4r0
-nUG/LXr8NulHIReJwUqctAqXDk46qTA7qnt9pVCxFmg3ONVgccQzXAKkNO7rrEbL
-r4hDlJZuvknyI0M5GmRrTlpOayrIZ1j5oFcVi04CS7EOkqFUhg/ymOUf1qHVhqys
-Ik5wjBddYCHxGR9ciVK9
-=pd3L
------END PGP SIGNATURE-----
+What I mean is that if you used a per-thread random number generator
+to compute idx, such as prandom_u32_state() for example, you'd get
+nice enough results already - after all, random eviction is not that
+bad. So, my hunch is that the particular way you compute idx based on
+the address works not because it catches on some particular property
+of the access patterns, but just because the sequence of indexes it
+ends up generating is as good as a random one.
 
---Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW--
+>> This is more of a question for Linus, but I am very surprised that I
+>> can't find an existing LRU eviction policy scheme in Linux. What I
+>> have in mind is to keep track of the order the cache entries have last
+>> been used. With 4 entries, there are 4! = 24 possible orders, which
+>> can be represented with an integer between 0 and 23. When
+>> vmacache_find suceeds, that integer is updated using a table lookup
+>> (table takes 24*4 = 96 bytes). In vmacache_update, the lru value
+>> module 4 indicates which cache way to evict (i.e. it's the one that's
+>> been least recently used).
+>
+> While not completely related, I did play with a mod 4 hashing scheme
+> before I got to the one I'm proposing now. It was just not as effective.
+
+I believe you mean using idx = addr % 4 ? I can see that this wouldn't
+work well, because index 0 would be chosen way too often (i.e. any
+time the address is aligned, or the first access into a given page is
+from reading a byte stream that crosses into it, etc).
+
+But, what I propose above is entirely different, it is just picking
+whatever cache index was least recently used for lookups. In this
+context, the 'modulo 4' is only an implementation detail of how I
+propose we track LRU order between the 4 cache slots.
+
+By the way, I'm happy enough with your patch going in with your
+proposed eviction scheme; LRU eviction is a refinement that is best
+done as a separate patch. It just came up because I think it would be
+applicable here.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
