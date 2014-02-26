@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaBZMsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 07:48:13 -0500
-Received: from mail.efficios.com ([78.47.125.74]:41456 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814AbaBZMsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 07:48:12 -0500
-Date: Wed, 26 Feb 2014 12:48:12 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <192956891.30659.1393418892222.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140226085926.GF18404@twins.programming.kicks-ass.net>
-References: <20140225191505.32b56105@gandalf.local.home> <188130295.30493.1393375141631.JavaMail.zimbra@efficios.com> <20140225194926.4eac5872@gandalf.local.home> <20140226085926.GF18404@twins.programming.kicks-ass.net>
-Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
- loaded due to module taint
+	id S1751910AbaBZMwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 07:52:06 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60593 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaBZMwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 07:52:04 -0500
+Date: Wed, 26 Feb 2014 12:51:57 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Cyril Chemparathy <cyril@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/5] mfd: remove obsolete ti-ssp driver
+Message-ID: <20140226125157.GM9195@lee--X1>
+References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
+ <1393418614-3968549-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: tracing: Warn and notify if tracepoints are not loaded due to module taint
-Thread-Index: 7h/v+Xs0y9Aqtsxe5AJk1yG7bGjpPg==
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393418614-3968549-5-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: "Peter Zijlstra" <peterz@infradead.org>
-> To: "Steven Rostedt" <rostedt@goodmis.org>
-> Cc: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "LKML" <linux-kernel@vger.kernel.org>, "Ingo Molnar"
-> <mingo@kernel.org>, "Rusty Russell" <rusty@rustcorp.com.au>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew
-> Morton" <akpm@linux-foundation.org>
-> Sent: Wednesday, February 26, 2014 3:59:26 AM
-> Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not loaded due to module taint
+> The tnetv107x platform is getting removed, so this driver
+> is not needed any more.
 > 
-> On Tue, Feb 25, 2014 at 07:49:26PM -0500, Steven Rostedt wrote:
-> > > > -	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-> > > > +	if (WARN_ONCE(mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 <<
-> > > > TAINT_CRAP)),
-> > > > +		      "Module is tainted, disabling tracepoints"))
-> 
-> > I originally had that with a simple WARN() instead of WARN_ONCE(), but
-> > if you have that config which makes all modules not have sigs correct,
-> > it spits out tens of these warnings and can cause more panic in users
-> > than it deserves. I then switched it to WARN_ONCE(), and then thought,
-> > that if it does it only once for the first module, it wont print the
-> > warning again for the other affected modules. That means it may confuse
-> > the user if they see a module had that warning, but the module they are
-> > trying to trace isn't working either.
-> > 
-> > I then figured it would be good to remove the module name and just
-> > state a general "Module is tainted, disabling tracepoints" and if the
-> > user notices that the module isn't working, and then looks at their
-> > dmesg, they'll see this message and just assume it was the module that
-> > wasn't working.
-> > 
-> > Make sense?
-> 
-> How about instead of a WARN, you use a normal KERN_ERR printk(). There's
-> no point to the entire WARN state dump, that's needlessly verbose.
-> 
-> When you have a normal error print you can have as many as are required
-> and put the mod name back in.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/Kconfig  |  11 --
+>  drivers/mfd/Makefile |   1 -
+>  drivers/mfd/ti-ssp.c | 465 ---------------------------------------------------
+>  3 files changed, 477 deletions(-)
+>  delete mode 100644 drivers/mfd/ti-ssp.c
 
-The good old printk KERN_ERR is a very good idea. I agree that WARN() is
-too verbose for our needs here.
-
-Thanks,
-
-Mathieu
-
+Applied, thanks.
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
