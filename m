@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaBZQry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:47:54 -0500
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:46266
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751936AbaBZQrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:47:52 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "rui.zhang@intel.com" <rui.zhang@intel.com>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>
-Subject: Re: [RFC PATCH 0/8] ACPI: change the way of enumerating
- PNPACPI/Platform devices
-Thread-Topic: [RFC PATCH 0/8] ACPI: change the way of enumerating
- PNPACPI/Platform devices
-Thread-Index: AQHPMtK4cG7APMXHIUq7OaKkVNhdy5rHv0+A
-Date: Wed, 26 Feb 2014 16:47:48 +0000
-Message-ID: <1393433267.14900.3.camel@x230>
-References: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
-In-Reply-To: <1393405874-3266-1-git-send-email-rui.zhang@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-forefront-prvs: 0134AD334F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(24454002)(199002)(377424004)(189002)(95416001)(94946001)(74662001)(31966008)(74502001)(86362001)(92566001)(54316002)(76482001)(74876001)(54356001)(92726001)(53806001)(47446002)(33646001)(19580405001)(19580395003)(83072002)(83322001)(95666003)(81816001)(51856001)(77096001)(80976001)(74366001)(2656002)(81686001)(85306002)(87936001)(59766001)(47736001)(50986001)(33716001)(49866001)(79102001)(47976001)(77982001)(81342001)(65816001)(80022001)(69226001)(93136001)(90146001)(85852003)(87266001)(81542001)(63696002)(94316002)(46102001)(74706001)(76796001)(76786001)(56816005)(56776001)(4396001)(93516002)(3826001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR05MB754;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6267:20ff:fec3:2318;FPR:B0F5721D.DDE5419.F1F29394.C8BC9E52.201D7;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <102124477E7D1C48A3434E049DFB829F@namprd05.prod.outlook.com>
+	id S1753258AbaBZQsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:48:43 -0500
+Received: from imap.thunk.org ([74.207.234.97]:34389 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753053AbaBZQsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 11:48:41 -0500
+Date: Wed, 26 Feb 2014 11:48:28 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        lczerner@redhat.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v6] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for
+ fallocate
+Message-ID: <20140226164827.GB11452@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
+	david@fromorbit.com, bpm@sgi.com, adilger.kernel@dilger.ca,
+	jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Namjae Jeon <namjae.jeon@samsung.com>,
+	Ashish Sangwan <a.sangwan@samsung.com>
+References: <1392908861-3563-1-git-send-email-linkinjeon@gmail.com>
+ <20140222170930.GE26637@thunk.org>
+ <CAKYAXd9vTbjTnJOQ1Y=pi4QJSYj41fWsQgRD3Fkufskez2W-YA@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd9vTbjTnJOQ1Y=pi4QJSYj41fWsQgRD3Fkufskez2W-YA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1QGm0BL032328
 
-On Wed, 2014-02-26 at 17:11 +0800, Zhang Rui wrote:
+On Mon, Feb 24, 2014 at 10:22:10AM +0900, Namjae Jeon wrote:
+> >> +	ret = ext4_es_remove_extent(inode, punch_start,
+> >> +				    EXT_MAX_BLOCKS - punch_start - 1);
+> >> +	if (ret) {
+> >> +		up_write(&EXT4_I(inode)->i_data_sem);
+> >> +		goto out_stop;
+> >> +	}
+> >
+> > Doing this at first is probably a bad idea; you should do this at the
+> > end, and then completely invalidate the es cache for that inode.  That
+> > way, the right thing happens if you get an error in the middle
+> > releasing the boxes and shifting the extents:
+> Okay, I see.
 
-> 1. without the patch, the acpi_platform scan handler white list is
->    continuously growing.
-> 2. with the patch set, the PNPACPI scan handler white list will become
->    smaller and smaller by
->    a) remove the ids from the PNPACPI white list, for the devices
->       that are never enumerated via ACPI
->    b) remove the ids from the PNPACPI whilte list and convert the drivers to
->       platform bus drivers, for the devices that are not PNP devices in nature.
->    which will be done later.
+Actually, thinking about this some more, we do want to do this first,
+since if we error out, we do need to make sure the extent cache is
+flushed.
 
-I agree that this is the right direction to go in. The number of acpipnp
-devices that are also pnpbios or (even worse) isapnp is (a) unlikely to
-increase, and (b) *very* small, and pretty much limited to superio and a
-small number of sound cards on old laptops. We may come up with a better
-solution for them later, but right now shifting away from requiring that
-every new ACPI device driver also bump a whitelist is an improvement.
+> If there is error in the middle of extent shifting, the hole will
+> present between the last shifted extent and the extent at which error
+> happen so this will be consistent state.
+> IMHO even if there is error in between the shift, filesystem will be
+> in consistent state.
+> Am I missing something?
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+No, I was wrong about that; you're right.  The file will be in an
+inconsistent statement, which will probably be highly confusing for
+the application, but the file system will be fine.
+
+So I withdraw my complaints.  I'll do a bit more testing, but so far
+the patch looks fine to me.  Thanks for your reply and your work!
+
+					- Ted
