@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaBZVkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 16:40:08 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36135 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaBZVkG (ORCPT
+	id S1753974AbaBZVlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:41:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55102 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753580AbaBZVlp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 16:40:06 -0500
-Date: Wed, 26 Feb 2014 13:40:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Waiman Long <waiman.long@hp.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 0/8] locking/core patches
-Message-ID: <20140226214002.GA5660@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140210195820.834693028@infradead.org>
+	Wed, 26 Feb 2014 16:41:45 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v3] drivers: cpufreq: Mark function as static in cpufreq.c
+Date: Wed, 26 Feb 2014 22:56:45 +0100
+Message-ID: <16591432.HQVTHU5NYJ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393432962-3647-1-git-send-email-rashika.kheria@gmail.com>
+References: <20140226154625.GA10701@rashika> <1393432962-3647-1-git-send-email-rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140210195820.834693028@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022621-3532-0000-0000-0000060C5046
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 10, 2014 at 08:58:20PM +0100, Peter Zijlstra wrote:
-> Hi all,
+On Wednesday, February 26, 2014 10:12:42 PM Rashika Kheria wrote:
+> Mark function as static in cpufreq.c because it is not
+> used outside this file.
 > 
-> I would propose merging the following patches...
+> This eliminates the following warning in cpufreq.c:
+> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for ‘show_boost’ [-Wmissing-prototypes]
 > 
-> The first set is mostly from Jason and tweaks the mutex adaptive
-> spinning, AIM7 throughput numbers:
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+
+v2 has been Reviewed-by: Josh already, right?
+
+> ---
+> Changes since v1:
+> Incorrect Fix
+> Changes since v2:
+> Show Changelog
 > 
-> PRE:  100   2000.04  21564.90 2721.29 311.99     3.12       0.01     0.00     99
-> POST: 100   2000.04  42603.85 5142.80 311.99     3.12       0.00     0.00     99
+>  drivers/cpufreq/cpufreq.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> The second set is the qrwlock, although mostly rewritten by me. I didn't do
-> much with it other than boot and build a kernel. But I like them because
-> of the much better worst case preformance.
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 08ca8c9..54fd670 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+>  /*********************************************************************
+>   *                          SYSFS INTERFACE                          *
+>   *********************************************************************/
+> -ssize_t show_boost(struct kobject *kobj,
+> +static ssize_t show_boost(struct kobject *kobj,
+>  				 struct attribute *attr, char *buf)
+>  {
+>  	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
+> 
 
-This series passes a short locktorture test when based on top of current
-tip/core/locking.
-
-But don't read too much into this...  This was in an 8-CPU KVM guest on
-x86, and locktorture is still a bit on the lame side.  But you have to
-start somewhere!
-
-							Thanx, Paul
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
