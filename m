@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaBZFMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:12:16 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:55545 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaBZFMH (ORCPT
+	id S1752729AbaBZFM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:12:27 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:13010 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaBZFMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:12:07 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-91-530d77a34e33
-Date: Wed, 26 Feb 2014 05:12:03 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH] PM / devfreq: Fix out of bounds access of transition
- table array
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+	Wed, 26 Feb 2014 00:12:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 25 Feb 2014 21:09:43 -0800
+Message-ID: <530D77B0.8080807@nvidia.com>
+Date: Wed, 26 Feb 2014 14:12:16 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20140226051127859@myungjoo.ham
-Msgkey: 20140226051127859@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140226051127859@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <19338058.266151393391521988.JavaMail.weblogic@epml02>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42JZI2JSpLu4nDfY4OVnIYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJWxdHUvU8Emnorna68zNzC28HQxcnIICahLLFpykg3ElhAwkZh7
-	+iELhC0mceHeeqA4F1DNUkaJl9dOM8EUzXo2iwUiMZ9Rovv/ckaQBIuAqsTvX6uAOjg42ATM
-	Je7PCAIJCwtESly7MRVsgYiAnsSRphWsIL3MAueZJC52nWKCuEJJYs2+V2CbeQUEJU7OfAJ1
-	hapE17rJrCAzeQXUJFoehUCEJSRmTb/ACmHzSsxofwpVLicx7esaZghbWuL8rA2MMM8s/v4Y
-	Ks4vcez2DiaQkSC9T+4Hw4zZvfkLNBwEJKaeOQjVqiUxvXEP1Co+iTUL37LAjNl1ajkzTO/9
-	LXPBPmEWUJSY0v2QHcLWkvjyYx8buq94BZwkPj57wj6BUXkWktQsJO2zkLQjq1nAyLKKUTS1
-	ILmgOCm9yFCvODG3uDQvXS85P3cTIzAtnP73rHcH4+0D1ocYk4ExMpFZSjQ5H5hW8kriDY3N
-	jCxMTUyNjcwtzUgTVhLnTXqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB8bg8Qw67NLOY
-	a9eRqx2uVr2vrz6VC7v7NrhtMXPJ4x/Pbmm9v7C49d+cvlBvlnj2qedv/zDi43SfdfZvHFtr
-	1a6LdicfxLFld8jbZBW1i9gqyUtHXdF/rrxmDtMP9p1/P1ifkbsj7jvnn+TyGwaldnHHlugn
-	Jf3REPggv3zDk+1eX1cI+GaUKLEUZyQaajEXFScCAAj3M5khAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPKsWRmVeSWpSXmKPExsVy+t/tGbqLy3mDDfYs5bG4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRlL
-	V/cyFWziqXi+9jpzA2MLTxcjJ4eQgLrEoiUn2UBsCQETiVnPZrFA2GISF+6tB4pzAdXMZ5To
-	/r+cESTBIqAq8fvXKqAEBwebgLnE/RlBIGFhgUiJazemgs0REdCTONK0ghWkl1ngPJPExa5T
-	TBDLlCTW7HsFtoBXQFDi5MwnUMtUJbrWTWYFmckroCbR8igEIiwhMWv6BVYIm1diRvtTqHI5
-	iWlf1zBD2NIS52dtYIS5efH3x1Bxfoljt3cwgYwE6X1yPxhmzO7NX6DeFZCYeuYgVKuWxPTG
-	PVCr+CTWLHzLAjNm16nlzDC997fMBfuEWUBRYkr3Q3YIW0viy499bOi+4hVwkvj47An7BEa5
-	WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9AoTveLE3OLSvHS95PzcTYzg5PRsyQ7GhgvWhxgF
-	OBiVeHgDWHiDhVgTy4orcw8xSnAwK4nwSmcDhXhTEiurUovy44tKc1KLDzEmA+NvIrOUaHI+
-	MHHmlcQbGhubmJmYWppYGJiakyasJM674FZSkJBAemJJanZqakFqEcwWJg5OqQZGXVN/ps12
-	64Juu9wTqJxTLt0mliZSUOSyqGt+0trW8Itlebw63k+uTVEQ3fH1bOjJ/uOr2GZymUYwX6q9
-	4H+ufibHmxKGmvLv26Xn+i/W6+p7uktOoXv6rb8mPRP+rpsf8WiblrBV9TeuK4lTPp+ccOj3
-	qrkTXnZ1M02XKYv+O2Hy5cmaPWumKLEUZyQaajEXFScCAOZZLhmSAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: add device tree for SHIELD
+References: <1393237593-28121-1-git-send-email-acourbot@nvidia.com> <530B952D.2000006@wwwdotorg.org> <530BFC58.6020003@nvidia.com> <530D1B7A.9070209@wwwdotorg.org> <530D748D.6010802@nvidia.com> <530D754A.60700@wwwdotorg.org>
+In-Reply-To: <530D754A.60700@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1Q5CPhe027999
 
-> On 02/23/2014 11:15 PM, Saravana Kannan wrote:
-> > The previous_freq value for a device could be an invalid frequency that
-> > results in a error value being returned from devfreq_get_freq_level().
-> > Check for an error value before using that to index into the transition
-> > table.
-> >
-> > Not doing this check will result in memory corruption when previous_freq is
-> > not a valid frequency.
-> >
-> > Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> 
-> MyungJoo/Kyungmin,
-> 
-> Would either of you have some time to respond to this?
-> 
-> Thanks,
-> Saravana
+On 02/26/2014 02:02 PM, Stephen Warren wrote:
+> On 02/25/2014 09:58 PM, Alexandre Courbot wrote:
+>> On 02/26/2014 07:38 AM, Stephen Warren wrote:
+>>> On 02/24/2014 07:13 PM, Alexandre Courbot wrote:
+>>>> On 02/25/2014 03:53 AM, Stephen Warren wrote:
+>>>>> On 02/24/2014 03:26 AM, Alexandre Courbot wrote:
+>>>>>> Add a device tree for NVIDIA SHIELD. The set of enabled features is
+>>>>>> still minimal with no display option (although HDMI should be easy
+>>>>>> to get to work) and USB requiring external power.
+> ...
+>>>> For the Wifi chip, non-removable would be the correct setting
+>>>> hardware-wise, but there is a trap: the chip has its reset line asserted
+>>>> at boot-time, and you need to set GPIO 229 to de-assert it. Only after
+>>>> that will the device be detected on the SDIO bus. Since it lacks a CD
+>>>> line, it must be polled, hence the broken-cd property.
+>>>
+>>> How does that GPIO get manipulated right now? I assume you must be
+>>> manually configuring it via sysfs after boot or something? If so,
+>>> perhaps it's best to just leave out the WiFi node until it works
+>>> automatically.
+>>
+>> The GPIO needs to be set from user-space, yes. But if we leave the Wifi
+>> node out, I'm concerned that wireless will not be usable at all,
+>> wouldn't it?
+>
+> True, but if we have no representation of the device in DT that works
+> without manually enabling clocks and/or GPIOs, it's not a
+> complete/accurate representation of the HW, so it doesn't make sense to
+> add it to DT. Yes, I admit that sucks.
 
-Dear Saravana,
-
-> > +	prev_lev = devfreq_get_freq_level(devfreq, devfreq->previous_freq);
-> > +	if (prev_lev < 0)
-> > +		return 0;
-
-If devfreq_get_freq_level returned error, please return that error
-to the caller. You are retuning 0 in that case.
-
-Plus, do you think we are going to change profile->freq_table in run-time?
-(by accidently? or intentionally?)
-
-Cheers,
-MyungJoo.
-
-> 
-> 
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
-> 
->        
->   
->          
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Well, I can always enable it in my out-of-tree branch until we can push 
+the complete binding in mainline, so I'm ok with taking it out of this 
+patch for now.
