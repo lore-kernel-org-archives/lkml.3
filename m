@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaBZBfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:35:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34487 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900AbaBZBfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:35:52 -0500
-Message-ID: <530D44C2.6040506@zytor.com>
-Date: Tue, 25 Feb 2014 17:34:58 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751245AbaBZBlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:41:21 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6436 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaBZBlT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 20:41:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 25 Feb 2014 17:37:39 -0800
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH] gpio: clamp returned values to the boolean range
+Date: Wed, 26 Feb 2014 10:40:00 +0900
+Message-ID: <1393378800-7220-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.9.0
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Behan Webster <behanw@converseincode.com>, Dave Jones <davej@redhat.com>,
-        mmarek@suse.cz, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        sparse@chrisli.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
-        torvalds@linux-foundation.org, dwmw2@infradead.org,
-        pageexec@freemail.hu,
-        =?ISO-8859-1?Q?Jan-Simon_M=F6ller?= <dl9pf@gmx.de>,
-        Mark Charlebois <mcharleb@gmail.com>
-Subject: Re: [PATCH 2/5] kbuild: LLVMLinux: Adapt warnings for compilation
- with clang
-References: <1393376923-21892-1-git-send-email-behanw@converseincode.com> <1393376923-21892-3-git-send-email-behanw@converseincode.com> <20140226011737.GA4564@redhat.com> <530D43E9.6010207@converseincode.com>
-In-Reply-To: <530D43E9.6010207@converseincode.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 05:31 PM, Behan Webster wrote:
-> 
-> This are primarily off due to the amount of noise these warnings produce
-> at this time (clang produces a LOT of warnings straight out of the box).
-> I'd love to eventually turn some of these back on again.
-> 
+Nothing prevents GPIO drivers from returning values outside the
+boolean range, and as it turns out a few drivers are actually doing so.
+These values were passed as-is to unsuspecting consumers and created
+confusion.
 
-It would also be nice if someone would be willing to look at the sparse
-warnings the kernel output -- there are tens of thousands of them it
-seems, although some are from header files.
+This patch makes the internal _gpiod_get_raw_value() function return a
+bool, effectively clamping the GPIO value to the boolean range no
+matter what the driver does.
 
-	-hpa
+While we are at it, we also change the value parameter of
+_gpiod_set_raw_value() to bool type before drivers start doing funny
+things with non-boolean values.
 
+Another way to fix this would be to change the prototypes of the driver
+interface to use bool directly, but this would require a huge
+cross-systems patch so this simpler solution is preferred.
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+This issue was discussed some time ago already
+(https://www.mail-archive.com/linux-gpio@vger.kernel.org/msg02019.html),
+here is finally the fix for it. Not exactly what we planned but who would
+take a hundreds-lines change when a two-liner does the same?
+
+ drivers/gpio/gpiolib.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 50c4922fe53a..45cefccbf4bf 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1928,7 +1928,7 @@ EXPORT_SYMBOL_GPL(gpiod_is_active_low);
+  * that the GPIO was actually requested.
+  */
+ 
+-static int _gpiod_get_raw_value(const struct gpio_desc *desc)
++static bool _gpiod_get_raw_value(const struct gpio_desc *desc)
+ {
+ 	struct gpio_chip	*chip;
+ 	int value;
+@@ -2041,7 +2041,7 @@ static void _gpio_set_open_source_value(struct gpio_desc *desc, int value)
+ 			  __func__, err);
+ }
+ 
+-static void _gpiod_set_raw_value(struct gpio_desc *desc, int value)
++static void _gpiod_set_raw_value(struct gpio_desc *desc, bool value)
+ {
+ 	struct gpio_chip	*chip;
+ 
+-- 
+1.9.0
 
