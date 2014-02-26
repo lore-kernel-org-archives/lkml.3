@@ -1,153 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaBZNCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:02:48 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:59707 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaBZNCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:02:45 -0500
-Date: Wed, 26 Feb 2014 14:02:42 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Henrik Austad <henrik@austad.us>
-Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/6 v2] Expose do_timer CPU as RW to userspace
-Message-ID: <20140226130234.GA3104@localhost.localdomain>
-References: <1393331641-14016-1-git-send-email-henrik@austad.us>
- <20140225141906.GA22814@localhost.localdomain>
- <20140226081602.GA16591@austad.us>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226081602.GA16591@austad.us>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752120AbaBZNDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:03:22 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46280 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489AbaBZNDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:03:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,547,1389772800"; 
+   d="scan'208";a="488391779"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: tj@kernel.org, jolsa@redhat.com, oleg@redhat.com, lenb@kernel.org,
+        rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ACPI/Processor: Rework processor throttling with work_on_cpu()
+Date: Wed, 26 Feb 2014 21:03:05 +0800
+Message-Id: <1393419786-5275-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 09:16:03AM +0100, Henrik Austad wrote:
-> On Tue, Feb 25, 2014 at 03:19:09PM +0100, Frederic Weisbecker wrote:
-> > On Tue, Feb 25, 2014 at 01:33:55PM +0100, Henrik Austad wrote:
-> > > From: Henrik Austad <haustad@cisco.com>
-> > > 
-> > > Hi!
-> > > 
-> > > This is a rework of the preiovus patch based on the feedback gathered
-> > > from the last round. I've split it up a bit, mostly to make it easier to
-> > > single out the parts that require more attention (#4 comes to mind).
-> > > 
-> > > Being able to read (and possible force a specific CPU to handle all
-> > > do_timer() updates) can be very handy when debugging a system and tuning
-> > > for performance. It is not always easy to route interrupts to a specific
-> > > core (or away from one, for that matter).
-> > 
-> > It's a bit vague as a reason for the patchset. Do we really need it?
-> 
-> One case is to move the timekeeping away from cores I know have 
-> interrupt-issues (in an embedded setup, it is not always easy to move 
-> interrupts away).
-> 
-> Another is to remove jitter from cores doing either real-time work or heavy 
-> workerthreads. The timekeeping update is pretty fast, but I do not see any 
-> reason for letting timekeeping interfere with my workers if it does not 
-> have to.
+acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+sure struct acpi_processor->acpi_processor_set_throttling() callback
+run on associated cpu. But the function maybe called in a worker which
+has been bound to a cpu. The patch is to replace set_cpus_allowed_ptr()
+with work_on_cpu().
 
-Ok. I'll get back to that below.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Change since v1:
+       Remove temp variable p_throttling and reference struct
+acpi_processor_throttling pointer directly from struct
+acpi_processor.
+
+ drivers/acpi/processor_throttling.c | 69 +++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
+index 28baa05..84243c3 100644
+--- a/drivers/acpi/processor_throttling.c
++++ b/drivers/acpi/processor_throttling.c
+@@ -56,6 +56,12 @@ struct throttling_tstate {
+ 	int target_state;		/* target T-state */
+ };
  
-> > Concerning the read-only part, if I want to know which CPU is handling the
-> > timekeeping, I'd rather use tracing than a sysfs file. I can correlate
-> > timekeeping update traces with other events. Especially as the timekeeping duty
-> > can change hands and move to any CPU all the time. We really don't want to
-> > poll on a sysfs file to get that information. It's not adapted and doesn't
-> > carry any timestamp. It may be useful only if the timekeeping CPU is static.
-> 
-> I agree that not having a timestamp will make it useless wrt to tracing, 
-> but that was never the intention. By having a sysfs/sysctl value you can 
-> quickly determine if the timekeeping is bound to a single core or if it is 
-> handled everywhere.
-> 
-> Tracing will give you the most accurate result, but that's not always what 
-> you want as tracing also provides an overhead (both in the kernel as well 
-> as in the head of the user) using the sysfs/sysctl interface for grabbing 
-> the CPU does not.
-> 
-> You can also use it to verify that the forced-cpu you just sat, did in fact 
-> have the desired effect.
-> 
-> Another approach I was contemplating, was to let current_cpu return the 
-> current mask CPUs where the timer is running, once you set it via 
-> forced_cpu, it will narrow down to that particular core. Would that be more 
-> useful for the RO approach outisde TICK_PERIODIC?
++struct acpi_processor_throttling_arg {
++	struct acpi_processor *pr;
++	int target_state;
++	bool force;
++};
++
+ #define THROTTLING_PRECHANGE       (1)
+ #define THROTTLING_POSTCHANGE      (2)
+ 
+@@ -1060,16 +1066,24 @@ static int acpi_processor_set_throttling_ptc(struct acpi_processor *pr,
+ 	return 0;
+ }
+ 
++static long acpi_processor_throttling_fn(void *data)
++{
++	struct acpi_processor_throttling_arg *arg = data;
++	struct acpi_processor *pr = arg->pr;
++
++	return pr->throttling.acpi_processor_set_throttling(pr,
++			arg->target_state, arg->force);
++}
++
+ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 						int state, bool force)
+ {
+-	cpumask_var_t saved_mask;
+ 	int ret = 0;
+ 	unsigned int i;
+ 	struct acpi_processor *match_pr;
+ 	struct acpi_processor_throttling *p_throttling;
++	struct acpi_processor_throttling_arg arg;
+ 	struct throttling_tstate t_state;
+-	cpumask_var_t online_throttling_cpus;
+ 
+ 	if (!pr)
+ 		return -EINVAL;
+@@ -1080,14 +1094,6 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
+ 		return -EINVAL;
+ 
+-	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
+-		return -ENOMEM;
+-
+-	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
+-		free_cpumask_var(saved_mask);
+-		return -ENOMEM;
+-	}
+-
+ 	if (cpu_is_offline(pr->id)) {
+ 		/*
+ 		 * the cpu pointed by pr->id is offline. Unnecessary to change
+@@ -1096,17 +1102,15 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 		return -ENODEV;
+ 	}
+ 
+-	cpumask_copy(saved_mask, &current->cpus_allowed);
+ 	t_state.target_state = state;
+ 	p_throttling = &(pr->throttling);
+-	cpumask_and(online_throttling_cpus, cpu_online_mask,
+-		    p_throttling->shared_cpu_map);
++
+ 	/*
+ 	 * The throttling notifier will be called for every
+ 	 * affected cpu in order to get one proper T-state.
+ 	 * The notifier event is THROTTLING_PRECHANGE.
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
+ 							&t_state);
+@@ -1118,21 +1122,18 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 	 * it can be called only for the cpu pointed by pr.
+ 	 */
+ 	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
+-		/* FIXME: use work_on_cpu() */
+-		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
+-			/* Can't migrate to the pr->id CPU. Exit */
+-			ret = -ENODEV;
+-			goto exit;
+-		}
+-		ret = p_throttling->acpi_processor_set_throttling(pr,
+-						t_state.target_state, force);
++		arg.pr = pr;
++		arg.target_state = state;
++		arg.force = force;
++		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
+ 	} else {
+ 		/*
+ 		 * When the T-state coordination is SW_ALL or HW_ALL,
+ 		 * it is necessary to set T-state for every affected
+ 		 * cpus.
+ 		 */
+-		for_each_cpu(i, online_throttling_cpus) {
++		for_each_cpu_and(i, cpu_online_mask,
++		    p_throttling->shared_cpu_map) {
+ 			match_pr = per_cpu(processors, i);
+ 			/*
+ 			 * If the pointer is invalid, we will report the
+@@ -1153,13 +1154,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 					"on CPU %d\n", i));
+ 				continue;
+ 			}
+-			t_state.cpu = i;
+-			/* FIXME: use work_on_cpu() */
+-			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
+-				continue;
+-			ret = match_pr->throttling.
+-				acpi_processor_set_throttling(
+-				match_pr, t_state.target_state, force);
++
++			arg.pr = match_pr;
++			arg.target_state = state;
++			arg.force = force;
++			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
++				&arg);
+ 		}
+ 	}
+ 	/*
+@@ -1168,17 +1168,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+ 	 * affected cpu to update the T-states.
+ 	 * The notifier event is THROTTLING_POSTCHANGE
+ 	 */
+-	for_each_cpu(i, online_throttling_cpus) {
++	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+ 		t_state.cpu = i;
+ 		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
+ 							&t_state);
+ 	}
+-	/* restore the previous state */
+-	/* FIXME: use work_on_cpu() */
+-	set_cpus_allowed_ptr(current, saved_mask);
+-exit:
+-	free_cpumask_var(online_throttling_cpus);
+-	free_cpumask_var(saved_mask);
++
+ 	return ret;
+ }
+ 
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
-Ok so this is about checking which CPU the timekeeping is bound to.
-But what do you diplay in the normal case (ie: when timekeeping is globally affine?)
-
--1 could be an option but hmm...
-
-Wouldn't it be saner to use a cpumask of the timer affinity instead? This
-is the traditional way we affine something in /proc or /sys
-
-> 
-> > Now looking at the write part. What kind of usecase do you have in mind?
-> 
-> Forcing the timer to run on single core only, and a core of my choosing at 
-> that.
-> 
-> - Get timekeeping away from cores with bad interrupts (no, I cannot move 
->   them).
-> - Avoid running timekeeping udpates on worker-cores.
-
-Ok but what you're moving away is not the tick but the timekeeping duty, which
-is only a part of the tick. A significant part but still just a part.
-
-Does this all make sense outside the NO_HZ_FULL case?
-
-> 
-> > It's also important to consider that, in the case of NO_HZ_IDLE, if you force
-> > the timekeeping duty to a specific CPU, it won't be able to enter in dynticks
-> > idle mode as long as any other CPU is running. 
-> 
-> Yes, it will in effect be a TICK_PERIODIC core where I can configure which 
-> core the timekeeping update will happen.
-
-Ok, I missed that part. So when the timekeeping is affine to a specific CPU,
-this CPU is prevented to enter into dynticks idle mode?
-
-> 
-> > Because those CPUs can make use of jiffies or gettimeofday() and must 
-> > have uptodate values. This involve quite some complication like using the 
-> > full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE) to avoid races 
-> > between timekeeper entering dynticks idle mode and other CPUs waking up 
-> > from idle. But the worst here is the powesaving issues resulting from the 
-> > timekeeper who can't sleep.
-> 
-> Personally, when I force the timer to be bound to a specific CPU, I'm 
-> pretty happy with the fact that it won't be allowed to turn ticks off. At 
-> that stage, powersave is the least of my concerns, throughput and/or jitter 
-> is.
-> 
-> I know that what I'm doing is in effect turning the kernel into a 
-> somewhat more configurable TICK_PERIODIC kernel (in the sense that I can 
-> set the timer to run on something other than the boot-cpu).
-
-I see.
-
-> 
-> > These issues are being dealt with in NO_HZ_FULL because we want the 
-> > timekeeping duty to be affine to the CPUs that are no full dynticks. But 
-> > in the case of NO_HZ_IDLE, I fear it's not going to be desirable.
-> 
-> Hum? I didn't get that one, what do you mean?
-
-So in NO_HZ_FULL we do something that is very close to what're doing: the timekeeping
-is affine to the boot CPU and it stays periodic whatever happens.
-
-But we start to worry about powersaving. When the whole system is idle, there is
-no point is preventing the CPU 0 to sleep. So we are dealing with that by using a
-full system idle detection that lets CPU 0 go to sleep when there is strictly nothing
-to do. Then when nohz full CPU wakes up from idle, CPU 0 is woken up as well to get back
-to its timekeeping duty.
