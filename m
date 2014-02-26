@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981AbaBZSIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 13:08:00 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:24238 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751334AbaBZSH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 13:07:59 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlcGABEtDlNXQ4FW/2dsb2JhbABagwbCA4EZF3SCVRMcIxiBAiQTh30ByTMXjgdNhD4EmDUBilKHVoMuO4Et
-Date: Wed, 26 Feb 2014 19:07:56 +0100
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: swhiteho <swhiteho@redhat.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/gfs2/quota.c: replace kmalloc - __vmalloc / memset 0
-Message-Id: <20140226190756.f2f898b9210e6e4cf48f60f7@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753083AbaBZSI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 13:08:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaBZSI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 13:08:56 -0500
+Date: Wed, 26 Feb 2014 19:08:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        schwidefsky@de.ibm.com, rientjes@google.com, riel@redhat.com,
+        pbonzini@redhat.com, mingo@kernel.org, mgorman@suse.de,
+        kirill.shutemov@linux.intel.com, heiko.carstens@de.ibm.com,
+        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com, ebiederm@xmission.com,
+        aarcange@redhat.com, athorlton@sgi.com
+Subject: Re: +
+	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch added
+	to -mm tree
+Message-ID: <20140226180807.GB25644@redhat.com>
+References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com> <530E0306.7020601@de.ibm.com> <20140226153144.GA15527@redhat.com> <20140226165759.GB22802@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226165759.GB22802@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kzalloc and __vmalloc __GFP_ZERO for clean sd_quota_bitmap allocation.
+On 02/26, Peter Zijlstra wrote:
+>
+> On Wed, Feb 26, 2014 at 04:31:44PM +0100, Oleg Nesterov wrote:
+> >  		/*
+> > @@ -1977,8 +1975,12 @@ int hugepage_madvise(struct vm_area_stru
+> >  		 */
+> >  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+> >  			return -EINVAL;
+> > -		if (mm->def_flags & VM_NOHUGEPAGE)
+> > +
+> > +#ifdef CONFIG_S390
+>
+> Do we want a comment here, explaining why s390 is special again?
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/gfs2/quota.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Yes, yes, sure. Especially because this is (hopefully) the temporary
+hack.
 
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index 8bec0e31..1ee4b88 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -1242,14 +1242,13 @@ int gfs2_quota_init(struct gfs2_sbd *sdp)
- 	bm_size = DIV_ROUND_UP(sdp->sd_quota_slots, 8 * sizeof(unsigned long));
- 	bm_size *= sizeof(unsigned long);
- 	error = -ENOMEM;
--	sdp->sd_quota_bitmap = kmalloc(bm_size, GFP_NOFS|__GFP_NOWARN);
-+	sdp->sd_quota_bitmap = kzalloc(bm_size, GFP_NOFS | __GFP_NOWARN);
- 	if (sdp->sd_quota_bitmap == NULL)
--		sdp->sd_quota_bitmap = __vmalloc(bm_size, GFP_NOFS, PAGE_KERNEL);
-+		sdp->sd_quota_bitmap = __vmalloc(bm_size, GFP_NOFS |
-+						 __GFP_ZERO, PAGE_KERNEL);
- 	if (!sdp->sd_quota_bitmap)
- 		return error;
- 
--	memset(sdp->sd_quota_bitmap, 0, bm_size);
--
- 	for (x = 0; x < blocks; x++) {
- 		struct buffer_head *bh;
- 		const struct gfs2_quota_change *qc;
--- 
-1.8.1.4
+Oleg.
 
