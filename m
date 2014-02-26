@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaBZUQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:16:31 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44226 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930AbaBZUQ3 (ORCPT
+	id S1754090AbaBZURy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:17:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33545 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaBZURs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:16:29 -0500
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 11/12] asus-wmi: Restrict debugfs interface when trusted_kernel is true
-Date: Wed, 26 Feb 2014 15:11:12 -0500
-Message-Id: <1393445473-15068-12-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.207.143
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 26 Feb 2014 15:17:48 -0500
+From: Saravana Kannan <skannan@codeaurora.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Saravana Kannan" <skannan@codeaurora.org>
+Subject: [PATCH 3/3] cpufreq: stats: Refactor common code into __cpufreq_stats_create_table()
+Date: Wed, 26 Feb 2014 12:17:38 -0800
+Message-Id: <1393445858-7062-3-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no way of validating what all of the Asus WMI methods do on a
-given machine, and there's a risk that some will allow hardware state to
-be manipulated in such a way that arbitrary code can be executed in the
-kernel. Prevent that if trusted_kernel is true.
+cpufreq_frequency_get_table() is called from all callers of
+__cpufreq_stats_create_table(). So, move it inside.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 ---
- drivers/platform/x86/asus-wmi.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/cpufreq/cpufreq_stats.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index c5e082f..4c1000b 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -46,6 +46,7 @@
- #include <linux/platform_device.h>
- #include <linux/thermal.h>
- #include <linux/acpi.h>
-+#include <linux/security.h>
- #include <acpi/video.h>
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index c52b440..9d9e366 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -180,13 +180,18 @@ static void cpufreq_stats_free_table(unsigned int cpu)
+ 	cpufreq_cpu_put(policy);
+ }
  
- #include "asus-wmi.h"
-@@ -1595,6 +1596,9 @@ static int show_dsts(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (get_trusted_kernel())
-+		return -EPERM;
+-static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+-		struct cpufreq_frequency_table *table)
++static int __cpufreq_stats_create_table(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, j, count = 0, ret = 0;
+ 	struct cpufreq_stats *stat;
+ 	unsigned int alloc_size;
+ 	unsigned int cpu = policy->cpu;
++	struct cpufreq_frequency_table *table;
 +
- 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
- 
- 	if (err < 0)
-@@ -1611,6 +1615,9 @@ static int show_devs(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (get_trusted_kernel())
-+		return -EPERM;
++	table = cpufreq_frequency_get_table(policy->cpu);
++	if (unlikely(!table))
++		return 0;
 +
- 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
- 				    &retval);
+ 	if (per_cpu(cpufreq_stats_table, cpu))
+ 		return -EBUSY;
+ 	stat = kzalloc(sizeof(*stat), GFP_KERNEL);
+@@ -248,7 +253,6 @@ error_out:
+ static void cpufreq_stats_create_table(unsigned int cpu)
+ {
+ 	struct cpufreq_policy *policy;
+-	struct cpufreq_frequency_table *table;
  
-@@ -1635,6 +1642,9 @@ static int show_call(struct seq_file *m, void *data)
- 	union acpi_object *obj;
- 	acpi_status status;
+ 	/*
+ 	 * "likely(!policy)" because normally cpufreq_stats will be registered
+@@ -258,9 +262,7 @@ static void cpufreq_stats_create_table(unsigned int cpu)
+ 	if (likely(!policy))
+ 		return;
  
-+	if (get_trusted_kernel())
-+		return -EPERM;
-+
- 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
- 				     1, asus->debug.method_id,
- 				     &input, &output);
+-	table = cpufreq_frequency_get_table(policy->cpu);
+-	if (likely(table))
+-		__cpufreq_stats_create_table(policy, table);
++	__cpufreq_stats_create_table(policy);
+ 
+ 	cpufreq_cpu_put(policy);
+ }
+@@ -283,20 +285,14 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
+ {
+ 	int ret = 0;
+ 	struct cpufreq_policy *policy = data;
+-	struct cpufreq_frequency_table *table;
+-	unsigned int cpu = policy->cpu;
+ 
+ 	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
+ 		cpufreq_stats_update_policy_cpu(policy);
+ 		return 0;
+ 	}
+ 
+-	table = cpufreq_frequency_get_table(cpu);
+-	if (!table)
+-		return 0;
+-
+ 	if (val == CPUFREQ_CREATE_POLICY)
+-		ret = __cpufreq_stats_create_table(policy, table);
++		ret = __cpufreq_stats_create_table(policy);
+ 	else if (val == CPUFREQ_REMOVE_POLICY)
+ 		__cpufreq_stats_free_table(policy);
+ 
 -- 
-1.8.5.3
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
