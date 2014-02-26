@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaBZKFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:05:12 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:49598 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751127AbaBZKFF (ORCPT
+	id S1751849AbaBZKJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:09:11 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34646 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaBZKJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:05:05 -0500
-Message-ID: <530DBC4C.9050802@arm.com>
-Date: Wed, 26 Feb 2014 10:05:00 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Feng Kan <fkan@apm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "patches@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH] irqchip:gic: change access of gicc_ctrl register to read
- modify write.
-References: <1392761550-11662-1-git-send-email-fkan@apm.com> <53048882.9070706@arm.com> <CAL85gmBjdBWv-aMAGQtufmJUSKanzPoXa0QfHo756KM+E0orqA@mail.gmail.com>
-In-Reply-To: <CAL85gmBjdBWv-aMAGQtufmJUSKanzPoXa0QfHo756KM+E0orqA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Feb 2014 05:09:09 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: geert+renesas@linux-m68k.org, laurent.pinchart+renesas@ideasonboard.com,
+        linux-sh@vger.kernel.org, linus.walleij@linaro.org,
+        valentine.barshak@cogentembedded.com, horms@verge.net.au,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Wed, 26 Feb 2014 19:10:26 +0900
+Message-Id: <20140226101026.16737.30404.sendpatchset@w520>
+Subject: [PATCH] pinctrl: sh-pfc: r8a7791: SD1_CLK fix
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Fixing tglx's email address so he too can enjoy the fun...]
+From: Magnus Damm <damm@opensource.se>
 
-On 25/02/14 20:19, Feng Kan wrote:
-> On Wed, Feb 19, 2014 at 2:33 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> Hi Feng,
->>
->> On 18/02/14 22:12, Feng Kan wrote:
->>> This change is made to preserve the GIC v2 releated bits in the
->>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
->>> The original code only set the enable/disable group bit in this register.
->>> This code will preserve all other bits configured by the bootload except
->>
->> This "all other bits" in itself is a major problem, see below.
->>
->>> the enable/disable bit. The main reason for this change is to allow the
->>> bypass bits specified in the v2 spec to remain untouched by the current
->>> GIC code. In the X-Gene platform, the bypass functionality is not used
->>> and bypass must be disabled at all time.
->>>
->>> Signed-off-by: Vinayak Kale <vkale@apm.com>
->>> Acked-by: Anup Patel <apatel@apm.com>
->>> Signed-off-by: Feng Kan <fkan@apm.com>
->>> ---
->>>  drivers/irqchip/irq-gic.c | 18 +++++++++++++++---
->>>  1 file changed, 15 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index 341c601..9adc3e1 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>       void __iomem *dist_base = gic_data_dist_base(gic);
->>>       void __iomem *base = gic_data_cpu_base(gic);
->>>       unsigned int cpu_mask, cpu = smp_processor_id();
->>> +     unsigned int ctrl_mask;
->>>       int i;
->>>
->>>       /*
->>> @@ -449,13 +450,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->>>
->>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
->>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
->>> +
->>> +     ctrl_mask = readl(base + GIC_CPU_CTRL);
->>> +     ctrl_mask |= 0x1;
->>> +     writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
->>
->> So what if the firmware used a different EOImode? We would end up in a
->> situation where we don't deactivate the interrupts anymore. Not good.
-> Is there an case where the EOI mode usage would change on the fly?
-> Bootloader's job would be to setup the bits so the kernel would work properly.
+Fix the SD1_CLK handling for r8a7791. Without this patch
+it is impossible to request all pins needed for SDHI1 on
+the Koelsch board.
 
-If you trust bootloaders to get anything right, you shouldn't ever touch
-the Linux IRQ code.
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
 
-Since the ancient times, bootloaders have been known to be part of a
-conspiracy aiming to destroy Mankind and rule the Earth. Bootloaders are
-the Orcs of software. It's been scientifically proven that they are
-responsible for climate change. Seen the floods in England? Bootloaders.
-Exploding volcanoes? Bootloaders. The flat tire on your bike?
-Bootloaders. Enough said.
+ Developed on top of linux-next tag next-20140225
 
-> Do you have a case in mind that would violate this setup?
+ drivers/pinctrl/sh-pfc/pfc-r8a7791.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-What if your bootloader is actually a small RT kernel that uses
-interrupt nesting (hence EOImode==1 to be able to split deactivation
-from priority drop)? ECOS/RedBoot anyone?
-
-Do you think for a second that this thing will kindly reset EIOmode to
-zero just because it loads a Linux kernel? See the above.
-
-Remember this code is used on a lot of fairly insane platforms. You
-*must* be extremely conservative in any change you make.
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+--- 0001/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
++++ work/drivers/pinctrl/sh-pfc/pfc-r8a7791.c	2014-02-26 19:03:38.000000000 +0900
+@@ -89,7 +89,8 @@ enum {
+ 
+ 	/* GPSR6 */
+ 	FN_IP13_10, FN_IP13_11, FN_IP13_12, FN_IP13_13, FN_IP13_14,
+-	FN_IP13_15, FN_IP13_18_16, FN_IP13_21_19, FN_IP13_22, FN_IP13_24_23,
++	FN_IP13_15, FN_IP13_18_16, FN_IP13_21_19,
++	FN_IP13_22, FN_IP13_24_23, FN_SD1_CLK,
+ 	FN_IP13_25, FN_IP13_26, FN_IP13_27, FN_IP13_30_28, FN_IP14_1_0,
+ 	FN_IP14_2, FN_IP14_3, FN_IP14_4, FN_IP14_5, FN_IP14_6, FN_IP14_7,
+ 	FN_IP14_10_8, FN_IP14_13_11, FN_IP14_16_14, FN_IP14_19_17,
+@@ -788,6 +789,7 @@ static const u16 pinmux_data[] = {
+ 	PINMUX_DATA(USB1_PWEN_MARK, FN_USB1_PWEN),
+ 	PINMUX_DATA(USB1_OVC_MARK, FN_USB1_OVC),
+ 	PINMUX_DATA(DU0_DOTCLKIN_MARK, FN_DU0_DOTCLKIN),
++	PINMUX_DATA(SD1_CLK_MARK, FN_SD1_CLK),
+ 
+ 	/* IPSR0 */
+ 	PINMUX_IPSR_DATA(IP0_0, D0),
+@@ -3888,7 +3890,7 @@ static const struct pinmux_cfg_reg pinmu
+ 		GP_6_11_FN, FN_IP13_25,
+ 		GP_6_10_FN, FN_IP13_24_23,
+ 		GP_6_9_FN, FN_IP13_22,
+-		0, 0,
++		GP_6_8_FN, FN_SD1_CLK,
+ 		GP_6_7_FN, FN_IP13_21_19,
+ 		GP_6_6_FN, FN_IP13_18_16,
+ 		GP_6_5_FN, FN_IP13_15,
