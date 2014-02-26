@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaBZKfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:35:36 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:47775 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748AbaBZKff (ORCPT
+	id S1751319AbaBZKrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:47:48 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53020 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751068AbaBZKrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:35:35 -0500
+	Wed, 26 Feb 2014 05:47:46 -0500
+Date: Wed, 26 Feb 2014 10:47:02 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Marc Carino <marc.ceeeee@gmail.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH v7 5/9] ARM: Enable erratum 798181 for Broadcom Brahma-B15
+Message-ID: <20140226104702.GA8961@mudshark.cambridge.arm.com>
+References: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
+ <1393410552-21497-6-git-send-email-marc.ceeeee@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1392284459.30853.17.camel@x220>
-References: <1362744373.5994.57.camel@x61.thuisdomein>
-	<1392284459.30853.17.camel@x220>
-Date: Wed, 26 Feb 2014 18:35:32 +0800
-Message-ID: <CAMk6uBnjEA2eozct6Q_Cm2BCrF-_3gGuNaBmtymGKYpPjoLUVw@mail.gmail.com>
-Subject: Re: [PATCH] blackfin: bf537: fix typo "CONFIG_SND_SOC_ADV80X_MODULE"
-From: Steven Miao <realmz6@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: bfin <adi-buildroot-devel@lists.sourceforge.net>,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
-	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393410552-21497-6-git-send-email-marc.ceeeee@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, Feb 26, 2014 at 10:29:08AM +0000, Marc Carino wrote:
+> From: Gregory Fong <gregory.0xf0@gmail.com>
+> 
+> Broadcom Brahma-B15 (r0p0..r0p2) is also affected by Cortex-A15
+> erratum 798181, so enable the workaround for Brahma-B15.
 
-On Thu, Feb 13, 2014 at 5:40 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> [Replaced previous maintainer and list with current maintainer and
-> list.]
->
-> On Fri, 2013-03-08 at 13:06 +0100, Paul Bolle wrote:
->> There's a (rather subtle) typo in "CONFIG_SND_SOC_ADV80X_MODULE". Fix it
->> once and for all by using IS_ENABLED(), which is designed to avoid
->> issues like this.
->>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->
-> Has someone ever looked at this trivial patch? The typo is still not
-> fixed in v3.14-rc2.
->
->> 0) Untested! And this needs build- and runtime testing, especially for
->> the MODULE case!
->>
->> 1) There are many lines that might be converted to IS_ENABLED() in this
->> file. I'm not sure if and how that should be done.
-Sorry for the late reply. There are many CONFIG_xxx ||
-CONFIG_xxx_MODULE things, we need a cleanup for it under all the
-stamp.c and ezkit.c.
->>
->>  arch/blackfin/mach-bf537/boards/stamp.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
->> index 95114ed..1872d15 100644
->> --- a/arch/blackfin/mach-bf537/boards/stamp.c
->> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
->> @@ -985,7 +985,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
->>       },
->>  #endif
->>
->> -#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADV80X_MODULE)
->> +#if IS_ENABLED(CONFIG_SND_SOC_ADAV80X)
->>       {
->>               .modalias = "adav801",
->>               .max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
->
->
-> Paul Bolle
->
--steven
+Really... *exactly* the same erratum? That sounds pretty unlikely, so I'd
+really like to be sure that the workaround we have indeed solves your
+problem (issuing a dummy TLBI to 0x0 + dsb, then followed by a dmb + clrex
+on each core). The point is that the workaround doesn't simply perform
+non-shareable invalidation on each core using IPIs.
+
+/me counts the days until we need this code in arch/arm64.
+
+Will
