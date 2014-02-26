@@ -1,54 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaBZAf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:35:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36440 "EHLO mx1.redhat.com"
+	id S1751297AbaBZAjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:39:01 -0500
+Received: from mail.efficios.com ([78.47.125.74]:39115 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029AbaBZAfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:35:55 -0500
-Date: Tue, 25 Feb 2014 19:35:45 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Michael Mueller <malware@t-online.de>
-Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Alasdair Kergon <agk@redhat.com>,
-        Neil Brown <neilb@suse.de>
-Subject: Re: 3.14-rc4 blocks on LVM init
-Message-ID: <20140226003545.GA4167@redhat.com>
-References: <530D3165.8070501@t-online.de>
+	id S1750724AbaBZAi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 19:38:59 -0500
+Date: Wed, 26 Feb 2014 00:39:01 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Message-ID: <188130295.30493.1393375141631.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140225191505.32b56105@gandalf.local.home>
+References: <20140225191505.32b56105@gandalf.local.home>
+Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
+ loaded due to module taint
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530D3165.8070501@t-online.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Warn and notify if tracepoints are not loaded due to module taint
+Thread-Index: Y+w5iRtnBJI2iK4r7SVb8fH01bYe/A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25 2014 at  7:12pm -0500,
-Michael Mueller <malware@t-online.de> wrote:
-
-> Hi,
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "LKML" <linux-kernel@vger.kernel.org>
+> Cc: "Ingo Molnar" <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Rusty Russell"
+> <rusty@rustcorp.com.au>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>,
+> "Peter Zijlstra" <peterz@infradead.org>
+> Sent: Tuesday, February 25, 2014 7:15:05 PM
+> Subject: [RFC][PATCH] tracing: Warn and notify if tracepoints are not loaded due to module taint
 > 
-> with 3.14-rc4 my box does not finish initializing the LVM array. It
-> hangs within the call to rw_header() on line 632 of dm-log.c. See
-> backtrace at end. Please excuse typos within - had to type it from a
-> screen shot.
+> [ Posting this as an RFC, but I plan on pushing it as soon as I finish
+> testing it ]
 > 
-> The problem seems to be introduced by the commit
-> 003b5c5719f159f4f4bf97511c4702a0638313dd (block: Convert drivers to
-> immutable biovecs).
+> If a module is loaded that is tainted with anything but OOT or CRAP, then
+> it will not create the traceoint infrastructure for the module. There should
 
-You need these two 3.14-rc fixes that are staged in linux-next (via
-linux-dm.git's 'for-next' branch):
+traceoint -> tracepoint
 
-https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=d73f9907294c670da14baea3fb31be27879e818e
-https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=f3a44fe0608eb628e1f8f6e3540462e6d171a745
+> be a big warning when this happens instead of exiting silently.
+> 
+> Fixes: 97e1c18e8d17 "tracing: Kernel Tracepoints"
+> Cc: stable@vger.kernel.org
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/tracepoint.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index 29f2654..413bc06 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -641,7 +641,8 @@ static int tracepoint_module_coming(struct module *mod)
+>  	 * module headers (for forced load), to make sure we don't cause a crash.
+>  	 * Staging and out-of-tree GPL modules are fine.
+>  	 */
+> -	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
+> +	if (WARN_ONCE(mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)),
+> +		      "Module is tainted, disabling tracepoints"))
 
-I wanted to send these to Linus last week but I was waiting for some
-dm-thin fixes that aren't quite ready.  I'll send whatever I have staged
-to Linus by this Friday so that 3.14-rc5 will have these fixes no matter
-what.
+Perhaps ever clearer with:
 
-Sorry for the inconvenience.
+   "Module \"%s\" is tainted, disabling tracepoints", mod->name
 
-Mike
+?
+
+Other than that, looks good to me!
+
+Thanks,
+
+Mathieu
+
+>  		return 0;
+>  	mutex_lock(&tracepoints_mutex);
+>  	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
+> --
+> 1.8.5.3
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
