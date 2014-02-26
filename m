@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaBZPrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:47:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49874 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaBZPrv (ORCPT
+	id S1751730AbaBZPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:49:26 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:36766 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaBZPtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:47:51 -0500
-Date: Wed, 26 Feb 2014 16:47:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Bob Liu <lliubbo@gmail.com>, Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
-Message-ID: <20140226154736.GV9987@twins.programming.kicks-ass.net>
-References: <530CEFE2.9090909@oracle.com>
- <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
- <20140226140941.GA31230@node.dhcp.inet.fi>
- <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
- <20140226152051.GA31115@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226152051.GA31115@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 26 Feb 2014 10:49:24 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, alex.williamson@redhat.com, mtosatti@redhat.com,
+        gleb@kernel.org, jan.kiszka@siemens.com
+Subject: [PATCH 0/4] KVM: x86: Let the guest write to multiple debug registers with one vmexit
+Date: Wed, 26 Feb 2014 16:49:09 +0100
+Message-Id: <1393429753-20857-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 05:20:51PM +0200, Kirill A. Shutemov wrote:
-> On Wed, Feb 26, 2014 at 10:48:30PM +0800, Bob Liu wrote:
-> > > Do you relay on unlock_page() to have a compiler barrier?
-> > >
-> > 
-> > Before your commit mapping is a local variable and be assigned before
-> > unlock_page():
-> > struct address_space *mapping = page->mapping;
-> > unlock_page(dirty_page);
-> > put_page(dirty_page);
-> > if ((dirtied || page_mkwrite) && mapping) {
-> > 
-> > 
-> > I'm afraid now "fault_page->mapping" might be changed to NULL after
-> > "if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {"
-> > and then passed down to balance_dirty_pages_ratelimited(NULL).
-> 
-> I see what you try to fix. I wounder if we need to do
-> 
-> mapping = ACCESS_ONCE(fault_page->mapping);
-> 
-> instead.
-> 
-> The question is if compiler on its own can eliminate intermediate variable
-> and dereference fault_page->mapping twice, as code with my patch does.
-> I ask because smp_mb__after_clear_bit() in unlock_page() does nothing on
-> some architectures.
+Alex Williamson reported that a Windows game does something weird that
+makes the guest save and restore debug registers on each context switch.
+This cause several hundred thousands vmexits per second, and basically
+cuts performance in half when running under KVM.
 
-That's a bug, and I have patches for that. That said; this is only ia64
-and sparc32. ia64 has an actual full memory barrier in there very much
-including a compiler fence. And sparc32 atomics do too.
+However, when not running in guest-debug mode, the guest controls the
+debug registers and having to take an exit for each DR access is a waste
+of time.  We just need one vmexit to load any stale values of DR0-DR6,
+and then we can let the guest run freely.  On the next vmexit (whatever
+the reason) we will read out whatever changes the guest made to the
+debug registers.
 
-In general, any atomic RMW op also implies a compiler fence. This
-includes clear_bit().
+On top of this, we can implement SVM support and let nested guests run
+with dirty debug registers too.
 
-That said; unlock_page() should have RELEASE semantics, this too
-enforces that the read of page->mapping stay before the unlock_page().
-The second usage of mapping may leak into the locked region, but it may
-not re-read after.
+Paolo Bonzini (4):
+  KVM: vmx: we do rely on loading DR7 on entry
+  KVM: x86: change vcpu->arch.switch_db_regs to a bit mask
+  KVM: x86: Allow the guest to run with dirty debug registers
+  KVM: vmx: Allow the guest to run with dirty debug registers
+
+ arch/x86/include/asm/kvm_host.h |  8 ++++++-
+ arch/x86/kvm/vmx.c              | 48 +++++++++++++++++++++++++++++++++++++----
+ arch/x86/kvm/x86.c              | 29 +++++++++++++++++++++++--
+ 3 files changed, 78 insertions(+), 7 deletions(-)
+
+-- 
+1.8.3.1
+
