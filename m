@@ -1,164 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484AbaBZOqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:46:54 -0500
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:3597 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750943AbaBZOqv (ORCPT
+	id S1752547AbaBZOrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:47:31 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:43217 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaBZOr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:46:51 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068h1954cbhz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh906i1155h)
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH v4] can: xilinx CAN controller support.
-Thread-Topic: [PATCH v4] can: xilinx CAN controller support.
-Thread-Index: AQHPMnBMZEwPglt3TUmAMsU8apdwWZrHhtZVgAAVneA=
-Date: Wed, 26 Feb 2014 14:46:43 +0000
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local>
- <530D0A9C.5090402@pengutronix.de>
- <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
- <530DEA7C.6010609@pengutronix.de>
-In-Reply-To: <530DEA7C.6010609@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.228.241]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 26 Feb 2014 09:47:29 -0500
+Date: Wed, 26 Feb 2014 14:47:21 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: DCG_UPD_stlinux_kernel@list.st.com, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: [PATCH v3 3/3] ahci: st: Add support for ST's SATA IP
+Message-ID: <20140226144721.GP9195@lee--X1>
+References: <1393328481-7251-1-git-send-email-lee.jones@linaro.org>
+ <1393328481-7251-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393328481-7251-3-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1QEl0j6031231
 
-Hi Marc,
+ahci: st: Add support for ST's SATA IP
 
+Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> -----Original Message-----
-> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> Sent: Wednesday, February 26, 2014 6:52 PM
-> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
-> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org
-> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; devicetree@vger.kernel.org
-> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
->
-> On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
-> >> This loop looks broken. Can you explain how it works.
-> >>
-> >> What it shoud do is:
-> >> We have put (priv->tx_head - priv->tx_tail) CAN frames into the FIFO.
-> >> This means at maximum there could be this amount of CAN frames which
-> >> have been successfully transmitted. For every cycle in this while
-> >> loop you
-> >> should:
-> >> a) check if a CAN frame has successfully been transmitted
-> >>    (as this CAN core uses a FIFO it should be "oldest")
-> >>    A read_reg() of some kind is missing in your loop.
-> >> b) if needed, remove this event from the FIFO or
-> >>    mark the interrupt as done. Whatever you hardware needs.
-> >> c) update your statistics
-> >> d) Use can_get_echo_skb to push this frame into the networking stack
-> >> e) As a CAN frame has been transmitted successfully, wake the tx_queue.
-> >>
-> >>> +   while (priv->tx_head - priv->tx_tail > 0) {
-> >>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
-> >>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
-> >>> +                                   XCAN_IXR_TXFLL_MASK);
-> >>> +                   netif_stop_queue(ndev);
-> >>
-> >> Why do you stop the queue here? A CAN frame has successfully been
-> >> transmitted, there should be room in the FIFO.
-> >>
-> >>> +                   break;
-> >>> +           }
-> >>> +           can_get_echo_skb(ndev, priv->tx_tail %
-> >>> +                                   priv->xcan_echo_skb_max_tx);
-> >>> +           priv->tx_tail++;
-> >>> +   }
-> >>> +
-> >
-> > The below are the bit fields available for the Transmit FIFO.
-> > 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx fifo full
-> interrupt.
-> > 2) in the SR(Status Register) Tx fifo full condition.
-> >
-> >
-> > I am modifying the entire tx interrupt logic to like below.
-> >
-> > static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
-> >         struct xcan_priv *priv = netdev_priv(ndev);
-> >         struct net_device_stats *stats = &ndev->stats;
-> >
-> >             while (priv->tx_head - priv->tx_tail > 0) {
-> >                 if (isr & XCAN_IXR_TXFLL_MASK) {
-> >                         priv->write_reg(priv, XCAN_ICR_OFFSET,
-> >                                         XCAN_IXR_TXFLL_MASK);
-> >                           break;
-> >                 }
-> >                 can_get_echo_skb(ndev, priv->tx_tail %
-> >                                         priv->xcan_echo_skb_max_tx);
-> >                 priv->tx_tail++;
-> >          stats->tx_packets++;
-> >         netif_wake_queue(ndev);
-> >               can_led_event(ndev, CAN_LED_EVENT_TX);
-> >
-> >         }
->
-> You just need to wake the queue once.
-
-Ok
->
-> > }
-> >
-> >
-> > Are you Ok with the above logic?
->
-> No, how can you tell how many frames have been transmitted?
-
-There is no register to read how many can frames are transmitted.
-The only way to know Is by reading this parameter (stats->tx_packets++;) through ip command
-ip -d -s link show can
-Or using ifconfig command.
-
-At the h/w level it can transmit Max upto 64 packets (Max fifo depth)
-We need to monitor the Tx fifo full bit in the ISR(Interrupt Status Register)  or Tx fifo full bit in the SR(Status Register) and if it is full we need to stop the queue that is
-I am doing in the _xmit by reading the status register before proceeding the   packet transmission.
-
-Regards,
-Kedar.
-
-
->
-> Marc
->
-> --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index b4a9262..ee7a3dc 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -97,6 +97,15 @@ config SATA_AHCI_PLATFORM
+ 
+ 	  If unsure, say N.
+ 
++config SATA_AHCI_ST
++	tristate "ST SATA support"
++	depends on SATA_AHCI_PLATFORM
++	select GENERIC_PHY
++	help
++	  This option enables support for ST SATA controller.
++
++	  If unsure, say N.
++
+ config AHCI_IMX
+ 	tristate "Freescale i.MX AHCI SATA support"
+ 	depends on SATA_AHCI_PLATFORM && MFD_SYSCON
+diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+index 246050b..6bbd6da 100644
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -5,6 +5,7 @@ obj-$(CONFIG_ATA)		+= libata.o
+ obj-$(CONFIG_SATA_AHCI)		+= ahci.o libahci.o
+ obj-$(CONFIG_SATA_ACARD_AHCI)	+= acard-ahci.o libahci.o
+ obj-$(CONFIG_SATA_AHCI_PLATFORM) += ahci_platform.o libahci.o
++obj-$(CONFIG_SATA_AHCI_ST)      += ahci_st.o
+ obj-$(CONFIG_SATA_FSL)		+= sata_fsl.o
+ obj-$(CONFIG_SATA_INIC162X)	+= sata_inic162x.o
+ obj-$(CONFIG_SATA_SIL24)	+= sata_sil24.o
+diff --git a/drivers/ata/ahci_st.c b/drivers/ata/ahci_st.c
+new file mode 100644
+index 0000000..2f95133
+--- /dev/null
++++ b/drivers/ata/ahci_st.c
+@@ -0,0 +1,239 @@
++/*
++ * Copyright (C) 2012 STMicroelectronics Limited
++ *
++ * Authors: Francesco Virlinzi <francesco.virlinzi@st.com>
++ *	    Alexandre Torgue <alexandre.torgue@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/export.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/of.h>
++#include <linux/ahci_platform.h>
++#include <linux/phy/phy.h>
++#include <linux/libata.h>
++#include <linux/reset.h>
++#include <linux/io.h>
++#include <linux/dma-mapping.h>
++
++#include "ahci.h"
++
++#define ST_AHCI_OOBR			0xbc
++#define ST_AHCI_OOBR_WE			BIT(31)
++#define ST_AHCI_OOBR_CWMIN_SHIFT	24
++#define ST_AHCI_OOBR_CWMAX_SHIFT	16
++#define ST_AHCI_OOBR_CIMIN_SHIFT	8
++#define ST_AHCI_OOBR_CIMAX_SHIFT	0
++
++struct st_ahci_drv_data {
++	struct platform_device *ahci;
++	struct phy *phy;
++	struct reset_control *pwr;
++	struct reset_control *sw_rst;
++	struct reset_control *pwr_rst;
++	struct ahci_host_priv *hpriv;
++};
++
++static void st_ahci_configure_oob(void __iomem *mmio)
++{
++	unsigned long old_val, new_val;
++
++	new_val = (0x02 << ST_AHCI_OOBR_CWMIN_SHIFT) |
++		  (0x04 << ST_AHCI_OOBR_CWMAX_SHIFT) |
++		  (0x08 << ST_AHCI_OOBR_CIMIN_SHIFT) |
++		  (0x0C << ST_AHCI_OOBR_CIMAX_SHIFT);
++
++	old_val = readl(mmio + ST_AHCI_OOBR);
++	writel(old_val | ST_AHCI_OOBR_WE, mmio + ST_AHCI_OOBR);
++	writel(new_val | ST_AHCI_OOBR_WE, mmio + ST_AHCI_OOBR);
++	writel(new_val, mmio + ST_AHCI_OOBR);
++}
++
++static int st_ahci_deassert_resets(struct device *dev)
++{
++	struct st_ahci_drv_data *drv_data = dev_get_drvdata(dev);
++	int err;
++
++	if (drv_data->pwr) {
++		err = reset_control_deassert(drv_data->pwr);
++		if (err) {
++			dev_err(dev, "unable to bring out of pwrdwn\n");
++			return err;
++		}
++	}
++
++	st_ahci_configure_oob(drv_data->hpriv->mmio);
++
++	if (drv_data->sw_rst) {
++		err = reset_control_deassert(drv_data->sw_rst);
++		if (err) {
++			dev_err(dev, "unable to bring out of sw-rst\n");
++			return err;
++		}
++	}
++
++	if (drv_data->pwr_rst) {
++		err = reset_control_deassert(drv_data->pwr_rst);
++		if (err) {
++			dev_err(dev, "unable to bring out of pwr-rst\n");
++			return err;
++		}
++	}
++
++	return 0;
++}
++
++static int st_ahci_probe_resets(struct platform_device *pdev)
++{
++	struct st_ahci_drv_data *drv_data = platform_get_drvdata(pdev);
++
++	drv_data->pwr = devm_reset_control_get(&pdev->dev, "pwr-dwn");
++	if (IS_ERR(drv_data->pwr)) {
++		dev_info(&pdev->dev, "power reset control not defined\n");
++		drv_data->pwr = NULL;
++	}
++
++	drv_data->sw_rst = devm_reset_control_get(&pdev->dev, "sw-rst");
++	if (IS_ERR(drv_data->sw_rst)) {
++		dev_info(&pdev->dev, "soft reset control not defined\n");
++		drv_data->sw_rst = NULL;
++	}
++
++	drv_data->pwr_rst = devm_reset_control_get(&pdev->dev, "pwr-rst");
++	if (IS_ERR(drv_data->pwr_rst)) {
++		dev_dbg(&pdev->dev, "power soft reset control not defined\n");
++		drv_data->pwr_rst = NULL;
++	}
++
++	return st_ahci_deassert_resets(&pdev->dev);
++}
++
++static const struct ata_port_info st_ahci_port_info = {
++	.flags          = AHCI_FLAG_COMMON,
++	.pio_mask       = ATA_PIO4,
++	.udma_mask      = ATA_UDMA6,
++	.port_ops       = &ahci_platform_ops,
++};
++
++static int st_ahci_probe(struct platform_device *pdev)
++{
++	struct st_ahci_drv_data *drv_data;
++	struct ahci_host_priv *hpriv;
++	int err;
++
++	drv_data = devm_kzalloc(&pdev->dev, sizeof(*drv_data), GFP_KERNEL);
++	if (!drv_data)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, drv_data);
++
++	hpriv = ahci_platform_get_resources(pdev);
++	if (IS_ERR(hpriv))
++		return PTR_ERR(hpriv);
++
++	drv_data->hpriv = hpriv;
++
++	err = st_ahci_probe_resets(pdev);
++	if (err)
++		return err;
++
++	err = ahci_platform_enable_resources(hpriv);
++	if (err)
++		return err;
++
++	err = ahci_platform_init_host(pdev, hpriv, &st_ahci_port_info, 0, 0);
++	if (err) {
++		ahci_platform_disable_resources(hpriv);
++		return err;
++	}
++
++	return 0;
++}
++
++static int st_ahci_remove(struct platform_device *pdev)
++{
++	struct st_ahci_drv_data *drv_data = platform_get_drvdata(pdev);
++	struct ahci_host_priv *hpriv = drv_data->hpriv;
++	int err;
++
++	if (drv_data->pwr) {
++		err = reset_control_assert(drv_data->pwr);
++		if (err)
++			dev_err(&pdev->dev, "unable to pwrdwn\n");
++	}
++
++	ahci_platform_disable_resources(hpriv);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int st_ahci_suspend(struct device *dev)
++{
++	struct st_ahci_drv_data *drv_data = dev_get_drvdata(dev);
++	struct ahci_host_priv *hpriv = drv_data->hpriv;
++	int err;
++
++	if (drv_data->pwr) {
++		err = reset_control_assert(drv_data->pwr);
++		if (err) {
++			dev_err(dev, "unable to pwrdwn");
++			return err;
++		}
++	}
++
++	ahci_platform_disable_resources(hpriv);
++
++	return 0;
++}
++
++static int st_ahci_resume(struct device *dev)
++{
++	struct st_ahci_drv_data *drv_data = dev_get_drvdata(dev);
++	struct ahci_host_priv *hpriv = drv_data->hpriv;
++	int err;
++
++	err = ahci_platform_enable_resources(hpriv);
++	if (err)
++		return err;
++
++	err = st_ahci_deassert_resets(dev);
++	if (err) {
++		ahci_platform_disable_resources(hpriv);
++		return err;
++	}
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(st_ahci_pm_ops, st_ahci_suspend, st_ahci_resume);
++
++static struct of_device_id st_ahci_match[] = {
++	{ .compatible = "st,ahci", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, st_ahci_match);
++
++static struct platform_driver st_ahci_driver = {
++	.driver = {
++		.name = "st_ahci",
++		.owner = THIS_MODULE,
++		.pm = &st_ahci_pm_ops,
++		.of_match_table = of_match_ptr(st_ahci_match),
++	},
++	.probe = st_ahci_probe,
++	.remove = st_ahci_remove,
++};
++module_platform_driver(st_ahci_driver);
++
++MODULE_AUTHOR("Alexandre Torgue <alexandre.torgue@st.com>");
++MODULE_AUTHOR("Francesco Virlinzi <francesco.virlinzi@st.com>");
++MODULE_DESCRIPTION("STMicroelectronics Sata Ahci driver");
++MODULE_LICENSE("GPL v2");
