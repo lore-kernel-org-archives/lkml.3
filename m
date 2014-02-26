@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaBZXkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:40:07 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:32866 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaBZXkE (ORCPT
+	id S1754267AbaBZXk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:40:29 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:53053 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142AbaBZXkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:40:04 -0500
+	Wed, 26 Feb 2014 18:40:21 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Make generic_make_request() handle arbitrary size bios
-Date: Wed, 26 Feb 2014 15:39:48 -0800
-Message-Id: <1393457997-17618-1-git-send-email-kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>,
+        linux-btrfs@vger.kernel.org
+Subject: [PATCH 5/9] btrfs: generic_make_request() handles arbitrary size bios now
+Date: Wed, 26 Feb 2014 15:39:53 -0800
+Message-Id: <1393457997-17618-6-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393457997-17618-1-git-send-email-kmo@daterainc.com>
+References: <1393457997-17618-1-git-send-email-kmo@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens, the following patches are for 3.15. This builds off of immutable biovecs,
-and this series in turn enables the DIO rewrite I've been working on off and on
-for ages and ages, and it also will let us delete merge_bvec_fn piecemeal
-(altogether merge_bvec_fn is 1500 lines of code we'll be able to delete).
+So there's no need for btrfs to break up bios for device limits anymore
 
-This will also get us performance gains (that I've measured myself, benchmarking
-on a p320h) once we push the work of splitting too-big bios all the way down to
-the drivers, and I expect bigger gains for stacking block drivers due to just
-processing larger bios.
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Chris Mason <clm@fb.com>
+Cc: linux-btrfs@vger.kernel.org
+---
+ fs/btrfs/volumes.c | 73 ------------------------------------------------------
+ 1 file changed, 73 deletions(-)
 
-I've got a patch I'll send separately for the mtip32xx driver to make it take
-arbitrary size bios, it's pretty small.
-
-Also a few related small refactoring patches.
-
-This is on top of your for-3.15/core branch.  If you want to pull these patches
-from my tree, here's that:
-
-The following changes since commit c46fff2a3b29794b35d717b5680a27f31a6a6bc0:
-
-  smp: Rename __smp_call_function_single() to smp_call_function_single_async() (2014-02-24 14:47:15 -0800)
-
-are available in the git repository at:
-
-  git://evilpiepirate.org/~kent/linux-bcache.git for-jens
-
-for you to fetch changes up to 089f8de5c42a121f351ef9d240d66e1128fa0ea2:
-
-  iov_iter: Kill written arg to iov_iter_init() (2014-02-26 15:17:36 -0800)
-
-----------------------------------------------------------------
-Kent Overstreet (9):
-      block: Make generic_make_request handle arbitrary sized bios
-      block: Gut bio_add_page()
-      blk-lib.c: generic_make_request() handles large bios now
-      bcache: generic_make_request() handles large bios now
-      btrfs: generic_make_request() handles arbitrary size bios now
-      btrfs: Convert to bio_for_each_segment()
-      iov_iter: Move iov_iter to uio.h
-      iov_iter: Kill iov_iter_single_seg_count()
-      iov_iter: Kill written arg to iov_iter_init()
-
- block/blk-core.c                            |  19 ++-
- block/blk-lib.c                             | 175 +++++-----------------------
- block/blk-merge.c                           | 150 ++++++++++++++++++++++--
- block/blk-mq.c                              |   2 +
- drivers/block/drbd/drbd_req.c               |   2 +
- drivers/block/mtip32xx/mtip32xx.c           |   6 +-
- drivers/block/nvme-core.c                   |   2 +
- drivers/block/pktcdvd.c                     |   6 +-
- drivers/block/ps3vram.c                     |   2 +
- drivers/block/rsxx/dev.c                    |   2 +
- drivers/block/umem.c                        |   2 +
- drivers/block/zram/zram_drv.c               |   2 +
- drivers/md/bcache/bcache.h                  |  18 ---
- drivers/md/bcache/io.c                      | 100 +---------------
- drivers/md/bcache/journal.c                 |   4 +-
- drivers/md/bcache/request.c                 |  16 +--
- drivers/md/bcache/super.c                   |  32 +----
- drivers/md/bcache/util.h                    |   5 +-
- drivers/md/bcache/writeback.c               |   4 +-
- drivers/md/dm.c                             |   2 +
- drivers/md/md.c                             |   2 +
- drivers/s390/block/dcssblk.c                |   2 +
- drivers/s390/block/xpram.c                  |   2 +
- drivers/staging/lustre/lustre/llite/lloop.c |   2 +
- fs/bio.c                                    | 137 +++++++++-------------
- fs/btrfs/extent_io.c                        |  12 +-
- fs/btrfs/file-item.c                        |  59 ++++------
- fs/btrfs/file.c                             |   8 +-
- fs/btrfs/inode.c                            |  22 ++--
- fs/btrfs/volumes.c                          |  73 ------------
- fs/ceph/file.c                              |   7 +-
- fs/cifs/file.c                              |   4 +-
- fs/fuse/file.c                              |  17 +--
- include/linux/blkdev.h                      |   3 +
- include/linux/fs.h                          |  32 -----
- include/linux/uio.h                         |  46 ++++++++
- mm/filemap.c                                |  19 +--
- 37 files changed, 399 insertions(+), 599 deletions(-)
-
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index bab0b84d8f..3ce1a8aed6 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -5395,34 +5395,6 @@ static noinline void btrfs_schedule_bio(struct btrfs_root *root,
+ 				   &device->work);
+ }
+ 
+-static int bio_size_ok(struct block_device *bdev, struct bio *bio,
+-		       sector_t sector)
+-{
+-	struct bio_vec *prev;
+-	struct request_queue *q = bdev_get_queue(bdev);
+-	unsigned int max_sectors = queue_max_sectors(q);
+-	struct bvec_merge_data bvm = {
+-		.bi_bdev = bdev,
+-		.bi_sector = sector,
+-		.bi_rw = bio->bi_rw,
+-	};
+-
+-	if (WARN_ON(bio->bi_vcnt == 0))
+-		return 1;
+-
+-	prev = &bio->bi_io_vec[bio->bi_vcnt - 1];
+-	if (bio_sectors(bio) > max_sectors)
+-		return 0;
+-
+-	if (!q->merge_bvec_fn)
+-		return 1;
+-
+-	bvm.bi_size = bio->bi_iter.bi_size - prev->bv_len;
+-	if (q->merge_bvec_fn(q, &bvm, prev) < prev->bv_len)
+-		return 0;
+-	return 1;
+-}
+-
+ static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
+ 			      struct bio *bio, u64 physical, int dev_nr,
+ 			      int rw, int async)
+@@ -5453,38 +5425,6 @@ static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
+ 		btrfsic_submit_bio(rw, bio);
+ }
+ 
+-static int breakup_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
+-			      struct bio *first_bio, struct btrfs_device *dev,
+-			      int dev_nr, int rw, int async)
+-{
+-	struct bio_vec *bvec = first_bio->bi_io_vec;
+-	struct bio *bio;
+-	int nr_vecs = bio_get_nr_vecs(dev->bdev);
+-	u64 physical = bbio->stripes[dev_nr].physical;
+-
+-again:
+-	bio = btrfs_bio_alloc(dev->bdev, physical >> 9, nr_vecs, GFP_NOFS);
+-	if (!bio)
+-		return -ENOMEM;
+-
+-	while (bvec <= (first_bio->bi_io_vec + first_bio->bi_vcnt - 1)) {
+-		if (bio_add_page(bio, bvec->bv_page, bvec->bv_len,
+-				 bvec->bv_offset) < bvec->bv_len) {
+-			u64 len = bio->bi_iter.bi_size;
+-
+-			atomic_inc(&bbio->stripes_pending);
+-			submit_stripe_bio(root, bbio, bio, physical, dev_nr,
+-					  rw, async);
+-			physical += len;
+-			goto again;
+-		}
+-		bvec++;
+-	}
+-
+-	submit_stripe_bio(root, bbio, bio, physical, dev_nr, rw, async);
+-	return 0;
+-}
+-
+ static void bbio_error(struct btrfs_bio *bbio, struct bio *bio, u64 logical)
+ {
+ 	atomic_inc(&bbio->error);
+@@ -5553,19 +5493,6 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
+ 			continue;
+ 		}
+ 
+-		/*
+-		 * Check and see if we're ok with this bio based on it's size
+-		 * and offset with the given device.
+-		 */
+-		if (!bio_size_ok(dev->bdev, first_bio,
+-				 bbio->stripes[dev_nr].physical >> 9)) {
+-			ret = breakup_stripe_bio(root, bbio, first_bio, dev,
+-						 dev_nr, rw, async_submit);
+-			BUG_ON(ret);
+-			dev_nr++;
+-			continue;
+-		}
+-
+ 		if (dev_nr < total_devs - 1) {
+ 			bio = btrfs_bio_clone(first_bio, GFP_NOFS);
+ 			BUG_ON(!bio); /* -ENOMEM */
+-- 
+1.9.0
 
