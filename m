@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaBZIQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 03:16:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:55174 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaBZIQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 03:16:34 -0500
-Date: Wed, 26 Feb 2014 19:16:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: linux-next: build failure after merge of the final tree
- (akpm-current tree related)
-Message-Id: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Feb_2014_19_16_27_+1100_fkq=PmvfOsfuA.xv"
+	id S1751671AbaBZISf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 03:18:35 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:61103 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaBZISd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 03:18:33 -0500
+X-AuditID: 9c93017e-b7cf9ae000004b4b-d6-530da357a251
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [RFC PATCH v1 0/2] perf: Support for SDT markers
+References: <20140224090833.7998.5416.stgit@hemant-fedora>
+	<530C821D.7000704@hitachi.com> <530CBD53.9010605@linux.vnet.ibm.com>
+Date: Wed, 26 Feb 2014 17:18:31 +0900
+In-Reply-To: <530CBD53.9010605@linux.vnet.ibm.com> (Hemant Kumar's message of
+	"Tue, 25 Feb 2014 21:27:07 +0530")
+Message-ID: <87ha7muw14.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Feb_2014_19_16_27_+1100_fkq=PmvfOsfuA.xv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Masami and Hemant,
 
-Hi all,
+On Tue, 25 Feb 2014 21:27:07 +0530, Hemant Kumar wrote:
+> On 02/25/2014 05:14 PM, Masami Hiramatsu wrote:
+>> (2014/02/24 18:14), Hemant Kumar wrote:
+>>> First, scan the binaries using :
+>>> # perf list sdt --scan
+>>>
+>>> Creating a cache of SDT markers...
+>>> perf sdt cache created!
+>>>   Use : "perf list sdt"
+>>>   to see the SDT markers
+>> Hmm, in that case, I think you'd better introduce perf-sdt for scanning.
+>> e.g.
+>>
+>>   # perf sdt --scan app
+>
+> Hmm, this seems a better idea :)
+>
+>>   then you can add app to sdt cache, without app,
+>>
+>>   # perf sdt --scan
+>>
+>>   will just scans all binaries on the PATH and the libraries which listed
+>> by `ldconfig --print-caceh`
 
-After merging the final tree, today's linux-next build (powerpc64
-allnoconfig) failed like this:
+What should be done with the new perf sdt command?  If it's only
+intended to list the markers, I'd just suggest to add "perf list sdt" as
+this patch did.
 
-arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
-(.text+0x11260): undefined reference to `.irq_work_queue'
+Plus I think it'd be better if event_glob pattern also looks for sdt
+markers so that user can find out a specific markers easily, e.g.:
 
-Caused (or exposed) (along with a lot of warnings) by commit 3dd6115cd60b
-("kconfig: make allnoconfig disable options behind EMBEDDED and EXPERT")
-from the apm-current tree.
+  # perf list rtld:*
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+or
 
---Signature=_Wed__26_Feb_2014_19_16_27_+1100_fkq=PmvfOsfuA.xv
-Content-Type: application/pgp-signature
+  # perf list %rtld:*
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>>
+>> And perf-list shows only the SDTs in the cache.
+>
+> Well, what will be better? perf-list or perf-sdt or perf-list sdt??
+> If perf-list, then wouldn't it be a huge list!!
 
-iQIcBAEBCAAGBQJTDaLgAAoJEMDTa8Ir7ZwVN68P/RLn4jRBNDZxw9Q+LrqdEZZz
-ULRJyqLEDGpXBvjqHLnJqFfsIuHAhpxYHn4WUwvQfrggA8p8BmpRdQzA/9lVU0vh
-ScGuRK556hqGpWHBeVj73inULU9PimuE4Onu7vaydXSDgSUyyS1LCdEAGfQgdGgr
-sE/jUBqJgCx3fn6rUTkjB2RA4fCwD1vN6RkO2mvLQBY4e/pC/I9u+RDMnzEyMPRu
-DHkqqrCPqyJHW8L2fPQdk8x26CgI2GCU9IdjI7zipoPDIsi8itoCH3ZVFMfgpxpp
-odG/sfuZm+J76EV9C1ipG+jC7dOlXadpX6aBIKu9GMGfwH4OkrKvVLG+6xQyvmTC
-kFUzQwLtXRMBHDYWISClGANUlrXM45YxJz02UlGCXVKaSnQkt6rqXVHILWXXG5Kz
-DhP3tjX2XSTyOqfSP43HBSMD5urNjGKqnq9xDArmTtwX2Y70IzlqHVxlDrMkJHVw
-1lLGGNxNmgSykRiY2Bukw2ujv+SfRqbKMAhPOhbHlJ5CRWbb9Tg7PKfG8jwCXcxB
-Wn/2v7B/2gravEJ+1cRFmKA4PYYmI6pX708ZQBdAigzgTiRU+BPuXfOdsTXll8eg
-/vU5Rd1SeCvjyMGDZMAuXFCNlNe3LgXVf13yO0vmSvPnBDjZCW8U+mwCjuqqxG8q
-ZW8bZ0lc6qEduOP3oky7
-=GjK3
------END PGP SIGNATURE-----
+The output of perf list is already a huge list and we paginate it.  So I
+don't think it's gonna be a problem. :)
 
---Signature=_Wed__26_Feb_2014_19_16_27_+1100_fkq=PmvfOsfuA.xv--
+
+>>> - Add support to probe these SDT markers and integrate with a previous patch
+>>>    (support to perf to probe SDT markers) posted in lkml.
+>>>    https://lkml.org/lkml/2013/10/23/10
+>> Yeah, but I think we'd better choose another way to integrate it.
+>> Since SDT is like markers(static events), setting each of them via perf-probe is
+>> not intuitive. :)  I'd like to use it as an event, e.g.
+>>
+>>   # perf top -e "%libgcc:unwind"
+>>
+>> And perf top internally calls perf-probe to add new uprobe event, and
+>> clean the new event at exit.
+>
+> Yeah! Right :) Makes sense.
+>
+> Will implement the suggestions in the next version asap!
+
+That would be great!
+
+Thanks,
+Namhyung
