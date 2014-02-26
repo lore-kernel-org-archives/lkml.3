@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaBZL7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:59:50 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	id S1752417AbaBZMAD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 07:00:03 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1663 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752242AbaBZL7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:59:48 -0500
-Message-ID: <530DD72A.6@nod.at>
-Date: Wed, 26 Feb 2014 12:59:38 +0100
+	id S1752333AbaBZMAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 07:00:00 -0500
+Message-ID: <530DD73D.3020507@nod.at>
+Date: Wed, 26 Feb 2014 12:59:57 +0100
 From: Richard Weinberger <richard@nod.at>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, horms@verge.net.au
-Subject: Re: [PATCH v2] thermal,rcar_thermal: Add dependency on HAS_IOMEM
-References: <1390812058-9002-1-git-send-email-richard@nod.at> <2789122.Lrp2LJzQED@avalon>
-In-Reply-To: <2789122.Lrp2LJzQED@avalon>
+To: thierry.reding@gmail.com
+CC: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH] pwm,renesas-tpu: Add dependency on HAS_IOMEM
+References: <1391172318-17853-1-git-send-email-richard@nod.at>
+In-Reply-To: <1391172318-17853-1-git-send-email-richard@nod.at>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.01.2014 12:32, schrieb Laurent Pinchart:
-> Hi Richard,
+Am 31.01.2014 13:45, schrieb Richard Weinberger:
+> On archs like S390 or um this driver cannot build nor work.
+> Make it depend on HAS_IOMEM to bypass build failures.
 > 
-> Thank you for the patch.
+> drivers/built-in.o: In function `tpu_probe':
+> drivers/pwm/pwm-renesas-tpu.c:421: undefined reference to `devm_ioremap_resource'
 > 
-> On Monday 27 January 2014 09:40:58 Richard Weinberger wrote:
->> Commit beeb5a1e (thermal: rcar-thermal: Enable driver compilation with
->> COMPILE_TEST) broke build on archs wihout io memory.
->>
->> On archs like S390 or um this driver cannot build nor work.
->> Make it depend on HAS_IOMEM to bypass build failures.
->>
->> drivers/thermal/rcar_thermal.c:404: undefined reference to
->> `devm_ioremap_resource' drivers/thermal/rcar_thermal.c:426: undefined
->> reference to `devm_ioremap_resource'
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
-> 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> 
-> I'm not the driver maintainer so I won't take this patch in my tree. Could you 
-> please keep an eye on it to make sure it gets picked by the maintainers ?
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
 Ping?
 
 Thanks,
 //richard
 
->> ---
->>  drivers/thermal/Kconfig | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
->> index 35c0664..88efa8f 100644
->> --- a/drivers/thermal/Kconfig
->> +++ b/drivers/thermal/Kconfig
->> @@ -136,6 +136,7 @@ config SPEAR_THERMAL
->>  config RCAR_THERMAL
->>  	tristate "Renesas R-Car thermal driver"
->>  	depends on ARCH_SHMOBILE || COMPILE_TEST
->> +	depends on HAS_IOMEM
->>  	help
->>  	  Enable this to plug the R-Car thermal sensor driver into the Linux
->>  	  thermal framework.
+> ---
+>  drivers/pwm/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 22f2f28..0b7a3c9 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -160,6 +160,7 @@ config PWM_PXA
+>  config PWM_RENESAS_TPU
+>  	tristate "Renesas TPU PWM support"
+>  	depends on ARCH_SHMOBILE || COMPILE_TEST
+> +	depends on HAS_IOMEM
+>  	help
+>  	  This driver exposes the Timer Pulse Unit (TPU) PWM controller found
+>  	  in Renesas chips through the PWM API.
 > 
