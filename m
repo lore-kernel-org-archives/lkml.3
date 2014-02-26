@@ -1,106 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbaBZP0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:26:51 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:50880 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399AbaBZP0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:26:49 -0500
-Date: Wed, 26 Feb 2014 17:20:51 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
-Message-ID: <20140226152051.GA31115@node.dhcp.inet.fi>
-References: <530CEFE2.9090909@oracle.com>
- <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
- <20140226140941.GA31230@node.dhcp.inet.fi>
- <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
+	id S1752985AbaBZP04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:26:56 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46782 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaBZP0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:26:52 -0500
+Date: Wed, 26 Feb 2014 07:26:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+Message-ID: <20140226152646.GI8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140207180647.5944fe3d.akpm@linux-foundation.org>
+ <201402092327.JAD12489.QOLSFVMHJtFOOF@I-love.SAKURA.ne.jp>
+ <201402102243.IEJ52676.JOFVMOQFOFSLtH@I-love.SAKURA.ne.jp>
+ <201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
+ <20140224235139.GH8264@linux.vnet.ibm.com>
+ <201402262244.GDF65182.VOtFOHFJLOFSMQ@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <201402262244.GDF65182.VOtFOHFJLOFSMQ@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022615-9332-0000-0000-0000033AF1E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 10:48:30PM +0800, Bob Liu wrote:
-> > Do you relay on unlock_page() to have a compiler barrier?
-> >
+On Wed, Feb 26, 2014 at 10:44:32PM +0900, Tetsuo Handa wrote:
+> Thank you for reviewing, Paul.
+
+No problem, but you do also need to address Lai Jiangshan's and
+Peter Zijlstra's questions about the purpose of this patch.  I was
+looking at it only from a "does it work?" viewpoint.
+
+> Paul E. McKenney wrote:
+> > > +/**
+> > > + * set_task_comm - Change task_struct->comm with tracer and perf hooks called.
+> > > + *
+> > > + * @tsk: Pointer to "struct task_struct".
+> > > + * @buf: New comm name.
+> > > + *
+> > > + * Returns nothing.
+> > > + */
+> > > +void set_task_comm(struct task_struct *tsk, char *buf)
+> > > +{
+> > > +	/*
+> > > +	 * Question: Do we need to use task_lock()/task_unlock() ?
+> > 
+> > The have-memory path through do_set_task_comm() does tolerate multiple
+> > CPUs concurrently setting the comm of a given task, but the no-memory
+> > path does not.  I advise keeping the locking, at least unless/until
+> > some workload is having lots of CPUs concurrently changing a given
+> > task's comm.  For some good reason, I hasten to add!  ;-)
+> > 
+> That question meant whether trace_task_rename(tsk, buf) needs to be serialized
+> by tsk->alloc_lock. If trace_task_rename(tsk, buf) doesn't need to be
+> serialized by tsk->alloc_lock, we can remove task_lock()/task_unlock().
+
+I was attempting ot answer that question.  ;-)
+
+> > Another reason to get rid of the lock is to allow do_set_task_comm()
+> > to sleep waiting for memory to become available, but not sure that
+> > this is a good approach.
 > 
-> Before your commit mapping is a local variable and be assigned before
-> unlock_page():
-> struct address_space *mapping = page->mapping;
-> unlock_page(dirty_page);
-> put_page(dirty_page);
-> if ((dirtied || page_mkwrite) && mapping) {
+> I used GFP_ATOMIC because I don't know whether there are callers that depend on
+> "changing task->comm does not sleep", for until today "changing task->comm did
+> not sleep".
+
+OK...
+
+> > > +void do_set_task_comm(struct task_struct *tsk, const char *buf)
+> > > +{
+> > > +	struct rcu_comm *comm;
+> > > +
+> > > +	comm = kmem_cache_zalloc(commname_cachep, GFP_ATOMIC | __GFP_NOWARN);
+> > > +	if (likely(comm)) {
+> > > +		atomic_set(&comm->usage, 1);
+> > > +		strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+> > > +		smp_wmb(); /* Behave like rcu_assign_pointer(). */
+> > > +		comm = xchg(&tsk->rcu_comm, comm);
+> > 
+> > The value-returning xchg() implies a full memory barrier, so the
+> > smp_wmb() is not needed.
+> > 
+> I see.
+> 
+> > > +		put_commname(comm);
+> > > +	} else {
+> > > +		/*
+> > > +		 * Memory allocation failed. We have to tolerate loss of
+> > > +		 * consistency.
+> > > +		 *
+> > > +		 * Question 1: Do we want to reserve some amount of static
+> > > +		 * "struct rcu_comm" arrays for use upon allocation failures?
+> > > +		 *
+> > > +		 * Question 2: Do we perfer unchanged comm name over
+> > > +		 * overwritten comm name because comm name is copy-on-write ?
+> > > +		 */
+> > > +		WARN_ONCE(1, "Failed to allocate memory for comm name.\n");
+> > > +		rcu_read_lock();
+> > > +		do {
+> > > +			comm = rcu_dereference(tsk->rcu_comm);
+> > > +		} while (!atomic_read(&comm->usage));
+> > 
+> > So the idea here is to avoid races with someone who might be freeing
+> > this same ->rcu_comm structure, right?  If we see a non-zero reference,
+> > they might still free it, but that would be OK because we are in an
+> > RCU read-side critical section, so it won't actually be freed until
+> > we get done.  And our change is being overwritten by someone else's
+> > in that case, but that is OK because it could happen anyway.
+> > 
+> Right.
+> 
+> > So the loop shouldn't go through many cycles, especially if memory
+> > remains low.
+> > 
+> > If I am correct, might be worth a comment.  Doubly so if I am wrong.  ;-)
+> > 
+> You are correct.
+> 
+> What about Q1 and Q2, like below ?
+
+I suggest reviewing the LKML thread that Peter Zijlstra pointed you at
+before digging too much further into this.  Especially this one:
+
+	https://lkml.org/lkml/2011/5/18/408
+
+							Thanx, Paul
+
+>   /* Usage is initialized with ATOMIC_INIT(-1). */
+>   static struct rcu_comm static_rcu_comm[CONFIG_RESERVED_COMMBUFFER];
+> 
+>   static void free_commname(struct rcu_head *rcu)
+>   {
+>   	struct rcu_comm *comm = container_of(rcu, struct rcu_comm, rcu);
+>   	if (comm < &static_rcu_comm[0] ||
+>   	    comm >= &static_rcu_comm[CONFIG_RESERVED_COMMBUFFER])
+>   		kmem_cache_free(commname_cachep, comm);
+>   	else
+>   		atomic_set(&comm->usage, -1);
+>   }
+> 
+>   void do_set_task_comm(struct task_struct *tsk, const char *buf)
+>   {
+>   	struct rcu_comm *comm;
+>   
+>   	comm = kmem_cache_zalloc(commname_cachep, GFP_ATOMIC | __GFP_NOWARN);
+>   	if (likely(comm))
+>   		atomic_set(&comm->usage, 1);
+>   	else {
+>   		int i;
+>   
+>   		/* Memory allocation failed. Try static comm name buffer. */
+>   		for (i = 0; i < CONFIG_RESERVED_COMMBUFFER; i++) {
+>   			comm = &static_rcu_comm[i];
+>   			if (atomic_read(&comm->usage) != -1)
+>   				continue;
+>   			if (atomic_add_return(&comm->usage, 2) == 1)
+>   				goto found;
+>   		  	put_commname(comm);
+>   		  	put_commname(comm);
+>   		}
+>   		/* No comm name buffer available. Keep current comm name. */
+>   		WARN_ONCE(1, "Failed to allocate memory for comm name.\n");
+>   		return;
+>   	}
+>   found:
+>   	strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+>   	comm = xchg(&tsk->rcu_comm, comm);
+>   	put_commname(comm);
+>   }
+> 
+> Since we can preallocate rcu_comm using GFP_KERNEL and return -ENOMEM (e.g.
+> prepare_bprm_creds() for execve() case, copy_from_user() for prctl(PR_SET_NAME)
+> and comm_write() (i.e. /proc/$pid/comm ) cases), there will be little users of
+> static_rcu_comm[] (e.g. kthreadd()).
 > 
 > 
-> I'm afraid now "fault_page->mapping" might be changed to NULL after
-> "if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {"
-> and then passed down to balance_dirty_pages_ratelimited(NULL).
-
-I see what you try to fix. I wounder if we need to do
-
-mapping = ACCESS_ONCE(fault_page->mapping);
-
-instead.
-
-The question is if compiler on its own can eliminate intermediate variable
-and dereference fault_page->mapping twice, as code with my patch does.
-I ask because smp_mb__after_clear_bit() in unlock_page() does nothing on
-some architectures.
-
-> >>
-> >> diff --git a/mm/memory.c b/mm/memory.c
-> >> index 548d97e..90cea22 100644
-> >> --- a/mm/memory.c
-> >> +++ b/mm/memory.c
-> >> @@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
-> >> struct vm_area_struct *vma,
-> >>   pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
-> >>  {
-> >>   struct page *fault_page;
-> >> + struct address_space *mapping;
-> >>   spinlock_t *ptl;
-> >>   pte_t *pte;
-> >>   int dirtied = 0;
-> >> @@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
-> >> *mm, struct vm_area_struct *vma,
-> >>
-> >>   if (set_page_dirty(fault_page))
-> >>   dirtied = 1;
-> >> + mapping = fault_page->mapping;
-> >>   unlock_page(fault_page);
-> >> - if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
-> >> + if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
-> >>   /*
-> >>   * Some device drivers do not set page.mapping but still
-> >>   * dirty their pages
-> >>   */
-> >> - balance_dirty_pages_ratelimited(fault_page->mapping);
-> >> + balance_dirty_pages_ratelimited(mapping);
-> >>   }
-> >>
-> >>   /* file_update_time outside page_lock */
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> > --
-> >  Kirill A. Shutemov
+> > > @@ -1191,6 +1195,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> > >  	p = dup_task_struct(current);
+> > >  	if (!p)
+> > >  		goto fork_out;
+> > > +	rcu_read_lock();
+> > > +	do {
+> > > +		p->rcu_comm = rcu_dereference(current->rcu_comm);
+> > > +	} while (!atomic_inc_not_zero(&p->rcu_comm->usage));
+> > 
+> > OK, loop until we get the sole reference on the comm...  But
+> > I suggest an rcu_read_unlock() followed by an rcu_read_lock() as the
+> > first thing in the loop.  Just to prevent adding an RCU CPU stall to
+> > our woes if we cannot get a reference.
+> > 
+> I see. I will use
 > 
-> -- 
-> Regards,
-> --Bob
+>   p->rcu_comm = NULL;
+>   do {
+>   	struct rcu_comm *comm;
+>   	rcu_read_lock();
+>   	comm = rcu_dereference(current->rcu_comm);
+>   	if (atomic_inc_not_zero(&comm->usage))
+>   		p->rcu_comm = comm;
+>   	rcu_read_unlock();
+>   } while (!p->rcu_comm);
+> 
+> in the next version (if we use RCU approach).
+> 
+> > And here the two tasks (parent and child) share the name until one
+> > or the other either changes its name or exits.  OK.
+> > 
+> Yes, this is copy on write approach.
+> 
+> Another approach could use heuristic atomicity; change from "char comm[16]"
+> to "long comm[16/sizeof(long)]" and read/write using "long". By using "long",
+> we can reduce the possibility of getting the mixture of current comm name and
+> comm name to update to, for reading/writing of "long" is atomic.
+> 
+> The horizontal axis of below map is the strlen() of current comm name and the
+> vertical axis is the strlen() of comm name to update to. If sizeof(long) == 8,
+> 193 out of 256 patterns can be atomically updated without any locks. Moreover,
+> since strlen() of at least one of current comm name and new comm name tends to
+> be shorter than sizeof(long) (e.g. "bash" -> "ls", "rc.sysinit" -> "cat",
+> "bash" -> "avahi-daemon" ), update of comm name will more likely be atomic
+> without any locks.
+> 
+>     | 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+>   --+-----------------------------------------------
+>    0| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    1| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    2| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    3| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    4| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    5| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    6| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    7| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+>    8| o  o  o  o  o  o  o  o  o  x  x  x  x  x  x  x
+>    9| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   10| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   11| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   12| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   13| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   14| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+>   15| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+> 
+> > > +	rcu_read_unlock();
+> > > 
+> > >  	ftrace_graph_init_task(p);
+> > >  	get_seccomp_filter(p);
+> 
 
--- 
- Kirill A. Shutemov
