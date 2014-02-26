@@ -1,226 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177AbaBZNqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:46:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19591 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814AbaBZNqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:46:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,548,1389772800"; 
-   d="scan'208";a="462587399"
-Message-ID: <530DF035.2090703@intel.com>
-Date: Wed, 26 Feb 2014 21:46:29 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: tj@kernel.org, jolsa@redhat.com, oleg@redhat.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ACPI/Processor: Rework processor throttling with work_on_cpu()
-References: <1393419786-5275-1-git-send-email-tianyu.lan@intel.com> <9984522.UXi6hmLF20@vostro.rjw.lan>
-In-Reply-To: <9984522.UXi6hmLF20@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751594AbaBZNqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:46:47 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:52750 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaBZNqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:46:45 -0500
+X-Nat-Received: from [202.181.97.72]:59747 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1393422275.13268
+To: paulmck@linux.vnet.ibm.com
+Cc: akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20140207180647.5944fe3d.akpm@linux-foundation.org>
+	<201402092327.JAD12489.QOLSFVMHJtFOOF@I-love.SAKURA.ne.jp>
+	<201402102243.IEJ52676.JOFVMOQFOFSLtH@I-love.SAKURA.ne.jp>
+	<201402172027.BFH81210.FJtOQOMLHFSVOF@I-love.SAKURA.ne.jp>
+	<20140224235139.GH8264@linux.vnet.ibm.com>
+In-Reply-To: <20140224235139.GH8264@linux.vnet.ibm.com>
+Message-Id: <201402262244.GDF65182.VOtFOHFJLOFSMQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 26 Feb 2014 22:44:32 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 26022014 #7304177, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 09:30 PM, Rafael J. Wysocki wrote:
-> On Wednesday, February 26, 2014 09:03:05 PM Lan Tianyu wrote:
->> acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
->> sure struct acpi_processor->acpi_processor_set_throttling() callback
->> run on associated cpu. But the function maybe called in a worker which
->> has been bound to a cpu. The patch is to replace set_cpus_allowed_ptr()
->> with work_on_cpu().
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->
-> OK
->
-> I suppose we need this in -stable?
+Thank you for reviewing, Paul.
 
-Yes.
+Paul E. McKenney wrote:
+> > +/**
+> > + * set_task_comm - Change task_struct->comm with tracer and perf hooks called.
+> > + *
+> > + * @tsk: Pointer to "struct task_struct".
+> > + * @buf: New comm name.
+> > + *
+> > + * Returns nothing.
+> > + */
+> > +void set_task_comm(struct task_struct *tsk, char *buf)
+> > +{
+> > +	/*
+> > +	 * Question: Do we need to use task_lock()/task_unlock() ?
+> 
+> The have-memory path through do_set_task_comm() does tolerate multiple
+> CPUs concurrently setting the comm of a given task, but the no-memory
+> path does not.  I advise keeping the locking, at least unless/until
+> some workload is having lots of CPUs concurrently changing a given
+> task's comm.  For some good reason, I hasten to add!  ;-)
+> 
+That question meant whether trace_task_rename(tsk, buf) needs to be serialized
+by tsk->alloc_lock. If trace_task_rename(tsk, buf) doesn't need to be
+serialized by tsk->alloc_lock, we can remove task_lock()/task_unlock().
 
->
-> Which series of -stable should it go to?  All of them or just recent?
+> Another reason to get rid of the lock is to allow do_set_task_comm()
+> to sleep waiting for memory to become available, but not sure that
+> this is a good approach.
 
-I think it should be all of them. Checking thermal zone device in a 
-worker was already there before 2.6.30-rc1 when moved thermal trip 
-handling to generic thermal layer from ACPI.
+I used GFP_ATOMIC because I don't know whether there are callers that depend on
+"changing task->comm does not sleep", for until today "changing task->comm did
+not sleep".
 
-commit b1569e99c795bf83b4ddf41c4f1c42761ab7f75e
-Author: Matthew Garrett <mjg59@srcf.ucam.org>
-Date:   Wed Dec 3 17:55:32 2008 +0000
+> > +void do_set_task_comm(struct task_struct *tsk, const char *buf)
+> > +{
+> > +	struct rcu_comm *comm;
+> > +
+> > +	comm = kmem_cache_zalloc(commname_cachep, GFP_ATOMIC | __GFP_NOWARN);
+> > +	if (likely(comm)) {
+> > +		atomic_set(&comm->usage, 1);
+> > +		strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+> > +		smp_wmb(); /* Behave like rcu_assign_pointer(). */
+> > +		comm = xchg(&tsk->rcu_comm, comm);
+> 
+> The value-returning xchg() implies a full memory barrier, so the
+> smp_wmb() is not needed.
+> 
+I see.
 
-     ACPI: move thermal trip handling to generic thermal layer
+> > +		put_commname(comm);
+> > +	} else {
+> > +		/*
+> > +		 * Memory allocation failed. We have to tolerate loss of
+> > +		 * consistency.
+> > +		 *
+> > +		 * Question 1: Do we want to reserve some amount of static
+> > +		 * "struct rcu_comm" arrays for use upon allocation failures?
+> > +		 *
+> > +		 * Question 2: Do we perfer unchanged comm name over
+> > +		 * overwritten comm name because comm name is copy-on-write ?
+> > +		 */
+> > +		WARN_ONCE(1, "Failed to allocate memory for comm name.\n");
+> > +		rcu_read_lock();
+> > +		do {
+> > +			comm = rcu_dereference(tsk->rcu_comm);
+> > +		} while (!atomic_read(&comm->usage));
+> 
+> So the idea here is to avoid races with someone who might be freeing
+> this same ->rcu_comm structure, right?  If we see a non-zero reference,
+> they might still free it, but that would be OK because we are in an
+> RCU read-side critical section, so it won't actually be freed until
+> we get done.  And our change is being overwritten by someone else's
+> in that case, but that is OK because it could happen anyway.
+> 
+Right.
 
-     The ACPI code currently carries its own thermal trip handling, 
-meaning that any other thermal implementation will need to reimplement
-it. Move the code to the generic thermal layer.
+> So the loop shouldn't go through many cycles, especially if memory
+> remains low.
+> 
+> If I am correct, might be worth a comment.  Doubly so if I am wrong.  ;-)
+> 
+You are correct.
 
->
->
->> ---
->> Change since v1:
->>         Remove temp variable p_throttling and reference struct
->> acpi_processor_throttling pointer directly from struct
->> acpi_processor.
->>
->>   drivers/acpi/processor_throttling.c | 69 +++++++++++++++++--------------------
->>   1 file changed, 32 insertions(+), 37 deletions(-)
->>
->> diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
->> index 28baa05..84243c3 100644
->> --- a/drivers/acpi/processor_throttling.c
->> +++ b/drivers/acpi/processor_throttling.c
->> @@ -56,6 +56,12 @@ struct throttling_tstate {
->>   	int target_state;		/* target T-state */
->>   };
->>
->> +struct acpi_processor_throttling_arg {
->> +	struct acpi_processor *pr;
->> +	int target_state;
->> +	bool force;
->> +};
->> +
->>   #define THROTTLING_PRECHANGE       (1)
->>   #define THROTTLING_POSTCHANGE      (2)
->>
->> @@ -1060,16 +1066,24 @@ static int acpi_processor_set_throttling_ptc(struct acpi_processor *pr,
->>   	return 0;
->>   }
->>
->> +static long acpi_processor_throttling_fn(void *data)
->> +{
->> +	struct acpi_processor_throttling_arg *arg = data;
->> +	struct acpi_processor *pr = arg->pr;
->> +
->> +	return pr->throttling.acpi_processor_set_throttling(pr,
->> +			arg->target_state, arg->force);
->> +}
->> +
->>   int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   						int state, bool force)
->>   {
->> -	cpumask_var_t saved_mask;
->>   	int ret = 0;
->>   	unsigned int i;
->>   	struct acpi_processor *match_pr;
->>   	struct acpi_processor_throttling *p_throttling;
->> +	struct acpi_processor_throttling_arg arg;
->>   	struct throttling_tstate t_state;
->> -	cpumask_var_t online_throttling_cpus;
->>
->>   	if (!pr)
->>   		return -EINVAL;
->> @@ -1080,14 +1094,6 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
->>   		return -EINVAL;
->>
->> -	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
->> -		return -ENOMEM;
->> -
->> -	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
->> -		free_cpumask_var(saved_mask);
->> -		return -ENOMEM;
->> -	}
->> -
->>   	if (cpu_is_offline(pr->id)) {
->>   		/*
->>   		 * the cpu pointed by pr->id is offline. Unnecessary to change
->> @@ -1096,17 +1102,15 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   		return -ENODEV;
->>   	}
->>
->> -	cpumask_copy(saved_mask, &current->cpus_allowed);
->>   	t_state.target_state = state;
->>   	p_throttling = &(pr->throttling);
->> -	cpumask_and(online_throttling_cpus, cpu_online_mask,
->> -		    p_throttling->shared_cpu_map);
->> +
->>   	/*
->>   	 * The throttling notifier will be called for every
->>   	 * affected cpu in order to get one proper T-state.
->>   	 * The notifier event is THROTTLING_PRECHANGE.
->>   	 */
->> -	for_each_cpu(i, online_throttling_cpus) {
->> +	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
->>   		t_state.cpu = i;
->>   		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
->>   							&t_state);
->> @@ -1118,21 +1122,18 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   	 * it can be called only for the cpu pointed by pr.
->>   	 */
->>   	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
->> -		/* FIXME: use work_on_cpu() */
->> -		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
->> -			/* Can't migrate to the pr->id CPU. Exit */
->> -			ret = -ENODEV;
->> -			goto exit;
->> -		}
->> -		ret = p_throttling->acpi_processor_set_throttling(pr,
->> -						t_state.target_state, force);
->> +		arg.pr = pr;
->> +		arg.target_state = state;
->> +		arg.force = force;
->> +		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
->>   	} else {
->>   		/*
->>   		 * When the T-state coordination is SW_ALL or HW_ALL,
->>   		 * it is necessary to set T-state for every affected
->>   		 * cpus.
->>   		 */
->> -		for_each_cpu(i, online_throttling_cpus) {
->> +		for_each_cpu_and(i, cpu_online_mask,
->> +		    p_throttling->shared_cpu_map) {
->>   			match_pr = per_cpu(processors, i);
->>   			/*
->>   			 * If the pointer is invalid, we will report the
->> @@ -1153,13 +1154,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   					"on CPU %d\n", i));
->>   				continue;
->>   			}
->> -			t_state.cpu = i;
->> -			/* FIXME: use work_on_cpu() */
->> -			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
->> -				continue;
->> -			ret = match_pr->throttling.
->> -				acpi_processor_set_throttling(
->> -				match_pr, t_state.target_state, force);
->> +
->> +			arg.pr = match_pr;
->> +			arg.target_state = state;
->> +			arg.force = force;
->> +			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
->> +				&arg);
->>   		}
->>   	}
->>   	/*
->> @@ -1168,17 +1168,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
->>   	 * affected cpu to update the T-states.
->>   	 * The notifier event is THROTTLING_POSTCHANGE
->>   	 */
->> -	for_each_cpu(i, online_throttling_cpus) {
->> +	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
->>   		t_state.cpu = i;
->>   		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
->>   							&t_state);
->>   	}
->> -	/* restore the previous state */
->> -	/* FIXME: use work_on_cpu() */
->> -	set_cpus_allowed_ptr(current, saved_mask);
->> -exit:
->> -	free_cpumask_var(online_throttling_cpus);
->> -	free_cpumask_var(saved_mask);
->> +
->>   	return ret;
->>   }
->>
->>
->
+What about Q1 and Q2, like below ?
+
+  /* Usage is initialized with ATOMIC_INIT(-1). */
+  static struct rcu_comm static_rcu_comm[CONFIG_RESERVED_COMMBUFFER];
+
+  static void free_commname(struct rcu_head *rcu)
+  {
+  	struct rcu_comm *comm = container_of(rcu, struct rcu_comm, rcu);
+  	if (comm < &static_rcu_comm[0] ||
+  	    comm >= &static_rcu_comm[CONFIG_RESERVED_COMMBUFFER])
+  		kmem_cache_free(commname_cachep, comm);
+  	else
+  		atomic_set(&comm->usage, -1);
+  }
+
+  void do_set_task_comm(struct task_struct *tsk, const char *buf)
+  {
+  	struct rcu_comm *comm;
+  
+  	comm = kmem_cache_zalloc(commname_cachep, GFP_ATOMIC | __GFP_NOWARN);
+  	if (likely(comm))
+  		atomic_set(&comm->usage, 1);
+  	else {
+  		int i;
+  
+  		/* Memory allocation failed. Try static comm name buffer. */
+  		for (i = 0; i < CONFIG_RESERVED_COMMBUFFER; i++) {
+  			comm = &static_rcu_comm[i];
+  			if (atomic_read(&comm->usage) != -1)
+  				continue;
+  			if (atomic_add_return(&comm->usage, 2) == 1)
+  				goto found;
+  		  	put_commname(comm);
+  		  	put_commname(comm);
+  		}
+  		/* No comm name buffer available. Keep current comm name. */
+  		WARN_ONCE(1, "Failed to allocate memory for comm name.\n");
+  		return;
+  	}
+  found:
+  	strncpy(comm->name, buf, TASK_COMM_LEN - 1);
+  	comm = xchg(&tsk->rcu_comm, comm);
+  	put_commname(comm);
+  }
+
+Since we can preallocate rcu_comm using GFP_KERNEL and return -ENOMEM (e.g.
+prepare_bprm_creds() for execve() case, copy_from_user() for prctl(PR_SET_NAME)
+and comm_write() (i.e. /proc/$pid/comm ) cases), there will be little users of
+static_rcu_comm[] (e.g. kthreadd()).
 
 
--- 
-Best Regards
-Tianyu Lan
+> > @@ -1191,6 +1195,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> >  	p = dup_task_struct(current);
+> >  	if (!p)
+> >  		goto fork_out;
+> > +	rcu_read_lock();
+> > +	do {
+> > +		p->rcu_comm = rcu_dereference(current->rcu_comm);
+> > +	} while (!atomic_inc_not_zero(&p->rcu_comm->usage));
+> 
+> OK, loop until we get the sole reference on the comm...  But
+> I suggest an rcu_read_unlock() followed by an rcu_read_lock() as the
+> first thing in the loop.  Just to prevent adding an RCU CPU stall to
+> our woes if we cannot get a reference.
+> 
+I see. I will use
+
+  p->rcu_comm = NULL;
+  do {
+  	struct rcu_comm *comm;
+  	rcu_read_lock();
+  	comm = rcu_dereference(current->rcu_comm);
+  	if (atomic_inc_not_zero(&comm->usage))
+  		p->rcu_comm = comm;
+  	rcu_read_unlock();
+  } while (!p->rcu_comm);
+
+in the next version (if we use RCU approach).
+
+> And here the two tasks (parent and child) share the name until one
+> or the other either changes its name or exits.  OK.
+> 
+Yes, this is copy on write approach.
+
+Another approach could use heuristic atomicity; change from "char comm[16]"
+to "long comm[16/sizeof(long)]" and read/write using "long". By using "long",
+we can reduce the possibility of getting the mixture of current comm name and
+comm name to update to, for reading/writing of "long" is atomic.
+
+The horizontal axis of below map is the strlen() of current comm name and the
+vertical axis is the strlen() of comm name to update to. If sizeof(long) == 8,
+193 out of 256 patterns can be atomically updated without any locks. Moreover,
+since strlen() of at least one of current comm name and new comm name tends to
+be shorter than sizeof(long) (e.g. "bash" -> "ls", "rc.sysinit" -> "cat",
+"bash" -> "avahi-daemon" ), update of comm name will more likely be atomic
+without any locks.
+
+    | 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+  --+-----------------------------------------------
+   0| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   1| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   2| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   3| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   4| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   5| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   6| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   7| o  o  o  o  o  o  o  o  o  o  o  o  o  o  o  o
+   8| o  o  o  o  o  o  o  o  o  x  x  x  x  x  x  x
+   9| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  10| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  11| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  12| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  13| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  14| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+  15| o  o  o  o  o  o  o  o  x  x  x  x  x  x  x  x
+
+> > +	rcu_read_unlock();
+> > 
+> >  	ftrace_graph_init_task(p);
+> >  	get_seccomp_filter(p);
