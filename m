@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaBZFXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:23:03 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:61232 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaBZFXA (ORCPT
+	id S1751604AbaBZFXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:23:14 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46516 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaBZFXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:23:00 -0500
-X-AuditID: 9c93017e-b7cf9ae000004b4b-e4-530d7a32a820
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2] zram: support REQ_DISCARD
-Date: Wed, 26 Feb 2014 14:23:15 +0900
-Message-Id: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 26 Feb 2014 00:23:11 -0500
+Date: Tue, 25 Feb 2014 21:23:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jeff Law <law@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140226052306.GD8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+ <20140224172110.GO8264@linux.vnet.ibm.com>
+ <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+ <20140224185341.GU8264@linux.vnet.ibm.com>
+ <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+ <20140224223701.GC8264@linux.vnet.ibm.com>
+ <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
+ <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com>
+ <20140226001558.GY8264@linux.vnet.ibm.com>
+ <530D6056.40305@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530D6056.40305@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022605-6688-0000-0000-000006FC219C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zram is ram based block device and can be used by backend of filesystem.
-When filesystem deletes a file, it normally doesn't do anything on data
-block of that file. It just marks on metadata of that file. This behavior
-has no problem on disk based block device, but has problems on ram based
-block device, since we can't free memory used for data block. To overcome
-this disadvantage, there is REQ_DISCARD functionality. If block device
-support REQ_DISCARD and filesystem is mounted with discard option,
-filesystem sends REQ_DISCARD to block device whenever some data blocks are
-discarded. All we have to do is to handle this request.
+On Tue, Feb 25, 2014 at 08:32:38PM -0700, Jeff Law wrote:
+> On 02/25/14 17:15, Paul E. McKenney wrote:
+> >>I have for the last several years been 100% convinced that the Intel
+> >>memory ordering is the right thing, and that people who like weak
+> >>memory ordering are wrong and should try to avoid reproducing if at
+> >>all possible. But given that we have memory orderings like power and
+> >>ARM, I don't actually see a sane way to get a good strong ordering.
+> >>You can teach compilers about cases like the above when they actually
+> >>see all the code and they could poison the value chain etc. But it
+> >>would be fairly painful, and once you cross object files (or even just
+> >>functions in the same compilation unit, for that matter), it goes from
+> >>painful to just "ridiculously not worth it".
+> >
+> >And I have indeed seen a post or two from you favoring stronger memory
+> >ordering over the past few years.  ;-)
+> I couldn't agree more.
+> 
+> >
+> >Are ARM and Power really the bad boys here?  Or are they instead playing
+> >the role of the canary in the coal mine?
+> That's a question I've been struggling with recently as well.  I
+> suspect they (arm, power) are going to be the outliers rather than
+> the canary. While the weaker model may give them some advantages WRT
+> scalability, I don't think it'll ultimately be enough to overcome
+> the difficulty in writing correct low level code for them.
+> 
+> Regardless, they're here and we have to deal with them.
 
-This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
-REQ_DISCARD request. With it, we can free memory used by zram if it isn't
-used.
+Agreed...
 
-v2: handle unaligned case commented by Jerome
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 5ec61be..5364c1e 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	return ret;
- }
- 
-+static void zram_bio_discard(struct zram *zram, struct bio *bio)
-+{
-+	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
-+	size_t n = bio->bi_iter.bi_size;
-+	size_t misalign;
-+
-+	/*
-+	 * On some arch, logical block (4096) aligned request couldn't be
-+	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
-+	 * Therefore we should handle this misaligned case here.
-+	 */
-+	misalign = (bio->bi_iter.bi_sector &
-+			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-+	if (misalign) {
-+		if (n < misalign)
-+			return;
-+
-+		n -= misalign;
-+		index++;
-+	}
-+
-+	while (n >= PAGE_SIZE) {
-+		write_lock(&zram->meta->tb_lock);
-+		zram_free_page(zram, index);
-+		write_unlock(&zram->meta->tb_lock);
-+		index++;
-+		n -= PAGE_SIZE;
-+	}
-+}
-+
- static void zram_reset_device(struct zram *zram, bool reset_capacity)
- {
- 	size_t index;
-@@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
- 	struct bio_vec bvec;
- 	struct bvec_iter iter;
- 
-+	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-+		zram_bio_discard(zram, bio);
-+		bio_endio(bio, 0);
-+		return;
-+	}
-+
- 	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 	offset = (bio->bi_iter.bi_sector &
- 		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-@@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
- 					ZRAM_LOGICAL_BLOCK_SIZE);
- 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
- 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
-+	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
-+	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
-+	zram->disk->queue->limits.discard_zeroes_data = 1;
-+	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
- 
- 	add_disk(zram->disk);
- 
--- 
-1.7.9.5
+							Thanx, Paul
 
