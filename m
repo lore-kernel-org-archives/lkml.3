@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974AbaBZVlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 16:41:47 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55102 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753580AbaBZVlp convert rfc822-to-8bit (ORCPT
+	id S1754111AbaBZVmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:42:38 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:55716 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698AbaBZVmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 16:41:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: josh@joshtriplett.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v3] drivers: cpufreq: Mark function as static in cpufreq.c
-Date: Wed, 26 Feb 2014 22:56:45 +0100
-Message-ID: <16591432.HQVTHU5NYJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1393432962-3647-1-git-send-email-rashika.kheria@gmail.com>
-References: <20140226154625.GA10701@rashika> <1393432962-3647-1-git-send-email-rashika.kheria@gmail.com>
+	Wed, 26 Feb 2014 16:42:37 -0500
+Date: Wed, 26 Feb 2014 22:42:36 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@amacapital.net>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+Message-ID: <20140226214236.GO22728@two.firstfloor.org>
+References: <530D53EF.9090706@amacapital.net>
+ <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+ <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+ <20140226185513.GL22728@two.firstfloor.org>
+ <CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
+ <530E3E47.8010205@gmail.com>
+ <CALCETrUHiDqT+VRbdEnGsEkMFqQt+ZqX+RTenp1ets8XMhrQ2Q@mail.gmail.com>
+ <530E4B42.5090401@gmail.com>
+ <20140226205322.GM22728@two.firstfloor.org>
+ <530E5DE7.7060904@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530E5DE7.7060904@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 26, 2014 10:12:42 PM Rashika Kheria wrote:
-> Mark function as static in cpufreq.c because it is not
-> used outside this file.
+On Wed, Feb 26, 2014 at 02:34:31PM -0700, David Ahern wrote:
+> On 2/26/14, 1:53 PM, Andi Kleen wrote:
+> >>Is there some reason not to enable frame pointers?
+> >
+> >It makes code slower.
 > 
-> This eliminates the following warning in cpufreq.c:
-> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for ‘show_boost’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Sure there is some overhead because of the push, mov, pop
+> instructions per function. But, take for example the simple program
+> below. Compile with and without frame pointers
 
-v2 has been Reviewed-by: Josh already, right?
+I'm not criticizing your choice, just saying that
+it's often not practical to get FP everywhere
+(and I bet you missed some cases too)
 
-> ---
-> Changes since v1:
-> Incorrect Fix
-> Changes since v2:
-> Show Changelog
-> 
->  drivers/cpufreq/cpufreq.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 08ca8c9..54fd670 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
->   *********************************************************************/
-> -ssize_t show_boost(struct kobject *kobj,
-> +static ssize_t show_boost(struct kobject *kobj,
->  				 struct attribute *attr, char *buf)
->  {
->  	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
-> 
+<.. micro benchmark snipped...>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The CPU you're using has special hardware to avoid the main 
+problems with FP. It can still cause slow downs in other
+cases (e.g. one register less). But there are other
+CPUs where this special hardware is not available.
+
+You may not care about these cases, but other people do.
+
+> >wrong annotations, out of date or broken dwarf library etc.)
+> 
+> dwarf is often just not usable:
+
+I agree (altough I haven't seen that error before)
+
+
+> That is a huge difference. Not to mention the fact the dwarf file is
+> useless which means radically lowering sample rate and increasing
+> mmap size.
+
+Yep.
+
+It's just fundamentally inefficient for profiling.
+
+-Andi
