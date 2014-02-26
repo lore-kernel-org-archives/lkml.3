@@ -1,65 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaBZQPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:15:45 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:33796 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751078AbaBZQPo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:15:44 -0500
-Date: Wed, 26 Feb 2014 11:15:42 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
- loaded due to module taint
-Message-ID: <20140226111542.15657cd6@gandalf.local.home>
-In-Reply-To: <192956891.30659.1393418892222.JavaMail.zimbra@efficios.com>
-References: <20140225191505.32b56105@gandalf.local.home>
-	<188130295.30493.1393375141631.JavaMail.zimbra@efficios.com>
-	<20140225194926.4eac5872@gandalf.local.home>
-	<20140226085926.GF18404@twins.programming.kicks-ass.net>
-	<192956891.30659.1393418892222.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1752830AbaBZQQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:16:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172AbaBZQQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 11:16:46 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: acme@ghostprotocols.net, jolsa@redhat.com, eranian@google.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/2] perf: fix synthesizing mmaps for threads
+Date: Wed, 26 Feb 2014 10:45:26 -0500
+Message-Id: <1393429527-167840-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
+References: <1393429527-167840-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 12:48:12 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+Currently if a process creates a bunch of threads using pthread_create
+and then perf is run in system_wide mode, the mmaps for those threads
+are not captured with a synthesized mmap event.
 
-> > How about instead of a WARN, you use a normal KERN_ERR printk(). There's
-> > no point to the entire WARN state dump, that's needlessly verbose.
-> > 
-> > When you have a normal error print you can have as many as are required
-> > and put the mod name back in.
-> 
-> The good old printk KERN_ERR is a very good idea. I agree that WARN() is
-> too verbose for our needs here.
+The reason is those threads are not visible when walking the /proc/
+directory looking for /proc/<pid>/maps files.  Instead they are discovered
+using the /proc/<pid>/tasks file (which the synthesized comm event uses).
 
-Actually, it's not so bad for the WARN() after my last patch to only
-allocate (or even process tracepoints) if mod->num_tracepionts is
-greater than zero. I didn't realize you were wasting memory for all
-modules that were loaded.
+This causes problems when a program is trying to map a data address to a
+tid.  Because the tid has no maps, the event is dropped.  Changing the program
+to look up using the pid instead of the tid, finds the correct maps but creates
+ugly hacks in the program to carry the correct tid around.
 
-My fear with the KERN_ERR is that it wont be noticeable enough. Where
-as a stack dump is something that will catch people's attention.
+Fix this by moving the walking of the /proc/<pid>/tasks up a level (out of the
+comm function) based on Arnaldo's suggestion.
 
-And as Rusty has said, if you are loading a module that is forced, or
-something strange, it is broken. The failure of loading the tracepoints
-of a module is a bug if the module happens to have tracepoints.
+Tweaked things a bit to special case the 'full' bit and 'guest' check.
 
-After the MOD_SIG fix, any failure should be a big banner bug. Either
-they are using a forced module with tracepoints that should not be
-loaded. Or they have tracepoints is a non-GPL module (which is also a
-big no-no).
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/util/event.c | 111 ++++++++++++++++++++++++------------------------
+ 1 file changed, 56 insertions(+), 55 deletions(-)
 
--- Steve
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 086c7c8..82fb890 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -94,14 +94,10 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+ 
+ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 					 union perf_event *event, pid_t pid,
+-					 int full,
+ 					 perf_event__handler_t process,
+ 					 struct machine *machine)
+ {
+-	char filename[PATH_MAX];
+ 	size_t size;
+-	DIR *tasks;
+-	struct dirent dirent, *next;
+ 	pid_t tgid;
+ 
+ 	memset(&event->comm, 0, sizeof(event->comm));
+@@ -124,53 +120,11 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 	event->comm.header.size = (sizeof(event->comm) -
+ 				(sizeof(event->comm.comm) - size) +
+ 				machine->id_hdr_size);
+-	if (!full) {
+-		event->comm.tid = pid;
+-
+-		if (process(tool, event, &synth_sample, machine) != 0)
+-			return -1;
++	event->comm.tid = pid;
+ 
+-		goto out;
+-	}
+-
+-	if (machine__is_default_guest(machine))
+-		return 0;
+-
+-	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
+-		 machine->root_dir, pid);
+-
+-	tasks = opendir(filename);
+-	if (tasks == NULL) {
+-		pr_debug("couldn't open %s\n", filename);
+-		return 0;
+-	}
+-
+-	while (!readdir_r(tasks, &dirent, &next) && next) {
+-		char *end;
+-		pid = strtol(dirent.d_name, &end, 10);
+-		if (*end)
+-			continue;
+-
+-		/* already have tgid; jut want to update the comm */
+-		(void) perf_event__get_comm_tgid(pid, event->comm.comm,
+-					 sizeof(event->comm.comm));
+-
+-		size = strlen(event->comm.comm) + 1;
+-		size = PERF_ALIGN(size, sizeof(u64));
+-		memset(event->comm.comm + size, 0, machine->id_hdr_size);
+-		event->comm.header.size = (sizeof(event->comm) -
+-					  (sizeof(event->comm.comm) - size) +
+-					  machine->id_hdr_size);
+-
+-		event->comm.tid = pid;
+-
+-		if (process(tool, event, &synth_sample, machine) != 0) {
+-			tgid = -1;
+-			break;
+-		}
+-	}
++	if (process(tool, event, &synth_sample, machine) != 0)
++		return -1;
+ 
+-	closedir(tasks);
+ out:
+ 	return tgid;
+ }
+@@ -331,12 +285,59 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      struct perf_tool *tool,
+ 				      struct machine *machine, bool mmap_data)
+ {
+-	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+-						 process, machine);
+-	if (tgid == -1)
+-		return -1;
+-	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+-						  process, machine, mmap_data);
++	char filename[PATH_MAX];
++	DIR *tasks;
++	struct dirent dirent, *next;
++	pid_t tgid;
++
++	/* special case: only send one comm event using passed in pid */
++	if (!full) {
++		tgid = perf_event__synthesize_comm(tool, comm_event, pid,
++						   process, machine);
++
++		if (tgid == -1)
++			return -1;
++
++		return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++							  process, machine, mmap_data);
++	}
++
++	if (machine__is_default_guest(machine))
++		return 0;
++
++	snprintf(filename, sizeof(filename), "%s/proc/%d/task",
++		 machine->root_dir, pid);
++
++	tasks = opendir(filename);
++	if (tasks == NULL) {
++		pr_debug("couldn't open %s\n", filename);
++		return 0;
++	}
++
++	while (!readdir_r(tasks, &dirent, &next) && next) {
++		char *end;
++		int rc = 0;
++		pid_t _pid;
++
++		_pid = strtol(dirent.d_name, &end, 10);
++		if (*end)
++			continue;
++
++		tgid = perf_event__synthesize_comm(tool, comm_event, _pid,
++						   process, machine);
++		if (tgid == -1)
++			return -1;
++
++		/* process the thread's maps too */
++		rc = perf_event__synthesize_mmap_events(tool, mmap_event, _pid, tgid,
++							process, machine, mmap_data);
++
++		if (rc)
++			return rc;
++	}
++
++	closedir(tasks);
++	return 0;
+ }
+ 
+ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+-- 
+1.7.11.7
+
