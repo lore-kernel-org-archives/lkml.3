@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbaBZWDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:03:41 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:50631 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaBZWDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:03:40 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: [PATCH v8.1 1/6] dt-bindings: sram: describe option to reserve parts of the memory
-Date: Wed, 26 Feb 2014 23:02:52 +0100
-Message-ID: <2574291.evU61mFTUd@phil>
-User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <201402251419.31151.arnd@arndb.de>
-References: <21117503.1c6iOkvYSr@phil> <126672712.tufE5adZWC@phil> <201402251419.31151.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754284AbaBZWEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:04:23 -0500
+Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:58831 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753647AbaBZWEV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 17:04:21 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2687:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:6117:6119:7652:9010:10004:10400:10848:11232:11658:11914:12050:12517:12519:12740:13069:13095:13161:13229:13311:13357:14096:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: women30_2584a64375e1c
+X-Filterd-Recvd-Size: 2060
+Message-ID: <1393452256.24588.5.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
+From: Joe Perches <joe@perches.com>
+To: Tom Rini <trini@ti.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 26 Feb 2014 14:04:16 -0800
+In-Reply-To: <530C8D00.8070606@ti.com>
+References: <1393274296-26179-1-git-send-email-trini@ti.com>
+	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
+	 <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>
+	 <1393279377.11020.66.camel@joe-AO722> <530BC209.2000708@ti.com>
+	 <1393279691.11020.69.camel@joe-AO722> <530BC5A4.4060803@ti.com>
+	 <1393281098.11020.82.camel@joe-AO722> <530BCB27.5040808@ti.com>
+	 <1393305803.11020.119.camel@joe-AO722> <530C8D00.8070606@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some SoCs need parts of their sram for special purposes. So while being part
-of the peripheral, it should not be part of the genpool controlling the sram.
+On Tue, 2014-02-25 at 07:30 -0500, Tom Rini wrote:
+> The only intentional differences we have today are adding debug/printf
+> to the list of log functions
 
-Therefore add the option to define reserved regions as subnodes of the
-sram-node similar to defining reserved global memory regions.
+That seems fine and trivial to keep current.
 
-Originally
-Suggested-by: Rob Herring <robherring2@gmail.com>
+> and pointing people at boards.cfg not
+> CHECKPATCH in MAINTAINERS,
 
-Using subnodes for reserved regions
-Suggested-by: Grant Likely <grant.likely@linaro.org>
+That seems wrong.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
----
-Hi Arnd,
+The idea of that message is to fix defects in checkpatch,
+not any other code.
 
-I've changed the range definition as suggested. I've also changed my
-rockchip dt-files accordingly, but will wait with respinning the whole
-series until the direction with this binding is a bit safer.
+Maybe that could be reworded to
+"See the CHECKPATCH entry in the MAINTAINERS file of linux git"
+or some such.
 
-I've also amended the "compatible"-property for the subnodes. It now
-mimics the text from the generic reserved memory nodes [0],
-which got no complaints from the DT maintainers.
+>  so I can re-sync us no problem as, yup, we're
+> about a year out of date there.  Oh and I see now someone snuck in a
+> check for whitespace before semi-colon to catch 'return 0 ;' which I'll
+> check real quick isn't something already caught and if not post that as
+> well.
 
-Heiko
-
-
-[0] https://lkml.org/lkml/2014/2/4/172
-
- Documentation/devicetree/bindings/misc/sram.txt | 35 +++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
-index 4d0a00e..36cbe5a 100644
---- a/Documentation/devicetree/bindings/misc/sram.txt
-+++ b/Documentation/devicetree/bindings/misc/sram.txt
-@@ -8,9 +8,44 @@ Required properties:
- 
- - reg : SRAM iomem address range
- 
-+Reserving sram areas:
-+---------------------
-+
-+Each child of the sram node specifies a region of reserved memory. Each
-+child node should use a 'reg' property to specify a specific range of
-+reserved memory.
-+
-+Following the generic-names recommended practice, node names should
-+reflect the purpose of the node. Unit address (@<address>) should be
-+appended to the name.
-+
-+Required properties in the sram node:
-+
-+- #address-cells, #size-cells : should use the same values as the root node
-+- ranges : standard definition, should translate from local addresses
-+           within the sram to bus addresses
-+
-+Required properties in the area nodes:
-+
-+- reg : iomem address range, relative to the SRAM range
-+
-+Optional properties in the area nodes:
-+
-+- compatible : standard definition, should contain a vendor specific string
-+               in the form <vendor>,[<device>-]<usage>
-+
- Example:
- 
- sram: sram@5c000000 {
- 	compatible = "mmio-sram";
- 	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
-+
-+	#adress-cells = <1>;
-+	#size-cells = <1>;
-+	ranges = <0 0x5c000000 0x40000>;
-+
-+	smp-sram@100 {
-+		compatible = "socvendor,smp-sram";
-+		reg = <0x100 0x50>;
-+	};
- };
--- 
-1.8.5.3
+Does anyone know of other projects that use checkpatch?
 
 
