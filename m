@@ -1,204 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaBZHwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:52:36 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:38599 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaBZHwX (ORCPT
+	id S1751447AbaBZH5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:57:30 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45436 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaBZH52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:52:23 -0500
+	Wed, 26 Feb 2014 02:57:28 -0500
+Subject: [PATCH] tools/vm/page-types.c: page-cache sniffing feature
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: acme@redhat.com, akpm@linux-foundation.org, fengguang.wu@intel.com,
+        bp@suse.de
+Date: Wed, 26 Feb 2014 11:57:23 +0400
+Message-ID: <20140226075723.29820.26427.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <1393387473.7655.28.camel@buesod1.americas.hpqcorp.net>
-References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-	<CANN689HfCT8uHKBeMHF-2Xa_eW9y9=UY7WdD1gW2EetqpcVSMw@mail.gmail.com>
-	<1393387473.7655.28.camel@buesod1.americas.hpqcorp.net>
-Date: Tue, 25 Feb 2014 23:52:22 -0800
-Message-ID: <CANN689GNfGLKkHAz9R6BC=E4b6ueMWcS0Ba_qZfCnW7NjnBs9A@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: per-thread vma caching
-From: Michel Lespinasse <walken@google.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 8:04 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Tue, 2014-02-25 at 18:04 -0800, Michel Lespinasse wrote:
->> On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->> > This patch is a continuation of efforts trying to optimize find_vma(),
->> > avoiding potentially expensive rbtree walks to locate a vma upon faults.
->> > The original approach (https://lkml.org/lkml/2013/11/1/410), where the
->> > largest vma was also cached, ended up being too specific and random, thus
->> > further comparison with other approaches were needed. There are two things
->> > to consider when dealing with this, the cache hit rate and the latency of
->> > find_vma(). Improving the hit-rate does not necessarily translate in finding
->> > the vma any faster, as the overhead of any fancy caching schemes can be too
->> > high to consider.
->>
->> Actually there is also the cost of keeping the cache up to date. I'm
->> not saying that it's an issue in your proposal - I like the proposal,
->> especially now that you are replacing the per-mm cache rather than
->> adding something on top - but it is a factor to consider.
->
-> True, although numbers show that the cost of maintaining the cache is
-> quite minimal. Invalidations are a free lunch (except in the rare event
-> of a seqnum overflow), so the updating part would consume the most
-> cycles, but then again, the hit rate is quite good so I'm not worried
-> about that either.
+After this patch 'page-types' can walk on filesystem mappings and analize
+populated page cache pages mostly without disturbing its state.
 
-Yes. I like your patch precisely because it keeps maintainance costs low.
+It maps chunk of file, marks VMA as MADV_RANDOM to turn off readahead,
+pokes VMA via mincore() to determine cached pages, triggers page-fault
+only for them, and finally gathers information via pagemap/kpageflags.
+Before unmap it marks VMA as MADV_SEQUENTIAL for ignoring reference bits.
 
->> > +void vmacache_invalidate_all(void)
->> > +{
->> > +       struct task_struct *g, *p;
->> > +
->> > +       rcu_read_lock();
->> > +       for_each_process_thread(g, p) {
->> > +               /*
->> > +                * Only flush the vmacache pointers as the
->> > +                * mm seqnum is already set and curr's will
->> > +                * be set upon invalidation when the next
->> > +                * lookup is done.
->> > +                */
->> > +               memset(p->vmacache, 0, sizeof(p->vmacache));
->> > +       }
->> > +       rcu_read_unlock();
->> > +}
->>
->> Two things:
->>
->> - I believe we only need to invalidate vma caches for threads that
->> share a given mm ? we should probably pass in that mm in order to
->> avoid over-invalidation
->
-> I think you're right, since the overflows will always occur on
-> mm->seqnum, tasks that do not share the mm shouldn't be affected.
->
-> So the danger here is that when a lookup occurs, vmacache_valid() will
-> return true, having:
->
-> mm == curr->mm && mm->vmacache_seqnum == curr->vmacache_seqnum (both 0).
->
-> Then we just iterate the cache and potentially return some bugus vma.
->
-> However, since we're now going to reset the seqnum on every fork/clone
-> (before it was just the oldmm->seqnum + 1 thing), I doubt we'll ever
-> overflow.
+usage: page-types -f <path>
 
-I'm concerned about it *precisely* because it won't happen often, and
-so it'd be hard to debug if we had a problem there. 64 bits would be
-safe, but a 32-bit counter doesn't take that long to overflow, and I'm
-sure it will happen once in a while in production.
+If <path> is directory it will analyse all files in all subdirectories.
 
-Actually, I think there is a case for masking the seqnum with a
-constant (all ones in production builds, but something shorter when
-CONFIG_DEBUG_VM is enabled) so that this code is easier to exercise.
+Symlinks are not followed as well as mount points. Hardlinks aren't handled,
+they'll be dumbed as many times as they are found. Recursive walk brings all
+dentries into dcache and populates page cache of block-devices aka 'Buffers'.
 
->> - My understanding is that the operation is safe because the caller
->> has the mm's mmap_sem held for write, and other threads accessing the
->> vma cache will have mmap_sem held at least for read, so we don't need
->> extra locking to maintain the vma cache.
->
-> Yes, that's how I see things as well.
->
->> Please 1- confirm this is the
->> intention, 2- document this, and 3- only invalidate vma caches for
->> threads that match the caller's mm so that mmap_sem locking can
->> actually apply.
->
-> Will do.
+Probably it's worth to add ioctl for dumping file page cache as array of PFNs
+as a replacement for this hackish juggling with mmap/madvise/mincore/pagemap.
+Also recursive walk could be replaced with dumping cached inodes via some ioctl
+or debugfs interface followed by openning them via open_by_handle_at, this
+would fix hardlinks handling and unneeded population of dcache and buffers.
+This interface might be used as data source for constructing readahead plans
+and for background optimizations of actively used files.
 
-Thanks :)
+collateral changes:
++ fix 64-bit LFS: define _FILE_OFFSET_BITS instead of _LARGEFILE64_SOURCE
++ replace lseek + read with single pread
++ make show_page_range() reusable after flush
 
->> > +struct vm_area_struct *vmacache_find(struct mm_struct *mm,
->> > +                                    unsigned long addr)
->> > +
->> > +{
->> > +       int i;
->> > +
->> > +       if (!vmacache_valid(mm))
->> > +               return NULL;
->> > +
->> > +       for (i = 0; i < VMACACHE_SIZE; i++) {
->> > +               struct vm_area_struct *vma = current->vmacache[i];
->> > +
->> > +               if (vma && vma->vm_start <= addr && vma->vm_end > addr)
->> > +                       return vma;
->> > +       }
->> > +
->> > +       return NULL;
->> > +}
->> > +
->> > +void vmacache_update(struct mm_struct *mm, unsigned long addr,
->> > +                    struct vm_area_struct *newvma)
->> > +{
->> > +       /*
->> > +        * Hash based on the page number. Provides a good
->> > +        * hit rate for workloads with good locality and
->> > +        * those with random accesses as well.
->> > +        */
->> > +       int idx = (addr >> PAGE_SHIFT) & 3;
->> > +       current->vmacache[idx] = newvma;
->> > +}
->>
->> I did read the previous discussion about how to compute idx here. I
->> did not at the time realize that you are searching all 4 vmacache
->> entries on lookup - that is, we are only talking about eviction policy
->> here, not a lookup hash policy.
->
-> Right.
->
->> My understanding is that the reason both your current and your
->> previous idx computations work, is that a random eviction policy would
->> work too. Basically, what you do is pick some address bits that are
->> 'random enough' to use as an eviction policy.
->
-> What do you mean by random enough? I assume that would be something like
-> my original scheme were I used the last X bits of the offset within the
-> page.
+usage example:
 
-What I mean is that if you used a per-thread random number generator
-to compute idx, such as prandom_u32_state() for example, you'd get
-nice enough results already - after all, random eviction is not that
-bad. So, my hunch is that the particular way you compute idx based on
-the address works not because it catches on some particular property
-of the access patterns, but just because the sequence of indexes it
-ends up generating is as good as a random one.
+~/src/linux/tools/vm$ sudo ./page-types -L -f page-types
+foffset	offset	flags
+page-types	Inode: 2229277	Size: 89065 (22 pages)
+Modify: Tue Feb 25 12:00:59 2014 (162 seconds ago)
+Access: Tue Feb 25 12:01:00 2014 (161 seconds ago)
+0	3cbf3b	__RU_lA____M________________________
+1	38946a	__RU_lA____M________________________
+2	1a3cec	__RU_lA____M________________________
+3	1a8321	__RU_lA____M________________________
+4	3af7cc	__RU_lA____M________________________
+5	1ed532	__RU_lA_____________________________
+6	2e436a	__RU_lA_____________________________
+7	29a35e	___U_lA_____________________________
+8	2de86e	___U_lA_____________________________
+9	3bdfb4	___U_lA_____________________________
+10	3cd8a3	___U_lA_____________________________
+11	2afa50	___U_lA_____________________________
+12	2534c2	___U_lA_____________________________
+13	1b7a40	___U_lA_____________________________
+14	17b0be	___U_lA_____________________________
+15	392b0c	___U_lA_____________________________
+16	3ba46a	__RU_lA_____________________________
+17	397dc8	___U_lA_____________________________
+18	1f2a36	___U_lA_____________________________
+19	21fd30	__RU_lA_____________________________
+20	2c35ba	__RU_l______________________________
+21	20f181	__RU_l______________________________
 
->> This is more of a question for Linus, but I am very surprised that I
->> can't find an existing LRU eviction policy scheme in Linux. What I
->> have in mind is to keep track of the order the cache entries have last
->> been used. With 4 entries, there are 4! = 24 possible orders, which
->> can be represented with an integer between 0 and 23. When
->> vmacache_find suceeds, that integer is updated using a table lookup
->> (table takes 24*4 = 96 bytes). In vmacache_update, the lru value
->> module 4 indicates which cache way to evict (i.e. it's the one that's
->> been least recently used).
->
-> While not completely related, I did play with a mod 4 hashing scheme
-> before I got to the one I'm proposing now. It was just not as effective.
 
-I believe you mean using idx = addr % 4 ? I can see that this wouldn't
-work well, because index 0 would be chosen way too often (i.e. any
-time the address is aligned, or the first access into a given page is
-from reading a byte stream that crosses into it, etc).
+             flags	page-count       MB  symbolic-flags			long-symbolic-flags
+0x000000000000002c	         2        0  __RU_l______________________________	referenced,uptodate,lru
+0x0000000000000068	        11        0  ___U_lA_____________________________	uptodate,lru,active
+0x000000000000006c	         4        0  __RU_lA_____________________________	referenced,uptodate,lru,active
+0x000000000000086c	         5        0  __RU_lA____M________________________	referenced,uptodate,lru,active,mmap
+             total	        22        0
 
-But, what I propose above is entirely different, it is just picking
-whatever cache index was least recently used for lookups. In this
-context, the 'modulo 4' is only an implementation detail of how I
-propose we track LRU order between the 4 cache slots.
 
-By the way, I'm happy enough with your patch going in with your
-proposed eviction scheme; LRU eviction is a refinement that is best
-done as a separate patch. It just came up because I think it would be
-applicable here.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+~/src/linux/tools/vm$ sudo ./page-types -f /
+             flags	page-count       MB  symbolic-flags			long-symbolic-flags
+0x0000000000000028	     21761       85  ___U_l______________________________	uptodate,lru
+0x000000000000002c	    127279      497  __RU_l______________________________	referenced,uptodate,lru
+0x0000000000000068	     74160      289  ___U_lA_____________________________	uptodate,lru,active
+0x000000000000006c	     84469      329  __RU_lA_____________________________	referenced,uptodate,lru,active
+0x000000000000007c	         1        0  __RUDlA_____________________________	referenced,uptodate,dirty,lru,active
+0x0000000000000228	       370        1  ___U_l___I__________________________	uptodate,lru,reclaim
+0x0000000000000828	        49        0  ___U_l_____M________________________	uptodate,lru,mmap
+0x000000000000082c	       126        0  __RU_l_____M________________________	referenced,uptodate,lru,mmap
+0x0000000000000868	       137        0  ___U_lA____M________________________	uptodate,lru,active,mmap
+0x000000000000086c	     12890       50  __RU_lA____M________________________	referenced,uptodate,lru,active,mmap
+             total	    321242     1254
+
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+---
+ tools/vm/page-types.c |  170 ++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 152 insertions(+), 18 deletions(-)
+
+diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
+index f9be24d..05654f5 100644
+--- a/tools/vm/page-types.c
++++ b/tools/vm/page-types.c
+@@ -19,7 +19,8 @@
+  * Authors: Wu Fengguang <fengguang.wu@intel.com>
+  */
+ 
+-#define _LARGEFILE64_SOURCE
++#define _FILE_OFFSET_BITS 64
++#define _GNU_SOURCE
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+@@ -29,11 +30,14 @@
+ #include <getopt.h>
+ #include <limits.h>
+ #include <assert.h>
++#include <ftw.h>
++#include <time.h>
+ #include <sys/types.h>
+ #include <sys/errno.h>
+ #include <sys/fcntl.h>
+ #include <sys/mount.h>
+ #include <sys/statfs.h>
++#include <sys/mman.h>
+ #include "../../include/uapi/linux/magic.h"
+ #include "../../include/uapi/linux/kernel-page-flags.h"
+ #include <api/fs/debugfs.h>
+@@ -158,6 +162,7 @@ static int		opt_raw;	/* for kernel developers */
+ static int		opt_list;	/* list pages (in ranges) */
+ static int		opt_no_summary;	/* don't show summary */
+ static pid_t		opt_pid;	/* process to walk */
++const char *		opt_file;
+ 
+ #define MAX_ADDR_RANGES	1024
+ static int		nr_addr_ranges;
+@@ -253,12 +258,7 @@ static unsigned long do_u64_read(int fd, char *name,
+ 	if (index > ULONG_MAX / 8)
+ 		fatal("index overflow: %lu\n", index);
+ 
+-	if (lseek(fd, index * 8, SEEK_SET) < 0) {
+-		perror(name);
+-		exit(EXIT_FAILURE);
+-	}
+-
+-	bytes = read(fd, buf, count * 8);
++	bytes = pread(fd, buf, count * 8, (off_t)index * 8);
+ 	if (bytes < 0) {
+ 		perror(name);
+ 		exit(EXIT_FAILURE);
+@@ -343,8 +343,8 @@ static char *page_flag_longname(uint64_t flags)
+  * page list and summary
+  */
+ 
+-static void show_page_range(unsigned long voffset,
+-			    unsigned long offset, uint64_t flags)
++static void show_page_range(unsigned long voffset, unsigned long offset,
++			    unsigned long size, uint64_t flags)
+ {
+ 	static uint64_t      flags0;
+ 	static unsigned long voff;
+@@ -352,14 +352,16 @@ static void show_page_range(unsigned long voffset,
+ 	static unsigned long count;
+ 
+ 	if (flags == flags0 && offset == index + count &&
+-	    (!opt_pid || voffset == voff + count)) {
+-		count++;
++	    size && voffset == voff + count) {
++		count += size;
+ 		return;
+ 	}
+ 
+ 	if (count) {
+ 		if (opt_pid)
+ 			printf("%lx\t", voff);
++		if (opt_file)
++			printf("%lu\t", voff);
+ 		printf("%lx\t%lx\t%s\n",
+ 				index, count, page_flag_name(flags0));
+ 	}
+@@ -367,7 +369,12 @@ static void show_page_range(unsigned long voffset,
+ 	flags0 = flags;
+ 	index  = offset;
+ 	voff   = voffset;
+-	count  = 1;
++	count  = size;
++}
++
++static void flush_page_range(void)
++{
++	show_page_range(0, 0, 0, 0);
+ }
+ 
+ static void show_page(unsigned long voffset,
+@@ -375,6 +382,8 @@ static void show_page(unsigned long voffset,
+ {
+ 	if (opt_pid)
+ 		printf("%lx\t", voffset);
++	if (opt_file)
++		printf("%lu\t", voffset);
+ 	printf("%lx\t%s\n", offset, page_flag_name(flags));
+ }
+ 
+@@ -565,7 +574,7 @@ static void add_page(unsigned long voffset,
+ 		unpoison_page(offset);
+ 
+ 	if (opt_list == 1)
+-		show_page_range(voffset, offset, flags);
++		show_page_range(voffset, offset, 1, flags);
+ 	else if (opt_list == 2)
+ 		show_page(voffset, offset, flags);
+ 
+@@ -667,7 +676,7 @@ static void walk_addr_ranges(void)
+ 
+ 	for (i = 0; i < nr_addr_ranges; i++)
+ 		if (!opt_pid)
+-			walk_pfn(0, opt_offset[i], opt_size[i], 0);
++			walk_pfn(opt_offset[i], opt_offset[i], opt_size[i], 0);
+ 		else
+ 			walk_task(opt_offset[i], opt_size[i]);
+ 
+@@ -699,9 +708,7 @@ static void usage(void)
+ "            -a|--addr    addr-spec     Walk a range of pages\n"
+ "            -b|--bits    bits-spec     Walk pages with specified bits\n"
+ "            -p|--pid     pid           Walk process address space\n"
+-#if 0 /* planned features */
+ "            -f|--file    filename      Walk file address space\n"
+-#endif
+ "            -l|--list                  Show page details in ranges\n"
+ "            -L|--list-each             Show page details one by one\n"
+ "            -N|--no-summary            Don't show summary info\n"
+@@ -799,8 +806,130 @@ static void parse_pid(const char *str)
+ 	fclose(file);
+ }
+ 
++static void show_file(const char *name, const struct stat *st)
++{
++	unsigned long long size = st->st_size;
++	char atime[64], mtime[64];
++	long now = time(NULL);
++
++	printf("%s\tInode: %u\tSize: %llu (%llu pages)\n",
++			name, (unsigned)st->st_ino,
++			size, (size + page_size - 1) / page_size);
++
++	strftime(atime, sizeof(atime), "%c", localtime(&st->st_atime));
++	strftime(mtime, sizeof(mtime), "%c", localtime(&st->st_mtime));
++
++	printf("Modify: %s (%ld seconds ago)\nAccess: %s (%ld seconds ago)\n",
++			mtime, now - st->st_mtime,
++			atime, now - st->st_atime);
++}
++
++static void walk_file(const char *name, const struct stat *st)
++{
++	uint8_t vec[PAGEMAP_BATCH];
++	uint64_t buf[PAGEMAP_BATCH], flags;
++	unsigned long nr_pages, pfn, i;
++	int fd;
++	off_t off;
++	ssize_t len;
++	void *ptr;
++	int first = 1;
++
++	fd = checked_open(name, O_RDONLY|O_NOATIME|O_NOFOLLOW);
++
++	for (off = 0; off < st->st_size; off += len) {
++		nr_pages = (st->st_size - off + page_size - 1) / page_size;
++		if (nr_pages > PAGEMAP_BATCH)
++			nr_pages = PAGEMAP_BATCH;
++		len = nr_pages * page_size;
++
++		ptr = mmap(NULL, len, PROT_READ, MAP_SHARED, fd, off);
++		if (ptr == MAP_FAILED)
++			fatal("mmap failed: %s", name);
++
++		/* determine cached pages */
++		if (mincore(ptr, len, vec))
++			fatal("mincore failed: %s", name);
++
++		/* turn off readahead */
++		if (madvise(ptr, len, MADV_RANDOM))
++			fatal("madvice failed: %s", name);
++
++		/* populate ptes */
++		for (i = 0; i < nr_pages ; i++) {
++			if (vec[i] & 1)
++				(void)*(volatile int *)(ptr + i * page_size);
++		}
++
++		/* turn off harvesting reference bits */
++		if (madvise(ptr, len, MADV_SEQUENTIAL))
++			fatal("madvice failed: %s", name);
++
++		if (pagemap_read(buf, (unsigned long)ptr / page_size,
++					nr_pages) != nr_pages)
++			fatal("cannot read pagemap");
++
++		munmap(ptr, len);
++
++		for (i = 0; i < nr_pages; i++) {
++			pfn = pagemap_pfn(buf[i]);
++			if (!pfn)
++				continue;
++			if (!kpageflags_read(&flags, pfn, 1))
++				continue;
++			if (first && opt_list) {
++				first = 0;
++				flush_page_range();
++				show_file(name, st);
++			}
++			add_page(off / page_size + i, pfn, flags, buf[i]);
++		}
++	}
++
++	close(fd);
++}
++
++int walk_tree(const char *name, const struct stat *st, int type, struct FTW *f)
++{
++	(void)f;
++	switch (type) {
++	case FTW_F:
++		if (S_ISREG(st->st_mode))
++			walk_file(name, st);
++		break;
++	case FTW_DNR:
++		fprintf(stderr, "cannot read dir: %s\n", name);
++		break;
++	}
++	return 0;
++}
++
++static void walk_page_cache(void)
++{
++	struct stat st;
++
++	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
++	pagemap_fd = checked_open("/proc/self/pagemap", O_RDONLY);
++
++	if (stat(opt_file, &st))
++		fatal("stat failed: %s\n", opt_file);
++
++	if (S_ISREG(st.st_mode)) {
++		walk_file(opt_file, &st);
++	} else if (S_ISDIR(st.st_mode)) {
++		/* do not follow symlinks and mountpoints */
++		if (nftw(opt_file, walk_tree, 64, FTW_MOUNT | FTW_PHYS) < 0)
++			fatal("nftw failed: %s\n", opt_file);
++	} else
++		fatal("unhandled file type: %s\n", opt_file);
++
++	close(kpageflags_fd);
++	close(pagemap_fd);
++}
++
+ static void parse_file(const char *name)
+ {
++	opt_file = name;
+ }
+ 
+ static void parse_addr_range(const char *optarg)
+@@ -991,15 +1120,20 @@ int main(int argc, char *argv[])
+ 
+ 	if (opt_list && opt_pid)
+ 		printf("voffset\t");
++	if (opt_list && opt_file)
++		printf("foffset\t");
+ 	if (opt_list == 1)
+ 		printf("offset\tlen\tflags\n");
+ 	if (opt_list == 2)
+ 		printf("offset\tflags\n");
+ 
+-	walk_addr_ranges();
++	if (opt_file)
++		walk_page_cache();
++	else
++		walk_addr_ranges();
+ 
+ 	if (opt_list == 1)
+-		show_page_range(0, 0, 0);  /* drain the buffer */
++		flush_page_range();
+ 
+ 	if (opt_no_summary)
+ 		return 0;
+
