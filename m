@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaBZCyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:54:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14650 "EHLO mga02.intel.com"
+	id S1752494AbaBZCz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:55:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:46322 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799AbaBZCyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:54:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,544,1389772800"; 
-   d="scan'208";a="481845830"
-Date: Wed, 26 Feb 2014 08:24:44 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        freemangordon@abv.bg, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140226025444.GA21449@jenny-desktop>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
- <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
- <20140204113640.GD2450@amd.pavel.ucw.cz>
- <20140220051655.GB2498@jenny-desktop>
- <20140221144529.GB5238@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140221144529.GB5238@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751746AbaBZCz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 21:55:27 -0500
+Date: Wed, 26 Feb 2014 13:55:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: linux-next: build failure after merge of the libata tree
+Message-Id: <20140226135521.047c301755d2bb44401e3ac6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Feb_2014_13_55_21_+1100_anEQrncZ=+8EAVZm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 03:45:29PM +0100, Pavel Machek wrote:
-> On Thu 2014-02-20 10:46:55, Jenny Tc wrote:
-> > On Tue, Feb 04, 2014 at 12:36:40PM +0100, Pavel Machek wrote:
-> > > > --- a/drivers/power/Kconfig
-> > > > +++ b/drivers/power/Kconfig
-> > > > @@ -22,6 +22,19 @@ config POWER_SUPPLY_CHARGER
-> > > >  	  drivers to keep the charging logic outside and the charger driver
-> > > >  	  just need to abstract the charger hardware.
-> > > >  
-> > > > +config POWER_SUPPLY_CHARGING_ALGO_PSE
-> > > > +	bool "PSE compliant charging algorithm"
-> > > > +	help
-> > > > +	  Say Y here to select Product Safety Engineering (PSE) compliant
-> > > > +	  charging algorithm. As per PSE standard the battery characteristics
-> > > > +	  and thereby the charging rates can vary on different temperature
-> > > > +	  zones. This config will enable PSE compliant charging algorithm with
-> > > > +	  maintenance charging support. At runtime the algorithm will be
-> > > > +	  selected by the psy charger driver based on the type of the battery
-> > > > +	  charging profile.
-> > > 
-> > > Information where to expect PSE compliant chargers would be nice.
-> > 
-> > This algorithm can be used with non PSE compliant chargers also. This is a SW
-> > based charging algorithm.
-> 
-> Ok, but you need to explain for the users when it might be good idea
-> to select this option...
-> 
-> Or maybe this should not be user configurable and drivers should just
-> select it?
+--Signature=_Wed__26_Feb_2014_13_55_21_+1100_anEQrncZ=+8EAVZm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The idea is to allow pluggable charging algorithms. Currently we have only one
-charging algorithm proposed, but can have other charging algorithms (like pulse
-charging, rule based charging etc.). Based on the platform need, the algorithms
-can be selected. So this should be a user configurable option. I can add more
-explanation on when to select this option.
+Hi Tejun,
+
+After merging the libata tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+drivers/ata/ahci_st.c: In function 'st_ahci_probe':
+drivers/ata/ahci_st.c:159:8: error: implicit declaration of function 'ahci_=
+platform_put_resources' [-Werror=3Dimplicit-function-declaration]
+        ahci_platform_put_resources(&pdev->dev, hpriv);
+        ^
+
+Caused by commit 0d8d213703ff ("ahci: st: Add support for ST's SATA
+IP").  That function is defined as "static" in another file ...
+
+I have used the version of the libata tree from next-20140225 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__26_Feb_2014_13_55_21_+1100_anEQrncZ=+8EAVZm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTDVeeAAoJEMDTa8Ir7ZwVNb0P/AkI6Ur1vRq3u4Ww14omBmCO
+mFL1k67D00iTFrD8FY0aKydX22jrLvkmEBgBgiLYfskucGE577kxwc6wtl/5ngWl
+lbGF3BVKAWy6+5P+a5lWybnoN8mRNkJnANxZrHvvDX0hJnRGlFOTIntI5ensi55j
+eJ/9lhhoJmInEpJbhManVMt5UwhQft1BWkabHURtxF08mOGj6epB6as92X0J8Nd1
+l9z/m36jChXiZI1gR8jIws/IP1tB4sNRFCLydoWiaRmM72R8tVdY9dvoejB2m8iz
+o9wMmKHvSWscZNlezTjfFXAwqIjUIt4Gx/o7IxGMLPiGm+Rd3fKqQ9PAz406GAlD
+9k4+nkhdWTsIGkzfTS3EYuXwXIuPmpGRVrsrMcdIceYOSkVuk/TM3iryrirGklCe
+Afa3zVz8xpSjI3UtCQheyZn3AAArB3yxxbXO717IJdCYvvmklJdzEPnCNXjUKAj1
+qtRROhGe+/88dbVMzC63ZMC69T+wupfvFrM6KsYab3/UN/y6M7g+KQRT8ec0liar
+AdhBkqhbkv+bG0CpUFy3wkOLspGXkbg8b68VwLDeMrKZnluS4Tv/IHD8yAcFLStF
+gHOVWp2DGIL7FGY4AojRYD3kmXi+g6a3b8xoX9G5yAgiZGPc2CUf7S60elZd7ehZ
+kyfG9L+yba1lDdAlN3uw
+=rIZ/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_Feb_2014_13_55_21_+1100_anEQrncZ=+8EAVZm--
