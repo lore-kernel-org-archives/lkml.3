@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaBZUQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:16:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44220 "EHLO
+	id S1754201AbaBZUQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:16:31 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:44226 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaBZUQR (ORCPT
+	with ESMTP id S1753930AbaBZUQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:16:17 -0500
+	Wed, 26 Feb 2014 15:16:29 -0500
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
         linux-efi@vger.kernel.org, jmorris@namei.org,
         linux-security-module@vger.kernel.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 10/12] x86: Restrict MSR access when trusted_kernel is true
-Date: Wed, 26 Feb 2014 15:11:11 -0500
-Message-Id: <1393445473-15068-11-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH 11/12] asus-wmi: Restrict debugfs interface when trusted_kernel is true
+Date: Wed, 26 Feb 2014 15:11:12 -0500
+Message-Id: <1393445473-15068-12-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
 References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
@@ -27,49 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Permitting write access to MSRs allows userspace to modify the running
-kernel. Prevent this if trusted_kernel is true. Based on a patch by Kees
-Cook.
+We have no way of validating what all of the Asus WMI methods do on a
+given machine, and there's a risk that some will allow hardware state to
+be manipulated in such a way that arbitrary code can be executed in the
+kernel. Prevent that if trusted_kernel is true.
 
-Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- arch/x86/kernel/msr.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/platform/x86/asus-wmi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
-index 05266b5..1bd5e92 100644
---- a/arch/x86/kernel/msr.c
-+++ b/arch/x86/kernel/msr.c
-@@ -37,6 +37,7 @@
- #include <linux/notifier.h>
- #include <linux/uaccess.h>
- #include <linux/gfp.h>
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index c5e082f..4c1000b 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -46,6 +46,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/thermal.h>
+ #include <linux/acpi.h>
 +#include <linux/security.h>
+ #include <acpi/video.h>
  
- #include <asm/processor.h>
- #include <asm/msr.h>
-@@ -103,6 +104,9 @@ static ssize_t msr_write(struct file *file, const char __user *buf,
- 	int err = 0;
- 	ssize_t bytes = 0;
+ #include "asus-wmi.h"
+@@ -1595,6 +1596,9 @@ static int show_dsts(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
  
 +	if (get_trusted_kernel())
 +		return -EPERM;
 +
- 	if (count % 8)
- 		return -EINVAL;	/* Invalid chunk size */
+ 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
  
-@@ -150,6 +154,10 @@ static long msr_ioctl(struct file *file, unsigned int ioc, unsigned long arg)
- 			err = -EBADF;
- 			break;
- 		}
-+		if (get_trusted_kernel()) {
-+			err = -EPERM;
-+			break;
-+		}
- 		if (copy_from_user(&regs, uregs, sizeof regs)) {
- 			err = -EFAULT;
- 			break;
+ 	if (err < 0)
+@@ -1611,6 +1615,9 @@ static int show_devs(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
+ 
++	if (get_trusted_kernel())
++		return -EPERM;
++
+ 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
+ 				    &retval);
+ 
+@@ -1635,6 +1642,9 @@ static int show_call(struct seq_file *m, void *data)
+ 	union acpi_object *obj;
+ 	acpi_status status;
+ 
++	if (get_trusted_kernel())
++		return -EPERM;
++
+ 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
+ 				     1, asus->debug.method_id,
+ 				     &input, &output);
 -- 
 1.8.5.3
 
