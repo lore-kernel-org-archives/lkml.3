@@ -1,54 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaBZWC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:02:29 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:41367 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaBZWC1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:02:27 -0500
-Date: Wed, 26 Feb 2014 17:02:25 -0500 (EST)
-Message-Id: <20140226.170225.656093339124352084.davem@davemloft.net>
-To: bjorn@mork.no
-Cc: freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keithp@keithp.com
-Subject: Re: [PATCH 1/1] AX88179_178A: Add VID:DID for Lenovo OneLinkDock
- Gigabit LAN
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87fvn57dn1.fsf@nemi.mork.no>
-References: <87lhwx7f19.fsf@nemi.mork.no>
-	<20140226.161659.2024676575146527914.davem@davemloft.net>
-	<87fvn57dn1.fsf@nemi.mork.no>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Feb 2014 14:02:27 -0800 (PST)
+	id S1754230AbaBZWDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:03:41 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:50631 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607AbaBZWDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 17:03:40 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        arm@kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH v8.1 1/6] dt-bindings: sram: describe option to reserve parts of the memory
+Date: Wed, 26 Feb 2014 23:02:52 +0100
+Message-ID: <2574291.evU61mFTUd@phil>
+User-Agent: KMail/4.11.5 (Linux/3.12-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <201402251419.31151.arnd@arndb.de>
+References: <21117503.1c6iOkvYSr@phil> <126672712.tufE5adZWC@phil> <201402251419.31151.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjørn Mork <bjorn@mork.no>
-Date: Wed, 26 Feb 2014 22:44:18 +0100
+Some SoCs need parts of their sram for special purposes. So while being part
+of the peripheral, it should not be part of the genpool controlling the sram.
 
-> David Miller <davem@davemloft.net> writes:
->> From: Bjørn Mork <bjorn@mork.no>
->>
->>> No, sorry for being confusing.  The patch is fine.  But Keith sent it
->>> first...
->>
->> Did I apply Keith's patch?
-> 
-> No, you didn't.  And when I went looking at it now, I see why: It was
-> posted to linux-usb and linux-kernel but not to netdev:
-> http://www.kernelhub.org/?msg=420289&p=2
-> 
->> If not, should I apply it instead?
-> 
-> The patches are identical except for the author and a minor difference
-> in the device description string. 
-> 
-> It doesn't matter to me which patch you apply, and I absolutely don't
-> think it's my place to tell you which patches to apply or not :-)
+Therefore add the option to define reserved regions as subnodes of the
+sram-node similar to defining reserved global memory regions.
 
-Fair enough, I'll apply this one, thanks!
+Originally
+Suggested-by: Rob Herring <robherring2@gmail.com>
+
+Using subnodes for reserved regions
+Suggested-by: Grant Likely <grant.likely@linaro.org>
+
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+---
+Hi Arnd,
+
+I've changed the range definition as suggested. I've also changed my
+rockchip dt-files accordingly, but will wait with respinning the whole
+series until the direction with this binding is a bit safer.
+
+I've also amended the "compatible"-property for the subnodes. It now
+mimics the text from the generic reserved memory nodes [0],
+which got no complaints from the DT maintainers.
+
+Heiko
+
+
+[0] https://lkml.org/lkml/2014/2/4/172
+
+ Documentation/devicetree/bindings/misc/sram.txt | 35 +++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
+index 4d0a00e..36cbe5a 100644
+--- a/Documentation/devicetree/bindings/misc/sram.txt
++++ b/Documentation/devicetree/bindings/misc/sram.txt
+@@ -8,9 +8,44 @@ Required properties:
+ 
+ - reg : SRAM iomem address range
+ 
++Reserving sram areas:
++---------------------
++
++Each child of the sram node specifies a region of reserved memory. Each
++child node should use a 'reg' property to specify a specific range of
++reserved memory.
++
++Following the generic-names recommended practice, node names should
++reflect the purpose of the node. Unit address (@<address>) should be
++appended to the name.
++
++Required properties in the sram node:
++
++- #address-cells, #size-cells : should use the same values as the root node
++- ranges : standard definition, should translate from local addresses
++           within the sram to bus addresses
++
++Required properties in the area nodes:
++
++- reg : iomem address range, relative to the SRAM range
++
++Optional properties in the area nodes:
++
++- compatible : standard definition, should contain a vendor specific string
++               in the form <vendor>,[<device>-]<usage>
++
+ Example:
+ 
+ sram: sram@5c000000 {
+ 	compatible = "mmio-sram";
+ 	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
++
++	#adress-cells = <1>;
++	#size-cells = <1>;
++	ranges = <0 0x5c000000 0x40000>;
++
++	smp-sram@100 {
++		compatible = "socvendor,smp-sram";
++		reg = <0x100 0x50>;
++	};
+ };
+-- 
+1.8.5.3
+
+
