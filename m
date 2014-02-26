@@ -1,177 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaBZOGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:06:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56393 "EHLO mx1.redhat.com"
+	id S1751484AbaBZOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:09:59 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:53924 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943AbaBZOGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:06:46 -0500
-Message-ID: <530DF4EB.90605@redhat.com>
-Date: Wed, 26 Feb 2014 15:06:35 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+	id S1750811AbaBZOJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:09:57 -0500
+Date: Wed, 26 Feb 2014 16:09:41 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] zram: support REQ_DISCARD
-References: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com> <20140226131625.GA2217@swordfish.minsk.epam.com> <530DEFA7.5060103@redhat.com> <20140226135741.GB2217@swordfish.minsk.epam.com>
-In-Reply-To: <20140226135741.GB2217@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
+Message-ID: <20140226140941.GA31230@node.dhcp.inet.fi>
+References: <530CEFE2.9090909@oracle.com>
+ <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 02:57 PM, Sergey Senozhatsky wrote:
-> On (02/26/14 14:44), Jerome Marchand wrote:
->> On 02/26/2014 02:16 PM, Sergey Senozhatsky wrote:
->>> Hello,
->>>
->>> On (02/26/14 14:23), Joonsoo Kim wrote:
->>>> zram is ram based block device and can be used by backend of filesystem.
->>>> When filesystem deletes a file, it normally doesn't do anything on data
->>>> block of that file. It just marks on metadata of that file. This behavior
->>>> has no problem on disk based block device, but has problems on ram based
->>>> block device, since we can't free memory used for data block. To overcome
->>>> this disadvantage, there is REQ_DISCARD functionality. If block device
->>>> support REQ_DISCARD and filesystem is mounted with discard option,
->>>> filesystem sends REQ_DISCARD to block device whenever some data blocks are
->>>> discarded. All we have to do is to handle this request.
->>>>
->>>> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
->>>> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
->>>> used.
->>>>
->>>> v2: handle unaligned case commented by Jerome
->>>>
->>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>
->>>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->>>> index 5ec61be..5364c1e 100644
->>>> --- a/drivers/block/zram/zram_drv.c
->>>> +++ b/drivers/block/zram/zram_drv.c
->>>> @@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>>>  	return ret;
->>>>  }
->>>>  
->>>> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
->>>> +{
->>>> +	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>>> +	size_t n = bio->bi_iter.bi_size;
->>>> +	size_t misalign;
->>>> +
->>>> +	/*
->>>> +	 * On some arch, logical block (4096) aligned request couldn't be
->>>> +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
->>>> +	 * Therefore we should handle this misaligned case here.
->>>> +	 */
->>>> +	misalign = (bio->bi_iter.bi_sector &
->>>> +			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
->>>> +	if (misalign) {
->>>> +		if (n < misalign)
->>>> +			return;
->>>> +
->>>> +		n -= misalign;
->>>> +		index++;
->>>> +	}
->>>> +
->>>> +	while (n >= PAGE_SIZE) {
->>>> +		write_lock(&zram->meta->tb_lock);
->>>> +		zram_free_page(zram, index);
->>>> +		write_unlock(&zram->meta->tb_lock);
->>>> +		index++;
->>>> +		n -= PAGE_SIZE;
->>>> +	}
->>>> +}
->>>> +
->>>
->>> a side note, do we need zram_bio_discard() function? I mean, can we handle
->>> discard request in zram_bvec_rw(), where we already know index, etc. (passed
->>> from __zram_make_request())?
->>>
->>
->> We'd still have to make sure not to discard pages that are still partially
->> used, but it might simplify the code: __zram_make_request() already takes
->> care of splitting the request.
->>
->>> for example:
->>>
->>> @@ -510,6 +510,11 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>>                 ret = zram_bvec_write(zram, bvec, index, offset);
->>>         }
->>>  
->>> +       if (unlikely(bio->bi_rw & REQ_DISCARD)) {
->>
->> +		if (!is_partial_io(bvec) {
->>
->>> +               write_lock(&zram->meta->tb_lock);
->>> +               zram_free_page(zram, index);
->>> +               write_unlock(&zram->meta->tb_lock);
->>
->> +		}
->>
->> Also this code might still call zram_bvec_read() and increase num_reads
->> for discard request: I guess bio_data_dir(bio) == READ == 0 in this case.
->>
->> Btw, why __zram_make_request() has an that rw argument? All the information
->> it needs is passed by the bio argument already. I kind of recollect to have
->> seen a cleanup patch that get rid of it or is it just my imagination?
->>
+On Wed, Feb 26, 2014 at 03:15:07PM +0800, Bob Liu wrote:
+> On Wed, Feb 26, 2014 at 3:32 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> > Hi all,
+> >
+> > While fuzzing with trinity inside a KVM tools running latest -next kernel
+> > I've stumbled on the following spew:
+> >
+> > [  232.869443] BUG: unable to handle kernel NULL pointer dereference at
+> > 0000000000000020
+> > [  232.870230] IP: [<mm/page-writeback.c:1612>]
+> > balance_dirty_pages_ratelimited+0x1e/0x150
+> > [  232.870230] PGD 586e1d067 PUD 586e1e067 PMD 0
+> > [  232.870230] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> > [  232.870230] Dumping ftrace buffer:
+> > [  232.870230]    (ftrace buffer empty)
+> > [  232.870230] Modules linked in:
+> > [  232.870230] CPU: 36 PID: 9707 Comm: trinity-c36 Tainted: G        W
+> > 3.14.0-rc4-next-20140225-sasha-00010-ga117461 #42
+> > [  232.870230] task: ffff880586dfb000 ti: ffff880586e34000 task.ti:
+> > ffff880586e34000
+> > [  232.870230] RIP: 0010:[<mm/page-writeback.c:1612>]
+> > [<mm/page-writeback.c:1612>] balance_dirty_pages_ratelimited+0x1e/0x150
+> > [  232.870230] RSP: 0000:ffff880586e35c58  EFLAGS: 00010282
+> > [  232.870230] RAX: 0000000000000000 RBX: ffff880582831361 RCX:
+> > 0000000000000007
+> > [  232.870230] RDX: 0000000000000007 RSI: ffff880586dfbcc0 RDI:
+> > ffff880582831361
+> > [  232.870230] RBP: ffff880586e35c78 R08: 0000000000000000 R09:
+> > 0000000000000000
+> > [  232.870230] R10: 0000000000000001 R11: 0000000000000001 R12:
+> > 00007f58007ee000
+> > [  232.870230] R13: ffff880c8d6d4f70 R14: 0000000000000200 R15:
+> > ffff880c8dcce710
+> > [  232.870230] FS:  00007f58018bb700(0000) GS:ffff880c8e800000(0000)
+> > knlGS:0000000000000000
+> > [  232.870230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [  232.870230] CR2: 0000000000000020 CR3: 0000000586e1c000 CR4:
+> > 00000000000006e0
+> > [  232.870230] Stack:
+> > [  232.870230]  ffff880586e35c78 ffff880586e33400 00007f58007ee000
+> > ffff880c8d6d4f70
+> > [  232.870230]  ffff880586e35cd8 ffffffff8127d241 0000000000000001
+> > 0000000000000001
+> > [  232.870230]  0000000000000000 ffffea0032337080 0000000080000000
+> > ffff880586e33400
+> > [  232.870230] Call Trace:
+> > [  232.870230]  [<mm/memory.c:3467>] do_shared_fault+0x1a1/0x1f0
+> > [  232.870230]  [<mm/memory.c:3487>] handle_pte_fault+0xc8/0x230
+> > [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ? delay_tsc+0xea/0x110
+> > [  232.870230]  [<mm/memory.c:3770>] __handle_mm_fault+0x36e/0x3a0
+> > [  232.870230]  [<include/linux/rcupdate.h:829>] ? rcu_read_unlock+0x5d/0x60
+> > [  232.870230]  [<include/linux/memcontrol.h:148>]
+> > handle_mm_fault+0x10b/0x1b0
+> > [  232.870230]  [<arch/x86/mm/fault.c:1147>] ? __do_page_fault+0x2e2/0x590
+> > [  232.870230]  [<arch/x86/mm/fault.c:1214>] __do_page_fault+0x551/0x590
+> > [  232.870230]  [<kernel/sched/cputime.c:681>] ?
+> > vtime_account_user+0x91/0xa0
+> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
+> > context_tracking_user_exit+0xa8/0x1c0
+> > [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ?
+> > _raw_spin_unlock+0x30/0x50
+> > [  232.870230]  [<kernel/sched/cputime.c:681>] ?
+> > vtime_account_user+0x91/0xa0
+> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
+> > context_tracking_user_exit+0xa8/0x1c0
+> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] do_page_fault+0x3d/0x70
+> > [  232.870230]  [<arch/x86/kernel/kvm.c:263>] do_async_page_fault+0x35/0x100
+> > [  232.870230]  [<arch/x86/kernel/entry_64.S:1496>]
+> > async_page_fault+0x28/0x30
+> > [  232.870230] Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48
+> > 83 ec 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 48 89 fb 48 8b 87 50 01 00 00
+> > <f6> 40 20 01 0f 85 18 01 00 00 65 48 8b 14 25 40 da 00 00 44 8b
+> > [  232.870230] RIP  [<mm/page-writeback.c:1612>]
+> > balance_dirty_pages_ratelimited+0x1e/0x150
+> > [  232.870230]  RSP <ffff880586e35c58>
+> > [  232.870230] CR2: 0000000000000020
+> >
+> >
 > 
-> it doesn't. cleanup patch 'do not pass rw argument to __zram_make_request()'
-> is in linux-next.
+> Could you please test below patch? I think it may fix this issue.
+
+What stops compiler from transform this back to unpatched?
+Do you relay on unlock_page() to have a compiler barrier?
+
 > 
-
-You're right. I must be blind since there is an exemple of __zram_make_request()
-without this argument just a few line below.
-
-> 	-ss
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 548d97e..90cea22 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
+> struct vm_area_struct *vma,
+>   pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
+>  {
+>   struct page *fault_page;
+> + struct address_space *mapping;
+>   spinlock_t *ptl;
+>   pte_t *pte;
+>   int dirtied = 0;
+> @@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
+> *mm, struct vm_area_struct *vma,
 > 
->> Jerome
->>
->>> +       }
->>>         return ret;
->>>  }
->>>
->>> 	-ss
->>>
->>>>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
->>>>  {
->>>>  	size_t index;
->>>> @@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+>   if (set_page_dirty(fault_page))
+>   dirtied = 1;
+> + mapping = fault_page->mapping;
+>   unlock_page(fault_page);
+> - if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
+> + if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
+>   /*
+>   * Some device drivers do not set page.mapping but still
+>   * dirty their pages
+>   */
+> - balance_dirty_pages_ratelimited(fault_page->mapping);
+> + balance_dirty_pages_ratelimited(mapping);
+>   }
+> 
+>   /* file_update_time outside page_lock */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I need to open my eyes.
-
-Jerome
-
->>>>  	struct bio_vec bvec;
->>>>  	struct bvec_iter iter;
->>>>  
->>>> +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
->>>> +		zram_bio_discard(zram, bio);
->>>> +		bio_endio(bio, 0);
->>>> +		return;
->>>> +	}
->>>> +
->>>>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>>>  	offset = (bio->bi_iter.bi_sector &
->>>>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
->>>> @@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
->>>>  					ZRAM_LOGICAL_BLOCK_SIZE);
->>>>  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
->>>>  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
->>>> +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
->>>> +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
->>>> +	zram->disk->queue->limits.discard_zeroes_data = 1;
->>>> +	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
->>>>  
->>>>  	add_disk(zram->disk);
->>>>  
->>>> -- 
->>>> 1.7.9.5
->>>>
->>
-
+-- 
+ Kirill A. Shutemov
