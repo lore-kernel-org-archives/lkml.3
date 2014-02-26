@@ -1,867 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaBZTDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:03:00 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52623 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaBZS7d (ORCPT
+	id S1753910AbaBZTDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:03:42 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:54928 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaBZTDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 13:59:33 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 1/8] mfd: Move pm8xxx-irq.c contents into only driver that uses it
-Date: Wed, 26 Feb 2014 10:59:19 -0800
-Message-Id: <1393441166-32692-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
-References: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 26 Feb 2014 14:03:40 -0500
+Date: Wed, 26 Feb 2014 19:03:33 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Len Brown <len.brown@intel.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Russ Dill <Russ.Dill@ti.com>, Pavel Machek <pavel@ucw.cz>,
+        Cyril Chemparathy <cyril@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140226190333.GD22839@e102568-lin.cambridge.arm.com>
+References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
+ <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
+ <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
+ <20140222103840.GH21483@n2100.arm.linux.org.uk>
+ <20140222120910.GA9012@e102568-lin.cambridge.arm.com>
+ <20140223200208.12998.47604@capellas-linux>
+ <20140225113251.GB6855@e102568-lin.cambridge.arm.com>
+ <20140225175531.18229.77850@capellas-linux>
+ <20140226102427.GA22839@e102568-lin.cambridge.arm.com>
+ <20140226175055.3502.49656@capellas-linux>
+MIME-Version: 1.0
+In-Reply-To: <20140226175055.3502.49656@capellas-linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 26 Feb 2014 19:03:40.0525 (UTC) FILETIME=[7619E9D0:01CF3325]
+X-MC-Unique: 114022619033702001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pm8xxx-irq.c code is practically mandatory given that the
-pm8921-core driver will WARN about it missing and the Kconfig
-marks it as default y when a PM8xxx chips is enabled. The only
-reason the file was split out was because we planned to support
-other pm8xxx chips with different pm8xxx-core.c files. Now that
-we have DT on ARM this isn't necessary because we should be able
-to support all the ssbi based PM8xxx chips in one driver and one
-file with no data bloat. Let's move this code into the only
-driver that uses it right now (pm8921) so that it's always compiled when
-needed. In the future we can rename pm8921-core.c to something
-more generic.
+On Wed, Feb 26, 2014 at 05:50:55PM +0000, Sebastian Capella wrote:
+> Quoting Lorenzo Pieralisi (2014-02-26 02:24:27)
+> > On Tue, Feb 25, 2014 at 05:55:31PM +0000, Sebastian Capella wrote:
+> > 
+> > Please add:
+> > 
+> > "swsusp_save() is executed in the suspend finisher so that the CPU context
+> > pointer and memory are part of the saved image, which is required by the
+> > resume kernel image to restart execution from swsusp_arch_suspend()"
+> > 
+> > >  * soft_restart is not technically needed, but is used
+> > >  * to get success returned from cpu_suspend.
+> > >  * After resume, the hibernation snapshot is written out.
+> > 
+> > "When soft reboot completes, the hibernation snapshot is written out."
+> > 
+> > Resume is confusing since this code is resuming twice :D on image saving
+> > and on kernel image restoration.
+> 
+> Thanks Lorenzo!
+> 
+> Here's what I've got.
+> 
+> /*
+>  * Snapshot kernel memory and reset the system.
+>  *
+>  * swsusp_save() is executed in the suspend finisher so that the CPU
+>  * context pointer and memory are part of the saved image, which is
+>  * required by the resume kernel image to restart execution from
+>  * swsusp_arch_suspend().
+>  *
+>  * soft_restart is not technically needed, but is used to get success
+>  * returned from cpu_suspend.
+>  * 
+>  * When soft reboot completes, the hibernation snapshot is
+>  * written out.
+>  */
+> 
+> Does this look ok?  I'll prepare a v4 patchset.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/mfd/Kconfig            |  10 --
- drivers/mfd/Makefile           |   1 -
- drivers/mfd/pm8921-core.c      | 348 ++++++++++++++++++++++++++++++++++++++
- drivers/mfd/pm8xxx-irq.c       | 371 -----------------------------------------
- include/linux/mfd/pm8xxx/irq.h |  23 ---
- 5 files changed, 348 insertions(+), 405 deletions(-)
- delete mode 100644 drivers/mfd/pm8xxx-irq.c
+Yes it does, I will wait and review v4 then.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 49bb445d846a..b4431d2995a1 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -487,16 +487,6 @@ config MFD_PM8921_CORE
- 	  Say M here if you want to include support for PM8921 chip as a module.
- 	  This will build a module called "pm8921-core".
- 
--config MFD_PM8XXX_IRQ
--	bool "Qualcomm PM8xxx IRQ features"
--	depends on MFD_PM8XXX
--	default y if MFD_PM8XXX
--	help
--	  This is the IRQ driver for Qualcomm PM 8xxx PMIC chips.
--
--	  This is required to use certain other PM 8xxx features, such as GPIO
--	  and MPP.
--
- config MFD_RDC321X
- 	tristate "RDC R-321x southbridge"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 5aea5ef0a62f..311c01409503 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -150,7 +150,6 @@ obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
- obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
- obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
--obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 484fe66e6c88..50e0a9b69b9d 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -14,6 +14,8 @@
- #define pr_fmt(fmt) "%s: " fmt, __func__
- 
- #include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-@@ -22,15 +24,361 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/pm8xxx/pm8921.h>
- #include <linux/mfd/pm8xxx/core.h>
-+#include <linux/mfd/pm8xxx/irq.h>
-+
-+#define	SSBI_REG_ADDR_IRQ_BASE		0x1BB
-+
-+#define	SSBI_REG_ADDR_IRQ_ROOT		(SSBI_REG_ADDR_IRQ_BASE + 0)
-+#define	SSBI_REG_ADDR_IRQ_M_STATUS1	(SSBI_REG_ADDR_IRQ_BASE + 1)
-+#define	SSBI_REG_ADDR_IRQ_M_STATUS2	(SSBI_REG_ADDR_IRQ_BASE + 2)
-+#define	SSBI_REG_ADDR_IRQ_M_STATUS3	(SSBI_REG_ADDR_IRQ_BASE + 3)
-+#define	SSBI_REG_ADDR_IRQ_M_STATUS4	(SSBI_REG_ADDR_IRQ_BASE + 4)
-+#define	SSBI_REG_ADDR_IRQ_BLK_SEL	(SSBI_REG_ADDR_IRQ_BASE + 5)
-+#define	SSBI_REG_ADDR_IRQ_IT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 6)
-+#define	SSBI_REG_ADDR_IRQ_CONFIG	(SSBI_REG_ADDR_IRQ_BASE + 7)
-+#define	SSBI_REG_ADDR_IRQ_RT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 8)
-+
-+#define	PM_IRQF_LVL_SEL			0x01	/* level select */
-+#define	PM_IRQF_MASK_FE			0x02	/* mask falling edge */
-+#define	PM_IRQF_MASK_RE			0x04	/* mask rising edge */
-+#define	PM_IRQF_CLR			0x08	/* clear interrupt */
-+#define	PM_IRQF_BITS_MASK		0x70
-+#define	PM_IRQF_BITS_SHIFT		4
-+#define	PM_IRQF_WRITE			0x80
-+
-+#define	PM_IRQF_MASK_ALL		(PM_IRQF_MASK_FE | \
-+					PM_IRQF_MASK_RE)
- 
- #define REG_HWREV		0x002  /* PMIC4 revision */
- #define REG_HWREV_2		0x0E8  /* PMIC4 revision 2 */
- 
-+struct pm_irq_chip {
-+	struct device		*dev;
-+	spinlock_t		pm_irq_lock;
-+	unsigned int		devirq;
-+	unsigned int		irq_base;
-+	unsigned int		num_irqs;
-+	unsigned int		num_blocks;
-+	unsigned int		num_masters;
-+	u8			config[0];
-+};
-+
- struct pm8921 {
- 	struct device			*dev;
- 	struct pm_irq_chip		*irq_chip;
- };
- 
-+static int pm8xxx_read_root_irq(const struct pm_irq_chip *chip, u8 *rp)
-+{
-+	return pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_ROOT, rp);
-+}
-+
-+static int pm8xxx_read_master_irq(const struct pm_irq_chip *chip, u8 m, u8 *bp)
-+{
-+	return pm8xxx_readb(chip->dev,
-+			SSBI_REG_ADDR_IRQ_M_STATUS1 + m, bp);
-+}
-+
-+static int pm8xxx_read_block_irq(struct pm_irq_chip *chip, u8 bp, u8 *ip)
-+{
-+	int	rc;
-+
-+	spin_lock(&chip->pm_irq_lock);
-+	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
-+	if (rc) {
-+		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
-+		goto bail;
-+	}
-+
-+	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_IT_STATUS, ip);
-+	if (rc)
-+		pr_err("Failed Reading Status rc=%d\n", rc);
-+bail:
-+	spin_unlock(&chip->pm_irq_lock);
-+	return rc;
-+}
-+
-+static int pm8xxx_config_irq(struct pm_irq_chip *chip, u8 bp, u8 cp)
-+{
-+	int	rc;
-+
-+	spin_lock(&chip->pm_irq_lock);
-+	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
-+	if (rc) {
-+		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
-+		goto bail;
-+	}
-+
-+	cp |= PM_IRQF_WRITE;
-+	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_CONFIG, cp);
-+	if (rc)
-+		pr_err("Failed Configuring IRQ rc=%d\n", rc);
-+bail:
-+	spin_unlock(&chip->pm_irq_lock);
-+	return rc;
-+}
-+
-+static int pm8xxx_irq_block_handler(struct pm_irq_chip *chip, int block)
-+{
-+	int pmirq, irq, i, ret = 0;
-+	u8 bits;
-+
-+	ret = pm8xxx_read_block_irq(chip, block, &bits);
-+	if (ret) {
-+		pr_err("Failed reading %d block ret=%d", block, ret);
-+		return ret;
-+	}
-+	if (!bits) {
-+		pr_err("block bit set in master but no irqs: %d", block);
-+		return 0;
-+	}
-+
-+	/* Check IRQ bits */
-+	for (i = 0; i < 8; i++) {
-+		if (bits & (1 << i)) {
-+			pmirq = block * 8 + i;
-+			irq = pmirq + chip->irq_base;
-+			generic_handle_irq(irq);
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int pm8xxx_irq_master_handler(struct pm_irq_chip *chip, int master)
-+{
-+	u8 blockbits;
-+	int block_number, i, ret = 0;
-+
-+	ret = pm8xxx_read_master_irq(chip, master, &blockbits);
-+	if (ret) {
-+		pr_err("Failed to read master %d ret=%d\n", master, ret);
-+		return ret;
-+	}
-+	if (!blockbits) {
-+		pr_err("master bit set in root but no blocks: %d", master);
-+		return 0;
-+	}
-+
-+	for (i = 0; i < 8; i++)
-+		if (blockbits & (1 << i)) {
-+			block_number = master * 8 + i;	/* block # */
-+			ret |= pm8xxx_irq_block_handler(chip, block_number);
-+		}
-+	return ret;
-+}
-+
-+static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	struct pm_irq_chip *chip = irq_desc_get_handler_data(desc);
-+	struct irq_chip *irq_chip = irq_desc_get_chip(desc);
-+	u8	root;
-+	int	i, ret, masters = 0;
-+
-+	ret = pm8xxx_read_root_irq(chip, &root);
-+	if (ret) {
-+		pr_err("Can't read root status ret=%d\n", ret);
-+		return;
-+	}
-+
-+	/* on pm8xxx series masters start from bit 1 of the root */
-+	masters = root >> 1;
-+
-+	/* Read allowed masters for blocks. */
-+	for (i = 0; i < chip->num_masters; i++)
-+		if (masters & (1 << i))
-+			pm8xxx_irq_master_handler(chip, i);
-+
-+	irq_chip->irq_ack(&desc->irq_data);
-+}
-+
-+static void pm8xxx_irq_mask_ack(struct irq_data *d)
-+{
-+	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
-+	unsigned int pmirq = d->irq - chip->irq_base;
-+	int	master, irq_bit;
-+	u8	block, config;
-+
-+	block = pmirq / 8;
-+	master = block / 8;
-+	irq_bit = pmirq % 8;
-+
-+	config = chip->config[pmirq] | PM_IRQF_MASK_ALL | PM_IRQF_CLR;
-+	pm8xxx_config_irq(chip, block, config);
-+}
-+
-+static void pm8xxx_irq_unmask(struct irq_data *d)
-+{
-+	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
-+	unsigned int pmirq = d->irq - chip->irq_base;
-+	int	master, irq_bit;
-+	u8	block, config;
-+
-+	block = pmirq / 8;
-+	master = block / 8;
-+	irq_bit = pmirq % 8;
-+
-+	config = chip->config[pmirq];
-+	pm8xxx_config_irq(chip, block, config);
-+}
-+
-+static int pm8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
-+{
-+	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
-+	unsigned int pmirq = d->irq - chip->irq_base;
-+	int master, irq_bit;
-+	u8 block, config;
-+
-+	block = pmirq / 8;
-+	master = block / 8;
-+	irq_bit  = pmirq % 8;
-+
-+	chip->config[pmirq] = (irq_bit << PM_IRQF_BITS_SHIFT)
-+							| PM_IRQF_MASK_ALL;
-+	if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {
-+		if (flow_type & IRQF_TRIGGER_RISING)
-+			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
-+		if (flow_type & IRQF_TRIGGER_FALLING)
-+			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
-+	} else {
-+		chip->config[pmirq] |= PM_IRQF_LVL_SEL;
-+
-+		if (flow_type & IRQF_TRIGGER_HIGH)
-+			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
-+		else
-+			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
-+	}
-+
-+	config = chip->config[pmirq] | PM_IRQF_CLR;
-+	return pm8xxx_config_irq(chip, block, config);
-+}
-+
-+static int pm8xxx_irq_set_wake(struct irq_data *d, unsigned int on)
-+{
-+	return 0;
-+}
-+
-+static struct irq_chip pm8xxx_irq_chip = {
-+	.name		= "pm8xxx",
-+	.irq_mask_ack	= pm8xxx_irq_mask_ack,
-+	.irq_unmask	= pm8xxx_irq_unmask,
-+	.irq_set_type	= pm8xxx_irq_set_type,
-+	.irq_set_wake	= pm8xxx_irq_set_wake,
-+	.flags		= IRQCHIP_MASK_ON_SUSPEND,
-+};
-+
-+/**
-+ * pm8xxx_get_irq_stat - get the status of the irq line
-+ * @chip: pointer to identify a pmic irq controller
-+ * @irq: the irq number
-+ *
-+ * The pm8xxx gpio and mpp rely on the interrupt block to read
-+ * the values on their pins. This function is to facilitate reading
-+ * the status of a gpio or an mpp line. The caller has to convert the
-+ * gpio number to irq number.
-+ *
-+ * RETURNS:
-+ * an int indicating the value read on that line
-+ */
-+static int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq)
-+{
-+	int pmirq, rc;
-+	u8  block, bits, bit;
-+	unsigned long flags;
-+
-+	if (chip == NULL || irq < chip->irq_base ||
-+			irq >= chip->irq_base + chip->num_irqs)
-+		return -EINVAL;
-+
-+	pmirq = irq - chip->irq_base;
-+
-+	block = pmirq / 8;
-+	bit = pmirq % 8;
-+
-+	spin_lock_irqsave(&chip->pm_irq_lock, flags);
-+
-+	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, block);
-+	if (rc) {
-+		pr_err("Failed Selecting block irq=%d pmirq=%d blk=%d rc=%d\n",
-+			irq, pmirq, block, rc);
-+		goto bail_out;
-+	}
-+
-+	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_RT_STATUS, &bits);
-+	if (rc) {
-+		pr_err("Failed Configuring irq=%d pmirq=%d blk=%d rc=%d\n",
-+			irq, pmirq, block, rc);
-+		goto bail_out;
-+	}
-+
-+	rc = (bits & (1 << bit)) ? 1 : 0;
-+
-+bail_out:
-+	spin_unlock_irqrestore(&chip->pm_irq_lock, flags);
-+
-+	return rc;
-+}
-+
-+static struct pm_irq_chip *pm8xxx_irq_init(struct device *dev,
-+				const struct pm8xxx_irq_platform_data *pdata)
-+{
-+	struct pm_irq_chip  *chip;
-+	int devirq, rc;
-+	unsigned int pmirq;
-+
-+	if (!pdata) {
-+		pr_err("No platform data\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	devirq = pdata->devirq;
-+	if (devirq < 0) {
-+		pr_err("missing devirq\n");
-+		rc = devirq;
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	chip = kzalloc(sizeof(struct pm_irq_chip)
-+			+ sizeof(u8) * pdata->irq_cdata.nirqs, GFP_KERNEL);
-+	if (!chip) {
-+		pr_err("Cannot alloc pm_irq_chip struct\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	chip->dev = dev;
-+	chip->devirq = devirq;
-+	chip->irq_base = pdata->irq_base;
-+	chip->num_irqs = pdata->irq_cdata.nirqs;
-+	chip->num_blocks = DIV_ROUND_UP(chip->num_irqs, 8);
-+	chip->num_masters = DIV_ROUND_UP(chip->num_blocks, 8);
-+	spin_lock_init(&chip->pm_irq_lock);
-+
-+	for (pmirq = 0; pmirq < chip->num_irqs; pmirq++) {
-+		irq_set_chip_and_handler(chip->irq_base + pmirq,
-+				&pm8xxx_irq_chip,
-+				handle_level_irq);
-+		irq_set_chip_data(chip->irq_base + pmirq, chip);
-+#ifdef CONFIG_ARM
-+		set_irq_flags(chip->irq_base + pmirq, IRQF_VALID);
-+#else
-+		irq_set_noprobe(chip->irq_base + pmirq);
-+#endif
-+	}
-+
-+	irq_set_irq_type(devirq, pdata->irq_trigger_flag);
-+	irq_set_handler_data(devirq, chip);
-+	irq_set_chained_handler(devirq, pm8xxx_irq_handler);
-+	set_irq_wake(devirq, 1);
-+
-+	return chip;
-+}
-+
-+static int pm8xxx_irq_exit(struct pm_irq_chip *chip)
-+{
-+	irq_set_chained_handler(chip->devirq, NULL);
-+	kfree(chip);
-+	return 0;
-+}
-+
- static int pm8921_readb(const struct device *dev, u16 addr, u8 *val)
- {
- 	const struct pm8xxx_drvdata *pm8921_drvdata = dev_get_drvdata(dev);
-diff --git a/drivers/mfd/pm8xxx-irq.c b/drivers/mfd/pm8xxx-irq.c
-deleted file mode 100644
-index 1360e20adf11..000000000000
---- a/drivers/mfd/pm8xxx-irq.c
-+++ /dev/null
-@@ -1,371 +0,0 @@
--/*
-- * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#define pr_fmt(fmt)	"%s: " fmt, __func__
--
--#include <linux/err.h>
--#include <linux/interrupt.h>
--#include <linux/irq.h>
--#include <linux/kernel.h>
--#include <linux/mfd/pm8xxx/core.h>
--#include <linux/mfd/pm8xxx/irq.h>
--#include <linux/platform_device.h>
--#include <linux/slab.h>
--
--/* PMIC8xxx IRQ */
--
--#define	SSBI_REG_ADDR_IRQ_BASE		0x1BB
--
--#define	SSBI_REG_ADDR_IRQ_ROOT		(SSBI_REG_ADDR_IRQ_BASE + 0)
--#define	SSBI_REG_ADDR_IRQ_M_STATUS1	(SSBI_REG_ADDR_IRQ_BASE + 1)
--#define	SSBI_REG_ADDR_IRQ_M_STATUS2	(SSBI_REG_ADDR_IRQ_BASE + 2)
--#define	SSBI_REG_ADDR_IRQ_M_STATUS3	(SSBI_REG_ADDR_IRQ_BASE + 3)
--#define	SSBI_REG_ADDR_IRQ_M_STATUS4	(SSBI_REG_ADDR_IRQ_BASE + 4)
--#define	SSBI_REG_ADDR_IRQ_BLK_SEL	(SSBI_REG_ADDR_IRQ_BASE + 5)
--#define	SSBI_REG_ADDR_IRQ_IT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 6)
--#define	SSBI_REG_ADDR_IRQ_CONFIG	(SSBI_REG_ADDR_IRQ_BASE + 7)
--#define	SSBI_REG_ADDR_IRQ_RT_STATUS	(SSBI_REG_ADDR_IRQ_BASE + 8)
--
--#define	PM_IRQF_LVL_SEL			0x01	/* level select */
--#define	PM_IRQF_MASK_FE			0x02	/* mask falling edge */
--#define	PM_IRQF_MASK_RE			0x04	/* mask rising edge */
--#define	PM_IRQF_CLR			0x08	/* clear interrupt */
--#define	PM_IRQF_BITS_MASK		0x70
--#define	PM_IRQF_BITS_SHIFT		4
--#define	PM_IRQF_WRITE			0x80
--
--#define	PM_IRQF_MASK_ALL		(PM_IRQF_MASK_FE | \
--					PM_IRQF_MASK_RE)
--
--struct pm_irq_chip {
--	struct device		*dev;
--	spinlock_t		pm_irq_lock;
--	unsigned int		devirq;
--	unsigned int		irq_base;
--	unsigned int		num_irqs;
--	unsigned int		num_blocks;
--	unsigned int		num_masters;
--	u8			config[0];
--};
--
--static int pm8xxx_read_root_irq(const struct pm_irq_chip *chip, u8 *rp)
--{
--	return pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_ROOT, rp);
--}
--
--static int pm8xxx_read_master_irq(const struct pm_irq_chip *chip, u8 m, u8 *bp)
--{
--	return pm8xxx_readb(chip->dev,
--			SSBI_REG_ADDR_IRQ_M_STATUS1 + m, bp);
--}
--
--static int pm8xxx_read_block_irq(struct pm_irq_chip *chip, u8 bp, u8 *ip)
--{
--	int	rc;
--
--	spin_lock(&chip->pm_irq_lock);
--	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
--	if (rc) {
--		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
--		goto bail;
--	}
--
--	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_IT_STATUS, ip);
--	if (rc)
--		pr_err("Failed Reading Status rc=%d\n", rc);
--bail:
--	spin_unlock(&chip->pm_irq_lock);
--	return rc;
--}
--
--static int pm8xxx_config_irq(struct pm_irq_chip *chip, u8 bp, u8 cp)
--{
--	int	rc;
--
--	spin_lock(&chip->pm_irq_lock);
--	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, bp);
--	if (rc) {
--		pr_err("Failed Selecting Block %d rc=%d\n", bp, rc);
--		goto bail;
--	}
--
--	cp |= PM_IRQF_WRITE;
--	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_CONFIG, cp);
--	if (rc)
--		pr_err("Failed Configuring IRQ rc=%d\n", rc);
--bail:
--	spin_unlock(&chip->pm_irq_lock);
--	return rc;
--}
--
--static int pm8xxx_irq_block_handler(struct pm_irq_chip *chip, int block)
--{
--	int pmirq, irq, i, ret = 0;
--	u8 bits;
--
--	ret = pm8xxx_read_block_irq(chip, block, &bits);
--	if (ret) {
--		pr_err("Failed reading %d block ret=%d", block, ret);
--		return ret;
--	}
--	if (!bits) {
--		pr_err("block bit set in master but no irqs: %d", block);
--		return 0;
--	}
--
--	/* Check IRQ bits */
--	for (i = 0; i < 8; i++) {
--		if (bits & (1 << i)) {
--			pmirq = block * 8 + i;
--			irq = pmirq + chip->irq_base;
--			generic_handle_irq(irq);
--		}
--	}
--	return 0;
--}
--
--static int pm8xxx_irq_master_handler(struct pm_irq_chip *chip, int master)
--{
--	u8 blockbits;
--	int block_number, i, ret = 0;
--
--	ret = pm8xxx_read_master_irq(chip, master, &blockbits);
--	if (ret) {
--		pr_err("Failed to read master %d ret=%d\n", master, ret);
--		return ret;
--	}
--	if (!blockbits) {
--		pr_err("master bit set in root but no blocks: %d", master);
--		return 0;
--	}
--
--	for (i = 0; i < 8; i++)
--		if (blockbits & (1 << i)) {
--			block_number = master * 8 + i;	/* block # */
--			ret |= pm8xxx_irq_block_handler(chip, block_number);
--		}
--	return ret;
--}
--
--static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
--{
--	struct pm_irq_chip *chip = irq_desc_get_handler_data(desc);
--	struct irq_chip *irq_chip = irq_desc_get_chip(desc);
--	u8	root;
--	int	i, ret, masters = 0;
--
--	ret = pm8xxx_read_root_irq(chip, &root);
--	if (ret) {
--		pr_err("Can't read root status ret=%d\n", ret);
--		return;
--	}
--
--	/* on pm8xxx series masters start from bit 1 of the root */
--	masters = root >> 1;
--
--	/* Read allowed masters for blocks. */
--	for (i = 0; i < chip->num_masters; i++)
--		if (masters & (1 << i))
--			pm8xxx_irq_master_handler(chip, i);
--
--	irq_chip->irq_ack(&desc->irq_data);
--}
--
--static void pm8xxx_irq_mask_ack(struct irq_data *d)
--{
--	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
--	unsigned int pmirq = d->irq - chip->irq_base;
--	int	master, irq_bit;
--	u8	block, config;
--
--	block = pmirq / 8;
--	master = block / 8;
--	irq_bit = pmirq % 8;
--
--	config = chip->config[pmirq] | PM_IRQF_MASK_ALL | PM_IRQF_CLR;
--	pm8xxx_config_irq(chip, block, config);
--}
--
--static void pm8xxx_irq_unmask(struct irq_data *d)
--{
--	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
--	unsigned int pmirq = d->irq - chip->irq_base;
--	int	master, irq_bit;
--	u8	block, config;
--
--	block = pmirq / 8;
--	master = block / 8;
--	irq_bit = pmirq % 8;
--
--	config = chip->config[pmirq];
--	pm8xxx_config_irq(chip, block, config);
--}
--
--static int pm8xxx_irq_set_type(struct irq_data *d, unsigned int flow_type)
--{
--	struct pm_irq_chip *chip = irq_data_get_irq_chip_data(d);
--	unsigned int pmirq = d->irq - chip->irq_base;
--	int master, irq_bit;
--	u8 block, config;
--
--	block = pmirq / 8;
--	master = block / 8;
--	irq_bit  = pmirq % 8;
--
--	chip->config[pmirq] = (irq_bit << PM_IRQF_BITS_SHIFT)
--							| PM_IRQF_MASK_ALL;
--	if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {
--		if (flow_type & IRQF_TRIGGER_RISING)
--			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
--		if (flow_type & IRQF_TRIGGER_FALLING)
--			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
--	} else {
--		chip->config[pmirq] |= PM_IRQF_LVL_SEL;
--
--		if (flow_type & IRQF_TRIGGER_HIGH)
--			chip->config[pmirq] &= ~PM_IRQF_MASK_RE;
--		else
--			chip->config[pmirq] &= ~PM_IRQF_MASK_FE;
--	}
--
--	config = chip->config[pmirq] | PM_IRQF_CLR;
--	return pm8xxx_config_irq(chip, block, config);
--}
--
--static int pm8xxx_irq_set_wake(struct irq_data *d, unsigned int on)
--{
--	return 0;
--}
--
--static struct irq_chip pm8xxx_irq_chip = {
--	.name		= "pm8xxx",
--	.irq_mask_ack	= pm8xxx_irq_mask_ack,
--	.irq_unmask	= pm8xxx_irq_unmask,
--	.irq_set_type	= pm8xxx_irq_set_type,
--	.irq_set_wake	= pm8xxx_irq_set_wake,
--	.flags		= IRQCHIP_MASK_ON_SUSPEND,
--};
--
--/**
-- * pm8xxx_get_irq_stat - get the status of the irq line
-- * @chip: pointer to identify a pmic irq controller
-- * @irq: the irq number
-- *
-- * The pm8xxx gpio and mpp rely on the interrupt block to read
-- * the values on their pins. This function is to facilitate reading
-- * the status of a gpio or an mpp line. The caller has to convert the
-- * gpio number to irq number.
-- *
-- * RETURNS:
-- * an int indicating the value read on that line
-- */
--int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq)
--{
--	int pmirq, rc;
--	u8  block, bits, bit;
--	unsigned long flags;
--
--	if (chip == NULL || irq < chip->irq_base ||
--			irq >= chip->irq_base + chip->num_irqs)
--		return -EINVAL;
--
--	pmirq = irq - chip->irq_base;
--
--	block = pmirq / 8;
--	bit = pmirq % 8;
--
--	spin_lock_irqsave(&chip->pm_irq_lock, flags);
--
--	rc = pm8xxx_writeb(chip->dev, SSBI_REG_ADDR_IRQ_BLK_SEL, block);
--	if (rc) {
--		pr_err("Failed Selecting block irq=%d pmirq=%d blk=%d rc=%d\n",
--			irq, pmirq, block, rc);
--		goto bail_out;
--	}
--
--	rc = pm8xxx_readb(chip->dev, SSBI_REG_ADDR_IRQ_RT_STATUS, &bits);
--	if (rc) {
--		pr_err("Failed Configuring irq=%d pmirq=%d blk=%d rc=%d\n",
--			irq, pmirq, block, rc);
--		goto bail_out;
--	}
--
--	rc = (bits & (1 << bit)) ? 1 : 0;
--
--bail_out:
--	spin_unlock_irqrestore(&chip->pm_irq_lock, flags);
--
--	return rc;
--}
--EXPORT_SYMBOL_GPL(pm8xxx_get_irq_stat);
--
--struct pm_irq_chip *  pm8xxx_irq_init(struct device *dev,
--				const struct pm8xxx_irq_platform_data *pdata)
--{
--	struct pm_irq_chip  *chip;
--	int devirq, rc;
--	unsigned int pmirq;
--
--	if (!pdata) {
--		pr_err("No platform data\n");
--		return ERR_PTR(-EINVAL);
--	}
--
--	devirq = pdata->devirq;
--	if (devirq < 0) {
--		pr_err("missing devirq\n");
--		rc = devirq;
--		return ERR_PTR(-EINVAL);
--	}
--
--	chip = kzalloc(sizeof(struct pm_irq_chip)
--			+ sizeof(u8) * pdata->irq_cdata.nirqs, GFP_KERNEL);
--	if (!chip) {
--		pr_err("Cannot alloc pm_irq_chip struct\n");
--		return ERR_PTR(-EINVAL);
--	}
--
--	chip->dev = dev;
--	chip->devirq = devirq;
--	chip->irq_base = pdata->irq_base;
--	chip->num_irqs = pdata->irq_cdata.nirqs;
--	chip->num_blocks = DIV_ROUND_UP(chip->num_irqs, 8);
--	chip->num_masters = DIV_ROUND_UP(chip->num_blocks, 8);
--	spin_lock_init(&chip->pm_irq_lock);
--
--	for (pmirq = 0; pmirq < chip->num_irqs; pmirq++) {
--		irq_set_chip_and_handler(chip->irq_base + pmirq,
--				&pm8xxx_irq_chip,
--				handle_level_irq);
--		irq_set_chip_data(chip->irq_base + pmirq, chip);
--#ifdef CONFIG_ARM
--		set_irq_flags(chip->irq_base + pmirq, IRQF_VALID);
--#else
--		irq_set_noprobe(chip->irq_base + pmirq);
--#endif
--	}
--
--	irq_set_irq_type(devirq, pdata->irq_trigger_flag);
--	irq_set_handler_data(devirq, chip);
--	irq_set_chained_handler(devirq, pm8xxx_irq_handler);
--	set_irq_wake(devirq, 1);
--
--	return chip;
--}
--
--int pm8xxx_irq_exit(struct pm_irq_chip *chip)
--{
--	irq_set_chained_handler(chip->devirq, NULL);
--	kfree(chip);
--	return 0;
--}
-diff --git a/include/linux/mfd/pm8xxx/irq.h b/include/linux/mfd/pm8xxx/irq.h
-index f83d6b43ecbb..1a11b02383f0 100644
---- a/include/linux/mfd/pm8xxx/irq.h
-+++ b/include/linux/mfd/pm8xxx/irq.h
-@@ -33,27 +33,4 @@ struct pm8xxx_irq_platform_data {
- 	int				irq_trigger_flag;
- };
- 
--struct pm_irq_chip;
--
--#ifdef CONFIG_MFD_PM8XXX_IRQ
--int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq);
--struct pm_irq_chip *pm8xxx_irq_init(struct device *dev,
--				const struct pm8xxx_irq_platform_data *pdata);
--int pm8xxx_irq_exit(struct pm_irq_chip *chip);
--#else
--static inline int pm8xxx_get_irq_stat(struct pm_irq_chip *chip, int irq)
--{
--	return -ENXIO;
--}
--static inline struct pm_irq_chip *pm8xxx_irq_init(
--				const struct device *dev,
--				const struct pm8xxx_irq_platform_data *pdata)
--{
--	return ERR_PTR(-ENXIO);
--}
--static inline int pm8xxx_irq_exit(struct pm_irq_chip *chip)
--{
--	return -ENXIO;
--}
--#endif /* CONFIG_MFD_PM8XXX_IRQ */
- #endif /* __MFD_PM8XXX_IRQ_H */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thank you,
+Lorenzo
 
