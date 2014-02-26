@@ -1,152 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaBZOJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:09:59 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:53924 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811AbaBZOJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:09:57 -0500
-Date: Wed, 26 Feb 2014 16:09:41 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
-Message-ID: <20140226140941.GA31230@node.dhcp.inet.fi>
-References: <530CEFE2.9090909@oracle.com>
- <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+	id S1751550AbaBZOM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:12:57 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:56343 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaBZOMz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:12:55 -0500
+Date: Wed, 26 Feb 2014 15:12:44 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm,renesas-tpu: Add dependency on HAS_IOMEM
+Message-ID: <20140226141243.GE29779@ulmo.nvidia.com>
+References: <1391172318-17853-1-git-send-email-richard@nod.at>
+ <20140226120800.GA28939@ulmo.nvidia.com>
+ <530DF4E7.1060900@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kA1LkgxZ0NN7Mz3A"
 Content-Disposition: inline
-In-Reply-To: <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <530DF4E7.1060900@nod.at>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 03:15:07PM +0800, Bob Liu wrote:
-> On Wed, Feb 26, 2014 at 3:32 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> > Hi all,
-> >
-> > While fuzzing with trinity inside a KVM tools running latest -next kernel
-> > I've stumbled on the following spew:
-> >
-> > [  232.869443] BUG: unable to handle kernel NULL pointer dereference at
-> > 0000000000000020
-> > [  232.870230] IP: [<mm/page-writeback.c:1612>]
-> > balance_dirty_pages_ratelimited+0x1e/0x150
-> > [  232.870230] PGD 586e1d067 PUD 586e1e067 PMD 0
-> > [  232.870230] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [  232.870230] Dumping ftrace buffer:
-> > [  232.870230]    (ftrace buffer empty)
-> > [  232.870230] Modules linked in:
-> > [  232.870230] CPU: 36 PID: 9707 Comm: trinity-c36 Tainted: G        W
-> > 3.14.0-rc4-next-20140225-sasha-00010-ga117461 #42
-> > [  232.870230] task: ffff880586dfb000 ti: ffff880586e34000 task.ti:
-> > ffff880586e34000
-> > [  232.870230] RIP: 0010:[<mm/page-writeback.c:1612>]
-> > [<mm/page-writeback.c:1612>] balance_dirty_pages_ratelimited+0x1e/0x150
-> > [  232.870230] RSP: 0000:ffff880586e35c58  EFLAGS: 00010282
-> > [  232.870230] RAX: 0000000000000000 RBX: ffff880582831361 RCX:
-> > 0000000000000007
-> > [  232.870230] RDX: 0000000000000007 RSI: ffff880586dfbcc0 RDI:
-> > ffff880582831361
-> > [  232.870230] RBP: ffff880586e35c78 R08: 0000000000000000 R09:
-> > 0000000000000000
-> > [  232.870230] R10: 0000000000000001 R11: 0000000000000001 R12:
-> > 00007f58007ee000
-> > [  232.870230] R13: ffff880c8d6d4f70 R14: 0000000000000200 R15:
-> > ffff880c8dcce710
-> > [  232.870230] FS:  00007f58018bb700(0000) GS:ffff880c8e800000(0000)
-> > knlGS:0000000000000000
-> > [  232.870230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [  232.870230] CR2: 0000000000000020 CR3: 0000000586e1c000 CR4:
-> > 00000000000006e0
-> > [  232.870230] Stack:
-> > [  232.870230]  ffff880586e35c78 ffff880586e33400 00007f58007ee000
-> > ffff880c8d6d4f70
-> > [  232.870230]  ffff880586e35cd8 ffffffff8127d241 0000000000000001
-> > 0000000000000001
-> > [  232.870230]  0000000000000000 ffffea0032337080 0000000080000000
-> > ffff880586e33400
-> > [  232.870230] Call Trace:
-> > [  232.870230]  [<mm/memory.c:3467>] do_shared_fault+0x1a1/0x1f0
-> > [  232.870230]  [<mm/memory.c:3487>] handle_pte_fault+0xc8/0x230
-> > [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ? delay_tsc+0xea/0x110
-> > [  232.870230]  [<mm/memory.c:3770>] __handle_mm_fault+0x36e/0x3a0
-> > [  232.870230]  [<include/linux/rcupdate.h:829>] ? rcu_read_unlock+0x5d/0x60
-> > [  232.870230]  [<include/linux/memcontrol.h:148>]
-> > handle_mm_fault+0x10b/0x1b0
-> > [  232.870230]  [<arch/x86/mm/fault.c:1147>] ? __do_page_fault+0x2e2/0x590
-> > [  232.870230]  [<arch/x86/mm/fault.c:1214>] __do_page_fault+0x551/0x590
-> > [  232.870230]  [<kernel/sched/cputime.c:681>] ?
-> > vtime_account_user+0x91/0xa0
-> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
-> > context_tracking_user_exit+0xa8/0x1c0
-> > [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ?
-> > _raw_spin_unlock+0x30/0x50
-> > [  232.870230]  [<kernel/sched/cputime.c:681>] ?
-> > vtime_account_user+0x91/0xa0
-> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
-> > context_tracking_user_exit+0xa8/0x1c0
-> > [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] do_page_fault+0x3d/0x70
-> > [  232.870230]  [<arch/x86/kernel/kvm.c:263>] do_async_page_fault+0x35/0x100
-> > [  232.870230]  [<arch/x86/kernel/entry_64.S:1496>]
-> > async_page_fault+0x28/0x30
-> > [  232.870230] Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48
-> > 83 ec 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 48 89 fb 48 8b 87 50 01 00 00
-> > <f6> 40 20 01 0f 85 18 01 00 00 65 48 8b 14 25 40 da 00 00 44 8b
-> > [  232.870230] RIP  [<mm/page-writeback.c:1612>]
-> > balance_dirty_pages_ratelimited+0x1e/0x150
-> > [  232.870230]  RSP <ffff880586e35c58>
-> > [  232.870230] CR2: 0000000000000020
-> >
-> >
-> 
-> Could you please test below patch? I think it may fix this issue.
 
-What stops compiler from transform this back to unpatched?
-Do you relay on unlock_page() to have a compiler barrier?
+--kA1LkgxZ0NN7Mz3A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 548d97e..90cea22 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
-> struct vm_area_struct *vma,
->   pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
->  {
->   struct page *fault_page;
-> + struct address_space *mapping;
->   spinlock_t *ptl;
->   pte_t *pte;
->   int dirtied = 0;
-> @@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
-> *mm, struct vm_area_struct *vma,
-> 
->   if (set_page_dirty(fault_page))
->   dirtied = 1;
-> + mapping = fault_page->mapping;
->   unlock_page(fault_page);
-> - if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
-> + if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
->   /*
->   * Some device drivers do not set page.mapping but still
->   * dirty their pages
->   */
-> - balance_dirty_pages_ratelimited(fault_page->mapping);
-> + balance_dirty_pages_ratelimited(mapping);
->   }
-> 
->   /* file_update_time outside page_lock */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Wed, Feb 26, 2014 at 03:06:31PM +0100, Richard Weinberger wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>=20
+> Am 26.02.2014 13:08, schrieb Thierry Reding:
+> > On Fri, Jan 31, 2014 at 01:45:18PM +0100, Richard Weinberger wrote:
+> >> On archs like S390 or um this driver cannot build nor work. Make it de=
+pend on HAS_IOMEM to bypass build failures.
+> >>=20
+> >> drivers/built-in.o: In function `tpu_probe': drivers/pwm/pwm-renesas-t=
+pu.c:421: undefined reference to `devm_ioremap_resource'
+> >>=20
+> >> Signed-off-by: Richard Weinberger <richard@nod.at> --- drivers/pwm/Kco=
+nfig | 1 + 1 file changed, 1 insertion(+)
+> >=20
+> > In the long run I think it might be better to add a dummy implementatio=
+n for devm_ioremap_resource() in order to make it build properly even for a=
+rchitectures where it isn't
+> > implemented.
+>=20
+> And what should devm_ioremap_resource() or in general ioremap() do on arc=
+hs without
+> iomem?
+> BUG()? Returning a random error and hoping that the driver handles it cor=
+rectly? :)
+>=20
+> IMHO such a dummy implementation does not make much sense.
 
--- 
- Kirill A. Shutemov
+Well, it could still be useful for drivers that want to support
+COMPILE_TEST. If we just make it return any error drivers should simply
+refuse to probe just like if the error was genuine.
+
+Thierry
+
+--kA1LkgxZ0NN7Mz3A
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTDfZbAAoJEN0jrNd/PrOhbRYQAJiD67f0HDwdEibVTdSis2oD
+eU5Ajo8RJ4OoeWNLxEMAgg/2yBU4iwKx51Pt14oM81gBzTFNcR5mS0l+wFloVnXg
+pzgGMfLXtg82FYl7KdnQ2802eQzj+CwHMzTs6din9m2Z/9dFWxWeMKRSvsCwVza5
+PKp5oJpIHQntjvjfcRku0uJl9HnynFecfRDApJTusJELxZcFuUwAjl+pBeCPJ4p7
+H1YRZlDWVUES2aVbiR1X16XZdqCLHd5Azq49IwUAVNy00nCy1TYIuJ1tE0APXk3C
+4HNR41oTBrypkdFECO5h4HKX68jnZPzFAs7DLrIHRKoeB07ds8Gi/RW/6plciG2+
+AgSjql89djFjmDyE5kaO8AJnh3gwJRW9hbaD0I2i2SAL7suVFG5TkOSEvUX8ZDpF
+4SgFz4SZfL0whWmN/UWQKHvVpLryoBfFHKzwr0LAvHfmfkVxEyjpjXxPZoAJSaA7
+iZ9pVh+wwy+cSFL/FjgyxaVg/EN9SPx3ZBP9OZ7qdjJ+/RLAEOMjKiP7EjZE3+Vo
+NKsyDHRkY6ujf++VY0igJfxih2EKQKkOKM7/y3HnEMuRzH8xAOJqdiZmWAouCibh
+E8dJt2zz83WRxYSy/HrcY1ucc1toI06OuqQWZmmUZt2YSwQgEbvA0fFhGJ8HZR6f
+xx+wOFWkCbCFjNc3GsSY
+=Jh9N
+-----END PGP SIGNATURE-----
+
+--kA1LkgxZ0NN7Mz3A--
