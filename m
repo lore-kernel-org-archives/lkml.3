@@ -1,177 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaBZK2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:28:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaBZK2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:28:01 -0500
-Date: Wed, 26 Feb 2014 11:30:30 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Rientjes <rientjes@google.com>, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        xen-devel@lists.xensource.com
-Subject: [PATCH] xen/acpi-processor: fix enabling interrupts on syscore_resume
-Message-ID: <20140226103030.GB4686@redhat.com>
-References: <20140128150848.GA1428@redhat.com>
- <20140128160404.GA5732@phenom.dumpdata.com>
- <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
- <20140129082521.GA1362@redhat.com>
- <20140131160140.GC23648@phenom.dumpdata.com>
- <20140203101215.GA1725@redhat.com>
- <20140203141429.GD3400@phenom.dumpdata.com>
- <20140210143727.GA15771@phenom.dumpdata.com>
- <20140226102620.GA4686@redhat.com>
+	id S1751845AbaBZK3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:29:16 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:59546 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaBZK3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 05:29:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226102620.GA4686@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1392284765.30853.21.camel@x220>
+References: <1363736001.1390.53.camel@x61.thuisdomein>
+	<CAMk6uBmNHb0t1zetK8+gkKMOj7843cRsz_f1m5zP4dPncuKwoA@mail.gmail.com>
+	<1392284765.30853.21.camel@x220>
+Date: Wed, 26 Feb 2014 18:29:14 +0800
+Message-ID: <CAMk6uBmk64pa0KF9yocd9z3jDriysaCcDKOPMBQbNkt8KLOp5g@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [PATCH] blackfin: bf60x: fix typo "CONFIG_PM_BFIN_WAKE_PA15_POL"
+From: Steven Miao <realmz6@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: bfin <adi-buildroot-devel@lists.sourceforge.net>,
+        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
+	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
+	<linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syscore->resume() callback is expected to do not enable interrupts,
-it generates warning like below otherwise:
+Hi Paul,
 
-[ 9386.365390] WARNING: CPU: 0 PID: 6733 at drivers/base/syscore.c:104 syscore_resume+0x9a/0xe0()
-[ 9386.365403] Interrupts enabled after xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
-...
-[ 9386.365429] Call Trace:
-[ 9386.365434]  [<ffffffff81667a8b>] dump_stack+0x45/0x56
-[ 9386.365437]  [<ffffffff8106921d>] warn_slowpath_common+0x7d/0xa0
-[ 9386.365439]  [<ffffffff8106928c>] warn_slowpath_fmt+0x4c/0x50
-[ 9386.365442]  [<ffffffffa0261bb0>] ? xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
-[ 9386.365443]  [<ffffffff814055fa>] syscore_resume+0x9a/0xe0
-[ 9386.365445]  [<ffffffff810aef42>] suspend_devices_and_enter+0x402/0x470
-[ 9386.365447]  [<ffffffff810af128>] pm_suspend+0x178/0x260
+On Thu, Feb 13, 2014 at 5:46 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> [Added current lists.]
+>
+> On Wed, 2013-03-20 at 13:26 +0800, Steven Miao wrote:
+>> good catch, thanks
+>
+> This typo is still present in v3.14-rc2. Was my patch perhaps lost?
+Sorry for the late reply. I'v applied this patch to the blackfin tree
+at that time, but it seems we made some mistakes after the maintainer
+changed. I will apply it to 3.14 release.
 
-On xen_acpi_processor_resume() we call various procedures, which are
-non atomic and can enable interrupts. To prevent the issue introduce
-separate resume notify called after we enable interrupts on resume
-and before we call other drivers resume callbacks.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-Patch was only compiled, not tested otherwise.
-
- drivers/xen/manage.c             | 17 +++++++++++++++++
- drivers/xen/xen-acpi-processor.c | 15 ++++++++-------
- include/xen/xen-ops.h            |  3 +++
- 3 files changed, 28 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 624e8dc..96e4173 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -13,6 +13,7 @@
- #include <linux/freezer.h>
- #include <linux/syscore_ops.h>
- #include <linux/export.h>
-+#include <linux/notifier.h>
- 
- #include <xen/xen.h>
- #include <xen/xenbus.h>
-@@ -46,6 +47,20 @@ struct suspend_info {
- 	void (*post)(int cancelled);
- };
- 
-+static RAW_NOTIFIER_HEAD(xen_resume_notifier);
-+
-+void xen_resume_notifier_register(struct notifier_block *nb)
-+{
-+	raw_notifier_chain_register(&xen_resume_notifier, nb);
-+}
-+EXPORT_SYMBOL_GPL(xen_resume_notifier_register);
-+
-+void xen_resume_notifier_unregister(struct notifier_block *nb)
-+{
-+	raw_notifier_chain_unregister(&xen_resume_notifier, nb);
-+}
-+EXPORT_SYMBOL_GPL(xen_resume_notifier_unregister);
-+
- #ifdef CONFIG_HIBERNATE_CALLBACKS
- static void xen_hvm_post_suspend(int cancelled)
- {
-@@ -152,6 +167,8 @@ static void do_suspend(void)
- 
- 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
- 
-+	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
-+
- 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
- 	if (err) {
-diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
-index 7231859..82358d1 100644
---- a/drivers/xen/xen-acpi-processor.c
-+++ b/drivers/xen/xen-acpi-processor.c
-@@ -27,10 +27,10 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/syscore_ops.h>
- #include <linux/acpi.h>
- #include <acpi/processor.h>
- #include <xen/xen.h>
-+#include <xen/xen-ops.h>
- #include <xen/interface/platform.h>
- #include <asm/xen/hypercall.h>
- 
-@@ -495,14 +495,15 @@ static int xen_upload_processor_pm_data(void)
- 	return rc;
- }
- 
--static void xen_acpi_processor_resume(void)
-+static int xen_acpi_processor_resume(struct notifier_block *nb,
-+				     unsigned long action, void *data)
- {
- 	bitmap_zero(acpi_ids_done, nr_acpi_bits);
--	xen_upload_processor_pm_data();
-+	return xen_upload_processor_pm_data();
- }
- 
--static struct syscore_ops xap_syscore_ops = {
--	.resume	= xen_acpi_processor_resume,
-+struct notifier_block xen_acpi_processor_resume_nb = {
-+	.notifier_call = xen_acpi_processor_resume,
- };
- 
- static int __init xen_acpi_processor_init(void)
-@@ -555,7 +556,7 @@ static int __init xen_acpi_processor_init(void)
- 	if (rc)
- 		goto err_unregister;
- 
--	register_syscore_ops(&xap_syscore_ops);
-+	xen_resume_notifier_register(&xen_acpi_processor_resume_nb);
- 
- 	return 0;
- err_unregister:
-@@ -574,7 +575,7 @@ static void __exit xen_acpi_processor_exit(void)
- {
- 	int i;
- 
--	unregister_syscore_ops(&xap_syscore_ops);
-+	xen_resume_notifier_unregister(&xen_acpi_processor_resume_nb);
- 	kfree(acpi_ids_done);
- 	kfree(acpi_id_present);
- 	kfree(acpi_id_cst_present);
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index fb2ea8f..6412358 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -16,6 +16,9 @@ void xen_mm_unpin_all(void);
- void xen_timer_resume(void);
- void xen_arch_resume(void);
- 
-+void xen_resume_notifier_register(struct notifier_block *nb);
-+void xen_resume_notifier_unregister(struct notifier_block *nb);
-+
- int xen_setup_shutdown_event(void);
- 
- extern unsigned long *xen_contiguous_bitmap;
--- 
-1.7.11.7
-
+>
+>> On Wed, Mar 20, 2013 at 7:33 AM, Paul Bolle <pebolle@tiscali.nl>
+>> wrote:
+>>         Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>>         ---
+>>         Obvious, isn't it? Introduced in v3.5, through commit
+>>         0fbd88ca20a68a633b565e1f5ba18ca64afb0c78 ("blackfin: bf60x:
+>>         add wakeup source select"). Untested.
+>>
+>>          arch/blackfin/mach-bf609/pm.c | 2 +-
+>>          1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>>         diff --git a/arch/blackfin/mach-bf609/pm.c
+>>         b/arch/blackfin/mach-bf609/pm.c
+>>         index ad505d9..0cdd695 100644
+>>         --- a/arch/blackfin/mach-bf609/pm.c
+>>         +++ b/arch/blackfin/mach-bf609/pm.c
+>>         @@ -210,7 +210,7 @@ void bf609_cpu_pm_enter(suspend_state_t
+>>         state)
+>>
+>>          #ifdef CONFIG_PM_BFIN_WAKE_PB15
+>>                 wakeup |= PB15WE;
+>>         -# if CONFIG_PM_BFIN_WAKE_PA15_POL
+>>         +# if CONFIG_PM_BFIN_WAKE_PB15_POL
+>>                 wakeup_pol |= PB15WE;
+>>          # endif
+>>          #endif
+>>         --
+>>         1.7.11.7
+>
+>
+> Paul Bolle
+>
+-steven
