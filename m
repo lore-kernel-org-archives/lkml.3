@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaBZTGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:06:52 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41763 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753707AbaBZTGq (ORCPT
+	id S1754178AbaBZTHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:07:01 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:45616 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586AbaBZTG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:06:46 -0500
-Message-Id: <20140226190644.873393336@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 26 Feb 2014 14:01:44 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [RFA][PATCH 4/4] tracing: Do not add event files for modules that fail tracepoints
-References: <20140226190140.590029589@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0004-tracing-Do-not-add-event-files-for-modules-that-fail.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 26 Feb 2014 14:06:59 -0500
+From: vinayakm.list@gmail.com
+To: gregkh@linuxfoundation.org, arve@android.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Vinayak Menon <vinayakm.list@gmail.com>
+Subject: [PATCH v3] staging: android: lowmemorykiller: neglect swap cached pages in other_file
+Date: Thu, 27 Feb 2014 00:36:22 +0530
+Message-Id: <1393441582-3730-1-git-send-email-vinayakm.list@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Vinayak Menon <vinayakm.list@gmail.com>
 
-If a module fails to add its tracepoints due to module tainting, do not
-create the module event infrastructure in the debugfs directory. As the events
-will not work and worse yet, they will silently fail, making the user wonder
-why the events they enable do not display anything.
+With ZRAM enabled it is observed that lowmemory killer
+doesn't trigger properly. swap cached pages are
+accounted in NR_FILE, and lowmemorykiller considers
+this as reclaimable and adds to other_file. But these
+pages can't be reclaimed unless lowmemorykiller triggers.
+So subtract swap pages from other_file.
 
-Having a warning on module load and the events not visible to the users
-will make the cause of the problem much clearer.
-
-Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
-Cc: stable@vger.kernel.org # 2.6.31+
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
 ---
- include/linux/tracepoint.h  | 7 +++++++
- kernel/trace/trace_events.c | 4 ++++
- kernel/tracepoint.c         | 2 +-
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/staging/android/lowmemorykiller.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index accc497..3cb2842 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -16,6 +16,7 @@
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 6f094b3..9e931b2 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -88,7 +88,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
+ 	int array_size = ARRAY_SIZE(lowmem_adj);
+ 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
+ 	int other_file = global_page_state(NR_FILE_PAGES) -
+-						global_page_state(NR_SHMEM);
++						global_page_state(NR_SHMEM) -
++						total_swapcache_pages();
  
- #include <linux/errno.h>
- #include <linux/types.h>
-+#include <linux/module.h>
- #include <linux/rcupdate.h>
- #include <linux/static_key.h>
- 
-@@ -60,6 +61,12 @@ struct tp_module {
- 	unsigned int num_tracepoints;
- 	struct tracepoint * const *tracepoints_ptrs;
- };
-+static inline bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
-+}
-+#else
-+#define trace_module_has_bad_taint(mod) ({false;})
- #endif /* CONFIG_MODULES */
- 
- struct tracepoint_iter {
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index e71ffd4..b2fee73 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1777,6 +1777,10 @@ static void trace_module_add_events(struct module *mod)
- {
- 	struct ftrace_event_call **call, **start, **end;
- 
-+	/* Don't add infrastructure for mods without tracepoints */
-+	if (trace_module_has_bad_taint(mod))
-+		return;
-+
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
- 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 8a5d5e95..f74e953 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -644,7 +644,7 @@ static int tracepoint_module_coming(struct module *mod)
- 	 * module headers (for forced load), to make sure we don't cause a crash.
- 	 * Staging and out-of-tree GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP))) {
-+	if (trace_module_has_bad_taint(mod)) {
- 		pr_err("Module '%s' is tainted, disabling tracepoints\n",
- 		       mod->name);
- 		return 0;
+ 	if (lowmem_adj_size < array_size)
+ 		array_size = lowmem_adj_size;
 -- 
-1.8.5.3
-
+1.7.10.4
 
