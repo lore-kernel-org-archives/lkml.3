@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaBZQDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:03:16 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:27855 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751170AbaBZQDP (ORCPT
+	id S1752209AbaBZQDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:03:35 -0500
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:42335 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaBZQDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:03:15 -0500
-Date: Wed, 26 Feb 2014 11:03:13 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH] tracepoint: Do not waste memory on mods with no
- tracepoints
-Message-ID: <20140226110313.4d92fb83@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 26 Feb 2014 11:03:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+ <530D53EF.9090706@amacapital.net> <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 26 Feb 2014 09:03:13 -0700
+Message-ID: <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 26, 2014 at 12:04 AM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Feb 26, 2014 at 3:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On 02/17/2014 10:07 PM, Yan, Zheng wrote:
+>>>
+>>> This patch series adds LBR call stack support. User can enabled/disable
+>>> this through an sysfs attribute file in the CPU PMU directory:
+>>>  echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack
+>>
+>> This seems like an unpleasant way to control this.  It would be handy to
+>> be able to control this as an option to perf record.
+>>
+> That would mean you'd be root for perf.
+> Or are you suggesting a perf event option? But then, you'd expose arch-specific
+> feature at the API level.
+>
 
-No reason to allocate tp_module structures for modules that have no
-tracepoints. This just wastes memory.
+I'm suggesting a perf event option, just like the way that PEBS works.
 
-Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
-Cc: stable@vger.kernel.org # 3.2+
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/tracepoint.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index 29f2654..0d4ef26 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -636,6 +636,9 @@ static int tracepoint_module_coming(struct module *mod)
- 	struct tp_module *tp_mod, *iter;
- 	int ret = 0;
- 
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	/*
- 	 * We skip modules that taint the kernel, especially those with different
- 	 * module headers (for forced load), to make sure we don't cause a crash.
-@@ -679,6 +682,9 @@ static int tracepoint_module_going(struct module *mod)
- {
- 	struct tp_module *pos;
- 
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	mutex_lock(&tracepoints_mutex);
- 	tracepoint_update_probe_range(mod->tracepoints_ptrs,
- 		mod->tracepoints_ptrs + mod->num_tracepoints);
--- 
-1.8.1.4
-
+--Andy
