@@ -1,39 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361AbaBZGOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 01:14:08 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:49391 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaBZGOG (ORCPT
+	id S1751432AbaBZGP1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 01:15:27 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:56067 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaBZGP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 01:14:06 -0500
+	Wed, 26 Feb 2014 01:15:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <1393385915-19138-3-git-send-email-skannan@codeaurora.org>
-References: <1789244.B5CzWbcp6h@vostro.rjw.lan>
-	<1393385915-19138-3-git-send-email-skannan@codeaurora.org>
-Date: Wed, 26 Feb 2014 11:44:04 +0530
-Message-ID: <CAKohpo=bmYX5iHrV7QixN_uFxB2jGDQYBbW23en0ZgeNesX6Aw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cpufreq: Set policy to non-NULL only after all
- hotplug online work is done
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <87sir856a7.fsf@rustcorp.com.au>
+References: <20140221201031.GA8089@www.outflux.net>
+	<87sir856a7.fsf@rustcorp.com.au>
+Date: Tue, 25 Feb 2014 22:15:25 -0800
+X-Google-Sender-Auth: gSXZKyeDBjUWBk4dLLvirEq598Q
+Message-ID: <CAGXu5j+iwHryXB9sQrT4agTa=GQ-OwoPLS256=cBuQoqnT3fhA@mail.gmail.com>
+Subject: Re: [PATCH] kallsyms: fix absolute addresses for kASLR
+From: Kees Cook <keescook@chromium.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Andi Kleen <andi@firstfloor.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Ming Lei <tom.leiming@gmail.com>, Andy Honig <ahonig@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Vivek Goyal <vgoyal@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 February 2014 09:08, Saravana Kannan <skannan@codeaurora.org> wrote:
-> The existing code sets the per CPU policy to a non-NULL value before all
-> the steps performed during the hotplug online path is done. Specifically,
-> this is done before the policy min/max, governors, etc are initialized for
-> the policy.  This in turn means that calls to cpufreq_cpu_get() return a
-> non-NULL policy before the policy/CPU is ready to be used.
+On Mon, Feb 24, 2014 at 5:29 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Kees Cook <keescook@chromium.org> writes:
+>> From: Andy Honig <ahonig@google.com>
+>>
+>> Currently symbols that are absolute addresses are incorrectly
+>> displayed in /proc/kallsyms if the kernel is loaded with kASLR.
+>>
+>> The problem was that the scripts/kallsyms.c file which generates
+>> the array of symbol names and addresses uses an relocatable value
+>> for all symbols, even absolute symbols.  This patch fixes that.
+>
+> Hi Andy, Kees,
+>
+>         This is not a good patch.  See the commit where this was
+> introduced:
+>
+> [PATCH] relocatable kernel: Fix kallsyms on avr32 after relocatable kernel changes
+>
+>     o On some platforms like avr32, section init comes before .text and
+>       not necessarily a symbol's relative position w.r.t _text is positive.
+>       In such cases assembler detects the overflow and emits warning. This
+>       patch fixes it.
+>
+> Did you just break avr32?
+>
+> And absolute symbols are supposed to be handled in the other branch:
+>
+>         for (i = 0; i < table_cnt; i++) {
+>                 if (toupper(table[i].sym[0]) != 'A') {
+>                         if (_text <= table[i].addr)
+>                                 printf("\tPTR\t_text + %#llx\n",
+>                                         table[i].addr - _text);
+>                         else
+>                                 printf("\tPTR\t_text - %#llx\n",
+>                                         _text - table[i].addr);
+>                 } else {
+>                         printf("\tPTR\t%#llx\n", table[i].addr);
+>                 }
+>         }
+>
+> __per_cpu_start is not an absolute symbol anyway.
+>
+> You need to fix this properly.
+> Rusty.
 
-First two patches are fine but I would still say that take the three patches
-I posted instead of this. Reasoning already given in other mails.
+Hm, yeah, it seems we need another class of variable. The per_cpu
+stuff is technically relative, but it's not relocated, since it's not
+relative to the text location. We'll see how to do this more sanely.
+
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
