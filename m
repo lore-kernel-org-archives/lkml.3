@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaBZPFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:05:37 -0500
-Received: from relay.parallels.com ([195.214.232.42]:59677 "EHLO
+	id S1753365AbaBZPMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:12:13 -0500
+Received: from relay.parallels.com ([195.214.232.42]:59688 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaBZPFf (ORCPT
+	with ESMTP id S1752452AbaBZPFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:05:35 -0500
+	Wed, 26 Feb 2014 10:05:37 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <devel@openvz.org>
-Subject: [PATCH -mm 03/12] memcg: fix root vs memcg cache destruction race
-Date: Wed, 26 Feb 2014 19:05:08 +0400
-Message-ID: <508bc2be4fff616069be7e0e89b7f637f3f8eb6e.1393423762.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 05/12] memcg: add pointer from memcg_cache_params to cache
+Date: Wed, 26 Feb 2014 19:05:10 +0400
+Message-ID: <34e44a086794439c938c01e9c019875aac5959b8.1393423762.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1393423762.git.vdavydov@parallels.com>
 References: <cover.1393423762.git.vdavydov@parallels.com>
@@ -25,232 +25,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a root cache is being destroyed and we are about to initiate
-destruction of its child caches (see kmem_cache_destroy_memcg_children),
-we should handle races with pending memcg cache destruction works
-somehow. Currently, we simply cancel the memcg_params::destroy work
-before calling kmem_cache_destroy for a memcg cache, but that's totally
-wrong, because the work handler may destroy and free the cache resulting
-in a use-after-free in cancel_work_sync. Furthermore, we do not handle
-the case when memcg cache destruction is scheduled after we start to
-destroy the root cache - that's possible, because nothing prevents
-memcgs from going offline while we are destroying a root cache. In that
-case we are likely to get a use-after-free in the work handler.
+While iterating over the memcg_slab_caches list we need to obtain the
+cache a particular memcg_params is corresponding to, because
+memcg_params are actually linked, not caches. Currently to achieve that,
+we employ the fact that each root cache tracks all its child caches in
+its memcg_caches array, so that given a memcg_params we can find the
+memcg cache by doing something like this:
 
-This patch resolves the race as follows:
+  root = memcg_params->root_cache;
+  memcg = memcg_params->memcg;
+  memcg_cache = root->memcg_params->memcg_caches[memcg->kmemcg_id];
 
-1) It makes kmem_cache_destroy silently exit if it is called for a memcg
-   cache while the corresponding root cache is being destroyed, leaving
-   the destruction to kmem_cache_destroy_memcg_children. That makes call
-   to cancel_work_sync safe if it is called from the root cache
-   destruction path.
-
-2) It moves cancel_work_sync to be called after we unregistered a child
-   cache from its memcg. That prevents the work from being rescheduled
-   from memcg offline path.
+Apart from being cumbersome, this is not going to work when reparenting
+of memcg caches is introduced. So let's embed a pointer back to the
+memcg cache into the memcg_cache_params struct.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Glauber Costa <glommer@gmail.com>
 ---
- include/linux/memcontrol.h |    2 +-
- include/linux/slab.h       |    1 +
- mm/memcontrol.c            |   22 ++-----------
- mm/slab_common.c           |   77 ++++++++++++++++++++++++++++++++++++--------
- 4 files changed, 69 insertions(+), 33 deletions(-)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |   28 +++-------------------------
+ 2 files changed, 5 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index e54fb469a908..6128323ea453 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -512,7 +512,7 @@ void memcg_update_array_size(int num_groups);
- struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
- 
--int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
-+int kmem_cache_destroy_memcg_children(struct kmem_cache *s);
- 
- /**
-  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 3ed53de256ea..ee9f1b0382ac 100644
+index ee9f1b0382ac..f2fd4212976e 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -117,6 +117,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- 			void (*)(void *));
- #ifdef CONFIG_MEMCG_KMEM
- void kmem_cache_create_memcg(struct mem_cgroup *, struct kmem_cache *);
-+void kmem_cache_destroy_memcg(struct kmem_cache *, bool);
- #endif
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
+@@ -520,6 +520,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  *
+  * Child caches will hold extra metadata needed for its operation. Fields are:
+  *
++ * @cachep: back pointer to the memcg cache
+  * @memcg: pointer to the memcg this cache belongs to
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+@@ -536,6 +537,7 @@ struct memcg_cache_params {
+ 			struct kmem_cache *memcg_caches[0];
+ 		};
+ 		struct {
++			struct kmem_cache *cachep;
+ 			struct mem_cgroup *memcg;
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 416da5dc3d2a..1b9634090454 100644
+index 69431f5285cc..5eb629ed28d6 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3345,10 +3345,10 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
- 			return;
- 	}
- 
--	kmem_cache_destroy(cachep);
-+	kmem_cache_destroy_memcg(cachep, false);
+@@ -2974,19 +2974,6 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+ 		memcg_kmem_is_active(memcg);
  }
  
--int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
- 	int i, failed = 0;
-@@ -3378,23 +3378,7 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 		if (!c)
- 			continue;
- 
--		/*
--		 * We will now manually delete the caches, so to avoid races
--		 * we need to cancel all pending destruction workers and
--		 * proceed with destruction ourselves.
--		 *
--		 * kmem_cache_destroy() will call kmem_cache_shrink internally,
--		 * and that could spawn the workers again: it is likely that
--		 * the cache still have active pages until this very moment.
--		 * This would lead us back to memcg_release_pages().
--		 *
--		 * But that will not execute at all if the refcount is > 0, so
--		 * increment it to guarantee we are in control.
--		 */
--		atomic_inc(&c->memcg_params->refcount);
--		cancel_work_sync(&c->memcg_params->destroy);
--		kmem_cache_destroy(c);
+-/*
+- * This is a bit cumbersome, but it is rarely used and avoids a backpointer
+- * in the memcg_cache_params struct.
+- */
+-static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+-{
+-	struct kmem_cache *cachep;
 -
-+		kmem_cache_destroy_memcg(c, true);
- 		if (cache_from_memcg_idx(s, i))
- 			failed++;
- 	}
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index f3cfccf76dda..05ba3cd1b507 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -302,28 +302,70 @@ out_unlock:
- 	put_online_cpus();
- }
- 
--static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+static void __kmem_cache_destroy(struct kmem_cache *, bool);
-+
-+void kmem_cache_destroy_memcg(struct kmem_cache *s, bool destroying_root)
-+{
-+	BUG_ON(is_root_cache(s));
-+	__kmem_cache_destroy(s, destroying_root);
-+}
-+
-+static int __kmem_cache_shutdown_memcg(struct kmem_cache *s,
-+				       bool destroying_root)
+-	VM_BUG_ON(p->is_root_cache);
+-	cachep = p->root_cache;
+-	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
+-}
+-
+ #ifdef CONFIG_SLABINFO
+ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
  {
--	int rc;
-+	int rc = 0;
+@@ -3000,7 +2987,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
  
--	if (!s->memcg_params ||
--	    !s->memcg_params->is_root_cache)
-+	if (!destroying_root) {
-+		struct kmem_cache *root;
-+
-+		root = memcg_root_cache(s);
-+		BUG_ON(root == s);
-+		/*
-+		 * If we are racing with the root cache destruction, let
-+		 * kmem_cache_destroy_memcg_children() finish with this cache.
-+		 */
-+		if (!root->refcount) {
-+			s->refcount++;
-+			return 1;
-+		}
-+	}
-+
-+	if (!s->memcg_params)
- 		return 0;
+ 	mutex_lock(&memcg->slab_caches_mutex);
+ 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
+-		cache_show(memcg_params_to_cache(params), m);
++		cache_show(params->cachep, m);
+ 	mutex_unlock(&memcg->slab_caches_mutex);
  
- 	mutex_unlock(&slab_mutex);
--	rc = __kmem_cache_destroy_memcg_children(s);
-+	if (s->memcg_params->is_root_cache) {
-+		rc = kmem_cache_destroy_memcg_children(s);
-+	} else {
-+		/*
-+		 * There might be a destruction work pending, which needs to be
-+		 * cancelled before we start to destroy the cache.
-+		 *
-+		 * This should be done after we deleted all the references to
-+		 * this cache, otherwise the work could be rescheduled.
-+		 *
-+		 * __kmem_cache_shutdown() will call kmem_cache_shrink()
-+		 * internally, and that could spawn the worker again. We
-+		 * increment the refcount to avoid that.
-+		 */
-+		if (destroying_root) {
-+			cancel_work_sync(&s->memcg_params->destroy);
-+			atomic_inc(&s->memcg_params->refcount);
-+		}
-+	}
- 	mutex_lock(&slab_mutex);
- 
- 	return rc;
- }
- #else
--static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+static int __kmem_cache_shutdown_memcg(struct kmem_cache *s,
-+				       bool destroying_root)
- {
  	return 0;
+@@ -3202,6 +3189,7 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 		return -ENOMEM;
+ 
+ 	if (memcg) {
++		s->memcg_params->cachep = s;
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
+ 		INIT_WORK(&s->memcg_params->destroy,
+@@ -3249,11 +3237,6 @@ void memcg_register_cache(struct kmem_cache *s)
+ 	 */
+ 	smp_wmb();
+ 
+-	/*
+-	 * Initialize the pointer to this cache in its parent's memcg_params
+-	 * before adding it to the memcg_slab_caches list, otherwise we can
+-	 * fail to convert memcg_params_to_cache() while traversing the list.
+-	 */
+ 	VM_BUG_ON(root->memcg_params->memcg_caches[id]);
+ 	root->memcg_params->memcg_caches[id] = s;
+ 
+@@ -3285,11 +3268,6 @@ void memcg_unregister_cache(struct kmem_cache *s)
+ 	list_del(&s->memcg_params->list);
+ 	mutex_unlock(&memcg->slab_caches_mutex);
+ 
+-	/*
+-	 * Clear the pointer to this cache in its parent's memcg_params only
+-	 * after removing it from the memcg_slab_caches list, otherwise we can
+-	 * fail to convert memcg_params_to_cache() while traversing the list.
+-	 */
+ 	VM_BUG_ON(root->memcg_params->memcg_caches[id] != s);
+ 	root->memcg_params->memcg_caches[id] = NULL;
  }
- #endif /* CONFIG_MEMCG_KMEM */
+@@ -3331,7 +3309,7 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
+ 	struct memcg_cache_params *params;
  
--void kmem_cache_destroy(struct kmem_cache *s)
-+static void __kmem_cache_destroy(struct kmem_cache *s, bool destroying_root)
- {
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
-@@ -332,19 +374,17 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 	if (s->refcount)
- 		goto out_unlock;
+ 	params = container_of(w, struct memcg_cache_params, destroy);
+-	cachep = memcg_params_to_cache(params);
++	cachep = params->cachep;
  
--	if (kmem_cache_destroy_memcg_children(s) != 0)
--		goto out_unlock;
--
- 	list_del(&s->list);
- 	memcg_unregister_cache(s);
- 
-+	if (__kmem_cache_shutdown_memcg(s, destroying_root) != 0)
-+		goto out_undelete;
-+
- 	if (__kmem_cache_shutdown(s) != 0) {
--		list_add(&s->list, &slab_caches);
--		memcg_register_cache(s);
- 		printk(KERN_ERR "kmem_cache_destroy %s: "
- 		       "Slab cache still has objects\n", s->name);
- 		dump_stack();
--		goto out_unlock;
-+		goto out_undelete;
- 	}
- 
- 	mutex_unlock(&slab_mutex);
-@@ -360,6 +400,17 @@ out_unlock:
- 	mutex_unlock(&slab_mutex);
- out_put_cpus:
- 	put_online_cpus();
-+	return;
-+out_undelete:
-+	list_add(&s->list, &slab_caches);
-+	memcg_register_cache(s);
-+	goto out_unlock;
-+}
-+
-+void kmem_cache_destroy(struct kmem_cache *s)
-+{
-+	BUG_ON(!is_root_cache(s));
-+	__kmem_cache_destroy(s, true);
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
- 
+ 	if (atomic_read(&params->refcount) != 0) {
+ 		/*
 -- 
 1.7.10.4
 
