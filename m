@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbaBZDoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 22:44:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11857 "EHLO mx1.redhat.com"
+	id S1752209AbaBZDoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 22:44:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128AbaBZDn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 22:43:58 -0500
+	id S1752132AbaBZDn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 22:43:59 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: acme@ghostprotocols.net, jolsa@redhat.com, eranian@google.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/3] perf, session: Change header.misc dump from decimal to hex
-Date: Tue, 25 Feb 2014 22:43:46 -0500
-Message-Id: <1393386227-149412-3-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 3/3] perf: fix synthesizing mmaps for threads
+Date: Tue, 25 Feb 2014 22:43:47 -0500
+Message-Id: <1393386227-149412-4-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
 References: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When printing the raw dump of a data file, the header.misc is
-printed as a decimal.  Unfortunately, that field is a bit mask, so
-it is hard to interpret as a decimal.
+Currently if a process creates a bunch of threads using pthread_create
+and then perf is run in system_wide mode, the mmaps for those threads
+are not captured with a synthesized mmap event.
 
-Print in hex, so the user can easily see what bits are set and more
-importantly what type of info it is conveying.
+The reason is those threads are not visible when walking the /proc/
+directory looking for /proc/<pid>/maps files.  Instead they are discovered
+using the /proc/<pid>/tasks file (which the synthesized comm event uses).
 
-V2: add 0x in front per Jiri Olsa
+This causes problems when a program is trying to map a data address to a
+tid.  Because the tid has no maps, the event is dropped.  Changing the program
+to look up using the pid instead of the tid, finds the correct maps but creates
+ugly hacks in the program to carry the correct tid around.
+
+Fix this by synthesizing mmap events for each tid found in the /proc/<pid>/tasks
+file.
+
+This may not be entirely clean but it seems to work.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/util/session.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/event.c   | 15 +++++++++++----
+ tools/perf/util/machine.c |  4 ++--
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 1d555d6..55960f2 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -794,7 +794,7 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 	if (!dump_trace)
- 		return;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 086c7c8..09c53bb 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -93,10 +93,13 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+ }
  
--	printf("(IP, %d): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
-+	printf("(IP, 0x%x): %d/%d: %#" PRIx64 " period: %" PRIu64 " addr: %#" PRIx64 "\n",
- 	       event->header.misc, sample->pid, sample->tid, sample->ip,
- 	       sample->period, sample->addr);
+ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+-					 union perf_event *event, pid_t pid,
++					 union perf_event *event,
++					 union perf_event *mmap_event,
++					 pid_t pid,
+ 					 int full,
+ 					 perf_event__handler_t process,
+-					 struct machine *machine)
++					 struct machine *machine,
++					 bool mmap_data)
+ {
+ 	char filename[PATH_MAX];
+ 	size_t size;
+@@ -168,6 +171,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+ 			tgid = -1;
+ 			break;
+ 		}
++
++		/* process the thread's maps too */
++		perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
++						  process, machine, mmap_data);
+ 	}
+ 
+ 	closedir(tasks);
+@@ -331,8 +338,8 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      struct perf_tool *tool,
+ 				      struct machine *machine, bool mmap_data)
+ {
+-	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+-						 process, machine);
++	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, mmap_event, pid,
++						 full, process, machine, mmap_data);
+ 	if (tgid == -1)
+ 		return -1;
+ 	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 813e94e..eb26544 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1026,7 +1026,7 @@ int machine__process_mmap2_event(struct machine *machine,
+ 	}
+ 
+ 	thread = machine__findnew_thread(machine, event->mmap2.pid,
+-					event->mmap2.pid);
++					event->mmap2.tid);
+ 	if (thread == NULL)
+ 		goto out_problem;
+ 
+@@ -1074,7 +1074,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 	}
+ 
+ 	thread = machine__findnew_thread(machine, event->mmap.pid,
+-					 event->mmap.pid);
++					 event->mmap.tid);
+ 	if (thread == NULL)
+ 		goto out_problem;
  
 -- 
 1.7.11.7
