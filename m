@@ -1,291 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaBZPP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:15:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45813 "EHLO mx2.suse.de"
+	id S1753213AbaBZPPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:15:37 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:36314 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263AbaBZPPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:15:22 -0500
-Date: Wed, 26 Feb 2014 16:15:17 +0100
-From: Jan Kara <jack@suse.cz>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: [PATCH 00/13] cross rename v4
-Message-ID: <20140226151517.GA11905@quack.suse.cz>
-References: <1391791751-2533-1-git-send-email-miklos@szeredi.hu>
- <19258.1392306854@warthog.procyon.org.uk>
- <20140213162534.GB4026@tucsk.piliscsaba.szeredi.hu>
- <20106.1392309770@warthog.procyon.org.uk>
- <CAJfpegtTDgLY=koYwg8m=snyD8FQ_EFyvLWErhcQ1jprAcOrrA@mail.gmail.com>
- <CA+55aFxE+v-RpHd1zNdw4COrkXmdT5btuE6Xei4oyeWSzeGHLw@mail.gmail.com>
- <16729.1392318161@warthog.procyon.org.uk>
- <CA+55aFyT9_XSFQwv82Qwv5US7QMOvW8RhbsxOa8B2mm3MChWLA@mail.gmail.com>
- <CAJfpegsDG-NoqvYog5PWqR=XOQgT0dSOTsjDwhd8v11T0kiEVA@mail.gmail.com>
- <20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140224171238.GG4026@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752580AbaBZPPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:15:33 -0500
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Xiaotian Feng <xtfeng@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, linux-kernel@vger.kernel.org,
+        <stable@vger.kernel.org>
+Subject: [PATCH v2] rapidio/tsi721: fix tasklet termination in dma channel release
+Date: Wed, 26 Feb 2014 10:13:47 -0500
+Message-Id: <1393427627-18525-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-02-14 18:12:38, Miklos Szeredi wrote:
-> On Thu, Feb 13, 2014 at 09:28:50PM +0100, Miklos Szeredi wrote:
-> > On Thu, Feb 13, 2014 at 8:32 PM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> 
-> > > (I do think we should allow creation - but for root only - for
-> > > management and testing purposes, but I really think it's a secondary
-> > > issue, and I do think we should literally use "mknod()" - either with
-> > > a new S_IFWHT or even just making use of existing S_IFCHR just so you
-> > > could use the user-space "mknod" to create it with some magic
-> > > major/minor combination.
-> > 
-> > And IMO the magic S_IFCHR is a lot better in many respects than a new
-> > filetype, since now all backup tools automatically work.  And I think
-> > that's a lot more important than looking like a nice new design.
-> > Sure, if S_IFWHT was there from the start, it would be wonderful.  But
-> > as it stands, it's a lot more difficult to add support for such a
-> > thing to userspace than adding a hack, using the existing intefaces,
-> > to the kernel.
-> 
-> And here's a patch to actually implement the "rename and whiteout source"
-> operation.
-> 
-> Jan, I suspect that the "credits" calculation for the number of journal
-> blocks is excessive, since here we don't actually need to create the
-> directory entry, only create the inode and populate an already existing
-> entry.  But I don't undestand the logic of ext4 enough to see what's the
-> right number to use here.
-  Yes. It should be enough to reserve
-  (EXT4_MAXQUOTAS_TRANS_BLOCKS(sb) + EXT4_XATTR_TRANS_BLOCKS + 4) blocks
-(for inode block, sb block, group summaries, and inode bitmap). Please add
-this summary to the comment before the estimate.
+This patch is a modification of the patch originally proposed
+by Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
+This new version disables DMA channel interrupts and ensures that the tasklet
+wil not be scheduled again before calling tasklet_kill().
 
-> And another ext4 specific question: I added ext4_setent(old, whiteout) before
-> ext4_add_entry(new, old.inode) because I suspect from the comment in
-> ext4_rename_delete() that ext4_add_entry() invalidates the looked up entry.  Is
-> that correct?
-  Yes, that is correct. As soon as you add any entry into a directory, any
-looked up position in that directory may be invalid (the directory is
-implemented as a tree and addition can trigger balancing which moves
-things around in the directory).
+Unfortunately the updated patch was not released at that time due to planned
+rework of Tsi721 mport driver to use threaded interrupts (which has yet to
+happen).
+Recently the issue was reported again: https://lkml.org/lkml/2014/2/19/762.
 
-> Are there any other traps in this area to look out for?
-  :-) Hum, no I cannot remember any.
+Description from the original Xiaotian's patch:
 
-								Honza
+"Some drivers use tasklet_disable in device remove/release process, 
+tasklet_disable will inc tasklet->count and return. If the tasklet is 
+not handled yet under some softirq pressure, the tasklet will be 
+placed on the tasklet_vec, never have a chance to be excuted. This 
+might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, 
+but tasklet is disabled. tasklet_kill should be used in this case."
 
-> ----
-> Subject: vfs: add RENAME_WHITEOUT
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> This adds a new RENAME_WHITEOUT flag.  This flag makes rename() create a
-> whiteout of source.  The whiteout creation is atomic relative to the
-> rename.
-> 
-> As Linus' suggestion, a whiteout is represented as a dummy char device.
-> This patch uses the 0/0 device number, but the actual number doesn't matter
-> as long as it doesn't conflict with a real device.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> ---
->  fs/ext4/namei.c         |   69 ++++++++++++++++++++++++++++++++++++++----------
->  fs/namei.c              |    8 ++++-
->  include/linux/fs.h      |    7 ++++
->  include/uapi/linux/fs.h |    1 
->  4 files changed, 70 insertions(+), 15 deletions(-)
-> 
-> --- a/fs/ext4/namei.c
-> +++ b/fs/ext4/namei.c
-> @@ -3157,7 +3157,8 @@ static void ext4_update_dir_count(handle
->   * This comes from rename(const char *oldpath, const char *newpath)
->   */
->  static int ext4_plain_rename(struct inode *old_dir, struct dentry *old_dentry,
-> -			     struct inode *new_dir, struct dentry *new_dentry)
-> +			     struct inode *new_dir, struct dentry *new_dentry,
-> +			     unsigned int flags)
->  {
->  	handle_t *handle = NULL;
->  	struct ext4_renament old = {
-> @@ -3171,6 +3172,9 @@ static int ext4_plain_rename(struct inod
->  		.inode = new_dentry->d_inode,
->  	};
->  	int retval;
-> +	struct inode *whiteout = NULL;
-> +	int credits;
-> +	u8 old_file_type;
->  
->  	dquot_initialize(old.dir);
->  	dquot_initialize(new.dir);
-> @@ -3202,11 +3206,33 @@ static int ext4_plain_rename(struct inod
->  	if (new.inode && !test_opt(new.dir->i_sb, NO_AUTO_DA_ALLOC))
->  		ext4_alloc_da_blocks(old.inode);
->  
-> -	handle = ext4_journal_start(old.dir, EXT4_HT_DIR,
-> -		(2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
-> -		 EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
-> -	if (IS_ERR(handle))
-> -		return PTR_ERR(handle);
-> +	credits = (2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
-> +		   EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2);
-> +	if (!(flags & RENAME_WHITEOUT)) {
-> +		handle = ext4_journal_start(old.dir, EXT4_HT_DIR, credits);
-> +		if (IS_ERR(handle))
-> +			return PTR_ERR(handle);
-> +	} else {
-> +		int retries = 0;
-> +
-> +		credits += (EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
-> +			    EXT4_INDEX_EXTRA_TRANS_BLOCKS + 3);
-> +retry:
-> +		whiteout = ext4_new_inode_start_handle(old.dir, S_IFCHR | WHITEOUT_MODE, &old.dentry->d_name, 0, NULL, EXT4_HT_DIR, credits);
-> +		handle = ext4_journal_current_handle();
-> +		if (IS_ERR(whiteout)) {
-> +			if (handle)
-> +				ext4_journal_stop(handle);
-> +			retval = PTR_ERR(whiteout);
-> +			if (retval == -ENOSPC &&
-> +			    ext4_should_retry_alloc(old.dir->i_sb, &retries))
-> +				goto retry;
-> +
-> +			return retval;
-> +		}
-> +		init_special_inode(whiteout, whiteout->i_mode, WHITEOUT_DEV);
-> +		whiteout->i_op = &ext4_special_inode_operations;
-> +	}
->  
->  	if (IS_DIRSYNC(old.dir) || IS_DIRSYNC(new.dir))
->  		ext4_handle_sync(handle);
-> @@ -3225,13 +3251,21 @@ static int ext4_plain_rename(struct inod
->  		if (retval)
->  			goto end_rename;
->  	}
-> +	old_file_type = old.de->file_type;
-> +	if (whiteout) {
-> +		retval = ext4_setent(handle, &old, whiteout->i_ino,
-> +				     EXT4_FT_CHRDEV);
-> +		if (retval)
-> +			goto end_rename;
-> +		ext4_mark_inode_dirty(handle, whiteout);
-> +	}
->  	if (!new.bh) {
->  		retval = ext4_add_entry(handle, new.dentry, old.inode);
->  		if (retval)
->  			goto end_rename;
->  	} else {
->  		retval = ext4_setent(handle, &new,
-> -				     old.inode->i_ino, old.de->file_type);
-> +				     old.inode->i_ino, old_file_type);
->  		if (retval)
->  			goto end_rename;
->  	}
-> @@ -3243,10 +3277,12 @@ static int ext4_plain_rename(struct inod
->  	old.inode->i_ctime = ext4_current_time(old.inode);
->  	ext4_mark_inode_dirty(handle, old.inode);
->  
-> -	/*
-> -	 * ok, that's it
-> -	 */
-> -	ext4_rename_delete(handle, &old);
-> +	if (!whiteout) {
-> +		/*
-> +		 * ok, that's it
-> +		 */
-> +		ext4_rename_delete(handle, &old);
-> +	}
->  
->  	if (new.inode) {
->  		ext4_dec_count(handle, new.inode);
-> @@ -3282,6 +3318,12 @@ static int ext4_plain_rename(struct inod
->  	brelse(old.dir_bh);
->  	brelse(old.bh);
->  	brelse(new.bh);
-> +	if (whiteout) {
-> +		if (retval)
-> +			drop_nlink(whiteout);
-> +		unlock_new_inode(whiteout);
-> +		iput(whiteout);
-> +	}
->  	if (handle)
->  		ext4_journal_stop(handle);
->  	return retval;
-> @@ -3407,7 +3449,7 @@ static int ext4_rename(struct inode *old
->  			struct inode *new_dir, struct dentry *new_dentry,
->  			unsigned int flags)
->  {
-> -	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
-> +	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
->  		return -EINVAL;
->  
->  	if (flags & RENAME_EXCHANGE) {
-> @@ -3418,7 +3460,8 @@ static int ext4_rename(struct inode *old
->  	 * Existence checking was done by the VFS, otherwise "RENAME_NOREPLACE"
->  	 * is equivalent to regular rename.
->  	 */
-> -	return ext4_plain_rename(old_dir, old_dentry, new_dir, new_dentry);
-> +	return ext4_plain_rename(old_dir, old_dentry, new_dir, new_dentry,
-> +				 flags);
->  }
->  
->  /*
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -4165,12 +4165,16 @@ SYSCALL_DEFINE5(renameat2, int, olddfd,
->  	bool should_retry = false;
->  	int error;
->  
-> -	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
-> +	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
->  		return -EINVAL;
->  
-> -	if ((flags & RENAME_NOREPLACE) && (flags & RENAME_EXCHANGE))
-> +	if ((flags & (RENAME_NOREPLACE | RENAME_WHITEOUT)) &&
-> +	    (flags & RENAME_EXCHANGE))
->  		return -EINVAL;
->  
-> +	if ((flags & RENAME_WHITEOUT) && !capable(CAP_MKNOD))
-> +		return -EPERM;
-> +
->  retry:
->  	from = user_path_parent(olddfd, oldname, &oldnd, lookup_flags);
->  	if (IS_ERR(from)) {
-> --- a/include/uapi/linux/fs.h
-> +++ b/include/uapi/linux/fs.h
-> @@ -37,6 +37,7 @@
->  
->  #define RENAME_NOREPLACE	(1 << 0)	/* Don't overwrite target */
->  #define RENAME_EXCHANGE		(1 << 1)	/* Exchange source and dest */
-> +#define RENAME_WHITEOUT		(1 << 2)	/* Whiteout source */
->  
->  struct fstrim_range {
->  	__u64 start;
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -215,6 +215,13 @@ typedef void (dio_iodone_t)(struct kiocb
->  #define ATTR_TIMES_SET	(1 << 16)
->  
->  /*
-> + * Whiteout is represented by a char device.  The following constants define the
-> + * mode and device number to use.
-> + */
-> +#define WHITEOUT_MODE 0
-> +#define WHITEOUT_DEV 0
-> +
-> +/*
->   * This is the Inode Attributes structure, used for notify_change().  It
->   * uses the above definitions as flags, to know which values have changed.
->   * Also, in this manner, a Filesystem can look at only the values it cares
+This patch is applicable to kernel versions starting from v3.5.
+
+v2 - fixes compile error if MSI support (CONFIG_PCI_MSI) is disabled.  
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: linux-kernel@vger.kernel.org
+Cc: <stable@vger.kernel.org>
+---
+ drivers/rapidio/devices/tsi721.h     |    1 +
+ drivers/rapidio/devices/tsi721_dma.c |   27 ++++++++++++++++++---------
+ 2 files changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
+index b4b0d83..7061ac0 100644
+--- a/drivers/rapidio/devices/tsi721.h
++++ b/drivers/rapidio/devices/tsi721.h
+@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
+ 	struct list_head	free_list;
+ 	dma_cookie_t		completed_cookie;
+ 	struct tasklet_struct	tasklet;
++	bool			active;
+ };
+ 
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
+index 502663f..91245f5 100644
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
+ {
+ 	/* Disable BDMA channel interrupts */
+ 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
+-
+-	tasklet_schedule(&bdma_chan->tasklet);
++	if (bdma_chan->active)
++		tasklet_schedule(&bdma_chan->tasklet);
+ }
+ 
+ #ifdef CONFIG_PCI_MSI
+@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
+ 	}
+ #endif /* CONFIG_PCI_MSI */
+ 
+-	tasklet_enable(&bdma_chan->tasklet);
++	bdma_chan->active = true;
+ 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+ 
+ 	return bdma_chan->bd_num - 1;
+@@ -576,9 +576,7 @@ err_out:
+ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ {
+ 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
+-#ifdef CONFIG_PCI_MSI
+ 	struct tsi721_device *priv = to_tsi721(dchan->device);
+-#endif
+ 	LIST_HEAD(list);
+ 
+ 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
+@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ 	BUG_ON(!list_empty(&bdma_chan->active_list));
+ 	BUG_ON(!list_empty(&bdma_chan->queue));
+ 
+-	tasklet_disable(&bdma_chan->tasklet);
++	tsi721_bdma_interrupt_enable(bdma_chan, 0);
++	bdma_chan->active = false;
++
++#ifdef CONFIG_PCI_MSI
++	if (priv->flags & TSI721_USING_MSIX) {
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
++					   bdma_chan->id].vector);
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
++					   bdma_chan->id].vector);
++	} else
++#endif
++	synchronize_irq(priv->pdev->irq);
++
++	tasklet_kill(&bdma_chan->tasklet);
+ 
+ 	spin_lock_bh(&bdma_chan->lock);
+ 	list_splice_init(&bdma_chan->free_list, &list);
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+-	tsi721_bdma_interrupt_enable(bdma_chan, 0);
+-
+ #ifdef CONFIG_PCI_MSI
+ 	if (priv->flags & TSI721_USING_MSIX) {
+ 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
+@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
+ 		bdma_chan->dchan.cookie = 1;
+ 		bdma_chan->dchan.chan_id = i;
+ 		bdma_chan->id = i;
++		bdma_chan->active = false;
+ 
+ 		spin_lock_init(&bdma_chan->lock);
+ 
+@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_device *priv)
+ 
+ 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
+ 			     (unsigned long)bdma_chan);
+-		tasklet_disable(&bdma_chan->tasklet);
+ 		list_add_tail(&bdma_chan->dchan.device_node,
+ 			      &mport->dma.channels);
+ 	}
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.4
+
