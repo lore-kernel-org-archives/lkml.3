@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaBZBKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:10:24 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47842 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038AbaBZBJl (ORCPT
+	id S1752028AbaBZBJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:09:40 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44250 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964AbaBZBJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:09:41 -0500
+	Tue, 25 Feb 2014 20:09:33 -0500
 From: behanw@converseincode.com
 To: mmarek@suse.cz, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         x86@kernel.org, sparse@chrisli.org
@@ -16,9 +16,9 @@ Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
         Behan Webster <behanw@converseincode.com>,
         Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH 5/5] x86 kbuild: LLVMLinux: More cc-options added for clang
-Date: Tue, 25 Feb 2014 17:08:43 -0800
-Message-Id: <1393376923-21892-6-git-send-email-behanw@converseincode.com>
+Subject: [PATCH 3/5] kbuild: LLVMLinux: Fix LINUX_COMPILER definition script for compilation with clang
+Date: Tue, 25 Feb 2014 17:08:41 -0800
+Message-Id: <1393376923-21892-4-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393376923-21892-1-git-send-email-behanw@converseincode.com>
 References: <1393376923-21892-1-git-send-email-behanw@converseincode.com>
@@ -31,44 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan-Simon Möller <dl9pf@gmx.de>
 
-Protect more options for x86 with cc-option so that we don't get errors when
-using clang instead of gcc.  Add more or different options when using clang as
-well. Also need to enforce that SSE is off for clang and the stack is 8-byte
-aligned.
+When building the LINUX_COMPILER definition, instead of merely taking the last
+line from "$(CC) -v", grep for ' version ' in the output. This supports both
+gcc and clang.
 
 Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
 ---
- arch/x86/Makefile | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ scripts/mkcompile_h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index eeda43a..852d8f0 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -108,7 +108,7 @@ else
+diff --git a/scripts/mkcompile_h b/scripts/mkcompile_h
+index f221ddf..cfb8440 100755
+--- a/scripts/mkcompile_h
++++ b/scripts/mkcompile_h
+@@ -76,7 +76,7 @@ UTS_TRUNCATE="cut -b -$UTS_LEN"
+   echo \#define LINUX_COMPILE_BY \"`echo $LINUX_COMPILE_BY | $UTS_TRUNCATE`\"
+   echo \#define LINUX_COMPILE_HOST \"`echo $LINUX_COMPILE_HOST | $UTS_TRUNCATE`\"
  
-         # this works around some issues with generating unwind tables in older gccs
-         # newer gccs do it by default
--        KBUILD_CFLAGS += -maccumulate-outgoing-args
-+        KBUILD_CFLAGS += $(call cc-option,-maccumulate-outgoing-args)
- endif
+-  echo \#define LINUX_COMPILER \"`$CC -v 2>&1 | tail -n 1`\"
++  echo \#define LINUX_COMPILER \"`$CC -v 2>&1 | grep ' version '`\"
+ ) > .tmpcompile
  
- # Make sure compiler does not have buggy stack-protector support.
-@@ -144,6 +144,12 @@ endif
- sp-$(CONFIG_X86_32) := esp
- sp-$(CONFIG_X86_64) := rsp
- 
-+# enforce no-sse for clang
-+ifneq ($(COMPILER),clang)
-+        KBUILD_CFLAGS += $(call cc-option,-mno-sse)
-+        KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
-+endif
-+
- # do binutils support CFI?
- cfi := $(call as-instr,.cfi_startproc\n.cfi_rel_offset $(sp-y)$(comma)0\n.cfi_endproc,-DCONFIG_AS_CFI=1)
- # is .cfi_signal_frame supported too?
+ # Only replace the real compile.h if the new one is different,
 -- 
 1.8.3.2
 
