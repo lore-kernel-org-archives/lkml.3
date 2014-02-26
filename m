@@ -1,120 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaBZAQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:16:38 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:48502 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773AbaBZAQd (ORCPT
+	id S1753711AbaBZAQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:16:11 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:33733 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651AbaBZAQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:16:33 -0500
-Date: Tue, 25 Feb 2014 16:15:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140226001558.GY8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140223063426.GT4250@linux.vnet.ibm.com>
- <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
- <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
- <20140224172110.GO8264@linux.vnet.ibm.com>
- <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
- <20140224185341.GU8264@linux.vnet.ibm.com>
- <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
- <20140224223701.GC8264@linux.vnet.ibm.com>
- <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
- <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022600-1542-0000-0000-0000069E3CEF
+	Tue, 25 Feb 2014 19:16:04 -0500
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org
+Cc: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 09/12] clk: bcm281xx: implement prerequisite clocks
+Date: Tue, 25 Feb 2014 18:15:49 -0600
+Message-Id: <1393373752-30875-10-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393373752-30875-1-git-send-email-elder@linaro.org>
+References: <1393373752-30875-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 10:05:52PM -0800, Linus Torvalds wrote:
-> On Mon, Feb 24, 2014 at 3:35 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Litmus test 1:
-> >
-> >     p = atomic_read(pp, consume);
-> >     if (p == &variable)
-> >         return p->val;
-> >
-> >    is *NOT* ordered
-> 
-> Btw, don't get me wrong. I don't _like_ it not being ordered, and I
-> actually did spend some time thinking about my earlier proposal on
-> strengthening the 'consume' ordering.
+Allow a clock to specify a "prerequisite" clock.  The prerequisite
+clock must be initialized before the clock that depends on it.  A
+prerequisite clock is defined initially by its name; as that clock
+gets initialized the name gets replaced with a pointer to its clock
+structure pointer.  In order to allow getting a reference to a clock
+by its name we call clkdev_add() for each clock as it gets set up.
+A new clk_lookup structure is added to the kona_clk type for this
+purpose.
 
-Understood.
+Rework the KONA_CLK() macro, and define a new KONA_CLK_PREREQ()
+variant that allows a prerequisite clock to be specified.
 
-> I have for the last several years been 100% convinced that the Intel
-> memory ordering is the right thing, and that people who like weak
-> memory ordering are wrong and should try to avoid reproducing if at
-> all possible. But given that we have memory orderings like power and
-> ARM, I don't actually see a sane way to get a good strong ordering.
-> You can teach compilers about cases like the above when they actually
-> see all the code and they could poison the value chain etc. But it
-> would be fairly painful, and once you cross object files (or even just
-> functions in the same compilation unit, for that matter), it goes from
-> painful to just "ridiculously not worth it".
+There exist clocks that could specify more than one prequisite, but
+almost all clocks only ever use one.  We can add support for more
+than one if we find we need it at some point.
 
-And I have indeed seen a post or two from you favoring stronger memory
-ordering over the past few years.  ;-)
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/bcm/clk-kona-setup.c |   16 ++++++++++----
+ drivers/clk/bcm/clk-kona.c       |   45 ++++++++++++++++++++++++++++++++++++++
+ drivers/clk/bcm/clk-kona.h       |   20 ++++++++++++++---
+ 3 files changed, 74 insertions(+), 7 deletions(-)
 
-> So I think the C semantics should mirror what the hardware gives us -
-> and do so even in the face of reasonable optimizations - not try to do
-> something else that requires compilers to treat "consume" very
-> differently.
-
-I am sure that a great many people would jump for joy at the chance to
-drop any and all RCU-related verbiage from the C11 and C++11 standards.
-(I know, you aren't necessarily advocating this, but given what you
-say above, I cannot think what verbiage that would remain.)
-
-The thing that makes me very nervous is how much the definition of
-"reasonable optimization" has changed.  For example, before the
-2.6.10 Linux kernel, we didn't even apply volatile semantics to
-fetches of RCU-protected pointers -- and as far as I know, never
-needed to.  But since then, there have been several cases where the
-compiler happily hoisted a normal load out of a surprisingly large loop.
-Hardware advances can come into play as well.  For example, my very first
-RCU work back in the early 90s was on a parallel system whose CPUs had
-no branch-prediction hardware (80386 or 80486, I don't remember which).
-Now people talk about compilers using branch prediction hardware to
-implement value-speculation optimizations.  Five or ten years from now,
-who knows what crazy optimizations might be considered to be completely
-reasonable?
-
-Are ARM and Power really the bad boys here?  Or are they instead playing
-the role of the canary in the coal mine?
-
-> If people made me king of the world, I'd outlaw weak memory ordering.
-> You can re-order as much as you want in hardware with speculation etc,
-> but you should always *check* your speculation and make it *look* like
-> you did everything in order. Which is pretty much the intel memory
-> ordering (ignoring the write buffering).
-
-Speaking as someone who got whacked over the head with DEC Alpha when
-first presenting RCU to the Digital UNIX folks long ago, I do have some
-sympathy with this line of thought.  But as you say, it is not the world
-we currently live in.
-
-Of course, in the final analysis, your kernel, your call.
-
-							Thanx, Paul
+diff --git a/drivers/clk/bcm/clk-kona-setup.c b/drivers/clk/bcm/clk-kona-setup.c
+index 757de19..973053b 100644
+--- a/drivers/clk/bcm/clk-kona-setup.c
++++ b/drivers/clk/bcm/clk-kona-setup.c
+@@ -685,6 +685,9 @@ peri_clk_setup(struct peri_clk_data *data, struct clk_init_data *init_data)
+ 
+ static void bcm_clk_teardown(struct kona_clk *bcm_clk)
+ {
++	/* There is no function defined for this (yet) */
++	/* clkdev_remove(&bcm_clk->cl); */
++
+ 	switch (bcm_clk->type) {
+ 	case bcm_clk_peri:
+ 		peri_clk_teardown(bcm_clk->data, &bcm_clk->init_data);
+@@ -718,6 +721,7 @@ static void kona_clk_teardown(struct clk *clk)
+ struct clk *kona_clk_setup(struct kona_clk *bcm_clk)
+ {
+ 	struct clk_init_data *init_data = &bcm_clk->init_data;
++	const char *name = init_data->name;
+ 	struct clk *clk = NULL;
+ 
+ 	switch (bcm_clk->type) {
+@@ -727,14 +731,13 @@ struct clk *kona_clk_setup(struct kona_clk *bcm_clk)
+ 		break;
+ 	default:
+ 		pr_err("%s: clock type %d invalid for %s\n", __func__,
+-			(int)bcm_clk->type, init_data->name);
++			(int)bcm_clk->type, name);
+ 		return NULL;
+ 	}
+ 
+ 	/* Make sure everything makes sense before we set it up */
+ 	if (!kona_clk_valid(bcm_clk)) {
+-		pr_err("%s: clock data invalid for %s\n", __func__,
+-			init_data->name);
++		pr_err("%s: clock data invalid for %s\n", __func__, name);
+ 		goto out_teardown;
+ 	}
+ 
+@@ -742,11 +745,16 @@ struct clk *kona_clk_setup(struct kona_clk *bcm_clk)
+ 	clk = clk_register(NULL, &bcm_clk->hw);
+ 	if (IS_ERR(clk)) {
+ 		pr_err("%s: error registering clock %s (%ld)\n", __func__,
+-			init_data->name, PTR_ERR(clk));
++			name, PTR_ERR(clk));
+ 		goto out_teardown;
+ 	}
+ 	BUG_ON(!clk);
+ 
++	/*  Make it so we can look the clock up using clk_find() */
++	bcm_clk->cl.con_id = name;
++	bcm_clk->cl.clk = clk;
++	clkdev_add(&bcm_clk->cl);
++
+ 	return clk;
+ out_teardown:
+ 	bcm_clk_teardown(bcm_clk);
+diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+index 6caed3b..37f7861 100644
+--- a/drivers/clk/bcm/clk-kona.c
++++ b/drivers/clk/bcm/clk-kona.c
+@@ -1193,6 +1193,48 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
+ 	return true;
+ }
+ 
++static bool __kona_clk_init(struct kona_clk *bcm_clk);
++static bool __kona_prereq_init(struct kona_clk *bcm_clk)
++{
++	struct clk *clk;
++	struct clk_hw *hw;
++	struct kona_clk *prereq;
++
++	BUG_ON(clk_is_initialized(bcm_clk));
++
++	if (!bcm_clk->prereq)
++		return true;
++
++	clk = clk_get(NULL, bcm_clk->prereq);
++	if (IS_ERR(clk)) {
++		pr_err("%s: unable to get prereq clock %s for %s\n",
++			__func__, bcm_clk->prereq, bcm_clk->init_data.name);
++		return false;
++	}
++	hw = __clk_get_hw(clk);
++	if (!hw) {
++		pr_err("%s: null hw pointer for clock %s\n", __func__,
++			bcm_clk->init_data.name);
++		return false;
++	}
++	prereq = to_kona_clk(hw);
++	if (prereq->ccu != bcm_clk->ccu) {
++		pr_err("%s: prereq clock %s CCU different for clock %s\n",
++			__func__, bcm_clk->prereq, bcm_clk->init_data.name);
++		return false;
++	}
++
++	/* Initialize the prerequisite clock first */
++	if (!__kona_clk_init(prereq)) {
++		pr_err("%s: failed to init prereq %s for clock %s\n",
++			__func__, bcm_clk->prereq, bcm_clk->init_data.name);
++		return false;
++	}
++	bcm_clk->prereq_clk = clk;
++
++	return true;
++}
++
+ static bool __kona_clk_init(struct kona_clk *bcm_clk)
+ {
+ 	bool ret = false;
+@@ -1200,6 +1242,9 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
+ 	if (clk_is_initialized(bcm_clk))
+ 		return true;
+ 
++	if (!__kona_prereq_init(bcm_clk))
++		return false;
++
+ 	switch (bcm_clk->type) {
+ 	case bcm_clk_peri:
+ 		ret = __peri_clk_init(bcm_clk);
+diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
+index 01fa776..27e0913 100644
+--- a/drivers/clk/bcm/clk-kona.h
++++ b/drivers/clk/bcm/clk-kona.h
+@@ -22,6 +22,8 @@
+ #include <linux/device.h>
+ #include <linux/of.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/debugfs.h>
+ 
+ #define	BILLION		1000000000
+ 
+@@ -407,6 +409,11 @@ struct kona_clk {
+ 	struct ccu_data *ccu;	/* ccu this clock is associated with */
+ 	enum bcm_clk_type type;
+ 	u32 flags;		/* BCM_CLK_KONA_FLAGS_* below */
++	struct clk_lookup cl;
++	union {
++		const char *prereq;
++		struct clk *prereq_clk;
++	};
+ 	union {
+ 		void *data;
+ 		struct peri_clk_data *peri;
+@@ -422,15 +429,22 @@ struct kona_clk {
+ #define BCM_CLK_KONA_FLAGS_INITIALIZED	((u32)1 << 0)	/* Clock initialized */
+ 
+ /* Initialization macro for an entry in a CCU's kona_clks[] array. */
+-#define KONA_CLK(_ccu_name, _clk_name, _type)				\
+-	{								\
++#define ___KONA_CLK_COMMON(_ccu_name, _clk_name, _type)			\
+ 		.init_data	= {					\
+ 			.name = #_clk_name,				\
+ 			.ops = &kona_ ## _type ## _clk_ops,		\
+ 		},							\
+ 		.ccu		= &_ccu_name ## _ccu_data,		\
+ 		.type		= bcm_clk_ ## _type,			\
+-		.data		= &_clk_name ## _data,			\
++		.data		= &_clk_name ## _data
++#define KONA_CLK_PREREQ(_ccu_name, _clk_name, _type, _prereq)		\
++	{								\
++		.prereq		= #_prereq,				\
++		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
++	}
++#define KONA_CLK(_ccu_name, _clk_name, _type)				\
++	{								\
++		___KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
+ 	}
+ #define LAST_KONA_CLK	{ .type = bcm_clk_none }
+ 
+-- 
+1.7.9.5
 
