@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616AbaBZVO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 16:14:28 -0500
-Received: from canardo.mork.no ([148.122.252.1]:60739 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750999AbaBZVOZ convert rfc822-to-8bit (ORCPT
+	id S1753943AbaBZVQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:16:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33037 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaBZVP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 16:14:25 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: David Miller <davem@davemloft.net>
-Cc: freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] AX88179_178A: Add VID:DID for Lenovo OneLinkDock Gigabit LAN
-Organization: m
-References: <1393404871-2248-1-git-send-email-freddy@asix.com.tw>
-	<87zjle6pif.fsf@nemi.mork.no>
-	<20140226.154801.1466276966991949680.davem@davemloft.net>
-Date: Wed, 26 Feb 2014 22:14:10 +0100
-In-Reply-To: <20140226.154801.1466276966991949680.davem@davemloft.net> (David
-	Miller's message of "Wed, 26 Feb 2014 15:48:01 -0500 (EST)")
-Message-ID: <87lhwx7f19.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130009 (Ma Gnus v0.9) Emacs/23.4 (gnu/linux)
+	Wed, 26 Feb 2014 16:15:59 -0500
+Date: Wed, 26 Feb 2014 22:15:40 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>, Andy Lutomirski <luto@amacapital.net>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+Message-ID: <20140226211540.GE22802@laptop.programming.kicks-ass.net>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+ <530D53EF.9090706@amacapital.net>
+ <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+ <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+ <20140226185513.GL22728@two.firstfloor.org>
+ <CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
+ <530E3E47.8010205@gmail.com>
+ <CALCETrUHiDqT+VRbdEnGsEkMFqQt+ZqX+RTenp1ets8XMhrQ2Q@mail.gmail.com>
+ <530E4B42.5090401@gmail.com>
+ <20140226205322.GM22728@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226205322.GM22728@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
+On Wed, Feb 26, 2014 at 09:53:22PM +0100, Andi Kleen wrote:
+> > Is there some reason not to enable frame pointers?
+> 
+> It makes code slower.
+> 
+> Especially on Atom CPUs, where it causes pipeline stalls, but
 
-> From: Bjørn Mork <bjorn@mork.no>
-> Date: Wed, 26 Feb 2014 13:13:12 +0100
->
->> freddy@asix.com.tw writes:
->> 
->>> From: Freddy Xin <freddy@asix.com.tw>
->>>
->>> Add VID:DID for Lenovo OneLinkDock Gigabit LAN
->> 
->> This is the same patch Keith Packard sent, but with a slighly different
->> description.  I take that as another proof that we should not attempt to
->> describe devices in these drivers.  Describe the driver instead.
->
-> Are you saying that this patch needs to be implemented differently?
+Yeah, but nobody sane cares about the in-order atom crap CPUs.
 
-No, sorry for being confusing.  The patch is fine.  But Keith sent it
-first...
+> also to some degree on others, because you lose one register and
+> spend a little bit of time setting it up, so making small
+> functions more expensive.
 
-The other comment is more of a personal opinion on the driver style.  In
-any case, it's something that can be fixed up later. If at all.
+Luckily GCC is rather good at inlining a lot of those. Esp. with LTO
+like stuff.
 
+> Another issue is that you can't enable it on a lot of existing
+> libraries, sometimes not even with a recompile. For example
+> glibc assembler functions do not support it at all, which
+> is a very common case.
 
-Bjørn
+They're mostly all leaf functions, so it doesn't matter much if
+anything.
+
+> They are designed to use dwarf, but in practice dwarf
+> is very slow (perf has to save the stack for every sample)
+> and in practice doesn't always work (too small stack saving,
+> wrong annotations, out of date or broken dwarf library etc.) 
+> 
+> LBR callstack mode is not perfect either, and it has 
+> its own tradeoffs, but in many cases it seems to be a good
+> and more efficient replacement for dwarf, when FP is not available.
+
+But except for the lobbying Intel put into disabling FP because of that
+piece of shit Atom we'd all still have it enabled.
