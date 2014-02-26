@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406AbaBZFH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:07:56 -0500
-Received: from [65.55.88.11] ([65.55.88.11]:33137 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751290AbaBZFHy (ORCPT
+	id S1751727AbaBZFIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:08:13 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:56738 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaBZFIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:07:54 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>
-CC: <timur@tabi.org>, <tiwai@suse.de>, <lars@metafoo.de>,
-        <Guangyu.Chen@freescale.com>, <fabio.estevam@freescale.com>,
-        <shawn.guo@linaro.org>, <denis@eukrea.com>, <mpa@pengutronix.de>,
-        <s.hauer@pengutronix.de>, <moinejf@free.fr>,
-        <kuninori.morimoto.gx@renesas.com>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 00/10] Simplify the code of TDM slot setting
-Date: Wed, 26 Feb 2014 11:59:25 +0800
-Message-ID: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Wed, 26 Feb 2014 00:08:10 -0500
+X-AuditID: cbfee690-b7f266d00000287c-20-530d76b8b870
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 1/3] drivers: clk: add samsung common clock config option
+Date: Wed, 26 Feb 2014 14:24:05 +0900
+Message-id: <1393392247-6247-2-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1393392247-6247-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1393392247-6247-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t8zA90dZbzBBgveq1lsenyN1eLyrjls
+	FjPO72OyeDrhIpvFoq1f2B1YPe5c28PmsXlJvUffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	HHmUXLCLp6L99HfGBsYVXF2MnBwSAiYS3RsamSFsMYkL99azdTFycQgJLGOUmN3wmQmm6MW/
+	eWwgtpDAIkaJNb8iIYramCQW/jnMCpJgE9CVePJ+LtgkEYFsiUuzbrGA2MwCoRJP580EaxYW
+	8JRYdH4DI4jNIqAqcWPjcbA4r4C7xL8Fy4F6OYCWKUjMmWQDEuYU8JB43DWHBWKvu8T14xuZ
+	QfZKCPxnk7i06yQrxBwBiW+TD7FA9MpKbDoA9YykxMEVN1gmMAovYGRYxSiaWpBcUJyUXmSi
+	V5yYW1yal66XnJ+7iRESwhN2MN47YH2IMRlo3ERmKdHkfGAM5JXEGxqbGVmYmpgaG5lbmpEm
+	rCTOq/YoKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY9FsU9250Q/F9rJ/el3999yF9r1r
+	vh0KUlS8ZxrxQHcV814Bt52h579Jb9r4suf8rIiXlqwyF+O9/hQc4nyyim/9h98/9Nl8D/o+
+	YFub5dKVW7L/7QnrDfwfWL9O/F17mM093MVfmSWhtr+q7pbeOxUj11X16+4VT/31yaGjzL9y
+	+bLouvCS20osxRmJhlrMRcWJAMQOmOV3AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t9jAd0dZbzBBreXK1tsenyN1eLyrjls
+	FjPO72OyeDrhIpvFoq1f2B1YPe5c28PmsXlJvUffllWMHp83yQWwRDUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZhx5lFywi6ei/fR3xgbGFVxdjJwcEgImEi/+zWODsMUk
+	LtxbD2YLCSxilFjzK7KLkQvIbmOSWPjnMCtIgk1AV+LJ+7nMILaIQLbEpVm3WEBsZoFQiafz
+	ZoI1Cwt4Siw6v4ERxGYRUJW4sfE4WJxXwF3i34LlQL0cQMsUJOZMsgEJcwp4SDzumsMCsddd
+	4vrxjcwTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOkGfSOxhXNVgcYhTgYFTi
+	4Q1g4Q0WYk0sK67MPcQowcGsJMIrnQ0U4k1JrKxKLcqPLyrNSS0+xJgMdNREZinR5Hxg9OaV
+	xBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6N4ZHzFyzfznwXr
+	zHNYURm9QNbKVfnwXjM1Y/WqyuXCO6f7f/kpaPdr6tolXP25k5jqWnZ8vjT/LUultpKSu+K5
+	8konffVwloPHL4WvF2VPn/NRK+9QflXey7wvkiz20320bGP4e5ftPn1Gc1ZP9k+nyWekfv++
+	JaC3fLfDJL4PVRXNK6tzQpRYijMSDbWYi4oTAa9QAX7UAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+add samsung common clock config option and let ARCH_EXYNOS or ARCH_S3CXXXX
+select this if they want to use samsung common clock infrastructure.
 
-Xiubo Li (10):
-  ASoC: core: Add snd_soc_dai_set_tdm_slot_xlate().
-  ASoC: fsl-utils: Add fsl_asoc_of_xlate_tdm_slot_mask() support.
-  ASoC: fsl-esai: Add .of_xlate_tdm_slot_mask() support.
-  ASoC: fsl-ssi: Add .of_xlate_tdm_slot_mask() support.
-  ASoC: imx-ssi: Add .of_xlate_tdm_slot_mask() support.
-  ASoC: simple-card: Use snd_soc_dai_set_tdm_slot_xlate()
-  ASoC: blackfin: bf5xx-ad1836: Use snd_soc_dai_set_tdm_slot_xlate()
-  ASoC: blackfin: bf5xx-ad193x: Use snd_soc_dai_set_tdm_slot_xlate()
-  ASoC: fsl: eukrea-tlv320: Use snd_soc_dai_set_tdm_slot_xlate()
-  ASoC: fsl: wm1133-ev1: Use snd_soc_dai_set_tdm_slot_xlate()
+CC: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ drivers/clk/Kconfig  |   10 ++++++++++
+ drivers/clk/Makefile |    2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
- include/sound/soc-dai.h           |  3 +++
- sound/soc/blackfin/bf5xx-ad1836.c |  2 +-
- sound/soc/blackfin/bf5xx-ad193x.c |  4 ++--
- sound/soc/fsl/Kconfig             |  3 +++
- sound/soc/fsl/eukrea-tlv320.c     |  2 +-
- sound/soc/fsl/fsl_esai.c          |  2 ++
- sound/soc/fsl/fsl_ssi.c           |  2 ++
- sound/soc/fsl/fsl_utils.c         | 27 +++++++++++++++++++++++++++
- sound/soc/fsl/fsl_utils.h         |  4 +++-
- sound/soc/fsl/imx-ssi.c           |  2 ++
- sound/soc/fsl/wm1133-ev1.c        | 11 +----------
- sound/soc/generic/simple-card.c   |  7 +++----
- sound/soc/soc-core.c              | 33 ++++++++++++++++++++++++++++-----
- 13 files changed, 78 insertions(+), 24 deletions(-)
-
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 7641965..d93a325 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -23,6 +23,16 @@ config COMMON_CLK
+ menu "Common Clock Framework"
+ 	depends on COMMON_CLK
+ 
++config COMMON_CLK_SAMSUNG
++	bool "Clock driver for Samsung SoCs"
++	depends on ARCH_S3C64XX || ARCH_S3C24XX || ARCH_EXYNOS || ARM64
++	---help---
++          Supports clocking on Exynos SoCs:
++	  - Exynos5250, Exynos5420 board.
++	  - Exynos4 boards.
++	  - S3C2412, S3C2416, S3C2466 boards.
++	  - S3C64XX boards.
++
+ config COMMON_CLK_WM831X
+ 	tristate "Clock driver for WM831x/2x PMICs"
+ 	depends on MFD_WM831X
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index a367a98..f1da6ee 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -38,7 +38,7 @@ obj-$(CONFIG_PLAT_ORION)		+= mvebu/
+ obj-$(CONFIG_ARCH_MXS)			+= mxs/
+ obj-$(CONFIG_COMMON_CLK_QCOM)		+= qcom/
+ obj-$(CONFIG_ARCH_ROCKCHIP)		+= rockchip/
+-obj-$(CONFIG_PLAT_SAMSUNG)		+= samsung/
++obj-$(CONFIG_COMMON_CLK_SAMSUNG)	+= samsung/
+ obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= shmobile/
+ obj-$(CONFIG_ARCH_SIRF)			+= sirf/
+ obj-$(CONFIG_ARCH_SOCFPGA)		+= socfpga/
 -- 
-1.8.4
-
+1.7.9.5
 
