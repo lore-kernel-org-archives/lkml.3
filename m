@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaBZDoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 22:44:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56887 "EHLO mx1.redhat.com"
+	id S1752466AbaBZDpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 22:45:44 -0500
+Received: from ozlabs.org ([203.10.76.45]:50203 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaBZDn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 22:43:59 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: acme@ghostprotocols.net, jolsa@redhat.com, eranian@google.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/3] perf: fix synthesizing mmaps for threads
-Date: Tue, 25 Feb 2014 22:43:47 -0500
-Message-Id: <1393386227-149412-4-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
-References: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
+	id S1751940AbaBZDpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 22:45:42 -0500
+Message-ID: <1393386338.29388.5.camel@concordia>
+Subject: Re: [PATCH] powerpc: warn users of smt-snooze-delay that the API
+ isn't there anymore
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        Wang Dongsheng <dongsheng.wang@freescale.com>,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Date: Wed, 26 Feb 2014 14:45:38 +1100
+In-Reply-To: <1393368002.6314.10.camel@pasglop>
+References: <1393028074-26797-1-git-send-email-cody@linux.vnet.ibm.com>
+	 <530C4D57.1030905@linux.vnet.ibm.com> <1393368002.6314.10.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if a process creates a bunch of threads using pthread_create
-and then perf is run in system_wide mode, the mmaps for those threads
-are not captured with a synthesized mmap event.
+On Wed, 2014-02-26 at 09:40 +1100, Benjamin Herrenschmidt wrote:
+> On Tue, 2014-02-25 at 13:29 +0530, Deepthi Dharwar wrote:
+> > We currently do not use smt-snooze-delay in the kernel.
+> > The sysfs entries needs to  be retained until we do a clean up
+> > ppc64_cpu
+> > util that uses these entries to determine SMT,
+> > clean up patch for this has already been posted out by Prerna.
+> > Once, we have the ppc64_cpu changes in, we can look to clean up these
+> > parts from the kernel.
+> 
+> We generally shouldn't change user visible interfaces.
+> 
+> People still have old versions of ppc64_cpu, we must not break them
 
-The reason is those threads are not visible when walking the /proc/
-directory looking for /proc/<pid>/maps files.  Instead they are discovered
-using the /proc/<pid>/tasks file (which the synthesized comm event uses).
+Yeah we can't remove the file entirely, at least for a few more years.
 
-This causes problems when a program is trying to map a data address to a
-tid.  Because the tid has no maps, the event is dropped.  Changing the program
-to look up using the pid instead of the tid, finds the correct maps but creates
-ugly hacks in the program to carry the correct tid around.
+ppc64_cpu should never have used that file to determine if a cpu existed, but
+it did, so we're stuck with it.
 
-Fix this by synthesizing mmap events for each tid found in the /proc/<pid>/tasks
-file.
+What we can do is remove the unused percpu, and just leave the file in sysfs,
+and have it print a warning when anyone touches it.
 
-This may not be entirely clean but it seems to work.
+cheers
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/util/event.c   | 15 +++++++++++----
- tools/perf/util/machine.c |  4 ++--
- 2 files changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 086c7c8..09c53bb 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -93,10 +93,13 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
- }
- 
- static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
--					 union perf_event *event, pid_t pid,
-+					 union perf_event *event,
-+					 union perf_event *mmap_event,
-+					 pid_t pid,
- 					 int full,
- 					 perf_event__handler_t process,
--					 struct machine *machine)
-+					 struct machine *machine,
-+					 bool mmap_data)
- {
- 	char filename[PATH_MAX];
- 	size_t size;
-@@ -168,6 +171,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
- 			tgid = -1;
- 			break;
- 		}
-+
-+		/* process the thread's maps too */
-+		perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
-+						  process, machine, mmap_data);
- 	}
- 
- 	closedir(tasks);
-@@ -331,8 +338,8 @@ static int __event__synthesize_thread(union perf_event *comm_event,
- 				      struct perf_tool *tool,
- 				      struct machine *machine, bool mmap_data)
- {
--	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
--						 process, machine);
-+	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, mmap_event, pid,
-+						 full, process, machine, mmap_data);
- 	if (tgid == -1)
- 		return -1;
- 	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 813e94e..eb26544 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1026,7 +1026,7 @@ int machine__process_mmap2_event(struct machine *machine,
- 	}
- 
- 	thread = machine__findnew_thread(machine, event->mmap2.pid,
--					event->mmap2.pid);
-+					event->mmap2.tid);
- 	if (thread == NULL)
- 		goto out_problem;
- 
-@@ -1074,7 +1074,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	}
- 
- 	thread = machine__findnew_thread(machine, event->mmap.pid,
--					 event->mmap.pid);
-+					 event->mmap.tid);
- 	if (thread == NULL)
- 		goto out_problem;
- 
--- 
-1.7.11.7
 
