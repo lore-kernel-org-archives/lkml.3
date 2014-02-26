@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960AbaBZJcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 04:32:14 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:33968 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaBZJcK (ORCPT
+	id S1751550AbaBZJfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 04:35:53 -0500
+Received: from forward2h.mail.yandex.net ([84.201.187.147]:60369 "EHLO
+	forward2h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaBZJfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 04:32:10 -0500
-Date: Wed, 26 Feb 2014 09:32:03 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [PATCH V1 2/3] MFD: da9052: Add new DA9053 BC chip variant
-Message-ID: <20140226093203.GK9195@lee--X1>
-References: <201402191637.s1JGb45N017694@swsrvapps-02.lan>
- <20140225085701.GD19099@lee--X1>
- <24DF37198A1E704D9811D8F72B87EB51BCFDB5D2@NB-EX-MBX02.diasemi.com>
- <20140225115036.GF13246@lee--X1>
- <20140225121555.GB25940@sirena.org.uk>
- <20140225124050.GA7571@lee--X1>
- <20140225230721.GA2927@sirena.org.uk>
+	Wed, 26 Feb 2014 04:35:50 -0500
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <bitbucket@online.de>
+Cc: Juri Lelli <juri.lelli@gmail.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140226090700.GG18404@twins.programming.kicks-ass.net>
+References: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
+ <1393361805.12438.6.camel@HP-250-G1-Notebook-PC>
+ <1393382258.5142.4.camel@marge.simpson.net> <20140226090700.GG18404@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH] sched/rt: fix rt timer activation/deactivation
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Message-Id: <341791393407342@web8h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 26 Feb 2014 13:35:42 +0400
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140225230721.GA2927@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > The advice here is usually that sending against -next is a good proxy
-> > > for sending against the individual tree without having to figure out all
-> > > the different trees - almost all of the time the effect is the same.
-> > > This only applies when sending patches via e-mail, for git pulls it's an
-> > > absolute no of course.
-> 
-> > Good point. But it's worth reiterating that this should only be done
-> > if you have dependencies which haven't yet reached Mainline. 
-> 
-> It can be worth doing anyway with a subsystem that's actively developed
-> since sometimees the dependencies are the other way - the APIs in Linus'
-> tree may have gone away.
 
-Then what happens if the tree that your patch finally gets sucked into
-is pulled before the one you've written your code against? I'd say
-basing your code on -next is generally a bad idea.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+26.02.2014, 13:07, "Peter Zijlstra" <peterz@infradead.org>:
+> On Wed, Feb 26, 2014 at 03:37:38AM +0100, Mike Galbraith wrote:
+>
+>> šBTW, I noticed you can no longer turn the turn the noisy thing off since
+>> šwe grew DL. šI added an old SGI boot parameter to tell it to go away.
+>
+> You're talking about the rt badnwidth timer, right?
+>
+> š1) why won't it go away with DL added?
+
+We know nothing about rt_time and rt_runtime values, when we are doing
+update_curr_dl().
+
+rt_time maybe not zero, so we increment rt_time.
+
+rt_rq->rt_runtime maybe less than maximum available for RT(and for dl too),
+because someone could borrow a part of rt_runtime during previous
+balance_runtime().
+
+If dl task uses all available runtime, we always will have "idle = 0"
+
+        if (rt_rq->rt_time || rt_rq->rt_nr_running)
+                idle = 0;
+
+in do_sched_rt_period_timer(). Timer will be restarted.
+
+This is boundary case, of course.
+
+> š2) it should never appear when !rt_bandwidth_enabled(), so if you set
+> šsysctl_sched_rt_runtime to -1 all this should go away already, no extra
+> špatches required.
