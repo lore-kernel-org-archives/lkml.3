@@ -1,152 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343AbaBZOvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:51:19 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37890 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaBZOvQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:51:16 -0500
-Message-ID: <530DFF4C.8080807@ti.com>
-Date: Wed, 26 Feb 2014 16:50:52 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752653AbaBZOvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:51:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37179 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaBZOvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:51:21 -0500
+Date: Wed, 26 Feb 2014 15:50:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
+        riel@redhat.com, peterz@infradead.org, pbonzini@redhat.com,
+        mingo@kernel.org, mgorman@suse.de, kirill.shutemov@linux.intel.com,
+        heiko.carstens@de.ibm.com, hannes@cmpxchg.org,
+        gerald.schaefer@de.ibm.com, ebiederm@xmission.com, aarcange@redhat.com,
+        athorlton@sgi.com
+Subject: Re: +
+	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch added
+	to -mm tree
+Message-ID: <20140226145025.GA12571@redhat.com>
+References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com>
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>	 <1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>	 <530DE8A9.9050809@ti.com> <1393426623.3248.70.camel@paszta.hi.pengutronix.de>
-In-Reply-To: <1393426623.3248.70.camel@paszta.hi.pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="tEHsptXr4FFpWcoGvwDA40KVVAmjgkgcU"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530D9F50.1080400@de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tEHsptXr4FFpWcoGvwDA40KVVAmjgkgcU
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 02/26, Christian Borntraeger wrote:
+>
+> On 26/02/14 00:53, akpm@linux-foundation.org wrote:
+> > Subject: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch added to -mm tree
+> > To: athorlton@sgi.com,aarcange@redhat.com,borntraeger@de.ibm.com,ebiederm@xmission.com,gerald.schaefer@de.ibm.com,hannes@cmpxchg.org,heiko.carstens@de.ibm.com,kirill.shutemov@linux.intel.com,mgorman@suse.de,mingo@kernel.org,oleg@redhat.com,pbonzini@redhat.com,peterz@infradead.org,riel@redhat.com,rientjes@google.com,schwidefsky@de.ibm.com,viro@zeniv.linux.org.uk
+> > From: akpm@linux-foundation.org
+> > Date: Tue, 25 Feb 2014 15:53:13 -0800
+> >
+> >
+> > The patch titled
+> >      Subject: mm: revert "thp: make MADV_HUGEPAGE check for mm->def_flags"
+> > has been added to the -mm tree.  Its filename is
+> >      mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+> >
+> > This patch should soon appear at
+> >     http://ozlabs.org/~akpm/mmots/broken-out/mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+> > and later at
+> >     http://ozlabs.org/~akpm/mmotm/broken-out/mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+>
+>
+> NAK.
+>
+> Since 2012 qemu does call "qemu_madvise(new_block->host, size, QEMU_MADV_HUGEPAGE);" for all kvm pages.
+> (commit ad0b5321f1f797274603ebbe20108b0750baee94 Call MADV_HUGEPAGE for guest RAM allocations) so this
+> breaks any recent kvm guest on s390.
 
-On 26/02/14 16:57, Philipp Zabel wrote:
-> Hi Tomi,
->=20
-> Am Mittwoch, den 26.02.2014, 15:14 +0200 schrieb Tomi Valkeinen:
->> On 25/02/14 16:58, Philipp Zabel wrote:
->>
->>> +Optional endpoint properties
->>> +----------------------------
->>> +
->>> +- remote-endpoint: phandle to an 'endpoint' subnode of a remote devi=
-ce node.
->>
->> Why is that optional? What use is an endpoint, if it's not connected t=
-o
->> something?
->=20
-> This allows to include the an empty endpoint template in a SoC dtsi for=
+Well, I can't really discuss the changes in arch/s390.
 
-> the convenience of board dts writers. Also, the same property is
-> currently listed as optional in video-interfaces.txt.
->=20
->   soc.dtsi:
-> 	display-controller {
-> 		port {
-> 			disp0: endpoint { };
-> 		};
-> 	};
->=20
->   board.dts:
-> 	#include "soc.dtsi"
-> 	&disp0 {
-> 		remote-endpoint =3D <&panel_input>;
-> 	};
-> 	panel {
-> 		port {
-> 			panel_in: endpoint {
-> 				remote-endpoint =3D <&disp0>;
-> 			};
-> 		};
-> 	};
->=20
-> Any board not using that port can just leave the endpoint disconnected.=
+But perhaps qemu can be changed to avoid MADV_HUGEPAGE on s390 ?
+Otherwise I'd suggest the change below.
+
+Oleg.
 
 
-Hmm I see. I'm against that.
+--- x/mm/huge_memory.c
++++ x/mm/huge_memory.c
+@@ -1968,8 +1968,6 @@ out:
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-
+ 	switch (advice) {
+ 	case MADV_HUGEPAGE:
+ 		/*
+@@ -1977,8 +1975,16 @@ int hugepage_madvise(struct vm_area_stru
+ 		 */
+ 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+-		if (mm->def_flags & VM_NOHUGEPAGE)
++
++/*
++ * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
++ * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
++ */
++#ifdef CONFIG_S390
++		if (vma->vm_mm->def_flags & VM_NOHUGEPAGE)
+ 			return -EINVAL;
++#endif
++
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+ 		/*
 
-I think the SoC dtsi should not contain endpoint node, or even port node
-(at least usually). It doesn't know how many endpoints, if any, a
-particular board has. That part should be up to the board dts.
-
-I've done this with OMAP as (much simplified):
-
-SoC.dtsi:
-
-dss: dss@58000000 {
-	status =3D "disabled";
-};
-
-Nothing else (relevant here). The binding documentation states that dss
-has one port, and information what data is needed for the port and endpoi=
-nt.
-
-board.dts:
-
-&dss {
-        status =3D "ok";
-
-        pinctrl-names =3D "default";
-        pinctrl-0 =3D <&dss_dpi_pins>;
-
-        dpi_out: endpoint {
-
-                remote-endpoint =3D <&tfp410_in>;
-                data-lines =3D <24>;
-        };
-};
-
-That's using the shortened version without port node.
-
-Of course, it's up to the developer how his dts looks like. But to me it
-makes sense to require the remote-endpoint property, as the endpoint, or
-even the port, doesn't make much sense if there's nothing to connect to.
-
- Tomi
-
-
-
---tEHsptXr4FFpWcoGvwDA40KVVAmjgkgcU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTDf9MAAoJEPo9qoy8lh71JaAQAJbPz+9VpNn17W+xOl/uxT2m
-7yfxwYtwoVzI3GP5CHS110ALyJh9cFQ0R/p2QEGESO1l/03gIVteCdypHUdzQDhT
-gVa7ALqhf5XrN7FneCWD4liAS1kh9vjT77p66RTKHDjH6NjSKDgPlKotUEkwasRC
-Bx1DwbEQ+6W92TyCp40rNK60buMvJr1yerA9WuPFz/nlynBvB742rYd+xBKS89oR
-kFq0ZzAeXeKrUxQ4kCk4o/Jlj+GW0QVwQiI4973m5/wfHAHVkxJ7yWD/CLRKHB0e
-82OHiHkyOBD6srbsbVGdZBSk/cdYFvpMPCBxyL1hFTWaaZ076sCDozU1RGBPyi8k
-41ERnfKWfz70aDwWo6EpG0kXDBSygwZHi20aMNi4gNQQwAHarO6zgZGGsZfyc3Z6
-pGomVCRZ4tpcEHyFmCUVm6NrocNFL9p3utQVOECC1VeLhT/Nbxaj96LKsFpBcd/d
-4yQjBPhtN22wgmT7maLOPqveUFvVItDLVWGoUeH2w5rOBzEnnTxDzzwV3R27fKvf
-T7NVF9xFTJnzt+NJChwrlTBgNTSMRThWf8YjmfWAJmk9V83esYHNo65m2DBCOcJE
-p7FiQOrG3pcrUUJD8HI98H0mEfLp52UB8kdLedJxI0NHCdO5HBHVge2M5sn3MPXT
-X+MSBcHoIVzFTpb6tGBZ
-=KzUA
------END PGP SIGNATURE-----
-
---tEHsptXr4FFpWcoGvwDA40KVVAmjgkgcU--
