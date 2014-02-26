@@ -1,39 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaBZR5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:57:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43696 "EHLO mail.zytor.com"
+	id S1752072AbaBZSEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 13:04:24 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:43849 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaBZR5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:57:52 -0500
-Message-ID: <530E2B06.5010608@zytor.com>
-Date: Wed, 26 Feb 2014 09:57:26 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751333AbaBZSEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 13:04:23 -0500
+From: Denis Carikli <denis@eukrea.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Denis Carikli <denis@eukrea.com>
+Subject: [RESEND PATCH v11] video: backlight: gpio-backlight: Add DT support.
+Date: Wed, 26 Feb 2014 19:04:05 +0100
+Message-Id: <1393437845-25564-1-git-send-email-denis@eukrea.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Chris Bainbridge <chris.bainbridge@gmail.com>, davej@redhat.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-References: <20140225060146.GA4339@debian.local> <530C7465.2080600@zytor.com> <20140225162611.GA31902@redhat.com> <530CCFD2.3050007@zytor.com> <20140226121256.GA8494@debian.local> <20140226164433.GA19341@srcf.ucam.org> <530E1A35.40506@zytor.com> <20140226171053.GA22567@srcf.ucam.org>
-In-Reply-To: <20140226171053.GA22567@srcf.ucam.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 09:10 AM, Matthew Garrett wrote:
-> On Wed, Feb 26, 2014 at 08:45:41AM -0800, H. Peter Anvin wrote:
-> 
->> Yes.  Grub can be made to behave sanely by using "linux16" and
->> "initrd16", but of course none of the distros do it that way.
-> 
-> Fedora does as of F20, but yeah, point taken.
-> 
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Eric Bénard <eric@eukrea.com>
+Signed-off-by: Denis Carikli <denis@eukrea.com>
+---
+ChangeLog v11->v11-resend:
+- Removed the Cc list because it's only one patch.
 
-Oh, good to hear.
+ChangeLog v10->v11:
+- Shrinked the Cc list.
+- Fixed the of_match_table warning.
 
-	-hpa
+ChangeLog v9->v10:
+- Only the respective maintainers, or people who responded to the patch
+  were kept in the Cc.
+- The unnecessary of_match_ptr in of_match_table was removed.
+
+ChangeLog v8->v9:
+- Added Shawn Guo in the Cc list.
+- The default-brightness-level is now a boolean default-on property,
+  the gpio is only touched if the gpio-backlight driver instance probes.
+- The code and documentation was updated accordingly.
+
+ChangeLog v7->v8:
+- The default-state was renamed to default-brightness-level.
+- default-brightness-level is now mandatory, like for backlight-pwm,
+  That way we avoid having to handle the case where it's not set,
+  which means that we would need not to set the gpio, but still
+  report a brightness value for sysfs, when not all gpio controllers are
+  able to read the gpio value.
+- switched the default-brightness-level to boolean values (0 or 1) instead
+  of using strings ("on", "off", "keep").
+- The documentation was updated accordingly.
+- The example in the documentation now uses the dts gpio defines.
+- The "backlight: gpio_backlight: Use a default state enum." patch was then
+  dropped, becuase it is not necessary anymore.
+
+ChangeLog v6->v7:
+- removed a compilation warning with the removal of the useless ret declaration.
+
+ChangeLog v5->v6:
+- The default state handling was reworked:
+  - it's now called default-state, and looks like the gpio-leds default-state.
+  - it now has a "keep" option, like for the gpio-leds.
+  - that "keep" option is the default when the default-state property is not set.
+- The documentation was updated accordingly.
+
+ChangeLog v4->v5:
+- The default-brightness property now defaults to 0 in the driver.
+- def_value int becomes a bool.
+- The check for the gpio validity has been reworked.
+---
+ .../bindings/video/backlight/gpio-backlight.txt    |   19 +++++++
+ drivers/video/backlight/gpio_backlight.c           |   60 +++++++++++++++++---
+ 2 files changed, 72 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
+
+diff --git a/Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt b/Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
+new file mode 100644
+index 0000000..a923193
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
+@@ -0,0 +1,19 @@
++gpio-backlight bindings
++
++Required properties:
++  - compatible: "gpio-backlight"
++  - gpios: describes the gpio that is used for enabling/disabling the backlight
++    (see GPIO binding[0] for more details).
++
++Optional properties:
++  - default-on: enable the backlight at boot.
++
++[0]: Documentation/devicetree/bindings/gpio/gpio.txt
++
++Example:
++
++	backlight {
++		compatible = "gpio-backlight";
++		gpios = <&gpio3 4 GPIO_ACTIVE_HIGH>;
++		default-on;
++	};
+diff --git a/drivers/video/backlight/gpio_backlight.c b/drivers/video/backlight/gpio_backlight.c
+index 81fb127..2422614 100644
+--- a/drivers/video/backlight/gpio_backlight.c
++++ b/drivers/video/backlight/gpio_backlight.c
+@@ -13,6 +13,8 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/platform_data/gpio_backlight.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+@@ -23,6 +25,7 @@ struct gpio_backlight {
+ 
+ 	int gpio;
+ 	int active;
++	int def_value;
+ };
+ 
+ static int gpio_backlight_update_status(struct backlight_device *bl)
+@@ -60,6 +63,33 @@ static const struct backlight_ops gpio_backlight_ops = {
+ 	.check_fb	= gpio_backlight_check_fb,
+ };
+ 
++static int gpio_backlight_probe_dt(struct platform_device *pdev,
++				   struct gpio_backlight *gbl)
++{
++	struct device_node *np = pdev->dev.of_node;
++	enum of_gpio_flags gpio_flags;
++	bool default_on = false;
++
++	gbl->fbdev = NULL;
++	gbl->gpio = of_get_gpio_flags(np, 0, &gpio_flags);
++
++	if (!gpio_is_valid(gbl->gpio)) {
++		if (gbl->gpio != -EPROBE_DEFER) {
++			dev_err(&pdev->dev,
++				"Error: The gpios parameter is missing or invalid.\n");
++		}
++		return gbl->gpio;
++	}
++
++	gbl->active = (gpio_flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
++
++	default_on = of_property_read_bool(np, "default-on");
++
++	gbl->def_value = default_on;
++
++	return 0;
++}
++
+ static int gpio_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct gpio_backlight_platform_data *pdata =
+@@ -67,10 +97,12 @@ static int gpio_backlight_probe(struct platform_device *pdev)
+ 	struct backlight_properties props;
+ 	struct backlight_device *bl;
+ 	struct gpio_backlight *gbl;
++	struct device_node *np = pdev->dev.of_node;
+ 	int ret;
+ 
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "failed to find platform data\n");
++	if (!pdata && !np) {
++		dev_err(&pdev->dev,
++			"failed to find platform data or device tree node.\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -79,14 +111,22 @@ static int gpio_backlight_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	gbl->dev = &pdev->dev;
+-	gbl->fbdev = pdata->fbdev;
+-	gbl->gpio = pdata->gpio;
+-	gbl->active = pdata->active_low ? 0 : 1;
++
++	if (np) {
++		ret = gpio_backlight_probe_dt(pdev, gbl);
++		if (ret)
++			return ret;
++	} else {
++		gbl->fbdev = pdata->fbdev;
++		gbl->gpio = pdata->gpio;
++		gbl->active = pdata->active_low ? 0 : 1;
++		gbl->def_value = pdata->def_value;
++	}
+ 
+ 	ret = devm_gpio_request_one(gbl->dev, gbl->gpio, GPIOF_DIR_OUT |
+ 				    (gbl->active ? GPIOF_INIT_LOW
+ 						 : GPIOF_INIT_HIGH),
+-				    pdata->name);
++				    pdata ? pdata->name : "backlight");
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "unable to request GPIO\n");
+ 		return ret;
+@@ -103,17 +143,23 @@ static int gpio_backlight_probe(struct platform_device *pdev)
+ 		return PTR_ERR(bl);
+ 	}
+ 
+-	bl->props.brightness = pdata->def_value;
++	bl->props.brightness = gbl->def_value;
+ 	backlight_update_status(bl);
+ 
+ 	platform_set_drvdata(pdev, bl);
+ 	return 0;
+ }
+ 
++static struct of_device_id gpio_backlight_of_match[] = {
++	{ .compatible = "gpio-backlight" },
++	{ /* sentinel */ }
++};
++
+ static struct platform_driver gpio_backlight_driver = {
+ 	.driver		= {
+ 		.name		= "gpio-backlight",
+ 		.owner		= THIS_MODULE,
++		.of_match_table = gpio_backlight_of_match,
+ 	},
+ 	.probe		= gpio_backlight_probe,
+ };
+-- 
+1.7.9.5
 
