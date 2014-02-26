@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaBZBV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:21:28 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:41469 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaBZBVD (ORCPT
+	id S1751971AbaBZBWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:22:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:60506 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaBZBWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:21:03 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-ee-530d417d1546
+	Tue, 25 Feb 2014 20:22:07 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-3c-530d41be62e9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
+        "'Haojian Zhuang'" <haojian.zhuang@gmail.com>
 References: <002e01cf3290$ccda9430$668fbc90$%han@samsung.com>
 In-reply-to: <002e01cf3290$ccda9430$668fbc90$%han@samsung.com>
-Subject: [PATCH 2/3] regulator: dbx500: use seq_puts() instead of seq_printf()
-Date: Wed, 26 Feb 2014 10:21:01 +0900
-Message-id: <002f01cf3291$02c7f7e0$0857e7a0$%han@samsung.com>
+Subject: [PATCH 3/3] regulator: 88pm8607: fix indent code style
+Date: Wed, 26 Feb 2014 10:22:05 +0900
+Message-id: <003001cf3291$293db3b0$7bb91b10$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
 Content-language: ko
-Thread-index: Ac8ykMzEt0AEx/NVROGPrQsXYu79GwAABOiQ
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zfd1aR95ggxsrdC3WPzjGZDH14RM2
-	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8f3pWvYPT5vkgtgjeKySUnNySxL
-	LdK3S+DKaH3bxF4wj7ui7e1ntgbGBZxdjJwcEgImEku3XGOEsMUkLtxbz9bFyMUhJLCMUeLc
-	uefMMEVbP79khEhMZ5Q4fvAUE4Tzm1Hiy4p+FpAqNgE1iS9fDrN3MXJwiAioSvx/5Q5Swyyw
-	kFFiypIHYJOEBGwlpp47ClbDKWAnMeWzAkhYWMBP4s2/32BjWIBaT984DVbOC1S+6c5FNghb
-	UOLH5HtgNcwCWhLrdx5ngrDlJTavecsMMlJCQF3i0V9diLCIxL4X78AeExEwkpgz8zQbxC+P
-	2CUmnRCEWCUg8W3yIRaIVlmJTQeg3pWUOLjiBssERolZSBbPQrJ4FpLFs5BsW8DIsopRNLUg
-	uaA4Kb3IVK84Mbe4NC9dLzk/dxMjJE4n7mC8f8D6EGMy0PqJzFKiyfnAOM8riTc0NjOyMDUx
-	NTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsZ1Z9zfKb4VuTP1af0r
-	lnv/dx4XrRbrOc2ss7FUrGqZjK3fFAb9r8febM54kKfy+AqvRtu7awwRZf/EjZ+9+btEYPn8
-	srsdnf2vZuhv2LZwl/WsmYUyJTu/7bl6zKHWvb3J4brnmi9Zu8WY3fIftj9kPDVPQffnT5k/
-	nVcdlu7hvR08ZU33bMkkJZbijERDLeai4kQA12DwSukCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd1aR95gg4mnNC3WPzjGZDH14RM2
-	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8f3pWvYPT5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzGh928ReMI+7ou3tZ7YGxgWcXYycHBICJhJb
-	P79khLDFJC7cW8/WxcjFISQwnVHi+MFTTBDOb0aJLyv6WUCq2ATUJL58OczexcjBISKgKvH/
-	lTtIDbPAQkaJKUseMIPUCAnYSkw9dxSshlPATmLKZwWQsLCAn8Sbf7/BxrAAtZ6+cRqsnBeo
-	fNOdi2wQtqDEj8n3wGqYBbQk1u88zgRhy0tsXvOWGWSkhIC6xKO/uhBhEYl9L96B3S8iYCQx
-	Z+ZptgmMQrOQTJqFZNIsJJNmIWlfwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4DTyT
-	2sG4ssHiEKMAB6MSD28AC2+wEGtiWXFl7iFGCQ5mJRFei288wUK8KYmVValF+fFFpTmpxYcY
-	k4EencgsJZqcD0xReSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTB
-	KdXA6Pmklbubs/H4gu+WK+y6ln5+0LL8Y/K+1h85lo+c/v69te+87o9TMkFs8/Y5rQo5K39m
-	RVmG7mZH8ciMbWK3uJumSn3+Gnji6H+L9Pq3v3QX5sdcW1Unc3/ZsllXSmOVEreuveR4+ihP
-	NsPf/cmPdmi9enkof4ta/bIvtb1HnqsnlShf1rkQWq7EUpyRaKjFXFScCAALNzQBRwMAAA==
+Thread-index: Ac8ykMzEt0AEx/NVROGPrQsXYu79GwAADcIQ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zI919jrzBBss/illMffiEzeLCOnOL
+	ywsvsVp8u9LBZHF51xw2B1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	b75cZi6Yz1/xZ8U85gbGc9xdjJwcEgImEpe2bmeCsMUkLtxbz9bFyMUhJLCMUaKv6T07TNG9
+	449YIBKLGCX6m04yQTi/GSVuHTrBDFLFJqAm8eXLYaAODg4RAVWJ/6/cQWqYBWYxSjQs+ssC
+	UiMkYCsx9dxRsBpOATuJKZ8VQMLCAvYSUw6uYQOxWYBav137ALaYF6j86LsprBC2oMSPyffA
+	xjALaEms33mcCcKWl9i85i0zyEgJAXWJR391IcIiEvtevGMEsUUEjCR2v97NDHKOhMA1dolz
+	e1+yQ+wSkPg2+RALRK+sxKYDzBD/SkocXHGDZQKjxCwkm2ch2TwLyeZZSNYtYGRZxSiaWpBc
+	UJyUXmSqV5yYW1yal66XnJ+7iRESnRN3MN4/YH2IMRlo/URmKdHkfGB055XEGxqbGVmYmpga
+	G5lbmpEmrCTOm/4oKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY1t3ec/0fVY/CxqX/U9e
+	3np5rmYwr/RB9+NFuX33qk23vT7S+9Uu1Kd9pVfRkaZDnxd+r9ZcbX5pllunvux1zg0fWE6f
+	4ezp/8l/PkSKecr31y/NevtOdceZr8y5ztvD58p0Z87UfcxuD+rO5FeGTt86fyVfucczLwZ1
+	0eZFXVpGnxY5Hvv5QYmlOCPRUIu5qDgRAJzt6krkAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAd19jrzBBu+WCltMffiEzeLCOnOL
+	ywsvsVp8u9LBZHF51xw2B1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5
+	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
+	hIa46VrANEbo+oYEwfUYGaCBhHWMGW++XGYumM9f8WfFPOYGxnPcXYycHBICJhL3jj9igbDF
+	JC7cW8/WxcjFISSwiFGiv+kkE4Tzm1Hi1qETzCBVbAJqEl++HGbvYuTgEBFQlfj/yh2khllg
+	FqNEw6K/YJOEBGwlpp47ClbDKWAnMeWzAkhYWMBeYsrBNWwgNgtQ67drH9hBbF6g8qPvprBC
+	2IISPybfAxvDLKAlsX7ncSYIW15i85q3zCAjJQTUJR791YUIi0jse/GOEcQWETCS2P16N/ME
+	RqFZSCbNQjJpFpJJs5C0L2BkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHPvPpHcwrmqw
+	OMQowMGoxMMbwMIbLMSaWFZcmXuIUYKDWUmE1+IbT7AQb0piZVVqUX58UWlOavEhxmSgRycy
+	S4km5wPTUl5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MGb9
+	NM3OZtL4me5+UcM6JvbalKo53a1H7H6yJCY2B0xhcu1T3tZvm1qger7wJtv28BjZnWkPeTK3
+	e03Kr1F5ceiDoZN+fvnsW8ViMm+rRJrXKgq8879w72Hwn8ia4lu2xVJ/lf8ksnIo9V6r26It
+	mRNYE9iocUyKvW71rfiSpEfRP/4ZtSQrsRRnJBpqMRcVJwIAaUdxGEEDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,47 +56,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a constant format without additional arguments, use seq_puts()
-instead of seq_printf(). Also, it fixes the following checkpatch
-warning.
+Fix indent code style in order to fix the following checkpatch
+issues.
 
-  WARNING: Prefer seq_puts to seq_printf
+  ERROR: code indent should use tabs where possible
+  WARNING: please, no space before tabs
+  WARNING: please, no spaces at the start of a line
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/dbx500-prcmu.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/regulator/88pm8607.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/dbx500-prcmu.c b/drivers/regulator/dbx500-prcmu.c
-index f111dfb..3dd1096 100644
---- a/drivers/regulator/dbx500-prcmu.c
-+++ b/drivers/regulator/dbx500-prcmu.c
-@@ -97,10 +97,10 @@ static int ux500_regulator_power_state_cnt_print(struct seq_file *s, void *p)
- 	int err;
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index fa99bfc..337634a 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -2,7 +2,7 @@
+  * Regulators driver for Marvell 88PM8607
+  *
+  * Copyright (C) 2009 Marvell International Ltd.
+- * 	Haojian Zhuang <haojian.zhuang@marvell.com>
++ *	Haojian Zhuang <haojian.zhuang@marvell.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -78,7 +78,7 @@ static const unsigned int BUCK2_suspend_table[] = {
+ };
  
- 	/* print power state count */
--	err = seq_printf(s, "ux500-regulator power state count: %i\n",
--		power_state_active_get());
-+	err = seq_puts(s, "ux500-regulator power state count: %i\n",
-+			power_state_active_get());
- 	if (err < 0)
--		dev_err(dev, "seq_printf overflow\n");
-+		dev_err(dev, "seq_puts overflow\n");
+ static const unsigned int BUCK3_table[] = {
+-              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
++	      0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+ 	 200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
+ 	 400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
+ 	 600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
+@@ -89,7 +89,7 @@ static const unsigned int BUCK3_table[] = {
+ };
  
- 	return 0;
- }
-@@ -127,9 +127,9 @@ static int ux500_regulator_status_print(struct seq_file *s, void *p)
- 	int i;
- 
- 	/* print dump header */
--	err = seq_printf(s, "ux500-regulator status:\n");
-+	err = seq_puts(s, "ux500-regulator status:\n");
- 	if (err < 0)
--		dev_err(dev, "seq_printf overflow\n");
-+		dev_err(dev, "seq_puts overflow\n");
- 
- 	err = seq_printf(s, "%31s : %8s : %8s\n", "current",
- 		"before", "after");
+ static const unsigned int BUCK3_suspend_table[] = {
+-              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
++	      0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+ 	 200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
+ 	 400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
+ 	 600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
 -- 
 1.7.10.4
 
