@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaBZI7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 03:59:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38371 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaBZI7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 03:59:37 -0500
-Date: Wed, 26 Feb 2014 09:59:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
- loaded due to module taint
-Message-ID: <20140226085926.GF18404@twins.programming.kicks-ass.net>
-References: <20140225191505.32b56105@gandalf.local.home>
- <188130295.30493.1393375141631.JavaMail.zimbra@efficios.com>
- <20140225194926.4eac5872@gandalf.local.home>
+	id S1751899AbaBZJAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 04:00:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:38259 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072AbaBZJAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 04:00:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,546,1389772800"; 
+   d="scan'208";a="481980318"
+Message-ID: <530DAC5E.20408@intel.com>
+Date: Wed, 26 Feb 2014 16:57:02 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140225194926.4eac5872@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephane Eranian <eranian@google.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>	<530D53EF.9090706@amacapital.net> <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+In-Reply-To: <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 07:49:26PM -0500, Steven Rostedt wrote:
-> > > -	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-> > > +	if (WARN_ONCE(mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)),
-> > > +		      "Module is tainted, disabling tracepoints"))
-
-> I originally had that with a simple WARN() instead of WARN_ONCE(), but
-> if you have that config which makes all modules not have sigs correct,
-> it spits out tens of these warnings and can cause more panic in users
-> than it deserves. I then switched it to WARN_ONCE(), and then thought,
-> that if it does it only once for the first module, it wont print the
-> warning again for the other affected modules. That means it may confuse
-> the user if they see a module had that warning, but the module they are
-> trying to trace isn't working either.
+On 02/26/2014 03:04 PM, Stephane Eranian wrote:
+> On Wed, Feb 26, 2014 at 3:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On 02/17/2014 10:07 PM, Yan, Zheng wrote:
+>>>
+>>> This patch series adds LBR call stack support. User can enabled/disable
+>>> this through an sysfs attribute file in the CPU PMU directory:
+>>>  echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack
+>>
+>> This seems like an unpleasant way to control this.  It would be handy to
+>> be able to control this as an option to perf record.
+>>
+> That would mean you'd be root for perf.
+> Or are you suggesting a perf event option? But then, you'd expose arch-specific
+> feature at the API level.
 > 
-> I then figured it would be good to remove the module name and just
-> state a general "Module is tainted, disabling tracepoints" and if the
-> user notices that the module isn't working, and then looks at their
-> dmesg, they'll see this message and just assume it was the module that
-> wasn't working.
-> 
-> Make sense?
 
-How about instead of a WARN, you use a normal KERN_ERR printk(). There's
-no point to the entire WARN state dump, that's needlessly verbose.
+Another option is enable this feature by default if hardware supports it. But it
+causes LBR contention between events that want callstack and evnets that want LBR.
 
-When you have a normal error print you can have as many as are required
-and put the mod name back in.
+Regards
+Yan, Zheng
