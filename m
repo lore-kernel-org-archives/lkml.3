@@ -1,99 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaBZPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:25:09 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32938 "EHLO arroyo.ext.ti.com"
+	id S1752844AbaBZP0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:26:51 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:50880 "EHLO jenni2.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177AbaBZPZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:25:07 -0500
-Date: Wed, 26 Feb 2014 09:23:36 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-CC: Neil Zhang <zhangwm@marvell.com>, "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
-Message-ID: <20140226152336.GI30028@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
- <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
- <20140225011839.GD7540@shlinux1.ap.freescale.net>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
- <6ad74d797ecc473f922ffdb58c3e9c70@BN1PR03MB235.namprd03.prod.outlook.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A5@SC-VEXCH4.marvell.com>
- <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
- <20140225181234.GF23275@saruman.home>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC413885@SC-VEXCH4.marvell.com>
- <c3b92dae0fe54efc85b886899ddf60ab@BN1PR03MB235.namprd03.prod.outlook.com>
+	id S1751399AbaBZP0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:26:49 -0500
+Date: Wed, 26 Feb 2014 17:20:51 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
+Message-ID: <20140226152051.GA31115@node.dhcp.inet.fi>
+References: <530CEFE2.9090909@oracle.com>
+ <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+ <20140226140941.GA31230@node.dhcp.inet.fi>
+ <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rmm1Stw9KgbdL9/H"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c3b92dae0fe54efc85b886899ddf60ab@BN1PR03MB235.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAA_GA1dRS9WghaoG3bYwnEVxdOXQTjcTrZQkgZEU+vq3Lbmm6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Rmm1Stw9KgbdL9/H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 26, 2014 at 10:48:30PM +0800, Bob Liu wrote:
+> > Do you relay on unlock_page() to have a compiler barrier?
+> >
+> 
+> Before your commit mapping is a local variable and be assigned before
+> unlock_page():
+> struct address_space *mapping = page->mapping;
+> unlock_page(dirty_page);
+> put_page(dirty_page);
+> if ((dirtied || page_mkwrite) && mapping) {
+> 
+> 
+> I'm afraid now "fault_page->mapping" might be changed to NULL after
+> "if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {"
+> and then passed down to balance_dirty_pages_ratelimited(NULL).
 
-On Wed, Feb 26, 2014 at 02:36:19AM +0000, Peter Chen wrote:
-> =20
-> > > > > easy to be found.
-> > > > >
-> > > >
-> > > > Chipidea bug too? Does it follow ch 8.5.3.2 Variable-length Data
-> > > > Stage, USB
-> > > 2.0 spec?
-> > >
-> > > wait, this is a chipidea core ? Why aren't you guys using the chipidea
-> > > driver yet ? You need to switch over to that driver dude, we can't
-> > > have duplicated code in the tree.
-> > >
-> > > I'm sorry, but I won't be taking this series, please use chipidea
-> > > driver, it should be very simple to add a glue layer for your core to
-> > the chipidea driver.
-> > >
-> >=20
-> > Yes, it use chipidea IP.
-> > But the driver is earlier than the chipidea one and we use it for our
-> > products.
-> > So it may be not that easy to switch to chipidea driver due to the
-> > stability.
-> >=20
->=20
-> Freescale i.mx SoC used fsl_udc_core.c before which was the one of the
+I see what you try to fix. I wounder if we need to do
 
-btw, when can I remove fsl_udc_core.c from the tree ?
+mapping = ACCESS_ONCE(fault_page->mapping);
 
---=20
-balbi
+instead.
 
---Rmm1Stw9KgbdL9/H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The question is if compiler on its own can eliminate intermediate variable
+and dereference fault_page->mapping twice, as code with my patch does.
+I ask because smp_mb__after_clear_bit() in unlock_page() does nothing on
+some architectures.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> >>
+> >> diff --git a/mm/memory.c b/mm/memory.c
+> >> index 548d97e..90cea22 100644
+> >> --- a/mm/memory.c
+> >> +++ b/mm/memory.c
+> >> @@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
+> >> struct vm_area_struct *vma,
+> >>   pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
+> >>  {
+> >>   struct page *fault_page;
+> >> + struct address_space *mapping;
+> >>   spinlock_t *ptl;
+> >>   pte_t *pte;
+> >>   int dirtied = 0;
+> >> @@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
+> >> *mm, struct vm_area_struct *vma,
+> >>
+> >>   if (set_page_dirty(fault_page))
+> >>   dirtied = 1;
+> >> + mapping = fault_page->mapping;
+> >>   unlock_page(fault_page);
+> >> - if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
+> >> + if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
+> >>   /*
+> >>   * Some device drivers do not set page.mapping but still
+> >>   * dirty their pages
+> >>   */
+> >> - balance_dirty_pages_ratelimited(fault_page->mapping);
+> >> + balance_dirty_pages_ratelimited(mapping);
+> >>   }
+> >>
+> >>   /* file_update_time outside page_lock */
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> > --
+> >  Kirill A. Shutemov
+> 
+> -- 
+> Regards,
+> --Bob
 
-iQIcBAEBAgAGBQJTDgb4AAoJEIaOsuA1yqREizoP/2qUWFMYnGH42/TquSocBVvr
-vzQ8WPXgS9bkLtAk+WGN1NwpAO7SsmoQHDHRdKpijPgL0d/HmDMJGik2yFX1joeW
-fMHx9nQEsX4JYK+LNVXrOX/gKj7JUghbIVCkpRbop07NHsc8Z2zhjkYXFMEfwlwp
-LWTlNHiZfTAzfBYYa64pktGGWi6isdmbS6rzaEzw7ADot+8Uz2tT3vYy2q8ry+qQ
-EK414SksIS3vKS+qOw/8Mts7X+E49QZLNlesf1/C5U/0bjfDmuwhZYV5OcSXvUuh
-quhmDXp4AvUmgx05vJs9niXsr2oqeGNCI71nbay74bVO7ZnT1EuYCYNUA0nbLTiR
-wbamocSFTNyFIi+xdBIjZLT1vQCERA94Y0uRKvX1CAOqW+8KkttdbEcVgD53vjSp
-idW+UPTpOvlhuXS7I+Uoqdzv8iDu5xC1MegdnnxcPFp7SR/48pVxsNWE1demXKPk
-glbOze99AiDtePr1mrQvh/Di4ygyEVp+yM5rx5o3Y994Eo6VpG1DSc+G2Q19O64Y
-VKtXap7ug2FlU8BbdA3geDAKQ2SjAhMtwvyPQYFbmFJmOU40cdgu+oMV5Wa7j+wd
-Arq7ngbhwLir7tN3+I8HrOG42/V2alr8t4038LDjRxOZNQU5Y9DUzsyi4RZ6Jm4Z
-uSgRrdatoZRwxYge/A2I
-=su2T
------END PGP SIGNATURE-----
-
---Rmm1Stw9KgbdL9/H--
+-- 
+ Kirill A. Shutemov
