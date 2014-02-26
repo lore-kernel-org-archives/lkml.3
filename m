@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaBZPkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:40:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42508 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752552AbaBZPkI (ORCPT
+	id S1752780AbaBZPnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:43:00 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40629 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaBZPm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:40:08 -0500
-Message-ID: <530E0AD3.7040909@hurleysoftware.com>
-Date: Wed, 26 Feb 2014 10:40:03 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 26 Feb 2014 10:42:58 -0500
+Date: Wed, 26 Feb 2014 09:41:14 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <dmitry.torokhov@gmail.com>, <rydberg@euromail.se>, <jcbian@pixcir.com.cn>,
+        <balbi@ti.com>, <dmurphy@ti.com>, <mugunthanvnm@ti.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 3/8] Input: pixcir_i2c_ts: Get rid of
+ pdata->attb_read_val()
+Message-ID: <20140226154114.GJ30028@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393428486-15001-1-git-send-email-rogerq@ti.com>
+ <1393428486-15001-4-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Feng Tang <feng.79.tang@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Sterba <dsterba@suse.cz>,
-        Felipe Balbi <balbi@ti.com>, Grant Edwards <grant.b.edwards@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, stable@vger.kernel.org,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Subject: Re: [PATCH] tty: Fix low_latency BUG
-References: <1393072281-5814-1-git-send-email-peter@hurleysoftware.com> <CA++bM2uq=vRo20FTMWvkDau+-X7h0+KU3n4Av7ef895mQKr5fA@mail.gmail.com>
-In-Reply-To: <CA++bM2uq=vRo20FTMWvkDau+-X7h0+KU3n4Av7ef895mQKr5fA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9pltayyoy9lWEMH"
+Content-Disposition: inline
+In-Reply-To: <1393428486-15001-4-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc linux-bluetooth ]
+--M9pltayyoy9lWEMH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Feng,
+On Wed, Feb 26, 2014 at 05:28:01PM +0200, Roger Quadros wrote:
+> Get rid of the attb_read_val() platform hook. Instead,
+> read the ATTB gpio directly from the driver.
+>=20
+> Fail if valid ATTB gpio is not provided by patform data.
 
-On 02/26/2014 12:11 AM, Feng Tang wrote:
-> Hi Peter,
->
-> 2014-02-22 20:31 GMT+08:00 Peter Hurley <peter@hurleysoftware.com>:
->> The user-settable knob, low_latency, has been the source of
->> several BUG reports which stem from flush_to_ldisc() running
->> in interrupt context. Since 3.12, which added several sleeping
->> locks (termios_rwsem and buf->lock) to the input processing path,
->> the frequency of these BUG reports has increased.
->>
->> Note that changes in 3.12 did not introduce this regression;
->> sleeping locks were first added to the input processing path
->> with the removal of the BKL from N_TTY in commit
->> a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
->> 'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
->> and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
->> 'tty: throttling race fix'. Since those changes, executing
->> flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
->>
->> However, since most devices do not validate if the low_latency
->> setting is appropriate for the context (process or interrupt) in
->> which they receive data, some reports are due to misconfiguration.
->> Further, serial dma devices for which dma fails, resort to
->> interrupt receiving as a backup without resetting low_latency.
->>
->> Historically, low_latency was used to force wake-up the reading
->> process rather than wait for the next scheduler tick. The
->> effect was to trim multiple milliseconds of latency from
->> when the process would receive new data.
->>
->> Recent tests [1] have shown that the reading process now receives
->> data with only 10's of microseconds latency without low_latency set.
->
-> The 10's of miscroseconds is ok for 115200 bps like device, but it may
-> hurt the high speed device like Bluetooth which runs at 3M/4M bps or
-> higher.
+s/patform/platform/
 
-The tests were run at 400Mbps, so 3Mbps or 4Mbps is not a problem
-(but I think you may be confusing throughput with latency).
+--=20
+balbi
 
-FWIW, two things affected the latency times of those particular tests;
-1) the kernel firewire subsystem handles rx data in a tasklet (so not
-    directly from IRQ) which negatively affected the latency reported, and
-2) the ftrace instrumentation is not free and there are several traces per rx.
+--M9pltayyoy9lWEMH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If you look carefully at the test trace data, you'll see that the timestamps
-from tty_flip_buffer_push() of the rx data to n_tty_write() of the
-response averages _~11us_; this is the measured latency from tty driver
-receiving the rx data to reading of that data *and* the process
-response (which comes back up through several tty locks).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Naturally, in mainline kernel, the scheduler load will affect the
-measured latency *but that's true regardless of low_latency rx steering
-because the user-space process must still be woken to complete the read*.
+iQIcBAEBAgAGBQJTDgsaAAoJEIaOsuA1yqRE4asP/2eriuoLHegpz0J8zF2vOdik
+R4Tfd9AmgZUxtv6nIKBtzKr7Fr9XdolmVF2WIcwvI+k49yzGaJYwEoTqu3FcZZv3
+auLb6xtdaxi1ppGbDTu1Jf/LZslG26gxVIkjj1M7Y04OAubvxH+uxpuLyhA/EUQy
+aB3MvU1/Ue8HePmdUZ6uczGW/708nILE3DYU7LXJUPMt+G1A770I8UGlp3HGFKis
+ba6HCutJh+B9NGeHNnyr9JdcyY6hwM8wgjAzJndBNwyQFb9gAOHUEqOe3CwHTeh3
+bfjjkq4M0NmZESadCWL7DbNKJUUBqSSNXq9n17AS+7KkbT6R/t3BR9+siUb5GyYh
+a75Y4w7TYIrbOKuGPx0oL0oSGPhci0rhf7AgmlyGhdtoY3KbmG/UhBR7YWV+0RYT
+SMwfxStrK2JYL0p40ESQQX9Rmq5QZi1GSMUCCvJaf0lfEUTSv7p0pdqw9/VFMWvi
+uKG7wzrumpcxdeinbH8qAQsN4gLuL5THXR/PxSuMvljqJ1L7WLQ1YWNMqLQXshry
+vjZyWqTr8dyiaLQ6QB1znIfG6C+YOpIqQJtl0uMcoHoIP8C3Vy4lt/oyKgtuZhfk
+SPiU6V8pkmy+ZZAxIt5m/nxdadbjPaDcqc1rQZ07X8/g3omS5EXQcyd2zlCpGirZ
+/A2RVIRU5L9d3DgRv9Lv
+=siyw
+-----END PGP SIGNATURE-----
 
-> More and more smartphones are using uart as the Bluetooth data
-> interface due to its low-pin, low-power feature, and many of them
-> are using HZ=100 kernel, I'm afraid this added delay may cause
-> some problem.
-
-Some hard data showing a real problem would help further this
-discussion; my belief is that 3.12+ w/o low_latency rx steering
-will outperform 3.11- w/ low_latency rx steering in every test.
-
-I'm glad to hear that the Bluetooth uart interface is getting
-some use; that means someone will soon be fixing the hard lockup
-in hci_uart_tx_wakeup() reported here:
-
-http://www.spinics.net/lists/linux-serial/msg11529.html
-
-Regards,
-Peter Hurley
+--M9pltayyoy9lWEMH--
