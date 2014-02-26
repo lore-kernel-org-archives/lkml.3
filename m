@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaBZNOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:14:01 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:33453 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432AbaBZNOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:14:00 -0500
-Date: Wed, 26 Feb 2014 14:13:56 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv9 Resend 4/4] Documentation: Add device tree bindings for
- Freescale FTM PWM.
-Message-ID: <20140226131355.GB29779@ulmo.nvidia.com>
-References: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
- <1392799137-17188-5-git-send-email-Li.Xiubo@freescale.com>
+	id S1752623AbaBZNOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:14:47 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55790 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752543AbaBZNOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:14:45 -0500
+Message-ID: <530DE8A9.9050809@ti.com>
+Date: Wed, 26 Feb 2014 15:14:17 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>
+X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
-Content-Disposition: inline
-In-Reply-To: <1392799137-17188-5-git-send-email-Li.Xiubo@freescale.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	protocol="application/pgp-signature";
+	boundary="P5XuDVSgpRe7oq63NjUpwRNaupJAvQLnT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---dTy3Mrz/UPE2dbVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--P5XuDVSgpRe7oq63NjUpwRNaupJAvQLnT
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Feb 19, 2014 at 04:38:57PM +0800, Xiubo Li wrote:
-> This adds the binding documentation for Freescale FlexTimer Module
-> (FTM) PWM driver under Documentation/devicetree/bindings/pwm/.
->=20
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
-> Acked-by: Kumar Gala <galak@codeaurora.org>
-> ---
->  .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 34 ++++++++++++++++=
-++++++
->  1 file changed, 34 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt b/Docu=
-mentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
-[...]
-> +- clocks : Must contain a clock specifier for each entry in clock-names,
+On 25/02/14 16:58, Philipp Zabel wrote:
 
-Nit: A slightly more correct way to say this would be: "Must contain a
-phandle and clock specifier...".
+> +Optional endpoint properties
+> +----------------------------
+> +
+> +- remote-endpoint: phandle to an 'endpoint' subnode of a remote device=
+ node.
 
-Thierry
+Why is that optional? What use is an endpoint, if it's not connected to
+something?
 
---dTy3Mrz/UPE2dbVg
-Content-Type: application/pgp-signature
+Also, if this is being worked on, I'd like to propose the addition of
+simpler single-endpoint cases which I've been using with OMAP DSS. So if
+there's just a single endpoint for the device, which is very common, you
+can have just:
+
+device {
+	...
+	endpoint { ... };
+};
+
+However, I guess that the patch just keeps growing and growing, so maybe
+it's better to add such things later =3D).
+
+ Tomi
+
+
+
+--P5XuDVSgpRe7oq63NjUpwRNaupJAvQLnT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJTDeiTAAoJEN0jrNd/PrOhvAwQAIGeUZpSfjwWI36hVO6NUSEk
-Wkk6gkSybGO9gNmyK8WtA/O3f0Y1T5ULzFXKT579dalaIcn9nOii70KH9Y47BE5r
-16E7IU3yHzwGBtX8dilHMMF0bHwI1WQQfBj+LHbQtyBDW0XrSJ8tVMzTsGD+2EaE
-Ef4gDNnCmQprXZuKP2/pGV2jNwoi6xGzBi8JWMxvVrKkoqekOSxxWMPo+KEV104k
-iLFsjZWSFmsY1JshACb34yNLpXxkzVQ4UtAy7ryEf+n5T/+r6Q/4RA01XY3LLlsB
-qGl5qq/NFioq3dmNRl7OKmWxUO1O2vGcFQOWQ8x3UFrXF9TiACbV982GoT9CdGY7
-7KoQ4jpNkZM0zVLxjbHoP7kJB6nfsz7b0R/6awFp7W8jcnqsZNoOj2Xz7I1DKICW
-2oOjHfARkdhtI0mO+3duNLYY97QXc+uPHt+1/5bv6Ut2WWXvczl35r6Q5HTVQW3B
-QxpH0GjzHoosQH5zcPL+79+u2P2PIsoRS+xQ496WP/VvVYPk6RkI4RskKlicRp36
-UmsBAdqM651pSpYp5Bl7c3zvvAcjXQ5Ig4wxZ1xPvpRvtsheHkqc02u6BUQq8X/h
-svbSVf86YtPil0x+2eIfck29M4DhiB0714zNqTZfBT4vn68R6YvuJoED7Xt8UmmF
-zuYAwkXhZh3CGvXQMb3b
-=bWSM
+iQIcBAEBAgAGBQJTDeipAAoJEPo9qoy8lh71kfUQAJhRq4j0qyfE4BGDXs+uIlkO
+TfkI7j8C/6ISwDRsgW84HTsdOUUynHk+Yi2haW++dz+q65vtVbsXwZZEJBig+s7u
+GURZkDuVYaO0Go4RltBAICKvPHyuiPFBw6R75i44pDurmzzGeIFyE4WO6fV0eY5R
+l0arhQwYax78+fAonRiLpQ+qHAPA2eMn7171P6zkQ5DaIb4tN5KcfrzFnZJeLH7M
+LwkgDo2lgixd9h1LjZB3av2WygnXW3HxVv9dZmTsizqoYw0FiQCg8uEnVYhevBBj
+Zni9bftyryKQhTvpvOokvPmFAQWIB/xy2NnM1HHivhv2QsBA/Rp7yi3wLE4Rq1ni
+rGh7Twq9P0l6/IFF0iffI+PoiK8K+mqbZjDrLyLjJsAE008JgILXE93xBubeaY+k
+j5j1Qb08jPqzkKtpCOw2SXTpS2ZSWmWrJHt8x3joAQG4dzB3f5dKbapCi6EJ29Z+
+9ppgINTtERFwnFaZh2onuk+/ogPMjuc/yS5LdU7NHkA5Ze4jqhgcIVguAljugaDX
+dA7lkynRrb2tjAVhsoSygEQklRz5eYNBPd4g8hFx7mAgOeUgMMYxz3lRQ6J+wptv
+/NjtZmn7dFeRjD6/0ru3SOjLwaVYeUPu/C/bQmzwsEoC33fqqbTIvA82m0zf3ROB
+eObjYrE8uzOLi0TTSTC+
+=TZyW
 -----END PGP SIGNATURE-----
 
---dTy3Mrz/UPE2dbVg--
+--P5XuDVSgpRe7oq63NjUpwRNaupJAvQLnT--
