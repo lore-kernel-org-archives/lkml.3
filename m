@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaBZKQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:16:46 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7999 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaBZKQo (ORCPT
+	id S1751333AbaBZKVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:21:14 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:36700 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaBZKVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:16:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 26 Feb 2014 02:14:05 -0800
-Date: Wed, 26 Feb 2014 12:16:40 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: Tegra clockframework fixes for 3.14
-Message-ID: <20140226101640.GM19389@tbergstrom-lnx.Nvidia.com>
-References: <20140220172744.GA4378@tbergstrom-lnx.Nvidia.com>
- <20140224010211.22529.99924@quantum>
- <20140224134319.GG19389@tbergstrom-lnx.Nvidia.com>
+	Wed, 26 Feb 2014 05:21:12 -0500
+Message-ID: <530DC013.9040908@cogentembedded.com>
+Date: Wed, 26 Feb 2014 14:21:07 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140224134319.GG19389@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dbaryshkov@gmail.com
+CC: "anton@enomsg.org" <anton@enomsg.org>, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mk7.kang@samsung.com, k.kozlowski@samsung.com, mark.rutland@arm.com
+Subject: Re: [PATCH v2 0/3] power_supply: modelgauge_battery: Add Maxim ModelGauge
+ ICs gauge
+References: <1391293385-27539-1-git-send-email-vladimir.barinov@cogentembedded.com>
+In-Reply-To: <1391293385-27539-1-git-send-email-vladimir.barinov@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+Hello Dmitry,
 
-> On Mon, Feb 24, 2014 at 02:02:11AM +0100, Mike Turquette wrote:
-> > Quoting Peter De Schrijver (2014-02-20 09:27:44)
-> > > Hi Mike,
-> > > 
-> > > Could you merge these fixes still for 3.14?
-> > 
-> > No problem, but can you provide a list of the regressions fixed? I'll
-> > add those to my merge commit message. No need for you to respin
-> > anything. Next time if you could submit a signed tag with the
-> > regressions listed in the message it would be a great help.
-> > 
-> 
-> This fixes the following issues:
-> 
-> clk: tegra124: remove gr2d and gr3d clocks - accesses to undefined registers
-> clk: tegra: Fix vic03 mux index - wrong parent when PLLC3 is selected (because clk_m is actually selected)
-> clk: tegra: use max divider if divider overflows - make tegra fractional divider match the clk-div.c behaviour
-> clk: tegra: cclk_lp has a pllx/2 divider - pllx runs at half the programmed rate
-> clk: tegra: fix sdmmc clks on Tegra1x4 - wrong parent selection
-> clk: tegra: fix host1x clock on Tegra124 - wrong parent selection
-> clk: tegra: PLLD2 fixes for hdmi - PLL runs at wrong rate
-> clk: tegra: Fix PLLD mnp table - PLL runs at wrong rate
-> clk: tegra: Fix PLLP rate table - kernel panic when using coreboot
-> clk: tegra: Correct clock number for UARTE - wrong clock when using UARTE
-> clk: tegra: Add missing Tegra20 fuse clks - fuse driver broken
-> 
+In accordance to this change you've taken the responsibility for power 
+supply maintainership.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/MAINTAINERS?id=573189354b7c97cd2256b87cf083ee435584594e
 
-Is this ok for you?
+It passed almost month and no answer from you.
+Does it make sense to apply this patch series?
 
-Thanks,
+Regards,
+Vladimir
 
-Peter.
+On 02/02/2014 02:23 AM, Vladimir Barinov wrote:
+> Hello.
+>
+> This adds the folowing:
+> - Maxim ModelGauge ICs gauge driver for MAX17040/41/43/44/48/49/58/59 chips
+> - Document DT bindings
+> - Remove superseded Maxim MAX17040 gauge driver
+>
+> Vladimir Barinov (3):
+>   [1/3] power_supply: modelgauge_battery: Maxim ModelGauge ICs gauge
+>   [2/3] dt: Document ModelGauge gauge bindings
+>   [3/3] power_supply: modelgauge_battery: Remove Maxim MAX17040 gauge
+>
+> ---
+> This patchset is against the 'kernel/git/torvalds/linux.git' repo.
+>
+> Changes since v1:
+> - switched to REGMAP API
+> - replaced request_threaded_irq with devm_request_threaded_irq
+> - replaced cancel_delayed_work with _sync version
+> - moved "empty_alert_threshold, soc_change_alert, hibernate_threshold,
+>    active_threshold, undervoltage, overvoltage, resetvoltage" parameters
+>    out from platform_data and DT
+> - removed unused parameters "empty_adjustment, empty_adjustment"
+> - added return value checks for of_property_read_XX functions
+> - removed irrelevant bindings
+> - fixed dt properties naming in documentation
+> - added binding size description in documentation
+> - removed satelite include file include/linux/max17040_battery.h
+>
+>   Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt |   61
+>   drivers/power/Kconfig                                                 |   17
+>   drivers/power/Makefile                                                |    2
+>   drivers/power/max17040_battery.c                                      |  297 ---
+>   drivers/power/modelgauge_battery.c                                    |  838 ++++++++++
+>   include/linux/max17040_battery.h                                      |   19
+>   include/linux/platform_data/battery-modelgauge.h                      |   31
+>   7 files changed, 940 insertions(+), 325 deletions(-)
+
