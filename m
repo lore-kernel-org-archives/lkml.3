@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaBZMO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 07:14:56 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44474 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaBZMOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 07:14:53 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v5 06/11] drivers: of: initialize and assign reserved memory to newly created devices
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-In-Reply-To: <1392985527-6260-7-git-send-email-m.szyprowski@samsung.com>
-References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com> < 1392985527-6260-7-git-send-email-m.szyprowski@samsung.com>
-Date: Wed, 26 Feb 2014 12:14:45 +0000
-Message-Id: <20140226121445.54D2DC40A89@trevor.secretlab.ca>
+	id S1751885AbaBZM0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 07:26:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63694 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311AbaBZM0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 07:26:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,547,1389772800"; 
+   d="scan'208";a="488375678"
+Message-ID: <1393417609.3412.156.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBIFS changes for 3.14-rc5
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Feb 2014 14:26:49 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Feb 2014 13:25:22 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> Use recently introduced of_reserved_mem_device_init() function to
-> automatically assign respective reserved memory region to the newly created
-> platform and amba device.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Hi Linus,
 
-I'm wary on this patch. It hides the assignment of regions into the core
-code and I worry that it is the wrong level of abstraction. I would
-think that drivers should know that they need a reserved memory region
-and should be calling the API to obtain the region directly rather than
-doing it for them. The reason being is that there may be some situations
-where the common code isn't quite right and the driver needs to override
-the behaviour. If it is called automatically then the driver cannot do
-that.
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
-Is it really a big burden to have the driver call the reserved memory
-init function?
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
-g.
+are available in the git repository at:
 
-> ---
->  drivers/of/platform.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 404d1daebefa..3df0b1826e8b 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -21,6 +21,7 @@
->  #include <linux/of_device.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_reserved_mem.h>
->  #include <linux/platform_device.h>
->  
->  const struct of_device_id of_default_bus_match_table[] = {
-> @@ -220,6 +221,8 @@ static struct platform_device *of_platform_device_create_pdata(
->  	dev->dev.bus = &platform_bus_type;
->  	dev->dev.platform_data = platform_data;
->  
-> +	of_reserved_mem_device_init(&dev->dev);
-> +
->  	/* We do not fill the DMA ops for platform devices by default.
->  	 * This is currently the responsibility of the platform code
->  	 * to do such, possibly using a device notifier
-> @@ -227,6 +230,7 @@ static struct platform_device *of_platform_device_create_pdata(
->  
->  	if (of_device_add(dev) != 0) {
->  		platform_device_put(dev);
-> +		of_reserved_mem_device_release(&dev->dev);
->  		return NULL;
->  	}
->  
-> @@ -282,6 +286,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->  	else
->  		of_device_make_bus_id(&dev->dev);
->  
-> +	of_reserved_mem_device_init(&dev->dev);
-> +
->  	/* Allow the HW Peripheral ID to be overridden */
->  	prop = of_get_property(node, "arm,primecell-periphid", NULL);
->  	if (prop)
-> @@ -308,6 +314,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
->  	return dev;
->  
->  err_free:
-> +	of_reserved_mem_device_release(&dev->dev);
->  	amba_device_put(dev);
->  	return NULL;
->  }
-> -- 
-> 1.7.9.5
-> 
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.14-rc5
+
+for you to fetch changes up to 5547fec74a566e1f5e00a937b9a367f7c6a94a8b:
+
+  UBI: fix some use after free bugs (2014-02-04 09:44:30 +0200)
+
+----------------------------------------------------------------
+Just a single fix for the UBI module unload path which makes sure we do not
+touch freed memory.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      UBI: fix some use after free bugs
+
+ drivers/mtd/ubi/fastmap.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
