@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaBZTMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:12:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20204 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695AbaBZTJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:09:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,549,1389772800"; 
-   d="scan'208";a="490301633"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/4] x86: Use clflushopt in drm_clflush_page
-Date: Wed, 26 Feb 2014 12:06:51 -0700
-Message-Id: <1393441612-19729-4-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1393441612-19729-1-git-send-email-ross.zwisler@linux.intel.com>
-References: <1393441612-19729-1-git-send-email-ross.zwisler@linux.intel.com>
+	id S1754018AbaBZTGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:06:08 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53833 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508AbaBZTGE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 14:06:04 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v3 0/9] Use regmap+devm+DT in pm8xxx input drivers
+Date: Wed, 26 Feb 2014 11:05:53 -0800
+Message-Id: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If clflushopt is available on the system, use it instead of clflush in
-drm_clflush_page.
+These patches move the pm8xxx input drivers over to use devm_* APIs
+and regmap. This breaks the dependency of these drivers on the pm8xxx
+specific read/write calls and also simplifies the probe code a bit.
+Finally we add devicetree support to these drivers so they can be probed
+on the platforms that are supported upstream.
 
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-Cc: H Peter Anvin <h.peter.anvin@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/gpu/drm/drm_cache.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Changes since v2:
+ * Rebased to v3.14-rc3
 
-diff --git a/drivers/gpu/drm/drm_cache.c b/drivers/gpu/drm/drm_cache.c
-index bb8f580..c518fb6 100644
---- a/drivers/gpu/drm/drm_cache.c
-+++ b/drivers/gpu/drm/drm_cache.c
-@@ -32,6 +32,12 @@
- #include <drm/drmP.h>
- 
- #if defined(CONFIG_X86)
-+
-+/*
-+ * clflushopt is an unordered instruction which needs fencing with mfence or
-+ * sfence to avoid ordering issues.  For drm_clflush_page this fencing happens
-+ * in the caller.
-+ */
- static void
- drm_clflush_page(struct page *page)
- {
-@@ -44,7 +50,7 @@ drm_clflush_page(struct page *page)
- 
- 	page_virtual = kmap_atomic(page);
- 	for (i = 0; i < PAGE_SIZE; i += size)
--		clflush(page_virtual + i);
-+		clflushopt(page_virtual + i);
- 	kunmap_atomic(page_virtual);
- }
- 
+Changes since v1:
+ * Picked up Dmitry's version of devm for pwrkey
+ * Added DT bindings and parsing patches
+ * Dropped patches picked up by Dmitry
+
+
+Stephen Boyd (9):
+  Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+  Input: pmic8xxx-keypad - Migrate to devm_* APIs
+  Input: pmic8xxx-keypad - Migrate to regmap APIs
+  Input: pmic8xxx-pwrkey - Migrate to DT
+  Input: pm8xxx-vibrator - Add DT match table
+  Input: pmic8xxx-keypad - Migrate to DT
+  devicetree: bindings: Document PM8921/8058 keypads
+  devicetree: bindings: Document PM8921/8058 power keys
+  devicetree: bindings: Document PM8921/8058 vibrators
+
+ .../bindings/input/qcom,pm8xxx-keypad.txt          |  72 +++++
+ .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  39 +++
+ .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  16 ++
+ drivers/input/keyboard/pmic8xxx-keypad.c           | 291 ++++++++++-----------
+ drivers/input/misc/pm8xxx-vibrator.c               |   8 +
+ drivers/input/misc/pmic8xxx-pwrkey.c               |  37 ++-
+ include/linux/input/pmic8xxx-keypad.h              |  52 ----
+ include/linux/input/pmic8xxx-pwrkey.h              |  31 ---
+ 8 files changed, 290 insertions(+), 256 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
+ create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
+ delete mode 100644 include/linux/input/pmic8xxx-keypad.h
+ delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
+
 -- 
-1.7.10.4
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
