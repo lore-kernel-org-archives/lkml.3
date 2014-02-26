@@ -1,76 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaBZIFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 03:05:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37232 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaBZIFJ convert rfc822-to-8bit (ORCPT
+	id S1751546AbaBZIHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 03:07:03 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:59409 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaBZIHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 03:05:09 -0500
+	Wed, 26 Feb 2014 03:07:01 -0500
+X-Original-SENDERIP: 10.177.220.194
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 26 Feb 2014 17:07:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v2] zram: support REQ_DISCARD
+Message-ID: <20140226080732.GF4606@bbox>
+References: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-From: Alexander Graf <agraf@suse.de>
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-Date: Wed, 26 Feb 2014 15:49:20 +0800
-Message-Id: <33B27E4E-11A7-45FD-B708-C2B380AB6608@suse.de>
-References: <1393284484-27637-1-git-send-email-agraf@suse.de> <20140225171528.GJ4407@cmpxchg.org> <alpine.LSU.2.11.1402251652230.979@eggly.anvils>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        Dave Hansen <dave.hansen@intel.com>
-In-Reply-To: <alpine.LSU.2.11.1402251652230.979@eggly.anvils>
-To: Hugh Dickins <hughd@google.com>
-X-Mailer: iPhone Mail (11B554a)
+Content-Disposition: inline
+In-Reply-To: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joonsoo,
 
-
-> Am 26.02.2014 um 09:05 schrieb Hugh Dickins <hughd@google.com>:
+On Wed, Feb 26, 2014 at 02:23:15PM +0900, Joonsoo Kim wrote:
+> zram is ram based block device and can be used by backend of filesystem.
+> When filesystem deletes a file, it normally doesn't do anything on data
+> block of that file. It just marks on metadata of that file. This behavior
+> has no problem on disk based block device, but has problems on ram based
+> block device, since we can't free memory used for data block. To overcome
+> this disadvantage, there is REQ_DISCARD functionality. If block device
+> support REQ_DISCARD and filesystem is mounted with discard option,
+> filesystem sends REQ_DISCARD to block device whenever some data blocks are
+> discarded. All we have to do is to handle this request.
 > 
->> On Tue, 25 Feb 2014, Johannes Weiner wrote:
->>> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
->>> Configuration of tunables and Linux virtual memory settings has traditionally
->>> happened via sysctl. Thanks to that there are well established ways to make
->>> sysctl configuration bits persistent (sysctl.conf).
->>> 
->>> KSM introduced a sysfs based configuration path which is not covered by user
->>> space persistent configuration frameworks.
->>> 
->>> In order to make life easy for sysadmins, this patch adds all access to all
->>> KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
->>> giving us a streamlined way to make KSM configuration persistent.
->> 
->> ksm can be a module, so this won't work.
+> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
+> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
+> used.
 > 
-> That's news to me.  Are you writing of some Red Hat patches, or just
-> misled by the "module_init(ksm_init)" which used the last line of ksm.c?
-
-Ugh, sorry. I should have double-checked this. KSM is bool in Kconfig and so is THP.
-
+> v2: handle unaligned case commented by Jerome
 > 
-> I don't mind Alex's patch, but I do think the same should be done for
-> THP as for KSM, and a general
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 5ec61be..5364c1e 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	return ret;
+>  }
+>  
+> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
+> +{
+> +	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+> +	size_t n = bio->bi_iter.bi_size;
 
-I agree.
+Nitpick:
+Please use more meaningful name(ex, len) rather than 'n'.
 
-> solution more attractive than more #ifdefs
-> one by one.  Should a general
+> +	size_t misalign;
+> +
+> +	 * On some arch, logical block (4096) aligned request couldn't be
+> +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
+> +	 * Therefore we should handle this misaligned case here.
+> +	 */
+> +	misalign = (bio->bi_iter.bi_sector &
+> +			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+> +	if (misalign) {
+> +		if (n < misalign)
+> +			return;
+> +
+> +		n -= misalign;
+> +		index++;
+> +	}
+> +
+> +	while (n >= PAGE_SIZE) {
+> +		write_lock(&zram->meta->tb_lock);
+> +		zram_free_page(zram, index);
+> +		write_unlock(&zram->meta->tb_lock);
+> +		index++;
+> +		n -= PAGE_SIZE;
+> +	}
+> +}
+> +
+>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  {
+>  	size_t index;
+> @@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  	struct bio_vec bvec;
+>  	struct bvec_iter iter;
+>  
+> +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
+> +		zram_bio_discard(zram, bio);
+> +		bio_endio(bio, 0);
+> +		return;
+> +	}
+> +
+>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>  	offset = (bio->bi_iter.bi_sector &
+>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+> @@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
+>  					ZRAM_LOGICAL_BLOCK_SIZE);
+>  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
+>  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
+> +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
+> +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
+> +	zram->disk->queue->limits.discard_zeroes_data = 1;
 
-I don't see a good alternative to this.
+I don't know what discard_zeroes_data does mean. It seems we should
+make sure zram should return zero pages for discarded block on next
+time but prolblem could happen if you bail out in discard logic
+due to misalign but caller seem to know it was successful?
 
-> solution just be in userspace, in sysctl(8)?
+What happens in this case?
 
-User space needs to have the ability to list available sysctls, so we need to have an enumerable map between sys and sysctl somewhere. Keeping that list close to where the actual files are implemented seems to make sense to me, as it's very hard to miss out on addition and removal of parameters throughout the stack this way. That's why I put it here.
+> +	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
+>  
+>  	add_disk(zram->disk);
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-
-Alex
-
+-- 
+Kind regards,
+Minchan Kim
