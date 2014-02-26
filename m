@@ -1,274 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaBZUzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:55:25 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36314 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755AbaBZUzV (ORCPT
+	id S1753909AbaBZU4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:56:30 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:42827 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021AbaBZU42 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:55:21 -0500
-Message-ID: <530E54B2.1040907@gmail.com>
-Date: Wed, 26 Feb 2014 21:55:14 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Feb 2014 15:56:28 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-CC: mtk.manpages@gmail.com
-Subject: man-pages-3.61 is released
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Roger Quadros <rogerq@ti.com>, tony@atomide.com, bcousson@baylibre.com,
+        lee.jones@linaro.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <530C6323.90205@ti.com>
+Cc: balbi@ti.com, nm@ti.com, khilman@linaro.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        "Tero Kristo" <t-kristo@ti.com>
+References: <1392896409-5101-1-git-send-email-rogerq@ti.com>
+ <1392896409-5101-7-git-send-email-rogerq@ti.com>
+ <20140225084327.22529.86075@quantum> <530C6323.90205@ti.com>
+Message-ID: <20140226205624.12081.67770@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v8 06/14] CLK: TI: OMAP3: Get rid of unused USB Host dummy clocks
+Date: Wed, 26 Feb 2014 12:56:24 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+Quoting Roger Quadros (2014-02-25 01:32:19)
+> Hi Mike,
+> 
+> On 02/25/2014 10:43 AM, Mike Turquette wrote:
+> > Quoting Roger Quadros (2014-02-20 03:40:01)
+> >> The OMAP USB Host MFD driver no longer expects these non-existing
+> >> clocks from the OMAP3 platform, so get rid of them.
+> > 
+> > Looks good to me.
+> 
+> Is it OK if I squash this patch with [1] and take it through the MFD tree?
+> Keeping them separate could break functionality if both don't go in together.
 
-I've released man-pages-3.61 - man pages for Linux.
+Acked-by: Mike Turquette <mturquette@linaro.org>
 
-Tarball download:
-    http://www.kernel.org/doc/man-pages/download.html
-Git repository:
-    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.61
-
-A short summary of the release is blogged at:
-http://linux-man-pages.blogspot.com/2014/02/man-pages-361-is-released.html
-
-The current version of the pages is browsable at:
-http://man7.org/linux/man-pages/
-
-A few changes in this release that may be of interest to readers of
-this list are given below.
-
-Cheers,
-
-Michael
-
-
-==================== Changes in man-pages-3.61 ====================
-
-New and rewritten pages
------------------------
-
-A note from Christoph Hellwig prompted me to perform a task that has
-been queued for a while: merging the text of the man pages for the
-*at([23]) ("directory file descriptor") APIs into their corresponding
-traditional pages.  When the *at([23]) pages were originally written
-(mostly in 2006), the APIs were not part of POSIX and (in most cases)
-were not available on other systems. So, it made some sense to wall
-them off into their own separate pages. Eight years later, with the
-APIs now all in POSIX (except scandirat()), it is much more sensible
-to document the newer APIs alongside their traditional counterparts,
-so that the newer APIs are not "hidden", and the reader can more
-easily see the differences between the APIs.
-
-Thus, the text of 14 pairs of pages has been merged, and the "merged
-from" pages have been converted to links to the "merged to" pages.
-Along the way, a few other fixes were made to the pages, as noted
-below.
-
-One page that did not undergo such a change was utimensat(2), which
-is different enough from utime(2) that it warrants a separate page.
-Unlike the other *at() pages, the utimensat(2) page was also already
-self-contained, rather than defining itself in terms of differences
-from utime(2) as the other *at() pages did.
-
-access.2
-    Michael Kerrisk
-        Merge text from faccessat(2)
-    Michael Kerrisk
-        Remove faccessat() race warning
-            That point is already covered in existing text in this page.
-    Michael Kerrisk
-        access() also conforms to POSIX.1-2008
-
-chmod.2
-    Michael Kerrisk
-        Merge text from fchmodat(2)
-    Michael Kerrisk
-        Use argument name 'pathname' throughout page
-            (Some APIs were using 'path' while others used 'pathname')
-    Michael Kerrisk
-        CONFORMING TO: chmod() and fchmod() are also in POSIX.1-2008
-
-chown.2
-    Michael Kerrisk
-        Merge text of fchownat(2)
-    Michael Kerrisk
-        AT_EMPTY_PATH is Linux-specific and requires _GNU_SOURCE
-    Michael Kerrisk
-        Use argument name 'pathname' throughout page
-            (Some APIs were using 'path' while others used 'pathname')
-    Michael Kerrisk
-        Remove sentence that fchownat() is present on Solaris
-            That point was only really relevant before fchownat() was
-            standardized in POSIX.1.2008.
-    Michael Kerrisk
-        CONFORMING TO: chown(), fchown(), lchown() are in POSIX.1-2008
-
-link.2
-    Michael Kerrisk
-        Merge text of linkat(2)
-    Michael Kerrisk
-        CONFORMING TO: link() is in POSIX.1-2008
-    Michael Kerrisk
-        AT_EMPTY_PATH is Linux-specific and requires _GNU_SOURCE
-
-mkdir.2
-    Michael Kerrisk
-        Merge text of mkdirat(2)
-    Michael Kerrisk
-        CONFORMING TO: mkdir() is in POSIX.1-2008
-
-mknod.2
-    Michael Kerrisk
-        Merge text of mknodat(2)
-    Michael Kerrisk
-        CONFORMING TO: mknod(2) is in POSIX.1-2008
-
-open.2
-    Michael Kerrisk
-        Merge text from openat(2)
-    Michael Kerrisk
-        Remove sentence that openat() is present on Solaris
-            That point was only really relevant before openat() was
-            standardized in POSIX.1.2008.
-
-readlink.2
-    Michael Kerrisk
-        Merge text of readlinkat(2)
-    Michael Kerrisk
-        CONFORMING TO: readlink() is in POSIX.1-2008.
-    Michael Kerrisk
-        Use argument name 'pathname' throughout page
-            (Some APIs were using 'path' while others used 'pathname')
-
-rename.2
-    Michael Kerrisk
-        Merge text of renameat(2)
-    Michael Kerrisk
-        CONFORMING TO: rename(2) is in POSIX.1-2008
-
-stat.2
-    Michael Kerrisk
-        Merge text from fstatat(2)
-    Michael Kerrisk
-        AT_EMPTY_PATH and AT_NO_AUTOMOUNT are Linux-specific
-            These flags require _GNU_SOURCE.
-    Michael Kerrisk
-        Use argument name 'pathname' throughout page
-            (Some APIs were using 'path' while others used 'pathname')
-    Michael Kerrisk
-        Remove sentence that fstatat() is present on Solaris
-            That point was only really relevant before fstatat() was
-            standardized in POSIX.1.2008.
-    Michael Kerrisk
-        CONFORMING TO: stat(), fstat(), lstat() are specified in POSIX.1-2008
-
-symlink.2
-    Michael Kerrisk
-        Merge text of symlinkat(2)
-    Michael Kerrisk
-        CONFORMING TO: symlink() is in POSIX.1-2008
-
-unlink.2
-    Michael Kerrisk
-        Merge text of unlinkat(2)
-    Michael Kerrisk
-        Remove sentence that unlinkat() is present on Solaris
-            That point was only really relevant before unlinkat() was
-            standardized in POSIX.1.2008.
-    Michael Kerrisk
-        CONFORMING TO: unlink() is in POSIX.1-2008
-
-mkfifo.3
-    Michael Kerrisk
-        Merge text of mkfifoat(3)
-    Michael Kerrisk
-        CONFORMING TO: mkfifo() is in POSIX.1-2008
-
-scandir.3
-    Michael Kerrisk
-        Merge text of scandirat(3)
-    Michael Kerrisk
-        Update feature test macro requirements
-            The FTM requirements changed in glibc 2.10.
-    Michael Kerrisk
-        Remove libc4/libc5 note under CONFORMING TO
-            No-one much cares about Linux libc these days.
-    Michael Kerrisk
-        Put detail about alphasort under a NOTES heading
-            This text was under CONFORMING TO, which made no sense.
-    Michael Kerrisk
-        Rework CONFORMING TO text
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-prctl.2
-    Kir Kolyshkin
-        Document PR_SET_MM options in Linux 3.5
-            Some of the PR_SET_MM options were merged to vanilla kernel
-            later, and appeared in Linux 3.5. Those are:
-
-               - PR_SET_MM_ARG_START
-               - PR_SET_MM_ARG_END
-               - PR_SET_MM_ENV_START
-               - PR_SET_MM_ENV_END
-               - PR_SET_MM_AUXV
-               - PR_SET_MM_EXE_FILE
-
-socket.7
-    Neil Horman
-        Document the SO_RXQ_OVFL socket option
-    Michael Kerrisk
-    	Add kernel version number for SO_RXQ_OVFL
-
-
-Changes to individual pages
----------------------------
-
-alarm.2
-    Michael Kerrisk
-        Note semantics of alarm with respect to fork() and execve()
-
-intro.2
-    Michael Kerrisk
-        Describe policy on documenting differences between syscall and glibc API
-
-utime.2
-    Michael Kerrisk
-        Add note that modern applications probably want utimensat(2) etc.
-
-getifaddrs.3
-    Michael Kerrisk
-        Enhance example program
-            Print statistics for AF_PACKET interfaces.
-            Add missing feature test macro definition.
-            Reformat output.
-
-resolv.conf.5
-    Carlos O'Donell
-        DESCRIPTION: mention that the data is trusted
-            In a recent discussion about DNSSEC it was brought to my
-            attention that not all system administrators may understand
-            that the information in /etc/resolv.conf is fully trusted.
-            The resolver implementation in glibc treats /etc/resolv.conf
-            as a fully trusted source of DNS information and passes on
-            the AD-bit for DNSSEC as trusted.
-
-            This patch adds a clarifying sentence to make it absolutely
-            clear that indeed this source of information is trusted.
-
-packet.7
-    Neil Horman
-        Document PACKET_FANOUT_QM fanout mode
-    Daniel Borkmann
-        Improve PACKET_QDISC_BYPASS description
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> 
+> [1] - http://article.gmane.org/gmane.linux.ports.arm.kernel/303266
+> 
+> cheers,
+> -roger
+> 
+> > 
+> >>
+> >> CC: Tero Kristo <t-kristo@ti.com>
+> >> CC: Mike Turquette <mturquette@linaro.org>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >> ---
+> >>  arch/arm/mach-omap2/cclock3xxx_data.c | 4 ----
+> >>  drivers/clk/ti/clk-3xxx.c             | 4 ----
+> >>  2 files changed, 8 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/cclock3xxx_data.c
+> >> index 3b05aea..4299a55 100644
+> >> --- a/arch/arm/mach-omap2/cclock3xxx_data.c
+> >> +++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+> >> @@ -3495,10 +3495,6 @@ static struct omap_clk omap3xxx_clks[] = {
+> >>         CLK(NULL,       "dss_tv_fck",   &dss_tv_fck),
+> >>         CLK(NULL,       "dss_96m_fck",  &dss_96m_fck),
+> >>         CLK(NULL,       "dss2_alwon_fck",       &dss2_alwon_fck),
+> >> -       CLK(NULL,       "utmi_p1_gfclk",        &dummy_ck),
+> >> -       CLK(NULL,       "utmi_p2_gfclk",        &dummy_ck),
+> >> -       CLK(NULL,       "xclk60mhsp1_ck",       &dummy_ck),
+> >> -       CLK(NULL,       "xclk60mhsp2_ck",       &dummy_ck),
+> >>         CLK(NULL,       "init_60m_fclk",        &dummy_ck),
+> >>         CLK(NULL,       "gpt1_fck",     &gpt1_fck),
+> >>         CLK(NULL,       "aes2_ick",     &aes2_ick),
+> >> diff --git a/drivers/clk/ti/clk-3xxx.c b/drivers/clk/ti/clk-3xxx.c
+> >> index d323023..0d1750a 100644
+> >> --- a/drivers/clk/ti/clk-3xxx.c
+> >> +++ b/drivers/clk/ti/clk-3xxx.c
+> >> @@ -130,10 +130,6 @@ static struct ti_dt_clk omap3xxx_clks[] = {
+> >>         DT_CLK(NULL, "dss_tv_fck", "dss_tv_fck"),
+> >>         DT_CLK(NULL, "dss_96m_fck", "dss_96m_fck"),
+> >>         DT_CLK(NULL, "dss2_alwon_fck", "dss2_alwon_fck"),
+> >> -       DT_CLK(NULL, "utmi_p1_gfclk", "dummy_ck"),
+> >> -       DT_CLK(NULL, "utmi_p2_gfclk", "dummy_ck"),
+> >> -       DT_CLK(NULL, "xclk60mhsp1_ck", "dummy_ck"),
+> >> -       DT_CLK(NULL, "xclk60mhsp2_ck", "dummy_ck"),
+> >>         DT_CLK(NULL, "init_60m_fclk", "dummy_ck"),
+> >>         DT_CLK(NULL, "gpt1_fck", "gpt1_fck"),
+> >>         DT_CLK(NULL, "aes2_ick", "aes2_ick"),
+> >> -- 
+> >> 1.8.3.2
+> >>
+> 
