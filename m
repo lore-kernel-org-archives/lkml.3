@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaBZXh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:37:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47143 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbaBZXh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:37:26 -0500
-Message-ID: <530E7AAF.3070908@zytor.com>
-Date: Wed, 26 Feb 2014 15:37:19 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754046AbaBZXhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:37:54 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52338 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752607AbaBZXhw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 18:37:52 -0500
+Date: Wed, 26 Feb 2014 23:37:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>, Robin Holt <robin.m.holt@gmail.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH v4 1/2] ARM: avoid tracers in soft_restart
+Message-ID: <20140226233744.GG21483@n2100.arm.linux.org.uk>
+References: <1393441857-15472-1-git-send-email-sebastian.capella@linaro.org> <1393441857-15472-2-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: The sheer number of sparse warnings in the kernel
-References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <20140226232954.GA17791@kroah.com> <530E7963.10209@zytor.com>
-In-Reply-To: <530E7963.10209@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393441857-15472-2-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 03:31 PM, H. Peter Anvin wrote:
-> On 02/26/2014 03:29 PM, Greg KH wrote:
->> On Wed, Feb 26, 2014 at 03:28:59PM -0800, Greg KH wrote:
->>> On Wed, Feb 26, 2014 at 02:49:26PM -0800, H. Peter Anvin wrote:
->>>> The number of sparse errors in the current kernel is staggering, and it
->>>> makes sparse a lot less valuable of a tool that it otherwise could be.
->>>> On a build of x86-64 allyesconfig I'm getting 20,676 sparse messages.
->>>> Out of those, 12,358 come from linux/err.h.  Given that the latter
->>>> basically spams *everything*, I can only conclude that almost noone uses
->>>> sparse unless they have a filter script.
->>>
->>> What errors are you seeing from err.h?  I don't see those when building
->>> different subdirectories with sparse (which is how I normally use it.)
->>>
->>> And what version of sparse are you running:
->>> 	$ sparse --version
->>> 	v0.4.5-rc1-407-g345e8943fc36
->>
->> Ah, 0.5.0 is now out, maybe you should update to that version?
->>
+On Wed, Feb 26, 2014 at 11:10:56AM -0800, Sebastian Capella wrote:
+> Use of tracers in local_irq_disable is causes recursive aborts when
+> called with irqs disabled and using a temporary stack (hibernation).
+> Replace local_irq_disable with raw_local_irq_disable instead to
+> avoid tracers.
 > 
-> Yes... it looks like the 0.4.5-rc1 that shipped in Fedora is indeed out
-> of date.  With 0.5.0 I "only" see 8,207 messages, which means that at
-> least the linux/err.h issue is gone.
+> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Robin Holt <robin.m.holt@gmail.com>
+> Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> ---
+>  arch/arm/kernel/process.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index 92f7b15..f58b723 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -100,7 +100,7 @@ void soft_restart(unsigned long addr)
+>  	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
+>  
+>  	/* Disable interrupts first */
+> -	local_irq_disable();
+> +	raw_local_irq_disable();
+>  	local_fiq_disable();
 
-For what it's worth, the rpm is called sparse-0.4.5.rc1-2.fc19.x86_64
-and sparse --version reports 0.4.4...
+Great, I'm happy with this now.  I assume that the plan is to submit this
+to my patch system when everyone's given their fill of acks?
 
-	-hpa
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
