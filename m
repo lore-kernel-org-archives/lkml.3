@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaBZJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 04:31:56 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:36403 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaBZJby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 04:31:54 -0500
-Message-ID: <530DB488.9030901@iki.fi>
-Date: Wed, 26 Feb 2014 11:31:52 +0200
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751960AbaBZJcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 04:32:14 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:33968 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaBZJcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 04:32:10 -0500
+Date: Wed, 26 Feb 2014 09:32:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [PATCH V1 2/3] MFD: da9052: Add new DA9053 BC chip variant
+Message-ID: <20140226093203.GK9195@lee--X1>
+References: <201402191637.s1JGb45N017694@swsrvapps-02.lan>
+ <20140225085701.GD19099@lee--X1>
+ <24DF37198A1E704D9811D8F72B87EB51BCFDB5D2@NB-EX-MBX02.diasemi.com>
+ <20140225115036.GF13246@lee--X1>
+ <20140225121555.GB25940@sirena.org.uk>
+ <20140225124050.GA7571@lee--X1>
+ <20140225230721.GA2927@sirena.org.uk>
 MIME-Version: 1.0
-To: Jan Vcelak <jv@fcelda.cz>, linux-media@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] rtl28xxu: add USB ID for Genius TVGo DVB-T03
-References: <1393374645-4568-1-git-send-email-jv@fcelda.cz>
-In-Reply-To: <1393374645-4568-1-git-send-email-jv@fcelda.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.187.87
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140225230721.GA2927@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank for the patch.
+> > > The advice here is usually that sending against -next is a good proxy
+> > > for sending against the individual tree without having to figure out all
+> > > the different trees - almost all of the time the effect is the same.
+> > > This only applies when sending patches via e-mail, for git pulls it's an
+> > > absolute no of course.
+> 
+> > Good point. But it's worth reiterating that this should only be done
+> > if you have dependencies which haven't yet reached Mainline. 
+> 
+> It can be worth doing anyway with a subsystem that's actively developed
+> since sometimees the dependencies are the other way - the APIs in Linus'
+> tree may have gone away.
 
-Even I didn't added any comment to driver ID list, which apparently 
-should be there, that empty line before "Astrometa DVB-T2" entry was 
-there because I wanted to separate RTL2832P entries from RTL2832U 
-entries (different chipset version). So if possible, could you provide a 
-new patch which adds that entry after the last RTL2832U device :) Maybe 
-some comment like "RTL2832P" could be nice too... I hope this is not too 
-much work for you, my mistake...
-
-regards
-Antti
-
-
-On 26.02.2014 02:30, Jan Vcelak wrote:
-> 0458:707f KYE Systems Corp. (Mouse Systems) TVGo DVB-T03 [RTL2832]
->
-> The USB dongle uses RTL2832U demodulator and FC0012 tuner.
->
-> Signed-off-by: Jan Vcelak <jv@fcelda.cz>
-> ---
->
-> The patch adds support for the Genius TVGo DVB-T03 USB dongle.
->
->   drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> index fda5c64..bb051c9 100644
-> --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> @@ -1432,6 +1432,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
->
->   	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
->   		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
-> +	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
-> +		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
->   	{ }
->   };
->   MODULE_DEVICE_TABLE(usb, rtl28xxu_id_table);
->
-
+Then what happens if the tree that your patch finally gets sucked into
+is pulled before the one you've written your code against? I'd say
+basing your code on -next is generally a bad idea.
 
 -- 
-http://palosaari.fi/
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
