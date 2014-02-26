@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaBZLCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:02:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:62063 "EHLO
+	id S1752660AbaBZLFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:05:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:60789 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaBZLCp (ORCPT
+	with ESMTP id S1751489AbaBZLCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:02:45 -0500
+	Wed, 26 Feb 2014 06:02:49 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [PATCH 10/16] atm: nicstar: remove interruptible_sleep_on_timeout
-Date: Wed, 26 Feb 2014 12:01:50 +0100
-Message-Id: <1393412516-3762435-11-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Karsten Keil <isdn@linux-pingi.de>,
+        netdev@vger.kernel.org
+Subject: [PATCH 14/16] isdn: divert, hysdn: fix interruptible_sleep_on race
+Date: Wed, 26 Feb 2014 12:01:54 +0100
+Message-Id: <1393412516-3762435-15-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
 References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:2azLJbA7yvYG0xxb5S/IzMJL7MQdThXmDfkH6kYOW7s
- /Sw1ryVfdKSRW9YXA3KyXBzjTZccpVTNJPQDN/P0JgYMXtbezj
- xoZL9Hs/xNp3A+PlJUW/hplt1GDBVcWohLKA/SLjRx1XAf2afa
- YLDZaQ86HnkhErH037yAbUudDQZCx3VRkM+OHL0bIWaGGoVg5z
- wMjkjk1SCRi4/O5jLKKHabFO26X3DUf3MsivsGnqQneJGBj0iO
- F1lLPJbZ/xui9EYkfSN+a3OpHXjVQ41WHsIwpWAQpclYZjhj02
- Uj2fhoeyW/gHNfcdrhIRPraoNn16XwucGoTT7Hj1otk2bDReKY
- 1Iv6u55roSoJ+H8GJJcUATEtnM1Mn1ZzJr1006GhV
+X-Provags-ID: V02:K0:vs1oOiF2Cpa2tjPYInArzNqrFUULRajxDNkjh1O1sia
+ dVmqFr4VccHJWcGfvY7pinvjCiJHHsewzfw3OKPSNglD+Q+PG+
+ QXu6Gq3uF/irHUxsYR8cGbyhOEvzltxZNYkghzXmEY1NKfZkcy
+ 7NTiUUr188D3TNBG8gfMgKegpIgP0ng2L+UkUio7YChpmyzLRG
+ 4WzmQhH6pd4QLKkE19heYOJIDvQbbUHmHql0HRmsWqC5A3MQCG
+ hXe3zB/m9OP8wL+osFGPZEBw1L1JPYjykJx/x42r8b8fe2oIfi
+ b3oLexWkAw1XBLg3iUz6kRtOW5YeDw6ATxGO8OdCoAZuuRUUSb
+ Rhd3vdFAzaGxV/Y7YuOrw9MMODj/Jm1W76icmYGcm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are trying to finally kill off interruptible_sleep_on_timeout.
-the two uses in the nicstar driver can be trivially replaced
-with wait_event_interruptible_lock_irq_timeout, which prevents the
-wake-up race and is able to check the buffer state with scq->lock
-held.
+These two drivers use identical code for their procfs status
+file handling, which contains a small race against status
+data becoming available while reading the file.
+
+This uses wait_event_interruptible instead to fix this
+particular race and eventually get rid of all sleep_on
+instances. There seems to be another race involving
+multiple concurrent readers of the same procfs file, which
+I don't try to fix here.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-atm-general@lists.sourceforge.net
+Cc: Karsten Keil <isdn@linux-pingi.de>
 Cc: netdev@vger.kernel.org
 ---
- drivers/atm/nicstar.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/isdn/divert/divert_procfs.c | 7 ++++---
+ drivers/isdn/hysdn/hysdn_proclog.c  | 7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
-index 9587e95..e1b17d57 100644
---- a/drivers/atm/nicstar.c
-+++ b/drivers/atm/nicstar.c
-@@ -1739,10 +1739,9 @@ static int push_scqe(ns_dev * card, vc_map * vc, scq_info * scq, ns_scqe * tbd,
- 		}
+diff --git a/drivers/isdn/divert/divert_procfs.c b/drivers/isdn/divert/divert_procfs.c
+index fb4f1ba..1c5dc34 100644
+--- a/drivers/isdn/divert/divert_procfs.c
++++ b/drivers/isdn/divert/divert_procfs.c
+@@ -86,12 +86,13 @@ isdn_divert_read(struct file *file, char __user *buf, size_t count, loff_t *off)
+ 	struct divert_info *inf;
+ 	int len;
  
- 		scq->full = 1;
--		spin_unlock_irqrestore(&scq->lock, flags);
--		interruptible_sleep_on_timeout(&scq->scqfull_waitq,
--					       SCQFULL_TIMEOUT);
--		spin_lock_irqsave(&scq->lock, flags);
-+		wait_event_interruptible_lock_irq_timeout(scq->scqfull_waitq,
-+				scq->tail != scq->next, scq->lock,
-+				SCQFULL_TIMEOUT);
+-	if (!*((struct divert_info **) file->private_data)) {
++	if (!(inf = *((struct divert_info **) file->private_data))) {
+ 		if (file->f_flags & O_NONBLOCK)
+ 			return -EAGAIN;
+-		interruptible_sleep_on(&(rd_queue));
++		wait_event_interruptible(rd_queue, (inf =
++			*((struct divert_info **) file->private_data)));
+ 	}
+-	if (!(inf = *((struct divert_info **) file->private_data)))
++	if (!inf)
+ 		return (0);
  
- 		if (scq->full) {
- 			spin_unlock_irqrestore(&scq->lock, flags);
-@@ -1789,10 +1788,10 @@ static int push_scqe(ns_dev * card, vc_map * vc, scq_info * scq, ns_scqe * tbd,
- 			scq->full = 1;
- 			if (has_run++)
- 				break;
--			spin_unlock_irqrestore(&scq->lock, flags);
--			interruptible_sleep_on_timeout(&scq->scqfull_waitq,
-+			wait_event_interruptible_lock_irq_timeout(scq->scqfull_waitq,
-+						       scq->tail != scq->next,
-+						       scq->lock,
- 						       SCQFULL_TIMEOUT);
--			spin_lock_irqsave(&scq->lock, flags);
- 		}
+ 	inf->usage_cnt--;	/* new usage count */
+diff --git a/drivers/isdn/hysdn/hysdn_proclog.c b/drivers/isdn/hysdn/hysdn_proclog.c
+index b61e8d5..7b5fd8f 100644
+--- a/drivers/isdn/hysdn/hysdn_proclog.c
++++ b/drivers/isdn/hysdn/hysdn_proclog.c
+@@ -175,14 +175,15 @@ hysdn_log_read(struct file *file, char __user *buf, size_t count, loff_t *off)
+ 	int len;
+ 	hysdn_card *card = PDE_DATA(file_inode(file));
  
- 		if (!scq->full) {
+-	if (!*((struct log_data **) file->private_data)) {
++	if (!(inf = *((struct log_data **) file->private_data))) {
+ 		struct procdata *pd = card->proclog;
+ 		if (file->f_flags & O_NONBLOCK)
+ 			return (-EAGAIN);
+ 
+-		interruptible_sleep_on(&(pd->rd_queue));
++		wait_event_interruptible(pd->rd_queue, (inf =
++				*((struct log_data **) file->private_data)));
+ 	}
+-	if (!(inf = *((struct log_data **) file->private_data)))
++	if (!inf)
+ 		return (0);
+ 
+ 	inf->usage_cnt--;	/* new usage count */
 -- 
 1.8.3.2
 
