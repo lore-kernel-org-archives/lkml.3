@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaBZJsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 04:48:35 -0500
-Received: from asix.com.tw ([113.196.140.82]:21580 "EHLO freebsd1.asix.com.tw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751497AbaBZJsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 04:48:32 -0500
-X-Greylist: delayed 3224 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Feb 2014 04:48:31 EST
-From: freddy@asix.com.tw
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Freddy Xin <freddy@asix.com.tw>
-Subject: [PATCH 1/1] AX88179_178A: Add VID:DID for Lenovo OneLinkDock Gigabit LAN
-Date: Wed, 26 Feb 2014 16:54:31 +0800
-Message-Id: <1393404871-2248-1-git-send-email-freddy@asix.com.tw>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751984AbaBZJtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 04:49:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724AbaBZJtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 04:49:43 -0500
+Message-ID: <1393408171.4744.32.camel@nilsson.home.kraxel.org>
+Subject: Re: [PATCH v4 2/2] hyperv-fb: kick off efifb early
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "Abhishek Gupta (LIS)" <abgupta@microsoft.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Date: Wed, 26 Feb 2014 10:49:31 +0100
+In-Reply-To: <5414def7813d4bccbcf1b128b6a5ee46@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1393331320-18147-1-git-send-email-kraxel@redhat.com>
+	 <1393331320-18147-3-git-send-email-kraxel@redhat.com>
+	 <5414def7813d4bccbcf1b128b6a5ee46@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
+  Hi,
 
-Add VID:DID for Lenovo OneLinkDock Gigabit LAN
+> > diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c index
+> > b7b3dd0..1b11886 100644
+> > --- a/drivers/video/hyperv_fb.c
+> > +++ b/drivers/video/hyperv_fb.c
+> > @@ -683,6 +683,7 @@ static int hvfb_getmem(struct fb_info *info)
+> >  		info->apertures->ranges[0].base = pci_resource_start(pdev, 0);
+> >  		info->apertures->ranges[0].size = pci_resource_len(pdev, 0);
+> >  	}
+> > +	remove_conflicting_framebuffers(info->apertures,
+> > KBUILD_MODNAME,
+> > +false);
+> 
+> Thanks for the updates. I'm concerned about, after removing efifb, 
+> if synthvid_send_config(hdev) fails, then there will be no video driver
+> available.
 
-Signed-off-by: Freddy Xin <freddy@asix.com.tw>
----
- drivers/net/usb/ax88179_178a.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+That may happen, yes.
 
-diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
-index 955df81..460e823 100644
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1421,6 +1421,19 @@ static const struct driver_info samsung_info = {
- 	.tx_fixup = ax88179_tx_fixup,
- };
- 
-+static const struct driver_info lenovo_info = {
-+	.description = "Lenovo OneLinkDock Gigabit LAN",
-+	.bind = ax88179_bind,
-+	.unbind = ax88179_unbind,
-+	.status = ax88179_status,
-+	.link_reset = ax88179_link_reset,
-+	.reset = ax88179_reset,
-+	.stop = ax88179_stop,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX,
-+	.rx_fixup = ax88179_rx_fixup,
-+	.tx_fixup = ax88179_tx_fixup,
-+};
-+
- static const struct usb_device_id products[] = {
- {
- 	/* ASIX AX88179 10/100/1000 */
-@@ -1438,6 +1451,10 @@ static const struct usb_device_id products[] = {
- 	/* Samsung USB Ethernet Adapter */
- 	USB_DEVICE(0x04e8, 0xa100),
- 	.driver_info = (unsigned long)&samsung_info,
-+}, {
-+	/* Lenovo OneLinkDock Gigabit LAN */
-+	USB_DEVICE(0x17ef, 0x304b),
-+	.driver_info = (unsigned long)&lenovo_info,
- },
- 	{ },
- };
--- 
-1.7.10.4
+> Is there a way to bring the generic driver back if 
+> synthvid_send_config(hdev) fails?
+
+Not that I know of.
+
+> If no way to recover the generic driver, please limit the early
+> remove_conflicting_framebuffers() to Gen2 VM only.
+
+I'll send updated patches once they are tested.
+
+cheers,
+  Gerd
+
 
