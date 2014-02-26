@@ -1,269 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaBZVYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 16:24:50 -0500
-Received: from mail.efficios.com ([78.47.125.74]:43597 "EHLO mail.efficios.com"
+	id S1753482AbaBZVZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:25:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47544 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaBZVYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 16:24:49 -0500
-Date: Wed, 26 Feb 2014 21:24:52 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <490126137.31172.1393449892867.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140226154012.7985f91c@gandalf.local.home>
-References: <1392355106-26104-1-git-send-email-mathieu.desnoyers@efficios.com> <20140226154012.7985f91c@gandalf.local.home>
-Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
+	id S1753130AbaBZVZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 16:25:16 -0500
+Date: Wed, 26 Feb 2014 16:25:11 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: David Airlie <airlied@linux.ie>
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] a crash in mga_driver_irq_uninstall
+Message-ID: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.172.26]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-Thread-Index: EySs3pfRby3sRrG08aGIUIWhcKji/Q==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "Rusty
-> Russell" <rusty@rustcorp.com.au>, "David Howells" <dhowells@redhat.com>, "Greg Kroah-Hartman"
-> <gregkh@linuxfoundation.org>
-> Sent: Wednesday, February 26, 2014 3:40:12 PM
-> Subject: Re: [PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
-> 
-> Mathieu, you should have added a v2 to the subject ie: [PATCH V2]
+Hi
 
-Good point, I'll keep in mind to increment patch version between
-RFC PATCH and PATCH when there are changes. Indeed, it can be
-confusing otherwise.
+I'm getting a reproducible crash in kernel MGA DRM driver.
 
-> 
-> Rusty,
-> 
-> If you want to take this, please add my
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+The crash happens in the following way:
 
-Thanks!
+drm_release is called
+drm_release calls drm_master_put(&file_priv->master);
+drm_master_put drops a reference and calls drm_master_destroy
+drm_master_destroy calls drm_rmmap_locked to unmap the card's mmio space
+drm_release continues to execute
+drm_release calls drm_lastclose
+drm_lastclose calls drm_irq_uninstall
+drm_irq_uninstall calls dev->driver->irq_uninstall (mga_driver_irq_uninstall)
+mga_driver_irq_uninstall performs MGA_WRITE(MGA_IEN, 0), it crashes 
+	because the mmio range was unmapped 
 
-Mathieu
+The result are these two crashes - one in mga_driver_irq_uninstall and the 
+other in mga_driver_irq_handler:
 
-> 
-> -- Steve
-> 
-> 
-> On Fri, 14 Feb 2014 00:18:26 -0500
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > Users have reported being unable to trace non-signed modules loaded
-> > within a kernel supporting module signature.
-> > 
-> > This is caused by tracepoint.c:tracepoint_module_coming() refusing to
-> > take into account tracepoints sitting within force-loaded modules
-> > (TAINT_FORCED_MODULE). The reason for this check, in the first place, is
-> > that a force-loaded module may have a struct module incompatible with
-> > the layout expected by the kernel, and can thus cause a kernel crash
-> > upon forced load of that module on a kernel with CONFIG_TRACEPOINTS=y.
-> > 
-> > Tracepoints, however, specifically accept TAINT_OOT_MODULE and
-> > TAINT_CRAP, since those modules do not lead to the "very likely system
-> > crash" issue cited above for force-loaded modules.
-> > 
-> > With kernels having CONFIG_MODULE_SIG=y (signed modules), a non-signed
-> > module is tainted re-using the TAINT_FORCED_MODULE taint flag.
-> > Unfortunately, this means that Tracepoints treat that module as a
-> > force-loaded module, and thus silently refuse to consider any tracepoint
-> > within this module.
-> > 
-> > Since an unsigned module does not fit within the "very likely system
-> > crash" category of tainting, add a new TAINT_UNSIGNED_MODULE taint flag
-> > to specifically address this taint behavior, and accept those modules
-> > within Tracepoints. We use the letter 'X' as a taint flag character for
-> > a module being loaded that doesn't know how to sign its name (proposed
-> > by Steven Rostedt).
-> > 
-> > Also add the missing 'O' entry to trace event show_module_flags() list
-> > for the sake of completeness.
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: Steven Rostedt <rostedt@goodmis.org>
-> > CC: Ingo Molnar <mingo@redhat.com>
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > CC: Rusty Russell <rusty@rustcorp.com.au>
-> > CC: David Howells <dhowells@redhat.com>
-> > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> >  Documentation/ABI/testing/sysfs-module |    1 +
-> >  Documentation/module-signing.txt       |    3 ++-
-> >  Documentation/oops-tracing.txt         |    3 +++
-> >  Documentation/sysctl/kernel.txt        |    2 ++
-> >  include/linux/kernel.h                 |    1 +
-> >  include/trace/events/module.h          |    4 +++-
-> >  kernel/module.c                        |    4 +++-
-> >  kernel/panic.c                         |    2 ++
-> >  kernel/tracepoint.c                    |    5 +++--
-> >  9 files changed, 20 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-module
-> > b/Documentation/ABI/testing/sysfs-module
-> > index 47064c2..b9a29cd 100644
-> > --- a/Documentation/ABI/testing/sysfs-module
-> > +++ b/Documentation/ABI/testing/sysfs-module
-> > @@ -49,3 +49,4 @@ Description:	Module taint flags:
-> >  			O - out-of-tree module
-> >  			F - force-loaded module
-> >  			C - staging driver module
-> > +			X - unsigned module
-> > diff --git a/Documentation/module-signing.txt
-> > b/Documentation/module-signing.txt
-> > index 2b40e04..b6af42e 100644
-> > --- a/Documentation/module-signing.txt
-> > +++ b/Documentation/module-signing.txt
-> > @@ -53,7 +53,8 @@ This has a number of options available:
-> >  
-> >       If this is off (ie. "permissive"), then modules for which the key is
-> >       not
-> >       available and modules that are unsigned are permitted, but the kernel
-> >       will
-> > -     be marked as being tainted.
-> > +     be marked as being tainted, and the concerned modules will be marked
-> > as
-> > +     tainted, shown with the character 'X'.
-> >  
-> >       If this is on (ie. "restrictive"), only modules that have a valid
-> >       signature that can be verified by a public key in the kernel's
-> >       possession
-> > diff --git a/Documentation/oops-tracing.txt
-> > b/Documentation/oops-tracing.txt
-> > index 13032c0..879abe2 100644
-> > --- a/Documentation/oops-tracing.txt
-> > +++ b/Documentation/oops-tracing.txt
-> > @@ -265,6 +265,9 @@ characters, each representing a particular tainted
-> > value.
-> >  
-> >   13: 'O' if an externally-built ("out-of-tree") module has been loaded.
-> >  
-> > + 14: 'X' if an unsigned module has been loaded in a kernel supporting
-> > +     module signature.
-> > +
-> >  The primary reason for the 'Tainted: ' string is to tell kernel
-> >  debuggers if this is a clean kernel or if anything unusual has
-> >  occurred.  Tainting is permanent: even if an offending module is
-> > diff --git a/Documentation/sysctl/kernel.txt
-> > b/Documentation/sysctl/kernel.txt
-> > index e55124e..8ebe1c0 100644
-> > --- a/Documentation/sysctl/kernel.txt
-> > +++ b/Documentation/sysctl/kernel.txt
-> > @@ -792,6 +792,8 @@ can be ORed together:
-> >  1024 - A module from drivers/staging was loaded.
-> >  2048 - The system is working around a severe firmware bug.
-> >  4096 - An out-of-tree module has been loaded.
-> > +8192 - An unsigned module has been loaded in a kernel supporting module
-> > +       signature.
-> >  
-> >  ==============================================================
-> >  
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > index 196d1ea..4710900 100644
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -469,6 +469,7 @@ extern enum system_states {
-> >  #define TAINT_CRAP			10
-> >  #define TAINT_FIRMWARE_WORKAROUND	11
-> >  #define TAINT_OOT_MODULE		12
-> > +#define TAINT_UNSIGNED_MODULE		13
-> >  
-> >  extern const char hex_asc[];
-> >  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
-> > diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-> > index 1619327..11fd51b 100644
-> > --- a/include/trace/events/module.h
-> > +++ b/include/trace/events/module.h
-> > @@ -22,8 +22,10 @@ struct module;
-> >  
-> >  #define show_module_flags(flags) __print_flags(flags, "",	\
-> >  	{ (1UL << TAINT_PROPRIETARY_MODULE),	"P" },		\
-> > +	{ (1UL << TAINT_OOT_MODULE),		"O" },		\
-> >  	{ (1UL << TAINT_FORCED_MODULE),		"F" },		\
-> > -	{ (1UL << TAINT_CRAP),			"C" })
-> > +	{ (1UL << TAINT_CRAP),			"C" },		\
-> > +	{ (1UL << TAINT_UNSIGNED_MODULE),	"X" })
-> >  
-> >  TRACE_EVENT(module_load,
-> >  
-> > diff --git a/kernel/module.c b/kernel/module.c
-> > index d24fcf2..4d7d25e 100644
-> > --- a/kernel/module.c
-> > +++ b/kernel/module.c
-> > @@ -1013,6 +1013,8 @@ static size_t module_flags_taint(struct module *mod,
-> > char *buf)
-> >  		buf[l++] = 'F';
-> >  	if (mod->taints & (1 << TAINT_CRAP))
-> >  		buf[l++] = 'C';
-> > +	if (mod->taints & (1 << TAINT_UNSIGNED_MODULE))
-> > +		buf[l++] = 'X';
-> >  	/*
-> >  	 * TAINT_FORCED_RMMOD: could be added.
-> >  	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-> > @@ -3214,7 +3216,7 @@ static int load_module(struct load_info *info, const
-> > char __user *uargs,
-> >  		pr_notice_once("%s: module verification failed: signature "
-> >  			       "and/or  required key missing - tainting "
-> >  			       "kernel\n", mod->name);
-> > -		add_taint_module(mod, TAINT_FORCED_MODULE, LOCKDEP_STILL_OK);
-> > +		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
-> >  	}
-> >  #endif
-> >  
-> > diff --git a/kernel/panic.c b/kernel/panic.c
-> > index 6d63003..0e25fe1 100644
-> > --- a/kernel/panic.c
-> > +++ b/kernel/panic.c
-> > @@ -210,6 +210,7 @@ static const struct tnt tnts[] = {
-> >  	{ TAINT_CRAP,			'C', ' ' },
-> >  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-> >  	{ TAINT_OOT_MODULE,		'O', ' ' },
-> > +	{ TAINT_UNSIGNED_MODULE,	'X', ' ' },
-> >  };
-> >  
-> >  /**
-> > @@ -228,6 +229,7 @@ static const struct tnt tnts[] = {
-> >   *  'C' - modules from drivers/staging are loaded.
-> >   *  'I' - Working around severe firmware bug.
-> >   *  'O' - Out-of-tree module has been loaded.
-> > + *  'X' - Unsigned module has been loaded.
-> >   *
-> >   *	The string is overwritten by the next call to print_tainted().
-> >   */
-> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> > index 29f2654..9bb887d 100644
-> > --- a/kernel/tracepoint.c
-> > +++ b/kernel/tracepoint.c
-> > @@ -639,9 +639,10 @@ static int tracepoint_module_coming(struct module
-> > *mod)
-> >  	/*
-> >  	 * We skip modules that taint the kernel, especially those with different
-> >  	 * module headers (for forced load), to make sure we don't cause a crash.
-> > -	 * Staging and out-of-tree GPL modules are fine.
-> > +	 * Staging, out-of-tree, and unsigned GPL modules are fine.
-> >  	 */
-> > -	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-> > +	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP) |
-> > +			(1 << TAINT_UNSIGNED_MODULE)))
-> >  		return 0;
-> >  	mutex_lock(&tracepoints_mutex);
-> >  	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
-> 
-> 
+[44272.019284] BUG: unable to handle kernel paging request at e4831e1c
+[44272.021000] IP: [<e481e8d8>] mga_driver_irq_uninstall+0x18/0x28 [mga]
+[44272.021000] *pde = 1e7ba067 *pte = 00000000
+[44272.021000] Oops: 0002 [#1]
+[44272.021000] Modules linked in: mga drm hid_generic usbhid hid ipv6 
+cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_ondemand 
+cpufreq_userspace plip spadfs hpfs nls_cp852 msdos fat matroxfb_base 
+matroxfb_g450 matroxfb_accel cfbfillrect cfbimgblt cfbcopyarea 
+matroxfb_DAC1064 g450_pll matroxfb_misc floppy dm_crypt snd_usb_audio 
+snd_usbmidi_lib snd_hwdep snd_seq_midi snd_seq_midi_event snd_rawmidi 
+snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer snd soundcore 
+powernow_k6 pcspkr evdev ehci_pci via686a i2c_viapro e1000 i2c_core 
+uhci_hcd ehci_hcd via_agp usbcore usb_common parport_pc agpgart parport 
+dm_mod ext4 crc16
+jbd2 mbcache sata_promise unix
+[44272.021000] CPU: 0 PID: 3140 Comm: Xorg Not tainted 3.13.5 #5
+[44272.021000] Hardware name: System Manufacturer Product Name/VA-503A, 
+BIOS 4.51 PG 08/02/00
+[44272.021000] task: c043ce80 ti: de662000 task.ti: de662000
+[44272.021000] EIP: 0060:[<e481e8d8>] EFLAGS: 00213286 CPU: 0
+[44272.021000] EIP is at mga_driver_irq_uninstall+0x18/0x28 [mga]
+[44272.021000] EAX: de87fc00 EBX: de87fc00 ECX: e4830000 EDX: 00000000
+[44272.021000] ESI: 00000001 EDI: 00000001 EBP: 00203202 ESP: de663e58
+[44272.021000]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[44272.021000] CR0: 8005003b CR2: e4831e1c CR3: 1e666000 CR4: 00000090
+[44272.021000] Stack:
+[44272.021000]  e47d17ae 00000000 e47f0064 e47e6ca2 e47f0079 0000000f 
+0187fc00 c0096e40
+[44272.021000]  de87fc00 00000001 de87fc00 e481a277 00000001 e481ee1f 
+e481eaa7 e481ee1d
+[44272.021000]  de7a6880 00150012 e47d6b2d 00017915 e47d6b2d df401d00 
+c0096e40 de87fc00
+[44272.021000] Call Trace:
+[44272.021000]  [<e47d17ae>] ? drm_irq_uninstall+0xae/0x180 [drm]
+[44272.021000]  [<e481a277>] ? mga_do_cleanup_dma+0x237/0x300 [mga]
+[44272.021000]  [<e47d6b2d>] ? drm_ht_remove+0x2d/0x40 [drm]
+[44272.021000]  [<e47d6b2d>] ? drm_ht_remove+0x2d/0x40 [drm]
+[44272.021000]  [<e47cf03e>] ? drm_lastclose+0x3e/0x180 [drm]
+[44272.021000]  [<e47cf4fb>] ? drm_release+0x37b/0x520 [drm]
+[44272.021000]  [<c10a61b2>] ? __fput+0x72/0x1c0
+[44272.021000]  [<c1039499>] ? task_work_run+0x79/0xa0
+[44272.021000]  [<c102722f>] ? do_exit+0x18f/0x740
+[44272.021000]  [<c10a5bec>] ? vfs_writev+0x2c/0x60
+[44272.021000]  [<c10a5d8a>] ? SyS_writev+0x4a/0xc0
+[44272.021000]  [<c10278a6>] ? do_group_exit+0x26/0x60
+[44272.021000]  [<c10278f1>] ? SyS_exit_group+0x11/0x20
+[44272.021000]  [<c125cbf8>] ? syscall_call+0x7/0xb
+[44272.021000] Code: 1e 00 00 b0 00 5b c3 8d b6 00 00 00 00 8d bf 00 00 00 
+00 8b 90 d8 00 00 00 85 d2 74 1b 8b 92 dc 00 00 00 8b 4a 10 ba 00 00 00 00 
+<89> 91 1c 1e 00 00 c6 80 80 00 00 00 00 c3 00 00 ba 00 f9 81 e4
+[44272.021000] EIP: [<e481e8d8>] mga_driver_irq_uninstall+0x18/0x28 [mga] 
+SS:ESP 0068:de663e58
+[44272.021000] CR2: 00000000e4831e1c
+[44272.021000] ---[ end trace 68cd6cc5ef884eb2 ]---
+[44272.021000] Fixing recursive fault but reboot is needed!
+[44272.651150] BUG: unable to handle kernel paging request at e4831e14
+[44272.654217] IP: [<e481e5f4>] mga_driver_irq_handler+0x14/0xe0 [mga]
+[44272.654217] *pde = 1e7ba067 *pte = 00000000
+[44272.654217] Oops: 0000 [#2]
+[44272.654217] Modules linked in: mga drm hid_generic usbhid hid ipv6 
+cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_ondemand 
+cpufreq_userspace plip spadfs hpfs nls_cp852 msdos fat matroxfb_base 
+matroxfb_g450 matroxfb_accel cfbfillrect cfbimgblt cfbcopyarea 
+matroxfb_DAC1064 g450_pll matroxfb_misc floppy dm_crypt snd_usb_audio 
+snd_usbmidi_lib snd_hwdep snd_seq_midi snd_seq_midi_event snd_rawmidi 
+snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer snd soundcore 
+powernow_k6 pcspkr evdev ehci_pci via686a i2c_viapro e1000 i2c_core 
+uhci_hcd ehci_hcd via_agp usbcore usb_common parport_pc agpgart parport 
+dm_mod ext4 crc16
+jbd2 mbcache sata_promise unix
+[44272.654217] CPU: 0 PID: 0 Comm: swapper Tainted: G      D      3.13.5 
+#5
+[44272.654217] Hardware name: System Manufacturer Product Name/VA-503A, 
+BIOS 4.51 PG 08/02/00
+[44272.654217] task: c132f500 ti: df406000 task.ti: c1324000
+[44272.654217] EIP: 0060:[<e481e5f4>] EFLAGS: 00210082 CPU: 0
+[44272.654217] EIP is at mga_driver_irq_handler+0x14/0xe0 [mga]
+[44272.654217] EAX: de87fc00 EBX: df640a00 ECX: e0860803 EDX: e4830000
+[44272.654217] ESI: 00000080 EDI: 0000000f EBP: de585340 ESP: df407fb0
+[44272.654217]  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+[44272.654217] CR0: 8005003b CR2: e4831e14 CR3: 1f7ca000 CR4: 00000090
+[44272.654217] Stack:
+[44272.654217]  0000000f 00000001 00000080 c104aaf6 00000000 00000000 
+00000000 00000000
+[44272.654217]  00000000 00000000 df405780 df405780 df405780 c104c9a0 
+0000000f c104ac19
+[44272.654217]  df405780 c104c9ec c1325f68 c10036b2
+[44272.654217] Call Trace:
+[44272.654217]  [<c104aaf6>] ? handle_irq_event_percpu+0x36/0x140
+[44272.654217]  [<c104c9a0>] ? cond_unmask_irq+0x40/0x40
+[44272.654217]  [<c104ac19>] ? handle_irq_event+0x19/0x40
+[44272.654217]  [<c104c9ec>] ? handle_level_irq+0x4c/0x80
+[44272.654217]  <IRQ>
+[44272.654217]  [<c100340e>] ? do_IRQ+0x2e/0xa0
+[44272.654217]  [<c125d5ec>] ? common_interrupt+0x2c/0x31
+[44272.654217]  [<c104a3a8>] ? cpu_startup_entry+0xa8/0x120
+[44272.654217]  [<c135f989>] ? start_kernel+0x2d1/0x2d6
+[44272.654217]  [<c135f502>] ? repair_env_string+0x4d/0x4d
+[44272.654217] Code: 0e 8b 80 9c 00 00 00 c3 8d b4 26 00 00 00 00 b8 00 00 
+00 00 c3 66 90 56 53 50 89 d0 8b 9a d8 00 00 00 8b 93 dc 00 00 00 8b 52 10 
+<8b> b2 14 1e 00 00 f7 c6 20 00 00 00 0f 85 8a 00 00 00 b8 00 00
+[44272.654217] EIP: [<e481e5f4>] mga_driver_irq_handler+0x14/0xe0 [mga] 
+SS:ESP 0068:df407fb0
+[44272.654217] CR2: 00000000e4831e14
+[44272.654217] ---[ end trace 68cd6cc5ef884eb3 ]---
+[44272.654217] Kernel panic - not syncing: Fatal exception in interrupt
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+
+The crash can be fixed with this patch - it calls drm_irq_uninstall before 
+unmapping the registers, so that further calls to drm_irq_uninstall do not 
+try to touch the mmio space. Removing the lock is not correct, but the 
+lock is already held when calling drm_master_destroy - you know the drm 
+locking rules better than me, so you could come up with a better patch for 
+this problem.
+
+Mikulas
+
+---
+ drivers/gpu/drm/drm_irq.c  |    2 --
+ drivers/gpu/drm/drm_stub.c |    2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-3.13.5/drivers/gpu/drm/drm_irq.c
+===================================================================
+--- linux-3.13.5.orig/drivers/gpu/drm/drm_irq.c	2014-01-24 19:36:33.529945530 +0100
++++ linux-3.13.5/drivers/gpu/drm/drm_irq.c	2014-02-26 16:40:41.379534715 +0100
+@@ -357,10 +357,8 @@ int drm_irq_uninstall(struct drm_device
+ 	if (!drm_core_check_feature(dev, DRIVER_HAVE_IRQ))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&dev->struct_mutex);
+ 	irq_enabled = dev->irq_enabled;
+ 	dev->irq_enabled = false;
+-	mutex_unlock(&dev->struct_mutex);
+ 
+ 	/*
+ 	 * Wake up any waiters so they don't hang.
+Index: linux-3.13.5/drivers/gpu/drm/drm_stub.c
+===================================================================
+--- linux-3.13.5.orig/drivers/gpu/drm/drm_stub.c	2014-02-26 16:31:36.158862071 +0100
++++ linux-3.13.5/drivers/gpu/drm/drm_stub.c	2014-02-26 16:40:52.031317277 +0100
+@@ -167,6 +167,8 @@ static void drm_master_destroy(struct kr
+ 
+ 	list_del(&master->head);
+ 
++	drm_irq_uninstall(dev);
++
+ 	if (dev->driver->master_destroy)
+ 		dev->driver->master_destroy(dev, master);
+ 
