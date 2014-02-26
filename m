@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaBZLCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:02:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.131]:60676 "EHLO
+	id S1752398AbaBZLC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:02:58 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:62707 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaBZLCm (ORCPT
+	with ESMTP id S1752127AbaBZLCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:02:42 -0500
+	Wed, 26 Feb 2014 06:02:52 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 03/16] DAC960: remove sleep_on usage
-Date: Wed, 26 Feb 2014 12:01:43 +0100
-Message-Id: <1393412516-3762435-4-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: [PATCH 11/16] atm: firestream: fix interruptible_sleep_on race
+Date: Wed, 26 Feb 2014 12:01:51 +0100
+Message-Id: <1393412516-3762435-12-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
 References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:rRlqgkUhlt2Kwb/7/X1Z4QbPFqL5dP0WHxKPPOsF1vL
- 3pnoVasZGOxcpDw8aJj9o5CO1efZ6GNsHoyjkTQurqWaQSeFM6
- WIWL78odNT1cedYdYMhf/PK++NP+8XhLexKpBWe1D91YEiUaS5
- aGx64phhalqJi46j5cAhcz/z2HKUO9hQtaY47lRRrZ1W2fRCsj
- XioxQcnH9lkIHAflrdP6rieOBpk9SJFZpUVOFwhHrfvXuOR3QV
- 1Hxg6TLTtxssuYbdh1wVr7rwu53LLDiiFissV/f37urQmvN7cG
- Vl0Z/Auufw254EFeq4Abb80L/Zf18j1c7djR/+4tDpdpqmv5Fs
- QaOBmZNs3m1ET+TtfCLW5Co/rLZXtLfruyzu+NcDf
+X-Provags-ID: V02:K0:i8mXTwYredDVP+AwF62Aju1Ktj759g4ve2ZVRecBLh/
+ KpUMdEyG2vhyKRwIGUFoAuJ49xY9Bm8dfzInu53Dh/rZdGqM4i
+ JrymDKRUOQFtg2kFRNPtzNG7YfyJ5uQZgElgZHiTc/eE3ZwX+T
+ Dz/iTjPQO0gFqmGh+VlVxFx7CezIrj6ix3i4Wvr9Qdl+UmirDX
+ 944Ac7T03Qw2B1oOScttgFn65c0bYDndl86wQ1aXnygAe8um4a
+ OrRc6Kdm9veUwrMVLuhs3L8XWfMNZiS6ZyXPZGE6Mlzy0X+aRE
+ JgCD7C1m5algHTd16LtQ8srV40Bl7lvlrgrnRqdMO9YlDguIbu
+ r1iLvu+St+4f3jBttK8vYKay38D5Q+RCTylZcX9lD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sleep_on and its variants are going away. The use of sleep_on() in
-DAC960_V2_ExecuteUserCommand seems to be bogus because the command
-by the time we get there, the command has completed already and
-we just enter the timeout. Based on this interpretation, I concluded
-that we can replace it with a simple msleep(1000) and rearrange the
-code around it slightly.
-
-The interruptible_sleep_on_timeout in DAC960_gam_ioctl seems equivalent
-to the race-free version using wait_event_interruptible_timeout.
-I left the driver to return -EINTR rather than -ERESTARTSYS to preserve
-the timeout behavior.
+interruptible_sleep_on is racy and going away. This replaces the one use
+in the firestream driver with the appropriate wait_event_interruptible
+variant.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jens Axboe <axboe@kernel.dk>
+Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
 ---
- drivers/block/DAC960.c | 34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
+ drivers/atm/firestream.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
-index eb39501..125d845 100644
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -6411,12 +6411,12 @@ static bool DAC960_V2_ExecuteUserCommand(DAC960_Controller_T *Controller,
- 					.ScatterGatherSegments[0]
- 					.SegmentByteCount =
- 	    CommandMailbox->ControllerInfo.DataTransferSize;
--	  DAC960_ExecuteCommand(Command);
--	  while (Controller->V2.NewControllerInformation->PhysicalScanActive)
--	    {
--	      DAC960_ExecuteCommand(Command);
--	      sleep_on_timeout(&Controller->CommandWaitQueue, HZ);
--	    }
-+	  while (1) {
-+	    DAC960_ExecuteCommand(Command);
-+	    if (!Controller->V2.NewControllerInformation->PhysicalScanActive)
-+		break;
-+	    msleep(1000);
-+	  }
- 	  DAC960_UserCritical("Discovery Completed\n", Controller);
-  	}
-     }
-@@ -7035,18 +7035,16 @@ static long DAC960_gam_ioctl(struct file *file, unsigned int Request,
- 		ErrorCode = -EFAULT;
- 		break;
+diff --git a/drivers/atm/firestream.c b/drivers/atm/firestream.c
+index b41c948..f43e1c1 100644
+--- a/drivers/atm/firestream.c
++++ b/drivers/atm/firestream.c
+@@ -736,8 +736,8 @@ static void process_txdone_queue (struct fs_dev *dev, struct queue *q)
+       
+ 			skb = td->skb;
+ 			if (skb == FS_VCC (ATM_SKB(skb)->vcc)->last_skb) {
+-				wake_up_interruptible (& FS_VCC (ATM_SKB(skb)->vcc)->close_wait);
+ 				FS_VCC (ATM_SKB(skb)->vcc)->last_skb = NULL;
++				wake_up_interruptible (& FS_VCC (ATM_SKB(skb)->vcc)->close_wait);
+ 			}
+ 			td->dev->ntxpckts--;
+ 
+@@ -1123,7 +1123,7 @@ static void fs_close(struct atm_vcc *atm_vcc)
+ 		   this sleep_on, we'll lose any reference to these packets. Memory leak!
+ 		   On the other hand, it's awfully convenient that we can abort a "close" that
+ 		   is taking too long. Maybe just use non-interruptible sleep on? -- REW */
+-		interruptible_sleep_on (& vcc->close_wait);
++		wait_event_interruptible(vcc->close_wait, !vcc->last_skb);
  	}
--	while (Controller->V2.HealthStatusBuffer->StatusChangeCounter
--	       == HealthStatusBuffer.StatusChangeCounter &&
--	       Controller->V2.HealthStatusBuffer->NextEventSequenceNumber
--	       == HealthStatusBuffer.NextEventSequenceNumber)
--	  {
--	    interruptible_sleep_on_timeout(&Controller->HealthStatusWaitQueue,
--					   DAC960_MonitoringTimerInterval);
--	    if (signal_pending(current)) {
--	    	ErrorCode = -EINTR;
--	    	break;
--	    }
--	  }
-+	ErrorCode = wait_event_interruptible_timeout(Controller->HealthStatusWaitQueue,
-+			!(Controller->V2.HealthStatusBuffer->StatusChangeCounter
-+			    == HealthStatusBuffer.StatusChangeCounter &&
-+			  Controller->V2.HealthStatusBuffer->NextEventSequenceNumber
-+			    == HealthStatusBuffer.NextEventSequenceNumber),
-+			DAC960_MonitoringTimerInterval);
-+	if (ErrorCode == -ERESTARTSYS) {
-+		ErrorCode = -EINTR;
-+		break;
-+	}
- 	if (copy_to_user(GetHealthStatus.HealthStatusBuffer,
- 			 Controller->V2.HealthStatusBuffer,
- 			 sizeof(DAC960_V2_HealthStatusBuffer_T)))
+ 
+ 	txtp = &atm_vcc->qos.txtp;
 -- 
 1.8.3.2
 
