@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaBZRkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:40:08 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:40093 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750813AbaBZRkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:40:06 -0500
-Date: Wed, 26 Feb 2014 18:39:04 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        b.brezillon@overkiz.com
-Subject: Re: [PATCH 1/7] Documentation: dt: iio: improve atmel-adc
- documentation
-Message-ID: <20140226173904.GG607@lukather>
-References: <1393434074-15600-1-git-send-email-alexandre.belloni@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PpAOPzA3dXsRhoo+"
-Content-Disposition: inline
-In-Reply-To: <1393434074-15600-1-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753364AbaBZRlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:41:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54011 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaBZRlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:41:10 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Michael Matz <matz@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Biener <richard.guenther@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <20140224172856.GP8264@linux.vnet.ibm.com>
+References: <1393095223.28840.4914.camel@triegel.csb>
+	 <CA+55aFz9=RQoMO2ipyZgNPNzWGVXi_R9Ar5=o9VBWwXzDDz6jg@mail.gmail.com>
+	 <20140223003933.GQ4250@linux.vnet.ibm.com>
+	 <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	 <20140223063426.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+	 <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+	 <CAFiYyc08cusFTsydD2C4rEZB-k38NnorzEXzKvqab0m3R+qn8w@mail.gmail.com>
+	 <CA+55aFyYtMm1_UsPVw8mi7o2iH_--1wLvxPUt5Z9mAEOGMgXdQ@mail.gmail.com>
+	 <alpine.LNX.2.00.1402241745100.7694@wotan.suse.de>
+	 <20140224172856.GP8264@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Feb 2014 18:39:51 +0100
+Message-ID: <1393436391.28840.8975.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-02-24 at 09:28 -0800, Paul E. McKenney wrote:
+> On Mon, Feb 24, 2014 at 05:55:50PM +0100, Michael Matz wrote:
+> > Hi,
+> > 
+> > On Mon, 24 Feb 2014, Linus Torvalds wrote:
+> > 
+> > > > To me that reads like
+> > > >
+> > > >   int i;
+> > > >   int *q = &i;
+> > > >   int **p = &q;
+> > > >
+> > > >   atomic_XXX (p, CONSUME);
+> > > >
+> > > > orders against accesses '*p', '**p', '*q' and 'i'.  Thus it seems they
+> > > > want to say that it orders against aliased storage - but then go further
+> > > > and include "indirectly through a chain of pointers"?!  Thus an
+> > > > atomic read of a int * orders against any 'int' memory operation but
+> > > > not against 'float' memory operations?
+> > > 
+> > > No, it's not about type at all, and the "chain of pointers" can be
+> > > much more complex than that, since the "int *" can point to within an
+> > > object that contains other things than just that "int" (the "int" can
+> > > be part of a structure that then has pointers to other structures
+> > > etc).
+> > 
+> > So, let me try to poke holes into your definition or increase my 
+> > understanding :) .  You said "chain of pointers"(dereferences I assume), 
+> > e.g. if p is result of consume load, then access to 
+> > p->here->there->next->prev->stuff is supposed to be ordered with that load 
+> > (or only when that last load/store itself is also an atomic load or 
+> > store?).
+> > 
+> > So, what happens if the pointer deref chain is partly hidden in some 
+> > functions:
+> > 
+> > A * adjustptr (B *ptr) { return &ptr->here->there->next; }
+> > B * p = atomic_XXX (&somewhere, consume);
+> > adjustptr(p)->prev->stuff = bla;
+> > 
+> > As far as I understood you, this whole ptrderef chain business would be 
+> > only an optimization opportunity, right?  So if the compiler can't be sure 
+> > how p is actually used (as in my function-using case, assume adjustptr is 
+> > defined in another unit), then the consume load would simply be 
+> > transformed into an acquire (or whatever, with some barrier I mean)?  Only 
+> > _if_ the compiler sees all obvious uses of p (indirectly through pointer 
+> > derefs) can it, yeah, do what with the consume load?
+> 
+> Good point, I left that out of my list.  Adding it:
+> 
+> 13.	By default, pointer chains do not propagate into or out of functions.
+> 	In implementations having attributes, a [[carries_dependency]]
+> 	may be used to mark a function argument or return as passing
+> 	a pointer chain into or out of that function.
+> 
+> 	If a function does not contain memory_order_consume loads and
+> 	also does not contain [[carries_dependency]] attributes, then
+> 	that function may be compiled using any desired dependency-breaking
+> 	optimizations.
+> 
+> 	The ordering effects are implementation defined when a given
+> 	pointer chain passes into or out of a function through a parameter
+> 	or return not marked with a [[carries_dependency]] attributed.
+> 
+> Note that this last paragraph differs from the current standard, which
+> would require ordering regardless.
 
---PpAOPzA3dXsRhoo+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I would prefer if we could get rid off [[carries_dependency]] as well;
+currently, it's a hint whose effectiveness really depends on how the
+particular implementation handles this attribute.  If we still need
+something like it in the future, it would be good if it had a clearer
+use and performance effects.
 
-Hi Alexandre,
-
-On Wed, Feb 26, 2014 at 06:01:08PM +0100, Alexandre Belloni wrote:
-> This corrects the example by removing the unit-address, as suggested by M=
-ark
-> Rutland in
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/23418=
-4.html
-
-I still belive that it's wrong, and Mark haven't answered my comments
-on his statement.
-
-I'd vote for a status-quo, until he gives an answer backed with
-references to the ePAPR.
-
->=20
-> Also, it removes the properties that are not used anymore, to stop propag=
-ating
-> them.
->=20
-> Finally, fixes a few typos.
-
-I'm fine with the rest.
-
-Maxime
-
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---PpAOPzA3dXsRhoo+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTDia4AAoJEBx+YmzsjxAgrCsP/3hu6rBDm+xElxr52vSVCaH8
-VZux4UJvE3LtLj7Hnei3uMZbdFV0BHFx6id3Z2nbLEYPAoLWIG72nO1Cj6w5Jl1m
-Fp75p0d/vY4v3Dy4Jz+Pf0yfaCEptaElLJO9YGGMyhP3i0i+zu7Vt+iYLLr0nJiD
-h8S7XULzUlwzVvmjqNeZxDzWQ4RteSqRS5CvWOnJfAzF624Te9AhOS/gFRTBEUOD
-cG9vMR7qM6g9fBZA6uXhGzY1nlyXJ70wIXOeZXzK8Xlleta3atZhora11INu984i
-EdI9F1NcHswEov3eALZhIJghSczwCIs8f9XL6LqmYd5VDOqdOP1QwsxjmDVQA8Nt
-E5lz6GIkYOFjthOT094WBAzlAkC7dkZCsXK0yjwDTjoYEW03PMyLuQ0y4cM5pBuf
-gp0Dfj+aIV6EBrZbEsRYbnybpf5il1mznk2wEFrk93BknoX8MSnldO8h1GvPk+pG
-/NQBfSXYUkLSBTCCyP3JfA/trZfOSHdbJYcSmEm1O8muoFWIHsGA3wFjn4zfAC8m
-KCZf/40FZQeVPEsqIYKrw2N6pasYM0SfLwULk0qTXOhXAxp9Gts5T4AbKqaR7Jni
-QRtrJjgjBL0mw4MoLQCfudsBqiUeTKEy4tz1+9MI67tBU1Kso5gpbEfyKMFVW0av
-iZCqFdRWcISziMFkOMCa
-=j/8D
------END PGP SIGNATURE-----
-
---PpAOPzA3dXsRhoo+--
