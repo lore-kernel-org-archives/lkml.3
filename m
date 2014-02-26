@@ -1,97 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107AbaBZPG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:06:56 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53748 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079AbaBZPGx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:06:53 -0500
-Message-ID: <530E0306.7020601@de.ibm.com>
-Date: Wed, 26 Feb 2014 16:06:46 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753139AbaBZPHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:07:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31903 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751047AbaBZPHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:07:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,548,1389772800"; 
+   d="scan'208";a="490143190"
+Date: Wed, 26 Feb 2014 10:07:19 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH v6 23/22] Bugfixes
+Message-ID: <20140226150719.GE5744@linux.intel.com>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
-        riel@redhat.com, peterz@infradead.org, pbonzini@redhat.com,
-        mingo@kernel.org, mgorman@suse.de, kirill.shutemov@linux.intel.com,
-        heiko.carstens@de.ibm.com, hannes@cmpxchg.org,
-        gerald.schaefer@de.ibm.com, ebiederm@xmission.com, aarcange@redhat.com,
-        athorlton@sgi.com
-Subject: Re: +	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
- added	to -mm tree
-References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com>
-In-Reply-To: <20140226145025.GA12571@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022615-3548-0000-0000-0000083893C3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/02/14 15:50, Oleg Nesterov wrote:
-[...]
+On Tue, Feb 25, 2014 at 09:18:16AM -0500, Matthew Wilcox wrote:
+> Seven xfstests still fail reliably with DAX that pass reliably without
+> DAX: ext4/301 generic/{075,091,112,127,223,263}
 
->> NAK.
->>
->> Since 2012 qemu does call "qemu_madvise(new_block->host, size, QEMU_MADV_HUGEPAGE);" for all kvm pages.
->> (commit ad0b5321f1f797274603ebbe20108b0750baee94 Call MADV_HUGEPAGE for guest RAM allocations) so this
->> breaks any recent kvm guest on s390.
-> 
-> Well, I can't really discuss the changes in arch/s390.
-> 
-> But perhaps qemu can be changed to avoid MADV_HUGEPAGE on s390 ?
-> Otherwise I'd suggest the change below.
-> 
-> Oleg.
-> 
-> 
-> --- x/mm/huge_memory.c
-> +++ x/mm/huge_memory.c
-> @@ -1968,8 +1968,6 @@ out:
->  int hugepage_madvise(struct vm_area_struct *vma,
->  		     unsigned long *vm_flags, int advice)
->  {
-> -	struct mm_struct *mm = vma->vm_mm;
-> -
->  	switch (advice) {
->  	case MADV_HUGEPAGE:
->  		/*
-> @@ -1977,8 +1975,16 @@ int hugepage_madvise(struct vm_area_stru
->  		 */
->  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
->  			return -EINVAL;
-> -		if (mm->def_flags & VM_NOHUGEPAGE)
-> +
-> +/*
-> + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
-> + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
-> + */
-> +#ifdef CONFIG_S390
-> +		if (vma->vm_mm->def_flags & VM_NOHUGEPAGE)
->  			return -EINVAL;
-> +#endif
-> +
+With the patches below, we're down to just two additional failures,
+ext4/301 and generic/223.  I'll fold these patches into the right place
+for a v7 of the patchset, but I thought it unsporting to send out a new
+version of such a large patchset the day after.
 
-Ifdefs are ugly but might be the only way of not breaking existing userspace.
-If we come up with a solution for THP in KVM host processes on s390, we can
-then remove that wart. We could even limit that hack to KVM only processes
-to retain Alex' prctl capability by checking mm_has_pgste (defined in
-arch/s390/include/asm/pgtable.h should be included via linux/mm.h)
+I've now had a review with Kirill of the page fault path.  We identified
+some ... infelicities in the mm code, but nothing that's worse than the
+current XIP code.
 
-> +
-> +/*
-> + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
-> + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
-> + */
-> +#ifdef CONFIG_S390
-> +		if ((vma->vm_mm->def_flags & VM_NOHUGEPAGE) && mm_has_pgste(vma->vm_mm))
->  			return -EINVAL;
-> +#endif
-> +
+commit 714bad38915139f381e28681ab46e2e2f7202556
+Author: Matthew Wilcox <willy@linux.intel.com>
+Date:   Wed Feb 26 08:00:46 2014 -0500
 
+    Only call get_block when necessary
+    
+    In the dax_io function, we would call get_block when we got to the end
+    of the current block returned by dax_get_addr().  When using a driver
+    like PRD, that's fine, but using BRD means that we stop on every page
+    boundary.  The problem is that we lose information from the first call
+    when doing this.  For example, if a write crosses a page boundary, the
+    first time around the loop the filesystem allocates two pages, BH_New is
+    set and we zero the start of the first page.  The second time around the
+    loop, the filesystem just returns the existing block with BH_New clear,
+    so we don't zero the tail of the second page.
+    
+    This patch adds tracking for how far through the buffer_head we've got,
+    and will only call get_block() again once we've got to the end of the
+    previous buffer.
+    
+    Fixes generic/263.  Now generic/{075,091,112,127} also pass; 075 was
+    looking like the same problem from Ross's investigation.
 
+commit 1f1fd14eb17dc19ecb757f896dd7573af79b5699
+Author: Matthew Wilcox <willy@linux.intel.com>
+Date:   Tue Feb 25 14:41:30 2014 -0500
+
+    Clear new or unwritten blocks in page fault handler
+    
+    Test generic/263 mmaps the end of the file, writes to it, then checks
+    the bytes after EOF are zero.  They were not being zeroed before, so we
+    must do it.
+
+commit 4d21ffcf353b8c83a599fe09ae8657ba05da1c76
+Author: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Date:   Tue Feb 25 12:06:42 2014 -0500
+
+    Initialise cow_page in do_page_mkwrite()
+    
+    We will end up checking cow_page when turning a hole into a written page,
+    so it needs to be zero.
+
+ fs/dax.c    | 47 +++++++++++++++++++++++++++++++++++++----------
+ mm/memory.c |  1 +
+ 2 files changed, 38 insertions(+), 10 deletions(-)
+
+diff --git a/fs/dax.c b/fs/dax.c
+index 6308197..2640db6 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -100,6 +100,19 @@ static bool buffer_written(struct buffer_head *bh)
+ 	return buffer_mapped(bh) && !buffer_unwritten(bh);
+ }
+ 
++/*
++ * When ext4 encounters a hole, it likes to return without modifying the
++ * buffer_head which means that we can't trust b_size.  To cope with this,
++ * we set b_state to 0 before calling get_block and, if any bit is set, we
++ * know we can trust b_size.  Unfortunate, really, since ext4 does know
++ * precisely how long a hole is and would save us time calling get_block
++ * repeatedly.
++ */
++static bool buffer_size_valid(struct buffer_head *bh)
++{
++	return bh->b_state != 0;
++}
++
+ static ssize_t dax_io(int rw, struct inode *inode, const struct iovec *iov,
+ 			loff_t start, loff_t end, get_block_t get_block,
+ 			struct buffer_head *bh)
+@@ -110,6 +123,7 @@ static ssize_t dax_io(int rw, struct inode *inode, const struct iovec *iov,
+ 	unsigned copied = 0;
+ 	loff_t offset = start;
+ 	loff_t max = start;
++	loff_t bh_max = start;
+ 	void *addr;
+ 	bool hole = false;
+ 
+@@ -119,15 +133,27 @@ static ssize_t dax_io(int rw, struct inode *inode, const struct iovec *iov,
+ 	while (offset < end) {
+ 		void __user *buf = iov[seg].iov_base + copied;
+ 
+-		if (max == offset) {
++		if (offset == max) {
+ 			sector_t block = offset >> inode->i_blkbits;
+ 			unsigned first = offset - (block << inode->i_blkbits);
+ 			long size;
+-			memset(bh, 0, sizeof(*bh));
+-			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
+-			retval = get_block(inode, block, bh, rw == WRITE);
+-			if (retval)
+-				break;
++
++			if (offset == bh_max) {
++				bh->b_size = PAGE_ALIGN(end - offset);
++				bh->b_state = 0;
++				retval = get_block(inode, block, bh,
++								rw == WRITE);
++				if (retval)
++					break;
++				if (!buffer_size_valid(bh))
++					bh->b_size = 1 << inode->i_blkbits;
++				bh_max = offset - first + bh->b_size;
++			} else {
++				unsigned done = bh->b_size - (bh_max -
++							(offset - first));
++				bh->b_blocknr += done >> inode->i_blkbits;
++				bh->b_size -= done;
++			}
+ 			if (rw == WRITE) {
+ 				if (!buffer_mapped(bh)) {
+ 					retval = -EIO;
+@@ -140,10 +166,7 @@ static ssize_t dax_io(int rw, struct inode *inode, const struct iovec *iov,
+ 
+ 			if (hole) {
+ 				addr = NULL;
+-				if (buffer_uptodate(bh))
+-					size = bh->b_size - first;
+-				else
+-					size = (1 << inode->i_blkbits) - first;
++				size = bh->b_size - first;
+ 			} else {
+ 				retval = dax_get_addr(inode, bh, &addr);
+ 				if (retval < 0)
+@@ -209,6 +232,7 @@ ssize_t dax_do_io(int rw, struct kiocb *iocb, struct inode *inode,
+ 	ssize_t retval = -EINVAL;
+ 	loff_t end = offset;
+ 
++	memset(&bh, 0, sizeof(bh));
+ 	for (seg = 0; seg < nr_segs; seg++)
+ 		end += iov[seg].iov_len;
+ 
+@@ -314,6 +338,9 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 		}
+ 	}
+ 
++	if (buffer_unwritten(&bh) || buffer_new(&bh))
++		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
++
+ 	/* Recheck i_size under i_mmap_mutex */
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+diff --git a/mm/memory.c b/mm/memory.c
+index 4e1bdee..3c6b8b2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2672,6 +2672,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
+ 	vmf.pgoff = page->index;
+ 	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+ 	vmf.page = page;
++	vmf.cow_page = NULL;
+ 
+ 	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
+ 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
