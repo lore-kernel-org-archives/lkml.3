@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaBZTiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:38:09 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38313 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168AbaBZTiG (ORCPT
+	id S1754226AbaBZTiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:38:20 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:34363 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836AbaBZTiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:38:06 -0500
-Subject: [PATCH 9/9] PCI: Don't enable decoding if BAR hasn't been assigned
- an address
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 26 Feb 2014 12:38:03 -0700
-Message-ID: <20140226193803.10125.95129.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Feb 2014 14:38:16 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v5 0/2] hibernation support on ARM
+Date: Wed, 26 Feb 2014 11:38:08 -0800
+Message-Id: <1393443490-18116-1-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't enable memory or I/O decoding if we haven't assigned or claimed the
-BAR's resource.
+Patches adding support for hibernation on ARM
+ - ARM hibernation / suspend-to-disk
+ - Change soft_restart to use non-tracing raw_local_irq_disable
 
-If we enable decoding for a BAR that hasn't been assigned an address, we'll
-likely cause bus conflicts.  This declines to enable decoding for resources
-with IORESOURCE_UNSET.
+Patches based on v3.13 tag, verified hibernation on beaglebone black on a
+branch based on 3.13 merged with initial omap support from Russ Dill which
+can be found here (includes v1 patchset):
+http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
 
-Note that drivers can use pci_enable_device_io() or pci_enable_device_mem()
-if they only care about specific types of BARs.  In that case, we don't
-bother checking whether the corresponding resources are assigned or
-claimed.
+[PATCH v5 1/2] ARM: avoid tracers in soft_restart
+ arch/arm/kernel/process.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/setup-res.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ Use raw_local_irq_disable in place of local_irq_disable to avoid
+ infinite abort recursion while tracing. (unchanged since v3)
 
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 6e443135ba24..7eed671d5586 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -343,9 +343,15 @@ int pci_enable_resources(struct pci_dev *dev, int mask)
- 				(!(r->flags & IORESOURCE_ROM_ENABLE)))
- 			continue;
- 
-+		if (r->flags & IORESOURCE_UNSET) {
-+			dev_err(&dev->dev, "can't enable device: BAR %d %pR not assigned\n",
-+				i, r);
-+			return -EINVAL;
-+		}
-+
- 		if (!r->parent) {
--			dev_err(&dev->dev, "device not available "
--				"(can't reserve %pR)\n", r);
-+			dev_err(&dev->dev, "can't enable device: BAR %d %pR not claimed\n",
-+				i, r);
- 			return -EINVAL;
- 		}
- 
+[PATCH v5 2/2] ARM hibernation / suspend-to-disk
+ arch/arm/include/asm/memory.h |    1 +
+ arch/arm/kernel/Makefile      |    1 +
+ arch/arm/kernel/hibernate.c   |  113 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/Kconfig           |    5 ++
+ include/linux/suspend.h       |    2 +
+ 5 files changed, 122 insertions(+)
+
+ Adds support for ARM based hibernation
+
+
+Additional notes:
+-----------------
+
+There are two checkpatch warnings added by this patch.  These follow
+behavior in existing hibernation implementations on other platforms.
+
+    WARNING: externs should be avoided in .c files
+    #116: FILE: arch/arm/kernel/hibernate.c:26:
+    +extern const void __nosave_begin, __nosave_end;
+
+  This extern is picking up the linker nosave region definitions, only
+  used in hibernate.  Follows same extern line used mips, powerpc, s390,
+  sh, sparc, x86 & unicore32
+
+    WARNING: externs should be avoided in .c files
+    #191: FILE: arch/arm/kernel/hibernate.c:101:
+    +extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+
+  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
+
+
+Changes in v5:
+--------------
+* Checkpatch warning on trailing whitespace
+
+Changes in v4:
+--------------
+* updated comment for soft_restart with review feedback
+* dropped freeze_processes patch which was queued separately 
+  to 3.14 by Rafael Wysocki:
+  https://lkml.org/lkml/2014/2/25/683
+
+Changes in v3:
+--------------
+* added comment to use of soft_restart
+* drop irq disable soft_restart patch
+* add patch to avoid tracers in soft_restart by using raw_local_irq_*
+
+Changes in v2:
+--------------
+* Removed unneeded flush_thread, use of __naked and cpu_init.
+* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as 
+  emails are bouncing.
+
+Thanks,
+
+Sebastian Capella
 
