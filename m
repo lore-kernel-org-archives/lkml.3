@@ -1,161 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171AbaBZHLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:11:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaBZHLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:11:38 -0500
-Message-ID: <530D9399.4050306@redhat.com>
-Date: Wed, 26 Feb 2014 15:11:21 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1750824AbaBZHPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:15:10 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:62851 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaBZHPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 02:15:08 -0500
 MIME-Version: 1.0
-To: Qin Chuanyu <qinchuanyu@huawei.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org
-Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
- exceed the limit
-References: <1393311238-7750-1-git-send-email-jasowang@redhat.com> <20140225135738.GA15274@redhat.com> <530D814E.2080708@redhat.com> <530D8A91.6080206@huawei.com>
-In-Reply-To: <530D8A91.6080206@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <530CEFE2.9090909@oracle.com>
+References: <530CEFE2.9090909@oracle.com>
+Date: Wed, 26 Feb 2014 15:15:07 +0800
+Message-ID: <CAA_GA1dJA9PmZnoNy59__Ek+KPS3xX4WuR_8=onY8mZSRQrKiQ@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in balance_dirty_pages_ratelimited
+From: Bob Liu <lliubbo@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 02:32 PM, Qin Chuanyu wrote:
-> On 2014/2/26 13:53, Jason Wang wrote:
->> On 02/25/2014 09:57 PM, Michael S. Tsirkin wrote:
->>> On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
->>>> We used to stop the handling of tx when the number of pending DMAs
->>>> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
->>>> of both host and guest. But it was too aggressive in some cases, since
->>>> any delay or blocking of a single packet may delay or block the guest
->>>> transmission. Consider the following setup:
->>>>
->>>>      +-----+        +-----+
->>>>      | VM1 |        | VM2 |
->>>>      +--+--+        +--+--+
->>>>         |              |
->>>>      +--+--+        +--+--+
->>>>      | tap0|        | tap1|
->>>>      +--+--+        +--+--+
->>>>         |              |
->>>>      pfifo_fast   htb(10Mbit/s)
->>>>         |              |
->>>>      +--+--------------+---+
->>>>      |     bridge          |
->>>>      +--+------------------+
->>>>         |
->>>>      pfifo_fast
->>>>         |
->>>>      +-----+
->>>>      | eth0|(100Mbit/s)
->>>>      +-----+
->>>>
->>>> - start two VMs and connect them to a bridge
->>>> - add an physical card (100Mbit/s) to that bridge
->>>> - setup htb on tap1 and limit its throughput to 10Mbit/s
->>>> - run two netperfs in the same time, one is from VM1 to VM2. 
->>>> Another is
->>>>    from VM1 to an external host through eth0.
->>>> - result shows that not only the VM1 to VM2 traffic were throttled but
->>>>    also the VM1 to external host through eth0 is also throttled 
->>>> somehow.
->>>>
->>>> This is because the delay added by htb may lead the delay the finish
->>>> of DMAs and cause the pending DMAs for tap0 exceeds the limit
->>>> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
->>>> htb send some packets. The problem here is all of the packets
->>>> transmission were blocked even if it does not go to VM2.
->>>>
->>>> We can solve this issue by relaxing it a little bit: switching to use
->>>> data copy instead of stopping tx when the number of pending DMAs
->>>> exceed the VHOST_MAX_PEND. This is safe because:
->>>>
->>>> - The number of pending DMAs were still limited by VHOST_MAX_PEND
->>>> - The out of order completion during mode switch can make sure that
->>>>    most of the tx buffers were freed in time in guest.
->>>>
->>>> So even if about 50% packets were delayed in zero-copy case, vhost
->>>> could continue to do the transmission through data copy in this case.
->>>>
->>>> Test result:
->>>>
->>>> Before this patch:
->>>> VM1 to VM2 throughput is 9.3Mbit/s
->>>> VM1 to External throughput is 40Mbit/s
->>>>
->>>> After this patch:
->>>> VM1 to VM2 throughput is 9.3Mbit/s
->>>> Vm1 to External throughput is 93Mbit/s
->>> Would like to see CPU utilization #s as well.
->>>
->>
->> Will measure this.
->>>> Simple performance test on 40gbe shows no obvious changes in
->>>> throughput after this patch.
->>>>
->>>> The patch only solve this issue when unlimited sndbuf. We still need a
->>>> solution for limited sndbuf.
->>>>
->>>> Cc: Michael S. Tsirkin<mst@redhat.com>
->>>> Cc: Qin Chuanyu<qinchuanyu@huawei.com>
->>>> Signed-off-by: Jason Wang<jasowang@redhat.com>
->>> I think this needs some thought.
->>>
->>> In particular I think this works because VHOST_MAX_PEND
->>> is much smaller than the ring size.
->>> Shouldn't max_pend then be tied to the ring size if it's small?
->>>
->>
->> Yes it should. I just reuse the VHOST_MAX_PEND since it was there for a
->> long time.
->>> Another question is about stopping vhost:
->>> ATM it's waiting for skbs to complete.
->>> Should we maybe hunt down skbs queued and destroy them
->>> instead?
->>> I think this happens when a device is removed.
->>>
->>> Thoughts?
->>>
->>
->> Agree, vhost net removal should not be blocked by a skb. But since the
->> skbs could be queued may places, just destroy them may need extra locks.
->>
->> Haven't thought this deeply, but another possible sloution is to rcuify
->> destructor_arg and assign it to NULL during vhost_net removing.
+On Wed, Feb 26, 2014 at 3:32 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Hi all,
 >
-> Xen treat it by a timer, for those skbs which has been delivered for a
-> while, netback would exchange page of zero_copy's skb with dom0's page.
+> While fuzzing with trinity inside a KVM tools running latest -next kernel
+> I've stumbled on the following spew:
 >
-> but there is still a race between host's another process handle the skb
-> and netback exchange its page. (This problem has been proved by testing)
+> [  232.869443] BUG: unable to handle kernel NULL pointer dereference at
+> 0000000000000020
+> [  232.870230] IP: [<mm/page-writeback.c:1612>]
+> balance_dirty_pages_ratelimited+0x1e/0x150
+> [  232.870230] PGD 586e1d067 PUD 586e1e067 PMD 0
+> [  232.870230] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  232.870230] Dumping ftrace buffer:
+> [  232.870230]    (ftrace buffer empty)
+> [  232.870230] Modules linked in:
+> [  232.870230] CPU: 36 PID: 9707 Comm: trinity-c36 Tainted: G        W
+> 3.14.0-rc4-next-20140225-sasha-00010-ga117461 #42
+> [  232.870230] task: ffff880586dfb000 ti: ffff880586e34000 task.ti:
+> ffff880586e34000
+> [  232.870230] RIP: 0010:[<mm/page-writeback.c:1612>]
+> [<mm/page-writeback.c:1612>] balance_dirty_pages_ratelimited+0x1e/0x150
+> [  232.870230] RSP: 0000:ffff880586e35c58  EFLAGS: 00010282
+> [  232.870230] RAX: 0000000000000000 RBX: ffff880582831361 RCX:
+> 0000000000000007
+> [  232.870230] RDX: 0000000000000007 RSI: ffff880586dfbcc0 RDI:
+> ffff880582831361
+> [  232.870230] RBP: ffff880586e35c78 R08: 0000000000000000 R09:
+> 0000000000000000
+> [  232.870230] R10: 0000000000000001 R11: 0000000000000001 R12:
+> 00007f58007ee000
+> [  232.870230] R13: ffff880c8d6d4f70 R14: 0000000000000200 R15:
+> ffff880c8dcce710
+> [  232.870230] FS:  00007f58018bb700(0000) GS:ffff880c8e800000(0000)
+> knlGS:0000000000000000
+> [  232.870230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  232.870230] CR2: 0000000000000020 CR3: 0000000586e1c000 CR4:
+> 00000000000006e0
+> [  232.870230] Stack:
+> [  232.870230]  ffff880586e35c78 ffff880586e33400 00007f58007ee000
+> ffff880c8d6d4f70
+> [  232.870230]  ffff880586e35cd8 ffffffff8127d241 0000000000000001
+> 0000000000000001
+> [  232.870230]  0000000000000000 ffffea0032337080 0000000080000000
+> ffff880586e33400
+> [  232.870230] Call Trace:
+> [  232.870230]  [<mm/memory.c:3467>] do_shared_fault+0x1a1/0x1f0
+> [  232.870230]  [<mm/memory.c:3487>] handle_pte_fault+0xc8/0x230
+> [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ? delay_tsc+0xea/0x110
+> [  232.870230]  [<mm/memory.c:3770>] __handle_mm_fault+0x36e/0x3a0
+> [  232.870230]  [<include/linux/rcupdate.h:829>] ? rcu_read_unlock+0x5d/0x60
+> [  232.870230]  [<include/linux/memcontrol.h:148>]
+> handle_mm_fault+0x10b/0x1b0
+> [  232.870230]  [<arch/x86/mm/fault.c:1147>] ? __do_page_fault+0x2e2/0x590
+> [  232.870230]  [<arch/x86/mm/fault.c:1214>] __do_page_fault+0x551/0x590
+> [  232.870230]  [<kernel/sched/cputime.c:681>] ?
+> vtime_account_user+0x91/0xa0
+> [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
+> context_tracking_user_exit+0xa8/0x1c0
+> [  232.870230]  [<arch/x86/include/asm/preempt.h:98>] ?
+> _raw_spin_unlock+0x30/0x50
+> [  232.870230]  [<kernel/sched/cputime.c:681>] ?
+> vtime_account_user+0x91/0xa0
+> [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] ?
+> context_tracking_user_exit+0xa8/0x1c0
+> [  232.870230]  [<arch/x86/include/asm/atomic.h:26>] do_page_fault+0x3d/0x70
+> [  232.870230]  [<arch/x86/kernel/kvm.c:263>] do_async_page_fault+0x35/0x100
+> [  232.870230]  [<arch/x86/kernel/entry_64.S:1496>]
+> async_page_fault+0x28/0x30
+> [  232.870230] Code: 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 48
+> 83 ec 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 48 89 fb 48 8b 87 50 01 00 00
+> <f6> 40 20 01 0f 85 18 01 00 00 65 48 8b 14 25 40 da 00 00 44 8b
+> [  232.870230] RIP  [<mm/page-writeback.c:1612>]
+> balance_dirty_pages_ratelimited+0x1e/0x150
+> [  232.870230]  RSP <ffff880586e35c58>
+> [  232.870230] CR2: 0000000000000020
 >
-> and Xen hasn't solved this problem yet, because if anyone want to solve
-> this problem completely, a page lock is necessary, but it would be
-> complex and expensive.
->
-> rcuify destructor arg and assign it to NULL couldn't solve the problem
-> of page release that has been reserved by host's another process.
 >
 
-There're two issues:
+Could you please test below patch? I think it may fix this issue.
 
-1) if a zerocopy skb won't be freed or frags orphaned in time, vhost_net 
-removal will be blocked since it was waiting for the refcnt of ubuf to zero.
-2) whether or not we should free all pending skbs during vhost_net removing.
+diff --git a/mm/memory.c b/mm/memory.c
+index 548d97e..90cea22 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3419,6 +3419,7 @@ static int do_shared_fault(struct mm_struct *mm,
+struct vm_area_struct *vma,
+  pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
+ {
+  struct page *fault_page;
++ struct address_space *mapping;
+  spinlock_t *ptl;
+  pte_t *pte;
+  int dirtied = 0;
+@@ -3454,13 +3455,14 @@ static int do_shared_fault(struct mm_struct
+*mm, struct vm_area_struct *vma,
 
-My proposal is for issue 1. Another idea is not wait for the refcnt to 
-be zero and then we can defer the freeing of vhost_net during the 
-release method of kref_put().
+  if (set_page_dirty(fault_page))
+  dirtied = 1;
++ mapping = fault_page->mapping;
+  unlock_page(fault_page);
+- if ((dirtied || vma->vm_ops->page_mkwrite) && fault_page->mapping) {
++ if ((dirtied || vma->vm_ops->page_mkwrite) && mapping) {
+  /*
+  * Some device drivers do not set page.mapping but still
+  * dirty their pages
+  */
+- balance_dirty_pages_ratelimited(fault_page->mapping);
++ balance_dirty_pages_ratelimited(mapping);
+  }
 
-For issue 2, I'm still not sure we should do this or not. Looks like 
-there's a similar issue for the packets sent by tcp_sendpage() was 
-blocked or delayed.
-> The key problem is how to release the memory of zero_copy's skb while
-> been reserved. 
-
+  /* file_update_time outside page_lock */
