@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaBZRWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:22:53 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:54483 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752435AbaBZRWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:22:52 -0500
-Date: Wed, 26 Feb 2014 11:22:53 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
-        riel@redhat.com, pbonzini@redhat.com, mingo@kernel.org,
-        mgorman@suse.de, kirill.shutemov@linux.intel.com,
-        heiko.carstens@de.ibm.com, hannes@cmpxchg.org,
-        gerald.schaefer@de.ibm.com, ebiederm@xmission.com, aarcange@redhat.com
-Subject: Re: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
- added to -mm tree
-Message-ID: <20140226172253.GQ3041@sgi.com>
-References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org>
- <530D9F50.1080400@de.ibm.com>
- <20140226145025.GA12571@redhat.com>
- <530E0306.7020601@de.ibm.com>
- <20140226153144.GA15527@redhat.com>
- <20140226165759.GB22802@laptop.programming.kicks-ass.net>
+	id S1753181AbaBZRYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:24:49 -0500
+Received: from mail.efficios.com ([78.47.125.74]:42604 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751716AbaBZRYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:24:48 -0500
+Date: Wed, 26 Feb 2014 17:24:47 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <339841817.31009.1393435487685.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140226111542.15657cd6@gandalf.local.home>
+References: <20140225191505.32b56105@gandalf.local.home> <188130295.30493.1393375141631.JavaMail.zimbra@efficios.com> <20140225194926.4eac5872@gandalf.local.home> <20140226085926.GF18404@twins.programming.kicks-ass.net> <192956891.30659.1393418892222.JavaMail.zimbra@efficios.com> <20140226111542.15657cd6@gandalf.local.home>
+Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
+ loaded due to module taint
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226165759.GB22802@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Warn and notify if tracepoints are not loaded due to module taint
+Thread-Index: wRlfhXC2k93erj3krVcQ33U0TyX1Xw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 05:57:59PM +0100, Peter Zijlstra wrote:
-> On Wed, Feb 26, 2014 at 04:31:44PM +0100, Oleg Nesterov wrote:
-> Do we want a comment here, explaining why s390 is special again?
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: "Peter Zijlstra" <peterz@infradead.org>, "LKML" <linux-kernel@vger.kernel.org>, "Ingo Molnar" <mingo@kernel.org>,
+> "Rusty Russell" <rusty@rustcorp.com.au>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton"
+> <akpm@linux-foundation.org>
+> Sent: Wednesday, February 26, 2014 11:15:42 AM
+> Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not loaded due to module taint
+> 
+> On Wed, 26 Feb 2014 12:48:12 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > > How about instead of a WARN, you use a normal KERN_ERR printk(). There's
+> > > no point to the entire WARN state dump, that's needlessly verbose.
+> > > 
+> > > When you have a normal error print you can have as many as are required
+> > > and put the mod name back in.
+> > 
+> > The good old printk KERN_ERR is a very good idea. I agree that WARN() is
+> > too verbose for our needs here.
+> 
+> Actually, it's not so bad for the WARN() after my last patch to only
+> allocate (or even process tracepoints) if mod->num_tracepionts is
+> greater than zero. I didn't realize you were wasting memory for all
+> modules that were loaded.
+> 
+> My fear with the KERN_ERR is that it wont be noticeable enough. Where
+> as a stack dump is something that will catch people's attention.
+> 
+> And as Rusty has said, if you are loading a module that is forced, or
+> something strange, it is broken. The failure of loading the tracepoints
+> of a module is a bug if the module happens to have tracepoints.
+> 
+> After the MOD_SIG fix, any failure should be a big banner bug. Either
+> they are using a forced module with tracepoints that should not be
+> loaded. Or they have tracepoints is a non-GPL module (which is also a
+> big no-no).
 
-Here's what I've got, with everybody's suggestions spun together:
+Agreed that after the skip for modules containing 0 tracepoints, it gets
+much more specific. I like that.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 82166bf..7f01491 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1968,8 +1968,6 @@ out:
- int hugepage_madvise(struct vm_area_struct *vma,
-                     unsigned long *vm_flags, int advice)
- {
--       struct mm_struct *mm = vma->vm_mm;
--
-        switch (advice) {
-        case MADV_HUGEPAGE:
-                /*
-@@ -1977,8 +1975,16 @@ int hugepage_madvise(struct vm_area_struct *vma,
-                 */
-                if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
-                        return -EINVAL;
--               if (mm->def_flags & VM_NOHUGEPAGE)
-+
-+/*
-+ * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
-+ * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
-+ */
-+#ifdef CONFIG_S390
-+               if (mm_has_pgste(vma->vm_mm))
-                        return -EINVAL;
-+#endif
-+
-                *vm_flags &= ~VM_NOHUGEPAGE;
-                *vm_flags |= VM_HUGEPAGE;
-                /*
+So then a WARN_ON() that prints the specific module name involved would
+be the way to go ?
 
-I've compiled and tested and it works ok on my machines (I don't have an
-s390 to test on though :).  Is everybody okay with this solution?
+Thanks,
 
-BTW, Kirill, I looked at using IS_ENABLED to clean up the ifdef, but it
-won't work here, since mm_has_pgste isn't defined unless CONFIG_S390
-is defined.  i.e.: This line:
+Mathieu
 
-if (IS_ENABLED(CONFIG_S390) && mm_has_pgste(vma->vm_mm))
-
-won't compile.
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
