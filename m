@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaBZQDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:03:35 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:42335 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752038AbaBZQDe (ORCPT
+	id S1752722AbaBZQGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:06:12 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38357 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaBZQGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:03:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
-References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
- <530D53EF.9090706@amacapital.net> <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 26 Feb 2014 09:03:13 -0700
-Message-ID: <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Feb 2014 11:06:10 -0500
+Date: Wed, 26 Feb 2014 11:06:03 -0500 (EST)
+Message-Id: <20140226.110603.1107468127601575254.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 10/16] atm: nicstar: remove
+ interruptible_sleep_on_timeout
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1393412516-3762435-11-git-send-email-arnd@arndb.de>
+References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
+	<1393412516-3762435-11-git-send-email-arnd@arndb.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Feb 2014 08:06:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 12:04 AM, Stephane Eranian <eranian@google.com> wrote:
-> On Wed, Feb 26, 2014 at 3:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On 02/17/2014 10:07 PM, Yan, Zheng wrote:
->>>
->>> This patch series adds LBR call stack support. User can enabled/disable
->>> this through an sysfs attribute file in the CPU PMU directory:
->>>  echo 1 > /sys/bus/event_source/devices/cpu/lbr_callstack
->>
->> This seems like an unpleasant way to control this.  It would be handy to
->> be able to control this as an option to perf record.
->>
-> That would mean you'd be root for perf.
-> Or are you suggesting a perf event option? But then, you'd expose arch-specific
-> feature at the API level.
->
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Wed, 26 Feb 2014 12:01:50 +0100
 
-I'm suggesting a perf event option, just like the way that PEBS works.
+> -		spin_unlock_irqrestore(&scq->lock, flags);
+> -		interruptible_sleep_on_timeout(&scq->scqfull_waitq,
+> -					       SCQFULL_TIMEOUT);
+> -		spin_lock_irqsave(&scq->lock, flags);
+> +		wait_event_interruptible_lock_irq_timeout(scq->scqfull_waitq,
+> +				scq->tail != scq->next, scq->lock,
+> +				SCQFULL_TIMEOUT);
+>  
 
---Andy
+When a function call spans multiple lines, please place arguments for
+those function calls starting at the first column after the openning
+parenthesis.
+
+Thank you.
+
