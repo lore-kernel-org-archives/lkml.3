@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012AbaBZSKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 13:10:53 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56414 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaBZSKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 13:10:51 -0500
-From: vinayakm.list@gmail.com
-To: gregkh@linuxfoundation.org, arve@android.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Vinayak Menon <vinayakm.list@gmail.com>
-Subject: [PATCH] staging: android: lowmemorykiller: neglect swap cached pages in other_file
-Date: Wed, 26 Feb 2014 23:40:33 +0530
-Message-Id: <1393438233-2759-1-git-send-email-vinayakm.list@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752812AbaBZSPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 13:15:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbaBZSPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 13:15:19 -0500
+From: Andrew Jones <drjones@redhat.com>
+To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mtosatti@redhat.com, pbonzini@redhat.com
+Subject: [PATCH 0/2] x86: kvm: global clock updates
+Date: Wed, 26 Feb 2014 19:15:10 +0100
+Message-Id: <1393438512-21273-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinayak Menon <vinayakm.list@gmail.com>
+This patch series addresses two issues with global clock updates.
+The first fixes a bug found on hosts that have a tsc marked as
+unstable. As global clock updates get triggered on every vcpu load
+in these cases, guests with a large number of vcpus have their
+progress nearly halted. The fix for that bug should also go to
+stable. The second patch in this series ensures that NTP corrections
+on the host, as well as on guests with all vcpus pinned, will be
+propagated periodically. That patch improves things, but doesn't
+fix a bug, thus it can be merged at a later time than the first.
+I've posted them together as a series, as the second one builds
+on the first.
 
-With ZRAM enabled it is observed that lowmemory killer
-doesn't trigger properly. swap cached pages are
-accounted in NR_FILE, and lowmemorykiller considers
-this as reclaimable and adds to other_file. But these
-pages can't be reclaimed unless lowmemorykiller triggers.
-So subtract swap pages from other_file.
+Andrew Jones (2):
+  x86: kvm: rate-limit global clock updates
+  x86: kvm: introduce periodic global clock updates
 
-Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
----
- drivers/staging/android/lowmemorykiller.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/kvm_host.h |  2 +
+ arch/x86/kvm/x86.c              | 92 +++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 90 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 6f094b3..92b1c93 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -88,7 +88,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
- 	int array_size = ARRAY_SIZE(lowmem_adj);
- 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
- 	int other_file = global_page_state(NR_FILE_PAGES) -
--						global_page_state(NR_SHMEM);
-+						global_page_state(NR_SHMEM)
-+						total_swapcache_pages();
- 
- 	if (lowmem_adj_size < array_size)
- 		array_size = lowmem_adj_size;
 -- 
-1.7.6
+1.8.1.4
 
