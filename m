@@ -1,46 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbaBZU6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:58:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42344 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326AbaBZU6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:58:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,549,1389772800"; 
-   d="scan'208";a="490381082"
-Message-ID: <530E5584.3080203@intel.com>
-Date: Wed, 26 Feb 2014 12:58:44 -0800
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753758AbaBZVAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:00:43 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:41220 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750814AbaBZVAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 16:00:42 -0500
+Date: Wed, 26 Feb 2014 22:00:36 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        b.brezillon@overkiz.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] Documentation: dt: iio: improve atmel-adc
+ documentation
+Message-ID: <20140226210035.GD20517@piout.net>
+References: <1393434074-15600-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20140226173904.GG607@lukather>
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] x86, mpx: add documentation on Intel MPX
-References: <1393162071-23995-1-git-send-email-qiaowei.ren@intel.com> <1393162071-23995-2-git-send-email-qiaowei.ren@intel.com> <530E3DC9.90609@intel.com>
-In-Reply-To: <530E3DC9.90609@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="8NvZYKFJsRX2Djef"
+Content-Disposition: inline
+In-Reply-To: <20140226173904.GG607@lukather>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 11:17 AM, Dave Hansen wrote:
-> On 02/23/2014 05:27 AM, Qiaowei Ren wrote:
->> +Bounds Directory (BD) and Bounds Tables (BT) are stored in
->> +application memory and are allocated by the application (in case
->> +of kernel use, the structures will be in kernel memory). The
->> +bound directory and each instance of bound table are in contiguous
->> +linear memory.
-> 
-> Hi Qiaowei,
-> 
-> Does this mean that if userspace decided to map something in the way of
-> the bounds tables that it would break MPX?
 
-Oh, or does this mean: "The Bounds Directory is contiguous in virtual
-memory."  and then "Each Bound Table is contiguous in virtual memory."
-But, the directory and tables do not have to be contiguous to each other?
+--8NvZYKFJsRX2Djef
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The wording there sounds a bit confusing.
+Hi,
+
+On 26/02/2014 at 18:39:04 +0100, Maxime Ripard wrote :
+> Hi Alexandre,
+>=20
+> On Wed, Feb 26, 2014 at 06:01:08PM +0100, Alexandre Belloni wrote:
+> > This corrects the example by removing the unit-address, as suggested by=
+ Mark
+> > Rutland in
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/234=
+184.html
+>=20
+> I still belive that it's wrong, and Mark haven't answered my comments
+> on his statement.
+>=20
+
+After our discussion, I'll go for the other suggestion, I'll add
+#address-cells, #size-cells and a reg for each trigger.
+
+> I'd vote for a status-quo, until he gives an answer backed with
+> references to the ePAPR.
+>=20
+> >=20
+> > Also, it removes the properties that are not used anymore, to stop prop=
+agating
+> > them.
+> >=20
+> > Finally, fixes a few typos.
+>=20
+> I'm fine with the rest.
+>=20
+> Maxime
+>=20
+>=20
+> --=20
+> Maxime Ripard, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
+
+
+
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+--=20
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--8NvZYKFJsRX2Djef
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTDlXzAAoJEKbNnwlvZCyzplAQAIWk31MS90E35KKlqxIkM71A
+b8fWj29WagQv2oxvPMwJkBcE0bpqOfkj6+cbhShimgNYMJpbU8ZauWhdB3jNPcWM
+gknRJzyCb37k3HTXd7CgT0+9/aeMYoHLTcAVNaKQGG6eAbPlY9wYnW/pwSB7QAax
+oeHcluEGVHnQitHZ6oLsIIl1x1J8wmCzpQYH8pj3sJJGw5bUgov2m1zoxG3uj5XZ
+E89hRYyNGKAjbGL/SpMJ5yuQJgZvSwqPXt5RxCFQLHp8WZr06yVxj8Q3HjRqWpmg
+deBfK5HHN6vgOFMbd4cUBQG0pCF7W3kosy6XDZm5jp67TgPcIaYDjNhw0j4SKJ9t
+dkTvkUGxdR5ISlqKtNS7THdzaKEIuhUq2zBwIxMMOWOrTFvHSs5insONA2kow0jP
+yFoxEekI1n7lfDwjrjk9zdApqafn+GqOx9VtRWkT1SKDYRfALkfpAFMxtoX3jvYw
+AnetWOJDtgAfHVNvpdoiMWDEpNL93lZNsskMSvHRhWw4jVeMGZ2TnfAEIaIFs2ft
+EjP80djBxd92PAncjSWny4Cq9dASNsENQuxYPnjaOrJ5RBwfI8Ah9hpY+d/4A+EL
+dTLzUGpOnzA9YorRFBIRzmf4PwOXHeQXP1UzKtkuICvHsudeY7JWOWFk6KrLbeRq
+mCt+CroEMOvL9w0HWYOx
+=11BW
+-----END PGP SIGNATURE-----
+
+--8NvZYKFJsRX2Djef--
