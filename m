@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaBZAKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:10:03 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22213 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaBZAKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:10:00 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX193XaGhgz5p99H4uRNbidEPFaIW2iq/1CM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 59B2C533FBD
-Date: Tue, 25 Feb 2014 19:09:40 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140226000940.GF1872@titan.lakedaemon.net>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
+	id S1753456AbaBZAKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:10:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64806 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072AbaBZAKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 19:10:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,543,1389772800"; 
+   d="scan'208";a="489792277"
+Message-ID: <530D3102.60504@intel.com>
+Date: Tue, 25 Feb 2014 16:10:42 -0800
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexander Graf <agraf@suse.de>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] ksm: Expose configuration via sysctl
+References: <1393284484-27637-1-git-send-email-agraf@suse.de> <530CD443.7010400@intel.com> <4B3C0B08-45E1-48EF-8030-A3365F0E7CF6@suse.de>
+In-Reply-To: <4B3C0B08-45E1-48EF-8030-A3365F0E7CF6@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-
-On Tue, Feb 25, 2014 at 10:36:54AM +0100, Linus Walleij wrote:
-> On Mon, Feb 24, 2014 at 7:10 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+On 02/25/2014 03:09 PM, Alexander Graf wrote:
+>> Couldn't we also (maybe in parallel) just teach the sysctl userspace
+>> about sysfs?  This way we don't have to do parallel sysctls and sysfs
+>> for *EVERYTHING* in the kernel:
+>>
+>>    sysfs.kernel.mm.transparent_hugepage.enabled=enabled
 > 
-> > Sebastian, Linus,
-> >
-> > I've now created mvebu/pinctrl-dove for this series.  It's based on
-> > v3.14-rc1, and depends on mvebu/pinctrl (which depends on
-> > mvebu/pinctrl-3xx).
-> >
-> > I've kept this series in a separate branch in case we encounter an
-> > unforeseen problem with something in here.  Then this branch can be
-> > dropped, and /pinctrl-3xx and /pinctrl will still make it in.
-> >
-> > So, all patches except 3 and 4 are in mvebu/pinctrl-dove.  3 and 4 are
-> > in mvebu/dt.
+> It's pretty hard to filter this. We definitely do not want to expose all of sysfs through /proc/sys. But how do we know which files are actual configuration and which ones are dynamic system introspection data?
 > 
-> OK so what should I be pulling in first now?
+> We could add a filter, but then we can just as well stick with the manual approach I followed here :).
 
-Sebastian has now re-organized the branches as I asked, and I confirmed
-that the final result is the exact same as mine (diff is null).
+Maybe not stick it under /proc/sys, but teach sysctl(8) about them.  I
+guess at the moment, sysctl says that it's tied to /proc/sys:
 
-Usually when I submit pull requests to arm-soc, they like to see the
-branches.  That way if there is an error in one of them, they just drop
-the one branch and the others remain.
+> DESCRIPTION
+>        sysctl  is  used to modify kernel parameters at runtime.  The parameters available are those listed under /proc/sys/.  Procfs is required
+>        for sysctl support in Linux.  You can use sysctl to both read and write sysctl data.
 
-Would you like them the same way?  If so, I'll send the pulls to you
-tomorrow.  Otherwise, I'll wait a few more days to let things shake out
-and then send you one request with the branches merged.
-
-thx,
-
-Jason.
+But surely that's not set in stone just because the manpage says so. :)
