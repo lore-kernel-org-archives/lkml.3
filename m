@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaBZRAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:00:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131AbaBZRAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:00:53 -0500
-Message-ID: <1393434040.18087.2.camel@ul30vt.home>
-Subject: Re: [PATCH 0/4] KVM: x86: Let the guest write to multiple debug
- registers with one vmexit
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mtosatti@redhat.com,
-        gleb@kernel.org, jan.kiszka@siemens.com
-Date: Wed, 26 Feb 2014 10:00:40 -0700
-In-Reply-To: <1393429753-20857-1-git-send-email-pbonzini@redhat.com>
-References: <1393429753-20857-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753598AbaBZRB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:01:29 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39833 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753483AbaBZRB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:01:26 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        b.brezillon@overkiz.com,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 6/7] ARM: at91/dt: at91sam9x5: remove useless adc properties
+Date: Wed, 26 Feb 2014 18:01:13 +0100
+Message-Id: <1393434074-15600-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393434074-15600-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1393434074-15600-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-26 at 16:49 +0100, Paolo Bonzini wrote:
-> Alex Williamson reported that a Windows game does something weird that
-> makes the guest save and restore debug registers on each context switch.
-> This cause several hundred thousands vmexits per second, and basically
-> cuts performance in half when running under KVM.
-> 
-> However, when not running in guest-debug mode, the guest controls the
-> debug registers and having to take an exit for each DR access is a waste
-> of time.  We just need one vmexit to load any stale values of DR0-DR6,
-> and then we can let the guest run freely.  On the next vmexit (whatever
-> the reason) we will read out whatever changes the guest made to the
-> debug registers.
-> 
-> On top of this, we can implement SVM support and let nested guests run
-> with dirty debug registers too.
-> 
-> Paolo Bonzini (4):
->   KVM: vmx: we do rely on loading DR7 on entry
->   KVM: x86: change vcpu->arch.switch_db_regs to a bit mask
->   KVM: x86: Allow the guest to run with dirty debug registers
->   KVM: vmx: Allow the guest to run with dirty debug registers
-> 
->  arch/x86/include/asm/kvm_host.h |  8 ++++++-
->  arch/x86/kvm/vmx.c              | 48 +++++++++++++++++++++++++++++++++++++----
->  arch/x86/kvm/x86.c              | 29 +++++++++++++++++++++++--
->  3 files changed, 78 insertions(+), 7 deletions(-)
-> 
+Remove the properties that are not used anymore by the at91_adc driver.
 
-I see a slightly better than 100% improvement in the frame rate in
-Borderlands2 running in a VM with assigned Nvidia GPU with this series.
+Also, stop using unit-addresses for the triggers as suggested by Mark
+Rutland in
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-February/234184.html
 
-Tested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9x5.dtsi | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index 174219de92fa..a535c905d9d4 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -627,35 +627,30 @@
+ 				atmel,adc-use-external;
+ 				atmel,adc-channels-used = <0xffff>;
+ 				atmel,adc-vref = <3300>;
+-				atmel,adc-num-channels = <12>;
+ 				atmel,adc-startup-time = <40>;
+-				atmel,adc-channel-base = <0x50>;
+-				atmel,adc-drdy-mask = <0x1000000>;
+-				atmel,adc-status-register = <0x30>;
+-				atmel,adc-trigger-register = <0xc0>;
+ 				atmel,adc-res = <8 10>;
+ 				atmel,adc-res-names = "lowres", "highres";
+ 				atmel,adc-use-res = "highres";
+ 
+-				trigger@0 {
++				trigger0 {
+ 					trigger-name = "external-rising";
+ 					trigger-value = <0x1>;
+ 					trigger-external;
+ 				};
+ 
+-				trigger@1 {
++				trigger1 {
+ 					trigger-name = "external-falling";
+ 					trigger-value = <0x2>;
+ 					trigger-external;
+ 				};
+ 
+-				trigger@2 {
++				trigger2 {
+ 					trigger-name = "external-any";
+ 					trigger-value = <0x3>;
+ 					trigger-external;
+ 				};
+ 
+-				trigger@3 {
++				trigger3 {
+ 					trigger-name = "continuous";
+ 					trigger-value = <0x6>;
+ 				};
+-- 
+1.8.3.2
 
