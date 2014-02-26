@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaB0ABw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:01:52 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:49239 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229AbaB0ABv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:01:51 -0500
-Date: Wed, 26 Feb 2014 18:01:53 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        schwidefsky@de.ibm.com, rientjes@google.com, riel@redhat.com,
-        pbonzini@redhat.com, mingo@kernel.org, mgorman@suse.de,
-        kirill.shutemov@linux.intel.com, heiko.carstens@de.ibm.com,
-        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com, ebiederm@xmission.com,
-        aarcange@redhat.com
-Subject: Re: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
- added to -mm tree
-Message-ID: <20140227000153.GC18555@sgi.com>
-References: <530D9F50.1080400@de.ibm.com>
- <20140226145025.GA12571@redhat.com>
- <530E0306.7020601@de.ibm.com>
- <20140226153144.GA15527@redhat.com>
- <20140226165759.GB22802@laptop.programming.kicks-ass.net>
- <20140226172253.GQ3041@sgi.com>
- <20140226180603.GA25644@redhat.com>
- <530E4028.70903@de.ibm.com>
- <20140226193917.GR3041@sgi.com>
- <20140226152434.8faabadc7f4f8d6475d58f88@linux-foundation.org>
+	id S1753789AbaB0ACj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:02:39 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:52555 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaB0ACi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 19:02:38 -0500
+Date: Wed, 26 Feb 2014 17:59:59 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/9] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+Message-ID: <20140226235959.GD18563@joshc.qualcomm.com>
+References: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
+ <1393441562-685-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140226152434.8faabadc7f4f8d6475d58f88@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1393441562-685-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 03:24:34PM -0800, Andrew Morton wrote:
-> On Wed, 26 Feb 2014 13:39:17 -0600 Alex Thorlton <athorlton@sgi.com> wrote:
+On Wed, Feb 26, 2014 at 11:05:54AM -0800, Stephen Boyd wrote:
+> Use the regmap APIs for this driver instead of custom pm8xxx
+> APIs. This breaks this driver's dependency on the pm8xxx APIs and
+> allows us to easily port it to other bus protocols in the future.
 > 
-> > > 
-> > > 
-> > > > I'd suggest the patch below on top of your changes, but I won't argue.
-> > 
-> > I like this approach, and your updated comment as well.  This should
-> > probably go in as [PATCH 2/4] in my series.  Do I need to spin a v5
-> > with this new patch included in the series, or will Andrew pull this in?
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/input/misc/pmic8xxx-pwrkey.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> Paolo's comments on Oleg's patch remain unaddressed, so please take a
-> look at that and send out the final version?
+> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> index 0e1a05f95858..cf6125dc3b51 100644
+> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> @@ -120,6 +120,10 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> +	regmap = dev_get_regmap(pdev->dev.parent, NULL);
+> +	if (!regmap)
+> +		return -ENODEV;
+> +
 
-Got it.  I'll get that to you tonight/tomorrow morning.
+This looks really weird.  A previous version of patch was included in
+v3.14-rc1 (1e63bd9cc4), which already included a very similar hunk...
 
-> An incremental patch would be preferred, please.  I'll later fold that
-> into mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch to
-> avoid any bisection holes.
+Maybe the fact that the hunk isn't identical is why a rebase didn't drop
+it (and instead, now if this gets merged, we'll have unnecessary
+duplication).
 
-Understood.  I'll keep them separate.
-
-Thanks, Andrew!
-
-- Alex
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
