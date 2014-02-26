@@ -1,77 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaBZLOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:14:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41169 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140AbaBZLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:14:34 -0500
-Date: Wed, 26 Feb 2014 12:14:32 +0100
-From: Jan Kara <jack@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140226111432.GD6989@quack.suse.cz>
-References: <20140226190436.53e6cf83e03ef4261577b94c@canb.auug.org.au>
+	id S1751799AbaBZLTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:19:35 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:54973 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaBZLTe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 06:19:34 -0500
+Message-ID: <530DCDC5.1060406@arm.com>
+Date: Wed, 26 Feb 2014 11:19:33 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226190436.53e6cf83e03ef4261577b94c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ben Segall <bsegall@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
+References: <1393328862-19997-1-git-send-email-dietmar.eggemann@arm.com> <20140225205253.GB18404@twins.programming.kicks-ass.net>
+In-Reply-To: <20140225205253.GB18404@twins.programming.kicks-ass.net>
+X-OriginalArrivalTime: 26 Feb 2014 11:19:35.0713 (UTC) FILETIME=[A14CC910:01CF32E4]
+X-MC-Unique: 114022611193202601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-02-14 19:04:36, Stephen Rothwell wrote:
-> Hi Andrew,
+On 25/02/14 20:52, Peter Zijlstra wrote:
+> On Tue, Feb 25, 2014 at 11:47:42AM +0000, Dietmar Eggemann wrote:
+>> +++ b/kernel/sched/sched.h
+>> @@ -630,7 +630,9 @@ struct rq {
+>>  	struct llist_head wake_list;
+>>  #endif
+>>  
+>> +#ifdef CONFIG_FAIR_GROUP_SCHED
+>>  	struct sched_avg avg;
+>> +#endif
+>>  };
 > 
-> After merging the akpm-current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> There is already a CONFIG_FAIR_GROUP_SCHED #ifdef in that structure;
+> does it make sense to move this variable in there instead of adding yet
+> another #ifdef?
 > 
-> fs/notify/fanotify/fanotify_user.c: In function 'SYSC_fanotify_init':
-> fs/notify/fanotify/fanotify_user.c:707:8: error: 'struct fanotify_event_info' has no member named 'response'
->   oevent->response = 0;
->         ^
-> 
-> Caused by my bad conflict resolution.  I added the following merge fix
-> patch (but I am not too sure of it).
-  The fix below looks good for now. I'll push the fixes which are in
-linux-next to Linus this week and after that send Andrew an updated version
-of the cleanup rebased on top of fixes (ultimately the code added in the
-fix wants to use new alloc_event() helper added by the cleanup).
 
-								Honza
+I changed the patch accordingly.
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 26 Feb 2014 19:01:03 +1100
-> Subject: [PATCH] fanotify: fix for bad merge resolution
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  fs/notify/fanotify/fanotify_user.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index 0edc47f7dfae..0d378a8cd279 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -704,7 +704,6 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
->  
->  	group->fanotify_data.f_flags = event_f_flags;
->  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-> -	oevent->response = 0;
->  	spin_lock_init(&group->fanotify_data.access_lock);
->  	init_waitqueue_head(&group->fanotify_data.access_waitq);
->  	INIT_LIST_HEAD(&group->fanotify_data.access_list);
-> -- 
-> 1.9.0
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+-- >8 --
+Subject: [PATCH] sched: put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
 
+The struct sched_avg of struct rq is only used in case group
+scheduling is enabled inside __update_tg_runnable_avg() to update
+per-cpu representation of a task group.  I.e. that there is no need to
+maintain the runnable avg of a rq in the !CONFIG_FAIR_GROUP_SCHED case.
 
+This patch guards struct sched_avg of struct rq and
+update_rq_runnable_avg() with CONFIG_FAIR_GROUP_SCHED.
+
+There is an extra empty definition for update_rq_runnable_avg()
+necessary for the !CONFIG_FAIR_GROUP_SCHED && CONFIG_SMP case.
+
+The function print_cfs_group_stats() which prints out struct sched_avg
+of struct rq is already guarded with CONFIG_FAIR_GROUP_SCHED.
+
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+---
+ kernel/sched/fair.c  |   13 +++++++------
+ kernel/sched/sched.h |    4 ++--
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5f6ddbef80af..76c6513b6889 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2376,12 +2376,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
+ 	}
+ }
++
++static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
++{
++	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
++	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 						 int force_update) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
++static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ static inline void __update_task_entity_contrib(struct sched_entity *se)
+@@ -2480,12 +2487,6 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
+ }
+ 
+-static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+-{
+-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
+-	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+-}
+-
+ /* Add the load generated by se into cfs_rq's child load-average */
+ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 						  struct sched_entity *se,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4be68da1fe00..b1fb1a62c52d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -540,6 +540,8 @@ struct rq {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
++
++	struct sched_avg avg;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 	/*
+@@ -629,8 +631,6 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
+ #endif
+-
+-	struct sched_avg avg;
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
+
+
+
