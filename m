@@ -1,157 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaBZLDX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:03:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.131]:64924 "EHLO
+	id S1752493AbaBZLDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:03:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:58714 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaBZLDQ (ORCPT
+	with ESMTP id S1752439AbaBZLDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:03:16 -0500
+	Wed, 26 Feb 2014 06:03:17 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 16/16] NOTYET: sched: remove sleep_on() and friends
-Date: Wed, 26 Feb 2014 12:01:56 +0100
-Message-Id: <1393412516-3762435-17-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@osdl.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, Karsten Keil <isdn@linux-pingi.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-atm-general@lists.sourceforge.net, linux-media@vger.kernel.org,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 00/16] sleep_on removal, second try
+Date: Wed, 26 Feb 2014 12:01:40 +0100
+Message-Id: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ckx0WpnPjjd/MAzKWHPcA0xqmz5oxs5wXt2OhVEJZw+
- Itk1Imuo2sWpfXKNu6lxSCBYZ8p6D3bZJUhni3HvKc3Fkymsw/
- wvYxCe/+FM61TFdbQlYQHGls4jRNwUp4aaO2CFwYCiHVkfCtj+
- bftjb9tiH+/CY4jPdJg8AtKR2uhQ2i8zme3DArXjegchw9JjLO
- wPadm+B24XMB19gvF5Wlbe8SDTUDPzv9FPyXQf3bCU/DhhKYo3
- BD7QiA510Y7t8DUjip/xJpNN6A/pwOzpQfn9KpCPTihzC+6ri9
- K7N0EnNYQDvgEGthD5Wxoqi2bR7yr6qVZTEUj3gXetIQiAe0ju
- 8a58RYlQN0dcR2/WjRYOTlLcx0cHe3wtrgm4zuMXt
+X-Provags-ID: V02:K0:EXulLr3cY83LSDxnQWpxQMav7LAcvynM9wdkdRavPGD
+ 1iQgMxC1MM2O6EN3tV809Lw4/b7whw9v3pwrKKye+/9qEZWYkW
+ yXQq6Hpr3ygd1ORuVjoXRYNo6N+PlDNT3oixmS3XQHHSTPK99p
+ ADqWssQIa/Ta+1ouG5BMB5L+pkQ+/yRVEyj1xv+Tx6FuGRvQK7
+ aEVrb2mkq94VZVzDEiPf1zFM5mw5xEcgh+8Vzzjlt6zw8tzubH
+ No9A7jJjMEhFhg6j9p2c8teRUTDdpaLq8+LBPnne1w6a7/BetL
+ GMCgWKwBdiOQdFM2eP9VoKraUg54jLq3f2vRpy28XovzTvjIrT
+ perA4HIDU4nRJjOgoD8l1Oq6wItPbJGkF4YPtcGd+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not apply yet, we first have to wait for the other patches
-in the series to get merged. Comments appreciated.
+It's been a while since the first submission of these patches,
+but a lot of them have made it into linux-next already, so here
+is the stuff that is not merged yet, hopefully addressing all
+the comments.
 
-8<----
+Geert and Michael: the I was expecting the ataflop and atari_scsi
+patches to be merged already, based on earlier discussion.
+Can you apply them to the linux-m68k tree, or do you prefer
+them to go through the scsi and block maintainers?
 
-We probably should have done this 15 years ago. I have created patches
-for every remaining user of the four sleep_on variants that are all
-broken, and this patch should get applied as soon as all of the other
-patches are merged.
+Jens: I did not get any comments for the DAC960 and swim3 patches,
+I assume they are good to go in. Please merge.
 
-If you are reading this changeset because you are looking for the
-functions I removed, please convert your code to use wait_event,
-wait_for_completion or an open-coded prepare_to_wait loop.
+Hans and Mauro: As I commented on the old thread, I thought the
+four media patches were on their way. I have addressed the one
+comment that I missed earlier now, and used Hans' version for
+the two patches he changed. Please merge or let me know the status
+if you have already put them in some tree, but not yet into linux-next
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Greg or Andrew: The parport subsystem is orphaned unfortunately,
+can one of you pick up that patch?
+
+Davem: The two ATM patches got acks, but I did not hear back from
+Karsten regarding the ISDN patches. Can you pick up all six, or
+should we wait for comments about the ISDN patches?
+
+	Arnd
+
+Cc: Andrew Morton <akpm@osdl.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Ingo Molnar <mingo@kernel.org>
----
- Documentation/DocBook/kernel-hacking.tmpl | 10 -------
- include/linux/wait.h                      | 11 --------
- kernel/sched/core.c                       | 46 -------------------------------
- 3 files changed, 67 deletions(-)
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: linux-media@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org
+Cc: netdev@vger.kernel.org
 
-diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
-index d0758b24..bd9015d 100644
---- a/Documentation/DocBook/kernel-hacking.tmpl
-+++ b/Documentation/DocBook/kernel-hacking.tmpl
-@@ -850,16 +850,6 @@ printk(KERN_INFO "my ip: %pI4\n", &amp;ipaddress);
-     <returnvalue>-ERESTARTSYS</returnvalue> if a signal is received.
-     The <function>wait_event()</function> version ignores signals.
-    </para>
--   <para>
--   Do not use the <function>sleep_on()</function> function family -
--   it is very easy to accidentally introduce races; almost certainly
--   one of the <function>wait_event()</function> family will do, or a
--   loop around <function>schedule_timeout()</function>. If you choose
--   to loop around <function>schedule_timeout()</function> remember
--   you must set the task state (with 
--   <function>set_current_state()</function>) on each iteration to avoid
--   busy-looping.
--   </para>
-  
-   </sect1>
- 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 559044c..e7d9d9e 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -803,17 +803,6 @@ do {									\
- 	__ret;								\
- })
- 
--
--/*
-- * These are the old interfaces to sleep waiting for an event.
-- * They are racy.  DO NOT use them, use the wait_event* interfaces above.
-- * We plan to remove these interfaces.
-- */
--extern void sleep_on(wait_queue_head_t *q);
--extern long sleep_on_timeout(wait_queue_head_t *q, signed long timeout);
--extern void interruptible_sleep_on(wait_queue_head_t *q);
--extern long interruptible_sleep_on_timeout(wait_queue_head_t *q, signed long timeout);
--
- /*
-  * Waitqueues which are removed from the waitqueue_head at wakeup time
-  */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..25377f4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2852,52 +2852,6 @@ int default_wake_function(wait_queue_t *curr, unsigned mode, int wake_flags,
- }
- EXPORT_SYMBOL(default_wake_function);
- 
--static long __sched
--sleep_on_common(wait_queue_head_t *q, int state, long timeout)
--{
--	unsigned long flags;
--	wait_queue_t wait;
--
--	init_waitqueue_entry(&wait, current);
--
--	__set_current_state(state);
--
--	spin_lock_irqsave(&q->lock, flags);
--	__add_wait_queue(q, &wait);
--	spin_unlock(&q->lock);
--	timeout = schedule_timeout(timeout);
--	spin_lock_irq(&q->lock);
--	__remove_wait_queue(q, &wait);
--	spin_unlock_irqrestore(&q->lock, flags);
--
--	return timeout;
--}
--
--void __sched interruptible_sleep_on(wait_queue_head_t *q)
--{
--	sleep_on_common(q, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
--}
--EXPORT_SYMBOL(interruptible_sleep_on);
--
--long __sched
--interruptible_sleep_on_timeout(wait_queue_head_t *q, long timeout)
--{
--	return sleep_on_common(q, TASK_INTERRUPTIBLE, timeout);
--}
--EXPORT_SYMBOL(interruptible_sleep_on_timeout);
--
--void __sched sleep_on(wait_queue_head_t *q)
--{
--	sleep_on_common(q, TASK_UNINTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
--}
--EXPORT_SYMBOL(sleep_on);
--
--long __sched sleep_on_timeout(wait_queue_head_t *q, long timeout)
--{
--	return sleep_on_common(q, TASK_UNINTERRUPTIBLE, timeout);
--}
--EXPORT_SYMBOL(sleep_on_timeout);
--
- #ifdef CONFIG_RT_MUTEXES
- 
- /*
+Arnd Bergmann (16):
+  ataflop: fix sleep_on races
+  scsi: atari_scsi: fix sleep_on race
+  DAC960: remove sleep_on usage
+  swim3: fix interruptible_sleep_on race
+  [media] omap_vout: avoid sleep_on race
+  [media] usbvision: drop unused define USBVISION_SAY_AND_WAIT
+  [media] radio-cadet: avoid interruptible_sleep_on race
+  [media] arv: fix sleep_on race
+  parport: fix interruptible_sleep_on race
+  atm: nicstar: remove interruptible_sleep_on_timeout
+  atm: firestream: fix interruptible_sleep_on race
+  isdn: pcbit: fix interruptible_sleep_on race
+  isdn: hisax/elsa: fix sleep_on race in elsa FSM
+  isdn: divert, hysdn: fix interruptible_sleep_on race
+  isdn: fix multiple sleep_on races
+  sched: remove sleep_on() and friends
+
+ Documentation/DocBook/kernel-hacking.tmpl    | 10 ------
+ drivers/atm/firestream.c                     |  4 +--
+ drivers/atm/nicstar.c                        | 13 ++++----
+ drivers/block/DAC960.c                       | 34 ++++++++++----------
+ drivers/block/ataflop.c                      | 16 +++++-----
+ drivers/block/swim3.c                        | 18 ++++++-----
+ drivers/isdn/divert/divert_procfs.c          |  7 +++--
+ drivers/isdn/hisax/elsa.c                    |  9 ++++--
+ drivers/isdn/hisax/elsa_ser.c                |  3 +-
+ drivers/isdn/hysdn/hysdn_proclog.c           |  7 +++--
+ drivers/isdn/i4l/isdn_common.c               | 13 +++++---
+ drivers/isdn/pcbit/drv.c                     |  6 ++--
+ drivers/media/platform/arv.c                 |  6 ++--
+ drivers/media/platform/omap/omap_vout_vrfb.c |  3 +-
+ drivers/media/radio/radio-cadet.c            | 46 ++++++++++++++++------------
+ drivers/media/usb/usbvision/usbvision.h      |  8 -----
+ drivers/parport/share.c                      |  3 +-
+ drivers/scsi/atari_scsi.c                    | 12 ++++++--
+ include/linux/wait.h                         | 11 -------
+ kernel/sched/core.c                          | 46 ----------------------------
+ 20 files changed, 113 insertions(+), 162 deletions(-)
+
 -- 
 1.8.3.2
 
