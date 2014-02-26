@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaBZNrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:47:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.24]:64181 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaBZNrI (ORCPT
+	id S1751829AbaBZNtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:49:20 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:38986 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaBZNtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:47:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org, Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: [PATCH 0/5] ARM: davinci: tnetv107x removal
-Date: Wed, 26 Feb 2014 14:46:28 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-spi@vger.kernel.org
-References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
-In-Reply-To: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
+	Wed, 26 Feb 2014 08:49:18 -0500
+Date: Wed, 26 Feb 2014 08:49:15 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: linux-next: build failure after merge of the libata tree
+Message-ID: <20140226134915.GB17302@htj.dyndns.org>
+References: <20140226135521.047c301755d2bb44401e3ac6@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402261446.29257.arnd@arndb.de>
-X-Provags-ID: V02:K0:DtVqhiyLXtboUhvIM8KtIVhgZXSn9HIaUKeWDzJnnO4
- yrPjLl0u83jQ1L7UgTvH5pEnjHgTQjF9Kbq0NSfa8E2JZSEWYd
- DIyvgxEkAfbtVbFfqKeFtsIaEbKb2uQZNby5kIlKkViSDQ+5cg
- Sa9mc23N9E9UalMwq83oG5iZAxt5BiVm8e4XhWU16F2y4cVfSs
- mmkRxRfXdFdu5kY+rhWgtRwoAXgSPVmdC5TKx4LNAlmyFlGjVz
- RyKfVY08JXB+CkEhp3EI18i+k97vjQC5Kd6ZA7DSVQ0Tl61RkH
- i6L0oIyi/JwuOyC1YWFV8mMzxxSDCfFLncRc+cXGuq3tipQ1vb
- qz0NTdM9ZtiIrDAERpOY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226135521.047c301755d2bb44401e3ac6@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 February 2014, Arnd Bergmann wrote:
+On Wed, Feb 26, 2014 at 01:55:21PM +1100, Stephen Rothwell wrote:
+> Hi Tejun,
+> 
+> After merging the libata tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/ata/ahci_st.c: In function 'st_ahci_probe':
+> drivers/ata/ahci_st.c:159:8: error: implicit declaration of function 'ahci_platform_put_resources' [-Werror=implicit-function-declaration]
+>         ahci_platform_put_resources(&pdev->dev, hpriv);
+>         ^
+> 
+> Caused by commit 0d8d213703ff ("ahci: st: Add support for ST's SATA
+> IP").  That function is defined as "static" in another file ...
+> 
+> I have used the version of the libata tree from next-20140225 for today.
 
-> The five patches are completely independent of one another,
-> and applying them out of order is fine since we just want
-> to remove the code. However, I'm looking for an Ack from
-> Cyril Chemparathy and Sekhar Nori first, to be sure we
-> won't need this code in the future. Kevin Hilman has
-> already mentioned that he sees no reason to keep this
-> code.
+Right, that patch was against the previous version which didn't use
+devres.  The put_resources calls are no longer necessary.  Will revert
+the patch for now.
 
-Hmm, apparently Cyril is no longer at TI. If anyone has his
-current email address and thinks he might have an opinion,
-could you forward the original email?
+Thanks.
 
-	Arnd
+-- 
+tejun
