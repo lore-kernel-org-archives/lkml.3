@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaBZWgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:36:52 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56807 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaBZWgt (ORCPT
+	id S1752953AbaBZWhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:37:38 -0500
+Received: from smtprelay0060.hostedemail.com ([216.40.44.60]:41815 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750891AbaBZWhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:36:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <38730952.JbtPf2mapG@avalon>
-References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
-	<1393323673-2751-4-git-send-email-geert@linux-m68k.org>
-	<38730952.JbtPf2mapG@avalon>
-Date: Wed, 26 Feb 2014 23:36:48 +0100
-X-Google-Sender-Auth: nJd54-GGP5WJN4xP8bQX7qr-G0Y
-Message-ID: <CAMuHMdUavuHNnwHY4Xd1CGdB71wV=rGn5uzeA3MTEoAn9-g0VA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/6] spi: sh-msiof: Add support for R-Car H2 and M2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Feb 2014 17:37:36 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3867:3868:3870:3872:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7514:7652:7809:9010:9025:9388:10004:10400:10848:11232:11638:11658:11914:12043:12517:12519:12555:12663:12740:13025:13069:13071:13311:13357:13618:13891:13894:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: gun13_24e61294ba522
+X-Filterd-Recvd-Size: 2440
+Message-ID: <1393454251.24588.15.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] AX88179_178A: Add VID:DID for Lenovo OneLinkDock
+ Gigabit LAN
+From: Joe Perches <joe@perches.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        David Miller <davem@davemloft.net>, freddy@asix.com.tw,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Feb 2014 14:37:31 -0800
+In-Reply-To: <86mwhd7bt1.fsf@hiro.keithp.com>
+References: <87zjle6pif.fsf@nemi.mork.no>
+	 <20140226.154801.1466276966991949680.davem@davemloft.net>
+	 <87lhwx7f19.fsf@nemi.mork.no>
+	 <20140226.161659.2024676575146527914.davem@davemloft.net>
+	 <87fvn57dn1.fsf@nemi.mork.no> <86mwhd7bt1.fsf@hiro.keithp.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Wed, 2014-02-26 at 14:23 -0800, Keith Packard wrote:
+> Bjørn Mork <bjorn@mork.no> writes:
+> 
+> > No, you didn't.  And when I went looking at it now, I see why: It was
+> > posted to linux-usb and linux-kernel but not to netdev:
+> > http://www.kernelhub.org/?msg=420289&p=2
+> 
+> I looked in MAINTAINERS and found linux-usb as a suitable address for
+> drivers/net/usb/. I'm sorry I didn't think to look for drivers/net/ as
+> well.
 
-On Wed, Feb 26, 2014 at 11:16 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
->> diff --git a/Documentation/devicetree/bindings/spi/sh-msiof.txt
->> b/Documentation/devicetree/bindings/spi/sh-msiof.txt index
->> eae3c8c9300e..1f0cb33763a1 100644
->> --- a/Documentation/devicetree/bindings/spi/sh-msiof.txt
->> +++ b/Documentation/devicetree/bindings/spi/sh-msiof.txt
->> @@ -1,8 +1,13 @@
->>  Renesas MSIOF spi controller
->>
->>  Required properties:
->> -- compatible           : "renesas,sh-msiof" for SuperH, or
->> +- compatible           : "renesas,msiof-<soctype>" for SoCs,
->> +                      "renesas,sh-msiof" for SuperH, or
->>                        "renesas,sh-mobile-msiof" for SH Mobile series.
->> +                      Examples with soctypes are:
->> +                      "renesas,msiof-sh7724" (SH)
->
-> Given that the driver doesn't handle the "renesas,msiof-sh7724" compatible
-> string this might not be a good example. Furthermore SuperH doesn't have DT
-> support. I would thus drop the "renesas,sh-msiof" compatible string from patch
-> 1/6 and wouldn't mention sh7724 here. I very much doubt that someone would
-> have developed DT support for SuperH on the side and shipped products that
-> would be broken by this change :-)
+Hi Keith.
 
-Right. Originally I had 'or "renesas,sh-msiof" as fallback', but the fallbacks
-have been dropped, so it indeed won't work with just "renesas,msiof-sh7724".
-I'll fix that.
+You could use scripts/get_maintainer.pl next time.
 
-Thanks for your review!
+$ ./scripts/get_maintainer.pl -f drivers/net/usb/ax88179_178a.c
+"David S. Miller" <davem@davemloft.net> (commit_signer:13/13=100%)
+Freddy Xin <freddy@asix.com.tw> (commit_signer:4/13=31%,authored:4/13=31%,added_lines:1473/1504=98%,removed_lines:9/43=21%)
+Eric Dumazet <edumazet@google.com> (commit_signer:3/13=23%,authored:2/13=15%,removed_lines:22/43=51%)
+Ming Lei <ming.lei@canonical.com> (commit_signer:3/13=23%,authored:3/13=23%,removed_lines:8/43=19%)
+David Chang <dchang@suse.com> (commit_signer:2/13=15%,authored:2/13=15%)
+Emil Goode <emilgoode@gmail.com> (authored:1/13=8%)
+linux-usb@vger.kernel.org (open list:USB NETWORKING DR...)
+netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+linux-kernel@vger.kernel.org (open list)
 
-Gr{oetje,eeting}s,
 
-                        Geert
+Maybe there should be a MAINTAINERS entry added too?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
