@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaBZCKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:10:06 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:46880 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaBZCKF (ORCPT
+	id S1751458AbaBZCVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:21:25 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45692 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaBZCVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:10:05 -0500
+	Tue, 25 Feb 2014 21:21:24 -0500
+Message-ID: <530D4F9E.70704@jp.fujitsu.com>
+Date: Tue, 25 Feb 2014 21:21:18 -0500
+From: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <003001cf3291$293db3b0$7bb91b10$%han@samsung.com>
-References: <002e01cf3290$ccda9430$668fbc90$%han@samsung.com>
-	<003001cf3291$293db3b0$7bb91b10$%han@samsung.com>
-Date: Wed, 26 Feb 2014 10:10:03 +0800
-Message-ID: <CAN1soZyc-YGB5qFL3tgHVY1ANMg8-jF=2n8dOy-MJe2awR1yMw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] regulator: 88pm8607: fix indent code style
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>
+CC: muneda.takahiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
+References: <8738jatylb.wl%satoru.takeuchi@gmail.com> <20140224093039.6509b6cd@gandalf.local.home>
+In-Reply-To: <20140224093039.6509b6cd@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-TM-AS-Product-Ver: IMSS-7.1.0.1403-7.5.0.1017-20532.002
+X-TM-AS-User-Approved-Sender: Yes
+X-TMASE-MatchedRID: mZljRXDwq+6xiVrMUp+cq5paQZrxtVBsWyQijpt1UQkNcckEPxfz2Iu3
+	renu5Y0wfmDk9kX3dCi7oJuTuWMpPtjTzYyhzXBGA9lly13c/gEHY/HQ9acau/gnJH5vm2+gyQ2
+	GIx+U1Ru5vvrLcdgiU5urMMf0bt5MDjVNhrRWL76j87+S1NQ9t5sAVGimIUEKDO+DX+rUwfb/eb
+	8DG9xHUQNMMYzMnKk5rotBFWSuK2hNfs8n85Te8hM0JxSxHjFJHpSfU35Tjw0E4g5QJth5ZHQdJ
+	7XfU86ekGUtrowrXLg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 9:22 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> Fix indent code style in order to fix the following checkpatch
-> issues.
->
->   ERROR: code indent should use tabs where possible
->   WARNING: please, no space before tabs
->   WARNING: please, no spaces at the start of a line
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/regulator/88pm8607.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
-> index fa99bfc..337634a 100644
-> --- a/drivers/regulator/88pm8607.c
-> +++ b/drivers/regulator/88pm8607.c
-> @@ -2,7 +2,7 @@
->   * Regulators driver for Marvell 88PM8607
->   *
->   * Copyright (C) 2009 Marvell International Ltd.
-> - *     Haojian Zhuang <haojian.zhuang@marvell.com>
-> + *     Haojian Zhuang <haojian.zhuang@marvell.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> @@ -78,7 +78,7 @@ static const unsigned int BUCK2_suspend_table[] = {
->  };
->
->  static const unsigned int BUCK3_table[] = {
-> -              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
-> +             0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
->          200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
->          400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
->          600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
-> @@ -89,7 +89,7 @@ static const unsigned int BUCK3_table[] = {
->  };
->
->  static const unsigned int BUCK3_suspend_table[] = {
-> -              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
-> +             0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
->          200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
->          400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
->          600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
-> --
-> 1.7.10.4
->
->
+On Mon, 24 Feb 2014 09:30:39 -0500,
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+> On Sun, 23 Feb 2014 10:19:28 +0900
+> Satoru Takeuchi <satoru.takeuchi@gmail.com> wrote:
+>
+>> From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+>>
+>> As mentioned at commit 5a5d8e48449, we can't terminate 'virsh console'
+>> with the default signal(INT). So it's better to set CLOSE_CONSOLE_SIGNAL
+>> in the kvm.conf.
+>>
+>> Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> ---
+>>   tools/testing/ktest/examples/kvm.conf | 4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
+>> index 831c7c5..40356f7 100644
+>> --- a/tools/testing/ktest/examples/kvm.conf
+>> +++ b/tools/testing/ktest/examples/kvm.conf
+>> @@ -10,6 +10,10 @@ MACHINE = Guest
+>>   # Use virsh to read the serial console of the guest
+>>   CONSOLE =  virsh console ${MACHINE}
+>>
+>> +# Use SIGILL to terminate virsh console. We can't kill virsh console
+>> +# by the default signal, SIGINT.
+>> +CLOSE_CONSOLE_SIGNAL = KILL
+>> +
+>
+> Thanks, I'll add this to my 3.15 queue.
 
-Regards
-Haojian
+Hmm, it seems that we need a following patch as well.
+Or, please merge with the orignal patch.
+
+Thanks,
+Takahiro
+
+======================================================================
+ From a1c7b948c47a6ea7b74225bf5698fdfb7199726a Mon Sep 17 00:00:00 2001
+From: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+Date: Tue, 25 Feb 2014 15:32:35 -0500
+Subject: [PATCH] ktest: Fixes a trivial typo
+
+Signed-off-by: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+
+---
+  tools/testing/ktest/examples/kvm.conf | 2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
+index 40356f7..fbc134f 100644
+--- a/tools/testing/ktest/examples/kvm.conf
++++ b/tools/testing/ktest/examples/kvm.conf
+@@ -10,7 +10,7 @@ MACHINE = Guest
+  # Use virsh to read the serial console of the guest
+  CONSOLE =  virsh console ${MACHINE}
+  
+-# Use SIGILL to terminate virsh console. We can't kill virsh console
++# Use SIGKILL to terminate virsh console. We can't kill virsh console
+  # by the default signal, SIGINT.
+  CLOSE_CONSOLE_SIGNAL = KILL
+  
+-- 
+1.8.3.1
