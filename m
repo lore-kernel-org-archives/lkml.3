@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaBZUIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:08:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45019 "EHLO
+	id S1753261AbaBZUKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:10:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45046 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaBZUIS (ORCPT
+	with ESMTP id S1750968AbaBZUKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:08:18 -0500
-Date: Wed, 26 Feb 2014 12:07:23 -0800
-From: tip-bot for Viresh Kumar <tipbot@zytor.com>
-Message-ID: <tip-8ba14654282ed6bb386d0a2f1ab329bfb293403f@git.kernel.org>
+	Wed, 26 Feb 2014 15:10:17 -0500
+Date: Wed, 26 Feb 2014 12:07:34 -0800
+From: tip-bot for Paul Gortmaker <tipbot@zytor.com>
+Message-ID: <tip-f96a34e27df19335155394a235ea3a096bc52a71@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, viresh.kumar@linaro.org,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, paul.gortmaker@windriver.com
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, paul.gortmaker@windriver.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, viresh.kumar@linaro.org,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, paul.gortmaker@windriver.com
-In-Reply-To: <CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
-References: <CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, paul.gortmaker@windriver.com
+In-Reply-To: <1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timer:
-  Spare IPI when deferrable timer is queued on idle remote targets
-Git-Commit-ID: 8ba14654282ed6bb386d0a2f1ab329bfb293403f
+Subject: [tip:timers/core] nohz:
+  ensure users are aware boot CPU is not NO_HZ_FULL
+Git-Commit-ID: f96a34e27df19335155394a235ea3a096bc52a71
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,69 +34,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ba14654282ed6bb386d0a2f1ab329bfb293403f
-Gitweb:     http://git.kernel.org/tip/8ba14654282ed6bb386d0a2f1ab329bfb293403f
-Author:     Viresh Kumar <viresh.kumar@linaro.org>
-AuthorDate: Mon, 10 Feb 2014 17:09:54 +0100
+Commit-ID:  f96a34e27df19335155394a235ea3a096bc52a71
+Gitweb:     http://git.kernel.org/tip/f96a34e27df19335155394a235ea3a096bc52a71
+Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
+AuthorDate: Thu, 6 Feb 2014 13:36:21 -0500
 Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-CommitDate: Fri, 14 Feb 2014 17:59:14 +0100
+CommitDate: Fri, 14 Feb 2014 17:59:17 +0100
 
-timer: Spare IPI when deferrable timer is queued on idle remote targets
+nohz: ensure users are aware boot CPU is not NO_HZ_FULL
 
-When a timer is enqueued or modified on a remote target, the latter is
-expected to see and handle this timer on its next tick. However if the
-target is idle and CONFIG_NO_HZ_IDLE=y, the CPU may be sleeping tickless
-and the timer may be ignored.
+This bit of information is in the Kconfig help text:
 
-wake_up_nohz_cpu() takes care of that by setting TIF_NEED_RESCHED and
-sending an IPI to idle targets so that the tick is reevaluated on the
-idle loop through the tick_nohz_idle_*() APIs.
+  "Note the boot CPU will still be kept outside the range to
+  handle the timekeeping duty."
 
-Now this is all performed regardless of the power properties of the
-timer. If the timer is deferrable, idle targets don't need to be woken
-up. Only the next buzy tick needs to care about it, and no IPI kick
-is needed for that to happen.
+However neither the variable NO_HZ_FULL_ALL, or the prompt
+convey this important detail, so lets add it to the prompt
+to make it more explicitly obvious to the average user.
 
-So lets spare the IPI on idle targets when the timer is deferrable.
-
-Meanwhile we keep the current behaviour on full dynticks targets. We can
-spare IPIs on idle full dynticks targets as well but some tricky races
-against idle_cpu() must be dealt all along to make sure that the timer
-is well handled after idle exit. We can deal with that later since
-NO_HZ_FULL already has more important powersaving issues.
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com
+Link: http://lkml.kernel.org/r/1391711781-7466-1-git-send-email-paul.gortmaker@windriver.com
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/timer.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ kernel/time/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index accfd24..b75e789 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -939,8 +939,15 @@ void add_timer_on(struct timer_list *timer, int cpu)
- 	 * with the timer by holding the timer base lock. This also
- 	 * makes sure that a CPU on the way to stop its tick can not
- 	 * evaluate the timer wheel.
-+	 *
-+	 * Spare the IPI for deferrable timers on idle targets though.
-+	 * The next busy ticks will take care of it. Except full dynticks
-+	 * require special care against races with idle_cpu(), lets deal
-+	 * with that later.
- 	 */
--	wake_up_nohz_cpu(cpu);
-+	if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
-+		wake_up_nohz_cpu(cpu);
-+
- 	spin_unlock_irqrestore(&base->lock, flags);
- }
- EXPORT_SYMBOL_GPL(add_timer_on);
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 3ce6e8c..f448513 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -124,7 +124,7 @@ config NO_HZ_FULL
+ endchoice
+ 
+ config NO_HZ_FULL_ALL
+-       bool "Full dynticks system on all CPUs by default"
++       bool "Full dynticks system on all CPUs by default (except CPU 0)"
+        depends on NO_HZ_FULL
+        help
+          If the user doesn't pass the nohz_full boot option to
