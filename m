@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaBZS7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 13:59:38 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:52618 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307AbaBZS7c (ORCPT
+	id S1753654AbaBZTAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:00:45 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:58492 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaBZTAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 13:59:32 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 2/8] mfd: pm8921: Update for genirq changes
-Date: Wed, 26 Feb 2014 10:59:20 -0800
-Message-Id: <1393441166-32692-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
-References: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 26 Feb 2014 14:00:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <5306BD8D.3030606@intel.com>
+References: <1392230186-16130-1-git-send-email-qiaowei.ren@intel.com>
+ <1392230186-16130-3-git-send-email-qiaowei.ren@intel.com> <52FBD74F.7050203@mit.edu>
+ <5306BD8D.3030606@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 26 Feb 2014 11:00:21 -0800
+Message-ID: <CALCETrU4-ew7qNn5TWx=Y0Vizzvf+vPoS8DmQbT=wRQs4_yHsg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+To: Ren Qiaowei <qiaowei.ren@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this code has been marked broken for some time a few genirq
-tree wide changes weren't made. set_irq_wake() was renamed to
-irq_set_irq_wake() in commit a0cd9ca2b (genirq: Namespace
-cleanup, 2011-02-10) and commit 10a8c383 (irq: introduce entry
-and exit functions for chained handlers) introduced the chained
-irq functions but this driver wasn't updated to use them. Fix
-these problems and remove the BROKEN marking on this driver.
+On Thu, Feb 20, 2014 at 6:44 PM, Ren Qiaowei <qiaowei.ren@intel.com> wrote:
+> On 02/13/2014 04:19 AM, Andy Lutomirski wrote:
+>>
+>> On 02/12/2014 10:36 AM, Qiaowei Ren wrote:
+>>>
+>>> An access to an invalid bound directory entry will cause a #BR
+>>> exception. This patch hook #BR exception handler to allocate
+>>> one bound table and bind it with that buond directory entry.
+>>>
+>>> This will avoid the need of forwarding the #BR exception
+>>> to the user space when bound directory has invalid entry.
+>>>
+>>> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+>>> ---
+>>> +void do_mpx_bt_fault(struct xsave_struct *xsave_buf)
+>>> +{
+>>> +       unsigned long status;
+>>> +       unsigned long bd_entry, bd_base;
+>>> +       unsigned long bd_size = 1UL << (MPX_L1_BITS+MPX_L1_SHIFT);
+>>> +
+>>> +       bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
+>>> +       status = xsave_buf->bndcsr.status_reg;
+>>> +
+>>> +       bd_entry = status & MPX_BNDSTA_ADDR_MASK;
+>>> +       if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
+>>> +               allocate_bt(bd_entry);
+>>> +}
+>>
+>>
+>> This still just loops on failure, right?
+>>
+> Seems like that SIGBUS should be raised if the allocation fail.
+>
+>         if (!do_mpx_bt_fault(xsave_buf))
+>                 force_sig(SIGBUS, tsk);
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/mfd/Kconfig       | 1 -
- drivers/mfd/pm8921-core.c | 7 +++++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+I wonder if this should go through the force_sig_info path.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index b4431d2995a1..bee2d2c81c2a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -474,7 +474,6 @@ config MFD_PM8XXX
- config MFD_PM8921_CORE
- 	tristate "Qualcomm PM8921 PMIC chip"
- 	depends on (ARCH_MSM || HEXAGON)
--	depends on BROKEN
- 	select MFD_CORE
- 	select MFD_PM8XXX
- 	help
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 50e0a9b69b9d..9ddc31f7a71d 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -15,6 +15,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
-+#include <linux/irqchip/chained_irq.h>
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -174,6 +175,8 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	u8	root;
- 	int	i, ret, masters = 0;
- 
-+	chained_irq_enter(irq_chip, desc);
-+
- 	ret = pm8xxx_read_root_irq(chip, &root);
- 	if (ret) {
- 		pr_err("Can't read root status ret=%d\n", ret);
-@@ -188,7 +191,7 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 		if (masters & (1 << i))
- 			pm8xxx_irq_master_handler(chip, i);
- 
--	irq_chip->irq_ack(&desc->irq_data);
-+	chained_irq_exit(irq_chip, desc);
- }
- 
- static void pm8xxx_irq_mask_ack(struct irq_data *d)
-@@ -367,7 +370,7 @@ static struct pm_irq_chip *pm8xxx_irq_init(struct device *dev,
- 	irq_set_irq_type(devirq, pdata->irq_trigger_flag);
- 	irq_set_handler_data(devirq, chip);
- 	irq_set_chained_handler(devirq, pm8xxx_irq_handler);
--	set_irq_wake(devirq, 1);
-+	irq_set_irq_wake(devirq, 1);
- 
- 	return chip;
- }
+--Andy
+
+>
+> Thanks,
+> Qiaowei
+>
+
+
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Andy Lutomirski
+AMA Capital Management, LLC
