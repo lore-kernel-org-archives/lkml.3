@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408AbaBZRHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:07:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43342 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616AbaBZRHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:07:06 -0500
-Date: Wed, 26 Feb 2014 10:49:49 -0500
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chris Bainbridge <chris.bainbridge@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: set Pentium M as PAE capable
-Message-ID: <20140226154949.GA770@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>,
-	Chris Bainbridge <chris.bainbridge@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20140225060146.GA4339@debian.local>
- <530C7465.2080600@zytor.com>
- <20140225162611.GA31902@redhat.com>
- <530CCFD2.3050007@zytor.com>
- <20140226121256.GA8494@debian.local>
- <20140226131852.GA22690@pd.tnic>
+	id S1753236AbaBZRJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:09:02 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:47978 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaBZRJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:09:00 -0500
+X-Originating-IP: 50.43.14.201
+Date: Wed, 26 Feb 2014 09:08:47 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org
+Subject: Re: [PATCH v2] drivers: cpufreq: Mark function as static in cpufreq.c
+Message-ID: <20140226170847.GA18427@thin>
+References: <1393432706-25708-1-git-send-email-rashika.kheria@gmail.com>
+ <20140226164142.GA18079@thin>
+ <CAMpEsFFjR2e_kDn9-QuKcS3RjsSmru9XGjXqXXdO7sYeWdh9dw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140226131852.GA22690@pd.tnic>
+In-Reply-To: <CAMpEsFFjR2e_kDn9-QuKcS3RjsSmru9XGjXqXXdO7sYeWdh9dw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 02:18:52PM +0100, Borislav Petkov wrote:
- > On Wed, Feb 26, 2014 at 07:12:59PM +0700, Chris Bainbridge wrote:
- > > @@ -226,6 +234,15 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
- > >  		clear_cpu_cap(c, X86_FEATURE_SEP);
- > >  
- > >  	/*
- > > +	 * PAE CPUID bug: Pentium M reports no PAE but has PAE
- > > +	 */
- > > +	if (forcepae) {
- > > +		printk(KERN_WARNING "PAE forced!\n");
- > > +		set_cpu_cap(c, X86_FEATURE_PAE);
- > > +		add_taint(TAINT_MACHINE_CHECK, LOCKDEP_NOW_UNRELIABLE);
- > 
- > This is certainly the wrong taint flag. We'd need a new one or to
- > repurpose another one as I suggested in a previous mail.
+On Wed, Feb 26, 2014 at 10:15:57PM +0530, Rashika Kheria wrote:
+> On Wed, Feb 26, 2014 at 10:11 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > On Wed, Feb 26, 2014 at 10:08:26PM +0530, Rashika Kheria wrote:
+> >> Mark function as static in cpufreq.c because it is not
+> >> used outside this file.
+> >>
+> >> This eliminates the following warning in cpufreq.c:
+> >> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for 'show_boost' [-Wmissing-prototypes]
+> >>
+> >> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> >
+> > I don't see any uses of this function in cpufreq.c; have uses appeared
+> > in a development branch?
+> >
+> 
+> It isn't used directly but through "define_one_global_rw(boost);".
+> 
+> The "define_one_global_rw()" is defined in include/linux/cpufreq.h. It
+> therefore, need the definition of the function.
 
-I'd suggest repurposing 'S'. Instead of 'unsafe smp', it could mean
-"out of Spec". We currently only use that flag on some ancient athlon xp,
-so there's not going to be any kind of collision.
+Ah, that's quite non-obvious.  Hiding the "show_" makes that hard to
+grep for.
 
-Start with the below maybe ?
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-	Dave
-
-Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC, so we can repurpose the
-flag to encompass a wider range of problems.
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index c67ffa686064..7ec4119b381c 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -218,7 +218,7 @@ static void amd_k7_smp_check(struct cpuinfo_x86 *c)
- 	 */
- 	WARN_ONCE(1, "WARNING: This combination of AMD"
- 		" processors is not suitable for SMP.\n");
--	add_taint(TAINT_UNSAFE_SMP, LOCKDEP_NOW_UNRELIABLE);
-+	add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
- }
- 
- static void init_amd_k7(struct cpuinfo_x86 *c)
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 196d1ea86df0..08fb02477641 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -458,7 +458,7 @@ extern enum system_states {
- 
- #define TAINT_PROPRIETARY_MODULE	0
- #define TAINT_FORCED_MODULE		1
--#define TAINT_UNSAFE_SMP		2
-+#define TAINT_CPU_OUT_OF_SPEC		2
- #define TAINT_FORCED_RMMOD		3
- #define TAINT_MACHINE_CHECK		4
- #define TAINT_BAD_PAGE			5
-diff --git a/kernel/module.c b/kernel/module.c
-index d24fcf29cb64..ca2c1aded7ee 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1015,7 +1015,7 @@ static size_t module_flags_taint(struct module *mod, char *buf)
- 		buf[l++] = 'C';
- 	/*
- 	 * TAINT_FORCED_RMMOD: could be added.
--	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-+	 * TAINT_CPU_OUT_OF_SPEC, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
- 	 * apply to modules.
- 	 */
- 	return l;
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 2feab00c73ba..6900b83d17f5 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -199,7 +199,7 @@ struct tnt {
- static const struct tnt tnts[] = {
- 	{ TAINT_PROPRIETARY_MODULE,	'P', 'G' },
- 	{ TAINT_FORCED_MODULE,		'F', ' ' },
--	{ TAINT_UNSAFE_SMP,		'S', ' ' },
-+	{ TAINT_CPU_OUT_OF_SPEC,	'S', ' ' },
- 	{ TAINT_FORCED_RMMOD,		'R', ' ' },
- 	{ TAINT_MACHINE_CHECK,		'M', ' ' },
- 	{ TAINT_BAD_PAGE,		'B', ' ' },
+> >>  drivers/cpufreq/cpufreq.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >> index 08ca8c9..54fd670 100644
+> >> --- a/drivers/cpufreq/cpufreq.c
+> >> +++ b/drivers/cpufreq/cpufreq.c
+> >> @@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+> >>  /*********************************************************************
+> >>   *                          SYSFS INTERFACE                          *
+> >>   *********************************************************************/
+> >> -ssize_t show_boost(struct kobject *kobj,
+> >> +static ssize_t show_boost(struct kobject *kobj,
+> >>                                struct attribute *attr, char *buf)
+> >>  {
+> >>       return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
+> >> --
+> >> 1.7.9.5
+> >>
+> 
+> 
+> 
+> -- 
+> Rashika Kheria
+> B.Tech CSE
+> IIIT Hyderabad
