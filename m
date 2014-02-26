@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083AbaBZSI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 13:08:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaBZSI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 13:08:56 -0500
-Date: Wed, 26 Feb 2014 19:08:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        schwidefsky@de.ibm.com, rientjes@google.com, riel@redhat.com,
-        pbonzini@redhat.com, mingo@kernel.org, mgorman@suse.de,
-        kirill.shutemov@linux.intel.com, heiko.carstens@de.ibm.com,
-        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com, ebiederm@xmission.com,
-        aarcange@redhat.com, athorlton@sgi.com
-Subject: Re: +
-	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch added
-	to -mm tree
-Message-ID: <20140226180807.GB25644@redhat.com>
-References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com> <530E0306.7020601@de.ibm.com> <20140226153144.GA15527@redhat.com> <20140226165759.GB22802@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226165759.GB22802@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753012AbaBZSKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 13:10:53 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56414 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaBZSKv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 13:10:51 -0500
+From: vinayakm.list@gmail.com
+To: gregkh@linuxfoundation.org, arve@android.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Vinayak Menon <vinayakm.list@gmail.com>
+Subject: [PATCH] staging: android: lowmemorykiller: neglect swap cached pages in other_file
+Date: Wed, 26 Feb 2014 23:40:33 +0530
+Message-Id: <1393438233-2759-1-git-send-email-vinayakm.list@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26, Peter Zijlstra wrote:
->
-> On Wed, Feb 26, 2014 at 04:31:44PM +0100, Oleg Nesterov wrote:
-> >  		/*
-> > @@ -1977,8 +1975,12 @@ int hugepage_madvise(struct vm_area_stru
-> >  		 */
-> >  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
-> >  			return -EINVAL;
-> > -		if (mm->def_flags & VM_NOHUGEPAGE)
-> > +
-> > +#ifdef CONFIG_S390
->
-> Do we want a comment here, explaining why s390 is special again?
+From: Vinayak Menon <vinayakm.list@gmail.com>
 
-Yes, yes, sure. Especially because this is (hopefully) the temporary
-hack.
+With ZRAM enabled it is observed that lowmemory killer
+doesn't trigger properly. swap cached pages are
+accounted in NR_FILE, and lowmemorykiller considers
+this as reclaimable and adds to other_file. But these
+pages can't be reclaimed unless lowmemorykiller triggers.
+So subtract swap pages from other_file.
 
-Oleg.
+Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
+---
+ drivers/staging/android/lowmemorykiller.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 6f094b3..92b1c93 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -88,7 +88,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
+ 	int array_size = ARRAY_SIZE(lowmem_adj);
+ 	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
+ 	int other_file = global_page_state(NR_FILE_PAGES) -
+-						global_page_state(NR_SHMEM);
++						global_page_state(NR_SHMEM)
++						total_swapcache_pages();
+ 
+ 	if (lowmem_adj_size < array_size)
+ 		array_size = lowmem_adj_size;
+-- 
+1.7.6
 
