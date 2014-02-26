@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaBZFPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:15:35 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:49002 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaBZFPc (ORCPT
+	id S1751165AbaBZFUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:20:46 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:56284 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaBZFUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:15:32 -0500
+	Wed, 26 Feb 2014 00:20:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <1456811.7asrQYHEt1@vostro.rjw.lan>
-References: <15ccc0609cb9ee3db0ad3a95b29bf69d11ea197c.1392375504.git.viresh.kumar@linaro.org>
-	<3894986.dK3STNSG71@vostro.rjw.lan>
-	<CAKohpom+RUAi0jZBVWUEWZh36O4QgoJcK-YrCq6eDnfMVf+GCg@mail.gmail.com>
-	<1456811.7asrQYHEt1@vostro.rjw.lan>
-Date: Wed, 26 Feb 2014 10:45:32 +0530
-Message-ID: <CAKohpokKJUt4UhC5_dJAhU3LCBwht4pfDWT5Lqo0T1-y_M31=A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+In-Reply-To: <530D06FF.201@codeaurora.org>
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org>
+	<530BAA31.4050701@codeaurora.org>
+	<CAKohpo=0CgzjCgKnDxUMcN6-CgbQ2ML=Tx-K8fS7=VJJYOD0eg@mail.gmail.com>
+	<15001517.xLHO8lGdWr@vostro.rjw.lan>
+	<530D06FF.201@codeaurora.org>
+Date: Wed, 26 Feb 2014 10:50:43 +0530
+Message-ID: <CAKohpo=iUBBcznKf0YbwNpvHNRuknC1wC0=MOSMrDYSaY2VLJQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pierre Ossman <pierre-list@ossman.eu>
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 February 2014 03:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Yes, what exactly do we need it for in the core?
+On 26 February 2014 02:41, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 02/25/2014 05:04 AM, Rafael J. Wysocki wrote:
+>> On Tuesday, February 25, 2014 02:20:57 PM Viresh Kumar wrote:
 
-Its probably there to make things faster. We cache the value so that we
-don't go to the hardware to read/calculate that again. Isn't it?
+> I think there's been a misunderstanding of what I'm proposing. The reference
+> to policy->clk is only to get rid of the dependency that
+> cpufreq_generic_get() has on the per cpu policy variable being filled. You
+> can do that by just removing calls to get _IF_ clk is filled in.
 
-And we need to know current freq on many occasions. One of that is that
-many drivers need to know the relation between current and new freq before
-they can make the change. As they might need to play with volt regulators
-before or after the freq change. Also it is used mainly in our loops_per_jiffiy
-calculations.
+cpufreq_cpu_get() can be called by other drivers as well, which may not have
+clock interface implemented for them. We can't stop them from calling it.
+
+> I'll look at the patches later today and respond. Although, I would have
+> been nice you had helped me fix any issues with my patch than coming up with
+> new ones. Kinda removes to motivation for submitting patches upstream.
+
+Sorry if I demotivated you at all :)
+
+I just wanted to get to a quick-fix and wasn't interested in getting
+my patch count
+up. Thought that isn't always bad :)
+
+I sent my patches as they were very different then your approach. Obviously, I
+wouldn't have done this otherwise :)
