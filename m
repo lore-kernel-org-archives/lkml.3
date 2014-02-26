@@ -1,90 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaBZHlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:41:37 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:62472 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaBZHlf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:41:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393375569-21751-1-git-send-email-sre@debian.org>
-References: <1393375569-21751-1-git-send-email-sre@debian.org>
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Wed, 26 Feb 2014 08:40:54 +0100
-Message-ID: <CAHYPw2EeEnDn2FUYSMWbywprmhJmcRRyaTPn1YZK0xPvuiJQFw@mail.gmail.com>
-Subject: Re: [PATCHv1 0/2] Convert rx51-battery to IIO API and add DT support
-To: Sebastian Reichel <sre@debian.org>
-Cc: Sebastian Reichel <sre@ring0.de>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Marek Belisko <marek@goldelico.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
-        linux-iio@vger.kernel.org,
-        Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751245AbaBZHnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:43:53 -0500
+Received: from ozlabs.org ([203.10.76.45]:37566 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbaBZHnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 02:43:51 -0500
+Date: Wed, 26 Feb 2014 18:43:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: linux-next: manual merge of the akpm-current tree with the cgroup
+ tree
+Message-Id: <20140226184346.d459564165b30a9f1f42807d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+--Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2014-02-26 1:46 GMT+01:00 Sebastian Reichel <sre@debian.org>:
-> Hi,
->
-> This is PATCHv1 for converting rx51-battery to the IIO API
-> and adding DT support. The patchset compiles and has been
-> tested on my Nokia N900. It depends on another patchset
-> converting twl4030-madc to the IIO API:
->
-> https://lkml.org/lkml/2014/2/25/627
->
-> -- Sebastian
->
-> Sebastian Reichel (2):
->   rx51_battery: convert to iio consumer
->   Documentation: DT: Document rx51-battery binding
->
->  .../devicetree/bindings/power/rx51-battery.txt     | 25 ++++++++
->  drivers/power/rx51_battery.c                       | 68 ++++++++++++++--------
->  2 files changed, 70 insertions(+), 23 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/power/rx51-battery.txt
->
-> --
-> 1.8.5.3
->
+Hi Andrew,
 
-Thanks for patch!
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/memcontrol.c between commits e61734c55c24 ("cgroup: remove
+cgroup->name") from the cgroup tree and commits a89db06ab1b4 ("memcg:
+change oom_info_lock to mutex") and c78e84121972 ("memcg, slab: cleanup
+memcg cache creation") from the akpm-current tree.
 
-I would like to ask other kernel developers what do you think about
-moving ADC channel numbers from rx51_battery.ko driver code to DT.
-Driver rx51_battery.ko is platform specific for Nokia RX-51 (N900) so
-it is usefull only for this one device.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Before this patch all driver data (look-up tables, adc channel
-numbers, etc...) were in driver code. Now after this patch adc channel
-numbers were moved to DT. What do you think? It is better to have all
-data in one place (driver code) or some in DT and some in driver code?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-For me it does not make sense to move these numbers to DT, because
-driver is rx51 device specific and chaning it in DT does not make
-sense. And I think it is better to have add driver data in one place
-and not in two...
+diff --cc mm/memcontrol.c
+index d9c6ac1532e6,452f45087566..000000000000
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@@ -1683,25 -1683,54 +1683,25 @@@ static void move_unlock_mem_cgroup(stru
+   */
+  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_stru=
+ct *p)
+  {
+ -	/*
+ -	 * protects memcg_name and makes sure that parallel ooms do not
+ -	 * interleave
+ -	 */
+ +	/* oom_info_lock ensures that parallel ooms do not interleave */
+- 	static DEFINE_SPINLOCK(oom_info_lock);
++ 	static DEFINE_MUTEX(oom_info_lock);
+ -	struct cgroup *task_cgrp;
+ -	struct cgroup *mem_cgrp;
+ -	static char memcg_name[PATH_MAX];
+ -	int ret;
+  	struct mem_cgroup *iter;
+  	unsigned int i;
+ =20
+  	if (!p)
+  		return;
+ =20
+- 	spin_lock(&oom_info_lock);
++ 	mutex_lock(&oom_info_lock);
+  	rcu_read_lock();
+ =20
+ -	mem_cgrp =3D memcg->css.cgroup;
+ -	task_cgrp =3D task_cgroup(p, mem_cgroup_subsys_id);
+ +	pr_info("Task in ");
+ +	pr_cont_cgroup_path(task_cgroup(p, memory_cgrp_id));
+ +	pr_info(" killed as a result of limit of ");
+ +	pr_cont_cgroup_path(memcg->css.cgroup);
+ +	pr_info("\n");
+ =20
+ -	ret =3D cgroup_path(task_cgrp, memcg_name, PATH_MAX);
+ -	if (ret < 0) {
+ -		/*
+ -		 * Unfortunately, we are unable to convert to a useful name
+ -		 * But we'll still print out the usage information
+ -		 */
+ -		rcu_read_unlock();
+ -		goto done;
+ -	}
+  	rcu_read_unlock();
+ =20
+ -	pr_info("Task in %s killed", memcg_name);
+ -
+ -	rcu_read_lock();
+ -	ret =3D cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
+ -	if (ret < 0) {
+ -		rcu_read_unlock();
+ -		goto done;
+ -	}
+ -	rcu_read_unlock();
+ -
+ -	/*
+ -	 * Continues from above, so we don't need an KERN_ level
+ -	 */
+ -	pr_cont(" as a result of limit of %s\n", memcg_name);
+ -done:
+ -
+  	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
+  		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
+  		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
 
-Sebastian already wrote me that this is normal to have numbers in DT
-and other code in driver. But I think that driver which can be used
-only in one device (so specified only in one DT file) does not need to
-have configuration (via DT or board files).
+--Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW
+Content-Type: application/pgp-signature
 
-Or do you think that driver specified only for one device needs to
-have ADC numbers configuration via DT?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Pali Rohár
-pali.rohar@gmail.com
+iQIcBAEBCAAGBQJTDZs2AAoJEMDTa8Ir7ZwV++UP/Az8172jyQkEQsOJ5brZWTnq
+98EhHaGbGdihrn/vHiyj8azr5aZ6DL7Xr634hwLJggC+RgDS/u1bTIlTF6Q58Cix
+r0oXFzKAlL4DQxRBAyOa1WGHgwEnKn5VpiIWAXQcUjvRpjoo8SA+q2Aj6H749xPY
+pdNi7CotbyGhWxqHSBynthp6PgYcARJqvHJWoT39iTi2nyRmnjZ1YUsFFRc02p+y
+9vg6wLD02CaIg4VCGMyRU39GCj/fqASkqaktdrJJyeUU2qz5waVuDBSEdbuTR/kq
+ksUaI9HrsFMi7j4kMnvUDgm19XQSVw0v0msYpyspJHQrjrsIk8g5fCpxOPAM+hhA
+BgGDrDpjy3v2IeItzUxAnIPi/10Qm6zY01rOgIa5I0/tRhjsB+Rvt7UTOtpg/qgR
+jcFP3Rj4amtFP97gOcMmH3brfciOG8CQf66wArphP86pX5yHxwzKVhfIySdKLbce
+UwxGiioWOuhoM5+2kRoQSgBICaBXcVzMSL6Ccr9yk9ovMthzF2e3fPKaqzWN/4r0
+nUG/LXr8NulHIReJwUqctAqXDk46qTA7qnt9pVCxFmg3ONVgccQzXAKkNO7rrEbL
+r4hDlJZuvknyI0M5GmRrTlpOayrIZ1j5oFcVi04CS7EOkqFUhg/ymOUf1qHVhqys
+Ik5wjBddYCHxGR9ciVK9
+=pd3L
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_Feb_2014_18_43_46_+1100_8jEItOkr5zfVqnAW--
