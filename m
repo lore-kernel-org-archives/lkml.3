@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaBZURu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:17:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:33532 "EHLO
+	id S1753575AbaBZUU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:20:29 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34043 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaBZURr (ORCPT
+	with ESMTP id S1750813AbaBZUU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:17:47 -0500
+	Wed, 26 Feb 2014 15:20:27 -0500
+Message-ID: <530E4C8A.6060906@codeaurora.org>
+Date: Wed, 26 Feb 2014 12:20:26 -0800
 From: Saravana Kannan <skannan@codeaurora.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "Saravana Kannan" <skannan@codeaurora.org>
-Subject: [PATCH 2/3] cpufreq: stats: Fix error handling in __cpufreq_stats_create_table()
-Date: Wed, 26 Feb 2014 12:17:37 -0800
-Message-Id: <1393445858-7062-2-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org> <15001517.xLHO8lGdWr@vostro.rjw.lan> <530D06FF.201@codeaurora.org> <1789244.B5CzWbcp6h@vostro.rjw.lan> <530D47F4.2010204@codeaurora.org> <CAKohpo==WVKytPCaMk=O5rGfPNFDAF7ffYo7OE0d3uAPyJfwwA@mail.gmail.com>
+In-Reply-To: <CAKohpo==WVKytPCaMk=O5rGfPNFDAF7ffYo7OE0d3uAPyJfwwA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove sysfs group if __cpufreq_stats_create_table() fails after creating
-one.
+On 02/25/2014 10:02 PM, Viresh Kumar wrote:
+> On 26 February 2014 07:18, Saravana Kannan <skannan@codeaurora.org> wrote:
+>> On 02/25/2014 02:41 PM, Rafael J. Wysocki wrote:
+>
+>>> And is "fully initialized" actually well defined?
+>>
+>> The point in add dev/hot plug path after which we will no longer change
+>> policy fields without sending further CPUFREQ_UPDATE_POLICY_CPU /
+>> CPUFRE_NOTIFY notifiers.
+>
+> Okay..
+>
+>> Pretty much the end of __cpufreq_add_dev() so that it's after:
+>> - cpufreq_init_policy()
+>> - And the update of userpolicy fields that after thie init call
+>
+> No. In that case it can be considered initialized before cpufreq_init_policy().
+> As we do send CPUFREQ_NOTIFY after that from cpufreq_init_policy()->
+> cpufreq_set_policy().
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
----
- drivers/cpufreq/cpufreq_stats.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Ok, valid hole in my definition of "fully initialized".
+>
+> There are two types of fields within policy, some are very basic: cpu/min/max/
+> affected_cpus/related_cpus
+>
+> some are advanced: sysfs/governors/..
+>
+> And as a rule you have to get policy->rwsem lock before accessing policy
+> members. We might not have followed it very well for small things like cpu.
+>
+> And so if you are doing anything over that, please use a lock and that is
+> already present in cpufreq_update_policy().
+>
+> With my latest patchset that I sent yesterday, locking is improved and now
+> a policy will be usable only after the rwsem is released. And that should be
+> fine. And so making it available in the per-cpu variable after all the necessary
+> fields are filled looks fine to me. And so I don't think we need to move it
+> after call to cpufreq_init_policy(maybe a better name to this function is
+> required)..
 
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index e4bd27f..c52b440 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -216,7 +216,7 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	stat->time_in_state = kzalloc(alloc_size, GFP_KERNEL);
- 	if (!stat->time_in_state) {
- 		ret = -ENOMEM;
--		goto error_out;
-+		goto error_alloc;
- 	}
- 	stat->freq_table = (unsigned int *)(stat->time_in_state + count);
- 
-@@ -237,6 +237,8 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
- 	stat->last_index = freq_table_get_index(stat, policy->cur);
- 	spin_unlock(&cpufreq_stats_lock);
- 	return 0;
-+error_alloc:
-+	sysfs_remove_group(&policy->kobj, &stats_attr_group);
- error_out:
- 	kfree(stat);
- 	per_cpu(cpufreq_stats_table, cpu) = NULL;
+I'll take a closer look. Internal tree cpufreq code is in 3.12, so 
+back-porting all the cpufreq changes and testing it can take a bit of 
+time. Will get back on this.
+
+-Saravana
+
+
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
-
