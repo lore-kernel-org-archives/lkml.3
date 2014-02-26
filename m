@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaBZVDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 16:03:19 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:46885 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaBZVDR (ORCPT
+	id S1753680AbaBZVIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 16:08:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41034 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaBZVIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 16:03:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <5165962.7bqj51B15Z@wuerfel>
-References: <201402241200.21944.arnd@arndb.de> <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com>
- <5165962.7bqj51B15Z@wuerfel>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Feb 2014 14:02:57 -0700
-Message-ID: <CAErSpo5uHCOpMGxdbtBwvZEV0jNOBkBch0rG-VVwxdLJgCkUnA@mail.gmail.com>
-Subject: Re: DMABOUNCE in pci-rcar
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Simon Horman <horms+renesas@verge.net.au>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Feb 2014 16:08:31 -0500
+Date: Wed, 26 Feb 2014 16:08:26 -0500 (EST)
+Message-Id: <20140226.160826.1051230037229837227.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 11/16] atm: firestream: fix interruptible_sleep_on race
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1393412516-3762435-12-git-send-email-arnd@arndb.de>
+References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
+	<1393412516-3762435-12-git-send-email-arnd@arndb.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Feb 2014 13:08:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 12:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
->> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > Hi Magnus,
->> >
->> > I noticed during randconfig testing that you enabled DMABOUNCE for the
->> > pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
->> >
->> > I didn't see the original post unfortunately, but I fear we have to
->> > revert it and come up with a better solution, ...
->>
->> Sounds like I should drop the following patches from my pci/host-rcar
->> branch for now?
->>
->>   PCI: rcar: Add DMABOUNCE support
->>   PCI: rcar: Enable BOUNCE in case of HIGHMEM
->>   PCI: rcar: Make the Kconfig dependencies more generic
->
-> Sounds good to me. The last patch is actually fine, but you'll have to
-> fix the context to apply it without the other two.
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Wed, 26 Feb 2014 12:01:51 +0100
 
-OK, I dropped the DMABOUNCE and BOUNCE patches and force-updated my
-"next" branch.
+> interruptible_sleep_on is racy and going away. This replaces the one use
+> in the firestream driver with the appropriate wait_event_interruptible
+> variant.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
 
-Bjorn
+Applied.
