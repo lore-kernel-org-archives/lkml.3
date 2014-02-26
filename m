@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaBZN0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:26:44 -0500
-Received: from moutng.kundenserver.de ([212.227.17.13]:54179 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089AbaBZN0l (ORCPT
+	id S1752500AbaBZN24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:28:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45553 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaBZN2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:26:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v2 4/5] bug: Use a common definition of BUG_ON regardless of CONFIG_BUG
-Date: Wed, 26 Feb 2014 14:26:37 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org> <6ce38c3701f8ed1d30bfc1661ede7eade46a79c6.1393385236.git.josh@joshtriplett.org>
-In-Reply-To: <6ce38c3701f8ed1d30bfc1661ede7eade46a79c6.1393385236.git.josh@joshtriplett.org>
+	Wed, 26 Feb 2014 08:28:55 -0500
+Date: Wed, 26 Feb 2014 14:28:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: George McCollister <george.mccollister@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: fix double normalization of vruntime
+Message-ID: <20140226132852.GB30956@twins.programming.kicks-ass.net>
+References: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402261426.37800.arnd@arndb.de>
-X-Provags-ID: V02:K0:EzaBHJWg9oZi0V4+Q7N/3pCAcUeW26kyEZkQ6j24GaS
- lmG/1WX6VE9cTOFk8wkTX4z+/TegNHfb9SyhXzEczh7YKySrpP
- p2usrlZYDI45w9rBj5stM5bxvEjPgYSPR2InOVhkkOQ6gJ2ThH
- DCi6vGWbdL/pmAepfnldCSDWq1mPiTFSZmVb0sAIH7R46j5mz2
- UtL+LFxIs99glFE727UmrWTtJ1vyXb+sNiw4bx6uvTV1ADVs61
- O7hbDxmOVQZQsb0YOOnB66rciVsTCn+seaF9ONOTvnUnQTJJxz
- NvzgWV2D5sQdlV/djPT793/UlHy6PV6jQPnBJesObe57R3E6RY
- BqcBOnO+7V4KsmiQytWc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 February 2014, Josh Triplett wrote:
+On Tue, Feb 18, 2014 at 05:56:51PM -0600, George McCollister wrote:
+> dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+> which appears to guarentee that the !se->on_rq condition is met.
+> If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+> schedule() the second condition will be met and vruntime will be
+> incorrectly adjusted twice.
 > 
-> include/asm-generic/bug.h defines BUG_ON to call BUG() if CONFIG_BUG=y,
-> or as a no-op if !CONFIG_BUG.  However, BUG() is already a no-op if
-> !CONFIG_BUG, making this pointless.  Use a common definition that always
-> calls BUG().
+> In certain cases this can result in the task's vruntime never increasing
+> past the vruntime of other tasks on the CFS' run queue, starving them of
+> CPU time.
 > 
-> This does not change the compiled code at all.
+> This patch changes switched_from_fair() to use !p->on_rq instead of
+> !se->on_rq.
 > 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> I'm able to cause a task with a priority of 120 to starve all other
+> tasks with the same priority on an ARM platform running 3.2.51-rt72
+> PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+> in a tight loop. I'm also able to verify making this change corrects the
+> problem on that platform and kernel version.
+> 
+> I haven't and not sure I will have an opportunity to get a newer kernel
+> version running on the platform mentioned above and have yet to
+> reproduce the problem on another platform.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Yes, I think you're quite right. Another way to look at this is that
+p->on_rq is the one matching p->state.
+
+Can I have (or add) your Signed-off-by for this patch?
