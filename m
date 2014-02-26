@@ -1,170 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157AbaBZOBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:01:19 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:57706 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaBZOBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:01:18 -0500
-Date: Wed, 26 Feb 2014 16:57:41 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] zram: support REQ_DISCARD
-Message-ID: <20140226135741.GB2217@swordfish.minsk.epam.com>
-References: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20140226131625.GA2217@swordfish.minsk.epam.com>
- <530DEFA7.5060103@redhat.com>
+	id S1751301AbaBZOGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:06:35 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750813AbaBZOGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:06:34 -0500
+Message-ID: <530DF4E7.1060900@nod.at>
+Date: Wed, 26 Feb 2014 15:06:31 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530DEFA7.5060103@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm,renesas-tpu: Add dependency on HAS_IOMEM
+References: <1391172318-17853-1-git-send-email-richard@nod.at> <20140226120800.GA28939@ulmo.nvidia.com>
+In-Reply-To: <20140226120800.GA28939@ulmo.nvidia.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (02/26/14 14:44), Jerome Marchand wrote:
-> On 02/26/2014 02:16 PM, Sergey Senozhatsky wrote:
-> > Hello,
-> > 
-> > On (02/26/14 14:23), Joonsoo Kim wrote:
-> >> zram is ram based block device and can be used by backend of filesystem.
-> >> When filesystem deletes a file, it normally doesn't do anything on data
-> >> block of that file. It just marks on metadata of that file. This behavior
-> >> has no problem on disk based block device, but has problems on ram based
-> >> block device, since we can't free memory used for data block. To overcome
-> >> this disadvantage, there is REQ_DISCARD functionality. If block device
-> >> support REQ_DISCARD and filesystem is mounted with discard option,
-> >> filesystem sends REQ_DISCARD to block device whenever some data blocks are
-> >> discarded. All we have to do is to handle this request.
-> >>
-> >> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
-> >> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
-> >> used.
-> >>
-> >> v2: handle unaligned case commented by Jerome
-> >>
-> >> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>
-> >> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> index 5ec61be..5364c1e 100644
-> >> --- a/drivers/block/zram/zram_drv.c
-> >> +++ b/drivers/block/zram/zram_drv.c
-> >> @@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >>  	return ret;
-> >>  }
-> >>  
-> >> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
-> >> +{
-> >> +	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
-> >> +	size_t n = bio->bi_iter.bi_size;
-> >> +	size_t misalign;
-> >> +
-> >> +	/*
-> >> +	 * On some arch, logical block (4096) aligned request couldn't be
-> >> +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
-> >> +	 * Therefore we should handle this misaligned case here.
-> >> +	 */
-> >> +	misalign = (bio->bi_iter.bi_sector &
-> >> +			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-> >> +	if (misalign) {
-> >> +		if (n < misalign)
-> >> +			return;
-> >> +
-> >> +		n -= misalign;
-> >> +		index++;
-> >> +	}
-> >> +
-> >> +	while (n >= PAGE_SIZE) {
-> >> +		write_lock(&zram->meta->tb_lock);
-> >> +		zram_free_page(zram, index);
-> >> +		write_unlock(&zram->meta->tb_lock);
-> >> +		index++;
-> >> +		n -= PAGE_SIZE;
-> >> +	}
-> >> +}
-> >> +
-> > 
-> > a side note, do we need zram_bio_discard() function? I mean, can we handle
-> > discard request in zram_bvec_rw(), where we already know index, etc. (passed
-> > from __zram_make_request())?
-> > 
-> 
-> We'd still have to make sure not to discard pages that are still partially
-> used, but it might simplify the code: __zram_make_request() already takes
-> care of splitting the request.
-> 
-> > for example:
-> > 
-> > @@ -510,6 +510,11 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >                 ret = zram_bvec_write(zram, bvec, index, offset);
-> >         }
-> >  
-> > +       if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-> 
-> +		if (!is_partial_io(bvec) {
-> 
-> > +               write_lock(&zram->meta->tb_lock);
-> > +               zram_free_page(zram, index);
-> > +               write_unlock(&zram->meta->tb_lock);
-> 
-> +		}
-> 
-> Also this code might still call zram_bvec_read() and increase num_reads
-> for discard request: I guess bio_data_dir(bio) == READ == 0 in this case.
-> 
-> Btw, why __zram_make_request() has an that rw argument? All the information
-> it needs is passed by the bio argument already. I kind of recollect to have
-> seen a cleanup patch that get rid of it or is it just my imagination?
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-it doesn't. cleanup patch 'do not pass rw argument to __zram_make_request()'
-is in linux-next.
-
-	-ss
-
-> Jerome
+Am 26.02.2014 13:08, schrieb Thierry Reding:
+> On Fri, Jan 31, 2014 at 01:45:18PM +0100, Richard Weinberger wrote:
+>> On archs like S390 or um this driver cannot build nor work. Make it depend on HAS_IOMEM to bypass build failures.
+>> 
+>> drivers/built-in.o: In function `tpu_probe': drivers/pwm/pwm-renesas-tpu.c:421: undefined reference to `devm_ioremap_resource'
+>> 
+>> Signed-off-by: Richard Weinberger <richard@nod.at> --- drivers/pwm/Kconfig | 1 + 1 file changed, 1 insertion(+)
 > 
-> > +       }
-> >         return ret;
-> >  }
-> > 
-> > 	-ss
-> > 
-> >>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >>  {
-> >>  	size_t index;
-> >> @@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
-> >>  	struct bio_vec bvec;
-> >>  	struct bvec_iter iter;
-> >>  
-> >> +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-> >> +		zram_bio_discard(zram, bio);
-> >> +		bio_endio(bio, 0);
-> >> +		return;
-> >> +	}
-> >> +
-> >>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
-> >>  	offset = (bio->bi_iter.bi_sector &
-> >>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-> >> @@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
-> >>  					ZRAM_LOGICAL_BLOCK_SIZE);
-> >>  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
-> >>  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
-> >> +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
-> >> +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
-> >> +	zram->disk->queue->limits.discard_zeroes_data = 1;
-> >> +	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
-> >>  
-> >>  	add_disk(zram->disk);
-> >>  
-> >> -- 
-> >> 1.7.9.5
-> >>
-> 
+> In the long run I think it might be better to add a dummy implementation for devm_ioremap_resource() in order to make it build properly even for architectures where it isn't
+> implemented.
+
+And what should devm_ioremap_resource() or in general ioremap() do on archs without
+iomem?
+BUG()? Returning a random error and hoping that the driver handles it correctly? :)
+
+IMHO such a dummy implementation does not make much sense.
+
+> For now this looks like the best option. Applied, thanks.
+
+Thanks!
+
+//richard
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTDfTnAAoJEPmeIjfg4Uaa0hsP/1lgoKuMLbfXEw8Z064st3lk
+pOQoQQYiyk9nW5Uj/yjFAq9hly+jtL6YdY9+i2q9aQAaIOqTj0I0VbmMy+1nFrdF
+x7ahD1Z4BAI0PSTj3P8LaYs6Jn+zaok2Zo7B6BlJIvLlNZqqvgQHcCVWHK5srdHu
+sjd6JwpvBykWSmNUMBG2oAkWCTKLjisXTIL1OsIbcyTgBSS7/17dHfaFqhgZJBTI
+L3aHRQYOTEdXJyCRZq4SUwNSBXUdP2AmaDJZ4HQ17nuXUTOTnAMgpVUgidgLasmF
+GAmSDunoi/i7Pu6Vu+562cZhmuzO+uYFo87hDivjn7tTPIJ0OMh4pHeWWaMWVye/
+o9GYI1Ew86Lbekd5Xxhf32hNnhz5RxZlNrnjdO1y2GNW5bt7A5ukF4jY0QEuHC+q
+tgLsS45NIECkqA2hk7nvgRdds1ZaqueuY1dw8mb2jIbuAuR3XXSfjVzdfQiXKxzA
+tXugXynMSP93mHEeOwzc1pRnFl6j1KgbNOMX9MuYwc5corUShab/Z1d+RVWNat7c
+iTn6b/GxWpPeMQv3qXvIe77R2UnFv50M2KW4RXs2MRZdXCbIR2FLojGl0fTp1lNo
+7mTnB/8SnJBbHz5+1tQv2exFfmalNhM78RighfONJcTnmXfvmA20aNo9Kn3IEU0t
+m2V40kQySnkcb7+gRXrR
+=34dU
+-----END PGP SIGNATURE-----
