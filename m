@@ -1,149 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaBZCEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:04:53 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:58312 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaBZCEw (ORCPT
+	id S1751720AbaBZCKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:10:06 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46880 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaBZCKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:04:52 -0500
+	Tue, 25 Feb 2014 21:10:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
-Date: Tue, 25 Feb 2014 18:04:51 -0800
-Message-ID: <CANN689HfCT8uHKBeMHF-2Xa_eW9y9=UY7WdD1gW2EetqpcVSMw@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: per-thread vma caching
-From: Michel Lespinasse <walken@google.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <003001cf3291$293db3b0$7bb91b10$%han@samsung.com>
+References: <002e01cf3290$ccda9430$668fbc90$%han@samsung.com>
+	<003001cf3291$293db3b0$7bb91b10$%han@samsung.com>
+Date: Wed, 26 Feb 2014 10:10:03 +0800
+Message-ID: <CAN1soZyc-YGB5qFL3tgHVY1ANMg8-jF=2n8dOy-MJe2awR1yMw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] regulator: 88pm8607: fix indent code style
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> This patch is a continuation of efforts trying to optimize find_vma(),
-> avoiding potentially expensive rbtree walks to locate a vma upon faults.
-> The original approach (https://lkml.org/lkml/2013/11/1/410), where the
-> largest vma was also cached, ended up being too specific and random, thus
-> further comparison with other approaches were needed. There are two things
-> to consider when dealing with this, the cache hit rate and the latency of
-> find_vma(). Improving the hit-rate does not necessarily translate in finding
-> the vma any faster, as the overhead of any fancy caching schemes can be too
-> high to consider.
+On Wed, Feb 26, 2014 at 9:22 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> Fix indent code style in order to fix the following checkpatch
+> issues.
+>
+>   ERROR: code indent should use tabs where possible
+>   WARNING: please, no space before tabs
+>   WARNING: please, no spaces at the start of a line
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/regulator/88pm8607.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+> index fa99bfc..337634a 100644
+> --- a/drivers/regulator/88pm8607.c
+> +++ b/drivers/regulator/88pm8607.c
+> @@ -2,7 +2,7 @@
+>   * Regulators driver for Marvell 88PM8607
+>   *
+>   * Copyright (C) 2009 Marvell International Ltd.
+> - *     Haojian Zhuang <haojian.zhuang@marvell.com>
+> + *     Haojian Zhuang <haojian.zhuang@marvell.com>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -78,7 +78,7 @@ static const unsigned int BUCK2_suspend_table[] = {
+>  };
+>
+>  static const unsigned int BUCK3_table[] = {
+> -              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+> +             0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+>          200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
+>          400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
+>          600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
+> @@ -89,7 +89,7 @@ static const unsigned int BUCK3_table[] = {
+>  };
+>
+>  static const unsigned int BUCK3_suspend_table[] = {
+> -              0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+> +             0,   25000,   50000,   75000,  100000,  125000,  150000,  175000,
+>          200000,  225000,  250000,  275000,  300000,  325000,  350000,  375000,
+>          400000,  425000,  450000,  475000,  500000,  525000,  550000,  575000,
+>          600000,  625000,  650000,  675000,  700000,  725000,  750000,  775000,
+> --
+> 1.7.10.4
+>
+>
 
-Actually there is also the cost of keeping the cache up to date. I'm
-not saying that it's an issue in your proposal - I like the proposal,
-especially now that you are replacing the per-mm cache rather than
-adding something on top - but it is a factor to consider.
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-
-> +static inline void __vmacache_invalidate(struct mm_struct *mm)
-> +{
-> +#ifdef CONFIG_MMU
-> +       vmacache_invalidate(mm);
-> +#else
-> +       mm->vmacache = NULL;
-> +#endif
-> +}
-
-Is there any reason why we can't use your proposal for !CONFIG_MMU as well ?
-(I'm assuming that we could reduce preprocessor checks by doing so)
-
-
-> +void vmacache_invalidate_all(void)
-> +{
-> +       struct task_struct *g, *p;
-> +
-> +       rcu_read_lock();
-> +       for_each_process_thread(g, p) {
-> +               /*
-> +                * Only flush the vmacache pointers as the
-> +                * mm seqnum is already set and curr's will
-> +                * be set upon invalidation when the next
-> +                * lookup is done.
-> +                */
-> +               memset(p->vmacache, 0, sizeof(p->vmacache));
-> +       }
-> +       rcu_read_unlock();
-> +}
-
-Two things:
-
-- I believe we only need to invalidate vma caches for threads that
-share a given mm ? we should probably pass in that mm in order to
-avoid over-invalidation
-
-- My understanding is that the operation is safe because the caller
-has the mm's mmap_sem held for write, and other threads accessing the
-vma cache will have mmap_sem held at least for read, so we don't need
-extra locking to maintain the vma cache. Please 1- confirm this is the
-intention, 2- document this, and 3- only invalidate vma caches for
-threads that match the caller's mm so that mmap_sem locking can
-actually apply.
-
-
-> +struct vm_area_struct *vmacache_find(struct mm_struct *mm,
-> +                                    unsigned long addr)
-> +
-> +{
-> +       int i;
-> +
-> +       if (!vmacache_valid(mm))
-> +               return NULL;
-> +
-> +       for (i = 0; i < VMACACHE_SIZE; i++) {
-> +               struct vm_area_struct *vma = current->vmacache[i];
-> +
-> +               if (vma && vma->vm_start <= addr && vma->vm_end > addr)
-> +                       return vma;
-> +       }
-> +
-> +       return NULL;
-> +}
-> +
-> +void vmacache_update(struct mm_struct *mm, unsigned long addr,
-> +                    struct vm_area_struct *newvma)
-> +{
-> +       /*
-> +        * Hash based on the page number. Provides a good
-> +        * hit rate for workloads with good locality and
-> +        * those with random accesses as well.
-> +        */
-> +       int idx = (addr >> PAGE_SHIFT) & 3;
-> +       current->vmacache[idx] = newvma;
-> +}
-
-I did read the previous discussion about how to compute idx here. I
-did not at the time realize that you are searching all 4 vmacache
-entries on lookup - that is, we are only talking about eviction policy
-here, not a lookup hash policy.
-
-My understanding is that the reason both your current and your
-previous idx computations work, is that a random eviction policy would
-work too. Basically, what you do is pick some address bits that are
-'random enough' to use as an eviction policy.
-
-This is more of a question for Linus, but I am very surprised that I
-can't find an existing LRU eviction policy scheme in Linux. What I
-have in mind is to keep track of the order the cache entries have last
-been used. With 4 entries, there are 4! = 24 possible orders, which
-can be represented with an integer between 0 and 23. When
-vmacache_find suceeds, that integer is updated using a table lookup
-(table takes 24*4 = 96 bytes). In vmacache_update, the lru value
-module 4 indicates which cache way to evict (i.e. it's the one that's
-been least recently used).
-
-I don't think it makes sense to introduce such an LRU facility for
-this cache only, but it's so generically useful, I'm very surprised
-that it's not somewhere already and instead we see people inventing
-new eviction schemes over and over again...
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Regards
+Haojian
