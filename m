@@ -1,216 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751202AbaBZBN4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:13:56 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:56937 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750724AbaBZBNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:13:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap95AN8+DVN5LJYePGdsb2JhbABZgwY7iBSgZQOTBYVWgRUXAwEBAQE4NYIlAQEEATocIwULCAMYCSUPBSUDBxoTGYdkB8hOFxaNTmwHhDgEjGaLT4dGgw2JRYFSKIE1
-Date: Wed, 26 Feb 2014 12:13:47 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-Message-ID: <20140226011347.GL13647@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
- <20140224005710.GH4317@dastard>
- <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
- <20140225041346.GA29907@dastard>
- <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
+	id S1751484AbaBZBOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:14:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15622 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaBZBOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 20:14:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,543,1389772800"; 
+   d="scan'208";a="488112865"
+Message-ID: <530D3E9E.7010206@intel.com>
+Date: Wed, 26 Feb 2014 09:08:46 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: tj@kernel.org, jolsa@redhat.com, oleg@redhat.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/Processor: Rework processor throttling with work_on_cpu()
+References: <20140220151721.GB32719@redhat.com> <1392960945-30741-1-git-send-email-tianyu.lan@intel.com> <3890679.FyyHKXfXOb@vostro.rjw.lan>
+In-Reply-To: <3890679.FyyHKXfXOb@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 03:23:35PM -0800, Hugh Dickins wrote:
-> On Tue, 25 Feb 2014, Dave Chinner wrote:
-> > On Tue, Feb 25, 2014 at 02:16:01PM +1100, Stephen Rothwell wrote:
-> > > On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
-> > > >
-> > > > > Namjae Jeon (10):
-> > > > >   fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-> > > > >   xfs: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-> > > > 
-> > > > I've pushed these to the following branch:
-> > > > 
-> > > > 	git://oss.sgi.com/xfs/xfs.git xfs-collapse-range
-> > > > 
-> > > > And so they'll be in tomorrow's linux-next tree.
-> > > > 
-> > > > >   ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-> > > > 
-> > > > I've left this one alone for the ext4 guys to sort out.
-> > > 
-> > > So presumably that xfs tree branch is now completely stable and so Ted
-> > > could just merge that branch into the ext4 tree as well and put the ext4
-> > > part on top of that in his tree.
-> > 
-> > Well, for some definition of stable. Right now it's just a topic
-> > branch that is merged into the for-next branch, so in theory it is
-> > still just a set of pending changes in a branch in a repo that has
-> > been pushed to linux-next for testing.
-> > 
-> > That said, I don't see that branch changing unless we find bugs in
-> > the code or a problem with the API needs fixing, at which point I
-> > would add more commits to it and rebase the for-next branch that you
-> > are pulling into the linux-next tree.
-> > 
-> > Realistically, I'm waiting for Lukas to repost his other pending
-> > fallocate changes (the zero range changes) so I can pull the VFS and
-> > XFS bits of that into the XFS tree and I can test them together
-> > before I'll call the xfs-collapse-range stable and ready to be
-> > merged into some other tree...
+On 2014年02月26日 09:23, Rafael J. Wysocki wrote:
+> On Friday, February 21, 2014 01:35:45 PM Lan Tianyu wrote:
+>> acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+>> sure struct acpi_processor->acpi_processor_set_throttling() callback
+>> run on associated cpu. But the function maybe called in a worker which
+>> has been bound to a cpu. The patch is to replace set_cpus_allowed_ptr()
+>> with work_on_cpu().
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>>  drivers/acpi/processor_throttling.c | 70 +++++++++++++++++--------------------
+>>  1 file changed, 33 insertions(+), 37 deletions(-)
+>>
+>> diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
+>> index 28baa05..2db105a 100644
+>> --- a/drivers/acpi/processor_throttling.c
+>> +++ b/drivers/acpi/processor_throttling.c
+>> @@ -56,6 +56,12 @@ struct throttling_tstate {
+>>  	int target_state;		/* target T-state */
+>>  };
+>>  
+>> +struct acpi_processor_throttling_arg {
+>> +	struct acpi_processor *pr;
+>> +	int target_state;
+>> +	bool force;
+>> +};
+>> +
+>>  #define THROTTLING_PRECHANGE       (1)
+>>  #define THROTTLING_POSTCHANGE      (2)
+>>  
+>> @@ -1060,16 +1066,25 @@ static int acpi_processor_set_throttling_ptc(struct acpi_processor *pr,
+>>  	return 0;
+>>  }
+>>  
+>> +static long acpi_processor_throttling_fn(void *data)
+>> +{
+>> +	struct acpi_processor_throttling_arg *arg = data;
+>> +	struct acpi_processor *pr = arg->pr;
+>> +	struct acpi_processor_throttling *p_throttling = &pr->throttling;
+>> +
+>> +	return p_throttling->acpi_processor_set_throttling(pr,
+>> +			arg->target_state, arg->force);
 > 
-> Thank you, Namjae and Dave, for driving this; and thank you, Ted and
-> Matthew, for raising appropriate mmap concerns (2013-7-31 and 2014-2-2).
-> I was aware of this work in progress, but only now found time to look.
+> What about doing
 > 
-> I've not studied the implementation, knowing too little of ext4 and
-> xfs; but it sounds like the approach you've taken, writing out dirties
-> and truncating all pagecache from the critical offset onwards, is the
-> sensible approach for now - lame, and leaves me wondering whether an
-> offline tool wouldn't be more appropriate; but a safe place to start
-> if we suppose it will be extended to handle pagecache better in future.
-
-Offline? You mean with the filesystem unmounted, or something else?
-
-> Of course I'm interested in the possibility of extending it to tmpfs;
-> which may not be a worthwhile exercise in itself, except that it would
-> force us to face and solve any pagecache/radixtree issues, if possible,
-> thereby enhancing the support for disk-based filesystems.
+> 	return pr->throttling.acpi_processor_set_throttling(...);
 > 
-> I doubt we should look into that before Jan Kara's range locking mods
-> arrive, or are rejected.  As I understand it, you're going ahead with
-> this, knowing that there can be awkward races with concurrent faults -
-> more likely to cause trinity fuzzer reports, than interfere with daily
-> usage (trinity seems to be good at faulting into holes being punched).
+> directly without using the extra p_throttling pointer?
 
-Yes, the caveat is that the applications that use it (TVs, DVRs, NLE
-applications, etc) typically don't use mmap for accessing the data
-stream being modified. Further, it's much less generally useful than
-holepunching, so when these two are combined, the likely exposure to
-issues resulting from mmap deficiencies are pretty damn low.
+This is better. I will update soon.
 
-> That's probably the right pragmatic decision; but I'm a little worried
-> that it's justfied by saying we already have such races in hole-punch.
-> Collapse is significantly more challenging than either hole-punch or
-> truncation: the shifting of pages from one offset to another is new,
-> and might present nastier bugs.
-
-Symptoms might be different, but it's exactly the same problem. i.e.
-mmap_sem locking inversions preventing the filesystem from
-serialising IO path operations like hole punch, truncate and other
-extent manipulation operations against concurrent page faults
-that enter the IO path.
-
-> Emphasis on "might": I expect it's impossible, given your current
-> approach, but something to be on guard against is unmap_mapping_range()
-> failing to find and unmap a pte, because the page is mapped at the
-> "wrong" place in the vma, resulting in BUG_ON(page_mapped(page))
-> in __delete_from_page_cache().
-
-Unmapping occurs before anything is shifted. And even if a fault
-does occur before the file size changes at the end of a collapse
-range operation (via the truncate path), the page in the page cache
-won't be moved about so I don't see how the above problem could
-occur. All that will happen is that you get the wrong data in the
-mmap()d page, just like you will with hole_punch issues.
-
-> One thing that is slightly wrong in what you have right now, is your
-> use of truncate_pagecache_range(): you'll need to add an "even_cows"
-> arg to that (or make it a wrapper to a __truncate_pagecache_range()
-> taking additional "even_cows" arg).  That arg governs what is done
-> with anonymous COW'ed pages in a MAP_PRIVATE mmap of the file.
 > 
-> Truncation is required by spec to unmap them; hole punching was up
-> to us to spec, did not unmap them originally (because there was no
-> preliminary call to unmap_mapping_range(), so it happened to rely
-> on the inefficient fallback within truncate_inode_page()), and that
-> seemed fine because, why discard a user's data unnecessarily?
-
-I don't see there being a problem here - it's the same case as hole
-punch. And when we change the file size after shifting extents we
-are doing a truncate so that will behave as expected w.r.t.
-anonymous COW'ed pages in a MAP_PRIVATE mmap of the file.
-
-> But your case is different: collapse is much closer to truncation,
-> and if you do not unmap the private COW'ed pages, then pages left
-> behind beyond the EOF will break the spec that requires SIGBUS when
-> touching there, and pages within EOF will be confusingly derived
-> from file data now belonging to another offset or none (move these
-> pages within the user address space? no, I don't think anon_vmas
-> would allow that, and there may be no right place to move them).
-
-See above - we never leave pages beyond the new EOF because setting
-the new EOF is a truncate operation that calls
-truncate_setsize(inode, newsize).
-
-> It's clear that the right and easy thing to do is just to unmap
-> them (all of them, from critical offset to EOF), in the rare case
-> of there being any such pages.  Whether this detail needs to be
-> mentioned in the man page (I don't like throwing away a user's
-> data without warning) I'm not sure, Michael can judge.
+>> +}
+>> +
+>>  int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  						int state, bool force)
+>>  {
+>> -	cpumask_var_t saved_mask;
+>>  	int ret = 0;
+>>  	unsigned int i;
+>>  	struct acpi_processor *match_pr;
+>>  	struct acpi_processor_throttling *p_throttling;
+>> +	struct acpi_processor_throttling_arg arg;
+>>  	struct throttling_tstate t_state;
+>> -	cpumask_var_t online_throttling_cpus;
+>>  
+>>  	if (!pr)
+>>  		return -EINVAL;
+>> @@ -1080,14 +1095,6 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  	if ((state < 0) || (state > (pr->throttling.state_count - 1)))
+>>  		return -EINVAL;
+>>  
+>> -	if (!alloc_cpumask_var(&saved_mask, GFP_KERNEL))
+>> -		return -ENOMEM;
+>> -
+>> -	if (!alloc_cpumask_var(&online_throttling_cpus, GFP_KERNEL)) {
+>> -		free_cpumask_var(saved_mask);
+>> -		return -ENOMEM;
+>> -	}
+>> -
+>>  	if (cpu_is_offline(pr->id)) {
+>>  		/*
+>>  		 * the cpu pointed by pr->id is offline. Unnecessary to change
+>> @@ -1096,17 +1103,15 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  		return -ENODEV;
+>>  	}
+>>  
+>> -	cpumask_copy(saved_mask, &current->cpus_allowed);
+>>  	t_state.target_state = state;
+>>  	p_throttling = &(pr->throttling);
+>> -	cpumask_and(online_throttling_cpus, cpu_online_mask,
+>> -		    p_throttling->shared_cpu_map);
+>> +
+>>  	/*
+>>  	 * The throttling notifier will be called for every
+>>  	 * affected cpu in order to get one proper T-state.
+>>  	 * The notifier event is THROTTLING_PRECHANGE.
+>>  	 */
+>> -	for_each_cpu(i, online_throttling_cpus) {
+>> +	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+>>  		t_state.cpu = i;
+>>  		acpi_processor_throttling_notifier(THROTTLING_PRECHANGE,
+>>  							&t_state);
+>> @@ -1118,21 +1123,18 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  	 * it can be called only for the cpu pointed by pr.
+>>  	 */
+>>  	if (p_throttling->shared_type == DOMAIN_COORD_TYPE_SW_ANY) {
+>> -		/* FIXME: use work_on_cpu() */
+>> -		if (set_cpus_allowed_ptr(current, cpumask_of(pr->id))) {
+>> -			/* Can't migrate to the pr->id CPU. Exit */
+>> -			ret = -ENODEV;
+>> -			goto exit;
+>> -		}
+>> -		ret = p_throttling->acpi_processor_set_throttling(pr,
+>> -						t_state.target_state, force);
+>> +		arg.pr = pr;
+>> +		arg.target_state = state;
+>> +		arg.force = force;
+>> +		ret = work_on_cpu(pr->id, acpi_processor_throttling_fn, &arg);
+>>  	} else {
+>>  		/*
+>>  		 * When the T-state coordination is SW_ALL or HW_ALL,
+>>  		 * it is necessary to set T-state for every affected
+>>  		 * cpus.
+>>  		 */
+>> -		for_each_cpu(i, online_throttling_cpus) {
+>> +		for_each_cpu_and(i, cpu_online_mask,
+>> +		    p_throttling->shared_cpu_map) {
+>>  			match_pr = per_cpu(processors, i);
+>>  			/*
+>>  			 * If the pointer is invalid, we will report the
+>> @@ -1153,13 +1155,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  					"on CPU %d\n", i));
+>>  				continue;
+>>  			}
+>> -			t_state.cpu = i;
+>> -			/* FIXME: use work_on_cpu() */
+>> -			if (set_cpus_allowed_ptr(current, cpumask_of(i)))
+>> -				continue;
+>> -			ret = match_pr->throttling.
+>> -				acpi_processor_set_throttling(
+>> -				match_pr, t_state.target_state, force);
+>> +
+>> +			arg.pr = match_pr;
+>> +			arg.target_state = state;
+>> +			arg.force = force;
+>> +			ret = work_on_cpu(pr->id, acpi_processor_throttling_fn,
+>> +				&arg);
+>>  		}
+>>  	}
+>>  	/*
+>> @@ -1168,17 +1169,12 @@ int acpi_processor_set_throttling(struct acpi_processor *pr,
+>>  	 * affected cpu to update the T-states.
+>>  	 * The notifier event is THROTTLING_POSTCHANGE
+>>  	 */
+>> -	for_each_cpu(i, online_throttling_cpus) {
+>> +	for_each_cpu_and(i, cpu_online_mask, p_throttling->shared_cpu_map) {
+>>  		t_state.cpu = i;
+>>  		acpi_processor_throttling_notifier(THROTTLING_POSTCHANGE,
+>>  							&t_state);
+>>  	}
+>> -	/* restore the previous state */
+>> -	/* FIXME: use work_on_cpu() */
+>> -	set_cpus_allowed_ptr(current, saved_mask);
+>> -exit:
+>> -	free_cpumask_var(online_throttling_cpus);
+>> -	free_cpumask_var(saved_mask);
+>> +
+>>  	return ret;
+>>  }
+>>  
+>>
 > 
-> FALLOC_FL_COLLAPSE_RANGE: I'm a little sad at the name COLLAPSE,
-> but probably seven months too late to object.  It surprises me that
-> you're doing all this work to deflate a part of the file, without
-> the obvious complementary work to inflate it - presumably all those
-> advertisers whose ads you're cutting out, will come back to us soon
-> to ask for inflation, so that they have somewhere to reinsert them ;)
 
-The name makes no difference to me - it's a filesystem offload
-function of a very specific nature. If we require the opposite
-behaviour - inserting unwritten extents after shifting the data up
-out of the way - then we can just add a new FALLOC_FL_INSERT_RANGE
-command to do that.
 
-But in the absence of anyone needing such functionality, the
-complexity of implementing it is not worth the effort.
-
-> I should mention that when "we" implemented this thirty years ago,
-> we had a strong conviction that the system call should be idempotent:
-> that is, the len argument should indicate the final i_size, not the
-> amount being removed from it.  Now, I don't remember the grounds for
-> that conviction: maybe it was just an idealistic preference for how
-> to design a good system call.  I can certainly see that defining it
-> that way round would surprise many app programmers.  Just mentioning
-> this in case anyone on these lists sees a practical advantage to
-> doing it that way instead.
-
-I don't see how specifying the end file size as an improvement. What
-happens if you are collapse a range in a file that is still being
-appended to by the application and so you race with a file size
-update? IOWs, with such an API the range to be collapsed is
-completely unpredictable, and IMO that's a fundamentally broken API.
-
-> I see you've included xfstests and xfs_io updates, nice.  Did you
-> realize that util-linux has a /usr/bin/fallocate?  I hope someone
-> will update that too.
-
-I don't care about /usr/bin/fallocate - I've never used it in my
-life because xfs_io exists on all my systems and is way more
-powerful and useful to me than /usr/bin/fallocate. Regardless, I
-think someone posted patches for it yesterday.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Best regards
+Tianyu Lan
