@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaBZPn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:43:59 -0500
-Received: from blackhole.sdinet.de ([176.9.52.58]:56548 "EHLO mail.sdinet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118AbaBZPn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:43:56 -0500
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Feb 2014 10:43:56 EST
-Date: Wed, 26 Feb 2014 16:36:33 +0100 (CET)
-From: Sven-Haegar Koch <haegar@sdinet.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Alexander Graf <agraf@suse.de>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-In-Reply-To: <530D3102.60504@intel.com>
-Message-ID: <alpine.DEB.2.10.1402261634010.31425@aurora64.sdinet.de>
-References: <1393284484-27637-1-git-send-email-agraf@suse.de> <530CD443.7010400@intel.com> <4B3C0B08-45E1-48EF-8030-A3365F0E7CF6@suse.de> <530D3102.60504@intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753209AbaBZPoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:44:09 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.88]:2757 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751593AbaBZPoE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:44:04 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Gerd Hoffmann <kraxel@redhat.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "Abhishek Gupta (LIS)" <abgupta@microsoft.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: RE: [PATCH v5 2/2] hyperv-fb: kick off efifb early
+Thread-Topic: [PATCH v5 2/2] hyperv-fb: kick off efifb early
+Thread-Index: AQHPMuDH8zLAbiBGqEm3vZBRa6inhprHrQwg
+Date: Wed, 26 Feb 2014 15:43:41 +0000
+Message-ID: <7f41262bad3c4043bded61abc759dac7@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1393411885-14895-1-git-send-email-kraxel@redhat.com>
+ <1393411885-14895-3-git-send-email-kraxel@redhat.com>
+In-Reply-To: <1393411885-14895-3-git-send-email-kraxel@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.59.235.233]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(377454003)(189002)(199002)(13464003)(51704005)(76482001)(69226001)(81686001)(80022001)(93516002)(54356001)(85306002)(47976001)(31966008)(94316002)(74876001)(47736001)(65816001)(66066001)(50466002)(74662001)(20776003)(80976001)(47776003)(63696002)(84676001)(4396001)(79102001)(47446002)(44976005)(74502001)(19580405001)(83322001)(19580395003)(6806004)(53806001)(74706001)(77982001)(2656002)(87266001)(59766001)(46102001)(56776001)(76786001)(93136001)(83072002)(85852003)(95666003)(81542001)(81342001)(87936001)(76796001)(46406003)(86612001)(95416001)(74366001)(23726002)(94946001)(50986001)(51856001)(90146001)(49866001)(81816001)(56816005)(33646001)(54316002)(92566001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB597;H:hybrid.exchange.microsoft.com;FPR:34EE793E.2BD155CA.FDE01B03.B0AFC813.201C0;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0134AD334F
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014, Dave Hansen wrote:
 
-> On 02/25/2014 03:09 PM, Alexander Graf wrote:
-> >> Couldn't we also (maybe in parallel) just teach the sysctl userspace
-> >> about sysfs?  This way we don't have to do parallel sysctls and sysfs
-> >> for *EVERYTHING* in the kernel:
-> >>
-> >>    sysfs.kernel.mm.transparent_hugepage.enabled=enabled
-> > 
-> > It's pretty hard to filter this. We definitely do not want to expose all of sysfs through /proc/sys. But how do we know which files are actual configuration and which ones are dynamic system introspection data?
-> > 
-> > We could add a filter, but then we can just as well stick with the manual approach I followed here :).
+
+> -----Original Message-----
+> From: Gerd Hoffmann [mailto:kraxel@redhat.com]
+> Sent: Wednesday, February 26, 2014 5:51 AM
+> To: linux-fbdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org; KY Srinivasan;
+> Abhishek Gupta (LIS); Haiyang Zhang; jasowang@redhat.com;
+> tomi.valkeinen@ti.com; devel@linuxdriverproject.org; Gerd Hoffmann; Jean-
+> Christophe Plagniol-Villard
+> Subject: [PATCH v5 2/2] hyperv-fb: kick off efifb early
 > 
-> Maybe not stick it under /proc/sys, but teach sysctl(8) about them.  I
-> guess at the moment, sysctl says that it's tied to /proc/sys:
+> Remove firmware framebuffer before initializing hyperv-fb.  Needed
+> on gen2 virtual machines.   Letting register_framebuffer handle the
+> switchover results in efifb still being active while hyperv graphics
+> are initialized, which in turn can make the linux kernel hang.
 > 
-> > DESCRIPTION
-> >        sysctl  is  used to modify kernel parameters at runtime.  The parameters available are those listed under /proc/sys/.  Procfs is required
-> >        for sysctl support in Linux.  You can use sysctl to both read and write sysctl data.
-> 
-> But surely that's not set in stone just because the manpage says so. :)
+> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 
-What I still don't get is why you need this?
+Thank you!
 
-My distribution (Debian) has a sysfsutils package which provides a 
-/etc/sysfs.conf / /etc/sysfs.d/foo exactly like /etc/sysctl.conf.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-Don't other distributions have something like this?
-
-c'ya
-sven-haegar
-
--- 
-Three may keep a secret, if two of them are dead.
-- Ben F.
