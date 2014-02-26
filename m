@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaBZRmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 12:42:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140AbaBZRmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 12:42:14 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: netdev@vger.kernel.org
-cc: dhowells@redhat.com, linux-afs@lists.infradead.org,
-        Tim Smith <tim@electronghost.co.uk>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] AF_RXRPC fixes and development
-Date: Wed, 26 Feb 2014 17:41:45 +0000
-Message-ID: <12143.1393436505@warthog.procyon.org.uk>
+	id S1751595AbaBZRpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 12:45:31 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:55146 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaBZRp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 12:45:29 -0500
+X-Greylist: delayed 78546 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Feb 2014 12:45:29 EST
+Message-ID: <1393436725.11382.3.camel@j-VirtualBox>
+Subject: Re: [PATCH 5/8] locking, mutex: Cancelable MCS lock for adaptive
+ spinning
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Waiman Long <waiman.long@hp.com>,
+        mingo@kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Wed, 26 Feb 2014 09:45:25 -0800
+In-Reply-To: <20140226092210.GH18404@twins.programming.kicks-ass.net>
+References: <20140210195820.834693028@infradead.org>
+	 <20140210203659.671232531@infradead.org>
+	 <1393358179.7727.34.camel@j-VirtualBox>
+	 <20140226092210.GH18404@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-02-26 at 10:22 +0100, Peter Zijlstra wrote:
+> On Tue, Feb 25, 2014 at 11:56:19AM -0800, Jason Low wrote:
+> > On Mon, 2014-02-10 at 20:58 +0100, Peter Zijlstra wrote:
+> > > +	for (;;) {
+> > > +		if (prev->next == node &&
+> > > +		    cmpxchg(&prev->next, node, NULL) == node)
+> > > +			break;
+> > > +
+> > > +		/*
+> > > +		 * We can only fail the cmpxchg() racing against an unlock(),
+> > > +		 * in which case we should observe @node->locked becomming
+> > > +		 * true.
+> > > +		 */
+> > > +		if (smp_load_acquire(&node->locked))
+> > > +			return true;
+> 
+> I've stuck on in right about here. So that we don't unduly delay the
+> cmpxchg() after the load of prev.
 
-Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
+Ok.
 
- (1) Fix to remove incorrect checksum calculation made during recvmsg().  It's
-     unnecessary to try to do this there since we check the checksum before
-     reading the RxRPC header from the packet.
+Reviewed-by: Jason Low <jason.low2@hp.com>
 
- (2) Fix to prevent the sending of an ABORT packet in response to another
-     ABORT packet and inducing a storm.
 
- (3) Fix UDP MTU calculation from parsing ICMP_FRAG_NEEDED packets where we
-     don't handle the ICMP packet not specifying an MTU size.
-
-And development patches (to tag rxrpc-devel-20140226):
-
- (4) Add sysctls for configuring RxRPC parameters, specifically various delays
-     pertaining to ACK generation, the time before we resend a packet for
-     which we don't receive an ACK, the maximum time a call is permitted to
-     live and the amount of time transport, connection and dead call
-     information is cached.
-
- (5) Improve ACK packet production by adjusting the handling of ACK_REQUESTED
-     packets, ignoring the MORE_PACKETS flag, delaying the production of
-     otherwise immediate ACK_IDLE packets and delaying all ACK_IDLE production
-     (barring the call termination) to half a second.
-
- (6) Add more sysctl parameters to expose the Rx window size, the maximum
-     packet size that we're willing to receive and the number of jumbo rxrpc
-     packets we're willing to handle in a single UDP packet.
-
- (7) Request ACKs on alternate DATA packets so that the other side doesn't
-     wait till we fill up the Tx window.
-
- (8) Use a RCU hash table to look up the rxrpc_call for an incoming packet
-     rather than stepping through a hierarchy involving several spinlocks.
-
-Would you rather these were separate pull requests?
-
-David
----
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
-
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/rxrpc-devel-20140226
-
-for you to fetch changes up to 224c577c412f620a600c15c86afe82157161d7e7:
-
-  af_rxrpc: Keep rxrpc_call pointers in a hashtable (2014-02-26 17:25:07 +0000)
-
-----------------------------------------------------------------
-(from the branch description for rxrpc local branch)
-
-RxRPC development
-RxRPC development
-
-----------------------------------------------------------------
-David Howells (5):
-      af_rxrpc: Fix UDP MTU calculation from ICMP_FRAG_NEEDED
-      af_rxrpc: Add sysctls for configuring RxRPC parameters
-      af_rxrpc: Improve ACK production
-      af_rxrpc: Expose more RxRPC parameters via sysctls
-      af_rxrpc: Request an ACK for every alternate DATA packet
-
-Tim Smith (3):
-      af_rxrpc: Remove incorrect checksum calculation from rxrpc_recvmsg()
-      af_rxrpc: Prevent RxRPC peers from ABORT-storming one another
-      af_rxrpc: Keep rxrpc_call pointers in a hashtable
-
- Documentation/networking/rxrpc.txt |  81 +++++++++++++++
- net/rxrpc/Makefile                 |   5 +-
- net/rxrpc/af_rxrpc.c               |   9 ++
- net/rxrpc/ar-ack.c                 |  61 +++++++++--
- net/rxrpc/ar-call.c                | 202 +++++++++++++++++++++++++++++++++++--
- net/rxrpc/ar-connection.c          |  10 +-
- net/rxrpc/ar-error.c               |   1 +
- net/rxrpc/ar-input.c               | 190 +++++++++++++++-------------------
- net/rxrpc/ar-internal.h            |  40 +++++++-
- net/rxrpc/ar-output.c              |  15 ++-
- net/rxrpc/ar-recvmsg.c             |  25 +----
- net/rxrpc/ar-skbuff.c              |   7 +-
- net/rxrpc/ar-transport.c           |  10 +-
- net/rxrpc/sysctl.c                 | 146 +++++++++++++++++++++++++++
- 14 files changed, 636 insertions(+), 166 deletions(-)
- create mode 100644 net/rxrpc/sysctl.c
