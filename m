@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbaBZXk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:40:29 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53053 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142AbaBZXkV (ORCPT
+	id S1754325AbaBZXkw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:40:52 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:32851 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174AbaBZXk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:40:21 -0500
+	Wed, 26 Feb 2014 18:40:27 -0500
 From: Kent Overstreet <kmo@daterainc.com>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>,
-        linux-btrfs@vger.kernel.org
-Subject: [PATCH 5/9] btrfs: generic_make_request() handles arbitrary size bios now
-Date: Wed, 26 Feb 2014 15:39:53 -0800
-Message-Id: <1393457997-17618-6-git-send-email-kmo@daterainc.com>
+        Kent Overstreet <kmo@daterainc.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Chris Mason <clm@fb.com>,
+        linux-btrfs@vger.kernel.org, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel@lists.sourceforge.net, Sage Weil <sage@inktank.com>,
+        ceph-devel@vger.kernel.org
+Subject: [PATCH 9/9] iov_iter: Kill written arg to iov_iter_init()
+Date: Wed, 26 Feb 2014 15:39:57 -0800
+Message-Id: <1393457997-17618-10-git-send-email-kmo@daterainc.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1393457997-17618-1-git-send-email-kmo@daterainc.com>
 References: <1393457997-17618-1-git-send-email-kmo@daterainc.com>
@@ -22,113 +26,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So there's no need for btrfs to break up bios for device limits anymore
+This gets rid of a usually needless call to iov_iter_advance().
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Chris Mason <clm@fb.com>
 Cc: linux-btrfs@vger.kernel.org
+Cc: Steve French <sfrench@samba.org>
+Cc: linux-cifs@vger.kernel.org
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Cc: fuse-devel@lists.sourceforge.net
+Cc: Sage Weil <sage@inktank.com>
+Cc: ceph-devel@vger.kernel.org
 ---
- fs/btrfs/volumes.c | 73 ------------------------------------------------------
- 1 file changed, 73 deletions(-)
+ fs/btrfs/file.c     |  8 +++++---
+ fs/ceph/file.c      |  7 ++++---
+ fs/cifs/file.c      |  4 ++--
+ fs/fuse/file.c      | 11 ++++++-----
+ include/linux/uio.h |  9 +++------
+ mm/filemap.c        |  4 +++-
+ 6 files changed, 23 insertions(+), 20 deletions(-)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index bab0b84d8f..3ce1a8aed6 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -5395,34 +5395,6 @@ static noinline void btrfs_schedule_bio(struct btrfs_root *root,
- 				   &device->work);
- }
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 0165b8672f..18b2e127e8 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1652,8 +1652,9 @@ static ssize_t __btrfs_direct_write(struct kiocb *iocb,
+ 		return written;
  
--static int bio_size_ok(struct block_device *bdev, struct bio *bio,
--		       sector_t sector)
--{
--	struct bio_vec *prev;
--	struct request_queue *q = bdev_get_queue(bdev);
--	unsigned int max_sectors = queue_max_sectors(q);
--	struct bvec_merge_data bvm = {
--		.bi_bdev = bdev,
--		.bi_sector = sector,
--		.bi_rw = bio->bi_rw,
--	};
--
--	if (WARN_ON(bio->bi_vcnt == 0))
--		return 1;
--
--	prev = &bio->bi_io_vec[bio->bi_vcnt - 1];
--	if (bio_sectors(bio) > max_sectors)
--		return 0;
--
--	if (!q->merge_bvec_fn)
--		return 1;
--
--	bvm.bi_size = bio->bi_iter.bi_size - prev->bv_len;
--	if (q->merge_bvec_fn(q, &bvm, prev) < prev->bv_len)
--		return 0;
--	return 1;
--}
--
- static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
- 			      struct bio *bio, u64 physical, int dev_nr,
- 			      int rw, int async)
-@@ -5453,38 +5425,6 @@ static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
- 		btrfsic_submit_bio(rw, bio);
- }
+ 	pos += written;
+-	count -= written;
+-	iov_iter_init(&i, iov, nr_segs, count, written);
++	iov_iter_init(&i, iov, nr_segs, count);
++	iov_iter_advance(&i, written);
++
+ 	written_buffered = __btrfs_buffered_write(file, &i, pos);
+ 	if (written_buffered < 0) {
+ 		err = written_buffered;
+@@ -1768,7 +1769,8 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 	} else {
+ 		struct iov_iter i;
  
--static int breakup_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
--			      struct bio *first_bio, struct btrfs_device *dev,
--			      int dev_nr, int rw, int async)
--{
--	struct bio_vec *bvec = first_bio->bi_io_vec;
--	struct bio *bio;
--	int nr_vecs = bio_get_nr_vecs(dev->bdev);
--	u64 physical = bbio->stripes[dev_nr].physical;
--
--again:
--	bio = btrfs_bio_alloc(dev->bdev, physical >> 9, nr_vecs, GFP_NOFS);
--	if (!bio)
--		return -ENOMEM;
--
--	while (bvec <= (first_bio->bi_io_vec + first_bio->bi_vcnt - 1)) {
--		if (bio_add_page(bio, bvec->bv_page, bvec->bv_len,
--				 bvec->bv_offset) < bvec->bv_len) {
--			u64 len = bio->bi_iter.bi_size;
--
--			atomic_inc(&bbio->stripes_pending);
--			submit_stripe_bio(root, bbio, bio, physical, dev_nr,
--					  rw, async);
--			physical += len;
--			goto again;
--		}
--		bvec++;
--	}
--
--	submit_stripe_bio(root, bbio, bio, physical, dev_nr, rw, async);
--	return 0;
--}
--
- static void bbio_error(struct btrfs_bio *bbio, struct bio *bio, u64 logical)
- {
- 	atomic_inc(&bbio->error);
-@@ -5553,19 +5493,6 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
- 			continue;
+-		iov_iter_init(&i, iov, nr_segs, count, num_written);
++		iov_iter_init(&i, iov, nr_segs, count + num_written);
++		iov_iter_advance(&i, num_written);
+ 
+ 		num_written = __btrfs_buffered_write(file, &i, pos);
+ 		if (num_written > 0)
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index dfd2ce3419..163ae0fe20 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -580,7 +580,7 @@ ceph_sync_direct_write(struct kiocb *iocb, const struct iovec *iov,
+ 		CEPH_OSD_FLAG_ONDISK |
+ 		CEPH_OSD_FLAG_WRITE;
+ 
+-	iov_iter_init(&i, iov, nr_segs, count, 0);
++	iov_iter_init(&i, iov, nr_segs, count);
+ 
+ 	while (iov_iter_count(&i) > 0) {
+ 		void __user *data = i.iov->iov_base + i.iov_offset;
+@@ -701,7 +701,7 @@ static ssize_t ceph_sync_write(struct kiocb *iocb, const struct iovec *iov,
+ 		CEPH_OSD_FLAG_WRITE |
+ 		CEPH_OSD_FLAG_ACK;
+ 
+-	iov_iter_init(&i, iov, nr_segs, count, 0);
++	iov_iter_init(&i, iov, nr_segs, count);
+ 
+ 	while ((len = iov_iter_count(&i)) > 0) {
+ 		size_t left;
+@@ -834,7 +834,8 @@ again:
+ 				goto out;
  		}
  
--		/*
--		 * Check and see if we're ok with this bio based on it's size
--		 * and offset with the given device.
--		 */
--		if (!bio_size_ok(dev->bdev, first_bio,
--				 bbio->stripes[dev_nr].physical >> 9)) {
--			ret = breakup_stripe_bio(root, bbio, first_bio, dev,
--						 dev_nr, rw, async_submit);
--			BUG_ON(ret);
--			dev_nr++;
--			continue;
--		}
+-		iov_iter_init(&i, iov, nr_segs, len, read);
++		iov_iter_init(&i, iov, nr_segs, len);
++		iov_iter_advance(&i, read);
+ 
+ 		/* hmm, this isn't really async... */
+ 		ret = ceph_sync_read(iocb, &i, &checkeof);
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 755584684f..8a03eeb95e 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2424,7 +2424,7 @@ cifs_iovec_write(struct file *file, const struct iovec *iov,
+ 	else
+ 		pid = current->tgid;
+ 
+-	iov_iter_init(&it, iov, nr_segs, len, 0);
++	iov_iter_init(&it, iov, nr_segs, len);
+ 	do {
+ 		size_t save_len;
+ 
+@@ -2729,7 +2729,7 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, const struct iovec *iov,
+ 	unsigned int i;
+ 
+ 	/* set up iov_iter and advance to the correct offset */
+-	iov_iter_init(&ii, iov, nr_segs, iov_length(iov, nr_segs), 0);
++	iov_iter_init(&ii, iov, nr_segs, iov_length(iov, nr_segs));
+ 	iov_iter_advance(&ii, pos);
+ 
+ 	*copied = 0;
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index b4c9a14e70..67542da685 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1152,9 +1152,10 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			goto out;
+ 
+ 		pos += written;
+-		count -= written;
+ 
+-		iov_iter_init(&i, iov, nr_segs, count, written);
++		iov_iter_init(&i, iov, nr_segs, count);
++		iov_iter_advance(&i, written);
++
+ 		written_buffered = fuse_perform_write(file, mapping, &i, pos);
+ 		if (written_buffered < 0) {
+ 			err = written_buffered;
+@@ -1174,7 +1175,7 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		written += written_buffered;
+ 		iocb->ki_pos = pos + written_buffered;
+ 	} else {
+-		iov_iter_init(&i, iov, nr_segs, count, 0);
++		iov_iter_init(&i, iov, nr_segs, count);
+ 		written = fuse_perform_write(file, mapping, &i, pos);
+ 		if (written >= 0)
+ 			iocb->ki_pos = pos + written;
+@@ -1300,7 +1301,7 @@ ssize_t fuse_direct_io(struct fuse_io_priv *io, const struct iovec *iov,
+ 	struct fuse_req *req;
+ 	struct iov_iter ii;
+ 
+-	iov_iter_init(&ii, iov, nr_segs, count, 0);
++	iov_iter_init(&ii, iov, nr_segs, count);
+ 
+ 	if (io->async)
+ 		req = fuse_get_req_for_background(fc, fuse_iter_npages(&ii));
+@@ -2188,7 +2189,7 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
+ 	if (!bytes)
+ 		return 0;
+ 
+-	iov_iter_init(&ii, iov, nr_segs, bytes, 0);
++	iov_iter_init(&ii, iov, nr_segs, bytes);
+ 
+ 	while (iov_iter_count(&ii)) {
+ 		struct page *page = pages[page_idx++];
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 2b99e0d2a1..d653feeeb1 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -67,16 +67,13 @@ size_t iov_iter_copy_from_user(struct page *page,
+ void iov_iter_advance(struct iov_iter *i, size_t bytes);
+ int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
+ 
+-static inline void iov_iter_init(struct iov_iter *i,
+-			const struct iovec *iov, unsigned long nr_segs,
+-			size_t count, size_t written)
++static inline void iov_iter_init(struct iov_iter *i, const struct iovec *iov,
++				 unsigned long nr_segs, size_t count)
+ {
+ 	i->iov = iov;
+ 	i->nr_segs = nr_segs;
+ 	i->iov_offset = 0;
+-	i->count = count + written;
 -
- 		if (dev_nr < total_devs - 1) {
- 			bio = btrfs_bio_clone(first_bio, GFP_NOFS);
- 			BUG_ON(!bio); /* -ENOMEM */
+-	iov_iter_advance(i, written);
++	i->count = count;
+ }
+ 
+ static inline size_t iov_iter_count(struct iov_iter *i)
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 8e509b3225..e756a0cf21 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2385,7 +2385,9 @@ generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
+ 	ssize_t status;
+ 	struct iov_iter i;
+ 
+-	iov_iter_init(&i, iov, nr_segs, count, written);
++	iov_iter_init(&i, iov, nr_segs, count + written);
++	iov_iter_advance(&i, written);
++
+ 	status = generic_perform_write(file, &i, pos);
+ 
+ 	if (likely(status >= 0)) {
 -- 
 1.9.0
 
