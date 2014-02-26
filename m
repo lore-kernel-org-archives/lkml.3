@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaBZTEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:04:39 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:39966 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753922AbaBZTEg (ORCPT
+	id S1753956AbaBZTF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:05:28 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49139 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaBZTF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:04:36 -0500
-Message-ID: <530E48CC.3040304@cogentembedded.com>
-Date: Wed, 26 Feb 2014 23:04:28 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: davinci-linux-open-source@linux.davincidsp.com,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-gpio@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 0/5] ARM: davinci: tnetv107x removal
-References: <1393418614-3968549-1-git-send-email-arnd@arndb.de> <201402261446.29257.arnd@arndb.de>
-In-Reply-To: <201402261446.29257.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Feb 2014 14:05:26 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 0/2] hibernation support on ARM
+Date: Wed, 26 Feb 2014 11:05:09 -0800
+Message-Id: <1393441511-15127-1-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Patches adding support for hibernation on ARM
+ - ARM hibernation / suspend-to-disk
+ - Change soft_restart to use non-tracing raw_local_irq_disable
 
-On 02/26/2014 04:46 PM, Arnd Bergmann wrote:
+Patches based on v3.13 tag, verified hibernation on beaglebone black on a
+branch based on 3.13 merged with initial omap support from Russ Dill which
+can be found here (includes v1 patchset):
+http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
 
->> The five patches are completely independent of one another,
->> and applying them out of order is fine since we just want
->> to remove the code. However, I'm looking for an Ack from
->> Cyril Chemparathy and Sekhar Nori first, to be sure we
->> won't need this code in the future. Kevin Hilman has
->> already mentioned that he sees no reason to keep this
->> code.
+[PATCH v4 1/2] ARM: avoid tracers in soft_restart
+ arch/arm/kernel/process.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Hmm, apparently Cyril is no longer at TI. If anyone has his
-> current email address and thinks he might have an opinion,
-> could you forward the original email?
+ Use raw_local_irq_disable in place of local_irq_disable to avoid
+ infinite abort recursion while tracing. (unchanged since v3)
 
-    Done. Fished his Gmail address from LinkedIn.
+[PATCH v4 2/2] ARM hibernation / suspend-to-disk
+ arch/arm/include/asm/memory.h |    1 +
+ arch/arm/kernel/Makefile      |    1 +
+ arch/arm/kernel/hibernate.c   |  113 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/Kconfig           |    5 ++
+ include/linux/suspend.h       |    2 +
+ 5 files changed, 122 insertions(+)
 
-> 	Arnd
+ Adds support for ARM based hibernation
 
-WBR, Sergei
+
+Additional notes:
+-----------------
+
+There are two checkpatch warnings added by this patch.  These follow
+behavior in existing hibernation implementations on other platforms.
+
+    WARNING: externs should be avoided in .c files
+    #116: FILE: arch/arm/kernel/hibernate.c:26:
+    +extern const void __nosave_begin, __nosave_end;
+
+  This extern is picking up the linker nosave region definitions, only
+  used in hibernate.  Follows same extern line used mips, powerpc, s390,
+  sh, sparc, x86 & unicore32
+
+    WARNING: externs should be avoided in .c files
+    #191: FILE: arch/arm/kernel/hibernate.c:101:
+    +extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+
+  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
+
+
+Changes in v4:
+--------------
+* updated comment for soft_restart with review feedback
+* dropped freeze_processes patch which was queued separately 
+  to 3.14 by Rafael Wysocki:
+  https://lkml.org/lkml/2014/2/25/683
+
+Changes in v3:
+--------------
+* added comment to use of soft_restart
+* drop irq disable soft_restart patch
+* add patch to avoid tracers in soft_restart by using raw_local_irq_*
+
+Changes in v2:
+--------------
+* Removed unneeded flush_thread, use of __naked and cpu_init.
+* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as 
+  emails are bouncing.
+
+Thanks,
+
+Sebastian Capella
 
