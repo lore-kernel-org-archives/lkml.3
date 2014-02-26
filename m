@@ -1,81 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356AbaBZI35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 03:29:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37558 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaBZI34 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 03:29:56 -0500
-Date: Wed, 26 Feb 2014 09:29:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 02/11] perf core: export swevent hrtimer helpers
-Message-ID: <20140226082943.GC18404@twins.programming.kicks-ass.net>
-References: <1392415338-16288-3-git-send-email-cody@linux.vnet.ibm.com>
- <20140225033326.7BB942C0228@ozlabs.org>
- <20140225102008.GI9987@twins.programming.kicks-ass.net>
- <530D0D57.4030704@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530D0D57.4030704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1751127AbaBZIfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 03:35:54 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4939 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724AbaBZIfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 03:35:52 -0500
+X-IronPort-AV: E=Sophos;i="4.97,546,1389715200"; 
+   d="scan'208";a="9607726"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: viro@zeniv.linux.org.uk, bcrl@kvack.org, jmoyer@redhat.com,
+        kosaki.motohiro@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com
+Cc: linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
+Date: Wed, 26 Feb 2014 16:38:39 +0800
+Message-Id: <1393403919-1178-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/26 16:33:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/26 16:33:28,
+	Serialize complete at 2014/02/26 16:33:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 01:38:31PM -0800, Cody P Schafer wrote:
-> On 02/25/2014 02:20 AM, Peter Zijlstra wrote:
-> >On Tue, Feb 25, 2014 at 02:33:26PM +1100, Michael Ellerman wrote:
-> >>On Fri, 2014-14-02 at 22:02:06 UTC, Cody P Schafer wrote:
-> >>>Export the swevent hrtimer helpers currently only used in events/core.c
-> >>>to allow the addition of architecture specific sw-like pmus.
-> >>
-> >>Peter, Ingo, can we get your ACK on this please?
-> >
-> >How are they used? I saw some usage in patch 9 or so; but its not
-> >explained anywhere. All patches have non-existent Changelogs and the few
-> >comments that are there are pretty hardware specific.
-> >
-> >So please do tell; what do you need this for?
-> 
-> From this patch's change log:
-> 
-> >Export the swevent hrtimer helpers currently only used in events/core.c to allow the addition of architecture specific sw-like pmus.
-> 
-> The key part here is "architecture specific sw-like pmus", where the
-> announcement explains why these pmus are sw-like:
+AIO ring page migration has been implemented by the following patch:
 
-I don't read announcements for crucial patch details; announcements are
-lost and therefore unimportant.
+        https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/aio.c?id=36bc08cc01709b4a9bb563b35aa530241ddc63e3
 
-> >The counters supplied by these interfaces are continually counting and never
-> >need to be (and cannot be) disabled or enabled. They additionally do not
-> >generate any interrupts. This makes them in some regards similar to software
-> >counters, and as a result their implimentation shares some common code (which
-> >an initial patch exposes) with the sw counters.
-> 
-> Essentially, these pmus just provide access to a big array of counters which
-> don't generate interrupts, and are all 64bit (and assumed to never
-> overflow). Rather than duplicate the code that we already have for managing
-> timing when reading from counters that don't have interrupts (the functions
-> that are exposed by this patch), I've reused it.
+In this patch, ctx->completion_lock is used to prevent other processes
+from accessing the ring page being migrated.
 
-So note that all the software counters generate interrupts in their own
-measuring domain. The hrtimer ones measure time and generate time based
-interrupts, the event based ones generate 'interrupts' on their events.
+But in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring(),
+when writing to the ring page, they didn't take ctx->completion_lock.
 
-What you have here is a hw pmu without interrupt capability. That's
-fine, they don't get to generate interrupt. We have plenty of those
-already.
+As a result, for example, we have the following problem:
 
-But what you propose to do is add interrupt in another domain entirely.
-That's not fine. Don't do that.
+            thread 1                      |              thread 2
+                                          |
+aio_migratepage()                         |
+ |-> take ctx->completion_lock            |
+ |-> migrate_page_copy(new, old)          |
+ |   *NOW*, ctx->ring_pages[idx] == old   |
+                                          |
+                                          |    *NOW*, ctx->ring_pages[idx] == old
+                                          |    aio_read_events_ring()
+                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
+                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
+                                          |     |-> kunmap_atomic(ring);
+                                          |
+ |-> ctx->ring_pages[idx] = new           |
+ |   *BUT NOW*, the content of            |
+ |    ring_pages[idx] is old.             |
+ |-> release ctx->completion_lock         |
 
-You also try and conceal this information; so you suck.
+As above, the new ring page will not be updated.
+
+The solution is taking ctx->completion_lock in thread 2, which means,
+in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring() when
+writing to ring pages.
+
+
+Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ fs/aio.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 062a5f6..50c089c 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -366,6 +366,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	int nr_pages;
+ 	int i;
+ 	struct file *file;
++	unsigned long flags;
+ 
+ 	/* Compensate for the ring buffer's head/tail overlap entry */
+ 	nr_events += 2;	/* 1 is required, 2 for good luck */
+@@ -437,6 +438,14 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	ctx->user_id = ctx->mmap_base;
+ 	ctx->nr_events = nr_events; /* trusted copy */
+ 
++	/*
++	 * The aio ring pages are user space pages, so they can be migrated.
++	 * When writing to an aio ring page, we should ensure the page is not
++	 * being migrated. Aio page migration procedure is protected by
++	 * ctx->completion_lock, so we add this lock here.
++	 */
++	spin_lock_irqsave(&ctx->completion_lock, flags);
++
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
+ 	ring->nr = nr_events;	/* user copy */
+ 	ring->id = ~0U;
+@@ -448,6 +457,8 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	kunmap_atomic(ring);
+ 	flush_dcache_page(ctx->ring_pages[0]);
+ 
++	spin_unlock_irqrestore(&ctx->completion_lock, flags);
++
+ 	return 0;
+ }
+ 
+@@ -542,6 +553,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 	unsigned i, new_nr;
+ 	struct kioctx_table *table, *old;
+ 	struct aio_ring *ring;
++	unsigned long flags;
+ 
+ 	spin_lock(&mm->ioctx_lock);
+ 	rcu_read_lock();
+@@ -556,9 +568,19 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 					rcu_read_unlock();
+ 					spin_unlock(&mm->ioctx_lock);
+ 
++					/*
++					 * Accessing ring pages must be done
++					 * holding ctx->completion_lock to
++					 * prevent aio ring page migration
++					 * procedure from migrating ring pages.
++					 */
++					spin_lock_irqsave(&ctx->completion_lock,
++							  flags);
+ 					ring = kmap_atomic(ctx->ring_pages[0]);
+ 					ring->id = ctx->id;
+ 					kunmap_atomic(ring);
++					spin_unlock_irqrestore(
++						&ctx->completion_lock, flags);
+ 					return 0;
+ 				}
+ 
+@@ -1021,6 +1043,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	unsigned head, tail, pos;
+ 	long ret = 0;
+ 	int copy_ret;
++	unsigned long flags;
+ 
+ 	mutex_lock(&ctx->ring_lock);
+ 
+@@ -1066,11 +1089,21 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 		head %= ctx->nr_events;
+ 	}
+ 
++	/*
++	 * The aio ring pages are user space pages, so they can be migrated.
++	 * When writing to an aio ring page, we should ensure the page is not
++	 * being migrated. Aio page migration procedure is protected by
++	 * ctx->completion_lock, so we add this lock here.
++	 */
++	spin_lock_irqsave(&ctx->completion_lock, flags);
++
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
+ 	ring->head = head;
+ 	kunmap_atomic(ring);
+ 	flush_dcache_page(ctx->ring_pages[0]);
+ 
++	spin_unlock_irqrestore(&ctx->completion_lock, flags);
++
+ 	pr_debug("%li  h%u t%u\n", ret, head, tail);
+ 
+ 	put_reqs_available(ctx, ret);
+-- 
+1.8.3.1
+
