@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaBZCxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:53:14 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41796 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaBZCxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:53:13 -0500
-Message-ID: <530D5715.1050901@mit.edu>
-Date: Tue, 25 Feb 2014 18:53:09 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752421AbaBZCyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:54:54 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14650 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751799AbaBZCyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 21:54:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,544,1389772800"; 
+   d="scan'208";a="481845830"
+Date: Wed, 26 Feb 2014 08:24:44 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20140226025444.GA21449@jenny-desktop>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+ <20140204113640.GD2450@amd.pavel.ucw.cz>
+ <20140220051655.GB2498@jenny-desktop>
+ <20140221144529.GB5238@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, john.stultz@linaro.org
-CC: Anton Vorontsov <anton@enomsg.org>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, akpm@linux-foundation.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH v4 5/6] timerfd: Add support for deferrable timers
-References: <1392913425-29369-1-git-send-email-a.perevalov@samsung.com> <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
-In-Reply-To: <1392913425-29369-6-git-send-email-a.perevalov@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221144529.GB5238@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2014 08:23 AM, Alexey Perevalov wrote:
-> From: Anton Vorontsov <anton@enomsg.org>
+On Fri, Feb 21, 2014 at 03:45:29PM +0100, Pavel Machek wrote:
+> On Thu 2014-02-20 10:46:55, Jenny Tc wrote:
+> > On Tue, Feb 04, 2014 at 12:36:40PM +0100, Pavel Machek wrote:
+> > > > --- a/drivers/power/Kconfig
+> > > > +++ b/drivers/power/Kconfig
+> > > > @@ -22,6 +22,19 @@ config POWER_SUPPLY_CHARGER
+> > > >  	  drivers to keep the charging logic outside and the charger driver
+> > > >  	  just need to abstract the charger hardware.
+> > > >  
+> > > > +config POWER_SUPPLY_CHARGING_ALGO_PSE
+> > > > +	bool "PSE compliant charging algorithm"
+> > > > +	help
+> > > > +	  Say Y here to select Product Safety Engineering (PSE) compliant
+> > > > +	  charging algorithm. As per PSE standard the battery characteristics
+> > > > +	  and thereby the charging rates can vary on different temperature
+> > > > +	  zones. This config will enable PSE compliant charging algorithm with
+> > > > +	  maintenance charging support. At runtime the algorithm will be
+> > > > +	  selected by the psy charger driver based on the type of the battery
+> > > > +	  charging profile.
+> > > 
+> > > Information where to expect PSE compliant chargers would be nice.
+> > 
+> > This algorithm can be used with non PSE compliant chargers also. This is a SW
+> > based charging algorithm.
 > 
-> This patch implements a userland-side API for generic deferrable timers,
-> per linux/timer.h:
+> Ok, but you need to explain for the users when it might be good idea
+> to select this option...
 > 
->  * A deferrable timer will work normally when the system is busy, but
->  * will not cause a CPU to come out of idle just to service it; instead,
->  * the timer will be serviced when the CPU eventually wakes up with a
->  * subsequent non-deferrable timer.
-> 
-> These timers are crucial for power saving, i.e. periodic tasks that want
-> to work in background when the system is under use, but don't want to
-> cause wakeups themselves.
+> Or maybe this should not be user configurable and drivers should just
+> select it?
 
-Please don't.  This API sucks for all kinds of reasons:
-
- - Why is it a new kind of clock?
- - How deferrable is deferrable?
- - It adds new core code, which serves no purpose (the problem is
-already solved).
-
-On the other hand, if you added a fancier version of timerfd_settime
-that could explicitly set the slack value (or, equivalently, the
-earliest and latest allowable times), that could be quite useful.
-
-It's often bugged me that timer slack is per-process.
-
---Andy
-
+The idea is to allow pluggable charging algorithms. Currently we have only one
+charging algorithm proposed, but can have other charging algorithms (like pulse
+charging, rule based charging etc.). Based on the platform need, the algorithms
+can be selected. So this should be a user configurable option. I can add more
+explanation on when to select this option.
