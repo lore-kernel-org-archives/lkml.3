@@ -1,142 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899AbaBZUEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:04:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60882 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaBZUEr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:04:47 -0500
-Message-ID: <530E48DD.5090108@codeaurora.org>
-Date: Wed, 26 Feb 2014 12:04:45 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] cpufreq: stats: Remove redundant cpufreq_cpu_get()
- call
-References: <1789244.B5CzWbcp6h@vostro.rjw.lan> <1393385915-19138-1-git-send-email-skannan@codeaurora.org> <CAKohponAnGn-C7-3T6JWZBb0PxtY1pE+o9SAKP-xC6GOrVE02Q@mail.gmail.com>
-In-Reply-To: <CAKohponAnGn-C7-3T6JWZBb0PxtY1pE+o9SAKP-xC6GOrVE02Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753946AbaBZUFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:05:21 -0500
+Received: from ring0.de ([5.45.105.125]:53339 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071AbaBZUDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 15:03:43 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [RFCv4 4/7] mfd: twl-core: Add twl_i2c_read/write_u16
+Date: Wed, 26 Feb 2014 21:03:07 +0100
+Message-Id: <1393444990-28140-5-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1393444990-28140-1-git-send-email-sre@debian.org>
+References: <1393374270-20079-1-git-send-email-sre@debian.org>
+ <1393444990-28140-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 09:06 PM, Viresh Kumar wrote:
-> On 26 February 2014 09:08, Saravana Kannan <skannan@codeaurora.org> wrote:
->> __cpufreq_stats_create_table always gets pass the valid and real policy
->> struct. So, there's no need to call cpufreq_cpu_get() to get the policy
->> again.
->>
->> Change-Id: I0136b3e67018ee3af2335906407f55d8c6219f71
->
-> ??
->
->> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
->> ---
->>
->> Viresh/Rafael,
->>
->> These 3 patches is the approximate code I have in mind.
->>
->> Approximate because:
->> * I inserted one question as a comment into the code.
->> * If the patch doesn't have any bugs, the plan is to remove
->>    cpufreq_generic_get() and references to it.
->>
->> This takes care of the "don't advertise before it's ready for use" rule.
->>
->> Viresh,
->>
->> I think the locking updates needs to be done in addition to this.
->>
->> Regards,
->> Saravana
->>
->>   drivers/cpufreq/cpufreq_stats.c | 12 +-----------
->>   1 file changed, 1 insertion(+), 11 deletions(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
->> index 5793e14..e4bd27f 100644
->> --- a/drivers/cpufreq/cpufreq_stats.c
->> +++ b/drivers/cpufreq/cpufreq_stats.c
->> @@ -185,7 +185,6 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
->>   {
->>          unsigned int i, j, count = 0, ret = 0;
->>          struct cpufreq_stats *stat;
->> -       struct cpufreq_policy *current_policy;
->>          unsigned int alloc_size;
->>          unsigned int cpu = policy->cpu;
->>          if (per_cpu(cpufreq_stats_table, cpu))
->> @@ -194,13 +193,7 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
->>          if ((stat) == NULL)
->>                  return -ENOMEM;
->>
->> -       current_policy = cpufreq_cpu_get(cpu);
->> -       if (current_policy == NULL) {
->> -               ret = -EINVAL;
->> -               goto error_get_fail;
->> -       }
->> -
->> -       ret = sysfs_create_group(&current_policy->kobj, &stats_attr_group);
->> +       ret = sysfs_create_group(&policy->kobj, &stats_attr_group);
->>          if (ret)
->>                  goto error_out;
->>
->> @@ -243,11 +236,8 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
->>          stat->last_time = get_jiffies_64();
->>          stat->last_index = freq_table_get_index(stat, policy->cur);
->>          spin_unlock(&cpufreq_stats_lock);
->> -       cpufreq_cpu_put(current_policy);
->>          return 0;
->>   error_out:
->> -       cpufreq_cpu_put(current_policy);
->> -error_get_fail:
->>          kfree(stat);
->>          per_cpu(cpufreq_stats_table, cpu) = NULL;
->>          return ret;
->
-> I was damn sure that this wasn't a waste of time. This was some meaningful
-> code when I visited it earlier. And we absolutely required a new
-> cpufreq_cpu_get()..
->
-> Reason: Earlier tables were created for this notifier: CPUFREQ_NOTIFY and
-> it used to come with another changed copy of 'policy' and so we were required
-> to get the real copy of policy to get to the right kobj.
->
-> But recently I have simplified stuff there and these tables are now added with
-> CPUFREQ_CREATE_POLICY and so this replication isn't required anymore.
+Add a simple twl_i2c_read/write_u16 wrapper over
+the twl_i2c_read/write, which is similar to the
+twl_i2c_read/write_u8 wrapper.
 
-Agreed. I already knew it had a good reason. :) Just that it's not 
-needed anymore.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ include/linux/i2c/twl.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-> So, Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-
-Thanks.
-
->
-> While you are at it please get this part into __cpufreq_stats_create_table()
-> routine:
->
-> table = cpufreq_frequency_get_table(cpu);
-> if (!table)
->      return 0;
->
-> As it is replicated at two places currently.
->
-
-Doing it as a separate patch since it's technically unrelated to these 
-changes.
-
--Saravana
-
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index ade1c06..d2b1670 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -195,6 +195,18 @@ static inline int twl_i2c_read_u8(u8 mod_no, u8 *val, u8 reg) {
+ 	return twl_i2c_read(mod_no, val, reg, 1);
+ }
+ 
++static inline int twl_i2c_write_u16(u8 mod_no, u16 val, u8 reg) {
++	val = cpu_to_le16(val);
++	return twl_i2c_write(mod_no, (u8*) &val, reg, 2);
++}
++
++static inline int twl_i2c_read_u16(u8 mod_no, u16 *val, u8 reg) {
++	int ret;
++	ret = twl_i2c_read(mod_no, (u8*) val, reg, 2);
++	*val = le16_to_cpu(*val);
++	return ret;
++}
++
+ int twl_get_type(void);
+ int twl_get_version(void);
+ int twl_get_hfclk_rate(void);
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.5.3
+
