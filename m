@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaBZE7g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 23:59:36 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:54839 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaBZE7e (ORCPT
+	id S1750971AbaBZFCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:02:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50474 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaBZFCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 23:59:34 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-57-530d74b2d12e
-Message-id: <530D787F.9080501@samsung.com>
-Date: Wed, 26 Feb 2014 14:15:43 +0900
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
- Thunderbird/17.0.4
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: samsung: remove parentheses from return statements
-References: <1393382688-5429-1-git-send-email-pankaj.dubey@samsung.com>
- <CAK9yfHyjQmFnJaM0v638X-K+jHveofOkf=2bWQ9-cyQ1y39Hmw@mail.gmail.com>
-In-reply-to: <CAK9yfHyjQmFnJaM0v638X-K+jHveofOkf=2bWQ9-cyQ1y39Hmw@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zfd1NJbzBBp3vmSw2Pb7GanF51xw2
-	ixnn9zFZPJ1wkc3i5J9eRov1M16zOLB53Lm2h81j85J6j74tqxg9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mo4u2cKe8FGlorXj/6xNDCeZe5i5OSQEDCR+PFgHRuELSZx4d56IJuLQ0hgGaPEnpaJ
-	bDBFE+80skMkFjFKNG9dwwLhvGaU6L/2gR2kildAS6LpwXdGEJtFQFVi4fKVrCA2m4CuxJP3
-	c8HWiQqESWya3scKUS8o8WPyPRYQWwSo92X3ciaQocwCzxklfv1ZCJYQFvCRmHbxBRPEtj5G
-	idOXX4PdxCkQLHH2ShvYZmYBa4mVk7YxQtjyEpvXvGUGaZAQOMQuMfvCSyaIkwQkvk0+BDSV
-	AyghK7HpADQAJCUOrrjBMoFRbBaSo2YhGTsLydgFjMyrGEVTC5ILipPSi0z1ihNzi0vz0vWS
-	83M3MULibOIOxvsHrA8xJgOtnMgsJZqcD4zTvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJ
-	pCeWpGanphakFsUXleakFh9iZOLglGpgrCn41vmwZZLQN75j/yV/uJ+a7HzB6FHYfKlJlRzB
-	FVO6H/5OvpMx99I8tcqZboZ/BUxjPmbYuhmK/9mZ7ax9yEvyJvv9mVunVDseduo+zl2/6Nf2
-	Bo/vNuqOOeJSh033BOX9XJCbdEVEzuCBVwr/nZ3fM8qqjT4nNBREXeK+d/qNwvOlAhPUlViK
-	MxINtZiLihMB3Sxec8kCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd2NJbzBBpM+WFtsenyN1eLyrjls
-	FjPO72OyeDrhIpvFyT+9jBbrZ7xmcWDzuHNtD5vH5iX1Hn1bVjF6fN4kF8AS1cBok5GamJJa
-	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYcXbPFPaCjSwVrx/9Y2lgPMvcxcjJISFgIjHx
-	TiM7hC0mceHeerYuRi4OIYFFjBLNW9ewQDivGSX6r30Aq+IV0JJoevCdEcRmEVCVWLh8JSuI
-	zSagK/Hk/VywqaICYRKbpvexQtQLSvyYfI8FxBYB6n3ZvZwJZCizwHNGiV9/FoIlhAV8JKZd
-	fMEEsa2PUeL05ddsIAlOgWCJs1fawDYzC1hLrJy0jRHClpfYvOYt8wRGgVlIlsxCUjYLSdkC
-	RuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFR/Ex6B+OqBotDjAIcjEo8vAEsvMFCrIll
-	xZW5hxglOJiVRHils4FCvCmJlVWpRfnxRaU5qcWHGJOBYTCRWUo0OR+YYPJK4g2NTcyMLI3M
-	LIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgXFK9KlHF4Kf7XrPIPrXu1M9bX3O
-	4lmBUX9NegXfLy1Zc6lX+Pd6+TcHa4stFvrtfc3XWuu2zGaGwcFjv69FGn3f9aM45/qVPC67
-	72pJPPacDhe0Kx8v6fL4ITlbY8tjq2X9Ndd2if/Je+TV+s5l1TX9mdW1oaInrn6OeW0p95rR
-	b/ap2CPsa62VWIozEg21mIuKEwGMvE0mJgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 26 Feb 2014 00:02:06 -0500
+Message-ID: <530D754A.60700@wwwdotorg.org>
+Date: Tue, 25 Feb 2014 22:02:02 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: add device tree for SHIELD
+References: <1393237593-28121-1-git-send-email-acourbot@nvidia.com> <530B952D.2000006@wwwdotorg.org> <530BFC58.6020003@nvidia.com> <530D1B7A.9070209@wwwdotorg.org> <530D748D.6010802@nvidia.com>
+In-Reply-To: <530D748D.6010802@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
-
-On 02/26/2014 01:12 PM, Sachin Kamat wrote:
-> Hi Pankaj,
->
-> On 26 February 2014 08:14, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
->> fixed following checkpatch warning message
->> "return is not a function, parentheses are not required"
+On 02/25/2014 09:58 PM, Alexandre Courbot wrote:
+> On 02/26/2014 07:38 AM, Stephen Warren wrote:
+>> On 02/24/2014 07:13 PM, Alexandre Courbot wrote:
+>>> On 02/25/2014 03:53 AM, Stephen Warren wrote:
+>>>> On 02/24/2014 03:26 AM, Alexandre Courbot wrote:
+>>>>> Add a device tree for NVIDIA SHIELD. The set of enabled features is
+>>>>> still minimal with no display option (although HDMI should be easy
+>>>>> to get to work) and USB requiring external power.
+...
+>>> For the Wifi chip, non-removable would be the correct setting
+>>> hardware-wise, but there is a trap: the chip has its reset line asserted
+>>> at boot-time, and you need to set GPIO 229 to de-assert it. Only after
+>>> that will the device be detected on the SDIO bus. Since it lacks a CD
+>>> line, it must be polled, hence the broken-cd property.
 >>
->> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Similar patch has already been submitted:
-> http://comments.gmane.org/gmane.linux.ports.arm.kernel/294530
->
->
-Sorry I missed that.
-Since same change already submitted we can ignore my patch.
+>> How does that GPIO get manipulated right now? I assume you must be
+>> manually configuring it via sysfs after boot or something? If so,
+>> perhaps it's best to just leave out the WiFi node until it works
+>> automatically.
+> 
+> The GPIO needs to be set from user-space, yes. But if we leave the Wifi
+> node out, I'm concerned that wireless will not be usable at all,
+> wouldn't it?
 
--- 
-Best Regards,
-Pankaj Dubey
+True, but if we have no representation of the device in DT that works
+without manually enabling clocks and/or GPIOs, it's not a
+complete/accurate representation of the HW, so it doesn't make sense to
+add it to DT. Yes, I admit that sucks.
 
