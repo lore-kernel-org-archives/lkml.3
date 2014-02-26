@@ -1,111 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaBZPQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:16:26 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:49693 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926AbaBZPQY (ORCPT
+	id S1752868AbaBZPTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:19:49 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46217 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaBZPTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:16:24 -0500
-Message-ID: <530E0531.7000303@linaro.org>
-Date: Wed, 26 Feb 2014 23:16:01 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@redhat.com, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        daniel.lezcano@linaro.org, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        tony.luck@intel.com, fenghua.yu@intel.com, james.hogan@imgtec.com,
-        jason.low2@hp.com, viresh.kumar@linaro.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
-        wangyun@linux.vnet.ibm.com, mgorman@suse.de
-Subject: Re: [PATCH 04/11] sched: unify imbalance bias for target group
-References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org> <1393293054-11378-5-git-send-email-alex.shi@linaro.org> <20140225141407.GT9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140225141407.GT9987@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Feb 2014 10:19:47 -0500
+Message-ID: <1393429676.3248.110.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Date: Wed, 26 Feb 2014 16:47:56 +0100
+In-Reply-To: <530DFF4C.8080807@ti.com>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>
+		 <1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>
+		 <530DE8A9.9050809@ti.com>
+	 <1393426623.3248.70.camel@paszta.hi.pengutronix.de>
+	 <530DFF4C.8080807@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mittwoch, den 26.02.2014, 16:50 +0200 schrieb Tomi Valkeinen:
+> On 26/02/14 16:57, Philipp Zabel wrote:
+> > Hi Tomi,
+> > 
+> > Am Mittwoch, den 26.02.2014, 15:14 +0200 schrieb Tomi Valkeinen:
+> >> On 25/02/14 16:58, Philipp Zabel wrote:
+> >>
+> >>> +Optional endpoint properties
+> >>> +----------------------------
+> >>> +
+> >>> +- remote-endpoint: phandle to an 'endpoint' subnode of a remote device node.
+> >>
+> >> Why is that optional? What use is an endpoint, if it's not connected to
+> >> something?
+> > 
+> > This allows to include the an empty endpoint template in a SoC dtsi for
+> > the convenience of board dts writers. Also, the same property is
+> > currently listed as optional in video-interfaces.txt.
+> > 
+> >   soc.dtsi:
+> > 	display-controller {
+> > 		port {
+> > 			disp0: endpoint { };
+> > 		};
+> > 	};
+> > 
+> >   board.dts:
+> > 	#include "soc.dtsi"
+> > 	&disp0 {
+> > 		remote-endpoint = <&panel_input>;
+> > 	};
+> > 	panel {
+> > 		port {
+> > 			panel_in: endpoint {
+> > 				remote-endpoint = <&disp0>;
+> > 			};
+> > 		};
+> > 	};
+> > 
+> > Any board not using that port can just leave the endpoint disconnected.
+> 
+> Hmm I see. I'm against that.
+> 
+> I think the SoC dtsi should not contain endpoint node, or even port node
+> (at least usually).
 
-> So this patch is weird..
-> 
-> So the original bias in the source/target load is purely based on actual
-> load figures. It only pulls-down/pulls-up resp. the long term avg with a
-> shorter term average; iow. it allows the source to decrease faster and
-> the target to increase faster, giving a natural inertia (ie. a
-> resistance to movement).
-> 
-> Therefore this gives rise to a conservative imbalance.
-> 
-> Then at the end we use the imbalance_pct thing as a normal hysteresis
-> control to avoid the rapid state switching associated with a single
-> control point system.
+Well, at least the port is a physical thing. I see no reason not to have
+it in the dtsi.
 
-Peter, Thanks response and detailed explanations! :)
+> It doesn't know how many endpoints, if any, a
+> particular board has. That part should be up to the board dts.
 
-Yes, fixed bias can not replace the current bias.
-If we said sth inertia, we usually mean the previous value or long term
-value here. but source/target_load doesn't prefer a long term or shorter
-term load, Just get the min or max of them. so I can't see other meaning
-except source/target bias. And the long term load is a decayed load with
-history load value, not a real actual load.
+...
 
-And in current logical, assume the load of cpu is constant in a period,
-then the source/target_load will lose its 'resistance' function for
-balance. Considering the moving cost, rq locking and potential cpu cache
-missing, Is some bias needed here?
+> I've done this with OMAP as (much simplified):
+> 
+> SoC.dtsi:
+> 
+> dss: dss@58000000 {
+> 	status = "disabled";
+> };
+> 
+> Nothing else (relevant here). The binding documentation states that dss
+> has one port, and information what data is needed for the port and endpoint.
+> 
+> board.dts:
+> 
+> &dss {
+>         status = "ok";
+> 
+>         pinctrl-names = "default";
+>         pinctrl-0 = <&dss_dpi_pins>;
+> 
+>         dpi_out: endpoint {
+> 
+>                 remote-endpoint = <&tfp410_in>;
+>                 data-lines = <24>;
+>         };
+> };
+> 
+> That's using the shortened version without port node.
 
-Another problem is, we bias load twice for busy_idx scenario. once in
-source/target_load another is imbalance_pct in find_busiest_group. I
-can't figure out the reason. :(
+Ok, that looks compact enough. I still don't see the need to change make
+the remote-endpoint property required to achieve this, though. On the
+other hand, I wouldn't object to making it mandatory either.
 
-So would rather select a random long/shorter term load, than maybe it's
-better to use a fixed bias, like in current NUMA balancing, and in
-newidle/wake balance.
+> Of course, it's up to the developer how his dts looks like. But to me it
+> makes sense to require the remote-endpoint property, as the endpoint, or
+> even the port, doesn't make much sense if there's nothing to connect to.
 
-> 
-> 
-> You completely wreck that, you also don't give a coherent model back.
-> 
-> 
-> The movement of imbalance_pct into target_load() doesn't make sense to
-> me either; it's an (expensive) no-op afaict. Seeing how:
-> 
->   100 * source_load() < imb_pct * target_load()
-> 
-> is very much equal to:
-> 
->   source_load() < (imb_pct * target_load()) / 100;
-> 
-> Except you get to do that div all over the place.
+Please let's not make it mandatory for a port node to contain an
+endpoint. For any device with multiple ports we can't use the simplified
+form above, and only adding the (correctly numbered) port in all the
+board device trees would be a pain.
 
-It is my fault. Will change it back.
-> 
-> It also completely muddles the fact that its a normal hysteresis
-> control. Not a load bias. A fixed bias can never replace the inertial
-> control we had; it doesn't make sense as a replacement.
+regards
+Philipp
 
-I know fixed bias maybe not the best, but sorry for can not figure out
-better one. Would you like to give some suggestion?
-> 
-> Not to mention you seem to ignore all concerns wrt the use of longer
-> term averages for the bigger domains.
-
-For bigger domain, I given up the aggression bias idea(less bias on
-large group) in V2 version due to Morten's concern. And I have asked for
-more comments, but no more detailed concerns I can see now. :(
-> 
-> Now I'm all for removing code; and so far the numbers aren't bad; but I
-> don't like the complete muddle you make of things at all.
-> 
-
-Sorry, do you mean the load_idx removing is fine, if without this fixed
-bias? Or other suggestion here?
-
--- 
-Thanks
-    Alex
