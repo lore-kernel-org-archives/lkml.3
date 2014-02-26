@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaBZXsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:48:21 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:38087 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaBZXsS (ORCPT
+	id S1754347AbaBZXtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:49:05 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:40905 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595AbaBZXtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:48:18 -0500
+	Wed, 26 Feb 2014 18:49:02 -0500
+Date: Wed, 26 Feb 2014 15:48:07 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
+        viro@zeniv.linux.org.uk, bpm@sgi.com, adilger.kernel@dilger.ca,
+        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
+ fallocate
+In-Reply-To: <20140226100439.GV13647@dastard>
+Message-ID: <alpine.LSU.2.11.1402261511270.2880@eggly.anvils>
+References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com> <20140222140625.GD26637@thunk.org> <20140223213606.GE4317@dastard> <alpine.LSU.2.11.1402251525370.2380@eggly.anvils> <20140226015747.GN13647@dastard> <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
+ <20140226100439.GV13647@dastard>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140226224844.219fe0ac@alan.etchedpixels.co.uk>
-References: <20140226190306.9616.30567.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140226190927.9616.43043.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140226224844.219fe0ac@alan.etchedpixels.co.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Feb 2014 16:47:58 -0700
-Message-ID: <CAErSpo7=vbbNck6Ua+-5ycHVCuby0OnxHMGmhSw3Qb-iXOsaeA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] i2o: Use pci_bus_alloc_resource(), not
- allocate_resource() directly
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Markus Lidel <Markus.Lidel@shadowconnect.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 3:48 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 26 Feb 2014 12:09:27 -0700
-> Bjorn Helgaas <bhelgaas@google.com> wrote:
->
->> Convert i2o_res_alloc() to use pci_bus_alloc_resource() rather than
->> pci_find_parent_resource() and allocate_resource().  We don't have a
->> resource to start with, so pci_find_parent_resource() can't do anything
->> useful: a bus may have several memory resources available, so there might
->> be several possible parents.  This is more likely on root buses because
->> host bridges may have any number of apertures.
->>
->> I'm pretty sure this didn't work in the first place because it passed
->> size == min == max to allocate_resource().  The min and max parameters are
->> constraints on the *addresses* of the resource, not on its size, so I think
->> it was impossible for allocate_resource() to succeed.
->
-> I don't think many i2o controllers ever used that path, and I doubt any
-> in normal use did as the vision of offloading for devices on the host bus
-> basically never happened (it happened even less than i2o)
->
-> A rather more sensible question might be "If i2o went away is there
-> anyone who would even notice". About the only devices that ever used i2o
-> in the real world (AMI MegaRAID and some FC stuff) had native firmware or
-> modes that worked better anyway.
+On Wed, 26 Feb 2014, Dave Chinner wrote:
+> On Tue, Feb 25, 2014 at 09:25:40PM -0800, Hugh Dickins wrote:
+> 
+> > But I wasn't really thinking of the offset > i_size case, just the
+> > offset + len >= i_size case: which would end with i_size at offset,
+> > and the areas you're worried about still beyond EOF - or am I confused?
+> 
+> Right, offset beyond EOF is just plain daft. But you're not thinking
+> of the entire picture. What happens when a system crashes half way
+> through a collapse operation? On tmpfs you don't care - everything
+> is lost, but on real filesystems we have to care about. 
+> 
+> offset + len beyond EOF is just truncate(offset).
+> 
+> From the point of view of an application offloading a data movement
+> operation via collapse range, any range that overlaps EOF is wrong -
+> data beyond EOF is not accessible and is not available for the
+> application to move. Hence EINVAL - it's an invalid set of
+> parameters.
+> 
+> If we do allow it and implement it by block shifting (which,
+> technically, is the correct interpretation of the collapse range
+> behaviour because it preserves preallocation beyond
+> the collapsed region beyond EOF), then we have
+> thr problem of moving data blocks below EOF by extent shifting
+> before we change the EOF. That exposes blocks of undefined content
+> to the user if we crash and recover up to that point of the
+> operation. It's just plain dangerous, and if we allow this
+> possibility via the API, someone is going to make that mistake in a
+> filesystem because it's difficult to test and hard to get right.
 
-I don't know anything about i2o, so I have no idea whether it could be
-completely removed.  I just want to remove its usage of
-pci_find_parent_resource() so I can change the semantics of that a bit
-(see [1]).
+Again, I would have thought that this is a problem you are already
+having to solve in the case when offset + len is below EOF, with
+blocks of undefined content preallocated beyond EOF.
 
-Bjorn
+But I don't know xfs, you do: so I accept there may be subtle reasons
+why the offset + len below EOF case is easier for you to handle - and
+please don't spend your time trying to hammer those into my head!
 
-[1] https://lkml.kernel.org/r/20140226193723.10125.15799.stgit@bhelgaas-glaptop.roam.corp.google.com
+I think I've been somewhat unreasonable: I insisted in the other
+thread that "Collapse is significantly more challenging than either
+hole-punch or truncation", so I should give you a break, not demand
+that you provide a perfect smooth implementation in all circumstances.
+
+None of our filesystems were designed with this operation in mind,
+each may have its own sound reasons to reject those peculiare cases
+which would pose more trouble and risk than they are worth.
+
+Whether that should be enforced at the VFS level is anther matter:
+if it turns out that the xfs and ext4 limitations match up, okay.
+
+I think we have different preferences, for whether to return error
+or success, when there is nothing to be done; but I notice now that
+fallocate fails on len 0, so you are being consistent with that.
+
+Reject "offset + len >= i_size" or "offset + len > i_size"?
+
+Hugh
