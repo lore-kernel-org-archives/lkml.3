@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaBZBG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:06:27 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:37721 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaBZBG0 (ORCPT
+	id S1751458AbaBZBHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:07:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34165 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaBZBHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:06:26 -0500
-Date: Tue, 25 Feb 2014 17:05:34 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Alexander Graf <agraf@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Kay Sievers <kay@vrfy.org>,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-In-Reply-To: <20140225171528.GJ4407@cmpxchg.org>
-Message-ID: <alpine.LSU.2.11.1402251652230.979@eggly.anvils>
-References: <1393284484-27637-1-git-send-email-agraf@suse.de> <20140225171528.GJ4407@cmpxchg.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 25 Feb 2014 20:07:02 -0500
+Date: Tue, 25 Feb 2014 17:06:46 -0800
+From: tip-bot for Eugene Surovegin <tipbot@zytor.com>
+Message-ID: <tip-b6085a865762236bb84934161273cdac6dd11c2d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, surovegin@google.com, hpa@zytor.com,
+        mingo@kernel.org, keescook@chromium.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, surovegin@google.com,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20140123173120.GA25474@www.outflux.net>
+References: <20140123173120.GA25474@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, kaslr:
+  export offset in VMCOREINFO ELF notes
+Git-Commit-ID: b6085a865762236bb84934161273cdac6dd11c2d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014, Johannes Weiner wrote:
-> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
-> > Configuration of tunables and Linux virtual memory settings has traditionally
-> > happened via sysctl. Thanks to that there are well established ways to make
-> > sysctl configuration bits persistent (sysctl.conf).
-> > 
-> > KSM introduced a sysfs based configuration path which is not covered by user
-> > space persistent configuration frameworks.
-> > 
-> > In order to make life easy for sysadmins, this patch adds all access to all
-> > KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
-> > giving us a streamlined way to make KSM configuration persistent.
-> 
-> ksm can be a module, so this won't work.
+Commit-ID:  b6085a865762236bb84934161273cdac6dd11c2d
+Gitweb:     http://git.kernel.org/tip/b6085a865762236bb84934161273cdac6dd11c2d
+Author:     Eugene Surovegin <surovegin@google.com>
+AuthorDate: Thu, 23 Jan 2014 09:31:20 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 25 Feb 2014 16:57:47 -0800
 
-That's news to me.  Are you writing of some Red Hat patches, or just
-misled by the "module_init(ksm_init)" which used the last line of ksm.c?
+x86, kaslr: export offset in VMCOREINFO ELF notes
 
-I don't mind Alex's patch, but I do think the same should be done for
-THP as for KSM, and a general solution more attractive than more #ifdefs
-one by one.  Should a general solution just be in userspace, in sysctl(8)?
+Include kASLR offset in VMCOREINFO ELF notes to assist in debugging.
 
-Hugh
+[ hpa: pushing this for v3.14 to avoid having a kernel version with
+  kASLR where we can't debug output. ]
+
+Signed-off-by: Eugene Surovegin <surovegin@google.com>
+Link: http://lkml.kernel.org/r/20140123173120.GA25474@www.outflux.net
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/machine_kexec_64.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 4eabc16..679cef0 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -279,5 +279,7 @@ void arch_crash_save_vmcoreinfo(void)
+ 	VMCOREINFO_SYMBOL(node_data);
+ 	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
+ #endif
++	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
++			      (unsigned long)&_text - __START_KERNEL);
+ }
+ 
