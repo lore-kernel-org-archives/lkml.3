@@ -1,314 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaBZPGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:06:34 -0500
-Received: from relay.parallels.com ([195.214.232.42]:59746 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880AbaBZPFm (ORCPT
+	id S1753107AbaBZPG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:06:56 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:53748 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079AbaBZPGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:05:42 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH -mm 07/12] memcg: rework slab charging
-Date: Wed, 26 Feb 2014 19:05:12 +0400
-Message-ID: <bf7c4f6e88169690d57f2e8b6c1a9ae1f09f0fcd.1393423762.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1393423762.git.vdavydov@parallels.com>
-References: <cover.1393423762.git.vdavydov@parallels.com>
+	Wed, 26 Feb 2014 10:06:53 -0500
+Message-ID: <530E0306.7020601@de.ibm.com>
+Date: Wed, 26 Feb 2014 16:06:46 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Oleg Nesterov <oleg@redhat.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
+        riel@redhat.com, peterz@infradead.org, pbonzini@redhat.com,
+        mingo@kernel.org, mgorman@suse.de, kirill.shutemov@linux.intel.com,
+        heiko.carstens@de.ibm.com, hannes@cmpxchg.org,
+        gerald.schaefer@de.ibm.com, ebiederm@xmission.com, aarcange@redhat.com,
+        athorlton@sgi.com
+Subject: Re: +	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+ added	to -mm tree
+References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com>
+In-Reply-To: <20140226145025.GA12571@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022615-3548-0000-0000-0000083893C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kmemcg charging is embedded to the alloc_pages path - if we
-get there with the GFP_KMEMCG bit set, we charge the new page to the
-cgroup of the caller. All per-memcg caches have this bit set in
-allocflags so kmalloc and friends are properly charged.
+On 26/02/14 15:50, Oleg Nesterov wrote:
+[...]
 
-So, what's wrong with it, why should it be reworked?
+>> NAK.
+>>
+>> Since 2012 qemu does call "qemu_madvise(new_block->host, size, QEMU_MADV_HUGEPAGE);" for all kvm pages.
+>> (commit ad0b5321f1f797274603ebbe20108b0750baee94 Call MADV_HUGEPAGE for guest RAM allocations) so this
+>> breaks any recent kvm guest on s390.
+> 
+> Well, I can't really discuss the changes in arch/s390.
+> 
+> But perhaps qemu can be changed to avoid MADV_HUGEPAGE on s390 ?
+> Otherwise I'd suggest the change below.
+> 
+> Oleg.
+> 
+> 
+> --- x/mm/huge_memory.c
+> +++ x/mm/huge_memory.c
+> @@ -1968,8 +1968,6 @@ out:
+>  int hugepage_madvise(struct vm_area_struct *vma,
+>  		     unsigned long *vm_flags, int advice)
+>  {
+> -	struct mm_struct *mm = vma->vm_mm;
+> -
+>  	switch (advice) {
+>  	case MADV_HUGEPAGE:
+>  		/*
+> @@ -1977,8 +1975,16 @@ int hugepage_madvise(struct vm_area_stru
+>  		 */
+>  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+>  			return -EINVAL;
+> -		if (mm->def_flags & VM_NOHUGEPAGE)
+> +
+> +/*
+> + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
+> + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
+> + */
+> +#ifdef CONFIG_S390
+> +		if (vma->vm_mm->def_flags & VM_NOHUGEPAGE)
+>  			return -EINVAL;
+> +#endif
+> +
 
-First, we do some extra work due to this design. We get memcg from mm,
-but we already know the cache we are allocating a page for, why not
-simply get it from there? We remember the memcg a page is charged to in
-a page_cgroup in order to properly uncharge it, but again each kmem slab
-holds a reference to its kmem cache in page->slab_cache so we could use
-that instead.
+Ifdefs are ugly but might be the only way of not breaking existing userspace.
+If we come up with a solution for THP in KVM host processes on s390, we can
+then remove that wart. We could even limit that hack to KVM only processes
+to retain Alex' prctl capability by checking mm_has_pgste (defined in
+arch/s390/include/asm/pgtable.h should be included via linux/mm.h)
 
-Second, it's racy. If a task changes its cgroup between selecting a
-cache to allocate from (memcg_kmem_get_cache) and charging, an object
-allocated from one cgroup's cache will be accounted to another cgroup.
+> +
+> +/*
+> + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
+> + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
+> + */
+> +#ifdef CONFIG_S390
+> +		if ((vma->vm_mm->def_flags & VM_NOHUGEPAGE) && mm_has_pgste(vma->vm_mm))
+>  			return -EINVAL;
+> +#endif
+> +
 
-And the last, but not least, we don't have a reliable way to track all
-kmem pages accounted to a particular memcg, which makes reparenting
-impossible. As a result, each memcg cache holds a reference to its memcg
-until death, which is bad.
-
-Since we have only a couple of places where we should actually charge
-kmem pages, why not just insert kmemcg charge/uncharge there passing on
-the slab we are allocating from instead of introdudingh into the generic
-allocation path. That's what this patch does.
-
-Note, it does not remove the old code - it will be handled further.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>
----
- include/linux/memcontrol.h |   44 +++++++++++++++++++++++++++++---------------
- mm/memcontrol.c            |   15 +++++++++++++++
- mm/slab.c                  |    9 +++++++--
- mm/slab_common.c           |    6 +-----
- mm/slub.c                  |   30 +++++++++++++++++++++---------
- 5 files changed, 73 insertions(+), 31 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index b38b52ce59fb..3f0ff043ba94 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -496,6 +496,10 @@ void __memcg_kmem_commit_charge(struct page *page,
- 				       struct mem_cgroup *memcg, int order);
- void __memcg_kmem_uncharge_pages(struct page *page, int order);
- 
-+struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
-+int __memcg_kmem_charge_slab(struct kmem_cache *s, gfp_t gfp, int nr_pages);
-+void __memcg_kmem_uncharge_slab(struct kmem_cache *s, int nr_pages);
-+
- int memcg_cache_id(struct mem_cgroup *memcg);
- 
- char *memcg_create_cache_name(struct mem_cgroup *memcg,
-@@ -509,9 +513,6 @@ void memcg_unregister_cache(struct kmem_cache *s);
- int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
- void memcg_update_array_size(int num_groups);
- 
--struct kmem_cache *
--__memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
--
- void kmem_cache_destroy_memcg_children(struct kmem_cache *s);
- 
- /**
-@@ -587,18 +588,6 @@ memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-  * memcg_kmem_get_cache: selects the correct per-memcg cache for allocation
-  * @cachep: the original global kmem cache
-  * @gfp: allocation flags.
-- *
-- * This function assumes that the task allocating, which determines the memcg
-- * in the page allocator, belongs to the same cgroup throughout the whole
-- * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
-- * while belonging to a cgroup, and later on changes. This is considered
-- * acceptable, and should only happen upon task migration.
-- *
-- * Before the cache is created by the memcg core, there is also a possible
-- * imbalance: the task belongs to a memcg, but the cache being allocated from
-- * is the global cache, since the child cache is not yet guaranteed to be
-- * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
-- * passed and the page allocator will not attempt any cgroup accounting.
-  */
- static __always_inline struct kmem_cache *
- memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-@@ -614,6 +603,21 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- 
- 	return __memcg_kmem_get_cache(cachep, gfp);
- }
-+
-+static __always_inline int memcg_kmem_charge_slab(struct kmem_cache *s,
-+						  gfp_t gfp, int nr_pages)
-+{
-+	if (memcg_kmem_enabled())
-+		return __memcg_kmem_charge_slab(s, gfp, nr_pages);
-+	return 0;
-+}
-+
-+static __always_inline void memcg_kmem_uncharge_slab(struct kmem_cache *s,
-+						     int nr_pages)
-+{
-+	if (memcg_kmem_enabled())
-+		__memcg_kmem_uncharge_slab(s, nr_pages);
-+}
- #else
- #define for_each_memcg_cache_index(_idx)	\
- 	for (; NULL; )
-@@ -666,6 +670,16 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
- 	return cachep;
- }
-+
-+static inline int memcg_kmem_charge_slab(struct kmem_cache *s,
-+					 gfp_t gfp, int nr_pages)
-+{
-+	return 0;
-+}
-+
-+static inline void memcg_kmem_uncharge_slab(struct kmem_cache *s, int nr_pages)
-+{
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- #endif /* _LINUX_MEMCONTROL_H */
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6af3c062dfb1..d60080812060 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3057,6 +3057,21 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
- 		css_put(&memcg->css);
- }
- 
-+int __memcg_kmem_charge_slab(struct kmem_cache *s, gfp_t gfp, int nr_pages)
-+{
-+	if (is_root_cache(s))
-+		return 0;
-+	return memcg_charge_kmem(s->memcg_params->memcg,
-+				 gfp, nr_pages << PAGE_SHIFT);
-+}
-+
-+void __memcg_kmem_uncharge_slab(struct kmem_cache *s, int nr_pages)
-+{
-+	if (is_root_cache(s))
-+		return;
-+	memcg_uncharge_kmem(s->memcg_params->memcg, nr_pages << PAGE_SHIFT);
-+}
-+
- /*
-  * helper for acessing a memcg's index. It will be used as an index in the
-  * child cache array in kmem_cache, and also to derive its name. This function
-diff --git a/mm/slab.c b/mm/slab.c
-index eae95847cdef..ef372599eb8b 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1664,10 +1664,15 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
- 		flags |= __GFP_RECLAIMABLE;
- 
-+	nr_pages = (1 << cachep->gfporder);
-+	if (memcg_kmem_charge_slab(cachep, flags, nr_pages))
-+		return NULL;
-+
- 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
- 	if (!page) {
- 		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
- 			slab_out_of_memory(cachep, flags, nodeid);
-+		memcg_kmem_uncharge_slab(cachep, nr_pages);
- 		return NULL;
- 	}
- 
-@@ -1675,7 +1680,6 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
- 	if (unlikely(page->pfmemalloc))
- 		pfmemalloc_active = true;
- 
--	nr_pages = (1 << cachep->gfporder);
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
- 		add_zone_page_state(page_zone(page),
- 			NR_SLAB_RECLAIMABLE, nr_pages);
-@@ -1724,7 +1728,8 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
- 	memcg_release_pages(cachep, cachep->gfporder);
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += nr_freed;
--	__free_memcg_kmem_pages(page, cachep->gfporder);
-+	memcg_kmem_uncharge_slab(cachep, nr_freed);
-+	__free_pages(page, cachep->gfporder);
- }
- 
- static void kmem_rcu_free(struct rcu_head *head)
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 48e472894511..22e48d000b1d 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -290,12 +290,8 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
- 				 root_cache->size, root_cache->align,
- 				 root_cache->flags, root_cache->ctor,
- 				 memcg, root_cache);
--	if (IS_ERR(s)) {
-+	if (IS_ERR(s))
- 		kfree(cache_name);
--		goto out_unlock;
--	}
--
--	s->allocflags |= __GFP_KMEMCG;
- 
- out_unlock:
- 	mutex_unlock(&slab_mutex);
-diff --git a/mm/slub.c b/mm/slub.c
-index 52864a6cb681..fa995823de60 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1328,8 +1328,9 @@ static inline struct page *alloc_slab_page(gfp_t flags, int node,
- 
- static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- {
--	struct page *page;
-+	struct page *page = NULL;
- 	struct kmem_cache_order_objects oo = s->oo;
-+	int pages = 1 << oo_order(oo);
- 	gfp_t alloc_gfp;
- 
- 	flags &= gfp_allowed_mask;
-@@ -1345,23 +1346,33 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 	 */
- 	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
- 
-+	if (memcg_kmem_charge_slab(s, alloc_gfp, pages))
-+		goto out;
-+
- 	page = alloc_slab_page(alloc_gfp, node, oo);
- 	if (unlikely(!page)) {
-+		int charged = pages;
-+
- 		oo = s->min;
-+		pages = 1 << oo_order(oo);
- 		/*
- 		 * Allocation may have failed due to fragmentation.
- 		 * Try a lower order alloc if possible
- 		 */
- 		page = alloc_slab_page(flags, node, oo);
-+		if (!page) {
-+			memcg_kmem_uncharge_slab(s, charged);
-+			goto out;
-+		}
- 
--		if (page)
--			stat(s, ORDER_FALLBACK);
--	}
-+		VM_BUG_ON(charged <= pages);
-+		memcg_kmem_uncharge_slab(s, charged - pages);
- 
--	if (kmemcheck_enabled && page
--		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
--		int pages = 1 << oo_order(oo);
-+		stat(s, ORDER_FALLBACK);
-+	}
- 
-+	if (kmemcheck_enabled &&
-+	    !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
- 		kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
- 
- 		/*
-@@ -1373,7 +1384,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- 		else
- 			kmemcheck_mark_unallocated_pages(page, pages);
- 	}
--
-+out:
- 	if (flags & __GFP_WAIT)
- 		local_irq_disable();
- 	if (!page)
-@@ -1468,7 +1479,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
- 	page_mapcount_reset(page);
- 	if (current->reclaim_state)
- 		current->reclaim_state->reclaimed_slab += pages;
--	__free_memcg_kmem_pages(page, order);
-+	memcg_kmem_uncharge_slab(s, pages);
-+	__free_pages(page, order);
- }
- 
- #define need_reserve_slab_rcu						\
--- 
-1.7.10.4
 
