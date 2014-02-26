@@ -1,225 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaBZWtf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:49:35 -0500
-Received: from ring0.de ([5.45.105.125]:54478 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891AbaBZWtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:49:32 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Wed, 26 Feb 2014 23:49:25 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv1 5/6] HSI: Introduce OMAP SSI driver
-Message-ID: <20140226224924.GA12143@earth.universe>
-References: <1393199401-27197-1-git-send-email-sre@debian.org>
- <1393199401-27197-6-git-send-email-sre@debian.org>
- <20140224155132.GK28555@e106331-lin.cambridge.arm.com>
+	id S1752396AbaBZW6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:58:20 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52636 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751761AbaBZW6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 17:58:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of suspended devices
+Date: Thu, 27 Feb 2014 00:13:19 +0100
+Message-ID: <4633671.dBN1DXCk1F@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1402261708030.1308-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1402261708030.1308-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
-Content-Disposition: inline
-In-Reply-To: <20140224155132.GK28555@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, February 26, 2014 05:17:03 PM Alan Stern wrote:
+> On Wed, 26 Feb 2014, Rafael J. Wysocki wrote:
+> 
+> > > > Still, I think that something like power.fast_suspend is needed to indicate
+> > > > that .suspend_late(), .suspend_noirq(), .resume_noirq() and .resume_early()
+> > > > should be skipped for it (in my opinion the core may very well skip them then)
+> > > > and so that .resume() knows how to handle the device.
+> > > 
+> > > I don't follow.  Why would you skip these routines without also
+> > > skipping .suspend and .resume?
+> > 
+> > Because .suspend will set the flag and then it would be reasonable to call .resume,
+> > for symmetry and to let it decide what to do (e.g. call pm_runtime_resume(dev) or
+> > do something else, depending on the subsystem).
+> 
+> In the original patch, ->prepare returned the flag.  When it was set,
+> you would skip ->suspend, ->suspend_late, and ->suspend_noirq (and the
+> corresponding resume callbacks).  Did you decide to change this?
 
---gBBFr7Ir9EOA20Yy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, I did.
 
-Hi Mark,
+After these patches:
 
-On Mon, Feb 24, 2014 at 03:51:32PM +0000, Mark Rutland wrote:
-> > +       irq =3D platform_get_resource_byname(pd, IORESOURCE_IRQ, "gdd_m=
-pu");
-> > +       if (!irq) {
-> > +               dev_err(&pd->dev, "GDD IRQ resource missing\n");
-> > +               err =3D -ENXIO;
-> > +               goto out_err;
-> > +       }
-> > +       omap_ssi->gdd_irq =3D irq->start;
->=20
-> You can use platform_get_irq_byname here.
+https://patchwork.kernel.org/patch/3705261/
+https://patchwork.kernel.org/patch/3705271/
 
-Right. Will be changed in PATCHv2.
+the decision doesn't have to be made until ->suspend (I'm ingoring the
+power.ignore_children set special case), because that's when
+pm_runtime_resume(dev) is now called (by ACPI and PCI).
 
-> > +static inline int ssi_of_get_available_child_count(const struct device=
-_node *np)
-> > +{
-> > +       struct device_node *child;
-> > +       int num =3D 0;
-> > +
-> > +       for_each_child_of_node(np, child)
-> > +               if (of_device_is_available(child))
-> > +                       num++;
-> > +
-> > +       return num;
-> > +}
->=20
-> You can find of_get_available_child_count in <linux/of.h>.
+> > > However, the second may indeed be a problem.  I don't know how you
+> > > intend to handle it.  Apply the patch, like you did for ACPI and PCI
+> > > above, and then see what happens?
+> > 
+> > For starters, I'd just make the parent's ->resume call pm_runtime_resume(dev).
+> > That will make the parent be ready before the child's ->resume is called.
+> > And then it may be optimized further going forward, possibly by replacing
+> > the pm_runtime_resume() with pm_request_resume() for some devices and by
+> > leaving some devices in RPM_SUSPENDED.
+> 
+> Of course, this would not be possible with the original version of the 
+> patch, because it wouldn't invoke the parent's ->resume.
 
-That did not exist when I started with the DT conversion of the
-driver.
+Right.
 
-> That said, this seems to be trying to count the number of ports,
-> which should all be compatible with "ti,omap3-ssi-port", no?
->=20
-> So maybe you should count all available child nodes compatible with
-> that.
+> > > A simple solution is to use fast_suspend only for devices that have no
+> > > children.  But that would not be optimal.
+> > > 
+> > > Another possibility is always to call pm_runtime_resume(dev->parent)
+> > > before invoking dev's ->resume callback.  But that might not solve the
+> > > entire problem (it wouldn't help dev's ->resume_early callback, for
+> > > instance) and it also might be sub-optimal.
+> > 
+> > The child's ->resume_early may be a problem indeed (or its ->resume_noirq
+> > for that matter).
+> 
+> If the child knows about the problem beforehand, it can runtime-resume 
+> the parent during its ->suspend.
 
-I updated the function to check the compatible string
-and use for_each_available_child_of_node(), which has
-also been added after I wrote this function.
+Well, it even should do that in those cases.  We may need to deal with children
+that don't do that, though.
 
-> > +static int __init ssi_probe(struct platform_device *pd)
-> > +{
-> > +       struct device_node *np =3D pd->dev.of_node;
-> > +       struct hsi_controller *ssi;
-> > +       int err;
-> > +       int num_ports;
-> > +
-> > +       if (!np) {
-> > +               dev_err(&pd->dev, "missing device tree data\n");
-> > +               return -EINVAL;
-> > +       }
-> > +
-> > +       num_ports =3D ssi_of_get_available_child_count(np);
-> > +
-> > +       ssi =3D hsi_alloc_controller(num_ports, GFP_KERNEL);
-> > +       if (!ssi) {
-> > +               dev_err(&pd->dev, "No memory for controller\n");
-> > +               return -ENOMEM;
-> > +       }
-> > +
-> > +       platform_set_drvdata(pd, ssi);
-> > +
-> > +       err =3D ssi_add_controller(ssi, pd);
-> > +       if (err < 0)
-> > +               goto out1;
-> > +
-> > +       pm_runtime_irq_safe(&pd->dev);
-> > +       pm_runtime_enable(&pd->dev);
-> > +
-> > +       err =3D ssi_hw_init(ssi);
-> > +       if (err < 0)
-> > +               goto out2;
-> > +#ifdef CONFIG_DEBUG_FS
-> > +       err =3D ssi_debug_add_ctrl(ssi);
-> > +       if (err < 0)
-> > +               goto out2;
-> > +#endif
-> > +
-> > +       err =3D of_platform_populate(pd->dev.of_node, NULL, NULL, &pd->=
-dev);
->=20
-> I'm not keen on doing this because it allows arbitrary devices which are
-> not ssi ports to be placed in the ssi host controller node that will be
-> probed, which is nonsensical and something I'd like to avoid by
-> construction.
->=20
-> Is there any reason the ports have to be platform devices at all?
+> > Well, if power.fast_suspend set guarantees that ->suspend_late, ->suspend_noirq,
+> > ->resume_noirq, and ->resume_early will be skipped for a device, then we may
+> > restrict setting it for devices whose children have it set (or that have no
+> > children).  Initially, that will be equivalent to setting it for leaf devices
+> > only, but it might be extended over time in a natural way.
+> 
+> Initially, maybe.
 
-not strictly, but I get system resources via platform_get_resource_byname.
+Of course initially.
 
-> If so, is there no way we can register them directly and skip any other
-> devices?
+> But it's the wrong approach in general.
 
-I set the second parameter (matches) of the of_platform_populate()
-call to a table containing the ssi-port compatible value.
+In the long run - I agree.
 
-> > +static int __exit ssi_remove(struct platform_device *pd)
-> > +{
-> > +       struct hsi_controller *ssi =3D platform_get_drvdata(pd);
-> > +
-> > +#ifdef CONFIG_DEBUG_FS
-> > +       ssi_debug_remove_ctrl(ssi);
-> > +#endif
-> > +       ssi_remove_controller(ssi);
-> > +       platform_set_drvdata(pd, NULL);
-> > +
-> > +       pm_runtime_disable(&pd->dev);
-> > +
-> > +       /* cleanup of of_platform_populate() call */
-> > +       device_for_each_child(&pd->dev, NULL, ssi_remove_ports);
->=20
-> This would certainly be broken for a non ssi port device.
+> The right approach is to restrict setting fast_suspend for devices whose
+> children don't mind their parent being suspended when their resume callbacks 
+> run -- not for devices whose children also have fast_suspend set.
 
-I never intended to support other subdevices, but this only
-unregisters each subdevice, so its probably safe...
+I agree, but we need to know which children are OK with the parent being
+suspended.  Having fast_suspend set is a good indication of that. :-)
 
-> > +static int omap_ssi_port_runtime_suspend(struct device *dev)
-> > +{
-> > +       struct hsi_port *port =3D dev_get_drvdata(dev);
-> > +       struct omap_ssi_port *omap_port =3D hsi_port_drvdata(port);
-> > +       struct hsi_controller *ssi =3D to_hsi_controller(port->device.p=
-arent);
-> > +       struct omap_ssi_controller *omap_ssi =3D hsi_controller_drvdata=
-(ssi);
-> > +
-> > +       dev_dbg(dev, "port runtime suspend!\n");
-> > +
-> > +       ssi_set_port_mode(omap_port, SSI_MODE_SLEEP);
-> > +       if (omap_ssi->get_loss)
-> > +               omap_port->loss_count =3D
-> > +                               (*omap_ssi->get_loss)(ssi->device.paren=
-t);
->=20
-> You don't need to do (*struct->func)(args) when invoking a function
-> pointer. You can jsut have struct->func(args) as we do elsewhere. This
-> can be:
->=20
->   omap_ssi->get_loss(ssi->device.parent)
->=20
-> This should be fixed up in the other sites too.
+Of course, we may introduce a separate flag for that just fine if you prefer.
 
-Thanks, fixed everywhere.
+> That's the point I've been trying to express all along.
 
--- Sebastian
+I see.
 
---gBBFr7Ir9EOA20Yy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Rafael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTDm90AAoJENju1/PIO/qakjEP/0RIP3Q6tS1dkrokytDsBPjf
-cJ4VtbxzzhITCfkt34L2fNw3xQthJfzJTRvJcxEjstO/FTLoOp4soBawPD6iMWJr
-D7FtDmEX0+uKvFs/XYPZwP5qjBXvKX5aL2wOv2DMXI+oNs3iTGL8jswvT5SK8q66
-Ge1jg9HkB/Z6Cnc3xv0Y9CAbjPjXiO0gsDn/dznEgyxPiGB4xNf89kKWAgwjMKSn
-BhRVhJnBXSOC10UyfFD+QsmyZ15OFHl8Nx9HbIn/ap5vF6/YZKVi7IeNCaAXcOCd
-XIQZbBBMNeVw7RaKnI2AeRTDp7oKUdmXlqjsm6VDVMJIFsG8ucFdhOPvF7YsfJZ3
-42YHq8LT5WyFngrqZqQEM5B3DVxIVrVSwq2nMPZnLHNk6zswaGHpDMwmMam6xqfj
-5Bn8aqqw0LV4tYsGjTUxkksAYrnaT9L0MDiH9bKpx23krgdhprk24LaEd4z2zhK9
-RZNRgv2RdCsnEhfQmU9VKjg71R2lXi1SM2AjwN7ntR3gkcAlhO2gNK0+d2+1ApO8
-XqCfzI+oqvjrnagXJs+mUmOftNquNKKgBfruzVde6z+ocdRWAcH86wk4R2RuwAc5
-BtqEx08qk7ZplGfGmi3ivtl104g1bB8zeYdALYssmb0Wlmxl17hfMqRHEdvLSJWL
-rLIsDdpY5DZWRn9Lia89
-=fPlW
------END PGP SIGNATURE-----
-
---gBBFr7Ir9EOA20Yy--
