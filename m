@@ -1,76 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaBZNJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:09:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaBZNJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:09:54 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Matz <matz@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
-References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
-	 <20140220083032.GN4250@linux.vnet.ibm.com>
-	 <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	 <20140220181116.GT4250@linux.vnet.ibm.com>
-	 <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	 <20140220185608.GX4250@linux.vnet.ibm.com>
-	 <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
-	 <20140220221027.GC4250@linux.vnet.ibm.com>
-	 <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
-	 <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
-	 <20140221191318.GK4250@linux.vnet.ibm.com>
-	 <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Feb 2014 14:09:17 +0100
-Message-ID: <1393420157.28840.8691.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752559AbaBZNLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:11:16 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:43754 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaBZNLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:11:14 -0500
+Date: Wed, 26 Feb 2014 14:11:11 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alison Wang <b18965@freescale.com>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: Re: [PATCHv9 Resend 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20140226131109.GA29779@ulmo.nvidia.com>
+References: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392799137-17188-2-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <1392799137-17188-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-21 at 22:10 +0000, Joseph S. Myers wrote:
-> On Fri, 21 Feb 2014, Paul E. McKenney wrote:
-> 
-> > This needs to be as follows:
-> > 
-> > [[carries_dependency]] int getzero(int i [[carries_dependency]])
-> > {
-> > 	return i - i;
-> > }
-> > 
-> > Otherwise dependencies won't get carried through it.
-> 
-> C11 doesn't have attributes at all (and no specification regarding calls 
-> and dependencies that I can see).  And the way I read the C++11 
-> specification of carries_dependency is that specifying carries_dependency 
-> is purely about increasing optimization of the caller: that if it isn't 
-> specified, then the caller doesn't know what dependencies might be 
-> carried.  "Note: The carries_dependency attribute does not change the 
-> meaning of the program, but may result in generation of more efficient 
-> code. - end note".
 
-I think that this last sentence can be kind of misleading, especially
-when looking at it from an implementation point of view.  How
-dependencies are handled (ie, preserving the syntactic dependencies vs.
-emitting barriers) must be part of the ABI, or things like
-[[carries_dependency]] won't work as expected (or lead to inefficient
-code).  Thus, in practice, all compiler vendors on a platform would have
-to agree to a particular handling, which might end up in selecting the
-easy-but-conservative implementation option (ie, always emitting
-mo_acquire when the source uses mo_consume).
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+Hi,
+
+Sorry for taking so long to get back to you. Things have been quite busy
+lately. A few more comments below, but we're getting there.
+
+On Wed, Feb 19, 2014 at 04:38:54PM +0800, Xiubo Li wrote:
+[...]
+> diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
+[...]
+> +static unsigned long fsl_pwm_calculate_period(struct fsl_pwm_chip *fpc,
+> +					      unsigned long period_ns)
+> +{
+> +	struct clk *cnt_clk[3];
+> +	enum fsl_pwm_clk m0, m1;
+> +	unsigned long fix_rate, ext_rate, cycles;
+> +
+> +	fpc->counter_clk = fpc->sys_clk;
+> +	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns,
+> +			FSL_PWM_CLK_SYS);
+> +	if (cycles)
+> +		return cycles;
+> +
+> +	cnt_clk[FSL_PWM_CLK_FIX] = devm_clk_get(fpc->chip.dev, "ftm_fix");
+> +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_FIX]))
+> +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_FIX]);
+> +
+> +	cnt_clk[FSL_PWM_CLK_EXT] = devm_clk_get(fpc->chip.dev, "ftm_ext");
+> +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_EXT]))
+> +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_EXT]);
+> +
+> +	fpc->counter_clk_en = devm_clk_get(fpc->chip.dev, "ftm_cnt_clk_en");
+> +	if (IS_ERR(fpc->counter_clk_en))
+> +		return PTR_ERR(fpc->counter_clk_en);
+
+You shouldn't do this. You're obtaining a reference to each of these
+clocks whenever pwm_config() is called. And devres will only clean those
+up after the driver is unbound. Can't you simply keep a reference to
+these within struct fsl_pwm_chip?
+
+> +static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+> +{
+> +	u32 val;
+> +	int ret;
+> +
+> +	if (fpc->counter_clk_enable++)
+
+This function is always called with the fpc->lock held, so you could
+make this much easier by incrementing the .counter_clk_enable field only
+at the very end of the function. That way...
+
+> +		return 0;
+> +
+> +	ret = clk_prepare_enable(fpc->counter_clk);
+> +	if (ret) {
+> +		fpc->counter_clk_enable--;
+
+... this won't be necessary...
+
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_prepare_enable(fpc->counter_clk_en);
+> +	if (ret) {
+> +		fpc->counter_clk_enable--;
+
+... and neither will this.
+
+> +static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val;
+> +	int ret;
+> +
+> +	val = readl(fpc->base + FTM_OUTMASK);
+> +	val &= ~BIT(pwm->hwpwm);
+> +	writel(val, fpc->base + FTM_OUTMASK);
+> +
+> +	mutex_lock(&fpc->lock);
+
+I think you want to extend the lock to cover the FTM_OUTMASK register
+access as well because there could be a race between pwm_enable() and
+pwm_disable().
+
+> +	ret = fsl_counter_clock_enable(fpc);
+> +	mutex_unlock(&fpc->lock);
+> +
+> +	return ret;
+> +}
+
+Can this function be moved somewhere else so fsl_counter_clock_enable()
+and fsl_counter_clock_disable() are grouped together?
+
+> +static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
+> +{
+> +	u32 val;
+> +
+> +	if (--fpc->counter_clk_enable)
+> +		return;
+
+This is going to break. Consider the case where you call pwm_disable()
+on a PWM device and fpc->counter_clk_enable == 1. In that case, this
+will decrement counter_clk_enable to 0 and proceed with the remainder of
+this function.
+
+Now you call pwm_disable() again. The above will decrement again and
+cause fpc->counter_clk_enable to wrap around to UINT_MAX.
+
+So I think a more correct implementation would be:
+
+	/*
+	 * already disabled, do nothing (perhaps output warning message
+	 * to catch unbalanced calls? )
+	 */
+	if (fpc->counter_clk_enable == 0)
+		return;
+
+	/* there are still users, so can't disable yet */
+	if (--fpc->counter_clk_enable > 0)
+		return;
+
+	/* no users left, disable clock */
+
+> +static void fsl_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> +	u32 val;
+> +
+> +	val = readl(fpc->base + FTM_OUTMASK);
+> +	val |= BIT(pwm->hwpwm);
+> +	writel(val, fpc->base + FTM_OUTMASK);
+> +
+> +	mutex_lock(&fpc->lock);
+
+This lock should also include the access to FTM_OUTMASK above.
+
+> +static int fsl_pwm_probe(struct platform_device *pdev)
+> +{
+[...]
+> +	fpc->sys_clk = devm_clk_get(&pdev->dev, "ftm_sys");
+> +	if (IS_ERR(fpc->sys_clk)) {
+> +		dev_err(&pdev->dev,
+> +				"failed to get \"ftm_sys\" clock\n");
+
+The above easily fits on a single line, no need for the wrapping.
+
+> +		return PTR_ERR(fpc->sys_clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(fpc->sys_clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	writel(0x00, fpc->base + FTM_CNTIN);
+> +	writel(0x00, fpc->base + FTM_OUTINIT);
+> +	writel(0xFF, fpc->base + FTM_OUTMASK);
+> +	clk_disable_unprepare(fpc->sys_clk);
+
+This looks out of place somehow, perhaps it should be moved off into a
+separate function? fsl_pwm_init() perhaps.
+
+Thierry
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTDeftAAoJEN0jrNd/PrOh6x4P/3tRxYP+9Ny2cp7q4GmmULZO
+usUiyphxWx8cka6+r/WwiK/nMPnkdxQna8JruMyh6TAMGBCIldBqUnOBih4VANaU
+PpcXKF4Zxs157n5i30VqAKRveJNnWi2a+sRJcssT9mXaUryHDIecsjr9uOWTzMqc
+uXy9lBS3qIU8TvLO3tzVMj4g49FBRiPGPmwMGOh5Zo7C8o+C4q7MJfAsys0L4/m4
+0QjevaIebw5NGxFpMGjCw7Fc6yY6Tm4C5RnE4GcBCwC+wveF6FueHW/nsJXZEiYD
+ojcHmxKWeY7wC0su7AEL08gz0ybonuYBSRoOFVfo1H4qt6znv/Ig2JxCu7rOH3+9
+M0nWqVG5LmqFQ+zC17G1vXD9d18+eV5fERS/bGLM72jkr2WO7bsUMh82W/e4+Opy
+0vTG93gqy8TAF7RESf7VT6BCMcYjUixJY5ppnmjHsAMunv9bcvDiR7vEFFpfXcZe
+orh5rwh+SWlDxHwTTTyvJBUwpb6+6tMVVl+rog7HCuvKn/NaTRYGKvp69ERHRwoN
+MgDq2vEzKQ0fx8diS1qwHuryGKK4lpVkaWrMVhTxL6tsyKR+wNaEOAwZP9pc60bl
+R6rUZtGQCj/dezhqU9jFRLCOX/QFxmOIxXGZdpqaLTrgOJlSz4lfB13PXwUyDdgW
+1Ux78LoaUBFwHE8MshW1
+=AYPX
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
