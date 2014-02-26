@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaBZQNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:13:37 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:40500 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaBZQNf convert rfc822-to-8bit (ORCPT
+	id S1752544AbaBZQPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:15:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:33796 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751078AbaBZQPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:13:35 -0500
-X-Originating-IP: 50.43.14.201
-Date: Wed, 26 Feb 2014 08:13:26 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] drivers: cpufreq: Remove unused function in cpufreq.c
-Message-ID: <20140226161325.GA17358@thin>
-References: <20140226154625.GA10701@rashika>
+	Wed, 26 Feb 2014 11:15:44 -0500
+Date: Wed, 26 Feb 2014 11:15:42 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] tracing: Warn and notify if tracepoints are not
+ loaded due to module taint
+Message-ID: <20140226111542.15657cd6@gandalf.local.home>
+In-Reply-To: <192956891.30659.1393418892222.JavaMail.zimbra@efficios.com>
+References: <20140225191505.32b56105@gandalf.local.home>
+	<188130295.30493.1393375141631.JavaMail.zimbra@efficios.com>
+	<20140225194926.4eac5872@gandalf.local.home>
+	<20140226085926.GF18404@twins.programming.kicks-ass.net>
+	<192956891.30659.1393418892222.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140226154625.GA10701@rashika>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 09:16:25PM +0530, Rashika Kheria wrote:
-> Remove unused function show_boost() in drivers/cpufreq/cpufreq.c.
-> 
-> This eliminates the following warning in drivers/cpufreq/cpufreq.c:
-> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for ‘show_boost’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On Wed, 26 Feb 2014 12:48:12 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > How about instead of a WARN, you use a normal KERN_ERR printk(). There's
+> > no point to the entire WARN state dump, that's needlessly verbose.
+> > 
+> > When you have a normal error print you can have as many as are required
+> > and put the mod name back in.
+> 
+> The good old printk KERN_ERR is a very good idea. I agree that WARN() is
+> too verbose for our needs here.
 
->  drivers/cpufreq/cpufreq.c |    6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 08ca8c9..6dce474 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -352,12 +352,6 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
->   *********************************************************************/
-> -ssize_t show_boost(struct kobject *kobj,
-> -				 struct attribute *attr, char *buf)
-> -{
-> -	return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
-> -}
-> -
->  static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
->  				  const char *buf, size_t count)
->  {
-> -- 
-> 1.7.9.5
-> 
+Actually, it's not so bad for the WARN() after my last patch to only
+allocate (or even process tracepoints) if mod->num_tracepionts is
+greater than zero. I didn't realize you were wasting memory for all
+modules that were loaded.
+
+My fear with the KERN_ERR is that it wont be noticeable enough. Where
+as a stack dump is something that will catch people's attention.
+
+And as Rusty has said, if you are loading a module that is forced, or
+something strange, it is broken. The failure of loading the tracepoints
+of a module is a bug if the module happens to have tracepoints.
+
+After the MOD_SIG fix, any failure should be a big banner bug. Either
+they are using a forced module with tracepoints that should not be
+loaded. Or they have tracepoints is a non-GPL module (which is also a
+big no-no).
+
+-- Steve
