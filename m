@@ -1,120 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaBZW6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:58:20 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52636 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751761AbaBZW6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:58:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of suspended devices
-Date: Thu, 27 Feb 2014 00:13:19 +0100
-Message-ID: <4633671.dBN1DXCk1F@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1402261708030.1308-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1402261708030.1308-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753088AbaBZXAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:00:35 -0500
+Received: from ozlabs.org ([203.10.76.45]:46991 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445AbaBZXAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 18:00:34 -0500
+Date: Thu, 27 Feb 2014 10:00:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (akpm-current tree related)
+Message-Id: <20140227100026.1cc909f2722b16b6d11a7b91@canb.auug.org.au>
+In-Reply-To: <20140226100234.GA23064@thin>
+References: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
+	<20140226100234.GA23064@thin>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Feb_2014_10_00_26_+1100_q83SYf+8Ri_LR0g0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 26, 2014 05:17:03 PM Alan Stern wrote:
-> On Wed, 26 Feb 2014, Rafael J. Wysocki wrote:
-> 
-> > > > Still, I think that something like power.fast_suspend is needed to indicate
-> > > > that .suspend_late(), .suspend_noirq(), .resume_noirq() and .resume_early()
-> > > > should be skipped for it (in my opinion the core may very well skip them then)
-> > > > and so that .resume() knows how to handle the device.
-> > > 
-> > > I don't follow.  Why would you skip these routines without also
-> > > skipping .suspend and .resume?
-> > 
-> > Because .suspend will set the flag and then it would be reasonable to call .resume,
-> > for symmetry and to let it decide what to do (e.g. call pm_runtime_resume(dev) or
-> > do something else, depending on the subsystem).
-> 
-> In the original patch, ->prepare returned the flag.  When it was set,
-> you would skip ->suspend, ->suspend_late, and ->suspend_noirq (and the
-> corresponding resume callbacks).  Did you decide to change this?
+--Signature=_Thu__27_Feb_2014_10_00_26_+1100_q83SYf+8Ri_LR0g0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I did.
+Hi Josh,
 
-After these patches:
+On Wed, 26 Feb 2014 02:02:34 -0800 Josh Triplett <josh@joshtriplett.org> wr=
+ote:
+>
+> On Wed, Feb 26, 2014 at 07:16:27PM +1100, Stephen Rothwell wrote:
+> >=20
+> > After merging the final tree, today's linux-next build (powerpc64
+> > allnoconfig) failed like this:
+> >=20
+> > arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event=
+':
+> > (.text+0x11260): undefined reference to `.irq_work_queue'
+> >=20
+> > Caused (or exposed) (along with a lot of warnings) by commit 3dd6115cd6=
+0b
+> > ("kconfig: make allnoconfig disable options behind EMBEDDED and EXPERT")
+> > from the apm-current tree.
+>=20
+> Pre-existing, just now triggerable with just "make allnoconfig" rather
+> than manually turning off other options (like PRINTK) that select
+> IRQ_WORK.  (One of the goals of that commit: get those options more
+> widely used and build-tested.)
+>=20
+> The following (untested) patch *should* fix this:
+> ----- 8< -----
+> From 36a5b6c87292b6c5eeb390ed6dc6acbb8f0a3767 Mon Sep 17 00:00:00 2001
+> From: Josh Triplett <josh@joshtriplett.org>
+> Date: Wed, 26 Feb 2014 01:58:02 -0800
+> Subject: [PATCH] ppc: Make PPC_BOOK3S_64 select IRQ_WORK
 
-https://patchwork.kernel.org/patch/3705261/
-https://patchwork.kernel.org/patch/3705271/
+OK, I added this as a merge fix patch for Andrew's tree today.  Please
+check the build results overnight tonight (for next-20140227 at
+http://kisskb.ellerman.id.au/linux-next) and submit any more fixes for
+the allnoconfig build errors.
 
-the decision doesn't have to be made until ->suspend (I'm ingoring the
-power.ignore_children set special case), because that's when
-pm_runtime_resume(dev) is now called (by ACPI and PCI).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> > > However, the second may indeed be a problem.  I don't know how you
-> > > intend to handle it.  Apply the patch, like you did for ACPI and PCI
-> > > above, and then see what happens?
-> > 
-> > For starters, I'd just make the parent's ->resume call pm_runtime_resume(dev).
-> > That will make the parent be ready before the child's ->resume is called.
-> > And then it may be optimized further going forward, possibly by replacing
-> > the pm_runtime_resume() with pm_request_resume() for some devices and by
-> > leaving some devices in RPM_SUSPENDED.
-> 
-> Of course, this would not be possible with the original version of the 
-> patch, because it wouldn't invoke the parent's ->resume.
+--Signature=_Thu__27_Feb_2014_10_00_26_+1100_q83SYf+8Ri_LR0g0
+Content-Type: application/pgp-signature
 
-Right.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> > > A simple solution is to use fast_suspend only for devices that have no
-> > > children.  But that would not be optimal.
-> > > 
-> > > Another possibility is always to call pm_runtime_resume(dev->parent)
-> > > before invoking dev's ->resume callback.  But that might not solve the
-> > > entire problem (it wouldn't help dev's ->resume_early callback, for
-> > > instance) and it also might be sub-optimal.
-> > 
-> > The child's ->resume_early may be a problem indeed (or its ->resume_noirq
-> > for that matter).
-> 
-> If the child knows about the problem beforehand, it can runtime-resume 
-> the parent during its ->suspend.
+iQIcBAEBCAAGBQJTDnIOAAoJEMDTa8Ir7ZwVxLkP+QH7upg3ImmQTCAUN/7RJd1E
+JEzGZEdyiXZ9zNG3QpxMOGbWxv4TzbRAwzjB9awUjUtax9/Z4u19qfYPTyICnxp9
+9GPEoujpHiu3yX3ZG41Ivc9yGfgaCfTSUaWkFrnX870zFXNEghaZ46Lsh+Ibn0Q/
+VukeQk2je1FymnTeTOvTHSNVcs4JFJw5e3Fg7IyCTrk/7xPjoOc+2tDKhuiPaZj/
+/C7x+Eg8OPL9JXeS2xmEKQlQPpHvQawuCzfKx95vcQ+nKcPoQrQw+6YwpzsW79AS
+bXzM3dAJuAgb0RvjbPj0JdmDs0YwOOQT1rUsxKDka7kj7ygIHksr4O7wVTNhG91C
+pGdZ8je0bDNs1ifuFEclJzevlINu7GQnfE4SLnjuJqfngM+O+u9P/ay90UTMGQjv
+l20JVf0LyZKLYPAcdqggnhc0s3ciL/IYyAIHPHypFe2CqwkFHEiSzilVAORUeaOx
+58/7zuN84PV/tQHuCVo9qvPflZ6Qn6LU7lfI9+2xoQ/N8tPw+aMNppeBtuQYfBcM
+1IWsKEUGrj4hw08uuI34n9BhR0XYwJEmyPKjDm0h6JRJ0dzDQAjwg5yiaWVMZmrD
+DpH0tl+KDrFEF1ibEtnNvu+zPF2uhlEAyYAO5Codn7ZRoPpvcg4iNLoJfAR6NQBZ
+DX3TkxSmCckDkyE5aRlF
+=mk8+
+-----END PGP SIGNATURE-----
 
-Well, it even should do that in those cases.  We may need to deal with children
-that don't do that, though.
-
-> > Well, if power.fast_suspend set guarantees that ->suspend_late, ->suspend_noirq,
-> > ->resume_noirq, and ->resume_early will be skipped for a device, then we may
-> > restrict setting it for devices whose children have it set (or that have no
-> > children).  Initially, that will be equivalent to setting it for leaf devices
-> > only, but it might be extended over time in a natural way.
-> 
-> Initially, maybe.
-
-Of course initially.
-
-> But it's the wrong approach in general.
-
-In the long run - I agree.
-
-> The right approach is to restrict setting fast_suspend for devices whose
-> children don't mind their parent being suspended when their resume callbacks 
-> run -- not for devices whose children also have fast_suspend set.
-
-I agree, but we need to know which children are OK with the parent being
-suspended.  Having fast_suspend set is a good indication of that. :-)
-
-Of course, we may introduce a separate flag for that just fine if you prefer.
-
-> That's the point I've been trying to express all along.
-
-I see.
-
-Rafael
-
+--Signature=_Thu__27_Feb_2014_10_00_26_+1100_q83SYf+8Ri_LR0g0--
