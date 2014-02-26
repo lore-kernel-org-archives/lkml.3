@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003AbaBZU3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:29:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:9747 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753974AbaBZU3j convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:29:39 -0500
-Date: Wed, 26 Feb 2014 15:29:37 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
-Message-ID: <20140226152937.37b5d80e@gandalf.local.home>
-In-Reply-To: <530D4F9E.70704@jp.fujitsu.com>
-References: <8738jatylb.wl%satoru.takeuchi@gmail.com>
-	<20140224093039.6509b6cd@gandalf.local.home>
-	<530D4F9E.70704@jp.fujitsu.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753518AbaBZUco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:32:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60068 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaBZUcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 15:32:42 -0500
+Date: Wed, 26 Feb 2014 21:32:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+Message-ID: <20140226203226.GD22802@laptop.programming.kicks-ass.net>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+ <530D53EF.9090706@amacapital.net>
+ <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+ <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+ <20140226185513.GL22728@two.firstfloor.org>
+ <CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
+ <530E3E47.8010205@gmail.com>
+ <CALCETrUHiDqT+VRbdEnGsEkMFqQt+ZqX+RTenp1ets8XMhrQ2Q@mail.gmail.com>
+ <530E4B42.5090401@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530E4B42.5090401@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014 21:21:18 -0500
-MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com> wrote:
+On Wed, Feb 26, 2014 at 01:14:58PM -0700, David Ahern wrote:
+> Does WRL or Yocto fall into that 'standard distro' comment? Fairly easy to
+> enable frame-pointers.
 
-> Hmm, it seems that we need a following patch as well.
-> Or, please merge with the orignal patch.
-
-I folded this fix in, here's the final:
-
->From 62183dcac539a14ed0a820b8392db353d72a7d7e Mon Sep 17 00:00:00 2001
-From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Date: Sun, 23 Feb 2014 10:19:28 +0900
-Subject: [PATCH] ktest: Set CLOSE_CONSOLE_SIGNAL in the kvm.conf
-
-As mentioned at commit 5a5d8e48449, we can't terminate 'virsh console'
-with the default signal(INT). So it's better to set CLOSE_CONSOLE_SIGNAL
-in the kvm.conf.
-
-Link: http://lkml.kernel.org/r/8738jatylb.wl%satoru.takeuchi@gmail.com
-
-Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-[ Typo fixed by ]
-Signed-off-by: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/ktest/examples/kvm.conf | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/tools/testing/ktest/examples/kvm.conf b/tools/testing/ktest/examples/kvm.conf
-index 831c7c5..fbc134f 100644
---- a/tools/testing/ktest/examples/kvm.conf
-+++ b/tools/testing/ktest/examples/kvm.conf
-@@ -10,6 +10,10 @@ MACHINE = Guest
- # Use virsh to read the serial console of the guest
- CONSOLE =  virsh console ${MACHINE}
- 
-+# Use SIGKILL to terminate virsh console. We can't kill virsh console
-+# by the default signal, SIGINT.
-+CLOSE_CONSOLE_SIGNAL = KILL
-+
- #*************************************#
- # This part is the same as test.conf  #
- #*************************************#
--- 
-1.8.5.3
-
-
+Yeah, same for Gentoo, I always build world with frame-pointers enabled.
