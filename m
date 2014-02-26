@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaBZTMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:12:21 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:41124 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326AbaBZTLE (ORCPT
+	id S1754483AbaBZTMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:12:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55216 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326AbaBZTMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:11:04 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 0/2] hibernation support on ARM
-Date: Wed, 26 Feb 2014 11:10:55 -0800
-Message-Id: <1393441857-15472-1-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 26 Feb 2014 14:12:24 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: [PATCH] devicetree: bindings: Make msm8974-pinctrl documentation match code
+Date: Wed, 26 Feb 2014 11:12:23 -0800
+Message-Id: <1393441943-1689-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patches adding support for hibernation on ARM
- - ARM hibernation / suspend-to-disk
- - Change soft_restart to use non-tracing raw_local_irq_disable
+The compatible string doesn't have an x in it. Fix it. Also
+remove the "qcom" prefix from pins and functions as this binding
+uses the generic pinctrl bindings for the pins and functions.
 
-Patches based on v3.13 tag, verified hibernation on beaglebone black on a
-branch based on 3.13 merged with initial omap support from Russ Dill which
-can be found here (includes v1 patchset):
-http://git.linaro.org/git-ro/people/sebastian.capella/linux.git hibernation_3.13_russMerge
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ .../devicetree/bindings/pinctrl/qcom,msm8974-pinctrl.txt   | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-[PATCH v4 1/2] ARM: avoid tracers in soft_restart
- arch/arm/kernel/process.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
- Use raw_local_irq_disable in place of local_irq_disable to avoid
- infinite abort recursion while tracing. (unchanged since v3)
-
-[PATCH v4 2/2] ARM hibernation / suspend-to-disk
- arch/arm/include/asm/memory.h |    1 +
- arch/arm/kernel/Makefile      |    1 +
- arch/arm/kernel/hibernate.c   |  113 +++++++++++++++++++++++++++++++++++++++++
- arch/arm/mm/Kconfig           |    5 ++
- include/linux/suspend.h       |    2 +
- 5 files changed, 122 insertions(+)
-
- Adds support for ARM based hibernation
-
-
-Additional notes:
------------------
-
-There are two checkpatch warnings added by this patch.  These follow
-behavior in existing hibernation implementations on other platforms.
-
-    WARNING: externs should be avoided in .c files
-    #116: FILE: arch/arm/kernel/hibernate.c:26:
-    +extern const void __nosave_begin, __nosave_end;
-
-  This extern is picking up the linker nosave region definitions, only
-  used in hibernate.  Follows same extern line used mips, powerpc, s390,
-  sh, sparc, x86 & unicore32
-
-    WARNING: externs should be avoided in .c files
-    #191: FILE: arch/arm/kernel/hibernate.c:101:
-    +extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-
-  This extern is used in the arch/arm/ in hibernate, process and bL_switcher
-
-
-Changes in v4:
---------------
-* updated comment for soft_restart with review feedback
-* dropped freeze_processes patch which was queued separately 
-  to 3.14 by Rafael Wysocki:
-  https://lkml.org/lkml/2014/2/25/683
-
-Changes in v3:
---------------
-* added comment to use of soft_restart
-* drop irq disable soft_restart patch
-* add patch to avoid tracers in soft_restart by using raw_local_irq_*
-
-Changes in v2:
---------------
-* Removed unneeded flush_thread, use of __naked and cpu_init.
-* dropped Cyril Chemparathy <cyril@ti.com> from Cc: list as 
-  emails are bouncing.
-
-Thanks,
-
-Sebastian Capella
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,msm8974-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,msm8974-pinctrl.txt
+index 4c352be5dd61..9fb89e3f61ea 100644
+--- a/Documentation/devicetree/bindings/pinctrl/qcom,msm8974-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,msm8974-pinctrl.txt
+@@ -1,7 +1,7 @@
+ Qualcomm MSM8974 TLMM block
+ 
+ Required properties:
+-- compatible: "qcom,msm8x74-pinctrl"
++- compatible: "qcom,msm8974-pinctrl"
+ - reg: Should be the base address and length of the TLMM block.
+ - interrupts: Should be the parent IRQ of the TLMM block.
+ - interrupt-controller: Marks the device node as an interrupt controller.
+@@ -42,14 +42,14 @@ Non-empty subnodes must specify the 'pins' property.
+ Note that not all properties are valid for all pins.
+ 
+ 
+-Valid values for qcom,pins are:
++Valid values for pins are:
+   gpio0-gpio145
+     Supports mux, bias and drive-strength
+ 
+   sdc1_clk, sdc1_cmd, sdc1_data, sdc2_clk, sdc2_cmd, sdc2_data
+     Supports bias and drive-strength
+ 
+-Valid values for qcom,function are:
++Valid values for function are:
+   blsp_i2c2, blsp_i2c6, blsp_i2c11, blsp_spi1, blsp_uart2, blsp_uart8, slimbus
+ 
+   (Note that this is not yet the complete list of functions)
+@@ -73,18 +73,18 @@ Example:
+ 
+ 		uart2_default: uart2_default {
+ 			mux {
+-				qcom,pins = "gpio4", "gpio5";
+-				qcom,function = "blsp_uart2";
++				pins = "gpio4", "gpio5";
++				function = "blsp_uart2";
+ 			};
+ 
+ 			tx {
+-				qcom,pins = "gpio4";
++				pins = "gpio4";
+ 				drive-strength = <4>;
+ 				bias-disable;
+ 			};
+ 
+ 			rx {
+-				qcom,pins = "gpio5";
++				pins = "gpio5";
+ 				drive-strength = <2>;
+ 				bias-pull-up;
+ 			};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
