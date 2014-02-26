@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaBZEwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 23:52:50 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15858 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaBZEws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 23:52:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 25 Feb 2014 20:50:11 -0800
-Message-ID: <530D731B.5050305@nvidia.com>
-Date: Wed, 26 Feb 2014 13:52:43 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751527AbaBZE6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 23:58:11 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46310 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaBZE6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 23:58:09 -0500
+Message-ID: <530D7416.8090805@ti.com>
+Date: Wed, 26 Feb 2014 10:26:54 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: tegra: add device tree for SHIELD
-References: <1393237593-28121-1-git-send-email-acourbot@nvidia.com> <530B952D.2000006@wwwdotorg.org> <530BFC58.6020003@nvidia.com> <530C67F4.7010208@broadcom.com>
-In-Reply-To: <530C67F4.7010208@broadcom.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
+ IP
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com> <52D7B2CA.8080902@ti.com> <52EF7D85.5070705@ti.com> <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de> <52F23887.9060209@ti.com> <52F24683.9060200@ti.com>
+In-Reply-To: <52F24683.9060200@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 06:52 PM, Arend van Spriel wrote:
-> On 02/25/2014 03:13 AM, Alexandre Courbot wrote:
+Hi Tony,
+
+On Wednesday 05 February 2014 07:41 PM, Sricharan R wrote:
+> Tony,
+> 
+> On Wednesday 05 February 2014 06:41 PM, Sricharan R wrote:
+>> On Tuesday 04 February 2014 09:44 PM, Thomas Gleixner wrote:
+>>> On Mon, 3 Feb 2014, Sricharan R wrote:
+>>>>> I already have your reviewed-by tag for the first patch in this series.
+>>>>>
+>>>>> Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
+>>>>> to be merged. We are planning to take this series through arm-soc tree.
+>>>>>
+>>>>> Can i please have your tag for this patch as well ?
 >>>
->>>> +    /* Wifi */
->>>> +    sdhci@78000000 {
->>>> +        status = "okay";
->>>> +        bus-width = <4>;
->>>> +        broken-cd;
->>>> +        keep-power-in-suspend;
->>>> +        cap-sdio-irq;
->>>
->>> Is non-removable better than broken-cd, or are they entirely unrelated?
+>>> Acked-by-me
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>
->> They are unrelated actually. With non-removable the driver expects the
->> device to always be there since boot, and does not check for the card to
->> be removed/added after boot. broken-cd indicates there is no CD line and
->> the device should be polled regularly.
+>> Thanks Thomas.
 >>
->> For the Wifi chip, non-removable would be the correct setting
->> hardware-wise, but there is a trap: the chip has its reset line asserted
->> at boot-time, and you need to set GPIO 229 to de-assert it. Only after
->> that will the device be detected on the SDIO bus. Since it lacks a CD
->> line, it must be polled, hence the broken-cd property.
+>> Kevin,
+>>     I will re-send a branch based on rc1 for this.
 >>
->> This also raises another, redundant problem with DT bindings: AFAIK we
->> currently have no way to let the system know the device will only appear
->> after a given GPIO is set. It would also be nice to be able to give some
->> parameters to the Wifi driver through the DT (like the OOB interrupt).
->> Right now the Wifi chip is brought up by exporting the GPIO and writing
->> to it from user-space, and the OOB interrupt is not used.
->
-> Hi Alexandre,
->
-> I recently posted a proposal for brcmfmac DT binding [1]. I did receive
-> some comments, but it would be great if you (and/or others involved) had
-> a look at it as well and give me some feedback. DT work still needs to
-> grow on me.
+> 
+> I have pushed a branch based on mainline,
+>    git://github.com/Sricharanti/sricharan.git
+>    branch: crossbar_3.14_rc1
+> 
+ Ping on this..
 
-Hi Arend, (and thanks again for all the help with getting the chip to work!)
-
-Great, I'm not subscribed to the devicetree list and so have missed this 
-thread, but I'm glad to see it.
-
-I don't think I have much to add to the comments you already received 
-there. I'd need it to reference the 32K clock (which I currently 
-force-enable manually), the OOB interrupt, and the reset pin as a GPIO 
-(as for SHIELD the device needs to be put out of reset using an 
-active-low GPIO before anything can happen). That last property could be 
-optional as I suspect most designs won't use it.
-
-Getting the device out of reset should be done before the bus probes the 
-non-removable device, so I wonder how this would fit wrt. the DT 
-power-on sequencing series by Olof. Something tells me this could rather 
-be a property of the bus, but physically speaking the pin is connected 
-to the wifi chip, so... Maybe we could get the platform driver to ask 
-the bus to probe again after enabling power/getting the device out of reset?
+Regards,
+ Sricharan
