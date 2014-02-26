@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaBZTf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:35:57 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61251 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbaBZTf4 (ORCPT
+	id S1754020AbaBZThJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:37:09 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:48656 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaBZThG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:35:56 -0500
+	Wed, 26 Feb 2014 14:37:06 -0500
+Subject: [PATCH 0/9] PCI: Use IORESOURCE_UNSET for unassigned BARs
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 26 Feb 2014 12:37:04 -0700
+Message-ID: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20140226191009.GC14907@lunn.ch>
-References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224191554.GC29288@lunn.ch> <530D1B7C.2090506@gmail.com>
- <20140226182117.GB14907@lunn.ch> <CAGVrzcYUfq84ryVET9qNJvyFCnhFdU4c0fOHbNN4eE8_w6qsAQ@mail.gmail.com>
- <20140226191009.GC14907@lunn.ch>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Wed, 26 Feb 2014 11:35:09 -0800
-Message-ID: <CAGVrzcb5k1JUPo0kvMdPJLCkWHb9qfHfDif08ud5ydKiKBwdHQ@mail.gmail.com>
-Subject: Re: [PATCH] net: phy: add suspend_halted module param
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-26 11:10 GMT-08:00 Andrew Lunn <andrew@lunn.ch>:
->> > As to the comment from davem about not using a kernel parameter. How
->> > about turning it all around. Put a boolean parameter into DT PHY node
->> > to indicate when it is safe to power down an idle phy?
->>
->> Ah ah, nice try, but I do not think this belongs in DT, this is purely
->> a software issue here, powering up/down the PHY itself works as
->> expected.
->>
->> How about we have this knob a sysfs parameter? This should be easy
->> enough to tweak at runtime and debug in case thing go wrong.
->
-> With a kernel parameter i can place it into the bootargs of the chosen
-> node in DT. Solves the problem for everybody with a QNAP box. Same
-> goes for topkick and any other board which has a broken u-boot. A
-> sysfs parameter needs setting from user space, so it is not something
-> we can solve within the kernel.
+I'm trying to unify the way we handle unassigned PCI BARs, i.e., resources
+where we know the type and size, but we haven't assigned an address yet.
+The PCI core and the various architectures don't really have a consistent
+way of dealing with these.
 
-David objected to a module parameter, a kernel parameter is not too
-different right?
+Many places currently use "res->start == 0" to indicate unassigned
+resources.  I don't think that's a good idea in general, because it's
+possible for a resource to actually start at zero.  Zero is also a
+perfectly good BAR value, especially for a host bridge that translates
+addresses, so I want to support that, too.
 
-The only case we need to handle is when the interface is brought down,
-suspend_halted=true will also power down the PHY, you reboot into
-u-boot, and you attempt a network boot right after that, in that case
-the PHY interface is still powered down and this does not work.
+The IORESOURCE_UNSET flag exists already, but is hardly used at all.  In
+drivers/pci, we set it for an obscure error case, and clear it when
+updating a BAR.  The microblaze and powerpc architectures use it the same
+way I want to use it here: to indicate a resource with no assigned address.
 
-That could be worked around by putting the interface up again before
-you reboot into u-boot right, that specific logic being gated by
-reading the board model. Agreed, you need to duplicate that workaround
-in all affected user-space....
--- 
-Florian
+Here's the outline of what this series does:
+
+- Add resource_contains(): true iff r1 contains r2 (for minor cleanup)
+- Make %pR print resource size, not address, when IORESOURCE_UNSET
+- Stop advertising pci_find_parent_resource() for use in allocation
+- Mark PCI resources IORESOURCE_UNSET when BIOS left decoding disabled
+- Mark PCI resources IORESOURCE_UNSET while we're trying to assign addresses
+- Don't enable PCI decoding when no address has been assigned to BARs
+
+It might be too aggressive to ignore the initial value of a BAR and try to
+reassign it when the BIOS left decoding disabled.  If the BIOS left
+decoding *enabled*, we can have some confidence that the BAR value is
+valid.  It's possible the BAR is also valid even if the BIOS turned off
+decoding.  We could conceivably try to use BAR values that are inside
+upstream bridge windows, even if the BAR was initially disabled.  But this
+first pass just ignores the values in BARs that are disabled.
+
+I welcome any comments :)
+
+---
+
+Bjorn Helgaas (9):
+      resource: Add resource_contains()
+      vsprintf: Add support for IORESOURCE_UNSET in %pR
+      PCI: Remove pci_find_parent_resource() use for allocation
+      PCI: Mark resources as IORESOURCE_UNSET if we can't assign them
+      PCI: Don't clear IORESOURCE_UNSET when updating BAR
+      PCI: Check IORESOURCE_UNSET before updating BAR
+      PCI: Don't try to claim IORESOURCE_UNSET resources
+      PCI: Ignore BAR contents when firmware left decoding disabled
+      PCI: Don't enable decoding if BAR hasn't been assigned an address
+
+
+ drivers/pci/host-bridge.c |    8 --------
+ drivers/pci/pci.c         |   41 +++++++++++++++++++++++++----------------
+ drivers/pci/probe.c       |    8 +++++++-
+ drivers/pci/quirks.c      |    5 +++++
+ drivers/pci/rom.c         |    2 ++
+ drivers/pci/setup-res.c   |   37 +++++++++++++++++++++++++------------
+ include/linux/ioport.h    |   12 +++++++++++-
+ kernel/resource.c         |    8 ++------
+ lib/vsprintf.c            |   13 +++++++++----
+ 9 files changed, 86 insertions(+), 48 deletions(-)
