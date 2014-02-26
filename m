@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaBZTDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:03:42 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54928 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaBZTDk convert rfc822-to-8bit (ORCPT
+	id S1753940AbaBZTEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:04:39 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:39966 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922AbaBZTEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:03:40 -0500
-Date: Wed, 26 Feb 2014 19:03:33 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Len Brown <len.brown@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Russ Dill <Russ.Dill@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        Cyril Chemparathy <cyril@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC v1 3/3] ARM hibernation / suspend-to-disk
-Message-ID: <20140226190333.GD22839@e102568-lin.cambridge.arm.com>
-References: <1392774729-3235-1-git-send-email-sebastian.capella@linaro.org>
- <1392774729-3235-4-git-send-email-sebastian.capella@linaro.org>
- <20140219161254.GB19343@e102568-lin.cambridge.arm.com>
- <20140222103840.GH21483@n2100.arm.linux.org.uk>
- <20140222120910.GA9012@e102568-lin.cambridge.arm.com>
- <20140223200208.12998.47604@capellas-linux>
- <20140225113251.GB6855@e102568-lin.cambridge.arm.com>
- <20140225175531.18229.77850@capellas-linux>
- <20140226102427.GA22839@e102568-lin.cambridge.arm.com>
- <20140226175055.3502.49656@capellas-linux>
+	Wed, 26 Feb 2014 14:04:36 -0500
+Message-ID: <530E48CC.3040304@cogentembedded.com>
+Date: Wed, 26 Feb 2014 23:04:28 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140226175055.3502.49656@capellas-linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 26 Feb 2014 19:03:40.0525 (UTC) FILETIME=[7619E9D0:01CF3325]
-X-MC-Unique: 114022619033702001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Alexandre Courbot <gnurou@gmail.com>
+CC: davinci-linux-open-source@linux.davincidsp.com,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-gpio@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-input@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 0/5] ARM: davinci: tnetv107x removal
+References: <1393418614-3968549-1-git-send-email-arnd@arndb.de> <201402261446.29257.arnd@arndb.de>
+In-Reply-To: <201402261446.29257.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 05:50:55PM +0000, Sebastian Capella wrote:
-> Quoting Lorenzo Pieralisi (2014-02-26 02:24:27)
-> > On Tue, Feb 25, 2014 at 05:55:31PM +0000, Sebastian Capella wrote:
-> > 
-> > Please add:
-> > 
-> > "swsusp_save() is executed in the suspend finisher so that the CPU context
-> > pointer and memory are part of the saved image, which is required by the
-> > resume kernel image to restart execution from swsusp_arch_suspend()"
-> > 
-> > >  * soft_restart is not technically needed, but is used
-> > >  * to get success returned from cpu_suspend.
-> > >  * After resume, the hibernation snapshot is written out.
-> > 
-> > "When soft reboot completes, the hibernation snapshot is written out."
-> > 
-> > Resume is confusing since this code is resuming twice :D on image saving
-> > and on kernel image restoration.
-> 
-> Thanks Lorenzo!
-> 
-> Here's what I've got.
-> 
-> /*
->  * Snapshot kernel memory and reset the system.
->  *
->  * swsusp_save() is executed in the suspend finisher so that the CPU
->  * context pointer and memory are part of the saved image, which is
->  * required by the resume kernel image to restart execution from
->  * swsusp_arch_suspend().
->  *
->  * soft_restart is not technically needed, but is used to get success
->  * returned from cpu_suspend.
->  * 
->  * When soft reboot completes, the hibernation snapshot is
->  * written out.
->  */
-> 
-> Does this look ok?  I'll prepare a v4 patchset.
+Hello.
 
-Yes it does, I will wait and review v4 then.
+On 02/26/2014 04:46 PM, Arnd Bergmann wrote:
 
-Thank you,
-Lorenzo
+>> The five patches are completely independent of one another,
+>> and applying them out of order is fine since we just want
+>> to remove the code. However, I'm looking for an Ack from
+>> Cyril Chemparathy and Sekhar Nori first, to be sure we
+>> won't need this code in the future. Kevin Hilman has
+>> already mentioned that he sees no reason to keep this
+>> code.
+
+> Hmm, apparently Cyril is no longer at TI. If anyone has his
+> current email address and thinks he might have an opinion,
+> could you forward the original email?
+
+    Done. Fished his Gmail address from LinkedIn.
+
+> 	Arnd
+
+WBR, Sergei
 
