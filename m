@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaBZHcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:32:15 -0500
-Received: from ozlabs.org ([203.10.76.45]:45544 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363AbaBZHcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:32:13 -0500
-Date: Wed, 26 Feb 2014 18:32:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the akpm-current tree with the ext3
- tree
-Message-Id: <20140226183204.4ea7969f087360c565ac3d4e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX"
+	id S1751159AbaBZHil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:38:41 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:37730 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745AbaBZHij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 02:38:39 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+Message-ID: <530D99EB.3090900@freescale.com>
+Date: Wed, 26 Feb 2014 15:38:19 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <scottwood@freescale.com>, <LeoLi@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] DMA: Freescale: driver cleanups and enhancements
+References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
+In-Reply-To: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Vinod,
+How about these patches?
+Thanks.
 
-Hi Andrew,
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-fs/notify/fanotify/fanotify_user.c between commit ff57cd5863cf
-("fsnotify: Allocate overflow events with proper type") from the ext3
-tree and commit c40e3490382b ("fanotify: convert access_mutex to
-spinlock") from the akpm-current tree.
+On 01/16/2014 01:47 PM, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>
+> Hi Vinod Koul and Dan Williams,
+> Please have a look at these patches.
+>
+> Note that patch 2~6 had beed sent out for upstream before, but were together
+> with other storage patches at that time, that was not easy for being reviewed
+> and merged, so I send them separately this time.
+>
+> Thanks.
+>
+> Hongbo Zhang (7):
+>    DMA: Freescale: unify register access methods
+>    DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
+>    DMA: Freescale: add fsl_dma_free_descriptor() to reduce code
+>      duplication
+>    DMA: Freescale: move functions to avoid forward declarations
+>    DMA: Freescale: change descriptor release process for supporting
+>      async_tx
+>    DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
+>    DMA: Freescale: add suspend resume functions for DMA driver
+>
+>   drivers/dma/fsldma.c |  592 ++++++++++++++++++++++++++++++++------------------
+>   drivers/dma/fsldma.h |   33 ++-
+>   2 files changed, 412 insertions(+), 213 deletions(-)
+>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc fs/notify/fanotify/fanotify_user.c
-index 287a22c04149,c3406d633925..000000000000
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@@ -731,21 -690,9 +691,21 @@@ SYSCALL_DEFINE2(fanotify_init, unsigne
-  	group->fanotify_data.user =3D user;
-  	atomic_inc(&user->fanotify_listeners);
- =20
- +	oevent =3D kmem_cache_alloc(fanotify_event_cachep, GFP_KERNEL);
- +	if (unlikely(!oevent)) {
- +		fd =3D -ENOMEM;
- +		goto out_destroy_group;
- +	}
- +	group->overflow_event =3D &oevent->fse;
- +	fsnotify_init_event(group->overflow_event, NULL, FS_Q_OVERFLOW);
- +	oevent->tgid =3D get_pid(task_tgid(current));
- +	oevent->path.mnt =3D NULL;
- +	oevent->path.dentry =3D NULL;
- +
-  	group->fanotify_data.f_flags =3D event_f_flags;
-  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- +	oevent->response =3D 0;
-- 	mutex_init(&group->fanotify_data.access_mutex);
-+ 	spin_lock_init(&group->fanotify_data.access_lock);
-  	init_waitqueue_head(&group->fanotify_data.access_waitq);
-  	INIT_LIST_HEAD(&group->fanotify_data.access_list);
-  	atomic_set(&group->fanotify_data.bypass_perm, 0);
-
---Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTDZh8AAoJEMDTa8Ir7ZwVSuEQAIYbKmcIxOm69xgB8ad4kKuF
-vQ0MJFb3e1ytk7FOC+tJRO9OwpYeegmEtORwiGEVNdkgKrmN/qB/rM6cLdrJCKFR
-BhqoovptyHrGtm7KQQxdRbKZAYmXxiKOV4YtV+qypt+qBoSqyRiYf5E7GYQzSKkZ
-xCHdoJuX75QYp0Cbh+waoMy1e7NiOzSy/mmqUYUlZP6JB3IvL0Z1PoQzEOCGj1H7
-/3XtZM44OenkWYjO7YpwwDF41Q7l2ud1M2J58NXnB5F8oiRLu02XPOvcEWIhehx+
-qaDH4Gt4xKubaHbBdxueYuX7x/Sv3jhubSU3CM77GVQd5oLXN54+rbn+dN3CIeJI
-d93OIruzFDe0B28WicNHnxB1VP/wLwT1XDNn3nCIpuhxiMobZIbpkVnJqL81VIr9
-KaJl/dpl+yPTbOQMariowZivRbk/eicRGv9vqoj3lG8Zz+nxQWdwVTIBId8Gn1Q4
-D3QG1mjFznBbo65SBpwhxWQCNcJTbJQURxUUas7HV+ugNGspkJ7cs2J6vclKPv1K
-ZIe/FUqhXLDTs3FGKlMfwrTx9pGJlG4wlR5anXKJDBhHBAr+Vpath2n+vKgTgb7V
-M93Aj8UJf2vuuvXWP3mAKLrOpriIhz0VOrV5skM7mNeTgAczKWLHYR9AydzfqvSR
-OS4IKgav6lixpy8dTELY
-=Zqvu
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX--
