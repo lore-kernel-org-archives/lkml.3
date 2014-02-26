@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaBZFL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:11:29 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:64407 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaBZFLX (ORCPT
+	id S1752640AbaBZFLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:11:40 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:46716 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596AbaBZFLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:11:23 -0500
+	Wed, 26 Feb 2014 00:11:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <1393072281-5814-1-git-send-email-peter@hurleysoftware.com>
-References: <1393072281-5814-1-git-send-email-peter@hurleysoftware.com>
-Date: Wed, 26 Feb 2014 13:11:21 +0800
-Message-ID: <CA++bM2uq=vRo20FTMWvkDau+-X7h0+KU3n4Av7ef895mQKr5fA@mail.gmail.com>
-Subject: Re: [PATCH] tty: Fix low_latency BUG
-From: Feng Tang <feng.79.tang@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
+In-Reply-To: <1393385915-19138-2-git-send-email-skannan@codeaurora.org>
+References: <1789244.B5CzWbcp6h@vostro.rjw.lan>
+	<1393385915-19138-2-git-send-email-skannan@codeaurora.org>
+Date: Wed, 26 Feb 2014 10:41:33 +0530
+Message-ID: <CAKohpomZ9VnZOdtEr5HCWTOCUQ-49UZXaUW4qKVF7rwFgTUdjg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] cpufreq: stats: Fix error handling in __cpufreq_stats_create_table()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, David Sterba <dsterba@suse.cz>,
-        Felipe Balbi <balbi@ti.com>, Grant Edwards <grant.b.edwards@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, stable@vger.kernel.org
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-2014-02-22 20:31 GMT+08:00 Peter Hurley <peter@hurleysoftware.com>:
-> The user-settable knob, low_latency, has been the source of
-> several BUG reports which stem from flush_to_ldisc() running
-> in interrupt context. Since 3.12, which added several sleeping
-> locks (termios_rwsem and buf->lock) to the input processing path,
-> the frequency of these BUG reports has increased.
+On 26 February 2014 09:08, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Remove sysfs group if __cpufreq_stats_create_table() fails after creating
+> one.
 >
-> Note that changes in 3.12 did not introduce this regression;
-> sleeping locks were first added to the input processing path
-> with the removal of the BKL from N_TTY in commit
-> a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
-> 'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
-> and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
-> 'tty: throttling race fix'. Since those changes, executing
-> flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
+> Change-Id: Icb0b44424cc4eb6c88be255e2839ef51c3f8779c
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> ---
+>  drivers/cpufreq/cpufreq_stats.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 >
-> However, since most devices do not validate if the low_latency
-> setting is appropriate for the context (process or interrupt) in
-> which they receive data, some reports are due to misconfiguration.
-> Further, serial dma devices for which dma fails, resort to
-> interrupt receiving as a backup without resetting low_latency.
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index e4bd27f..c52b440 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -216,7 +216,7 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+>         stat->time_in_state = kzalloc(alloc_size, GFP_KERNEL);
+>         if (!stat->time_in_state) {
+>                 ret = -ENOMEM;
+> -               goto error_out;
+> +               goto error_alloc;
+>         }
+>         stat->freq_table = (unsigned int *)(stat->time_in_state + count);
 >
-> Historically, low_latency was used to force wake-up the reading
-> process rather than wait for the next scheduler tick. The
-> effect was to trim multiple milliseconds of latency from
-> when the process would receive new data.
->
-> Recent tests [1] have shown that the reading process now receives
-> data with only 10's of microseconds latency without low_latency set.
+> @@ -237,6 +237,8 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+>         stat->last_index = freq_table_get_index(stat, policy->cur);
+>         spin_unlock(&cpufreq_stats_lock);
+>         return 0;
+> +error_alloc:
+> +       sysfs_remove_group(&policy->kobj, &stats_attr_group);
+>  error_out:
+>         kfree(stat);
+>         per_cpu(cpufreq_stats_table, cpu) = NULL;
 
-The 10's of miscroseconds is ok for 115200 bps like device, but it may
-hurt the high speed device like Bluetooth which runs at 3M/4M bps or
-higher.
-
-More and more smartphones are using uart as the Bluetooth data
-interface due to its low-pin, low-power feature, and many of them
-are using HZ=100 kernel, I'm afraid this added delay may cause
-some problem.
-
-Thanks,
-Feng
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
