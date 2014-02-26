@@ -1,128 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaBZT1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:27:45 -0500
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54686 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaBZT1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:27:43 -0500
-Message-ID: <530E4028.70903@de.ibm.com>
-Date: Wed, 26 Feb 2014 20:27:36 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Alex Thorlton <athorlton@sgi.com>
-CC: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        schwidefsky@de.ibm.com, rientjes@google.com, riel@redhat.com,
-        pbonzini@redhat.com, mingo@kernel.org, mgorman@suse.de,
-        kirill.shutemov@linux.intel.com, heiko.carstens@de.ibm.com,
-        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com, ebiederm@xmission.com,
-        aarcange@redhat.com
-Subject: Re: +	mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
- added	to -mm tree
-References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com> <530E0306.7020601@de.ibm.com> <20140226153144.GA15527@redhat.com> <20140226165759.GB22802@laptop.programming.kicks-ass.net> <20140226172253.GQ3041@sgi.com> <20140226180603.GA25644@redhat.com>
-In-Reply-To: <20140226180603.GA25644@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022619-1948-0000-0000-000007F51FE9
+	id S1753746AbaBZT3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:29:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54502 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495AbaBZT3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 14:29:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,549,1389772800"; 
+   d="scan'208";a="462813947"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <linux-usb@vger.kernel.org>
+Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFCv3 0/4] xhci: re-work command queue management
+Date: Wed, 26 Feb 2014 21:38:46 +0200
+Message-Id: <1393443530-9216-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/02/14 19:06, Oleg Nesterov wrote:
-> On 02/26, Alex Thorlton wrote:
->>
->> + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
->> + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
->> + */
->> +#ifdef CONFIG_S390
->> +               if (mm_has_pgste(vma->vm_mm))
->>                         return -EINVAL;
->> +#endif
-> 
-> The comment is not really right...
-> 
-> And personally I think that
-> 
-> 	@@ -504,6 +504,9 @@ static int gmap_connect_pgtable(unsigned long address, unsigned long segment,
-> 		if (!pmd_present(*pmd) &&
-> 		    __pte_alloc(mm, vma, pmd, vmaddr))
-> 			return -ENOMEM;
-> 	+       /* large pmds cannot yet be handled */
-> 	+       if (pmd_large(*pmd))
-> 	+               return -EFAULT;
-> 
-> change still makes sense, so that we can simply revert this s390-
-> specific hack in hugepage_madvise().
+changes since v2:
 
-Yes, it still makes sense to cover existing THPs here.
+    squash first 7 patches together that all just created commands 
+    and avoid some nasty mid-patch series memory leaking	  
 
+changes since v1: 
 
-> I'd suggest the patch below on top of your changes, but I won't argue.
-> 
-> It would be nice to also change thp_split_mm() to not not play with
-> mm->def_flags, but I am not sure if we can do this.
-> 
-> Oleg.
-> ---
-> 
-> Subject: [PATCH] s390: make sure MADV_HUGEPAGE fails after s390_enable_sie()
-> 
-> As Christian pointed out, the recent 'Revert "thp: make MADV_HUGEPAGE
-> check for mm->def_flags"' breaks qemu, it does QEMU_MADV_HUGEPAGE for
-> all kvm pages but this doesn't work after s390_enable_sie/thp_split_mm.
-> 
-> Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> Suggested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index a4310a5..0e08d92 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1970,11 +1970,22 @@ int hugepage_madvise(struct vm_area_struct *vma,
->  {
->  	switch (advice) {
->  	case MADV_HUGEPAGE:
-> +#ifdef CONFIG_S390
-> +		/*
-> +		 * MADV_HUGEPAGE is broken after s390_enable_sie(), qemu
-> +		 * blindly does madvise(MADV_HUGEPAGE) for for all kvm pages
-> +		 * and expects it must fail on s390. Avoid a possible SIGSEGV
-> +		 * until qemu is changed.
+    Fixing smatch warnings and errors.
+    Check for null return from alloc_command, release lock in error path and
+    don't dereference possible null pointer in error path.
 
-I prefer:
-		 * until kvm/s390 can handle large pages in the host.
+    release lock in xhci_stop_dev() error path.
+    
+This is the third attempt to re-work and solve the issues in xhci command
+queue management that Sarah has described earlier:
 
-Otherwise qemu has to be changed again, if we get THP working for kvm.
+Right now, the command management in the xHCI driver is rather ad-hock.  
+Different parts of the driver all submit commands, including interrupt 
+handling routines, functions called from the USB core (with or without the
+bus bandwidth mutex held).
+Some times they need to wait for the command to complete, and sometimes 
+they just issue the command and don't care about the result of the command.
 
-> +		 */
-> +		if (mm_has_pgste(vma->vm_mm))
-> +			return -EINVAL;
-> +#endif
->  		/*
->  		 * Be somewhat over-protective like KSM for now!
->  		 */
->  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
->  			return -EINVAL;
-> +
+The places that wait on a command all time the command for five seconds,
+and then attempt to cancel the command.  
+Unfortunately, that means if several commands are issued at once, and one of
+them times out, all the commands timeout, even though the host hasn't gotten
+a chance to service them yet.
 
-Unrelated white space?
->  		*vm_flags &= ~VM_NOHUGEPAGE;
->  		*vm_flags |= VM_HUGEPAGE;
->  		/*
-> 
+This is apparent with some devices that take a long time to respond to the 
+Set Address command during device enumeration (when the device is plugged in).
+If a driver for a different device attempts to change alternate interface
+settings at the same time (causing a Configure Endpoint command to be issued),
+both commands timeout.
 
+Instead of having each command timeout after five seconds, the driver should
+wait indefinitely in an uninterruptible sleep on the command completion.  
+A global command queue manager should time whatever command is currently
+running, and cancel that command after five seconds.
 
+If the commands were in a list, like TDs currently are, it may be easier to keep
+track of where the command ring dequeue pointer is, and avoid racing with events.
+We may need to have parts of the driver that issue commands without waiting on
+them still put the commands in the command list.
 
-With the comment and white space change:
+The Implementation:
+-------------------
 
-Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+First step is to create a list of the commands submitted to the command queue.
+To accomplish this each command is required to be submitted with a properly
+filled command structure containing completion, status variable and a pointer to
+the command TRB that will be used.
 
-Thanks for the quick patch
+The first patch is all about creating these command structures and
+submitting them when we queue commands.
+The command structures are allocated on the fly, the commands that are submitted
+in interrupt context are allocated with GFP_ATOMIC.
+
+Next, the global command queue is introduced. Commands structures are added to 
+the queue when trb's are queued, and removed when the command completes. 
+Also switch to use the status variable and completion in the command struct.
+
+A new timer handles command timeout, the timer is kicked every time when a 
+command finishes and there's a new command waiting in the queue, or when a new
+command is submitted to an _empty_ command queue.
+Timer is deleted when the the last command on the queue finishes (empty queue)
+
+The old cancel_cmd_list is removed. 
+When the timer expires we simply tag the current command as "ABORTED" and start
+the ring abortion process. Functions waiting for an aborted command to finish are
+called after the command abortion is completed.
+
+Mathias Nyman (4):
+  xhci: Use command structures when queuing commands on the command ring
+  xhci: Add a global command queue
+  xhci: Use completion and status in global command queue
+  xhci: rework command timeout and cancellation,
+
+ drivers/usb/host/xhci-hub.c  |  43 ++--
+ drivers/usb/host/xhci-mem.c  |  22 +-
+ drivers/usb/host/xhci-ring.c | 529 ++++++++++++++-----------------------------
+ drivers/usb/host/xhci.c      | 264 +++++++++++----------
+ drivers/usb/host/xhci.h      |  43 ++--
+ 5 files changed, 373 insertions(+), 528 deletions(-)
+
+-- 
+1.8.1.2
 
