@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaBZTGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:06:49 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42548 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753688AbaBZTGq (ORCPT
+	id S1754037AbaBZTGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:06:10 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53844 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986AbaBZTGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:06:46 -0500
-Message-Id: <20140226190644.591040764@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 26 Feb 2014 14:01:42 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [RFA][PATCH 2/4] tracing: Fix event header migrate.h to include tracepoint.h
-References: <20140226190140.590029589@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tracing-Fix-event-header-migrate.h-to-include-tracep.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Wed, 26 Feb 2014 14:06:04 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/9] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+Date: Wed, 26 Feb 2014 11:05:54 -0800
+Message-Id: <1393441562-685-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
+References: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Request for Ack ]
+Use the regmap APIs for this driver instead of custom pm8xxx
+APIs. This breaks this driver's dependency on the pm8xxx APIs and
+allows us to easily port it to other bus protocols in the future.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-
-The trace event headers are required to include tracepoint.h. The only reason
-they worked now is because module.h included tracepoint.h, and that will soon
-change. (And the change will be going to the stable tree as well)
-
-Fixes: 7b2a2d4a18ff "mm: migrate: Add a tracepoint for migrate_pages"
-Cc: stable@vger.kernel.org # 3.8+
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- include/trace/events/migrate.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/misc/pmic8xxx-pwrkey.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-index 3075ffb..4e4f2f8 100644
---- a/include/trace/events/migrate.h
-+++ b/include/trace/events/migrate.h
-@@ -4,6 +4,8 @@
- #if !defined(_TRACE_MIGRATE_H) || defined(TRACE_HEADER_MULTI_READ)
- #define _TRACE_MIGRATE_H
+diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+index 0e1a05f95858..cf6125dc3b51 100644
+--- a/drivers/input/misc/pmic8xxx-pwrkey.c
++++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+@@ -120,6 +120,10 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
-+#include <linux/tracepoint.h>
++	regmap = dev_get_regmap(pdev->dev.parent, NULL);
++	if (!regmap)
++		return -ENODEV;
 +
- #define MIGRATE_MODE						\
- 	{MIGRATE_ASYNC,		"MIGRATE_ASYNC"},		\
- 	{MIGRATE_SYNC_LIGHT,	"MIGRATE_SYNC_LIGHT"},		\
+ 	input_set_capability(pwr, EV_KEY, KEY_POWER);
+ 
+ 	pwr->name = "pmic8xxx_pwrkey";
 -- 
-1.8.5.3
-
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
