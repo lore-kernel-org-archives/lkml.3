@@ -1,176 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263AbaBZFxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:53:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaBZFxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:53:33 -0500
-Message-ID: <530D814E.2080708@redhat.com>
-Date: Wed, 26 Feb 2014 13:53:18 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1751393AbaBZF5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:57:13 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:47082 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaBZF5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 00:57:11 -0500
+Date: Wed, 26 Feb 2014 00:59:10 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: x86_pmu_start WARN_ON.
+In-Reply-To: <20140224112839.GQ15586@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1402260054560.17626@vincent-weaver-1.um.maine.edu>
+References: <20140217152859.GF15586@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402181327400.31682@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402181717300.20073@vincent-weaver-1.um.maine.edu> <20140219101949.GG15586@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1402191727420.23543@vincent-weaver-1.um.maine.edu> <20140220100830.GN6835@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1402201302150.24360@vincent-weaver-1.um.maine.edu> <20140220182300.GN9987@twins.programming.kicks-ass.net>
+ <20140221150312.GF3104@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1402211514560.6395@vincent-weaver-1.um.maine.edu> <20140224112839.GQ15586@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org,
-        Qin Chuanyu <qinchuanyu@huawei.com>
-Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
- exceed the limit
-References: <1393311238-7750-1-git-send-email-jasowang@redhat.com> <20140225135738.GA15274@redhat.com>
-In-Reply-To: <20140225135738.GA15274@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 09:57 PM, Michael S. Tsirkin wrote:
-> On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
->> We used to stop the handling of tx when the number of pending DMAs
->> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
->> of both host and guest. But it was too aggressive in some cases, since
->> any delay or blocking of a single packet may delay or block the guest
->> transmission. Consider the following setup:
->>
->>      +-----+        +-----+
->>      | VM1 |        | VM2 |
->>      +--+--+        +--+--+
->>         |              |
->>      +--+--+        +--+--+
->>      | tap0|        | tap1|
->>      +--+--+        +--+--+
->>         |              |
->>      pfifo_fast   htb(10Mbit/s)
->>         |              |
->>      +--+--------------+---+
->>      |     bridge          |
->>      +--+------------------+
->>         |
->>      pfifo_fast
->>         |
->>      +-----+
->>      | eth0|(100Mbit/s)
->>      +-----+
->>
->> - start two VMs and connect them to a bridge
->> - add an physical card (100Mbit/s) to that bridge
->> - setup htb on tap1 and limit its throughput to 10Mbit/s
->> - run two netperfs in the same time, one is from VM1 to VM2. Another is
->>    from VM1 to an external host through eth0.
->> - result shows that not only the VM1 to VM2 traffic were throttled but
->>    also the VM1 to external host through eth0 is also throttled somehow.
->>
->> This is because the delay added by htb may lead the delay the finish
->> of DMAs and cause the pending DMAs for tap0 exceeds the limit
->> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
->> htb send some packets. The problem here is all of the packets
->> transmission were blocked even if it does not go to VM2.
->>
->> We can solve this issue by relaxing it a little bit: switching to use
->> data copy instead of stopping tx when the number of pending DMAs
->> exceed the VHOST_MAX_PEND. This is safe because:
->>
->> - The number of pending DMAs were still limited by VHOST_MAX_PEND
->> - The out of order completion during mode switch can make sure that
->>    most of the tx buffers were freed in time in guest.
->>
->> So even if about 50% packets were delayed in zero-copy case, vhost
->> could continue to do the transmission through data copy in this case.
->>
->> Test result:
->>
->> Before this patch:
->> VM1 to VM2 throughput is 9.3Mbit/s
->> VM1 to External throughput is 40Mbit/s
->>
->> After this patch:
->> VM1 to VM2 throughput is 9.3Mbit/s
->> Vm1 to External throughput is 93Mbit/s
-> Would like to see CPU utilization #s as well.
->
+On Mon, 24 Feb 2014, Peter Zijlstra wrote:
 
-Will measure this.
->> Simple performance test on 40gbe shows no obvious changes in
->> throughput after this patch.
->>
->> The patch only solve this issue when unlimited sndbuf. We still need a
->> solution for limited sndbuf.
->>
->> Cc: Michael S. Tsirkin<mst@redhat.com>
->> Cc: Qin Chuanyu<qinchuanyu@huawei.com>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
-> I think this needs some thought.
->
-> In particular I think this works because VHOST_MAX_PEND
-> is much smaller than the ring size.
-> Shouldn't max_pend then be tied to the ring size if it's small?
->
+> On Fri, Feb 21, 2014 at 03:18:38PM -0500, Vince Weaver wrote:
+> > I've applied the patch and have been unable to trigger the warning with 
+> > either my testcase or a few hours of fuzzing.
+> 
+> Yay.
+> 
+> > My only comment on the patch is it could always use some comments.
+> > 
+> > The perf_event code is really hard to follow as is, without adding
+> > more uncommented special cases.
+> 
+> Does the below help a bit? Or is there anywhere in particular you want
+> more comments?
 
-Yes it should. I just reuse the VHOST_MAX_PEND since it was there for a 
-long time.
-> Another question is about stopping vhost:
-> ATM it's waiting for skbs to complete.
-> Should we maybe hunt down skbs queued and destroy them
-> instead?
-> I think this happens when a device is removed.
->
-> Thoughts?
->
+yes, every little bit helps.
 
-Agree, vhost net removal should not be blocked by a skb. But since the 
-skbs could be queued may places, just destroy them may need extra locks.
+While chasing these fuzzer-related bugs I end up deep in the perf_event
+code and many of the routines have no comments at all.  Eventually I have 
+to dig out the K+R book to figure out order precendece of ++ prefix 
+operators, have at least 2-3 different files open in editors, plus a bunch 
+of firefox tabs open to http://lxr.free-electrons.com, and even then I 
+misunderstand the code a lot.
 
-Haven't thought this deeply, but another possible sloution is to rcuify 
-destructor_arg and assign it to NULL during vhost_net removing.
->> ---
->>   drivers/vhost/net.c | 17 +++++++----------
->>   1 file changed, 7 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
->> index a0fa5de..3e96e47 100644
->> --- a/drivers/vhost/net.c
->> +++ b/drivers/vhost/net.c
->> @@ -345,7 +345,7 @@ static void handle_tx(struct vhost_net *net)
->>   		.msg_flags = MSG_DONTWAIT,
->>   	};
->>   	size_t len, total_len = 0;
->> -	int err;
->> +	int err, num_pends;
->>   	size_t hdr_size;
->>   	struct socket *sock;
->>   	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
->> @@ -366,13 +366,6 @@ static void handle_tx(struct vhost_net *net)
->>   		if (zcopy)
->>   			vhost_zerocopy_signal_used(net, vq);
->>
->> -		/* If more outstanding DMAs, queue the work.
->> -		 * Handle upend_idx wrap around
->> -		 */
->> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
->> -			      % UIO_MAXIOV == nvq->done_idx))
->> -			break;
->> -
->>   		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
->>   					 ARRAY_SIZE(vq->iov),
->>   					&out,&in,
->> @@ -405,9 +398,13 @@ static void handle_tx(struct vhost_net *net)
->>   			break;
->>   		}
->>
->> +		num_pends = likely(nvq->upend_idx>= nvq->done_idx) ?
->> +			    (nvq->upend_idx - nvq->done_idx) :
->> +			    (nvq->upend_idx + UIO_MAXIOV -
->> +			     nvq->done_idx);
->> +
->>   		zcopy_used = zcopy&&  len>= VHOST_GOODCOPY_LEN
->> -				&&  (nvq->upend_idx + 1) % UIO_MAXIOV !=
->> -				      nvq->done_idx
->> +				&&  num_pends<= VHOST_MAX_PEND
->>   				&&  vhost_net_tx_select_zcopy(net);
->>
->>   		/* use msg_control to pass vhost zerocopy ubuf info to skb */
->> -- 
->> 1.8.3.2
+Vince
+
+> 
+> ---
+> Subject: perf, x86: Add a few more comments
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Mon Feb 24 12:26:21 CET 2014
+> 
+> Add a few comments on the ->add(), ->del() and ->*_txn()
+> implementation.
+> 
+> Requested-by: Vince Weaver <vincent.weaver@maine.edu>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   49 +++++++++++++++++++++++++++------------
+>  arch/x86/kernel/cpu/perf_event.h |    8 +++---
+>  2 files changed, 39 insertions(+), 18 deletions(-)
+> 
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -892,7 +892,6 @@ static void x86_pmu_enable(struct pmu *p
+>  		 * hw_perf_group_sched_in() or x86_pmu_enable()
+>  		 *
+>  		 * step1: save events moving to new counters
+> -		 * step2: reprogram moved events into new counters
+>  		 */
+>  		for (i = 0; i < n_running; i++) {
+>  			event = cpuc->event_list[i];
+> @@ -918,6 +917,9 @@ static void x86_pmu_enable(struct pmu *p
+>  			x86_pmu_stop(event, PERF_EF_UPDATE);
+>  		}
+>  
+> +		/*
+> +		 * step2: reprogram moved events into new counters
+> +		 */
+>  		for (i = 0; i < cpuc->n_events; i++) {
+>  			event = cpuc->event_list[i];
+>  			hwc = &event->hw;
+> @@ -1043,7 +1045,7 @@ static int x86_pmu_add(struct perf_event
+>  	/*
+>  	 * If group events scheduling transaction was started,
+>  	 * skip the schedulability test here, it will be performed
+> -	 * at commit time (->commit_txn) as a whole
+> +	 * at commit time (->commit_txn) as a whole.
+>  	 */
+>  	if (cpuc->group_flag & PERF_EVENT_TXN)
+>  		goto done_collect;
+> @@ -1058,6 +1060,10 @@ static int x86_pmu_add(struct perf_event
+>  	memcpy(cpuc->assign, assign, n*sizeof(int));
+>  
+>  done_collect:
+> +	/*
+> +	 * Commit the collect_events() state. See x86_pmu_del() and
+> +	 * x86_pmu_*_txn().
+> +	 */
+>  	cpuc->n_events = n;
+>  	cpuc->n_added += n - n0;
+>  	cpuc->n_txn += n - n0;
+> @@ -1183,28 +1189,38 @@ static void x86_pmu_del(struct perf_even
+>  	 * If we're called during a txn, we don't need to do anything.
+>  	 * The events never got scheduled and ->cancel_txn will truncate
+>  	 * the event_list.
+> +	 *
+> +	 * XXX assumes any ->del() called during a TXN will only be on
+> +	 * an event added during that same TXN.
+>  	 */
+>  	if (cpuc->group_flag & PERF_EVENT_TXN)
+>  		return;
+>  
+> +	/*
+> +	 * Not a TXN, therefore cleanup properly.
+> +	 */
+>  	x86_pmu_stop(event, PERF_EF_UPDATE);
+>  
+>  	for (i = 0; i < cpuc->n_events; i++) {
+> -		if (event == cpuc->event_list[i]) {
+> -
+> -			if (i >= cpuc->n_events - cpuc->n_added)
+> -				--cpuc->n_added;
+> +		if (event == cpuc->event_list[i])
+> +			break;
+> +	}
+>  
+> -			if (x86_pmu.put_event_constraints)
+> -				x86_pmu.put_event_constraints(cpuc, event);
+> +	if (WARN_ON_ONCE(i == cpuc->n_events)) /* called ->del() without ->add() ? */
+> +		return;
+>  
+> -			while (++i < cpuc->n_events)
+> -				cpuc->event_list[i-1] = cpuc->event_list[i];
+> +	/* If we have a newly added event; make sure to decrease n_added. */
+> +	if (i >= cpuc->n_events - cpuc->n_added)
+> +		--cpuc->n_added;
+> +
+> +	if (x86_pmu.put_event_constraints)
+> +		x86_pmu.put_event_constraints(cpuc, event);
+> +
+> +	/* Delete the array entry. */
+> +	while (++i < cpuc->n_events)
+> +		cpuc->event_list[i-1] = cpuc->event_list[i];
+> +	--cpuc->n_events;
+>  
+> -			--cpuc->n_events;
+> -			break;
+> -		}
+> -	}
+>  	perf_event_update_userpage(event);
+>  }
+>  
+> @@ -1598,7 +1614,8 @@ static void x86_pmu_cancel_txn(struct pm
+>  {
+>  	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
+>  	/*
+> -	 * Truncate the collected events.
+> +	 * Truncate collected array by the number of events added in this
+> +	 * transaction. See x86_pmu_add() and x86_pmu_*_txn().
+>  	 */
+>  	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
+>  	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
+> @@ -1609,6 +1626,8 @@ static void x86_pmu_cancel_txn(struct pm
+>   * Commit group events scheduling transaction
+>   * Perform the group schedulability test as a whole
+>   * Return 0 if success
+> + *
+> + * Does not cancel the transaction on failure; expects the caller to do this.
+>   */
+>  static int x86_pmu_commit_txn(struct pmu *pmu)
+>  {
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -130,9 +130,11 @@ struct cpu_hw_events {
+>  	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+>  	int			enabled;
+>  
+> -	int			n_events;
+> -	int			n_added;
+> -	int			n_txn;
+> +	int			n_events; /* the # of events in the below arrays */
+> +	int			n_added;  /* the # last events in the below arrays;
+> +					     they've never been enabled yet */
+> +	int			n_txn;    /* the # last events in the below arrays;
+> +					     added in the current transaction */
+>  	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
+>  	u64			tags[X86_PMC_IDX_MAX];
+>  	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+> 
 
