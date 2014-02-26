@@ -1,202 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaBZKFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:05:00 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:48730 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750724AbaBZKE4 (ORCPT
+	id S1752043AbaBZKFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:05:12 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:49598 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751127AbaBZKFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:04:56 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmcGAOK7DVN5LJYe/2dsb2JhbABZgwaDQ7hshVaBGxd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhExkCh2IHyHoXFo46B4Q4BJg1ilOHVoNBKIEuJA
-Date: Wed, 26 Feb 2014 21:04:39 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
- fallocate
-Message-ID: <20140226100439.GV13647@dastard>
-References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com>
- <20140222140625.GD26637@thunk.org>
- <20140223213606.GE4317@dastard>
- <alpine.LSU.2.11.1402251525370.2380@eggly.anvils>
- <20140226015747.GN13647@dastard>
- <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
+	Wed, 26 Feb 2014 05:05:05 -0500
+Message-ID: <530DBC4C.9050802@arm.com>
+Date: Wed, 26 Feb 2014 10:05:00 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Feng Kan <fkan@apm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: Re: [PATCH] irqchip:gic: change access of gicc_ctrl register to read
+ modify write.
+References: <1392761550-11662-1-git-send-email-fkan@apm.com> <53048882.9070706@arm.com> <CAL85gmBjdBWv-aMAGQtufmJUSKanzPoXa0QfHo756KM+E0orqA@mail.gmail.com>
+In-Reply-To: <CAL85gmBjdBWv-aMAGQtufmJUSKanzPoXa0QfHo756KM+E0orqA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 09:25:40PM -0800, Hugh Dickins wrote:
-> On Wed, 26 Feb 2014, Dave Chinner wrote:
-> > On Tue, Feb 25, 2014 at 03:41:20PM -0800, Hugh Dickins wrote:
-> > > On Mon, 24 Feb 2014, Dave Chinner wrote:
-> > > > On Sat, Feb 22, 2014 at 09:06:25AM -0500, Theodore Ts'o wrote:
-> > > > > On Wed, Feb 19, 2014 at 01:37:43AM +0900, Namjae Jeon wrote:
-> > > > > > +	/*
-> > > > > > +	 * There is no need to overlap collapse range with EOF, in which case
-> > > > > > +	 * it is effectively a truncate operation
-> > > > > > +	 */
-> > > > > > +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) &&
-> > > > > > +	    (offset + len >= i_size_read(inode)))
-> > > > > > +		return -EINVAL;
-> > > > > > +
-> > > > > 
-> > > > > I wonder if we should just translate a collapse range that is
-> > > > > equivalent to a truncate operation to, in fact, be a truncate
-> > > > > operation?
-> > > > 
-> > > > Trying to collapse a range that extends beyond EOF, IMO, is likely
-> > > > to only happen if the DVR/NLE application is buggy. Hence I think
-> > > > that telling the application it is doing something that is likely to
-> > > > be wrong is better than silently truncating the file....
-> > > 
-> > > I do agree with Ted on this point.  This is not an xfs ioctl added
-> > > for one DVR/NLE application, it's a mode of a Linux system call.
-> > > 
-> > > We do not usually reject with an error when one system call happens
-> > > to ask for something which can already be accomplished another way;
-> > > nor nanny our callers.
-> > > 
-> > > It seems natural to me that COLLAPSE_RANGE should support beyond EOF;
-> > > unless that adds significantly to implementation difficulties?
-> > 
-> > Yes, it does add to the implementation complexity significantly - it
-> > adds data security issues that don't exist with the current API.
-> > 
-> > That is, Filesystems can have uninitialised blocks beyond EOF so
-> > if we allow COLLAPSE_RANGE to shift them down within EOF, we now
-> > have to ensure they are properly zeroed or marked as unwritten.
-> > 
-> > It also makes implementations more difficult. For example, XFS can
-> > also have in-memory delayed allocation extents beyond EOF, and they
-> > can't be brought into the range < EOF without either:
-> > 
-> > 	a) inserting zeroed pages with appropriately set up
-> > 	and mapped bufferheads into the page cache for the range
-> > 	that sits within EOF; or
-> > 	b) truncating the delalloc extents beyond EOF before the
-> > 	move
-> > 
-> > So, really, the moment you go beyond EOF filesystems have to do
-> > quite a bit more validation and IO in the context of the system
-> > call. It no longer becomes a pure extent manipulation offload - it
-> > becomes a data security problem.
-> 
-> Those sound like problems you would already have solved for a
-> simple extending truncate.
+[Fixing tglx's email address so he too can enjoy the fun...]
 
-Yes, they have because of what truncate defines - that the region
-between the old EOF and the new EOF must contain zeroes. truncate
-does not move blocks around, it merely changes the EOF, and so the
-solution is simple.
+On 25/02/14 20:19, Feng Kan wrote:
+> On Wed, Feb 19, 2014 at 2:33 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> Hi Feng,
+>>
+>> On 18/02/14 22:12, Feng Kan wrote:
+>>> This change is made to preserve the GIC v2 releated bits in the
+>>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+>>> The original code only set the enable/disable group bit in this register.
+>>> This code will preserve all other bits configured by the bootload except
+>>
+>> This "all other bits" in itself is a major problem, see below.
+>>
+>>> the enable/disable bit. The main reason for this change is to allow the
+>>> bypass bits specified in the v2 spec to remain untouched by the current
+>>> GIC code. In the X-Gene platform, the bypass functionality is not used
+>>> and bypass must be disabled at all time.
+>>>
+>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>>> Acked-by: Anup Patel <apatel@apm.com>
+>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>> ---
+>>>  drivers/irqchip/irq-gic.c | 18 +++++++++++++++---
+>>>  1 file changed, 15 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>> index 341c601..9adc3e1 100644
+>>> --- a/drivers/irqchip/irq-gic.c
+>>> +++ b/drivers/irqchip/irq-gic.c
+>>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>       void __iomem *dist_base = gic_data_dist_base(gic);
+>>>       void __iomem *base = gic_data_cpu_base(gic);
+>>>       unsigned int cpu_mask, cpu = smp_processor_id();
+>>> +     unsigned int ctrl_mask;
+>>>       int i;
+>>>
+>>>       /*
+>>> @@ -449,13 +450,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>
+>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
+>>> +
+>>> +     ctrl_mask = readl(base + GIC_CPU_CTRL);
+>>> +     ctrl_mask |= 0x1;
+>>> +     writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+>>
+>> So what if the firmware used a different EOImode? We would end up in a
+>> situation where we don't deactivate the interrupts anymore. Not good.
+> Is there an case where the EOI mode usage would change on the fly?
+> Bootloader's job would be to setup the bits so the kernel would work properly.
 
+If you trust bootloaders to get anything right, you shouldn't ever touch
+the Linux IRQ code.
 
-> But I wasn't really thinking of the offset > i_size case, just the
-> offset + len >= i_size case: which would end with i_size at offset,
-> and the areas you're worried about still beyond EOF - or am I confused?
+Since the ancient times, bootloaders have been known to be part of a
+conspiracy aiming to destroy Mankind and rule the Earth. Bootloaders are
+the Orcs of software. It's been scientifically proven that they are
+responsible for climate change. Seen the floods in England? Bootloaders.
+Exploding volcanoes? Bootloaders. The flat tire on your bike?
+Bootloaders. Enough said.
 
-Right, offset beyond EOF is just plain daft. But you're not thinking
-of the entire picture. What happens when a system crashes half way
-through a collapse operation? On tmpfs you don't care - everything
-is lost, but on real filesystems we have to care about. 
+> Do you have a case in mind that would violate this setup?
 
-offset + len beyond EOF is just truncate(offset).
+What if your bootloader is actually a small RT kernel that uses
+interrupt nesting (hence EOImode==1 to be able to split deactivation
+from priority drop)? ECOS/RedBoot anyone?
 
->From the point of view of an application offloading a data movement
-operation via collapse range, any range that overlaps EOF is wrong -
-data beyond EOF is not accessible and is not available for the
-application to move. Hence EINVAL - it's an invalid set of
-parameters.
+Do you think for a second that this thing will kindly reset EIOmode to
+zero just because it loads a Linux kernel? See the above.
 
-If we do allow it and implement it by block shifting (which,
-technically, is the correct interpretation of the collapse range
-behaviour because it preserves preallocation beyond
-the collapsed region beyond EOF), then we have
-thr problem of moving data blocks below EOF by extent shifting
-before we change the EOF. That exposes blocks of undefined content
-to the user if we crash and recover up to that point of the
-operation. It's just plain dangerous, and if we allow this
-possibility via the API, someone is going to make that mistake in a
-filesystem because it's difficult to test and hard to get right.
+Remember this code is used on a lot of fairly insane platforms. You
+*must* be extremely conservative in any change you make.
 
-> > And, indeed, the specification that we are working to is that the
-> > applications that want to collapse the range of a file are using
-> > this function instead of read/memcpy/write/truncate, which by
-> > definition means they cannot shift ranges of the file beyond EOF
-> > into the new file.
-> > 
-> > So IMO the API defines the functionality as required by the
-> > applications that require it and *no more*. If you need some
-> > different behaviour - we can add it via additional flags in future
-> > when you have an application that requires it. 
-> 
-> You still seem to be thinking in terms of xfs ioctl hacks,
-> rather than fully scoped Linux system calls.
+Thanks,
 
-Low blow, referee! :/
-
-To set the record straight, this fallocate interface was originally
-scoped and implemented for ext4, then extended to XFS by request.
-it's never been near an XFS ioctl interface in it's life.
-
-Besides, you're completely off the ball here. This isn't a fully
-scoped Linux system call - that's what fallocate() is. fallocate()
-is designed to be as extensible as possible within the constraints
-of it's three control parameters (flags, offset, length).  This was
-done so we could add new allocation primitives for filesystem
-offloads in the future. That's *exactly* what collapse range is -
-it is using fallocate in the way it was intended to be used.
-
-FWIW, consider the the "can't change EOF with the hole punch
-primitive" rule we defined.  We did that because hole punch needs to
-work beyond EOF without changing EOF because having a hole punch
-that removes preallocation beyond EOF extend the file is just plain
-daft.
-
-Hence if you want to punch a hole that crosses EOF and set EOF to
-the start of the hole a the same time *you have to use truncate*.
-Because, by definition, that's a *truncate operation*, not a *hole
-punch operation*.
-
-Now, consider the collapse range primitive and apply the same logic:
-
-Applications cannot access data beyond EOF. Allowing them to
-collapse a range past EOF is effectively saying "bring data
-beyond EOF down into the file, then set EOF so you can't
-access the data that was beyond the old EOF. It has potential for
-stale data exposure, especially if the operation is fatally
-interrupted (e.g. by a system crash or filesystem shutdown).
-
-Hence if you want to collapse a range that crosses EOF and set EOF
-to the start of the range a the same time *you have to use
-truncate*.  Because, by definition, that's a *truncate operation*,
-not a *collapse range operation*.
-
-> But it probably doesn't matter too much, if we start with an error,
-> and later correct that to a full implementation - an xfstest or LTP
-> test which expected failure will fail once it sees success, but no
-> users harmed in the making of this change.
-
-If we want different behaviour in future, then we define a new
-control flag to indicate that we want the different behaviour.  Yet
-another reason we designed the fallocate syscall to be
-extensible....
-
-Cheers,
-
-Dave.
+	M.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jazz is not dead. It just smells funny...
