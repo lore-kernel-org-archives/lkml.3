@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaBZBeE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:34:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34447 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800AbaBZBeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:34:02 -0500
-Message-ID: <530D4445.8060304@zytor.com>
-Date: Tue, 25 Feb 2014 17:32:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751821AbaBZBec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:34:32 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36699 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751107AbaBZBea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 20:34:30 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtpMAI5DDVN5LJYePGdsb2JhbABZgwaIT7NuhVaBFBcDAQEBATg1giUBAQU6HCMQCAMOCgklDwUlAwcaE4gEyFMXFo46B4Q4BJg1ilOJRYFSKA
+Date: Wed, 26 Feb 2014 12:34:26 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Namjae Jeon <linkinjeon@gmail.com>,
+        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
+        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
+        mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
+ for fallocate
+Message-ID: <20140226013426.GM13647@dastard>
+References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
+ <20140224005710.GH4317@dastard>
+ <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
+ <20140225041346.GA29907@dastard>
+ <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
+ <20140225154128.947a2de83a2d0dc21763ccf9@linux-foundation.org>
 MIME-Version: 1.0
-To: behanw@converseincode.com, mmarek@suse.cz, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, sparse@chrisli.org
-CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sparse@vger.kernel.org, torvalds@linux-foundation.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        =?UTF-8?B?SmFuLVNpbW9uIE3Dtmxs?= =?UTF-8?B?ZXI=?= <dl9pf@gmx.de>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH 5/5] x86 kbuild: LLVMLinux: More cc-options added for
- clang
-References: <1393376923-21892-1-git-send-email-behanw@converseincode.com> <1393376923-21892-6-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1393376923-21892-6-git-send-email-behanw@converseincode.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140225154128.947a2de83a2d0dc21763ccf9@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 05:08 PM, behanw@converseincode.com wrote:
->  
-> +# enforce no-sse for clang
-> +ifneq ($(COMPILER),clang)
-> +        KBUILD_CFLAGS += $(call cc-option,-mno-sse)
-> +        KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
-> +endif
-> +
+On Tue, Feb 25, 2014 at 03:41:28PM -0800, Andrew Morton wrote:
+> On Tue, 25 Feb 2014 15:23:35 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
+> > On Tue, 25 Feb 2014, Dave Chinner wrote:
+> > > On Tue, Feb 25, 2014 at 02:16:01PM +1100, Stephen Rothwell wrote:
+> > > > On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
+> > FALLOC_FL_COLLAPSE_RANGE: I'm a little sad at the name COLLAPSE,
+> > but probably seven months too late to object.  It surprises me that
+> > you're doing all this work to deflate a part of the file, without
+> > the obvious complementary work to inflate it - presumably all those
+> > advertisers whose ads you're cutting out, will come back to us soon
+> > to ask for inflation, so that they have somewhere to reinsert them ;)
+> 
+> Yes, I was wondering that.  Why not simply "move these blocks from here
+> to there".
 
-I'm *very* confused.  You're doing ifneq here but you're talking about
-it as if you are *adding* them for Clang, also these options are already
-added elsewhere (lines 57, 64, 86, 89) so why add them here?
+And open a completely unnecessary can of worms to do with
+behavioural and implementation corner cases?
 
-	-hpa
+Do you allow it to destroy data by default? Or only allow moves into
+holes?
 
+What do you do with range the data is moved out of? Does it just
+become a hole? What happens if the range overlaps EOF - does that
+change the file size?
+
+What if you want to move the range beyond EOF?
+
+What if the source and destination ranges overlap?
+
+What happens when you move the block at EOF into the middle of a
+file - do you end up with zeros padding the block and the file size
+having to be adjusted accordingly? Or do we have to *copy* all the
+data in high blocks down to fill the hole in the block?
+
+What behaviour should we expect if the filesystem can't implement
+the entire move atomically and we crash in the middle of the move?
+
+I can keep going, but I'll stop here - you get the idea.
+
+In comparison, collapse range as a file data manipulation has very
+specific requirements and from that we can define a simple, specific
+API that allows filesystems to accelerate that operation by extent
+manipulation rather than read/memcpy/write that the applications are
+currently doing for this operation....  IOWs, collapse range is a
+simple operation, "move arbitrary blocks from here to there" is a
+nightmare both from the specification and the implementation points
+of view.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
