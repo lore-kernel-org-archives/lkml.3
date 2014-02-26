@@ -1,190 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaBZPn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:43:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40704 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaBZPn1 (ORCPT
+	id S1753090AbaBZPnq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:43:46 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36571 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaBZPno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:43:27 -0500
-Message-ID: <530E0B92.5010903@pengutronix.de>
-Date: Wed, 26 Feb 2014 16:43:14 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
-MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local> <530DEA7C.6010609@pengutronix.de> <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
-In-Reply-To: <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="pLrNo12Q9JO65kgWkwNPQd1MnkbN5SB08"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 26 Feb 2014 10:43:44 -0500
+From: Kieran Clancy <clancy.kieran@gmail.com>
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kieran Clancy <clancy.kieran@gmail.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Subject: [PATCH] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Thu, 27 Feb 2014 02:12:40 +1030
+Message-Id: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---pLrNo12Q9JO65kgWkwNPQd1MnkbN5SB08
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
+continue to log events during sleep (lid open/close, AC plug/unplug,
+battery level change), which accumulate in the EC until a buffer fills.
+After the buffer is full (tests suggest it holds 8 events), GPEs stop
+being triggered for new events. This state persists on wake or even on
+power cycle, and prevents new events from being registered until the EC
+is manually polled.
 
-On 02/26/2014 03:46 PM, Appana Durga Kedareswara Rao wrote:
-> Hi Marc,
->=20
->=20
->> -----Original Message-----
->> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
->> Sent: Wednesday, February 26, 2014 6:52 PM
->> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
->> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org=
+This is the root cause of a number of bugs, including AC not being
+detected properly, lid close not triggering suspend, and low ambient
+light not triggering the keyboard backlight. The bug also seemed to be
+responsible for performance issues on at least one user's machine.
 
->> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linu=
-x-
->> kernel@vger.kernel.org; devicetree@vger.kernel.org
->> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
->>
->> On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
->>>> This loop looks broken. Can you explain how it works.
->>>>
->>>> What it shoud do is:
->>>> We have put (priv->tx_head - priv->tx_tail) CAN frames into the FIFO=
-=2E
->>>> This means at maximum there could be this amount of CAN frames which=
+Juan Manuel Cabo found the cause of bug and the workaround of polling
+the EC manually on wake.
 
->>>> have been successfully transmitted. For every cycle in this while
->>>> loop you
->>>> should:
->>>> a) check if a CAN frame has successfully been transmitted
->>>>    (as this CAN core uses a FIFO it should be "oldest")
->>>>    A read_reg() of some kind is missing in your loop.
->>>> b) if needed, remove this event from the FIFO or
->>>>    mark the interrupt as done. Whatever you hardware needs.
->>>> c) update your statistics
->>>> d) Use can_get_echo_skb to push this frame into the networking stack=
+This patch:
+- Adds a function acpi_ec_clear() which polls the EC, at most
+  ACPI_EC_CLEAR_MAX (currently 20) times. A warning is logged if this
+  limit is reached.
+- Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
+  system vendor is Samsung. This check could be replaced by several more
+  specific DMI vendor/product pairs, but it's likely that the bug
+  affects more Samsung products than just the five series mentioned
+  above. Further, it should not be harmful to run acpi_ec_clear() on
+  systems without the bug; it will return immediately after finding no
+  data waiting.
+- Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
+- Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
 
->>>> e) As a CAN frame has been transmitted successfully, wake the tx_que=
-ue.
->>>>
->>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
->>>>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
->>>>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
->>>>> +                                   XCAN_IXR_TXFLL_MASK);
->>>>> +                   netif_stop_queue(ndev);
->>>>
->>>> Why do you stop the queue here? A CAN frame has successfully been
->>>> transmitted, there should be room in the FIFO.
->>>>
->>>>> +                   break;
->>>>> +           }
->>>>> +           can_get_echo_skb(ndev, priv->tx_tail %
->>>>> +                                   priv->xcan_echo_skb_max_tx);
->>>>> +           priv->tx_tail++;
->>>>> +   }
->>>>> +
->>>
->>> The below are the bit fields available for the Transmit FIFO.
->>> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx fifo=
- full
->> interrupt.
->>> 2) in the SR(Status Register) Tx fifo full condition.
->>>
->>>
->>> I am modifying the entire tx interrupt logic to like below.
->>>
->>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
->>>         struct xcan_priv *priv =3D netdev_priv(ndev);
->>>         struct net_device_stats *stats =3D &ndev->stats;
->>>
->>>             while (priv->tx_head - priv->tx_tail > 0) {
->>>                 if (isr & XCAN_IXR_TXFLL_MASK) {
->>>                         priv->write_reg(priv, XCAN_ICR_OFFSET,
->>>                                         XCAN_IXR_TXFLL_MASK);
->>>                           break;
->>>                 }
->>>                 can_get_echo_skb(ndev, priv->tx_tail %
->>>                                         priv->xcan_echo_skb_max_tx);
->>>                 priv->tx_tail++;
->>>          stats->tx_packets++;
->>>         netif_wake_queue(ndev);
->>>               can_led_event(ndev, CAN_LED_EVENT_TX);
->>>
->>>         }
->>
->> You just need to wake the queue once.
->=20
-> Ok
->>
->>> }
->>>
->>>
->>> Are you Ok with the above logic?
->>
->> No, how can you tell how many frames have been transmitted?
->=20
-> There is no register to read how many can frames are transmitted.
-> The only way to know Is by reading this parameter (stats->tx_packets++;=
-) through ip command
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
+References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Signed-off-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: San Zamoyski <san@plusnet.pl>
+---
+ drivers/acpi/ec.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
 
-stats->tx_packets is calculated in the above loop and the loop is
-broken. Let me illustrate the problem:
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index 959d41a..f437d9a 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -67,6 +67,8 @@ enum ec_command {
+ #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
+ #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
+ #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
++#define ACPI_EC_CLEAR_MAX	20	/* Maximum number of events to query
++					 * when trying to clear the EC */
+ 
+ enum {
+ 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
+@@ -116,6 +118,7 @@ EXPORT_SYMBOL(first_ec);
+ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
+ static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
+ static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
++static int EC_FLAGS_CLEAR_ON_RESUME; /* EC should be polled on boot/resume */
+ 
+ /* --------------------------------------------------------------------------
+                              Transaction Management
+@@ -440,6 +443,26 @@ acpi_handle ec_get_handle(void)
+ 
+ EXPORT_SYMBOL(ec_get_handle);
+ 
++static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
++
++/* run with locked ec mutex */
++static void acpi_ec_clear(struct acpi_ec *ec)
++{
++	int i, status;
++	u8 value = 0;
++
++	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
++		status = acpi_ec_query_unlocked(ec, &value);
++		if (status || !value)
++			break;
++	}
++
++	if (i == ACPI_EC_CLEAR_MAX)
++		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
++	else
++		pr_info("%d stale EC events cleared\n", i);
++}
++
+ void acpi_ec_block_transactions(void)
+ {
+ 	struct acpi_ec *ec = first_ec;
+@@ -463,6 +486,10 @@ void acpi_ec_unblock_transactions(void)
+ 	mutex_lock(&ec->mutex);
+ 	/* Allow transactions to be carried out again */
+ 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
++
++	if (EC_FLAGS_CLEAR_ON_RESUME)
++		acpi_ec_clear(ec);
++
+ 	mutex_unlock(&ec->mutex);
+ }
+ 
+@@ -821,6 +848,13 @@ static int acpi_ec_add(struct acpi_device *device)
+ 
+ 	/* EC is fully operational, allow queries */
+ 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
++
++	/* Some hardware may need the EC to be cleared before use */
++	if (EC_FLAGS_CLEAR_ON_RESUME) {
++		mutex_lock(&ec->mutex);
++		acpi_ec_clear(ec);
++		mutex_unlock(&ec->mutex);
++	}
+ 	return ret;
+ }
+ 
+@@ -922,6 +956,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
+ 	return 0;
+ }
+ 
++/*
++ * On some hardware it is necessary to clear events accumulated by the EC during
++ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
++ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
++ *
++ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
++ *
++ * Ideally, the EC should also be instructed not to accumulate events during
++ * sleep (which Windows seems to do somehow), but the interface to control this
++ * behaviour is not known at this time.
++ *
++ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
++ * however it is very likely that other Samsung models are affected.
++ *
++ * On systems which don't accumulate EC events during sleep, this extra check
++ * should be harmless.
++ */
++static int ec_clear_on_resume(const struct dmi_system_id *id)
++{
++	pr_debug("Detected system needing EC poll on resume.\n");
++	EC_FLAGS_CLEAR_ON_RESUME = 1;
++	return 0;
++}
++
+ static struct dmi_system_id ec_dmi_table[] __initdata = {
+ 	{
+ 	ec_skip_dsdt_scan, "Compal JFL92", {
+@@ -965,6 +1023,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
++	{
++	ec_clear_on_resume, "Samsung hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
+ 	{},
+ };
+ 
+-- 
+1.8.5.3
 
-- xmit is called 10 times in a row
-- this means you have 10 CAN frames in the TX FIFO
-- a single CAN frame gets transmitted
-- you get an interrupt
-- you enter the above routine and loop 10 times and echo the CAN frame
-  back into the stack
-
-Now every application sees 10 transmitted packages, but there is only
-one transmitted. Every time you loop you have to check if the CAN frame
-has already been transmitted or not. Is that possible with the hardware?
-
-> ip -d -s link show can
-> Or using ifconfig command.
->=20
-> At the h/w level it can transmit Max upto 64 packets (Max fifo depth)
-> We need to monitor the Tx fifo full bit in the ISR(Interrupt Status Reg=
-ister)  or Tx fifo full bit in the SR(Status Register) and if it is full =
-we need to stop the queue that is
-> I am doing in the _xmit by reading the status register before proceedin=
-g the   packet transmission.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---pLrNo12Q9JO65kgWkwNPQd1MnkbN5SB08
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMOC5IACgkQjTAFq1RaXHOO/wCdHe54PqTUu8mFN3zIwWQUgMMj
-fKEAn1bsIGaXKtF2HBYURWYAchExjecR
-=6BdZ
------END PGP SIGNATURE-----
-
---pLrNo12Q9JO65kgWkwNPQd1MnkbN5SB08--
