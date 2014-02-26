@@ -1,246 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaBZGmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 01:42:33 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36402 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750745AbaBZGmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 01:42:31 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjVNAHaMDVN5LJYePGdsb2JhbABZgwaDQ4UMs3KFVoEYFwMBAQEBODWCJQEBBAE6HCMFCwgDGAklDwUlAwcaExmHZAfIWRcWjU5sB4Q4BIxmi0+HRoMNiUWBUiiBNQ
-Date: Wed, 26 Feb 2014 17:42:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-Message-ID: <20140226064224.GU13647@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
- <20140224005710.GH4317@dastard>
- <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
- <20140225041346.GA29907@dastard>
- <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
- <20140226011347.GL13647@dastard>
- <alpine.LSU.2.11.1402251856060.1114@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402251856060.1114@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751261AbaBZGrC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 01:47:02 -0500
+Received: from ozlabs.org ([203.10.76.45]:52307 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717AbaBZGrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 01:47:00 -0500
+Date: Wed, 26 Feb 2014 17:46:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: linux-next: build failure after merge of the cgroup tree
+Message-Id: <20140226174655.b5430a1a2413ddb459dababe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Feb_2014_17_46_55_+1100_7jDWOrjbyOGJQ73G"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:45:15PM -0800, Hugh Dickins wrote:
-> On Wed, 26 Feb 2014, Dave Chinner wrote:
-> > On Tue, Feb 25, 2014 at 03:23:35PM -0800, Hugh Dickins wrote:
-> > > Of course I'm interested in the possibility of extending it to tmpfs;
-> > > which may not be a worthwhile exercise in itself, except that it would
-> > > force us to face and solve any pagecache/radixtree issues, if possible,
-> > > thereby enhancing the support for disk-based filesystems.
-> > > 
-> > > I doubt we should look into that before Jan Kara's range locking mods
-> > > arrive, or are rejected.  As I understand it, you're going ahead with
-> > > this, knowing that there can be awkward races with concurrent faults -
-> > > more likely to cause trinity fuzzer reports, than interfere with daily
-> > > usage (trinity seems to be good at faulting into holes being punched).
-> > 
-> > Yes, the caveat is that the applications that use it (TVs, DVRs, NLE
-> > applications, etc) typically don't use mmap for accessing the data
-> > stream being modified. Further, it's much less generally useful than
-> > holepunching, so when these two are combined, the likely exposure to
-> > issues resulting from mmap deficiencies are pretty damn low.
-> 
-> Agreed, but we do want to define how the interaction behaves, we want
-> it to be the same across all filesystems supporting COLLAPSE_RANGE,
-> and we don't want it to lead to system crashes or corruptions.
+--Signature=_Wed__26_Feb_2014_17_46_55_+1100_7jDWOrjbyOGJQ73G
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We have defined it. It's just a data manipulation operation that
-moves file data from one offset to another. How  a filesystem
-implements that is a filesystem's problem, not a problem with the
-API.
+Hi Tejun,
 
-ext4 and XFS implement it by removing all cached data and mappings
-over the range from memory and then mainpulating extent status.
-Other fileystems might be able to do similar things, or we might
-just do an internal kernel read/write loop. And there's nothing
-ruling out a hardware ior nework protocol copy offload being used to
-implement an optimised data copy, either.
+After merging the cgroup tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-tmpfs is different in that it's only data store is the page cache,
-so it needs to operate within the constraints of the page cache.
-moving pages inside the page cache might be a new operation for
-tmpfs, but it's not an operation that is needed by filesystems
-to implement this file data manipulation.
+kernel/cgroup.c: In function 'cgroup_mount':
+kernel/cgroup.c:1572:2: error: too few arguments to function 'kernfs_mount'
+  dentry =3D kernfs_mount(fs_type, flags, root->kf_root);
+  ^
 
-> > > That's probably the right pragmatic decision; but I'm a little worried
-> > > that it's justfied by saying we already have such races in hole-punch.
-> > > Collapse is significantly more challenging than either hole-punch or
-> > > truncation: the shifting of pages from one offset to another is new,
-> > > and might present nastier bugs.
-> > 
-> > Symptoms might be different, but it's exactly the same problem. i.e.
-> > mmap_sem locking inversions preventing the filesystem from
-> > serialising IO path operations like hole punch, truncate and other
-> > extent manipulation operations against concurrent page faults
-> > that enter the IO path.
-> 
-> That may (may) be true of the current kick-everything-out-of-pagecache
-> approach.  But in general I stand by "Collapse is significantly more
-> challenging".  Forgive me if that amounts to saying "Hey, here's a
-> more complicated way to do it.  Ooh, this way is more complicated."
-> The concept of moving a page from one file offset to another is new,
-> and can be expected to pose new difficulties.
+Caused by commit 2bd59d48ebfb ("cgroup: convert to kernfs") interacting
+with commit fed95bab8d29 ("sysfs: fix namespace refcnt leak") from the
+driver-core.current tree.
 
-Collapse might be challenging for tmpfs, but it's relatively trivial
-for block based filesystems because we have an independent backing
-store and so we don't need to move cached data around.
+I added the following merge fix patch, but it may not be completely
+correct, please check.
 
-> > > Emphasis on "might": I expect it's impossible, given your current
-> > > approach, but something to be on guard against is unmap_mapping_range()
-> > > failing to find and unmap a pte, because the page is mapped at the
-> > > "wrong" place in the vma, resulting in BUG_ON(page_mapped(page))
-> > > in __delete_from_page_cache().
-> > 
-> > Unmapping occurs before anything is shifted. And even if a fault
-> > does occur before the file size changes at the end of a collapse
-> > range operation (via the truncate path), the page in the page cache
-> > won't be moved about so I don't see how the above problem could
-> > occur. All that will happen is that you get the wrong data in the
-> > mmap()d page, just like you will with hole_punch issues.
-> 
-> I think you're probably right.  I expect that attempting to fault
-> a page back from disk while collapse is shifting down, will hit a
-> mutex and wait.  But that's liable to differ from filesystem to
-> filesystem, so I'm not certain.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 26 Feb 2014 17:41:51 +1100
+Subject: [PATCH] cgroup: fix up for kernfs_mount API change
 
-Well, no, we can't do that entirely atomically because of mmap_sem
-inversions. Individual extent shifts, yes, but not against the
-operation as a whole. i.e. fallocate needs to serialise against IO
-operations, but we can't serialise Io operations against page faults
-because of mmap_sem inversions....
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ kernel/cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> > > But your case is different: collapse is much closer to truncation,
-> > > and if you do not unmap the private COW'ed pages, then pages left
-> > > behind beyond the EOF will break the spec that requires SIGBUS when
-> > > touching there, and pages within EOF will be confusingly derived
-> > > from file data now belonging to another offset or none (move these
-> > > pages within the user address space? no, I don't think anon_vmas
-> > > would allow that, and there may be no right place to move them).
-> > 
-> > See above - we never leave pages beyond the new EOF because setting
-> > the new EOF is a truncate operation that calls
-> > truncate_setsize(inode, newsize).
-> 
-> Right, thanks, I now see the truncate_setsize() in the xfs case -
-> though not in the ext4 case, which looks as if it's just doing an
-> i_size_write() afterwards.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 306ad0ed19ef..8f4ddbe23d58 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1569,7 +1569,7 @@ out_unlock:
+ 	if (ret)
+ 		return ERR_PTR(ret);
+=20
+-	dentry =3D kernfs_mount(fs_type, flags, root->kf_root);
++	dentry =3D kernfs_mount(fs_type, flags, root->kf_root, NULL);
+ 	if (IS_ERR(dentry))
+ 		cgroup_put(&root->top_cgroup);
+ 	return dentry;
+--=20
+1.9.0
 
-So that's a bug in the ext4 code ;)
-
-> Yes, truncate_setsize() at the end should answer my SIGBUS objection.
-> And with that out of the way, although I don't particularly care for
-> the weirdness of private COW'ed pages becoming associated with file
-> offsets they never originated from, I don't think I could argue with
-> you when you tell me "well, that's the weirdness you get from mixing
-> COLLAPSE_RANGE with MAP_PRIVATE mmaps".
-> 
-> Looks like there's no need for the __truncate_pagecache_range() with
-> even_cows arg that I was advocating: we just need ext4 to truncate
-> properly at the end, and document the disassociated private pages.
-
-*nod*
-
-> > > It's clear that the right and easy thing to do is just to unmap
-> > > them (all of them, from critical offset to EOF), in the rare case
-> > > of there being any such pages.  Whether this detail needs to be
-> > > mentioned in the man page (I don't like throwing away a user's
-> > > data without warning) I'm not sure, Michael can judge.
-> > > 
-> > > FALLOC_FL_COLLAPSE_RANGE: I'm a little sad at the name COLLAPSE,
-> > > but probably seven months too late to object.  It surprises me that
-> > > you're doing all this work to deflate a part of the file, without
-> > > the obvious complementary work to inflate it - presumably all those
-> > > advertisers whose ads you're cutting out, will come back to us soon
-> > > to ask for inflation, so that they have somewhere to reinsert them ;)
-> > 
-> > The name makes no difference to me - it's a filesystem offload
-> > function of a very specific nature. If we require the opposite
-> > behaviour - inserting unwritten extents after shifting the data up
-> > out of the way - then we can just add a new FALLOC_FL_INSERT_RANGE
-> > command to do that.
-> > 
-> > But in the absence of anyone needing such functionality, the
-> > complexity of implementing it is not worth the effort.
-> 
-> Yes, it's not a requirement that it be implemented immediately.
-> 
-> > 
-> > > I should mention that when "we" implemented this thirty years ago,
-> > > we had a strong conviction that the system call should be idempotent:
-> > > that is, the len argument should indicate the final i_size, not the
-> > > amount being removed from it.  Now, I don't remember the grounds for
-> > > that conviction: maybe it was just an idealistic preference for how
-> > > to design a good system call.  I can certainly see that defining it
-> > > that way round would surprise many app programmers.  Just mentioning
-> > > this in case anyone on these lists sees a practical advantage to
-> > > doing it that way instead.
-> > 
-> > I don't see how specifying the end file size as an improvement. What
-> > happens if you are collapse a range in a file that is still being
-> > appended to by the application and so you race with a file size
-> > update? IOWs, with such an API the range to be collapsed is
-> > completely unpredictable, and IMO that's a fundamentally broken API.
-> 
-> That's fine if you don't see the idempotent API as an improvement,
-> I just wanted to put it on the table in case someone does see an
-> advantage to it.  But I think I'm missing something in your race
-> example: I don't see a difference between the two APIs there.
-
-
-Userspace can't sample the inode size via stat(2) and then use the value for a
-syscall atomically. i.e. if you specify the offset you want to
-collapse at, and the file size you want to have to define the region
-to collapse, then the length you need to collapse is (current inode
-size - end file size). If "current inode size" can change between
-the stat(2) and fallocate() call (and it can), then the length being
-collapsed is indeterminate....
-
-> > > I see you've included xfstests and xfs_io updates, nice.  Did you
-> > > realize that util-linux has a /usr/bin/fallocate?  I hope someone
-> > > will update that too.
-> > 
-> > I don't care about /usr/bin/fallocate - I've never used it in my
-> > life because xfs_io exists on all my systems and is way more
-> > powerful and useful to me than /usr/bin/fallocate. Regardless,
-> > I think someone posted patches for it yesterday.
-> 
-> Your scorn is noted: yes, it is pretty simple,
-> but I'm glad to hear Dongsu is attending to it.
-
-Not scorn - "don't care" was careless phrasing. What I was trying to
-say is that fallocate is not really relevant for testing filesystem
-implementations as you need a bunch more functionality to be able to
-test the syscall and filesystems adequately.....
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
+--Signature=_Wed__26_Feb_2014_17_46_55_+1100_7jDWOrjbyOGJQ73G
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> 
-> Hugh
-> 
+iQIcBAEBCAAGBQJTDY3jAAoJEMDTa8Ir7ZwV494P/1tky6yrFNJEpJZ7o61zJbz1
+/wIieAEuKGYIrAAuCva5lkYuyjvxlwUhCGvwa6lda/K65cKiaCYMlX7PyJiot80P
+W144G7OXpJWgC13Sw/BjNwm1l055CQAU3sH7x+4QYaI/ADO2I8qjWbwgkHCMC0XH
+Q4W7C0DWQLeiej/1M8P2OCorKDA2vvEDdgSmODT9Xj2mUFQSRT/xP2rqQlZEmYXl
++/XqaH4pdAHIISmEj21ZEC6EDjHi5CVHY4pumh6Q+M92YWS968jGB3x3eyweUSNr
+D16JfTmzptwaqGFxUbSE10szV42q0z2GZuuy5JnipK5Gykdqzph+9cHbDi2kB2E+
+ttrnAYootLOtn1CQ8/5rUlx34fFnlcfhws+/tDLqfXjD9DSrNH0K/ou65PLehB0c
+j9p+o1NVVQtlzJ2ovtuEkbmhm7oKtSLyej88A12fkaWhdf1BJa8crkpLZFBO2g7D
+upUH7XIhMAnhq/mpeXkycq3GwQBpPeRI7RNOdcelQYoGE230L9kz9NVsMQ6Sddmz
+Pkp11pHljXCtkUnOMEsZ+7KSwVsRrVw/M5hiljyf12B4FnkDqa+YqgTMrWRkvqw4
+AOw3cJW9ODOVrTT1JquMi5LZyRfgxjePRR+dHCcqJ/sk6+2JrtlLsBt2HlE3MQf9
+1kKsMRBKEsEyIer+TlK7
+=XzJY
+-----END PGP SIGNATURE-----
 
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Wed__26_Feb_2014_17_46_55_+1100_7jDWOrjbyOGJQ73G--
