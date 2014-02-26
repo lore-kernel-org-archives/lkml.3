@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaBZXbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:31:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47087 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaBZXbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:31:55 -0500
-Message-ID: <530E7963.10209@zytor.com>
-Date: Wed, 26 Feb 2014 15:31:47 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753709AbaBZXeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:34:24 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56121 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751700AbaBZXeX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 18:34:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: tj@kernel.org, jolsa@redhat.com, oleg@redhat.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ACPI/Processor: Rework processor throttling with work_on_cpu()
+Date: Thu, 27 Feb 2014 00:49:24 +0100
+Message-ID: <1578601.f4RF6O7QVQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <530DF035.2090703@intel.com>
+References: <1393419786-5275-1-git-send-email-tianyu.lan@intel.com> <9984522.UXi6hmLF20@vostro.rjw.lan> <530DF035.2090703@intel.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: The sheer number of sparse warnings in the kernel
-References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <20140226232954.GA17791@kroah.com>
-In-Reply-To: <20140226232954.GA17791@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 03:29 PM, Greg KH wrote:
-> On Wed, Feb 26, 2014 at 03:28:59PM -0800, Greg KH wrote:
->> On Wed, Feb 26, 2014 at 02:49:26PM -0800, H. Peter Anvin wrote:
->>> The number of sparse errors in the current kernel is staggering, and it
->>> makes sparse a lot less valuable of a tool that it otherwise could be.
->>> On a build of x86-64 allyesconfig I'm getting 20,676 sparse messages.
->>> Out of those, 12,358 come from linux/err.h.  Given that the latter
->>> basically spams *everything*, I can only conclude that almost noone uses
->>> sparse unless they have a filter script.
->>
->> What errors are you seeing from err.h?  I don't see those when building
->> different subdirectories with sparse (which is how I normally use it.)
->>
->> And what version of sparse are you running:
->> 	$ sparse --version
->> 	v0.4.5-rc1-407-g345e8943fc36
+On Wednesday, February 26, 2014 09:46:29 PM Lan Tianyu wrote:
+> On 02/26/2014 09:30 PM, Rafael J. Wysocki wrote:
+> > On Wednesday, February 26, 2014 09:03:05 PM Lan Tianyu wrote:
+> >> acpi_processor_set_throttling() uses set_cpus_allowed_ptr() to make
+> >> sure struct acpi_processor->acpi_processor_set_throttling() callback
+> >> run on associated cpu. But the function maybe called in a worker which
+> >> has been bound to a cpu. The patch is to replace set_cpus_allowed_ptr()
+> >> with work_on_cpu().
+> >>
+> >> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> >
+> > OK
+> >
+> > I suppose we need this in -stable?
 > 
-> Ah, 0.5.0 is now out, maybe you should update to that version?
+> Yes.
 > 
+> >
+> > Which series of -stable should it go to?  All of them or just recent?
+> 
+> I think it should be all of them.
 
-Yes... it looks like the 0.4.5-rc1 that shipped in Fedora is indeed out
-of date.  With 0.5.0 I "only" see 8,207 messages, which means that at
-least the linux/err.h issue is gone.
+OK, queued up as a fix for 3.14, thanks!
 
-	-hpa
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
