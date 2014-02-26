@@ -1,75 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbaBZQzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:55:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48202 "EHLO mx2.suse.de"
+	id S1753509AbaBZQzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:55:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869AbaBZQzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753134AbaBZQzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Feb 2014 11:55:42 -0500
-Date: Wed, 26 Feb 2014 17:55:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] Notification, writeback, udf, quota fixes for 3.14-rc5
-Message-ID: <20140226165540.GA28856@quack.suse.cz>
+Date: Wed, 26 Feb 2014 17:55:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Lennart Poettering <lpoetter@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Schmidt <mschmidt@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] wait: WSTOPPED|WCONTINUED hangs if a zombie child is
+	traced by real_parent
+Message-ID: <20140226165529.GB22677@redhat.com>
+References: <20140220173838.GA21825@redhat.com> <20140226165504.GA22677@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140226165504.GA22677@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+"A zombie is only visible to its ptracer" logic in wait_consider_task()
+is very wrong. Trivial test-case:
 
-  could you please pull from
+	#include <unistd.h>
+	#include <sys/ptrace.h>
+	#include <sys/wait.h>
+	#include <assert.h>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+	int main(void)
+	{
+		int child = fork();
 
-to get several fixes. Notification patches are (with one exception) a fallout
-of my fsnotify rework which went into -rc1 (I've extented LTP to cover these
-cornercases to avoid similar breakage in future). UDF patch is a nasty data
-corruption Al has recently reported, revert of writeback patch is due to
-possibility of violating sync(2) guarantees, and quota bug can lead to
-corruption of quota files in ocfs2.  Top of the tree is ff57cd5863cf. The full
-shortlog is:
+		if (!child) {
+			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+			return 0x23;
+		}
 
-Jan Kara (7):
-      inotify: Fix reporting of cookies for inotify events
-      udf: Fix data corruption on file type conversion
-      quota: Fix race between dqput() and dquot_scan_active()
-      Revert "writeback: do not sync data dirtied after sync start"
-      fsnotify: Fix detection whether overflow event is queued
-      fanotify: Handle overflow in case of permission events
-      fsnotify: Allocate overflow events with proper type
+		assert(waitid(P_ALL, child, NULL, WEXITED | WNOWAIT) == 0);
+		assert(waitid(P_ALL, 0, NULL, WSTOPPED) == -1);
+		return 0;
+	}
 
-The diffstat is
+it hangs in waitpid(WSTOPPED) despite the fact it has a single zombie
+child. This is because wait_consider_task(ptrace => 0) sees p->ptrace
+and cleares ->notask_error assuming that the debugger should detach and
+notify us.
 
- fs/fs-writeback.c                    | 33 +++++++++++----------------------
- fs/notify/dnotify/dnotify.c          |  2 +-
- fs/notify/fanotify/fanotify.c        |  8 +++++---
- fs/notify/fanotify/fanotify_user.c   | 13 +++++++++++++
- fs/notify/fsnotify.c                 |  2 +-
- fs/notify/group.c                    |  8 +++++++-
- fs/notify/inotify/inotify.h          |  2 +-
- fs/notify/inotify/inotify_fsnotify.c |  3 ++-
- fs/notify/inotify/inotify_user.c     | 14 +++++++++++++-
- fs/notify/notification.c             | 20 +++++++++++++++-----
- fs/quota/dquot.c                     | 14 +++++++++++---
- fs/sync.c                            | 15 ++++++---------
- fs/udf/file.c                        | 14 ++++++++++++--
- fs/udf/inode.c                       |  1 +
- fs/xfs/xfs_super.c                   |  2 +-
- include/linux/fsnotify_backend.h     |  4 ++--
- include/linux/writeback.h            |  2 +-
- include/trace/events/writeback.h     |  6 +++---
- kernel/audit_tree.c                  |  2 +-
- kernel/audit_watch.c                 |  2 +-
- 20 files changed, 108 insertions(+), 59 deletions(-)
+Change wait_consider_task(ptrace => 0) to pretend that ptrace == T if
+the child is traced by us. This really simplifies the logic and allows
+us to do more fixes, see the next changes. This also hides the unwanted
+group stop state automatically, we can remove another ptrace_reparented()
+check.
 
-							Thanks
-								Honza
+Unfortunately, this adds the following behavioural changes:
 
+	1. Before this patch wait(WEXITED | __WNOTHREAD) does not reap
+	   a natural child if it is traced by the caller's sub-thread.
+
+	   Hopefully nobody will ever notice this change, and I think
+	   that nobody should rely on this behaviour anyway.
+
+	2. SIGNAL_STOP_CONTINUED is no longer hidden from debugger if
+	   it is real parent.
+
+	   While this change comes as a side effect, I think it is good
+	   by itself. The group continued state can not be consumed by
+	   another process in this case, it doesn't depend on ptrace,
+	   it doesn't make sense to hide it from real parent.
+
+	   Perhaps we should add the thread_group_leader() check before
+	   wait_task_continued()? May be, but this shouldn't depend on
+	   ptrace_reparented().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/exit.c |   29 ++++++++++++++++-------------
+ 1 files changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 3d6f247..56c5ac3 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1364,6 +1364,22 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 		return 0;
+ 	}
+ 
++	if (likely(!ptrace) && unlikely(p->ptrace)) {
++		/*
++		 * If it is traced by its real parent's group, just pretend
++		 * the caller is ptrace_do_wait() and reap this child if it
++		 * is zombie.
++		 *
++		 * This also hides group stop state from real parent; otherwise
++		 * a single stop can be reported twice as group and ptrace stop.
++		 * If a ptracer wants to distinguish these two events for its
++		 * own children it should create a separate process which takes
++		 * the role of real parent.
++		 */
++		if (!ptrace_reparented(p))
++			ptrace = 1;
++	}
++
+ 	/* slay zombie? */
+ 	if (p->exit_state == EXIT_ZOMBIE) {
+ 		/*
+@@ -1405,19 +1421,6 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 			wo->notask_error = 0;
+ 	} else {
+ 		/*
+-		 * If @p is ptraced by a task in its real parent's group,
+-		 * hide group stop/continued state when looking at @p as
+-		 * the real parent; otherwise, a single stop can be
+-		 * reported twice as group and ptrace stops.
+-		 *
+-		 * If a ptracer wants to distinguish the two events for its
+-		 * own children, it should create a separate process which
+-		 * takes the role of real parent.
+-		 */
+-		if (likely(!ptrace) && p->ptrace && !ptrace_reparented(p))
+-			return 0;
+-
+-		/*
+ 		 * @p is alive and it's gonna stop, continue or exit, so
+ 		 * there always is something to wait for.
+ 		 */
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.5.5.1
+
+
