@@ -1,63 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284AbaBZWEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:04:23 -0500
-Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:58831 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753647AbaBZWEV (ORCPT
+	id S1753647AbaBZWPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:15:19 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48195 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaBZWPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:04:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2687:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:6117:6119:7652:9010:10004:10400:10848:11232:11658:11914:12050:12517:12519:12740:13069:13095:13161:13229:13311:13357:14096:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: women30_2584a64375e1c
-X-Filterd-Recvd-Size: 2060
-Message-ID: <1393452256.24588.5.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-From: Joe Perches <joe@perches.com>
-To: Tom Rini <trini@ti.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 26 Feb 2014 14:04:16 -0800
-In-Reply-To: <530C8D00.8070606@ti.com>
-References: <1393274296-26179-1-git-send-email-trini@ti.com>
-	 <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>
-	 <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>
-	 <1393279377.11020.66.camel@joe-AO722> <530BC209.2000708@ti.com>
-	 <1393279691.11020.69.camel@joe-AO722> <530BC5A4.4060803@ti.com>
-	 <1393281098.11020.82.camel@joe-AO722> <530BCB27.5040808@ti.com>
-	 <1393305803.11020.119.camel@joe-AO722> <530C8D00.8070606@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Feb 2014 17:15:17 -0500
+Date: Wed, 26 Feb 2014 23:15:23 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+cc: linus.walleij@linaro.org, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irq: Consider a negative return value of irq_startup()
+ as an error
+In-Reply-To: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
+Message-ID: <alpine.DEB.2.02.1402262119560.4174@ionos.tec.linutronix.de>
+References: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 07:30 -0500, Tom Rini wrote:
-> The only intentional differences we have today are adding debug/printf
-> to the list of log functions
+On Tue, 25 Feb 2014, Jean-Jacques Hiblot wrote:
 
-That seems fine and trivial to keep current.
+> The irq_startup() function returns the return value of the
+> irq_startup callback of the underlying irq_chip. Currently this
+> value only tells if the interrupt is pending, but we can make it
+> also return an error code when it fails.
+> 
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> ---
+> 
+> Hi Thomas,
+> 
+> This patch updates the semantic of the return value of the irq_startup()
+> callback of an irq_chip : a negative value indicates an error. The purpose is
+> to make __setup_irq() fail if the irq_chip can't startup the interrupt.
 
-> and pointing people at boards.cfg not
-> CHECKPATCH in MAINTAINERS,
+How does that work?
 
-That seems wrong.
+    unsigned int    (*irq_startup)(struct irq_data *data);
 
-The idea of that message is to fix defects in checkpatch,
-not any other code.
+> I checked in the kernel for drivers impacted by this. It turns out that most
+> of the implementation of irq_startup() return 0. The only drivers that return
+> non-zero values are:
+>  * arch/x86/kernel/apic/io_apic.c: returns 1 when an interrupt is pending
+>  * drivers/pinctrl/pinctrl-adi2.c: may return -ENODEV.
 
-Maybe that could be reworded to
-"See the CHECKPATCH entry in the MAINTAINERS file of linux git"
-or some such.
+   which is wrong to begin with.
+ 
+> GPIO-based irq_chip could use this feature because an output gpio
+> can't be used as an interrupt, and thus a call to irq_startup() is
+> likely to fail. You can check out
+> http://www.spinics.net/lists/arm-kernel/msg302713.html for a
+> reference.
 
->  so I can re-sync us no problem as, yup, we're
-> about a year out of date there.  Oh and I see now someone snuck in a
-> check for whitespace before semi-colon to catch 'return 0 ;' which I'll
-> check real quick isn't something already caught and if not post that as
-> well.
+And that tells me that the design of the gpio stuff is just wrong.
 
-Does anyone know of other projects that use checkpatch?
+The whole drviers/gpio directory is full of this gpio_lock_as_irq()
+called from the guts of irq_chip callbacks braindamage.
 
+The comment above gpiod_lock_as_irq() is so wrong it's not even funny
+anymore.
 
+"....or in the .irq_enable() from its irq_chip implementation ..."
+
+	void            (*irq_enable)(struct irq_data *data);
+
+So how does that help, if the gpio is not available as irq?
+
+And no, you are not going to cure that design brainfart by adding a
+negative return value to a function returning unsigned int. And I'm
+not going to accept anything which is just a duct tape based
+workaround for a complete braindamaged design.
+
+Lets look at the usage sites:
+
+The following irqchip callback implementations printk some blurb and
+proceed:
+
+ sirfsoc_gpio_irq_startup
+ nmk_gpio_irq_startup
+ msm_gpio_irq_startup
+ u300_gpio_irq_enable
+ byt_irq_startup
+ mcp23s08_irq_startup
+ lp_irq_startup
+ intel_mid_irq_startup
+ em_gio_irq_startup
+ bcm_kona_gpio_irq_startup
+ adnp_irq_startup
+
+The following functions return an error code from the set_type
+callback:
+
+ tegra_gpio_irq_set_type
+ gpio_irq_type
+
+The whole idiocy starts with commit d468bf9e, which tells people to
+call this from irq_startup/enable. But it fails to tell, that this is
+pointless because it wont prevent the interrupt from starting up.
+
+So 11 SoC lemmings followed and added this completely pointless
+nonsense to their drivers.
+
+Two lemmings added it to a function which can actually fail. Failure
+as well, because there is no guarantee that this function gets invoked
+before request_irq(). What's worse is that if request_irq() succeeds
+then the following code which tries to set the type fails for no
+obvious reason.
+
+Now at least Jean-Jacques tried to make it actually fail, but that
+turns out to be a failure on its own.
+
+Dammit, I told you folks often enough that workarounds in some
+subsystem do not actually cure a shortcoming in the core code. When
+the core code was written, the GPIO case which might actually fail was
+definitly not thought of. But that's not a reason for adding
+tasteless and useless workarounds to the GPIO subsystem.
+
+Of course you encouraged people to copy that nonsense all over the
+place. All startup functions do the same thing:
+
+    if (gpio_lock_as_irq() < 0)
+       dev_err("BLA");
+    unmask_irq();
+
+Plus the shutdown functions having the gpio_unlock_as_irq() +
+mask_irq() sequence. Sigh.
+
+So the proper solution to the problem if we want to use irq_startup()
+is:
+
+  Change the return value of the irq_startup() callback to int and
+  fixup all existing implementations. This wants to be done with a
+  coccinelle script. If you hurry up, I might squeeze it into 3.14 as
+  there is no risk at all. Otherwise this is going to happen after the
+  3.15 merge window closes.
+
+  After that's done, remove all the copies of startup/shutdown
+  nonsense in drivers/gpio and force all gpio chips to call
+  gpio_set_irq_chip*() instead of irq_set_irq_chip*() and add generic
+  irq_startup/shutdown callbacks which are implemented in the gpiolib
+  core code.
+
+There is a less intrusive alternative solution:
+
+  Mark the interrupt as GPIO based in the core and let the core call
+  conditonally the gpio_[un]lock_as_irq functions.
+
+And no, I'm not going to provide you the proper solution on the silver
+tablet this time. Go and figure it out yourself and if you're
+confident enough that it might be an acceptable solution, post it and
+we'll see.
+
+Thanks,
+
+	tglx
