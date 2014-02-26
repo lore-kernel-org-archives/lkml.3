@@ -1,85 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaBZLlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 06:41:45 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52191 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaBZLln (ORCPT
+	id S1752249AbaBZLm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:42:59 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:57760 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaBZLm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 06:41:43 -0500
-Date: Wed, 26 Feb 2014 20:41:35 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20140226114135.GC31120@sirena.org.uk>
-References: <201402191637.s1JGb45N017694@swsrvapps-02.lan>
- <20140225085701.GD19099@lee--X1>
- <24DF37198A1E704D9811D8F72B87EB51BCFDB5D2@NB-EX-MBX02.diasemi.com>
- <20140225115036.GF13246@lee--X1>
- <20140225121555.GB25940@sirena.org.uk>
- <20140225124050.GA7571@lee--X1>
- <20140225230721.GA2927@sirena.org.uk>
- <20140226093203.GK9195@lee--X1>
+	Wed, 26 Feb 2014 06:42:57 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
-Content-Disposition: inline
-In-Reply-To: <20140226093203.GK9195@lee--X1>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 121.174.50.227
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1 2/3] MFD: da9052: Add new DA9053 BC chip variant
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1393374270-20079-1-git-send-email-sre@debian.org>
+References: <1393193271-16717-1-git-send-email-sre@debian.org>
+	<1393374270-20079-1-git-send-email-sre@debian.org>
+Date: Wed, 26 Feb 2014 12:42:55 +0100
+Message-ID: <CAAfyv35C_a+OA1WAMVYwJquM7YEJy3Fdu+TgkNU9R30xhX6D3w@mail.gmail.com>
+Subject: Re: [RFCv3 0/7] Convert twl4030-madc to IIO API and add DT support
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Jonathan Cameron <jic23@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio@vger.kernel.org,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
---NMuMz9nt05w80d4+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed, Feb 26, 2014 at 1:24 AM, Sebastian Reichel <sre@debian.org> wrote:
+> Hi,
+>
+> This is RFCv3 for converting twl4030-madc to the IIO API and
+> adding DT support. The patchset compiles and has been tested
+> on my Nokia N900.
+>
+> Changes since RFCv2:
+>  * Use "--find-renames" for the move from mfd/ to iio/adc/ ;)
+>  * Added Acked-by from Lee Jones (MFD subsystem maintainer)
+>  * Fixed issue found by Joe Perches
+>   - twl4030_madc_request.do_avg should be bool instead of u16
+>  * Fixed issues found by Peter Meerwald
+>   - some style issues (e.g. /** instead of /*)
+>   - typos
+>   - usage of u16 read/write
+>  * Tested with converted rx51-battery driver on Nokia N900
+>
+> TODO:
+>  * Remove twl4030-madc-hwmon in favour of iio-hwmon
+>    This driver is currently only used by board-omap3beagle.c
+>    and board-rx51-peripherals.c. The instanciation in the
+>    rx51 boardcode is a bug, since actually only twl4030-madc
+>    is needed. Thus board-omap3beagle.c needs to be updated to
+>    iio-hwmon and board-rx51-peripherals.c to twl4030-madc.
+>    Both tasks are pretty trivial and twl4030-madc-hwmon can
+>    be removed afterwards :)
+>  * Update twl4030-madc-battery to the IIO API. I guess Marek
+>    will do this update in the near future, since he is currently
+>    writing DT bindings for the driver.
+Yes I'm working on DT for twl4030-madc-battery. I'll convert it also to IIO
+and post for comments. Thanks for doing that it's really nice work!
+>  * I updated twl4030-madc-battery already and will send it
+>    in a separate patchset.
+>  * Once all of the above steps happened the old API can be
+>    removed from the driver, which allows some more cleanups.
+>
+> -- Sebastian
+>
+> Sebastian Reichel (7):
+>   mfd: twl4030-madc: Use managed resources
+>   mfd: twl4030-madc: Add DT support and convert to IIO framework
+>   mfd: twl4030-madc: Cleanup driver
+>   mfd: twl-core: Add twl_i2c_read/write_u16
+>   mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
+>   Documentation: DT: Document twl4030-madc binding
+>   mfd: twl4030-madc: Move driver to drivers/iio/adc
+>
+>  .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
+>  drivers/iio/adc/Kconfig                            |  10 +
+>  drivers/iio/adc/Makefile                           |   1 +
+>  drivers/{mfd => iio/adc}/twl4030-madc.c            | 278 +++++++++++++--------
+>  drivers/mfd/Kconfig                                |  10 -
+>  drivers/mfd/Makefile                               |   1 -
+>  include/linux/i2c/twl.h                            |  12 +
+>  include/linux/i2c/twl4030-madc.h                   |   2 +-
+>  8 files changed, 224 insertions(+), 114 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+>  rename drivers/{mfd => iio/adc}/twl4030-madc.c (77%)
+>
+> --
+> 1.8.5.3
+>
 
-On Wed, Feb 26, 2014 at 09:32:03AM +0000, Lee Jones wrote:
+BR,
 
-> > It can be worth doing anyway with a subsystem that's actively developed
-> > since sometimees the dependencies are the other way - the APIs in Linus'
-> > tree may have gone away.
+marek
 
-> Then what happens if the tree that your patch finally gets sucked into
-> is pulled before the one you've written your code against? I'd say
-> basing your code on -next is generally a bad idea.
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-Submitters should defintely at the very least be checking against the
-subsystem tree (since that's what they're really submitting against) -
-it's always annoying when someone submits code that either doesn't
-apply or fails to build with the current tree.
-
---NMuMz9nt05w80d4+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTDdLoAAoJELSic+t+oim9PpYP/3aod/odwRyNs0ok4abD5bhX
-cd6DZX2ZhWuhoiU7T74MsF87R8AuDWRazh9UWsdOXfBrvi3kv8AMufQo3kxK2em/
-eyeGfgNLYq87Fk6f5QdJGM2b3m7NLn+os+ttOF8/O2Z+suHBM3i1XzVOyAvS/URn
-prSIXet604EfzAkEYvXLc7fv/QPH6CCs/4YcmhR5mkV8lpMXmS/Wx1RT3tBb9jgb
-q2i6LrOY/HJRYTJtMVIqsfGfnmAUJu6T8tQ4aohUME7ca0Wxjlluqk/isAoKvW94
-8gVWU33bThCCNpW25ONcxMNTjqcMzAdJeOIcf7oJkZpCB96TYqAqPyJ14RycRQuo
-qCv1GYUjorIgvc9pwMrarT6GsDZXUtlrt5sjuf0LNhLsWIowNBHCZJNwzAVjnsYQ
-3BpN6rSsha8uKm3MQr63fC0NcR+WxLReZRF750wXLNRLW/qB6acube7QA+H52OYZ
-Hr+4KbaCTgW4eFzUwuHufKnkySnzMqVdPMaygaheSWNpBqeXFhoeWD/dsCakX65Z
-MvbyWMA4Bns2Y+dzj7Mtdza/5rKyHS6mlfUFO1W2d8tpuTpBIQzBYxHW38AvaOXM
-FfyXh54Qcdv9CZiSAReChjb6QwwMWdL+HPEWBPO+fpmvXOGENL/GbHO8/5npjfoR
-0acgh2R/aLFeEOI9AySy
-=wP26
------END PGP SIGNATURE-----
-
---NMuMz9nt05w80d4+--
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
