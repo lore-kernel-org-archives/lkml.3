@@ -1,298 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751048AbaBZFsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:48:22 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:33710 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaBZFsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:48:20 -0500
+	id S1751263AbaBZFxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:53:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaBZFxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 00:53:33 -0500
+Message-ID: <530D814E.2080708@redhat.com>
+Date: Wed, 26 Feb 2014 13:53:18 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <1392238575-10000-5-git-send-email-msalter@redhat.com>
-References: <1392238575-10000-1-git-send-email-msalter@redhat.com>
-	<1392238575-10000-5-git-send-email-msalter@redhat.com>
-Date: Tue, 25 Feb 2014 23:48:19 -0600
-Message-ID: <CAL_JsqLi=GhGy7dNf2BiAGd4EtzfqqYfbo0YhRhyhuwEp0w8HQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/6] arm: add early_ioremap support
-From: Rob Herring <robherring2@gmail.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Linaro Patches <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org,
+        Qin Chuanyu <qinchuanyu@huawei.com>
+Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
+ exceed the limit
+References: <1393311238-7750-1-git-send-email-jasowang@redhat.com> <20140225135738.GA15274@redhat.com>
+In-Reply-To: <20140225135738.GA15274@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 12, 2014 at 2:56 PM, Mark Salter <msalter@redhat.com> wrote:
-> This patch uses the generic early_ioremap code to implement
-> early_ioremap for ARM. The ARM-specific bits come mostly from
-> an earlier patch from Leif Lindholm <leif.lindholm@linaro.org>
-> here:
-
-This doesn't actually work for me. The PTE flags are not correct and
-accesses to a device fault. See below.
-
+On 02/25/2014 09:57 PM, Michael S. Tsirkin wrote:
+> On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
+>> We used to stop the handling of tx when the number of pending DMAs
+>> exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+>> of both host and guest. But it was too aggressive in some cases, since
+>> any delay or blocking of a single packet may delay or block the guest
+>> transmission. Consider the following setup:
+>>
+>>      +-----+        +-----+
+>>      | VM1 |        | VM2 |
+>>      +--+--+        +--+--+
+>>         |              |
+>>      +--+--+        +--+--+
+>>      | tap0|        | tap1|
+>>      +--+--+        +--+--+
+>>         |              |
+>>      pfifo_fast   htb(10Mbit/s)
+>>         |              |
+>>      +--+--------------+---+
+>>      |     bridge          |
+>>      +--+------------------+
+>>         |
+>>      pfifo_fast
+>>         |
+>>      +-----+
+>>      | eth0|(100Mbit/s)
+>>      +-----+
+>>
+>> - start two VMs and connect them to a bridge
+>> - add an physical card (100Mbit/s) to that bridge
+>> - setup htb on tap1 and limit its throughput to 10Mbit/s
+>> - run two netperfs in the same time, one is from VM1 to VM2. Another is
+>>    from VM1 to an external host through eth0.
+>> - result shows that not only the VM1 to VM2 traffic were throttled but
+>>    also the VM1 to external host through eth0 is also throttled somehow.
+>>
+>> This is because the delay added by htb may lead the delay the finish
+>> of DMAs and cause the pending DMAs for tap0 exceeds the limit
+>> (VHOST_MAX_PEND). In this case vhost stop handling tx request until
+>> htb send some packets. The problem here is all of the packets
+>> transmission were blocked even if it does not go to VM2.
+>>
+>> We can solve this issue by relaxing it a little bit: switching to use
+>> data copy instead of stopping tx when the number of pending DMAs
+>> exceed the VHOST_MAX_PEND. This is safe because:
+>>
+>> - The number of pending DMAs were still limited by VHOST_MAX_PEND
+>> - The out of order completion during mode switch can make sure that
+>>    most of the tx buffers were freed in time in guest.
+>>
+>> So even if about 50% packets were delayed in zero-copy case, vhost
+>> could continue to do the transmission through data copy in this case.
+>>
+>> Test result:
+>>
+>> Before this patch:
+>> VM1 to VM2 throughput is 9.3Mbit/s
+>> VM1 to External throughput is 40Mbit/s
+>>
+>> After this patch:
+>> VM1 to VM2 throughput is 9.3Mbit/s
+>> Vm1 to External throughput is 93Mbit/s
+> Would like to see CPU utilization #s as well.
 >
->   https://lkml.org/lkml/2013/10/3/279
+
+Will measure this.
+>> Simple performance test on 40gbe shows no obvious changes in
+>> throughput after this patch.
+>>
+>> The patch only solve this issue when unlimited sndbuf. We still need a
+>> solution for limited sndbuf.
+>>
+>> Cc: Michael S. Tsirkin<mst@redhat.com>
+>> Cc: Qin Chuanyu<qinchuanyu@huawei.com>
+>> Signed-off-by: Jason Wang<jasowang@redhat.com>
+> I think this needs some thought.
 >
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  arch/arm/Kconfig              | 10 +++++
->  arch/arm/include/asm/Kbuild   |  1 +
->  arch/arm/include/asm/fixmap.h | 20 ++++++++++
->  arch/arm/include/asm/io.h     |  1 +
->  arch/arm/kernel/setup.c       |  2 +
->  arch/arm/mm/Makefile          |  4 ++
->  arch/arm/mm/early_ioremap.c   | 93 +++++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mm/mmu.c             |  2 +
->  8 files changed, 133 insertions(+)
->  create mode 100644 arch/arm/mm/early_ioremap.c
+> In particular I think this works because VHOST_MAX_PEND
+> is much smaller than the ring size.
+> Shouldn't max_pend then be tied to the ring size if it's small?
 >
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index e254198..7a35ef6 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1874,6 +1874,16 @@ config UACCESS_WITH_MEMCPY
->           However, if the CPU data cache is using a write-allocate mode,
->           this option is unlikely to provide any performance gain.
+
+Yes it should. I just reuse the VHOST_MAX_PEND since it was there for a 
+long time.
+> Another question is about stopping vhost:
+> ATM it's waiting for skbs to complete.
+> Should we maybe hunt down skbs queued and destroy them
+> instead?
+> I think this happens when a device is removed.
 >
-> +config EARLY_IOREMAP
-> +       bool "Provide early_ioremap() support for kernel initialization"
-> +       select GENERIC_EARLY_IOREMAP
-> +       help
-> +         Provide a mechanism for kernel initialisation code to temporarily
-> +         map, in a highmem-agnostic way, memory pages in before ioremap()
-> +         and friends are available (before paging_init() has run). It uses
-> +         the same virtual memory range as kmap so all early mappings must
-> +         be unmapped before paging_init() is called.
-> +
->  config SECCOMP
->         bool
->         prompt "Enable seccomp to safely compute untrusted bytecode"
-> diff --git a/arch/arm/include/asm/Kbuild b/arch/arm/include/asm/Kbuild
-> index 3278afe..6fcfd7d 100644
-> --- a/arch/arm/include/asm/Kbuild
-> +++ b/arch/arm/include/asm/Kbuild
-> @@ -4,6 +4,7 @@ generic-y += auxvec.h
->  generic-y += bitsperlong.h
->  generic-y += cputime.h
->  generic-y += current.h
-> +generic-y += early_ioremap.h
->  generic-y += emergency-restart.h
->  generic-y += errno.h
->  generic-y += exec.h
-> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> index 68ea615..ff8fa3e 100644
-> --- a/arch/arm/include/asm/fixmap.h
-> +++ b/arch/arm/include/asm/fixmap.h
-> @@ -21,8 +21,28 @@ enum fixed_addresses {
->         FIX_KMAP_BEGIN,
->         FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
->         __end_of_fixed_addresses
-> +/*
-> + * 224 temporary boot-time mappings, used by early_ioremap(),
-> + * before ioremap() is functional.
-> + *
-> + * (P)re-using the FIXADDR region, which is used for highmem
-> + * later on, and statically aligned to 1MB.
-> + */
-> +#define NR_FIX_BTMAPS          32
-> +#define FIX_BTMAPS_SLOTS       7
-> +#define TOTAL_FIX_BTMAPS       (NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
-> +#define FIX_BTMAP_END          FIX_KMAP_BEGIN
-> +#define FIX_BTMAP_BEGIN                (FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1)
-
-Why the different logic from arm64? Specifically, it doesn't make
-adding a permanent mapping simple.
-
->  };
+> Thoughts?
 >
-> +#define FIXMAP_PAGE_COMMON (L_PTE_YOUNG | L_PTE_PRESENT | L_PTE_XN)
-> +
-> +#define FIXMAP_PAGE_NORMAL (FIXMAP_PAGE_COMMON | L_PTE_MT_WRITEBACK)
-> +#define FIXMAP_PAGE_IO    (FIXMAP_PAGE_COMMON | L_PTE_MT_DEV_NONSHARED)
 
-This should be L_PTE_MT_DEV_SHARED and also needs L_PTE_DIRTY and
-L_PTE_SHARED as we want this to match MT_DEVICE.
+Agree, vhost net removal should not be blocked by a skb. But since the 
+skbs could be queued may places, just destroy them may need extra locks.
 
-These should also be wrapped with __pgprot().
+Haven't thought this deeply, but another possible sloution is to rcuify 
+destructor_arg and assign it to NULL during vhost_net removing.
+>> ---
+>>   drivers/vhost/net.c | 17 +++++++----------
+>>   1 file changed, 7 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index a0fa5de..3e96e47 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -345,7 +345,7 @@ static void handle_tx(struct vhost_net *net)
+>>   		.msg_flags = MSG_DONTWAIT,
+>>   	};
+>>   	size_t len, total_len = 0;
+>> -	int err;
+>> +	int err, num_pends;
+>>   	size_t hdr_size;
+>>   	struct socket *sock;
+>>   	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
+>> @@ -366,13 +366,6 @@ static void handle_tx(struct vhost_net *net)
+>>   		if (zcopy)
+>>   			vhost_zerocopy_signal_used(net, vq);
+>>
+>> -		/* If more outstanding DMAs, queue the work.
+>> -		 * Handle upend_idx wrap around
+>> -		 */
+>> -		if (unlikely((nvq->upend_idx + vq->num - VHOST_MAX_PEND)
+>> -			      % UIO_MAXIOV == nvq->done_idx))
+>> -			break;
+>> -
+>>   		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
+>>   					 ARRAY_SIZE(vq->iov),
+>>   					&out,&in,
+>> @@ -405,9 +398,13 @@ static void handle_tx(struct vhost_net *net)
+>>   			break;
+>>   		}
+>>
+>> +		num_pends = likely(nvq->upend_idx>= nvq->done_idx) ?
+>> +			    (nvq->upend_idx - nvq->done_idx) :
+>> +			    (nvq->upend_idx + UIO_MAXIOV -
+>> +			     nvq->done_idx);
+>> +
+>>   		zcopy_used = zcopy&&  len>= VHOST_GOODCOPY_LEN
+>> -				&&  (nvq->upend_idx + 1) % UIO_MAXIOV !=
+>> -				      nvq->done_idx
+>> +				&&  num_pends<= VHOST_MAX_PEND
+>>   				&&  vhost_net_tx_select_zcopy(net);
+>>
+>>   		/* use msg_control to pass vhost zerocopy ubuf info to skb */
+>> -- 
+>> 1.8.3.2
 
-> +
-> +extern void __early_set_fixmap(enum fixed_addresses idx,
-> +                              phys_addr_t phys, pgprot_t flags);
-> +
->  #include <asm-generic/fixmap.h>
->
->  #endif
-> diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> index 8aa4cca..637e0cd 100644
-> --- a/arch/arm/include/asm/io.h
-> +++ b/arch/arm/include/asm/io.h
-> @@ -28,6 +28,7 @@
->  #include <asm/byteorder.h>
->  #include <asm/memory.h>
->  #include <asm-generic/pci_iomap.h>
-> +#include <asm/early_ioremap.h>
->  #include <xen/xen.h>
->
->  /*
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index b0df976..9c8b751 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -30,6 +30,7 @@
->  #include <linux/bug.h>
->  #include <linux/compiler.h>
->  #include <linux/sort.h>
-> +#include <linux/io.h>
->
->  #include <asm/unified.h>
->  #include <asm/cp15.h>
-> @@ -880,6 +881,7 @@ void __init setup_arch(char **cmdline_p)
->         const struct machine_desc *mdesc;
->
->         setup_processor();
-> +       early_ioremap_init();
->         mdesc = setup_machine_fdt(__atags_pointer);
->         if (!mdesc)
->                 mdesc = setup_machine_tags(__atags_pointer, __machine_arch_type);
-> diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
-> index 7f39ce2..501af98 100644
-> --- a/arch/arm/mm/Makefile
-> +++ b/arch/arm/mm/Makefile
-> @@ -12,6 +12,10 @@ ifneq ($(CONFIG_MMU),y)
->  obj-y                          += nommu.o
->  endif
->
-> +ifeq ($(CONFIG_MMU),y)
-> +obj-$(CONFIG_EARLY_IOREMAP)    += early_ioremap.o
-> +endif
-> +
->  obj-$(CONFIG_ARM_PTDUMP)       += dump.o
->  obj-$(CONFIG_MODULES)          += proc-syms.o
->
-> diff --git a/arch/arm/mm/early_ioremap.c b/arch/arm/mm/early_ioremap.c
-> new file mode 100644
-> index 0000000..c3e2bf2
-> --- /dev/null
-> +++ b/arch/arm/mm/early_ioremap.c
-> @@ -0,0 +1,93 @@
-> +/*
-> + * early_ioremap() support for ARM
-> + *
-> + * Based on existing support in arch/x86/mm/ioremap.c
-> + *
-> + * Restrictions: currently only functional before paging_init()
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-
-io.h doesn't appear to be needed.
-
-> +
-> +#include <asm/fixmap.h>
-> +#include <asm/pgalloc.h>
-> +#include <asm/pgtable.h>
-> +#include <asm/tlbflush.h>
-> +
-> +#include <asm/mach/map.h>
-> +
-> +static pte_t bm_pte[PTRS_PER_PTE] __aligned(PTE_HWTABLE_SIZE) __initdata;
-> +
-> +static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
-> +{
-> +       unsigned int index = pgd_index(addr);
-> +       pgd_t *pgd = cpu_get_pgd() + index;
-> +       pud_t *pud = pud_offset(pgd, addr);
-> +       pmd_t *pmd = pmd_offset(pud, addr);
-> +
-> +       return pmd;
-> +}
-> +
-> +static inline pte_t * __init early_ioremap_pte(unsigned long addr)
-> +{
-> +       return &bm_pte[pte_index(addr)];
-> +}
-> +
-> +void __init early_ioremap_init(void)
-> +{
-> +       pmd_t *pmd;
-> +
-> +       pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
-> +
-> +       pmd_populate_kernel(NULL, pmd, bm_pte);
-> +
-> +       /*
-> +        * Make sure we don't span multiple pmds.
-> +        */
-> +       BUILD_BUG_ON((__fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT)
-> +                    != (__fix_to_virt(FIX_BTMAP_END) >> PMD_SHIFT));
-> +
-> +       if (pmd != early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END))) {
-> +               WARN_ON(1);
-> +               pr_warn("pmd %p != %p\n",
-> +                       pmd, early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END)));
-> +               pr_warn("fix_to_virt(FIX_BTMAP_BEGIN): %08lx\n",
-> +                       fix_to_virt(FIX_BTMAP_BEGIN));
-> +               pr_warn("fix_to_virt(FIX_BTMAP_END):   %08lx\n",
-> +                       fix_to_virt(FIX_BTMAP_END));
-> +               pr_warn("FIX_BTMAP_END:       %d\n", FIX_BTMAP_END);
-> +               pr_warn("FIX_BTMAP_BEGIN:     %d\n", FIX_BTMAP_BEGIN);
-> +       }
-> +
-> +       early_ioremap_setup();
-> +}
-> +
-> +void __init __early_set_fixmap(enum fixed_addresses idx,
-> +                              phys_addr_t phys, pgprot_t flags)
-> +{
-> +       unsigned long addr = __fix_to_virt(idx);
-> +       pte_t *pte;
-> +       u64 desc;
-> +
-> +       if (idx > FIX_KMAP_END) {
-> +               BUG();
-> +               return;
-> +       }
-> +       pte = early_ioremap_pte(addr);
-> +
-> +       if (pgprot_val(flags))
-> +               set_pte_at(NULL, 0xfff00000, pte,
-
-Couldn't you use addr here instead of 0xfff00000? It's not really used
-other than a check against TASK_SIZE.
-
-> +                          pfn_pte(phys >> PAGE_SHIFT, flags));
-
-phys_to_pfn(phys)
-
-> +       else
-> +               pte_clear(NULL, addr, pte);
-> +       flush_tlb_kernel_range(addr, addr + PAGE_SIZE);
-> +       desc = *pte;
-> +}
-> +
-> +void __init
-> +early_ioremap_shutdown(void)
-> +{
-> +       pmd_t *pmd;
-> +       pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
-> +       pmd_clear(pmd);
-
-This is redundant with the clearing done in devicemaps_init. Not a big
-deal but this is probably something we don't want with permanent
-mappings. I'm still trying to figure out how to do those. Leaving this
-page table in place doesn't seem to work, so I think we'll have to
-copy mappings to the new page tables.
-
-Rob
