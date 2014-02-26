@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaBZTzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:55:31 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:60520 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753198AbaBZTz2 (ORCPT
+	id S1753454AbaBZT6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:58:17 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:63535 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaBZT6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:55:28 -0500
-Date: Wed, 26 Feb 2014 14:55:22 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
- TAINT_UNSIGNED_MODULE
-Message-ID: <20140226145522.01fc5a97@gandalf.local.home>
-In-Reply-To: <405776058.29534.1393264698347.JavaMail.zimbra@efficios.com>
-References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<20140213102817.4bfd5eac@gandalf.local.home>
-	<2127052721.24380.1392306090965.JavaMail.zimbra@efficios.com>
-	<20140213154507.4040fb06@gandalf.local.home>
-	<1828346046.24803.1392349744601.JavaMail.zimbra@efficios.com>
-	<20140224105454.3e1981ba@gandalf.local.home>
-	<193756443.29489.1393260936319.JavaMail.zimbra@efficios.com>
-	<20140224123926.0a44f32e@gandalf.local.home>
-	<405776058.29534.1393264698347.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 26 Feb 2014 14:58:16 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: Re: DMABOUNCE in pci-rcar
+Date: Wed, 26 Feb 2014 20:57:26 +0100
+Message-ID: <5165962.7bqj51B15Z@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com>
+References: <201402241200.21944.arnd@arndb.de> <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7uKBsBHbX8cIJCl15KsvUyyOcHjDsvdJH9H8xIL5ZgB
+ yxh5gcAnz9BCiWpnb9A0vHZoAWhMonAWCUqjz5VnKHNpoCP6og
+ KCgMiN5NqofeAZxKhrNNiPYiyo3W06O9Kx5YxkWAIOrLi6tSne
+ bPEV8cMDY1eehrZN+GmoE0kW89OKgiN46nb1unWocRHwO8nrXc
+ cn5pnyC3bqN8iUM7AbIl+WyuxClZvSlVSKxSR4jjbfy2BMialZ
+ MtjTdIB+QYU9wK0H9kKVdPP00vjeD9X6kK/9jKvxcnjMGch04E
+ KLkOOtyIZ7aPSbHR4xqHVV9KU8baP/lGjNHn4Jb4SSmrM4DnUH
+ Se3TUsaQmb6wrLEvr8qU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Feb 2014 17:58:18 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-
-> > The one that I replied to. I can't pull the module patch unless I get
-> > an ack from Rusty.
+On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
+> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > Hi Magnus,
+> >
+> > I noticed during randconfig testing that you enabled DMABOUNCE for the
+> > pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
+> >
+> > I didn't see the original post unfortunately, but I fear we have to
+> > revert it and come up with a better solution, ...
 > 
-> Do you mean the internal API semantic change you propose for tracepoints ?
-> If yes, then how do you consider this a fix worthy of being backported to
-> stable ?
+> Sounds like I should drop the following patches from my pci/host-rcar
+> branch for now?
 > 
+>   PCI: rcar: Add DMABOUNCE support
+>   PCI: rcar: Enable BOUNCE in case of HIGHMEM
+>   PCI: rcar: Make the Kconfig dependencies more generic
 
-No, I was talking about your patch. The one Rusty already said he'll
-pull (or I will :-)
+Sounds good to me. The last patch is actually fine, but you'll have to
+fix the context to apply it without the other two.
 
--- Steve
+	Arnd
