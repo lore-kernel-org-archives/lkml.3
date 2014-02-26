@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaBZOnV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 09:43:21 -0500
-Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:57308 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750813AbaBZOnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 09:43:20 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2693:2828:2894:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3873:3874:4250:4321:4362:4605:5007:7652:7903:8957:9149:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sun34_741437688614b
-X-Filterd-Recvd-Size: 2443
-Message-ID: <1393425796.407.19.camel@joe-AO722>
-Subject: Re: [PATCH 2/8] security: apparmor: Use a more current logging style
-From: Joe Perches <joe@perches.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Date: Wed, 26 Feb 2014 06:43:16 -0800
-In-Reply-To: <530D9862.1070108@canonical.com>
-References: <cover.1393279025.git.joe@perches.com>
-	 <ff8a7d422cfa605de40dc64c103f27ed7a76e0cf.1393279025.git.joe@perches.com>
-	 <530D9862.1070108@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752209AbaBZOox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 09:44:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943AbaBZOow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 09:44:52 -0500
+Date: Wed, 26 Feb 2014 09:44:46 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, eranian@google.com
+Subject: Re: [PATCH 3/3] perf: fix synthesizing mmaps for threads
+Message-ID: <20140226144446.GS25953@redhat.com>
+References: <1393386227-149412-1-git-send-email-dzickus@redhat.com>
+ <1393386227-149412-4-git-send-email-dzickus@redhat.com>
+ <20140226141726.GA7552@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226141726.GA7552@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 23:31 -0800, John Johansen wrote:
-> On 02/24/2014 01:59 PM, Joe Perches wrote:
-> > Convert printks to pr_<level>.
-> > Add pr_fmt.
-> > Coalesce formats.
-> > Remove embedded prefixes from logging.
+On Wed, Feb 26, 2014 at 11:17:26AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Feb 25, 2014 at 10:43:47PM -0500, Don Zickus escreveu:
+> > Currently if a process creates a bunch of threads using pthread_create
+> > and then perf is run in system_wide mode, the mmaps for those threads
+> > are not captured with a synthesized mmap event.
 > > 
+> > The reason is those threads are not visible when walking the /proc/
+> > directory looking for /proc/<pid>/maps files.  Instead they are discovered
+> > using the /proc/<pid>/tasks file (which the synthesized comm event uses).
+> > 
+> > This causes problems when a program is trying to map a data address to a
+> > tid.  Because the tid has no maps, the event is dropped.  Changing the program
+> > to look up using the pid instead of the tid, finds the correct maps but creates
+> > ugly hacks in the program to carry the correct tid around.
+> > 
+> > Fix this by synthesizing mmap events for each tid found in the /proc/<pid>/tasks
+> > file.
 > 
-> you missed one place,
+> This seems to cover two problems, the first is for mmap/mmap2 event
+> processing to lookup pid/tid instead of pid/pid, the other one is to
+> iterate thru /proc/pid/tasks/, so this needes spliting up.
+> 
+> Now looking at the /tasks/ part...
 
-No, not really.
+Fair enough. :-)
 
-pr_debug differs from printk(KERN_DEBUG in that
-pr_debug is only enabled with a #define DEBUG
-or CONFIG_DYNAMIC_DEBUG setting.
+Cheers,
+Don
 
-I did not want to convert any of the printks
-with KERN_DEBUG in this pass as that would
-change the message logging by requiring
-dynamic debugging be included in the CONFIG.
-
-A subsequent pass converting these uses will
-be done if or after these initial patches are
-applied.
-
-thanks, Joe
-
-> --- a/security/apparmor/include/apparmor.h
-> +++ b/security/apparmor/include/apparmor.h
-> @@ -50,7 +50,7 @@ extern unsigned int aa_g_path_max;
->  #define AA_DEBUG(fmt, args...)                                         \
->         do {                                                            \
->                 if (aa_g_debug && printk_ratelimit())                   \
-> -                       printk(KERN_DEBUG "AppArmor: " fmt, ##args);    \
-> +                       pr_debug(fmt, ##args);                          \
->         } while (0)
 >  
->  #define AA_ERROR(fmt, args...)                                         \
-> 
-> other than that looks good.
-> 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> Acked-by: John Johansen <john.johansen@canonical.com>
-
-
+> > This may not be entirely clean but it seems to work.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  tools/perf/util/event.c   | 15 +++++++++++----
+> >  tools/perf/util/machine.c |  4 ++--
+> >  2 files changed, 13 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> > index 086c7c8..09c53bb 100644
+> > --- a/tools/perf/util/event.c
+> > +++ b/tools/perf/util/event.c
+> > @@ -93,10 +93,13 @@ static pid_t perf_event__get_comm_tgid(pid_t pid, char *comm, size_t len)
+> >  }
+> >  
+> >  static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+> > -					 union perf_event *event, pid_t pid,
+> > +					 union perf_event *event,
+> > +					 union perf_event *mmap_event,
+> > +					 pid_t pid,
+> >  					 int full,
+> >  					 perf_event__handler_t process,
+> > -					 struct machine *machine)
+> > +					 struct machine *machine,
+> > +					 bool mmap_data)
+> >  {
+> >  	char filename[PATH_MAX];
+> >  	size_t size;
+> > @@ -168,6 +171,10 @@ static pid_t perf_event__synthesize_comm(struct perf_tool *tool,
+> >  			tgid = -1;
+> >  			break;
+> >  		}
+> > +
+> > +		/* process the thread's maps too */
+> > +		perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+> > +						  process, machine, mmap_data);
+> >  	}
+> >  
+> >  	closedir(tasks);
+> > @@ -331,8 +338,8 @@ static int __event__synthesize_thread(union perf_event *comm_event,
+> >  				      struct perf_tool *tool,
+> >  				      struct machine *machine, bool mmap_data)
+> >  {
+> > -	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+> > -						 process, machine);
+> > +	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, mmap_event, pid,
+> > +						 full, process, machine, mmap_data);
+> >  	if (tgid == -1)
+> >  		return -1;
+> >  	return perf_event__synthesize_mmap_events(tool, mmap_event, pid, tgid,
+> > diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> > index 813e94e..eb26544 100644
+> > --- a/tools/perf/util/machine.c
+> > +++ b/tools/perf/util/machine.c
+> > @@ -1026,7 +1026,7 @@ int machine__process_mmap2_event(struct machine *machine,
+> >  	}
+> >  
+> >  	thread = machine__findnew_thread(machine, event->mmap2.pid,
+> > -					event->mmap2.pid);
+> > +					event->mmap2.tid);
+> >  	if (thread == NULL)
+> >  		goto out_problem;
+> >  
+> > @@ -1074,7 +1074,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+> >  	}
+> >  
+> >  	thread = machine__findnew_thread(machine, event->mmap.pid,
+> > -					 event->mmap.pid);
+> > +					 event->mmap.tid);
+> >  	if (thread == NULL)
+> >  		goto out_problem;
+> >  
+> > -- 
+> > 1.7.11.7
