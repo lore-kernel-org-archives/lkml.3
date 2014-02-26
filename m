@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaBZM0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 07:26:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63694 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311AbaBZM0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 07:26:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,547,1389772800"; 
-   d="scan'208";a="488375678"
-Message-ID: <1393417609.3412.156.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBIFS changes for 3.14-rc5
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 26 Feb 2014 14:26:49 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752132AbaBZMbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 07:31:44 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:33736 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaBZMbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 07:31:38 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv8 0/6] add compressing abstraction and multi stream support
+Date: Wed, 26 Feb 2014 15:27:53 +0300
+Message-Id: <1393417679-13657-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.291.g027825b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patchset introduces zcomp compression backend abstraction
+adding ability to support compression algorithms other than LZO;
+support for multi compression streams, making parallel compressions
+possible.
 
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+v7->v8 (reviewed by Minchan Kim):
+-- merge patches 'add multi stream functionality' and 'enable multi
+   stream compression support in zram'
+-- return status code from set_max_streams knob and print message on
+   error
+-- do not use atomic type for ->avail_strm
+-- return back: allocate by default only one stream for multi stream backend
+-- wake sleeping write in zcomp_strm_multi_put() only if we put stream
+   to idle list
+-- minor code `nitpicks'
 
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+v6->v7 (reviewed by Minchan Kim):
+-- enable multi and single stream support out of the box (drop
+   ZRAM_MULTI_STREAM config option)
+-- add set_max_stream knob, so we can adjust max number of compression
+   streams in runtime (for multi stream backend at the moment)
+-- minor code `nitpicks'
 
-are available in the git repository at:
+v5->v6 (reviewed by Minchan Kim):
+-- handle single compression stream case separately, using mutex locking,
+   to address perfomance regression
+-- handle multi compression stream using spin lock and wait_event()/wake_up()
+-- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+   config option)
 
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.14-rc5
+v4->v5 (reviewed by Minchan Kim):
+-- renamed zcomp buffer_lock; removed src len and dst len from
+   compress() and decompress(); not using term `buffer' and
+   `workmem' in code and documentation; define compress() and
+   decompress() functions for LZO backend; not using goto's;
+   do not put idle zcomp_strm to idle list tail.
 
-for you to fetch changes up to 5547fec74a566e1f5e00a937b9a367f7c6a94a8b:
+v3->v4 (reviewed by Minchan Kim):
+-- renamed compression backend and working memory structs as requested
+   by Minchan Kim; fixed several issues noted by Minchan Kim.
 
-  UBI: fix some use after free bugs (2014-02-04 09:44:30 +0200)
+Sergey Senozhatsky (6):
+  zram: introduce compressing backend abstraction
+  zram: use zcomp compressing backends
+  zram: factor out single stream compression
+  zram: add multi stream functionality
+  zram: add set_max_streams knob
+  zram: document max_comp_streams
 
-----------------------------------------------------------------
-Just a single fix for the UBI module unload path which makes sure we do not
-touch freed memory.
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      UBI: fix some use after free bugs
-
- drivers/mtd/ubi/fastmap.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ Documentation/ABI/testing/sysfs-block-zram |   9 +-
+ Documentation/blockdev/zram.txt            |  31 ++-
+ drivers/block/zram/Makefile                |   2 +-
+ drivers/block/zram/zcomp.c                 | 318 +++++++++++++++++++++++++++++
+ drivers/block/zram/zcomp.h                 |  59 ++++++
+ drivers/block/zram/zcomp_lzo.c             |  48 +++++
+ drivers/block/zram/zram_drv.c              |  98 +++++----
+ drivers/block/zram/zram_drv.h              |  10 +-
+ 8 files changed, 528 insertions(+), 47 deletions(-)
+ create mode 100644 drivers/block/zram/zcomp.c
+ create mode 100644 drivers/block/zram/zcomp.h
+ create mode 100644 drivers/block/zram/zcomp_lzo.c
 
 -- 
-Best Regards,
-Artem Bityutskiy
+1.9.0.291.g027825b
 
