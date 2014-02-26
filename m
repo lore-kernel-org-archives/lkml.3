@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaBZIEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 03:04:43 -0500
-Received: from ozlabs.org ([203.10.76.45]:60535 "EHLO ozlabs.org"
+	id S1751940AbaBZIFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 03:05:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37232 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaBZIEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 03:04:41 -0500
-Date: Wed, 26 Feb 2014 19:04:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140226190436.53e6cf83e03ef4261577b94c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Feb_2014_19_04_36_+1100_g4iRjQyie.e.FZ4a"
+	id S1750993AbaBZIFJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 03:05:09 -0500
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+From: Alexander Graf <agraf@suse.de>
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH] ksm: Expose configuration via sysctl
+Date: Wed, 26 Feb 2014 15:49:20 +0800
+Message-Id: <33B27E4E-11A7-45FD-B708-C2B380AB6608@suse.de>
+References: <1393284484-27637-1-git-send-email-agraf@suse.de> <20140225171528.GJ4407@cmpxchg.org> <alpine.LSU.2.11.1402251652230.979@eggly.anvils>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Kay Sievers <kay@vrfy.org>,
+        Dave Hansen <dave.hansen@intel.com>
+In-Reply-To: <alpine.LSU.2.11.1402251652230.979@eggly.anvils>
+To: Hugh Dickins <hughd@google.com>
+X-Mailer: iPhone Mail (11B554a)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Feb_2014_19_04_36_+1100_g4iRjQyie.e.FZ4a
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
 
-After merging the akpm-current tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> Am 26.02.2014 um 09:05 schrieb Hugh Dickins <hughd@google.com>:
+> 
+>> On Tue, 25 Feb 2014, Johannes Weiner wrote:
+>>> On Tue, Feb 25, 2014 at 12:28:04AM +0100, Alexander Graf wrote:
+>>> Configuration of tunables and Linux virtual memory settings has traditionally
+>>> happened via sysctl. Thanks to that there are well established ways to make
+>>> sysctl configuration bits persistent (sysctl.conf).
+>>> 
+>>> KSM introduced a sysfs based configuration path which is not covered by user
+>>> space persistent configuration frameworks.
+>>> 
+>>> In order to make life easy for sysadmins, this patch adds all access to all
+>>> KSM tunables via sysctl as well. That way sysctl.conf works for KSM as well,
+>>> giving us a streamlined way to make KSM configuration persistent.
+>> 
+>> ksm can be a module, so this won't work.
+> 
+> That's news to me.  Are you writing of some Red Hat patches, or just
+> misled by the "module_init(ksm_init)" which used the last line of ksm.c?
 
-fs/notify/fanotify/fanotify_user.c: In function 'SYSC_fanotify_init':
-fs/notify/fanotify/fanotify_user.c:707:8: error: 'struct fanotify_event_inf=
-o' has no member named 'response'
-  oevent->response =3D 0;
-        ^
+Ugh, sorry. I should have double-checked this. KSM is bool in Kconfig and so is THP.
 
-Caused by my bad conflict resolution.  I added the following merge fix
-patch (but I am not too sure of it).
+> 
+> I don't mind Alex's patch, but I do think the same should be done for
+> THP as for KSM, and a general
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 26 Feb 2014 19:01:03 +1100
-Subject: [PATCH] fanotify: fix for bad merge resolution
+I agree.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/notify/fanotify/fanotify_user.c | 1 -
- 1 file changed, 1 deletion(-)
+> solution more attractive than more #ifdefs
+> one by one.  Should a general
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanoti=
-fy_user.c
-index 0edc47f7dfae..0d378a8cd279 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -704,7 +704,6 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, uns=
-igned int, event_f_flags)
-=20
- 	group->fanotify_data.f_flags =3D event_f_flags;
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
--	oevent->response =3D 0;
- 	spin_lock_init(&group->fanotify_data.access_lock);
- 	init_waitqueue_head(&group->fanotify_data.access_waitq);
- 	INIT_LIST_HEAD(&group->fanotify_data.access_list);
---=20
-1.9.0
+I don't see a good alternative to this.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> solution just be in userspace, in sysctl(8)?
 
---Signature=_Wed__26_Feb_2014_19_04_36_+1100_g4iRjQyie.e.FZ4a
-Content-Type: application/pgp-signature
+User space needs to have the ability to list available sysctls, so we need to have an enumerable map between sys and sysctl somewhere. Keeping that list close to where the actual files are implemented seems to make sense to me, as it's very hard to miss out on addition and removal of parameters throughout the stack this way. That's why I put it here.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJTDaAYAAoJEMDTa8Ir7ZwVg/IP/iZJy+Th3fdVvfYsRaUH5tVP
-TwAOsVRXhlO5f/PD/ac6bcHygzju4xqZWxbe/e6aj+zcrmB2NwEX0ndHQMSKOWfU
-GKcLt00FGwZlP05tBmJA+OmVHlnNfk++l4UXk1f/twStDeFGaacgju/hPlAVOM3+
-NQncRd/OQTO+Spc0LqjzoOzb2w5uZqU+b40JmeoYbChUkgVctlLyUeNPqurOVZ/m
-wZwSo+UJTWIyxmwSlPwkolSbcQEdRH9gASLLSZ+ZvLwIiC9xWg990f/I1iKsTRRu
-qhy4oIb58LBT47uJSSISnKHnBiyx7wm1FTZQfS3KE4aT5e86o5KbbhQTqYVwyclC
-P3dvdHB8KDPBjhaoVjEKc7XthxZbsRjWGBheBuGG5sQ+VH8HxffvGDb8XRweR+Tk
-VdfKN4bbS/2oPDXu4ouoA7e0qP7181F2oVUJ5eqvYJ+TvoBJ9q85We0KeJJC6Yhl
-DmCvHqDwlSwF0Bo67zOvpkOOdUJi9mw+bcl2Fi0bFx9FEFptUnY+UnVz0IvMUfYo
-CQJQw7G60Z8+xmh6IYNpK7fIkEHCIl27Lpy+BxG4IgLPc7fdgM1nz7HbW4jFyAxv
-gS7HxwgTExKqlN6g3Iua8DkgJJquW6ONQ/40+GU7udjNb76tpL1/1R3+KH7kuB/H
-MCvIdJQ7koKxNR9FYRSM
-=KRCq
------END PGP SIGNATURE-----
+Alex
 
---Signature=_Wed__26_Feb_2014_19_04_36_+1100_g4iRjQyie.e.FZ4a--
