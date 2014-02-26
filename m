@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaBZPFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:05:38 -0500
-Received: from relay.parallels.com ([195.214.232.42]:59683 "EHLO
+	id S1752945AbaBZPFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:05:47 -0500
+Received: from relay.parallels.com ([195.214.232.42]:59776 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809AbaBZPFg (ORCPT
+	with ESMTP id S1752886AbaBZPFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:05:36 -0500
+	Wed, 26 Feb 2014 10:05:46 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH -mm 04/12] memcg: move slab caches list/mutex init to memcg creation
-Date: Wed, 26 Feb 2014 19:05:09 +0400
-Message-ID: <0bd569d6a70e144d39f6749b5592803ee666367f.1393423762.git.vdavydov@parallels.com>
+        <devel@openvz.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH -mm 12/12] slub: make sure all memcg caches have unique names on sysfs
+Date: Wed, 26 Feb 2014 19:05:17 +0400
+Message-ID: <c19e2143ba98d26f3898489bf6ab55ed3764c1a1.1393423762.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1393423762.git.vdavydov@parallels.com>
 References: <cover.1393423762.git.vdavydov@parallels.com>
@@ -25,40 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need them initialized for cgroups that haven't got kmem accounting
-initialized.
+Since memcg caches are now reparented on memcg offline, a memcg cache
+can outlive its cgroup. If the memcg id is then reused for a new cgroup
+with the same name, we can get cache name collision, which will result
+in failures while trying to add a sysfs entry for a new cgroup's cache.
+Let's fix this by appending the cache address to sysfs names of all
+memcg caches so that they are guaranteed to have unique names.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Glauber Costa <glommer@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 ---
- mm/memcontrol.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ mm/slub.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1b9634090454..69431f5285cc 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5122,8 +5122,6 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
- 		goto out_rmid;
+diff --git a/mm/slub.c b/mm/slub.c
+index d8b8659bfa64..cdeea794bba5 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5234,7 +5234,18 @@ static int sysfs_slab_add(struct kmem_cache *s)
+ 	}
  
- 	memcg->kmemcg_id = memcg_id;
--	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
--	mutex_init(&memcg->slab_caches_mutex);
- 
- 	/*
- 	 * We couldn't have accounted to this cgroup, because it hasn't got the
-@@ -5870,6 +5868,9 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 	int ret;
- 
- 	memcg->kmemcg_id = -1;
-+	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
-+	mutex_init(&memcg->slab_caches_mutex);
-+
- 	ret = memcg_propagate_kmem(memcg);
- 	if (ret)
- 		return ret;
+ 	s->kobj.kset = cache_kset(s);
+-	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
++	/*
++	 * A memcg cache can outlive its cgroup. If the memcg id is then reused
++	 * for a new cgroup with the same name, we can get cache name
++	 * collision. To make sure all memcg caches have unique names on sysfs,
++	 * we append the cache address to its name.
++	 */
++	if (is_root_cache(s))
++		err = kobject_init_and_add(&s->kobj, &slab_ktype,
++					   NULL, "%s", name);
++	else
++		err = kobject_init_and_add(&s->kobj, &slab_ktype,
++					   NULL, "%s-%p", name, s);
+ 	if (err) {
+ 		kobject_put(&s->kobj);
+ 		return err;
 -- 
 1.7.10.4
 
