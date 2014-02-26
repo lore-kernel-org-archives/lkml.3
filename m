@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980AbaBZKCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:02:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:59462 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaBZKCQ (ORCPT
+	id S1752028AbaBZKCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:02:53 -0500
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:34646 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaBZKCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:02:16 -0500
-Message-ID: <1393408924.5592.6.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/rt: fix rt timer activation/deactivation
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: tkhai@yandex.ru, Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com,
+	Wed, 26 Feb 2014 05:02:50 -0500
+X-Originating-IP: 50.43.14.201
+Date: Wed, 26 Feb 2014 02:02:34 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 26 Feb 2014 11:02:04 +0100
-In-Reply-To: <20140226090700.GG18404@twins.programming.kicks-ass.net>
-References: <1393344328-16653-1-git-send-email-juri.lelli@gmail.com>
-	 <1393361805.12438.6.camel@HP-250-G1-Notebook-PC>
-	 <1393382258.5142.4.camel@marge.simpson.net>
-	 <20140226090700.GG18404@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:4y4NlW71WqYVK2q372nl519AtP5bhdVsMCeExe1A+iD
- v7HEx2xK4ns6OYFpv575d+b23/RjudX+sq1vJYkRH06cbWbdJY
- i5VCsz1E6bw/QOlJAAzyd2w1NLp42nmI/dBxhYGJ/YhgSbDcUA
- bQp7hCo6TwojKd1/7aStEiUPJqpxfYNjsyT8grsKuV6HH8Fzmv
- tTOuNsgs8GI9mJdfxdl37gc6dEyuHV7MESz8ZAcWGNtJqUxTh5
- 7+yLPV3vYsOk0UmDacIrSGvqbXYwk/9p/zkOk9jsT1KETh0lgj
- C/RJwWTaseuSgunT+dP1qzMs9gd4MeB4tWrrHoAt3dlxMiN/X/
- 2F4YG0wByt4wZ/SHbXRSvjZxUzblfw0UTl00LutZRMvYDIVjQf
- j+vQa1/UJ673A==
+Subject: Re: linux-next: build failure after merge of the final tree
+ (akpm-current tree related)
+Message-ID: <20140226100234.GA23064@thin>
+References: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-26 at 10:07 +0100, Peter Zijlstra wrote: 
-> On Wed, Feb 26, 2014 at 03:37:38AM +0100, Mike Galbraith wrote:
-> > BTW, I noticed you can no longer turn the turn the noisy thing off since
-> > we grew DL.  I added an old SGI boot parameter to tell it to go away.
+On Wed, Feb 26, 2014 at 07:16:27PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> You're talking about the rt badnwidth timer, right?
+> After merging the final tree, today's linux-next build (powerpc64
+> allnoconfig) failed like this:
+> 
+> arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
+> (.text+0x11260): undefined reference to `.irq_work_queue'
+> 
+> Caused (or exposed) (along with a lot of warnings) by commit 3dd6115cd60b
+> ("kconfig: make allnoconfig disable options behind EMBEDDED and EXPERT")
+> from the apm-current tree.
 
-Right.
+Pre-existing, just now triggerable with just "make allnoconfig" rather
+than manually turning off other options (like PRINTK) that select
+IRQ_WORK.  (One of the goals of that commit: get those options more
+widely used and build-tested.)
 
-> 1) why won't it go away with DL added?
+The following (untested) patch *should* fix this:
+----- 8< -----
+>From 36a5b6c87292b6c5eeb390ed6dc6acbb8f0a3767 Mon Sep 17 00:00:00 2001
+From: Josh Triplett <josh@joshtriplett.org>
+Date: Wed, 26 Feb 2014 01:58:02 -0800
+Subject: [PATCH] ppc: Make PPC_BOOK3S_64 select IRQ_WORK
 
-Hm, it _was_ saying go away when I said -1, but 7472e009a3f1 is obeying,
-so I guess it got fixed.. so never mind.
+arch/powerpc/kernel/mce.c, compiled in for PPC_BOOK3S_64, calls
+functions only built when IRQ_WORK, so select it.  Fixes the following
+build error:
 
--Mike
+arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
+(.text+0x11260): undefined reference to `.irq_work_queue'
 
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ arch/powerpc/platforms/Kconfig.cputype | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
+index 434fda3..d9e2b19 100644
+--- a/arch/powerpc/platforms/Kconfig.cputype
++++ b/arch/powerpc/platforms/Kconfig.cputype
+@@ -73,6 +73,7 @@ config PPC_BOOK3S_64
+ 	select SYS_SUPPORTS_HUGETLBFS
+ 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if PPC_64K_PAGES
+ 	select ARCH_SUPPORTS_NUMA_BALANCING
++	select IRQ_WORK
+ 
+ config PPC_BOOK3E_64
+ 	bool "Embedded processors"
+-- 
+1.9.0
