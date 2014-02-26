@@ -1,416 +1,656 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaBZQAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:00:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33264 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943AbaBZQAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:00:14 -0500
-Date: Wed, 26 Feb 2014 17:00:08 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, jkosina@suse.cz
-Subject: Re: [PATCH 07/11] kexec: Create a relocatable object called purgatory
-Message-ID: <20140226160008.GF22639@pd.tnic>
-References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
- <1390849071-21989-8-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1390849071-21989-8-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751959AbaBZQCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:02:08 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:56892 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaBZQCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 11:02:06 -0500
+Message-ID: <1393430521.5888.3.camel@b13cycling>
+Subject: Re: [PATCH v12] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+From: Dinh Nguyen <dinh.linux@gmail.com>
+To: delicious quinoa <delicious.quinoa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Date: Wed, 26 Feb 2014 10:02:01 -0600
+In-Reply-To: <CANk1AXRg7DPSMAZytfu=wwiWi+-PEqsNPeS_9zirfDXsOWQK=g@mail.gmail.com>
+References: <1393369261-17469-1-git-send-email-delicious.quinoa@gmail.com>
+	 <CANk1AXRg7DPSMAZytfu=wwiWi+-PEqsNPeS_9zirfDXsOWQK=g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 01:57:47PM -0500, Vivek Goyal wrote:
-> Create a stand alone relocatable object purgatory which runs between two
-> kernels. This name, concept and some code has been taken from kexec-tools.
+Hi Alan,
 
-... and the concept probably originates from Dante's "Divine Comedy" :-P
-
-> Idea is that this code runs after a crash and it runs in minimal environment.
-> So keep it separate from rest of the kernel and in long term we will have
-> to practically do no maintenance of this code.
+On Wed, 2014-02-26 at 09:53 -0600, delicious quinoa wrote:
+> On Tue, Feb 25, 2014 at 5:01 PM, Alan Tull <delicious.quinoa@gmail.com> wrote:
+> > From: Jamie Iles <jamie@jamieiles.com>
+> >
+> > The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> > and can be configured to provide multiple banks of GPIO pins.
+> >
+> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> > Signed-off-by: Alan Tull <atull@altera.com>
+> > Reviewed-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >
+> > v12: - Add irq_startup/shutdown
+> >      - do irq_create_mapping() in probe, irq_find_mapping() in to_irq()
+> >      - Adjust mappings to show support for 1 gpio per port.
+> >      - gpio-cells = <1>
+> > v11: - Use NULL when checking existence of 'interrupts' property
+> >      - Bindings descriptions cleanup
+> > v10: - in documentation nr-gpio -> nr-gpios
+> > v9:  - cleanup in dt bindings doc
+> >      - use of_get_child_count()
+> > v8:  - remove socfpga.dtsi changes
+> >      - minor cleanup in devicetree documentation
+> > v7:  - use irq_generic_chip
+> >      - support one irq per gpio line or one irq for many
+> >      - s/bank/port/ and other cleanup
+> > v6:  - (atull) squash the set of patches
+> >      - use linear irq domain
+> >      - build fixes. Original driver was reviewed on v3.2.
+> >      - Fix setting irq edge type for 'rising' and 'both'.
+> >      - Support as a loadable module.
+> >      - Use bgpio_chip's spinlock during register access.
+> >      - Clean up register names to match spec
+> >      - s/bank/port/ because register names use the word 'port'
+> >      - s/nr-gpio/nr-gpios/
+> >      - don't get/put the of_node
+> >      - remove signoffs/acked-by's because of changes
+> >      - other cleanup
+> > v5:  - handle sparse bank population correctly
+> > v3:  - depend on rather than select IRQ_DOMAIN
+> >      - split IRQ support into a separate patch
+> > v2:  - use Rob Herring's irqdomain in generic irq chip patches
+> >      - use reg property to indicate bank index
+> >      - support irqs on both edges based on LinusW's u300 driver
+> > ---
+> >  .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   57 +++
+> >  drivers/gpio/Kconfig                               |    9 +
+> >  drivers/gpio/Makefile                              |    1 +
+> >  drivers/gpio/gpio-dwapb.c                          |  438 ++++++++++++++++++++
+> >  4 files changed, 505 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+> >  create mode 100644 drivers/gpio/gpio-dwapb.c
+> >
+> > diff --git a/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+> > new file mode 100644
+> > index 0000000..0934950
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+> > @@ -0,0 +1,57 @@
+> > +* Synopsys DesignWare APB GPIO controller
+> > +
+> > +Required properties:
+> > +- compatible : Should contain "snps,dw-apb-gpio"
+> > +- reg : Address and length of the register set for the device.
+> > +- #address-cells : should be 1 (for addressing port subnodes).
+> > +- #size-cells : should be 0 (port subnodes).
+> > +
+> > +The GPIO controller has a configurable number of ports, each of which are
+> > +represented as child nodes with the following properties:
+> > +
+> > +Required properties:
+> > +- compatible : "snps,dw-apb-gpio-port"
+> > +- gpio-controller : Marks the device node as a gpio controller.
+> > +- #gpio-cells : Should be 1.  It is the pin number.
+> > +- reg : The integer port index of the port, a single cell.
+> > +
+> > +Optional properties:
+> > +- interrupt-controller : The first port may be configured to be an interrupt
+> > +controller.
+> > +- #interrupt-cells : Specifies the number of cells needed to encode an
+> > +  interrupt.  Shall be set to 2.  The first cell defines the interrupt number,
+> > +  the second encodes the triger flags encoded as described in
+> > +  Documentation/devicetree/bindings/interrupts.txt
+> > +- interrupt-parent : The parent interrupt controller.
+> > +- interrupts : The interrupt to the parent controller raised when GPIOs
+> > +  generate the interrupts.
+> > +- snps,nr-gpios : The number of pins in the port, a single cell.
+> > +
+> > +Example:
+> > +
+> > +gpio: gpio@20000 {
+> > +       compatible = "snps,dw-apb-gpio";
+> > +       reg = <0x20000 0x1000>;
+> > +       #address-cells = <1>;
+> > +       #size-cells = <0>;
+> > +
+> > +       porta: gpio-controller@0 {
+> > +               compatible = "snps,dw-apb-gpio-port";
+> > +               gpio-controller;
+> > +               #gpio-cells = <1>;
+> > +               snps,nr-gpios = <8>;
+> > +               reg = <0>;
+> > +               interrupt-controller;
+> > +               #interrupt-cells = <2>;
+> > +               interrupt-parent = <&vic1>;
+> > +               interrupts = <0>;
+> > +       };
+> > +
+> > +       portb: gpio-controller@1 {
+> > +               compatible = "snps,dw-apb-gpio-port";
+> > +               gpio-controller;
+> > +               #gpio-cells = <1>;
+> > +               snps,nr-gpios = <8>;
+> > +               reg = <1>;
+> > +       };
+> > +};
 > 
-> This code also has the logic to do verify sha256 hashes of various
-> segments which have been loaded into memory. So first we verify that
-> the kernel we are jumping to is fine and has not been corrupted and
-> make progress only if checsums are verified.
+> Hi Rob,
 > 
-> This code also takes care of copying some memory contents to backup region.
+> Are these bindings acceptable?
+
+In the future, I think you should split out the DTS documentation into a
+separate patch. As recommended in :
+
+Documentation/devicetree/bindings/submitting-patches.txt
+
+Dinh
 > 
-> sha256 hash related code has been taken from crypto/sha256_generic.c. I
-> could not call into functions exported by sha256_generic.c directly as
-> we don't link against the kernel. Purgatory is a stand alone object.
+> Alan
 > 
-> Also sha256_generic.c is supposed to work with higher level crypto
-> abstrations and API and there was no point in importing all that in
-> purgatory. So instead of doing #include on sha256_generic.c I just
-> copied relevant portions of code into arch/x86/purgatory/sha256.c. Now
-> we shouldn't have to touch this code at all. Do let me know if there are
-> better ways to handle it.
+> > diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> > index 903f24d..9979017 100644
+> > --- a/drivers/gpio/Kconfig
+> > +++ b/drivers/gpio/Kconfig
+> > @@ -128,6 +128,15 @@ config GPIO_GENERIC_PLATFORM
+> >         help
+> >           Say yes here to support basic platform_device memory-mapped GPIO controllers.
+> >
+> > +config GPIO_DWAPB
+> > +       tristate "Synopsys DesignWare APB GPIO driver"
+> > +       select GPIO_GENERIC
+> > +       select GENERIC_IRQ_CHIP
+> > +       depends on OF_GPIO && IRQ_DOMAIN
+> > +       help
+> > +         Say Y or M here to build support for the Synopsys DesignWare APB
+> > +         GPIO block.
+> > +
+> >  config GPIO_IT8761E
+> >         tristate "IT8761E GPIO support"
+> >         depends on X86  # unconditional access to IO space.
+> > diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> > index 5d50179..2d09f04 100644
+> > --- a/drivers/gpio/Makefile
+> > +++ b/drivers/gpio/Makefile
+> > @@ -23,6 +23,7 @@ obj-$(CONFIG_GPIO_CS5535)     += gpio-cs5535.o
+> >  obj-$(CONFIG_GPIO_DA9052)      += gpio-da9052.o
+> >  obj-$(CONFIG_GPIO_DA9055)      += gpio-da9055.o
+> >  obj-$(CONFIG_GPIO_DAVINCI)     += gpio-davinci.o
+> > +obj-$(CONFIG_GPIO_DWAPB)       += gpio-dwapb.o
+> >  obj-$(CONFIG_GPIO_EM)          += gpio-em.o
+> >  obj-$(CONFIG_GPIO_EP93XX)      += gpio-ep93xx.o
+> >  obj-$(CONFIG_GPIO_F7188X)      += gpio-f7188x.o
+> > diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+> > new file mode 100644
+> > index 0000000..2797fbb
+> > --- /dev/null
+> > +++ b/drivers/gpio/gpio-dwapb.c
+> > @@ -0,0 +1,438 @@
+> > +/*
+> > + * Copyright (c) 2011 Jamie Iles
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * All enquiries to support@picochip.com
+> > + */
+> > +#include <linux/basic_mmio_gpio.h>
+> > +#include <linux/err.h>
+> > +#include <linux/init.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/io.h>
+> > +#include <linux/ioport.h>
+> > +#include <linux/irq.h>
+> > +#include <linux/irqdomain.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/of_irq.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/spinlock.h>
+> > +
+> > +#define GPIO_SWPORTA_DR                0x00
+> > +#define GPIO_SWPORTA_DDR       0x04
+> > +#define GPIO_SWPORTB_DR                0x0c
+> > +#define GPIO_SWPORTB_DDR       0x10
+> > +#define GPIO_SWPORTC_DR                0x18
+> > +#define GPIO_SWPORTC_DDR       0x1c
+> > +#define GPIO_SWPORTD_DR                0x24
+> > +#define GPIO_SWPORTD_DDR       0x28
+> > +#define GPIO_INTEN             0x30
+> > +#define GPIO_INTMASK           0x34
+> > +#define GPIO_INTTYPE_LEVEL     0x38
+> > +#define GPIO_INT_POLARITY      0x3c
+> > +#define GPIO_INTSTATUS         0x40
+> > +#define GPIO_PORTA_EOI         0x4c
+> > +#define GPIO_EXT_PORTA         0x50
+> > +#define GPIO_EXT_PORTB         0x54
+> > +#define GPIO_EXT_PORTC         0x58
+> > +#define GPIO_EXT_PORTD         0x5c
+> > +
+> > +#define DWAPB_MAX_PORTS                4
+> > +#define GPIO_EXT_PORT_SIZE     (GPIO_EXT_PORTB - GPIO_EXT_PORTA)
+> > +#define GPIO_SWPORT_DR_SIZE    (GPIO_SWPORTB_DR - GPIO_SWPORTA_DR)
+> > +#define GPIO_SWPORT_DDR_SIZE   (GPIO_SWPORTB_DDR - GPIO_SWPORTA_DDR)
+> > +
+> > +struct dwapb_gpio;
+> > +
+> > +struct dwapb_gpio_port {
+> > +       struct bgpio_chip       bgc;
+> > +       bool                    is_registered;
+> > +       struct dwapb_gpio       *gpio;
+> > +};
+> > +
+> > +struct dwapb_gpio {
+> > +       struct  device          *dev;
+> > +       void __iomem            *regs;
+> > +       struct dwapb_gpio_port  *ports;
+> > +       unsigned int            nr_ports;
+> > +       struct irq_domain       *domain;
+> > +};
+> > +
+> > +static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+> > +{
+> > +       struct bgpio_chip *bgc = to_bgpio_chip(gc);
+> > +       struct dwapb_gpio_port *port = container_of(bgc, struct
+> > +                                                   dwapb_gpio_port, bgc);
+> > +       struct dwapb_gpio *gpio = port->gpio;
+> > +
+> > +       return irq_find_mapping(gpio->domain, offset);
+> > +}
+> > +
+> > +static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
+> > +{
+> > +       u32 v = readl(gpio->regs + GPIO_INT_POLARITY);
+> > +
+> > +       if (gpio_get_value(gpio->ports[0].bgc.gc.base + offs))
+> > +               v &= ~BIT(offs);
+> > +       else
+> > +               v |= BIT(offs);
+> > +
+> > +       writel(v, gpio->regs + GPIO_INT_POLARITY);
+> > +}
+> > +
+> > +static void dwapb_irq_handler(u32 irq, struct irq_desc *desc)
+> > +{
+> > +       struct dwapb_gpio *gpio = irq_get_handler_data(irq);
+> > +       struct irq_chip *chip = irq_desc_get_chip(desc);
+> > +       u32 irq_status = readl_relaxed(gpio->regs + GPIO_INTSTATUS);
+> > +
+> > +       while (irq_status) {
+> > +               int hwirq = fls(irq_status) - 1;
+> > +               int gpio_irq = irq_find_mapping(gpio->domain, hwirq);
+> > +
+> > +               generic_handle_irq(gpio_irq);
+> > +               irq_status &= ~BIT(hwirq);
+> > +
+> > +               if ((irq_get_trigger_type(gpio_irq) & IRQ_TYPE_SENSE_MASK)
+> > +                       == IRQ_TYPE_EDGE_BOTH)
+> > +                       dwapb_toggle_trigger(gpio, hwirq);
+> > +       }
+> > +
+> > +       if (chip->irq_eoi)
+> > +               chip->irq_eoi(irq_desc_get_irq_data(desc));
+> > +}
+> > +
+> > +static void dwapb_irq_enable(struct irq_data *d)
+> > +{
+> > +       struct irq_chip_generic *igc = irq_data_get_irq_chip_data(d);
+> > +       struct dwapb_gpio *gpio = igc->private;
+> > +       struct bgpio_chip *bgc = &gpio->ports[0].bgc;
+> > +       unsigned long flags;
+> > +       u32 val;
+> > +
+> > +       spin_lock_irqsave(&bgc->lock, flags);
+> > +       val = readl(gpio->regs + GPIO_INTEN);
+> > +       val |= BIT(d->hwirq);
+> > +       writel(val, gpio->regs + GPIO_INTEN);
+> > +       spin_unlock_irqrestore(&bgc->lock, flags);
+> > +}
+> > +
+> > +static void dwapb_irq_disable(struct irq_data *d)
+> > +{
+> > +       struct irq_chip_generic *igc = irq_data_get_irq_chip_data(d);
+> > +       struct dwapb_gpio *gpio = igc->private;
+> > +       struct bgpio_chip *bgc = &gpio->ports[0].bgc;
+> > +       unsigned long flags;
+> > +       u32 val;
+> > +
+> > +       spin_lock_irqsave(&bgc->lock, flags);
+> > +       val = readl(gpio->regs + GPIO_INTEN);
+> > +       val &= ~BIT(d->hwirq);
+> > +       writel(val, gpio->regs + GPIO_INTEN);
+> > +       spin_unlock_irqrestore(&bgc->lock, flags);
+> > +}
+> > +
+> > +static unsigned int dwapb_irq_startup(struct irq_data *d)
+> > +{
+> > +       struct irq_chip_generic *igc = irq_data_get_irq_chip_data(d);
+> > +       struct dwapb_gpio *gpio = igc->private;
+> > +       struct bgpio_chip *bgc = &gpio->ports[0].bgc;
+> > +
+> > +       if (gpio_lock_as_irq(&bgc->gc, irqd_to_hwirq(d)))
+> > +               dev_err(gpio->dev, "unable to lock HW IRQ %lu for IRQ\n",
+> > +                       irqd_to_hwirq(d));
+> > +       dwapb_irq_enable(d);
+> > +       return 0;
+> > +}
+> > +
+> > +static void dwapb_irq_shutdown(struct irq_data *d)
+> > +{
+> > +       struct irq_chip_generic *igc = irq_data_get_irq_chip_data(d);
+> > +       struct dwapb_gpio *gpio = igc->private;
+> > +       struct bgpio_chip *bgc = &gpio->ports[0].bgc;
+> > +
+> > +       dwapb_irq_disable(d);
+> > +       gpio_unlock_as_irq(&bgc->gc, irqd_to_hwirq(d));
+> > +}
+> > +
+> > +static int dwapb_irq_set_type(struct irq_data *d, u32 type)
+> > +{
+> > +       struct irq_chip_generic *igc = irq_data_get_irq_chip_data(d);
+> > +       struct dwapb_gpio *gpio = igc->private;
+> > +       struct bgpio_chip *bgc = &gpio->ports[0].bgc;
+> > +       int bit = d->hwirq;
+> > +       unsigned long level, polarity, flags;
+> > +
+> > +       if (type & ~(IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING |
+> > +                    IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_LEVEL_LOW))
+> > +               return -EINVAL;
+> > +
+> > +       spin_lock_irqsave(&bgc->lock, flags);
+> > +       level = readl(gpio->regs + GPIO_INTTYPE_LEVEL);
+> > +       polarity = readl(gpio->regs + GPIO_INT_POLARITY);
+> > +
+> > +       switch (type) {
+> > +       case IRQ_TYPE_EDGE_BOTH:
+> > +               level |= BIT(bit);
+> > +               dwapb_toggle_trigger(gpio, bit);
+> > +               break;
+> > +       case IRQ_TYPE_EDGE_RISING:
+> > +               level |= BIT(bit);
+> > +               polarity |= BIT(bit);
+> > +               break;
+> > +       case IRQ_TYPE_EDGE_FALLING:
+> > +               level |= BIT(bit);
+> > +               polarity &= ~BIT(bit);
+> > +               break;
+> > +       case IRQ_TYPE_LEVEL_HIGH:
+> > +               level &= ~BIT(bit);
+> > +               polarity |= BIT(bit);
+> > +               break;
+> > +       case IRQ_TYPE_LEVEL_LOW:
+> > +               level &= ~BIT(bit);
+> > +               polarity &= ~BIT(bit);
+> > +               break;
+> > +       }
+> > +
+> > +       writel(level, gpio->regs + GPIO_INTTYPE_LEVEL);
+> > +       writel(polarity, gpio->regs + GPIO_INT_POLARITY);
+> > +       spin_unlock_irqrestore(&bgc->lock, flags);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
+> > +                                struct dwapb_gpio_port *port)
+> > +{
+> > +       struct gpio_chip *gc = &port->bgc.gc;
+> > +       struct device_node *node =  gc->of_node;
+> > +       struct irq_chip_generic *irq_gc;
+> > +       unsigned int hwirq, ngpio = gc->ngpio;
+> > +       struct irq_chip_type *ct;
+> > +       int err, irq;
+> > +
+> > +       irq = irq_of_parse_and_map(node, 0);
+> > +       if (!irq) {
+> > +               dev_warn(gpio->dev, "no irq for bank %s\n",
+> > +                       port->bgc.gc.of_node->full_name);
+> > +               return;
+> > +       }
+> > +
+> > +       gpio->domain = irq_domain_add_linear(node, ngpio,
+> > +                                            &irq_generic_chip_ops, gpio);
+> > +       if (!gpio->domain)
+> > +               return;
+> > +
+> > +       err = irq_alloc_domain_generic_chips(gpio->domain, ngpio, 1,
+> > +                                            "gpio-dwapb", handle_level_irq,
+> > +                                            IRQ_NOREQUEST, 0,
+> > +                                            IRQ_GC_INIT_NESTED_LOCK);
+> > +       if (err) {
+> > +               dev_info(gpio->dev, "irq_alloc_domain_generic_chips failed\n");
+> > +               irq_domain_remove(gpio->domain);
+> > +               gpio->domain = NULL;
+> > +               return;
+> > +       }
+> > +
+> > +       irq_gc = irq_get_domain_generic_chip(gpio->domain, 0);
+> > +       if (!irq_gc) {
+> > +               irq_domain_remove(gpio->domain);
+> > +               gpio->domain = NULL;
+> > +               return;
+> > +       }
+> > +
+> > +       irq_gc->reg_base = gpio->regs;
+> > +       irq_gc->private = gpio;
+> > +
+> > +       ct = irq_gc->chip_types;
+> > +       ct->chip.irq_ack = irq_gc_ack_set_bit;
+> > +       ct->chip.irq_mask = irq_gc_mask_set_bit;
+> > +       ct->chip.irq_unmask = irq_gc_mask_clr_bit;
+> > +       ct->chip.irq_set_type = dwapb_irq_set_type;
+> > +       ct->chip.irq_enable = dwapb_irq_enable;
+> > +       ct->chip.irq_disable = dwapb_irq_disable;
+> > +       ct->chip.irq_startup = dwapb_irq_startup;
+> > +       ct->chip.irq_shutdown = dwapb_irq_shutdown;
+> > +       ct->regs.ack = GPIO_PORTA_EOI;
+> > +       ct->regs.mask = GPIO_INTMASK;
+> > +
+> > +       irq_setup_generic_chip(irq_gc, IRQ_MSK(port->bgc.gc.ngpio),
+> > +                       IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
+> > +
+> > +       irq_set_chained_handler(irq, dwapb_irq_handler);
+> > +       irq_set_handler_data(irq, gpio);
+> > +
+> > +       for (hwirq = 0 ; hwirq < ngpio ; hwirq++)
+> > +               irq_create_mapping(gpio->domain, hwirq);
+> > +
+> > +       port->bgc.gc.to_irq = dwapb_gpio_to_irq;
+> > +}
+> > +
+> > +static void dwapb_irq_teardown(struct dwapb_gpio *gpio)
+> > +{
+> > +       struct dwapb_gpio_port *port = &gpio->ports[0];
+> > +       struct gpio_chip *gc = &port->bgc.gc;
+> > +       unsigned int ngpio = gc->ngpio;
+> > +       irq_hw_number_t hwirq;
+> > +
+> > +       if (!gpio->domain)
+> > +               return;
+> > +
+> > +       for (hwirq = 0 ; hwirq < ngpio ; hwirq++)
+> > +               irq_dispose_mapping(irq_find_mapping(gpio->domain, hwirq));
+> > +
+> > +       irq_domain_remove(gpio->domain);
+> > +       gpio->domain = NULL;
+> > +}
+> > +
+> > +static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
+> > +                              struct device_node *port_np,
+> > +                              unsigned int offs)
+> > +{
+> > +       struct dwapb_gpio_port *port;
+> > +       u32 port_idx, ngpio;
+> > +       void __iomem *dat, *set, *dirout;
+> > +       int err;
+> > +
+> > +       if (of_property_read_u32(port_np, "reg", &port_idx) ||
+> > +               port_idx >= DWAPB_MAX_PORTS) {
+> > +               dev_err(gpio->dev, "missing/invalid port index for %s\n",
+> > +                       port_np->full_name);
+> > +               return -EINVAL;
+> > +       }
+> > +
+> > +       port = &gpio->ports[offs];
+> > +       port->gpio = gpio;
+> > +
+> > +       if (of_property_read_u32(port_np, "snps,nr-gpios", &ngpio)) {
+> > +               dev_info(gpio->dev, "failed to get number of gpios for %s\n",
+> > +                        port_np->full_name);
+> > +               ngpio = 32;
+> > +       }
+> > +
+> > +       dat = gpio->regs + GPIO_EXT_PORTA + (port_idx * GPIO_EXT_PORT_SIZE);
+> > +       set = gpio->regs + GPIO_SWPORTA_DR + (port_idx * GPIO_SWPORT_DR_SIZE);
+> > +       dirout = gpio->regs + GPIO_SWPORTA_DDR +
+> > +               (port_idx * GPIO_SWPORT_DDR_SIZE);
+> > +
+> > +       err = bgpio_init(&port->bgc, gpio->dev, 4, dat, set, NULL, dirout,
+> > +                        NULL, false);
+> > +       if (err) {
+> > +               dev_err(gpio->dev, "failed to init gpio chip for %s\n",
+> > +                       port_np->full_name);
+> > +               return err;
+> > +       }
+> > +
+> > +       port->bgc.gc.ngpio = ngpio;
+> > +       port->bgc.gc.of_node = port_np;
+> > +
+> > +       /*
+> > +        * Only port A can provide interrupts in all configurations of the IP.
+> > +        */
+> > +       if (port_idx == 0 &&
+> > +           of_property_read_bool(port_np, "interrupt-controller"))
+> > +               dwapb_configure_irqs(gpio, port);
+> > +
+> > +       err = gpiochip_add(&port->bgc.gc);
+> > +       if (err)
+> > +               dev_err(gpio->dev, "failed to register gpiochip for %s\n",
+> > +                       port_np->full_name);
+> > +       else
+> > +               port->is_registered = true;
+> > +
+> > +       return err;
+> > +}
+> > +
+> > +static void dwapb_gpio_unregister(struct dwapb_gpio *gpio)
+> > +{
+> > +       unsigned int m;
+> > +
+> > +       for (m = 0; m < gpio->nr_ports; ++m)
+> > +               if (gpio->ports[m].is_registered)
+> > +                       WARN_ON(gpiochip_remove(&gpio->ports[m].bgc.gc));
+> > +}
+> > +
+> > +static int dwapb_gpio_probe(struct platform_device *pdev)
+> > +{
+> > +       struct resource *res;
+> > +       struct dwapb_gpio *gpio;
+> > +       struct device_node *np;
+> > +       int err;
+> > +       unsigned int offs = 0;
+> > +
+> > +       gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
+> > +       if (!gpio)
+> > +               return -ENOMEM;
+> > +       gpio->dev = &pdev->dev;
+> > +
+> > +       gpio->nr_ports = of_get_child_count(pdev->dev.of_node);
+> > +       if (!gpio->nr_ports) {
+> > +               err = -EINVAL;
+> > +               goto out_err;
+> > +       }
+> > +       gpio->ports = devm_kzalloc(&pdev->dev, gpio->nr_ports *
+> > +                                  sizeof(*gpio->ports), GFP_KERNEL);
+> > +       if (!gpio->ports) {
+> > +               err = -ENOMEM;
+> > +               goto out_err;
+> > +       }
+> > +
+> > +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +       gpio->regs = devm_ioremap_resource(&pdev->dev, res);
+> > +       if (IS_ERR(gpio->regs)) {
+> > +               err = PTR_ERR(gpio->regs);
+> > +               goto out_err;
+> > +       }
+> > +
+> > +       for_each_child_of_node(pdev->dev.of_node, np) {
+> > +               err = dwapb_gpio_add_port(gpio, np, offs++);
+> > +               if (err)
+> > +                       goto out_unregister;
+> > +       }
+> > +       platform_set_drvdata(pdev, gpio);
+> > +
+> > +       return 0;
+> > +
+> > +out_unregister:
+> > +       dwapb_gpio_unregister(gpio);
+> > +       dwapb_irq_teardown(gpio);
+> > +
+> > +out_err:
+> > +       return err;
+> > +}
+> > +
+> > +static int dwapb_gpio_remove(struct platform_device *pdev)
+> > +{
+> > +       struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
+> > +
+> > +       dwapb_gpio_unregister(gpio);
+> > +       dwapb_irq_teardown(gpio);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static const struct of_device_id dwapb_of_match[] = {
+> > +       { .compatible = "snps,dw-apb-gpio" },
+> > +       { /* Sentinel */ }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, dwapb_of_match);
+> > +
+> > +static struct platform_driver dwapb_gpio_driver = {
+> > +       .driver         = {
+> > +               .name   = "gpio-dwapb",
+> > +               .owner  = THIS_MODULE,
+> > +               .of_match_table = of_match_ptr(dwapb_of_match),
+> > +       },
+> > +       .probe          = dwapb_gpio_probe,
+> > +       .remove         = dwapb_gpio_remove,
+> > +};
+> > +
+> > +module_platform_driver(dwapb_gpio_driver);
+> > +
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_AUTHOR("Jamie Iles");
+> > +MODULE_DESCRIPTION("Synopsys DesignWare APB GPIO driver");
+> > --
+> > 1.7.9.5
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Ok, but what about configurable encryption algorithms? Maybe there are
-people who don't want to use sha-2 and prefer something else instead.
 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-
-Also checkpatch:
-
-...
-total: 429 errors, 5 warnings, 1409 lines checked
-
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index 13b22e0..fedcd16 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -160,6 +160,11 @@ archscripts: scripts_basic
->  archheaders:
->  	$(Q)$(MAKE) $(build)=arch/x86/syscalls all
->  
-> +archprepare:
-> +ifeq ($(CONFIG_KEXEC),y)
-> +	$(Q)$(MAKE) $(build)=arch/x86/purgatory arch/x86/purgatory/kexec-purgatory.c
-> +endif
-
-I wonder if this could be put into arch/x86/boot/ and built there too...
-But hpa said that already.
-
-...
-
-> diff --git a/arch/x86/purgatory/entry64.S b/arch/x86/purgatory/entry64.S
-> new file mode 100644
-> index 0000000..e405c0f
-> --- /dev/null
-> +++ b/arch/x86/purgatory/entry64.S
-> @@ -0,0 +1,111 @@
-> +/*
-> + * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
-> + * Copyright (C) 2014  Red Hat Inc.
-> +
-> + * Author(s): Vivek Goyal <vgoyal@redhat.com>
-> + *
-> + * This code has been taken from kexec-tools.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation (version 2 of the License).
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-Yeah, can we drop this boilerplate gunk and refer to COPYING instead.
-
-> + */
-> +
-> +	.text
-> +	.balign 16
-> +	.code64
-> +	.globl entry64, entry64_regs
-> +
-> +
-> +entry64:
-> +	/* Setup a gdt that should be preserved */
-> +	lgdt gdt(%rip)
-> +
-> +	/* load the data segments */
-> +	movl    $0x18, %eax     /* data segment */
-> +	movl    %eax, %ds
-> +	movl    %eax, %es
-> +	movl    %eax, %ss
-> +	movl    %eax, %fs
-> +	movl    %eax, %gs
-> +
-> +	/* Setup new stack */
-> +	leaq    stack_init(%rip), %rsp
-> +	pushq   $0x10 /* CS */
-> +	leaq    new_cs_exit(%rip), %rax
-> +	pushq   %rax
-> +	lretq
-> +new_cs_exit:
-> +
-> +	/* Load the registers */
-> +	movq	rax(%rip), %rax
-> +	movq	rbx(%rip), %rbx
-> +	movq	rcx(%rip), %rcx
-> +	movq	rdx(%rip), %rdx
-> +	movq	rsi(%rip), %rsi
-> +	movq	rdi(%rip), %rdi
-> +	movq    rsp(%rip), %rsp
-> +	movq	rbp(%rip), %rbp
-> +	movq	r8(%rip), %r8
-> +	movq	r9(%rip), %r9
-> +	movq	r10(%rip), %r10
-> +	movq	r11(%rip), %r11
-> +	movq	r12(%rip), %r12
-> +	movq	r13(%rip), %r13
-> +	movq	r14(%rip), %r14
-> +	movq	r15(%rip), %r15
-
-Huh, is the purpose to simply clear the arch registers here?
-
-	xor %reg,%reg
-
-?
-
-If so, you don't need the entry64_regs and below definitions at all.
->From the looks of it, though, something's populating those regs before
-we jump to rip below...
-
-> +
-> +	/* Jump to the new code... */
-> +	jmpq	*rip(%rip)
-> +
-> +	.section ".rodata"
-> +	.balign 4
-> +entry64_regs:
-> +rax:	.quad 0x00000000
-> +rbx:	.quad 0x00000000
-> +rcx:	.quad 0x00000000
-> +rdx:	.quad 0x00000000
-> +rsi:	.quad 0x00000000
-> +rdi:	.quad 0x00000000
-> +rsp:	.quad 0x00000000
-> +rbp:	.quad 0x00000000
-> +r8:	.quad 0x00000000
-> +r9:	.quad 0x00000000
-> +r10:	.quad 0x00000000
-> +r11:	.quad 0x00000000
-> +r12:	.quad 0x00000000
-> +r13:	.quad 0x00000000
-> +r14:	.quad 0x00000000
-> +r15:	.quad 0x00000000
-> +rip:	.quad 0x00000000
-> +	.size entry64_regs, . - entry64_regs
-> +
-> +	/* GDT */
-> +	.section ".rodata"
-> +	.balign 16
-> +gdt:
-> +	/* 0x00 unusable segment
-> +	 * 0x08 unused
-> +	 * so use them as gdt ptr
-> +	 */
-> +	.word gdt_end - gdt - 1
-> +	.quad gdt
-> +	.word 0, 0, 0
-> +
-> +	/* 0x10 4GB flat code segment */
-> +	.word 0xFFFF, 0x0000, 0x9A00, 0x00AF
-> +
-> +	/* 0x18 4GB flat data segment */
-> +	.word 0xFFFF, 0x0000, 0x9200, 0x00CF
-> +gdt_end:
-> +stack:	.quad   0, 0
-> +stack_init:
-> diff --git a/arch/x86/purgatory/purgatory.c b/arch/x86/purgatory/purgatory.c
-> new file mode 100644
-> index 0000000..375cfb7
-> --- /dev/null
-> +++ b/arch/x86/purgatory/purgatory.c
-> @@ -0,0 +1,103 @@
-> +/*
-> + * purgatory: Runs between two kernels
-> + *
-> + * Copyright (C) 2013 Red Hat Inc.
-> + *
-> + * Author:
-> + *
-> + * Vivek Goyal <vgoyal@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation (version 2 of the License).
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-Ditto for the boilerplate gunk.
-
-> + */
-> +
-> +#include "sha256.h"
-> +
-> +struct sha_region {
-> +	unsigned long start;
-> +	unsigned long len;
-> +};
-> +
-> +unsigned long backup_dest = 0;
-> +unsigned long backup_src = 0;
-> +unsigned long backup_sz = 0;
-> +
-> +u8 sha256_digest[SHA256_DIGEST_SIZE] = { 0 };
-> +
-> +struct sha_region sha_regions[16] = {};
-> +
-> +/**
-> + * memcpy - Copy one area of memory to another
-> + * @dest: Where to copy to
-> + * @src: Where to copy from
-> + * @count: The size of the area.
-> + */
-> +static void *memcpy(void *dest, const void *src, unsigned long count)
-> +{
-> +	char *tmp = dest;
-> +	const char *s = src;
-> +
-> +	while (count--)
-> +		*tmp++ = *s++;
-> +	return dest;
-> +}
-> +
-> +static int memcmp(const void *cs, const void *ct, size_t count)
-> +{
-> +	const unsigned char *su1, *su2;
-> +	int res = 0;
-> +
-> +	for (su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
-> +		if ((res = *su1 - *su2) != 0)
-> +			break;
-> +	return res;
-> +}
-> +
-> +static int copy_backup_region(void)
-> +{
-> +	if (backup_dest)
-> +		memcpy((void *)backup_dest, (void *)backup_src, backup_sz);
-> +
-> +	return 0;
-> +}
-> +
-> +int verify_sha256_digest(void)
-> +{
-> +	struct sha_region *ptr, *end;
-> +	u8 digest[SHA256_DIGEST_SIZE];
-> +	struct sha256_state sctx;
-> +
-> +	sha256_init(&sctx);
-> +	end = &sha_regions[sizeof(sha_regions)/sizeof(sha_regions[0])];
-> +	for (ptr = sha_regions; ptr < end; ptr++)
-> +		sha256_update(&sctx, (uint8_t *)(ptr->start), ptr->len);
-> +
-> +	sha256_final(&sctx, digest);
-> +
-> +	if (memcmp(digest, sha256_digest, sizeof(digest)) != 0)
-> +		return 1;
-> +
-> +        return 0;
-> +}
-> +
-> +void purgatory(void)
-> +{
-> +	int ret;
-> +
-> +	ret = verify_sha256_digest();
-
-Yeah, again, hardcoding sha256 is kinda jucky. We probably should link
-the needed crypto API stuff stuff and support multiple encryption algos.
-
-> +	if (ret) {
-> +		/* loop forever */
-> +		for(;;);
-> +	}
-> +	copy_backup_region();
-
-What is this thing supposed to do? I see in patch 11/11
-arch_update_purgatory() does some preparations for KEXEC_TYPE_CRASH.
-
-> +}
-> diff --git a/arch/x86/purgatory/setup-x86_32.S b/arch/x86/purgatory/setup-x86_32.S
-> new file mode 100644
-> index 0000000..a9d5aa5
-> --- /dev/null
-> +++ b/arch/x86/purgatory/setup-x86_32.S
-> @@ -0,0 +1,29 @@
-> +/*
-> + * purgatory:  setup code
-> + *
-> + * Copyright (C) 2014 Red Hat Inc.
-> + *
-> + * This code has been taken from kexec-tools.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation (version 2 of the License).
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-
-Ditto on the boilerplate.
-
-> + */
-> +
-> +	.text
-> +	.globl purgatory_start
-> +	.balign 16
-> +purgatory_start:
-> +	.code32
-> +
-> +	/* This is just a stub. Write code when 32bit support comes along */
-
-I'm guessing we want to support 32-bit secure boot with kexec at some
-point...
-
-> +	call purgatory
-> diff --git a/arch/x86/purgatory/setup-x86_64.S b/arch/x86/purgatory/setup-x86_64.S
-> new file mode 100644
-> index 0000000..d23bc54
-> --- /dev/null
-> +++ b/arch/x86/purgatory/setup-x86_64.S
-> @@ -0,0 +1,68 @@
-> +/*
-> + * purgatory:  setup code
-> + *
-> + * Copyright (C) 2003,2004  Eric Biederman (ebiederm@xmission.com)
-> + * Copyright (C) 2014 Red Hat Inc.
-> + *
-> + * This code has been taken from kexec-tools.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation (version 2 of the License).
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-Boilerplate gunk.
-
-...
-
-Bah, that's a huge patch - it could use some splitting.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
