@@ -1,80 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaBZKCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:02:53 -0500
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:34646 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaBZKCu (ORCPT
+	id S1751660AbaBZKFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 05:05:00 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:48730 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750724AbaBZKE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:02:50 -0500
-X-Originating-IP: 50.43.14.201
-Date: Wed, 26 Feb 2014 02:02:34 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (akpm-current tree related)
-Message-ID: <20140226100234.GA23064@thin>
-References: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
+	Wed, 26 Feb 2014 05:04:56 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmcGAOK7DVN5LJYe/2dsb2JhbABZgwaDQ7hshVaBGxd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhExkCh2IHyHoXFo46B4Q4BJg1ilOHVoNBKIEuJA
+Date: Wed, 26 Feb 2014 21:04:39 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
+        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
+        mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
+ fallocate
+Message-ID: <20140226100439.GV13647@dastard>
+References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com>
+ <20140222140625.GD26637@thunk.org>
+ <20140223213606.GE4317@dastard>
+ <alpine.LSU.2.11.1402251525370.2380@eggly.anvils>
+ <20140226015747.GN13647@dastard>
+ <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140226191627.9adf3c8e1548e2016c16557c@canb.auug.org.au>
+In-Reply-To: <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 07:16:27PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Tue, Feb 25, 2014 at 09:25:40PM -0800, Hugh Dickins wrote:
+> On Wed, 26 Feb 2014, Dave Chinner wrote:
+> > On Tue, Feb 25, 2014 at 03:41:20PM -0800, Hugh Dickins wrote:
+> > > On Mon, 24 Feb 2014, Dave Chinner wrote:
+> > > > On Sat, Feb 22, 2014 at 09:06:25AM -0500, Theodore Ts'o wrote:
+> > > > > On Wed, Feb 19, 2014 at 01:37:43AM +0900, Namjae Jeon wrote:
+> > > > > > +	/*
+> > > > > > +	 * There is no need to overlap collapse range with EOF, in which case
+> > > > > > +	 * it is effectively a truncate operation
+> > > > > > +	 */
+> > > > > > +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) &&
+> > > > > > +	    (offset + len >= i_size_read(inode)))
+> > > > > > +		return -EINVAL;
+> > > > > > +
+> > > > > 
+> > > > > I wonder if we should just translate a collapse range that is
+> > > > > equivalent to a truncate operation to, in fact, be a truncate
+> > > > > operation?
+> > > > 
+> > > > Trying to collapse a range that extends beyond EOF, IMO, is likely
+> > > > to only happen if the DVR/NLE application is buggy. Hence I think
+> > > > that telling the application it is doing something that is likely to
+> > > > be wrong is better than silently truncating the file....
+> > > 
+> > > I do agree with Ted on this point.  This is not an xfs ioctl added
+> > > for one DVR/NLE application, it's a mode of a Linux system call.
+> > > 
+> > > We do not usually reject with an error when one system call happens
+> > > to ask for something which can already be accomplished another way;
+> > > nor nanny our callers.
+> > > 
+> > > It seems natural to me that COLLAPSE_RANGE should support beyond EOF;
+> > > unless that adds significantly to implementation difficulties?
+> > 
+> > Yes, it does add to the implementation complexity significantly - it
+> > adds data security issues that don't exist with the current API.
+> > 
+> > That is, Filesystems can have uninitialised blocks beyond EOF so
+> > if we allow COLLAPSE_RANGE to shift them down within EOF, we now
+> > have to ensure they are properly zeroed or marked as unwritten.
+> > 
+> > It also makes implementations more difficult. For example, XFS can
+> > also have in-memory delayed allocation extents beyond EOF, and they
+> > can't be brought into the range < EOF without either:
+> > 
+> > 	a) inserting zeroed pages with appropriately set up
+> > 	and mapped bufferheads into the page cache for the range
+> > 	that sits within EOF; or
+> > 	b) truncating the delalloc extents beyond EOF before the
+> > 	move
+> > 
+> > So, really, the moment you go beyond EOF filesystems have to do
+> > quite a bit more validation and IO in the context of the system
+> > call. It no longer becomes a pure extent manipulation offload - it
+> > becomes a data security problem.
 > 
-> After merging the final tree, today's linux-next build (powerpc64
-> allnoconfig) failed like this:
+> Those sound like problems you would already have solved for a
+> simple extending truncate.
+
+Yes, they have because of what truncate defines - that the region
+between the old EOF and the new EOF must contain zeroes. truncate
+does not move blocks around, it merely changes the EOF, and so the
+solution is simple.
+
+
+> But I wasn't really thinking of the offset > i_size case, just the
+> offset + len >= i_size case: which would end with i_size at offset,
+> and the areas you're worried about still beyond EOF - or am I confused?
+
+Right, offset beyond EOF is just plain daft. But you're not thinking
+of the entire picture. What happens when a system crashes half way
+through a collapse operation? On tmpfs you don't care - everything
+is lost, but on real filesystems we have to care about. 
+
+offset + len beyond EOF is just truncate(offset).
+
+>From the point of view of an application offloading a data movement
+operation via collapse range, any range that overlaps EOF is wrong -
+data beyond EOF is not accessible and is not available for the
+application to move. Hence EINVAL - it's an invalid set of
+parameters.
+
+If we do allow it and implement it by block shifting (which,
+technically, is the correct interpretation of the collapse range
+behaviour because it preserves preallocation beyond
+the collapsed region beyond EOF), then we have
+thr problem of moving data blocks below EOF by extent shifting
+before we change the EOF. That exposes blocks of undefined content
+to the user if we crash and recover up to that point of the
+operation. It's just plain dangerous, and if we allow this
+possibility via the API, someone is going to make that mistake in a
+filesystem because it's difficult to test and hard to get right.
+
+> > And, indeed, the specification that we are working to is that the
+> > applications that want to collapse the range of a file are using
+> > this function instead of read/memcpy/write/truncate, which by
+> > definition means they cannot shift ranges of the file beyond EOF
+> > into the new file.
+> > 
+> > So IMO the API defines the functionality as required by the
+> > applications that require it and *no more*. If you need some
+> > different behaviour - we can add it via additional flags in future
+> > when you have an application that requires it. 
 > 
-> arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
-> (.text+0x11260): undefined reference to `.irq_work_queue'
-> 
-> Caused (or exposed) (along with a lot of warnings) by commit 3dd6115cd60b
-> ("kconfig: make allnoconfig disable options behind EMBEDDED and EXPERT")
-> from the apm-current tree.
+> You still seem to be thinking in terms of xfs ioctl hacks,
+> rather than fully scoped Linux system calls.
 
-Pre-existing, just now triggerable with just "make allnoconfig" rather
-than manually turning off other options (like PRINTK) that select
-IRQ_WORK.  (One of the goals of that commit: get those options more
-widely used and build-tested.)
+Low blow, referee! :/
 
-The following (untested) patch *should* fix this:
------ 8< -----
->From 36a5b6c87292b6c5eeb390ed6dc6acbb8f0a3767 Mon Sep 17 00:00:00 2001
-From: Josh Triplett <josh@joshtriplett.org>
-Date: Wed, 26 Feb 2014 01:58:02 -0800
-Subject: [PATCH] ppc: Make PPC_BOOK3S_64 select IRQ_WORK
+To set the record straight, this fallocate interface was originally
+scoped and implemented for ext4, then extended to XFS by request.
+it's never been near an XFS ioctl interface in it's life.
 
-arch/powerpc/kernel/mce.c, compiled in for PPC_BOOK3S_64, calls
-functions only built when IRQ_WORK, so select it.  Fixes the following
-build error:
+Besides, you're completely off the ball here. This isn't a fully
+scoped Linux system call - that's what fallocate() is. fallocate()
+is designed to be as extensible as possible within the constraints
+of it's three control parameters (flags, offset, length).  This was
+done so we could add new allocation primitives for filesystem
+offloads in the future. That's *exactly* what collapse range is -
+it is using fallocate in the way it was intended to be used.
 
-arch/powerpc/kernel/built-in.o: In function `.machine_check_queue_event':
-(.text+0x11260): undefined reference to `.irq_work_queue'
+FWIW, consider the the "can't change EOF with the hole punch
+primitive" rule we defined.  We did that because hole punch needs to
+work beyond EOF without changing EOF because having a hole punch
+that removes preallocation beyond EOF extend the file is just plain
+daft.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- arch/powerpc/platforms/Kconfig.cputype | 1 +
- 1 file changed, 1 insertion(+)
+Hence if you want to punch a hole that crosses EOF and set EOF to
+the start of the hole a the same time *you have to use truncate*.
+Because, by definition, that's a *truncate operation*, not a *hole
+punch operation*.
 
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 434fda3..d9e2b19 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -73,6 +73,7 @@ config PPC_BOOK3S_64
- 	select SYS_SUPPORTS_HUGETLBFS
- 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE if PPC_64K_PAGES
- 	select ARCH_SUPPORTS_NUMA_BALANCING
-+	select IRQ_WORK
- 
- config PPC_BOOK3E_64
- 	bool "Embedded processors"
+Now, consider the collapse range primitive and apply the same logic:
+
+Applications cannot access data beyond EOF. Allowing them to
+collapse a range past EOF is effectively saying "bring data
+beyond EOF down into the file, then set EOF so you can't
+access the data that was beyond the old EOF. It has potential for
+stale data exposure, especially if the operation is fatally
+interrupted (e.g. by a system crash or filesystem shutdown).
+
+Hence if you want to collapse a range that crosses EOF and set EOF
+to the start of the range a the same time *you have to use
+truncate*.  Because, by definition, that's a *truncate operation*,
+not a *collapse range operation*.
+
+> But it probably doesn't matter too much, if we start with an error,
+> and later correct that to a full implementation - an xfstest or LTP
+> test which expected failure will fail once it sees success, but no
+> users harmed in the making of this change.
+
+If we want different behaviour in future, then we define a new
+control flag to indicate that we want the different behaviour.  Yet
+another reason we designed the fallocate syscall to be
+extensible....
+
+Cheers,
+
+Dave.
 -- 
-1.9.0
+Dave Chinner
+david@fromorbit.com
