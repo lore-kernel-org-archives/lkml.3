@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaBZANu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:13:50 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:52201 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaBZANt (ORCPT
+	id S1753483AbaBZAPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:15:54 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:54449 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072AbaBZAPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:13:49 -0500
-Message-ID: <1393373618.2886.26.camel@linux-whg8.site>
-Subject: Re: [RFC PATCH for-next 1/4] epoll: struct epoll userspace definiton
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 25 Feb 2014 16:13:38 -0800
-In-Reply-To: <20140225101527.GA9963@dcvr.yhbt.net>
-References: <1393206162-18151-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-	 <1393206162-18151-2-git-send-email-n1ght.4nd.d4y@gmail.com>
-	 <20140224052934.GA7056@dcvr.yhbt.net>
-	 <CAJ3m7Bq1y+MLn=HFY3AADnVc2HK31+WANahiYLUcdBw=hh_2pg@mail.gmail.com>
-	 <20140225101527.GA9963@dcvr.yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 19:15:51 -0500
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org
+Cc: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 00/12] clk: bcm281xx: updates for 3.15
+Date: Tue, 25 Feb 2014 18:15:40 -0600
+Message-Id: <1393373752-30875-1-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-02-25 at 10:15 +0000, Eric Wong wrote:
-> (Did you intend to Cc LKML on your original reply?)
-> 
-> Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
-> > On Sun, Feb 23, 2014 at 9:29 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> > > Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com> wrote:
-> > >> +++ b/include/uapi/linux/eventpoll.h
-> > >> @@ -61,6 +61,12 @@ struct epoll_event {
-> > >>       __u64 data;
-> > >>  } EPOLL_PACKED;
-> > >>
-> > >> +struct epoll {
-> > >> +     int ep_fildes; /* file descriptor */
-> > >> +     int ep_events; /* triggering events */
-> > >> +     long long ep_ident; /* entry ID (cf. epoll_event->data) */
-> > >> +} EPOLL_PACKED;
-> > >
-> > > Why not reuse the existing epoll_event struct?
-> > >
-> > >         struct epoll {
-> > >                 int ep_fildes; /* file descriptor */
-> > >                 struct epoll_event event;
-> > >         } EPOLL_PACKED;
-> > 
-> > Well my first instinct was that doing it like that would be too messy,
-> > but now that you mention it that'd probably be a much better
-> > approach. In fact we could even do something like:
-> > 
-> > struct epoll {
-> >         int ep_fildes; /* file descriptor */
-> >         union {
-> >                 struct epoll_event event;
-> >                 struct {
-> >                         int ep_events;
-> >                         long long ep_ident;
-> >                 } EPOLL_PACKED;
-> >         };
-> > } EPOLL_PACKED;
-> > 
-> > In order to keep things looking spiffy while also easing migration
-> > from the old struct :)
-> 
-> I think you miss the point of my question.  What is the point of
-> changing:
-> 
-> 	event.events => ep_events
-> 	event.data   => ep_ident
-> 
-> in the first place?
+This series includes updates for the bcm281xx clock code for 3.15.
+I had held off posting this until the code on which this is based
+was queued for 3.14, and it now has been:
+    https://github.com/broadcom/mach-bcm/
+    Branch armsoc/for-3.15/drivers
+	clk: bcm281xx: don't disable unused peripheral clocks
+	clk: bcm281xx: add initial clock framework support
+followed by:
+    (same repository)
+    Branch armsoc/for-3.15/dt
+	ARM: dts: bcm281xx: define real clocks
 
-Whoops, my bad, still haven't gotten my email client totally figured
-out. I'll CC this back the mailing list so everyone else can follow
-along.
+The patches in this series are available here:
+    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+    Branch review/bcm-clk-next-v2
 
-My intent was just to give the struct a more Unix-like style (so
-to speak), because when I started, it looked like entirely
-different code paths would be needed for this sort of functionality.
-Thankfully that wasn't the case, but still a new struct was
-necessary. All that to say I don't have an issue embedding an
-epoll_event over defining the fields directly, but I'd just
-prefer not to.
+I've grouped them, and offer a little explanation of each of the
+groups below.
+
+Note:  The final (DT) patch *must* be committed last.
+
+The first version of this series had a patch from the middle of the
+series that shouldn't have been there, and it has been removed in
+this version (that patch affected mach-bcm, not clk).  I also split
+the final patch into two, with the second one isolating the change
+to a device tree file.
+
+		    					-Alex
+
+Alex Elder (12):
+  clk: bcm281xx: warn if ccu_wait_bit() fails
+  clk: bcm281xx: use init_data.name for clock name
+  clk: bcm281xx: change some symbol names
+       	Three small code improvements.
+
+  clk: bcm281xx: initialize CCU structures statically
+  clk: bcm281xx: define CCU clock data statically
+	Rearrange the way CCUs and the clocks they provide are
+	defined, so that they're defined statically to the extent
+	possible rather than allocating and initializing things at
+	runtime.
+
+  clk: bcm281xx: add clock policy support
+  clk: bcm281xx: add clock hysteresis support
+  clk: bcm281xx: add an initialized flag
+  clk: bcm281xx: implement prerequisite clocks
+  clk: bcm281xx: add bus clock support
+  clk: bcm281xx: define a bus clock
+	Add a few new features, ultimately for the purpose of adding
+	support for another type of Kona clock.  Currently only
+	peripheral clocks are supported; this adds the ability to
+	define and control bus clocks.  In addition, support is
+	added for clocks to identify a prerequisite clock; a clock
+	won't be initialized until after its prerequisite has been.
+
+  ARM: dts: add bus clock bsc3_apb for bcm281xx
+  	Add the new bus clock to the device tree.
+
+ arch/arm/boot/dts/bcm11351.dtsi      |    3 +-
+ drivers/clk/bcm/clk-bcm281xx.c       |  254 ++++++++++++--------------
+ drivers/clk/bcm/clk-kona-setup.c     |  331 +++++++++++++++++++++++++++-------
+ drivers/clk/bcm/clk-kona.c           |  331 ++++++++++++++++++++++++++++++++--
+ drivers/clk/bcm/clk-kona.h           |  189 ++++++++++++++++---
+ include/dt-bindings/clock/bcm281xx.h |    3 +-
+ 6 files changed, 872 insertions(+), 239 deletions(-)
+-- 
+1.7.9.5
+
 
