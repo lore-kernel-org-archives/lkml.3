@@ -1,111 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaBZBuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:50:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34557 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaBZBuE (ORCPT
+	id S1751484AbaBZBzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:55:04 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:34731 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaBZBzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:50:04 -0500
-Date: Tue, 25 Feb 2014 17:52:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Hugh Dickins <hughd@google.com>, Namjae Jeon <linkinjeon@gmail.com>,
-        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new
- flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-Message-Id: <20140225175216.0f0c10f9.akpm@linux-foundation.org>
-In-Reply-To: <20140226013426.GM13647@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
-	<20140224005710.GH4317@dastard>
-	<20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
-	<20140225041346.GA29907@dastard>
-	<alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
-	<20140225154128.947a2de83a2d0dc21763ccf9@linux-foundation.org>
-	<20140226013426.GM13647@dastard>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 25 Feb 2014 20:55:01 -0500
+Message-ID: <530D4964.7060301@linaro.org>
+Date: Wed, 26 Feb 2014 09:54:44 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, tony.luck@intel.com,
+        fenghua.yu@intel.com, james.hogan@imgtec.com, jason.low2@hp.com,
+        viresh.kumar@linaro.org, hanjun.guo@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
+        wangyun@linux.vnet.ibm.com, mgorman@suse.de
+Subject: Re: [PATCH 02/11] sched: remove rq->cpu_load[load_idx] array
+References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org> <1393293054-11378-3-git-send-email-alex.shi@linaro.org> <20140225162252.GA13532@linux.vnet.ibm.com>
+In-Reply-To: <20140225162252.GA13532@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 12:34:26 +1100 Dave Chinner <david@fromorbit.com> wrote:
-
-> On Tue, Feb 25, 2014 at 03:41:28PM -0800, Andrew Morton wrote:
-> > On Tue, 25 Feb 2014 15:23:35 -0800 (PST) Hugh Dickins <hughd@google.com> wrote:
-> > > On Tue, 25 Feb 2014, Dave Chinner wrote:
-> > > > On Tue, Feb 25, 2014 at 02:16:01PM +1100, Stephen Rothwell wrote:
-> > > > > On Mon, 24 Feb 2014 11:57:10 +1100 Dave Chinner <david@fromorbit.com> wrote:
-> > > FALLOC_FL_COLLAPSE_RANGE: I'm a little sad at the name COLLAPSE,
-> > > but probably seven months too late to object.  It surprises me that
-> > > you're doing all this work to deflate a part of the file, without
-> > > the obvious complementary work to inflate it - presumably all those
-> > > advertisers whose ads you're cutting out, will come back to us soon
-> > > to ask for inflation, so that they have somewhere to reinsert them ;)
-> > 
-> > Yes, I was wondering that.  Why not simply "move these blocks from here
-> > to there".
+On 02/26/2014 12:22 AM, Srikar Dronamraju wrote:
+>>  
+>> -/**
+>> - * get_sd_load_idx - Obtain the load index for a given sched domain.
+>> - * @sd: The sched_domain whose load_idx is to be obtained.
+>> - * @idle: The idle status of the CPU for whose sd load_idx is obtained.
+>> - *
+>> - * Return: The load index.
+>> - */
+>> -static inline int get_sd_load_idx(struct sched_domain *sd,
+>> -					enum cpu_idle_type idle)
+>> -{
+>> -	int load_idx;
+>> -
+>> -	switch (idle) {
+>> -	case CPU_NOT_IDLE:
+>> -		load_idx = sd->busy_idx;
+>> -		break;
+>> -
+>> -	case CPU_NEWLY_IDLE:
+>> -		load_idx = sd->newidle_idx;
+>> -		break;
+>> -	default:
+>> -		load_idx = sd->idle_idx;
+>> -		break;
+>> -	}
+>> -
+>> -	return load_idx;
+>> -}
+>> -
 > 
-> And open a completely unnecessary can of worms to do with
-> behavioural and implementation corner cases?
+> Since the last caller to get_sd_load_idx(), does it make sense to remove
+> the function definition for get_sd_load_idx() in the previous patch itself?
 
-But it's general.
+yes. it's reasonable.
+> 
+> Or
+> 
+>> @@ -5903,13 +5868,11 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+>>  	struct sched_domain *child = env->sd->child;
+>>  	struct sched_group *sg = env->sd->groups;
+>>  	struct sg_lb_stats tmp_sgs;
+>> -	int load_idx, prefer_sibling = 0;
+>> +	int prefer_sibling = 0;
+>>  
+>>  	if (child && child->flags & SD_PREFER_SIBLING)
+>>  		prefer_sibling = 1;
+>>  
+>> -	load_idx = 0;
+>> -
+>>  	do {
+>>  		struct sg_lb_stats *sgs = &tmp_sgs;
+>>  		int local_group;
+> 
+> 
+> The single line change in the previous patch gets removed here so why
+> not club them.
 
-> Do you allow it to destroy data by default? Or only allow moves into
-> holes?
+Uh, the first patch want to just show the load_idx connection in current
+logical.
 
-Overwrite.
+Yes, we can club them, but this connection will be flooded in code.
 
-> What do you do with range the data is moved out of? Does it just
-> become a hole? What happens if the range overlaps EOF - does that
-> change the file size?
 
-Truncate.
 
-> What if you want to move the range beyond EOF?
-
-Extend.
-
-> What if the source and destination ranges overlap?
-
-Don't screw it up.
-
-> What happens when you move the block at EOF into the middle of a
-> file - do you end up with zeros padding the block and the file size
-> having to be adjusted accordingly? Or do we have to *copy* all the
-> data in high blocks down to fill the hole in the block?
-
-I don't understand that.  Move the block(s) and truncate to the new
-length.
-
-> What behaviour should we expect if the filesystem can't implement
-> the entire move atomically and we crash in the middle of the move?
-
-What does collapse_range do now?
-
-If it's a journaled filesystem, it shouldn't screw up.  If it isn't, fsck.
-
-> I can keep going, but I'll stop here - you get the idea.
-
-None of this seems like rocket science.
-
-> In comparison, collapse range as a file data manipulation has very
-> specific requirements and from that we can define a simple, specific
-> API that allows filesystems to accelerate that operation by extent
-> manipulation rather than read/memcpy/write that the applications are
-> currently doing for this operation....  IOWs, collapse range is a
-> simple operation, "move arbitrary blocks from here to there" is a
-> nightmare both from the specification and the implementation points
-> of view.
-
-collapse_range seems weird, arbitrary and half-assed.  "Why didn't they
-go all the way and do it properly".
-
+-- 
+Thanks
+    Alex
