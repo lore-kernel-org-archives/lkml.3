@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaBZXfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:35:07 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55108 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752826AbaBZXfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:35:04 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len.Brown@intel.com, "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Raj, Ashok" <ashok.raj@intel.com>
-Subject: Re: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be installed
-Date: Thu, 27 Feb 2014 00:50:05 +0100
-Message-ID: <1853937.5e0COHhnpP@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <530D558D.6090607@linux.intel.com>
-References: <530D558D.6090607@linux.intel.com>
+	id S1753951AbaBZXh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:37:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47143 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510AbaBZXh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 18:37:26 -0500
+Message-ID: <530E7AAF.3070908@zytor.com>
+Date: Wed, 26 Feb 2014 15:37:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: The sheer number of sparse warnings in the kernel
+References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <20140226232954.GA17791@kroah.com> <530E7963.10209@zytor.com>
+In-Reply-To: <530E7963.10209@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 26, 2014 10:46:37 AM Li, Aubrey wrote:
-> Sleep control and status registers need santity check before ACPI
-> install acpi_power_off to pm_power_off hook. The checking code in
-> acpi_enter_sleep_state() is too late, we should not allow a not-working
-> pm_power_off function hooked.
+On 02/26/2014 03:31 PM, H. Peter Anvin wrote:
+> On 02/26/2014 03:29 PM, Greg KH wrote:
+>> On Wed, Feb 26, 2014 at 03:28:59PM -0800, Greg KH wrote:
+>>> On Wed, Feb 26, 2014 at 02:49:26PM -0800, H. Peter Anvin wrote:
+>>>> The number of sparse errors in the current kernel is staggering, and it
+>>>> makes sparse a lot less valuable of a tool that it otherwise could be.
+>>>> On a build of x86-64 allyesconfig I'm getting 20,676 sparse messages.
+>>>> Out of those, 12,358 come from linux/err.h.  Given that the latter
+>>>> basically spams *everything*, I can only conclude that almost noone uses
+>>>> sparse unless they have a filter script.
+>>>
+>>> What errors are you seeing from err.h?  I don't see those when building
+>>> different subdirectories with sparse (which is how I normally use it.)
+>>>
+>>> And what version of sparse are you running:
+>>> 	$ sparse --version
+>>> 	v0.4.5-rc1-407-g345e8943fc36
+>>
+>> Ah, 0.5.0 is now out, maybe you should update to that version?
+>>
 > 
-> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
-> ---
->  drivers/acpi/sleep.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index b718806..0284d22 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -809,8 +809,11 @@ int __init acpi_sleep_init(void)
->  	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
->  	if (ACPI_SUCCESS(status)) {
->  		sleep_states[ACPI_STATE_S5] = 1;
-
-Do we still want to set this if the check below fails?  If so, then why?
-
-> -		pm_power_off_prepare = acpi_power_off_prepare;
-> -		pm_power_off = acpi_power_off;
-> +		if (acpi_gbl_FADT.sleep_control.address &&
-> +			acpi_gbl_FADT.sleep_status.address) {
-> +			pm_power_off_prepare = acpi_power_off_prepare;
-> +			pm_power_off = acpi_power_off;
-> +		}
->  	}
-> 
->  	supported[0] = 0;
+> Yes... it looks like the 0.4.5-rc1 that shipped in Fedora is indeed out
+> of date.  With 0.5.0 I "only" see 8,207 messages, which means that at
+> least the linux/err.h issue is gone.
 > 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+For what it's worth, the rpm is called sparse-0.4.5.rc1-2.fc19.x86_64
+and sparse --version reports 0.4.4...
+
+	-hpa
+
