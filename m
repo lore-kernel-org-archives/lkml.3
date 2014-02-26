@@ -1,80 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaBZQRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 11:17:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47169 "EHLO mx2.suse.de"
+	id S1752903AbaBZQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 11:17:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54182 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319AbaBZQRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 11:17:22 -0500
-Message-ID: <530E2518.5090102@suse.de>
-Date: Wed, 26 Feb 2014 18:32:08 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1751319AbaBZQRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 11:17:25 -0500
+Date: Wed, 26 Feb 2014 16:31:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
+        riel@redhat.com, peterz@infradead.org, pbonzini@redhat.com,
+        mingo@kernel.org, mgorman@suse.de, kirill.shutemov@linux.intel.com,
+        heiko.carstens@de.ibm.com, hannes@cmpxchg.org,
+        gerald.schaefer@de.ibm.com, ebiederm@xmission.com, aarcange@redhat.com,
+        athorlton@sgi.com
+Subject: Re: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
+	added to -mm tree
+Message-ID: <20140226153144.GA15527@redhat.com>
+References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com> <530E0306.7020601@de.ibm.com>
 MIME-Version: 1.0
-To: Sven-Haegar Koch <haegar@sdinet.de>
-CC: Dave Hansen <dave.hansen@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] ksm: Expose configuration via sysctl
-References: <1393284484-27637-1-git-send-email-agraf@suse.de> <530CD443.7010400@intel.com> <4B3C0B08-45E1-48EF-8030-A3365F0E7CF6@suse.de> <530D3102.60504@intel.com> <alpine.DEB.2.10.1402261634010.31425@aurora64.sdinet.de>
-In-Reply-To: <alpine.DEB.2.10.1402261634010.31425@aurora64.sdinet.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530E0306.7020601@de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sven-Haegar Koch wrote:
-> On Tue, 25 Feb 2014, Dave Hansen wrote:
+On 02/26, Christian Borntraeger wrote:
 >
->   
->> On 02/25/2014 03:09 PM, Alexander Graf wrote:
->>     
->>>> Couldn't we also (maybe in parallel) just teach the sysctl userspace
->>>> about sysfs?  This way we don't have to do parallel sysctls and sysfs
->>>> for *EVERYTHING* in the kernel:
->>>>
->>>>    sysfs.kernel.mm.transparent_hugepage.enabled=enabled
->>>>         
->>> It's pretty hard to filter this. We definitely do not want to expose all of sysfs through /proc/sys. But how do we know which files are actual configuration and which ones are dynamic system introspection data?
->>>
->>> We could add a filter, but then we can just as well stick with the manual approach I followed here :).
->>>       
->> Maybe not stick it under /proc/sys, but teach sysctl(8) about them.  I
->> guess at the moment, sysctl says that it's tied to /proc/sys:
->>
->>     
->>> DESCRIPTION
->>>        sysctl  is  used to modify kernel parameters at runtime.  The parameters available are those listed under /proc/sys/.  Procfs is required
->>>        for sysctl support in Linux.  You can use sysctl to both read and write sysctl data.
->>>       
->> But surely that's not set in stone just because the manpage says so. :)
->>     
+> On 26/02/14 15:50, Oleg Nesterov wrote:
+> >
+> > But perhaps qemu can be changed to avoid MADV_HUGEPAGE on s390 ?
+> > Otherwise I'd suggest the change below.
+> >
+> > Oleg.
+> >
+> >
+> > --- x/mm/huge_memory.c
+> > +++ x/mm/huge_memory.c
+> > @@ -1968,8 +1968,6 @@ out:
+> >  int hugepage_madvise(struct vm_area_struct *vma,
+> >  		     unsigned long *vm_flags, int advice)
+> >  {
+> > -	struct mm_struct *mm = vma->vm_mm;
+> > -
+> >  	switch (advice) {
+> >  	case MADV_HUGEPAGE:
+> >  		/*
+> > @@ -1977,8 +1975,16 @@ int hugepage_madvise(struct vm_area_stru
+> >  		 */
+> >  		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+> >  			return -EINVAL;
+> > -		if (mm->def_flags & VM_NOHUGEPAGE)
+> > +
+> > +/*
+> > + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
+> > + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
+> > + */
+> > +#ifdef CONFIG_S390
+> > +		if (vma->vm_mm->def_flags & VM_NOHUGEPAGE)
+> >  			return -EINVAL;
+> > +#endif
+> > +
 >
-> What I still don't get is why you need this?
->
-> My distribution (Debian) has a sysfsutils package which provides a 
-> /etc/sysfs.conf / /etc/sysfs.d/foo exactly like /etc/sysctl.conf.
->
-> Don't other distributions have something like this?
->   
+> Ifdefs are ugly but might be the only way of not breaking existing userspace.
 
-Maybe that's the right answer to the problem, but I still don't
-understand why these properties were put into sysfs in the first place.
-We're not configuring a dynamic device here, are we?
+Yes, agreed. but note that this code is already s390-specific, nobody
+else puts VM_NOHUGEPAGE into ->def_flags (until this series of course).
 
-Also if we do want something like a sysfs.conf and sysfs.d, that should
-probably be something that gets properly coordinated between
-distributions so that users don't get completely confused. Today
-openSUSE does not have a sysfs.conf/.d provided by the sysfsutils
-package. Maybe it's something homegrown?
+> If we come up with a solution for THP in KVM host processes on s390, we can
+> then remove that wart. We could even limit that hack to KVM only processes
+> to retain Alex' prctl capability by checking mm_has_pgste
 
+Yes, yes, I looked at mm->context.has_pgste too ;) But I wasn't sure
+we can rely on it. Thanks.
 
-Alex
+> > +/*
+> > + * MADV_HUGEPAGE after PRCTL_THP_DISABLE is broken on s390 because
+> > + * qemu blindly does madvise(MADV_HUGEPAGE) after s390_enable_sie().
+> > + */
+> > +#ifdef CONFIG_S390
+> > +		if ((vma->vm_mm->def_flags & VM_NOHUGEPAGE) && mm_has_pgste(vma->vm_mm))
+> >  			return -EINVAL;
+
+Hmm... but why do we need to check VM_NOHUGEPAGE then? Can't the
+change below work?
+
+Oleg.
+
+--- x/arch/s390/mm/pgtable.c
++++ x/arch/s390/mm/pgtable.c
+@@ -1084,7 +1084,6 @@ static inline void thp_split_mm(struct m
+ 		vma->vm_flags &= ~VM_HUGEPAGE;
+ 		vma->vm_flags |= VM_NOHUGEPAGE;
+ 	}
+-	mm->def_flags |= VM_NOHUGEPAGE;
+ }
+ #else
+ static inline void thp_split_mm(struct mm_struct *mm)
+--- x/mm/huge_memory.c
++++ x/mm/huge_memory.c
+@@ -1968,8 +1968,6 @@ out:
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-
+ 	switch (advice) {
+ 	case MADV_HUGEPAGE:
+ 		/*
+@@ -1977,8 +1975,12 @@ int hugepage_madvise(struct vm_area_stru
+ 		 */
+ 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+-		if (mm->def_flags & VM_NOHUGEPAGE)
++
++#ifdef CONFIG_S390
++		if (mm_has_pgste(vma->vm_mm))
+ 			return -EINVAL;
++#endif
++
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+ 		/*
 
