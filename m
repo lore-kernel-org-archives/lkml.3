@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaBZAY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 19:24:28 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64943 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752813AbaBZAY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 19:24:27 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: dirk.brandewie@gmail.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com, gf435@gmx.net,
-        bp@alien8.de, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH] intel_pstate: Change busy calculation to use fixed point math.
-Date: Wed, 26 Feb 2014 01:39:25 +0100
-Message-ID: <1509075.br8MLUFIAK@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1393353337-19778-1-git-send-email-dirk.j.brandewie@intel.com>
-References: <20140219224752.GA370@kroah.com> <1393353337-19778-1-git-send-email-dirk.j.brandewie@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753719AbaBZAYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 19:24:42 -0500
+Received: from ring0.de ([5.45.105.125]:46965 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753679AbaBZAYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 19:24:39 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Marek Belisko <marek@goldelico.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-iio@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [RFCv3 0/7] Convert twl4030-madc to IIO API and add DT support
+Date: Wed, 26 Feb 2014 01:24:23 +0100
+Message-Id: <1393374270-20079-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1393193271-16717-1-git-send-email-sre@debian.org>
+References: <1393193271-16717-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 25, 2014 10:35:37 AM dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> 
-> Commit fcb6a15c2e Take core C0 time into account for core busy calculation.
-> 
-> Introduced a regression on some processor SKUs supported by
-> intel_pstate. This was caused by the truncation caused by using
-> integer math to calculate core busy and C0 percentages.
-> 
-> On a i7-4770K processor operating at 800Mhz going to 100% utilization
-> the percent busy of the CPU using integer math is 22% it actually is
-> 22.85%.  This value scaled to the current frequency returned 97 which
-> the PID interpreted as no error and did not adjust the P state.
-> 
-> Tested on i7-4770K, i7-2600, i5-3230M
-> 
-> References:
->    https://lkml.org/lkml/2014/2/19/626
->    https://bugzilla.kernel.org/show_bug.cgi?id=70941
-> 
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Hi,
 
-Queued up as a fix for 3.14.
+This is RFCv3 for converting twl4030-madc to the IIO API and
+adding DT support. The patchset compiles and has been tested
+on my Nokia N900.
 
-Thanks!
+Changes since RFCv2:
+ * Use "--find-renames" for the move from mfd/ to iio/adc/ ;)
+ * Added Acked-by from Lee Jones (MFD subsystem maintainer)
+ * Fixed issue found by Joe Perches
+  - twl4030_madc_request.do_avg should be bool instead of u16
+ * Fixed issues found by Peter Meerwald
+  - some style issues (e.g. /** instead of /*)
+  - typos
+  - usage of u16 read/write
+ * Tested with converted rx51-battery driver on Nokia N900
 
-> ---
->  drivers/cpufreq/intel_pstate.c | 28 ++++++++++++++++++----------
->  1 file changed, 18 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index e908161..2cd36b9 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -39,9 +39,10 @@
->  #define BYT_TURBO_RATIOS	0x66c
->  
->  
-> -#define FRAC_BITS 8
-> +#define FRAC_BITS 6
->  #define int_tofp(X) ((int64_t)(X) << FRAC_BITS)
->  #define fp_toint(X) ((X) >> FRAC_BITS)
-> +#define FP_ROUNDUP(X) ((X) += 1 << FRAC_BITS)
->  
->  static inline int32_t mul_fp(int32_t x, int32_t y)
->  {
-> @@ -556,18 +557,20 @@ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
->  static inline void intel_pstate_calc_busy(struct cpudata *cpu,
->  					struct sample *sample)
->  {
-> -	u64 core_pct;
-> -	u64 c0_pct;
-> +	int32_t core_pct;
-> +	int32_t c0_pct;
->  
-> -	core_pct = div64_u64(sample->aperf * 100, sample->mperf);
-> +	core_pct = div_fp(int_tofp((sample->aperf)),
-> +			int_tofp((sample->mperf)));
-> +	core_pct = mul_fp(core_pct, int_tofp(100));
-> +	FP_ROUNDUP(core_pct);
-> +
-> +	c0_pct = div_fp(int_tofp(sample->mperf), int_tofp(sample->tsc));
->  
-> -	c0_pct = div64_u64(sample->mperf * 100, sample->tsc);
->  	sample->freq = fp_toint(
-> -		mul_fp(int_tofp(cpu->pstate.max_pstate),
-> -			int_tofp(core_pct * 1000)));
-> +		mul_fp(int_tofp(cpu->pstate.max_pstate * 1000), core_pct));
->  
-> -	sample->core_pct_busy = mul_fp(int_tofp(core_pct),
-> -				div_fp(int_tofp(c0_pct + 1), int_tofp(100)));
-> +	sample->core_pct_busy = mul_fp(core_pct, c0_pct);
->  }
->  
->  static inline void intel_pstate_sample(struct cpudata *cpu)
-> @@ -579,6 +582,10 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
->  	rdmsrl(MSR_IA32_MPERF, mperf);
->  	tsc = native_read_tsc();
->  
-> +	aperf = aperf >> FRAC_BITS;
-> +	mperf = mperf >> FRAC_BITS;
-> +	tsc = tsc >> FRAC_BITS;
-> +
->  	cpu->sample_ptr = (cpu->sample_ptr + 1) % SAMPLE_COUNT;
->  	cpu->samples[cpu->sample_ptr].aperf = aperf;
->  	cpu->samples[cpu->sample_ptr].mperf = mperf;
-> @@ -610,7 +617,8 @@ static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
->  	core_busy = cpu->samples[cpu->sample_ptr].core_pct_busy;
->  	max_pstate = int_tofp(cpu->pstate.max_pstate);
->  	current_pstate = int_tofp(cpu->pstate.current_pstate);
-> -	return mul_fp(core_busy, div_fp(max_pstate, current_pstate));
-> +	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
-> +	return FP_ROUNDUP(core_busy);
->  }
->  
->  static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
-> 
+TODO:
+ * Remove twl4030-madc-hwmon in favour of iio-hwmon
+   This driver is currently only used by board-omap3beagle.c
+   and board-rx51-peripherals.c. The instanciation in the
+   rx51 boardcode is a bug, since actually only twl4030-madc
+   is needed. Thus board-omap3beagle.c needs to be updated to
+   iio-hwmon and board-rx51-peripherals.c to twl4030-madc.
+   Both tasks are pretty trivial and twl4030-madc-hwmon can
+   be removed afterwards :)
+ * Update twl4030-madc-battery to the IIO API. I guess Marek
+   will do this update in the near future, since he is currently
+   writing DT bindings for the driver.
+ * I updated twl4030-madc-battery already and will send it
+   in a separate patchset.
+ * Once all of the above steps happened the old API can be
+   removed from the driver, which allows some more cleanups.
+
+-- Sebastian
+
+Sebastian Reichel (7):
+  mfd: twl4030-madc: Use managed resources
+  mfd: twl4030-madc: Add DT support and convert to IIO framework
+  mfd: twl4030-madc: Cleanup driver
+  mfd: twl-core: Add twl_i2c_read/write_u16
+  mfd: twl4030-madc: Use twl_i2c_read/write_u16 for 16 bit registers
+  Documentation: DT: Document twl4030-madc binding
+  mfd: twl4030-madc: Move driver to drivers/iio/adc
+
+ .../devicetree/bindings/iio/adc/twl4030-madc.txt   |  24 ++
+ drivers/iio/adc/Kconfig                            |  10 +
+ drivers/iio/adc/Makefile                           |   1 +
+ drivers/{mfd => iio/adc}/twl4030-madc.c            | 278 +++++++++++++--------
+ drivers/mfd/Kconfig                                |  10 -
+ drivers/mfd/Makefile                               |   1 -
+ include/linux/i2c/twl.h                            |  12 +
+ include/linux/i2c/twl4030-madc.h                   |   2 +-
+ 8 files changed, 224 insertions(+), 114 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/twl4030-madc.txt
+ rename drivers/{mfd => iio/adc}/twl4030-madc.c (77%)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.5.3
+
