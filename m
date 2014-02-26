@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaBZFJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:09:59 -0500
-Received: from [216.32.181.183] ([216.32.181.183]:9098 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171AbaBZFJ5 (ORCPT
+	id S1752315AbaBZFKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:10:11 -0500
+Received: from [216.32.180.13] ([216.32.180.13]:30620 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751251AbaBZFKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:09:57 -0500
+	Wed, 26 Feb 2014 00:10:06 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+X-SpamScore: 4
+X-BigFish: VS4(z37d4lzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <lgirdwood@gmail.com>
 CC: <timur@tabi.org>, <tiwai@suse.de>, <lars@metafoo.de>,
@@ -18,9 +18,9 @@ CC: <timur@tabi.org>, <tiwai@suse.de>, <lars@metafoo.de>,
         <s.hauer@pengutronix.de>, <moinejf@free.fr>,
         <kuninori.morimoto.gx@renesas.com>, <alsa-devel@alsa-project.org>,
         <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 06/10] ASoC: simple-card: Use snd_soc_dai_set_tdm_slot_xlate()
-Date: Wed, 26 Feb 2014 11:59:31 +0800
-Message-ID: <1393387175-15539-7-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCH 04/10] ASoC: fsl-ssi: Add .of_xlate_tdm_slot_mask() support.
+Date: Wed, 26 Feb 2014 11:59:29 +0800
+Message-ID: <1393387175-15539-5-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1393387175-15539-1-git-send-email-Li.Xiubo@freescale.com>
@@ -33,36 +33,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_dai_set_tdm_slot_xlate instead of snd_soc_dai_set_tdm_slot.
-
-This will use the DAI driver specified .of_xlate_tdm_slot_mask to generate
-the TDM slot TX/RX mask, or the default snd_soc_of_xlate_tdm_slot_mask will
-be used instead if it's absent.
+This patch add .of_xlate_tdm_slot_mask support for SSI, and this will
+generate the TDM slot TX and RX masks.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- sound/soc/generic/simple-card.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ sound/soc/fsl/Kconfig   | 1 +
+ sound/soc/fsl/fsl_ssi.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index bdd176d..22efa83 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -48,11 +48,10 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
- 	}
+diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
+index 6abb68e..7472308 100644
+--- a/sound/soc/fsl/Kconfig
++++ b/sound/soc/fsl/Kconfig
+@@ -5,6 +5,7 @@ config SND_SOC_FSL_SAI
  
- 	if (set->slots) {
--		ret = snd_soc_dai_set_tdm_slot(dai, 0, 0,
--						set->slots,
--						set->slot_width);
-+		ret = snd_soc_dai_set_tdm_slot_xlate(dai, set->slots,
-+						     set->slot_width);
- 		if (ret && ret != -ENOTSUPP) {
--			dev_err(dai->dev, "simple-card: set_tdm_slot error\n");
-+			dev_err(dai->dev, "simple-card: set_tdm_slot_xlate error\n");
- 			goto err;
- 		}
- 	}
+ config SND_SOC_FSL_SSI
+ 	tristate
++	select SND_SOC_FSL_UTILS
+ 
+ config SND_SOC_FSL_SPDIF
+ 	tristate "ALSA SoC support for the Freescale SPDIF device"
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 5428a1f..80ca76c 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -53,6 +53,7 @@
+ 
+ #include "fsl_ssi.h"
+ #include "imx-pcm.h"
++#include "fsl_utils.h"
+ 
+ #ifdef PPC
+ #define read_ssi(addr)			 in_be32(addr)
+@@ -1136,6 +1137,7 @@ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
+ 	.hw_params	= fsl_ssi_hw_params,
+ 	.set_fmt	= fsl_ssi_set_dai_fmt,
+ 	.set_sysclk	= fsl_ssi_set_dai_sysclk,
++	.of_xlate_tdm_slot_mask	= fsl_asoc_of_xlate_tdm_slot_mask,
+ 	.set_tdm_slot	= fsl_ssi_set_dai_tdm_slot,
+ 	.trigger	= fsl_ssi_trigger,
+ };
 -- 
 1.8.4
 
