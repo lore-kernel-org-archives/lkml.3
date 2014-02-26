@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaBZWl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:41:56 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43380 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaBZWlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:41:55 -0500
-Date: Wed, 26 Feb 2014 22:41:41 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        gregkh@linuxfoundation.org, hpa@zytor.com, linux-efi@vger.kernel.org,
-        jmorris@namei.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 12/12] Add option to automatically set trusted_kernel
- when in Secure Boot mode
-Message-ID: <20140226224141.1741a746@alan.etchedpixels.co.uk>
-In-Reply-To: <1393445473-15068-13-git-send-email-matthew.garrett@nebula.com>
-References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
-	<1393445473-15068-13-git-send-email-matthew.garrett@nebula.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753573AbaBZWod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:44:33 -0500
+Received: from arlo.cworth.org ([50.126.95.6]:51972 "EHLO arlo.cworth.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698AbaBZWo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 17:44:27 -0500
+From: Carl Worth <cworth@cworth.org>
+To: Ping Cheng <pingc@wacom.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Carl Worth <cworth@cworth.org>
+Subject: [PATCH 3/3] Input: wacom - Avoid incorrect sign extension from pressure-value lower byte
+Date: Wed, 26 Feb 2014 14:38:16 -0800
+Message-Id: <1393454296-32735-4-git-send-email-cworth@cworth.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393454296-32735-3-git-send-email-cworth@cworth.org>
+References: <1393454296-32735-1-git-send-email-cworth@cworth.org>
+ <1393454296-32735-2-git-send-email-cworth@cworth.org>
+ <1393454296-32735-3-git-send-email-cworth@cworth.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 15:11:13 -0500
-Matthew Garrett <matthew.garrett@nebula.com> wrote:
+Previously, whenever the lower byte was greater than 127, the sign
+extension of the "char" during integer promotion would result in a
+negative value for pressure. There was code in place to adjust a
+negative value back to positive by subtracting from pressure_max, but
+this code was only correct with a tablet with a maximum of 256
+pressure values.
 
-> UEFI Secure Boot provides a mechanism for ensuring that the firmware will
-> only load signed bootloaders and kernels. Certain use cases may also
-> require that the kernel prevent userspace from inserting untrusted kernel
-> code at runtime. Add a configuration option that enforces this automatically
-> when enabled.
+By switching from "char" to "unsigned char" we can avoid the sign
+extension altogether, eliminate the code to adjust values, and obtain
+correct pressure results.
 
-I think you have a load more cases to attempt to paper over before you
-even pretend to achieve that goal. Firewire for example. Also it only
-remotely begins to work if you also force CAP_SYS_RAWIO off globally as
-you need to force off things like raw command issuing to various
-controllers (especially as some of that code is written on the basis that
-'its RAWIO, screw making it secure and doing all the checks we could
-bother with'.
+With this code in place, I am now obtaining correct pressure results
+from the Wacom tablet built into a ThinkPad Yoga laptop. (Prior to
+this fix, gradual increases of pressure would result in pressure
+values that would reset from 255 to 0 rathern than simply increasing.)
 
-RAWIO also disables things like CPU msr access - which is also quite
-adequate for subverting a kernel.
+Signed-off-by: Carl Worth <cworth@cworth.org>
+---
+ drivers/input/tablet/wacom_wac.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Another issue that needs addressing is firmware. Quite a few of our
-request_firmware cases load device firmware which is not signed into DMA
-capable hardware. Probably also worth checking what the
-architectural guarantees on bogus microcode updates is. Maybe we need
-firmware signing for such cases to match the mod signing ?
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 563f197..93f7440 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1018,8 +1018,7 @@ static int wacom_tpc_single_touch(struct wacom_wac *wacom, size_t len)
+ 
+ static int wacom_tpc_pen(struct wacom_wac *wacom)
+ {
+-	struct wacom_features *features = &wacom->features;
+-	char *data = wacom->data;
++	unsigned char *data = wacom->data;
+ 	struct input_dev *input = wacom->input;
+ 	int pressure;
+ 	bool prox = data[1] & 0x20;
+@@ -1038,8 +1037,6 @@ static int wacom_tpc_pen(struct wacom_wac *wacom)
+ 		input_report_abs(input, ABS_X, le16_to_cpup((__le16 *)&data[2]));
+ 		input_report_abs(input, ABS_Y, le16_to_cpup((__le16 *)&data[4]));
+ 		pressure = (data[7] << 8) | data[6];
+-		if (pressure < 0)
+-			pressure = features->pressure_max + pressure + 1;
+ 		input_report_abs(input, ABS_PRESSURE, pressure);
+ 		input_report_key(input, BTN_TOUCH, data[1] & 0x05);
+ 		input_report_key(input, wacom->tool[0], prox);
+-- 
+1.9.0
 
-I'm trying to think what else. Possibly disabling it on Pentium-M with
-the rep movs erratum (Y19) as it's quite possible to set up suitable
-adjacent page sets in user space via the graphics.
-
-Alan
