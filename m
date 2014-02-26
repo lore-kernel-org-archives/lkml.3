@@ -1,138 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaBZNUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:20:06 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:43686 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbaBZNUE (ORCPT
+	id S1752433AbaBZNWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:22:18 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38224 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaBZNWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:20:04 -0500
-Date: Wed, 26 Feb 2014 16:16:26 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Jerome Marchand <jmarchan@redhat.com>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] zram: support REQ_DISCARD
-Message-ID: <20140226131625.GA2217@swordfish.minsk.epam.com>
-References: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Wed, 26 Feb 2014 08:22:17 -0500
+Message-ID: <530DEA7C.6010609@pengutronix.de>
+Date: Wed, 26 Feb 2014 14:22:04 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
+In-Reply-To: <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On (02/26/14 14:23), Joonsoo Kim wrote:
-> zram is ram based block device and can be used by backend of filesystem.
-> When filesystem deletes a file, it normally doesn't do anything on data
-> block of that file. It just marks on metadata of that file. This behavior
-> has no problem on disk based block device, but has problems on ram based
-> block device, since we can't free memory used for data block. To overcome
-> this disadvantage, there is REQ_DISCARD functionality. If block device
-> support REQ_DISCARD and filesystem is mounted with discard option,
-> filesystem sends REQ_DISCARD to block device whenever some data blocks are
-> discarded. All we have to do is to handle this request.
-> 
-> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
-> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
-> used.
-> 
-> v2: handle unaligned case commented by Jerome
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 5ec61be..5364c1e 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	return ret;
->  }
->  
-> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
-> +{
-> +	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
-> +	size_t n = bio->bi_iter.bi_size;
-> +	size_t misalign;
-> +
-> +	/*
-> +	 * On some arch, logical block (4096) aligned request couldn't be
-> +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
-> +	 * Therefore we should handle this misaligned case here.
-> +	 */
-> +	misalign = (bio->bi_iter.bi_sector &
-> +			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-> +	if (misalign) {
-> +		if (n < misalign)
-> +			return;
-> +
-> +		n -= misalign;
-> +		index++;
-> +	}
-> +
-> +	while (n >= PAGE_SIZE) {
-> +		write_lock(&zram->meta->tb_lock);
-> +		zram_free_page(zram, index);
-> +		write_unlock(&zram->meta->tb_lock);
-> +		index++;
-> +		n -= PAGE_SIZE;
-> +	}
-> +}
-> +
+On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
+>> This loop looks broken. Can you explain how it works.
+>>
+>> What it shoud do is:
+>> We have put (priv->tx_head - priv->tx_tail) CAN frames into the FIFO.
+>> This means at maximum there could be this amount of CAN frames which
+>> have been successfully transmitted. For every cycle in this while loop=
+ you
+>> should:
+>> a) check if a CAN frame has successfully been transmitted
+>>    (as this CAN core uses a FIFO it should be "oldest")
+>>    A read_reg() of some kind is missing in your loop.
+>> b) if needed, remove this event from the FIFO or
+>>    mark the interrupt as done. Whatever you hardware needs.
+>> c) update your statistics
+>> d) Use can_get_echo_skb to push this frame into the networking stack
+>> e) As a CAN frame has been transmitted successfully, wake the tx_queue=
+=2E
+>>
+>>> +   while (priv->tx_head - priv->tx_tail > 0) {
+>>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
+>>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
+>>> +                                   XCAN_IXR_TXFLL_MASK);
+>>> +                   netif_stop_queue(ndev);
+>>
+>> Why do you stop the queue here? A CAN frame has successfully been
+>> transmitted, there should be room in the FIFO.
+>>
+>>> +                   break;
+>>> +           }
+>>> +           can_get_echo_skb(ndev, priv->tx_tail %
+>>> +                                   priv->xcan_echo_skb_max_tx);
+>>> +           priv->tx_tail++;
+>>> +   }
+>>> +
+>=20
+> The below are the bit fields available for the Transmit FIFO.
+> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx fifo f=
+ull interrupt.
+> 2) in the SR(Status Register) Tx fifo full condition.
+>=20
+>=20
+> I am modifying the entire tx interrupt logic to like below.
+>=20
+> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr)
+> {
+>         struct xcan_priv *priv =3D netdev_priv(ndev);
+>         struct net_device_stats *stats =3D &ndev->stats;
+>=20
+>             while (priv->tx_head - priv->tx_tail > 0) {
+>                 if (isr & XCAN_IXR_TXFLL_MASK) {
+>                         priv->write_reg(priv, XCAN_ICR_OFFSET,
+>                                         XCAN_IXR_TXFLL_MASK);
+>                           break;
+>                 }
+>                 can_get_echo_skb(ndev, priv->tx_tail %
+>                                         priv->xcan_echo_skb_max_tx);
+>                 priv->tx_tail++;
+>          stats->tx_packets++;
+>         netif_wake_queue(ndev);
+>               can_led_event(ndev, CAN_LED_EVENT_TX);
+>=20
+>         }
 
-a side note, do we need zram_bio_discard() function? I mean, can we handle
-discard request in zram_bvec_rw(), where we already know index, etc. (passed
-from __zram_make_request())?
+You just need to wake the queue once.
 
-for example:
+> }
+>=20
+>=20
+> Are you Ok with the above logic?
 
-@@ -510,6 +510,11 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-                ret = zram_bvec_write(zram, bvec, index, offset);
-        }
- 
-+       if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-+               write_lock(&zram->meta->tb_lock);
-+               zram_free_page(zram, index);
-+               write_unlock(&zram->meta->tb_lock);
-+       }
-        return ret;
- }
+No, how can you tell how many frames have been transmitted?
 
-	-ss
+Marc
 
->  static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  {
->  	size_t index;
-> @@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
->  	struct bio_vec bvec;
->  	struct bvec_iter iter;
->  
-> +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-> +		zram_bio_discard(zram, bio);
-> +		bio_endio(bio, 0);
-> +		return;
-> +	}
-> +
->  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->  	offset = (bio->bi_iter.bi_sector &
->  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
-> @@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
->  					ZRAM_LOGICAL_BLOCK_SIZE);
->  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
->  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
-> +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
-> +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
-> +	zram->disk->queue->limits.discard_zeroes_data = 1;
-> +	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
->  
->  	add_disk(zram->disk);
->  
-> -- 
-> 1.7.9.5
-> 
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlMN6nwACgkQjTAFq1RaXHPQGQCffOrc4qe/mhVZnM1NvNN3XTMq
+JfAAn3poCqSBHxbeZtkG8DiW4dHP6rDk
+=fs9R
+-----END PGP SIGNATURE-----
+
+--WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi--
