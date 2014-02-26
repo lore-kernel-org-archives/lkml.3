@@ -1,142 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaBZNWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:22:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38224 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaBZNWR (ORCPT
+	id S1752335AbaBZNZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:25:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:62082 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaBZNZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:22:17 -0500
-Message-ID: <530DEA7C.6010609@pengutronix.de>
-Date: Wed, 26 Feb 2014 14:22:04 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Wed, 26 Feb 2014 08:25:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH v2 1/5] bug: When !CONFIG_BUG, simplify WARN_ON_ONCE and family
+Date: Wed, 26 Feb 2014 14:24:59 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org>
+In-Reply-To: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
-In-Reply-To: <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402261424.59875.arnd@arndb.de>
+X-Provags-ID: V02:K0:YSrOJBi3SxI0oFyU+P2aiFu2kGFyFesaqrc6X6cChEX
+ jo5TK/QBajQ+UbQzVhP+VYOl9FQtdp0AtNQne1i/RkRDC2kVyI
+ Mj6B1FdliKkqv0EXsZo0kU9sB66dRxPDh5tQFkuEBLFJ1KOH4V
+ fLPqdfu1sxeWZtlV4V8H0QEPro906YSyJOw3cTEt7cnW50w1wY
+ o3PNvzZ6QN8fFSdI9pd55ijCFSFgRbxmLPu4FNrVqjrhr7ZULd
+ 0e62vh7Q1Tq9LIH1WxcQOxo9CfKW23APLD7FaTeAKNzeba/iuT
+ 02oDh8NjRkcri5DkhO1fSzRN+N73+Pt7YPtDCLr7zLCZjmPN7L
+ TJcVLcpS6MpHnAQ+nAlI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 26 February 2014, Josh Triplett wrote:
+> When !CONFIG_BUG, WARN_ON and family become simple passthroughs of their
+> condition argument; however, WARN_ON_ONCE and family still have
+> conditions and a boolean to detect one-time invocation, even though the
+> warning they'd emit doesn't exist.  Make the existing definitions
+> conditional on CONFIG_BUG, and add definitions for !CONFIG_BUG that map
+> to the passthrough versions of WARN and WARN_ON.
+> 
+> This saves 4.4k on a minimized configuration (smaller than
+> allnoconfig), and 20.6k with defconfig plus CONFIG_BUG=n.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
-On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
->> This loop looks broken. Can you explain how it works.
->>
->> What it shoud do is:
->> We have put (priv->tx_head - priv->tx_tail) CAN frames into the FIFO.
->> This means at maximum there could be this amount of CAN frames which
->> have been successfully transmitted. For every cycle in this while loop=
- you
->> should:
->> a) check if a CAN frame has successfully been transmitted
->>    (as this CAN core uses a FIFO it should be "oldest")
->>    A read_reg() of some kind is missing in your loop.
->> b) if needed, remove this event from the FIFO or
->>    mark the interrupt as done. Whatever you hardware needs.
->> c) update your statistics
->> d) Use can_get_echo_skb to push this frame into the networking stack
->> e) As a CAN frame has been transmitted successfully, wake the tx_queue=
-=2E
->>
->>> +   while (priv->tx_head - priv->tx_tail > 0) {
->>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
->>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
->>> +                                   XCAN_IXR_TXFLL_MASK);
->>> +                   netif_stop_queue(ndev);
->>
->> Why do you stop the queue here? A CAN frame has successfully been
->> transmitted, there should be room in the FIFO.
->>
->>> +                   break;
->>> +           }
->>> +           can_get_echo_skb(ndev, priv->tx_tail %
->>> +                                   priv->xcan_echo_skb_max_tx);
->>> +           priv->tx_tail++;
->>> +   }
->>> +
->=20
-> The below are the bit fields available for the Transmit FIFO.
-> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx fifo f=
-ull interrupt.
-> 2) in the SR(Status Register) Tx fifo full condition.
->=20
->=20
-> I am modifying the entire tx interrupt logic to like below.
->=20
-> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr)
-> {
->         struct xcan_priv *priv =3D netdev_priv(ndev);
->         struct net_device_stats *stats =3D &ndev->stats;
->=20
->             while (priv->tx_head - priv->tx_tail > 0) {
->                 if (isr & XCAN_IXR_TXFLL_MASK) {
->                         priv->write_reg(priv, XCAN_ICR_OFFSET,
->                                         XCAN_IXR_TXFLL_MASK);
->                           break;
->                 }
->                 can_get_echo_skb(ndev, priv->tx_tail %
->                                         priv->xcan_echo_skb_max_tx);
->                 priv->tx_tail++;
->          stats->tx_packets++;
->         netif_wake_queue(ndev);
->               can_led_event(ndev, CAN_LED_EVENT_TX);
->=20
->         }
-
-You just need to wake the queue once.
-
-> }
->=20
->=20
-> Are you Ok with the above logic?
-
-No, how can you tell how many frames have been transmitted?
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMN6nwACgkQjTAFq1RaXHPQGQCffOrc4qe/mhVZnM1NvNN3XTMq
-JfAAn3poCqSBHxbeZtkG8DiW4dHP6rDk
-=fs9R
------END PGP SIGNATURE-----
-
---WLaE7bP6u1l5645uGMVJRtbhg45ixMqLi--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
