@@ -1,152 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaBZPPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 10:15:37 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:36314 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaBZPPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 10:15:33 -0500
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>, linux-kernel@vger.kernel.org,
-        <stable@vger.kernel.org>
-Subject: [PATCH v2] rapidio/tsi721: fix tasklet termination in dma channel release
-Date: Wed, 26 Feb 2014 10:13:47 -0500
-Message-Id: <1393427627-18525-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1753450AbaBZPQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 10:16:26 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:49693 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926AbaBZPQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 10:16:24 -0500
+Message-ID: <530E0531.7000303@linaro.org>
+Date: Wed, 26 Feb 2014 23:16:01 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        daniel.lezcano@linaro.org, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        tony.luck@intel.com, fenghua.yu@intel.com, james.hogan@imgtec.com,
+        jason.low2@hp.com, viresh.kumar@linaro.org, hanjun.guo@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
+        wangyun@linux.vnet.ibm.com, mgorman@suse.de
+Subject: Re: [PATCH 04/11] sched: unify imbalance bias for target group
+References: <1393293054-11378-1-git-send-email-alex.shi@linaro.org> <1393293054-11378-5-git-send-email-alex.shi@linaro.org> <20140225141407.GT9987@twins.programming.kicks-ass.net>
+In-Reply-To: <20140225141407.GT9987@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a modification of the patch originally proposed
-by Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-This new version disables DMA channel interrupts and ensures that the tasklet
-wil not be scheduled again before calling tasklet_kill().
 
-Unfortunately the updated patch was not released at that time due to planned
-rework of Tsi721 mport driver to use threaded interrupts (which has yet to
-happen).
-Recently the issue was reported again: https://lkml.org/lkml/2014/2/19/762.
+> So this patch is weird..
+> 
+> So the original bias in the source/target load is purely based on actual
+> load figures. It only pulls-down/pulls-up resp. the long term avg with a
+> shorter term average; iow. it allows the source to decrease faster and
+> the target to increase faster, giving a natural inertia (ie. a
+> resistance to movement).
+> 
+> Therefore this gives rise to a conservative imbalance.
+> 
+> Then at the end we use the imbalance_pct thing as a normal hysteresis
+> control to avoid the rapid state switching associated with a single
+> control point system.
 
-Description from the original Xiaotian's patch:
+Peter, Thanks response and detailed explanations! :)
 
-"Some drivers use tasklet_disable in device remove/release process, 
-tasklet_disable will inc tasklet->count and return. If the tasklet is 
-not handled yet under some softirq pressure, the tasklet will be 
-placed on the tasklet_vec, never have a chance to be excuted. This 
-might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, 
-but tasklet is disabled. tasklet_kill should be used in this case."
+Yes, fixed bias can not replace the current bias.
+If we said sth inertia, we usually mean the previous value or long term
+value here. but source/target_load doesn't prefer a long term or shorter
+term load, Just get the min or max of them. so I can't see other meaning
+except source/target bias. And the long term load is a decayed load with
+history load value, not a real actual load.
 
-This patch is applicable to kernel versions starting from v3.5.
+And in current logical, assume the load of cpu is constant in a period,
+then the source/target_load will lose its 'resistance' function for
+balance. Considering the moving cost, rq locking and potential cpu cache
+missing, Is some bias needed here?
 
-v2 - fixes compile error if MSI support (CONFIG_PCI_MSI) is disabled.  
+Another problem is, we bias load twice for busy_idx scenario. once in
+source/target_load another is imbalance_pct in find_busiest_group. I
+can't figure out the reason. :(
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: linux-kernel@vger.kernel.org
-Cc: <stable@vger.kernel.org>
----
- drivers/rapidio/devices/tsi721.h     |    1 +
- drivers/rapidio/devices/tsi721_dma.c |   27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 9 deletions(-)
+So would rather select a random long/shorter term load, than maybe it's
+better to use a fixed bias, like in current NUMA balancing, and in
+newidle/wake balance.
 
-diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
-index b4b0d83..7061ac0 100644
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
- 	struct list_head	free_list;
- 	dma_cookie_t		completed_cookie;
- 	struct tasklet_struct	tasklet;
-+	bool			active;
- };
- 
- #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
-diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
-index 502663f..91245f5 100644
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_bdma_chan *bdma_chan)
- {
- 	/* Disable BDMA channel interrupts */
- 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
--
--	tasklet_schedule(&bdma_chan->tasklet);
-+	if (bdma_chan->active)
-+		tasklet_schedule(&bdma_chan->tasklet);
- }
- 
- #ifdef CONFIG_PCI_MSI
-@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(struct dma_chan *dchan)
- 	}
- #endif /* CONFIG_PCI_MSI */
- 
--	tasklet_enable(&bdma_chan->tasklet);
-+	bdma_chan->active = true;
- 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
- 
- 	return bdma_chan->bd_num - 1;
-@@ -576,9 +576,7 @@ err_out:
- static void tsi721_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
--#ifdef CONFIG_PCI_MSI
- 	struct tsi721_device *priv = to_tsi721(dchan->device);
--#endif
- 	LIST_HEAD(list);
- 
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
-@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
- 	BUG_ON(!list_empty(&bdma_chan->active_list));
- 	BUG_ON(!list_empty(&bdma_chan->queue));
- 
--	tasklet_disable(&bdma_chan->tasklet);
-+	tsi721_bdma_interrupt_enable(bdma_chan, 0);
-+	bdma_chan->active = false;
-+
-+#ifdef CONFIG_PCI_MSI
-+	if (priv->flags & TSI721_USING_MSIX) {
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-+					   bdma_chan->id].vector);
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
-+					   bdma_chan->id].vector);
-+	} else
-+#endif
-+	synchronize_irq(priv->pdev->irq);
-+
-+	tasklet_kill(&bdma_chan->tasklet);
- 
- 	spin_lock_bh(&bdma_chan->lock);
- 	list_splice_init(&bdma_chan->free_list, &list);
- 	spin_unlock_bh(&bdma_chan->lock);
- 
--	tsi721_bdma_interrupt_enable(bdma_chan, 0);
--
- #ifdef CONFIG_PCI_MSI
- 	if (priv->flags & TSI721_USING_MSIX) {
- 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 		bdma_chan->dchan.cookie = 1;
- 		bdma_chan->dchan.chan_id = i;
- 		bdma_chan->id = i;
-+		bdma_chan->active = false;
- 
- 		spin_lock_init(&bdma_chan->lock);
- 
-@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 
- 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
- 			     (unsigned long)bdma_chan);
--		tasklet_disable(&bdma_chan->tasklet);
- 		list_add_tail(&bdma_chan->dchan.device_node,
- 			      &mport->dma.channels);
- 	}
+> 
+> 
+> You completely wreck that, you also don't give a coherent model back.
+> 
+> 
+> The movement of imbalance_pct into target_load() doesn't make sense to
+> me either; it's an (expensive) no-op afaict. Seeing how:
+> 
+>   100 * source_load() < imb_pct * target_load()
+> 
+> is very much equal to:
+> 
+>   source_load() < (imb_pct * target_load()) / 100;
+> 
+> Except you get to do that div all over the place.
+
+It is my fault. Will change it back.
+> 
+> It also completely muddles the fact that its a normal hysteresis
+> control. Not a load bias. A fixed bias can never replace the inertial
+> control we had; it doesn't make sense as a replacement.
+
+I know fixed bias maybe not the best, but sorry for can not figure out
+better one. Would you like to give some suggestion?
+> 
+> Not to mention you seem to ignore all concerns wrt the use of longer
+> term averages for the bigger domains.
+
+For bigger domain, I given up the aggression bias idea(less bias on
+large group) in V2 version due to Morten's concern. And I have asked for
+more comments, but no more detailed concerns I can see now. :(
+> 
+> Now I'm all for removing code; and so far the numbers aren't bad; but I
+> don't like the complete muddle you make of things at all.
+> 
+
+Sorry, do you mean the load_idx removing is fine, if without this fixed
+bias? Or other suggestion here?
+
 -- 
-1.7.8.4
-
+Thanks
+    Alex
