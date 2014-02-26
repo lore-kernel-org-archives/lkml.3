@@ -1,190 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaBZDVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 22:21:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:46613 "EHLO ozlabs.org"
+	id S1751510AbaBZDdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 22:33:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5893 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036AbaBZDVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 22:21:13 -0500
-Date: Wed, 26 Feb 2014 14:21:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Oleksij Rempel <linux@rempel-privat.de>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20140226142105.6e7154303b423b0eef78518d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__26_Feb_2014_14_21_05_+1100_mA.s5K__i=Jyapdm"
+	id S1751114AbaBZDdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 22:33:13 -0500
+Message-ID: <530D6056.40305@redhat.com>
+Date: Tue, 25 Feb 2014 20:32:38 -0700
+From: Jeff Law <law@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com, Linus Torvalds <torvalds@linux-foundation.org>
+CC: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+References: <20140223063426.GT4250@linux.vnet.ibm.com> <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com> <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com> <20140224172110.GO8264@linux.vnet.ibm.com> <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com> <20140224185341.GU8264@linux.vnet.ibm.com> <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com> <20140224223701.GC8264@linux.vnet.ibm.com> <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com> <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com> <20140226001558.GY8264@linux.vnet.ibm.com>
+In-Reply-To: <20140226001558.GY8264@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_Feb_2014_14_21_05_+1100_mA.s5K__i=Jyapdm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/25/14 17:15, Paul E. McKenney wrote:
+>> I have for the last several years been 100% convinced that the Intel
+>> memory ordering is the right thing, and that people who like weak
+>> memory ordering are wrong and should try to avoid reproducing if at
+>> all possible. But given that we have memory orderings like power and
+>> ARM, I don't actually see a sane way to get a good strong ordering.
+>> You can teach compilers about cases like the above when they actually
+>> see all the code and they could poison the value chain etc. But it
+>> would be fairly painful, and once you cross object files (or even just
+>> functions in the same compilation unit, for that matter), it goes from
+>> painful to just "ridiculously not worth it".
+>
+> And I have indeed seen a post or two from you favoring stronger memory
+> ordering over the past few years.  ;-)
+I couldn't agree more.
 
-Hi all,
+>
+> Are ARM and Power really the bad boys here?  Or are they instead playing
+> the role of the canary in the coal mine?
+That's a question I've been struggling with recently as well.  I suspect 
+they (arm, power) are going to be the outliers rather than the canary. 
+While the weaker model may give them some advantages WRT scalability, I 
+don't think it'll ultimately be enough to overcome the difficulty in 
+writing correct low level code for them.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/ath/ath9k/recv.c between commit b7b146c9c9a0
-("ath9k: fix invalid descriptor discarding") from the wireless tree and
-commits 1274603646a8 ("ath9k: move ath9k_process_rate to common.c") and
-6438696efa81 ("ath9k: move ath9k_rx_accept to common.c") from the
-net-next tree.
+Regardless, they're here and we have to deal with them.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/ath/ath9k/recv.c
-index 82e340d3ec60,076dae1e5ab7..000000000000
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@@ -1055,8 -853,10 +857,8 @@@ static int ath9k_rx_skb_preprocess(stru
-  	 * everything but the rate is checked here, the rate check is done
-  	 * separately to avoid doing two lookups for a rate for each frame.
-  	 */
-- 	if (!ath9k_rx_accept(common, hdr, rx_status, rx_stats, decrypt_error))
- -	if (!ath9k_cmn_rx_accept(common, hdr, rx_status, rx_stats, decrypt_error=
-, sc->rx.rxfilter)) {
- -		ret =3D -EINVAL;
- -		goto exit;
- -	}
-++	if (!ath9k_cmn_rx_accept(common, hdr, rx_status, rx_stats, decrypt_error=
-, sc->rx.rxfilter))
- +		return -EINVAL;
- =20
-  	if (ath_is_mybeacon(common, hdr)) {
-  		RX_STAT_INC(rx_beacons);
-@@@ -1066,13 -866,24 +868,21 @@@
-  	/*
-  	 * This shouldn't happen, but have a safety check anyway.
-  	 */
- -	if (WARN_ON(!ah->curchan)) {
- -		ret =3D -EINVAL;
- -		goto exit;
- -	}
- +	if (WARN_ON(!ah->curchan))
- +		return -EINVAL;
- =20
-- 	if (ath9k_process_rate(common, hw, rx_stats, rx_status))
-+ 	if (ath9k_cmn_process_rate(common, hw, rx_stats, rx_status)) {
-+ 		/*
-+ 		 * No valid hardware bitrate found -- we should not get here
-+ 		 * because hardware has already validated this frame as OK.
-+ 		 */
-+ 		ath_dbg(common, ANY, "unsupported hw bitrate detected 0x%02x using 1 Mb=
-it\n",
-+ 			rx_stats->rs_rate);
-+ 		RX_STAT_INC(rx_rate_err);
- -		ret =3D-EINVAL;
- -		goto exit;
- +		return -EINVAL;
-+ 	}
- =20
-- 	ath9k_process_rssi(common, hw, rx_stats, rx_status);
-+ 	ath9k_cmn_process_rssi(common, hw, rx_stats, rx_status);
- =20
-  	rx_status->band =3D ah->curchan->chan->band;
-  	rx_status->freq =3D ah->curchan->chan->center_freq;
-@@@ -1085,64 -896,11 +895,13 @@@
-  		sc->rx.num_pkts++;
-  #endif
- =20
- -exit:
- -	sc->rx.discard_next =3D false;
- -	return ret;
- +	return 0;
- +
- +corrupt:
- +	sc->rx.discard_next =3D rx_stats->rs_more;
- +	return -EINVAL;
-  }
- =20
-- static void ath9k_rx_skb_postprocess(struct ath_common *common,
-- 				     struct sk_buff *skb,
-- 				     struct ath_rx_status *rx_stats,
-- 				     struct ieee80211_rx_status *rxs,
-- 				     bool decrypt_error)
-- {
-- 	struct ath_hw *ah =3D common->ah;
-- 	struct ieee80211_hdr *hdr;
-- 	int hdrlen, padpos, padsize;
-- 	u8 keyix;
-- 	__le16 fc;
--=20
-- 	/* see if any padding is done by the hw and remove it */
-- 	hdr =3D (struct ieee80211_hdr *) skb->data;
-- 	hdrlen =3D ieee80211_get_hdrlen_from_skb(skb);
-- 	fc =3D hdr->frame_control;
-- 	padpos =3D ieee80211_hdrlen(fc);
--=20
-- 	/* The MAC header is padded to have 32-bit boundary if the
-- 	 * packet payload is non-zero. The general calculation for
-- 	 * padsize would take into account odd header lengths:
-- 	 * padsize =3D (4 - padpos % 4) % 4; However, since only
-- 	 * even-length headers are used, padding can only be 0 or 2
-- 	 * bytes and we can optimize this a bit. In addition, we must
-- 	 * not try to remove padding from short control frames that do
-- 	 * not have payload. */
-- 	padsize =3D padpos & 3;
-- 	if (padsize && skb->len>=3Dpadpos+padsize+FCS_LEN) {
-- 		memmove(skb->data + padsize, skb->data, padpos);
-- 		skb_pull(skb, padsize);
-- 	}
--=20
-- 	keyix =3D rx_stats->rs_keyix;
--=20
-- 	if (!(keyix =3D=3D ATH9K_RXKEYIX_INVALID) && !decrypt_error &&
-- 	    ieee80211_has_protected(fc)) {
-- 		rxs->flag |=3D RX_FLAG_DECRYPTED;
-- 	} else if (ieee80211_has_protected(fc)
-- 		   && !decrypt_error && skb->len >=3D hdrlen + 4) {
-- 		keyix =3D skb->data[hdrlen + 3] >> 6;
--=20
-- 		if (test_bit(keyix, common->keymap))
-- 			rxs->flag |=3D RX_FLAG_DECRYPTED;
-- 	}
-- 	if (ah->sw_mgmt_crypto &&
-- 	    (rxs->flag & RX_FLAG_DECRYPTED) &&
-- 	    ieee80211_is_mgmt(fc))
-- 		/* Use software decrypt for management frames. */
-- 		rxs->flag &=3D ~RX_FLAG_DECRYPTED;
-- }
--=20
-  /*
-   * Run the LNA combining algorithm only in these cases:
-   *
-
---Signature=_Wed__26_Feb_2014_14_21_05_+1100_mA.s5K__i=Jyapdm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTDV2mAAoJEMDTa8Ir7ZwVOIEQAIX9Gmks6bSnjhsrlWSfsQpL
-aR37r7R52Gp3j0cg0XqdCbV/U/6168XvCn2Drx5fCR2Du515pjef+zTA1c4wXX+w
-zirBvcKX2/rPIbsIa7ZK+rbsJb1O1UY9DmPNWU2+DLWkrfI6MsQeo2o2qnNMPbcE
-dpX1nqTSO3JxjyRZQcU4SyS0992awtrQGq2x850qHk3UHby/K8TnFP85YNV9F7wg
-TF1B6UOEl53CaLyNflqYMVGViTEE+wmC3dTdXPbWr6/4yohZ2j1Mn3jcIE7n/QgG
-AQnPEy5WxrG7OcNcjFfkYNwGcYyzM9mrGFSc/JKzPANqNuNIqa37EOgf13cC/yn8
-7+27ft9qwYcAiX+UE+exg+NeYQ3tz56cbFVc5dj3+naAeNAT5VdxujVEnPURk52X
-uFZc2llRFRscf7EfdcUOxDFszpeCkuG5+z6tE8Uk9E5yC9tdoP4IDtX/xYdXdMT4
-8yuwvi9sAV4Rq/4uSGO1j9YLkFgo4i25Sb9Y2CPE2lEIaGZif9ZBgjJjEur3XmRv
-Eg5UJkFFPGbHJFswaDsD76PfF/6Md7q2d7F30RyPH9jXsQjBEogJdZlQdYXZKxzR
-VjWuL6oEZLcKVe8DPFUS4fQ1pVgtdgG3oSF727V3mj0ft9ygGpwbnrdvgZJfFVtk
-c3atFT5G74smitJVuWs7
-=Osrq
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_Feb_2014_14_21_05_+1100_mA.s5K__i=Jyapdm--
+Jeff
