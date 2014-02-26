@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaBZDCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 22:02:18 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42959 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaBZDCR (ORCPT
+	id S1752282AbaBZDG5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 22:06:57 -0500
+Received: from science.horizon.com ([71.41.210.146]:54670 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751808AbaBZDGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 22:02:17 -0500
-Message-ID: <530D5935.9010104@mit.edu>
-Date: Tue, 25 Feb 2014 19:02:13 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Alexey Perevalov <a.perevalov@samsung.com>, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com
-Subject: Re: [RFC patch 0/5] hrtimers: Add deferrable mode
-References: <20140221173936.583477951@linutronix.de>
-In-Reply-To: <20140221173936.583477951@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Feb 2014 22:06:55 -0500
+Date: 25 Feb 2014 22:06:53 -0500
+Message-ID: <20140226030653.17328.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Cc: akpm@linux-foundation.org, dhowells@redhat.com, gcc@gcc.gnu.org,
+        linux@horizon.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        Ramana.Radhakrishnan@arm.com, torvalds@linux-foundation.org,
+        triegel@redhat.com, will.deacon@arm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 09:56 AM, Thomas Gleixner wrote:
-> Deferrable timers are beneficial for power saving. They behave like
-> standard timers except that their expiry can be delayed up to the
-> expiry of the next non deferred timer. That prevents them from waking
-> up cpus from deep idle periods.
+<paulmck@linux.vnet.ibm.com> wrote:
+> <torvalds@linux-foundation.org> wrote:
+>> I have for the last several years been 100% convinced that the Intel
+>> memory ordering is the right thing, and that people who like weak
+>> memory ordering are wrong and should try to avoid reproducing if at
+>> all possible.
+>
+> Are ARM and Power really the bad boys here?  Or are they instead playing
+> the role of the canary in the coal mine?
 
-What does this accomplish that can't be done with hrtimers with enormous
-slack?
+To paraphrase some older threads, I think Linus's argument is that
+weak memory ordering is like branch delay slots: a way to make a simple
+implementation simpler, but ends up being no help to a more aggressive
+implementation.
 
---Andy
+Branch delay slots give a one-cycle bonus to in-order cores, but
+once you go superscalar and add branch prediction, they stop helping,
+and once you go full out of order, they're just an annoyance.
+
+Likewise, I can see the point that weak ordering can help make a simple
+cache interface simpler, but once you start doing speculative loads,
+you've already bought and paid for all the hardware you need to do
+stronger coherency.
+
+Another thing that requires all the strong-coherency machinery is
+a high-performance implementation of the various memory barrier and
+synchronization operations.  Yes, a low-performance (drain the pipeline)
+implementation is tolerable if the instructions aren't used frequently,
+but once you're really trying, it doesn't save complexity.
+
+Once you're there, strong coherency always doesn't actually cost you any
+time outside of critical synchronization code, and it both simplifies
+and speeds up the tricky synchronization software.
+
+
+So PPC and ARM's weak ordering are not the direction the future is going.
+Rather, weak ordering is something that's only useful in a limited
+technology window, which is rapidly passing.
+
+If you can find someone in IBM who's worked on the Z series cache
+coherency (extremely strong ordering), they probably have some useful
+insights.  The big question is if strong ordering, once you've accepted
+the implementation complexity and area, actually costs anything in
+execution time.  If there's an unavoidable cost which weak ordering saves,
+that's significant.
