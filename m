@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaBZUXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:23:18 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:35891 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223AbaBZUXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:23:16 -0500
-Date: Wed, 26 Feb 2014 21:22:22 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] net: phy: add suspend_halted module param
-Message-ID: <20140226202222.GD14907@lunn.ch>
-References: <1393174719-20806-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224191554.GC29288@lunn.ch>
- <530D1B7C.2090506@gmail.com>
- <20140226182117.GB14907@lunn.ch>
- <CAGVrzcYUfq84ryVET9qNJvyFCnhFdU4c0fOHbNN4eE8_w6qsAQ@mail.gmail.com>
- <20140226191009.GC14907@lunn.ch>
- <CAGVrzcb5k1JUPo0kvMdPJLCkWHb9qfHfDif08ud5ydKiKBwdHQ@mail.gmail.com>
+	id S1753407AbaBZU0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:26:44 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:38978 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaBZU0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 15:26:43 -0500
+Date: Wed, 26 Feb 2014 12:26:34 -0800
+From: Jeff Layton <jlayton@samba.org>
+To: "Lorenz Bucher" <Lorenz.Bucher@gmx.de>
+Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: connect: added option krb5mi which may allow
+ package signing
+Message-ID: <20140226122634.1190167e@corrin.poochiereds.net>
+In-Reply-To: <trinity-7e911dab-5097-463a-ba4a-09935acbdc69-1393422407694@3capp-gmx-bs33>
+References: <trinity-7e911dab-5097-463a-ba4a-09935acbdc69-1393422407694@3capp-gmx-bs33>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGVrzcb5k1JUPo0kvMdPJLCkWHb9qfHfDif08ud5ydKiKBwdHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The only case we need to handle is when the interface is brought down,
-> suspend_halted=true will also power down the PHY, you reboot into
-> u-boot, and you attempt a network boot right after that, in that case
-> the PHY interface is still powered down and this does not work.
+On Wed, 26 Feb 2014 14:46:47 +0100
+"Lorenz Bucher" <Lorenz.Bucher@gmx.de> wrote:
 
-Correct. And since my device uses dhclient, the interface is always
-put down on reboot when it releases the lease. 
- 
-> That could be worked around by putting the interface up again before
-> you reboot into u-boot right, that specific logic being gated by
-> reading the board model. Agreed, you need to duplicate that workaround
-> in all affected user-space....
+> Solves an issue with dfs where servers using package signing are
+> mixed with servers which don't use package signing.
+> 
+> Signed-off-by: Lorenz Bucher <lorenz.bucher@gmx.de>
+> ---
+>  fs/cifs/connect.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> index 56c152d..9d06dd8 100644
+> --- a/fs/cifs/connect.c
+> +++ b/fs/cifs/connect.c
+> @@ -1104,6 +1104,9 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+>                         if (!value || !*value) {
+>                                 cERROR(1, "no security value specified");
+>                                 continue;
+> +                       } else if (strnicmp(value, "krb5mi", 6) == 0) {
+> +                               vol->secFlg |= CIFSSEC_MAY_KRB5 | 
+> +                                       CIFSSEC_MAY_SIGN;
+>                         } else if (strnicmp(value, "krb5i", 5) == 0) {
+>                                 vol->secFlg |= CIFSSEC_MAY_KRB5 |
+>                                         CIFSSEC_MUST_SIGN;
 
-I wonder how many other systems are broken? Are we considering this a
-regression? Should this feature to turned off by default, and a sysfs
-knob used to enable it? That is the safe option.
+This looks like it applies to a really old kernel. I think that problem
+was what commit 0b7bc84000d71f3647ca33ab1bf5bd928535c846 was intended
+to fix.
 
-     Andrew
+-- 
+Jeff Layton <jlayton@samba.org>
