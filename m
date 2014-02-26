@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaBZNZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:25:36 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:33938 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaBZNZe (ORCPT
+	id S1752714AbaBZNZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:25:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:57164 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaBZNZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:25:34 -0500
-Date: Wed, 26 Feb 2014 14:25:30 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-Subject: Re: [PATCH] backlight: add PWM dependencies
-Message-ID: <20140226132529.GC29779@ulmo.nvidia.com>
-References: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
- <20140210104032.GB20143@ulmo.nvidia.com>
- <CACRpkdb1T1GCqEpy9=fPp4hYQErLYiQqJezrFhoS3x1MU=0S9g@mail.gmail.com>
+	Wed, 26 Feb 2014 08:25:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH v2 3/5] bug: When !CONFIG_BUG, make WARN call no_printk to check format and args
+Date: Wed, 26 Feb 2014 14:25:49 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org> <770b3955bdcec63564ae09741ae154f8908c22c6.1393385236.git.josh@joshtriplett.org>
+In-Reply-To: <770b3955bdcec63564ae09741ae154f8908c22c6.1393385236.git.josh@joshtriplett.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb1T1GCqEpy9=fPp4hYQErLYiQqJezrFhoS3x1MU=0S9g@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402261425.49779.arnd@arndb.de>
+X-Provags-ID: V02:K0:gcNbYY0X8EmH5frCadb7CLB76rwVXYbOx++uKlFXDBU
+ xGG1d+tT7L0zjqgflD8P4WMrSOCcBQMHU/6Jrb1dtaJ+3fHuVh
+ ucmy4Z3TfVTtWsTGb+wLghC+Al8tAk5CaNd+Bv7ajYcXW4Hkb8
+ 9haYlgPd5EvRu7WIQwUIYOuPos7NzEMpOU7bhFzA5KJ571HQKv
+ E6OSHx1kRdfHKvN3D464XtHqeux7yOOTF300SNduOWetqwAvu4
+ k6Yj2LzzTw5ss8DEs3/MQjiLcxqYk4w/3KpGpGN7AIEGWtKuKu
+ vDgZcp5K+9xrzqkCiJoXA9RXwkrP8UXKwK20xhpnKpHqlpQOtj
+ j6WAQtrbR+DZVfFSq7NY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 26 February 2014, Josh Triplett wrote:
+> The stub version of WARN for !CONFIG_BUG completely ignored its format
+> string and subsequent arguments; make it check them instead, using
+> no_printk.
+> 
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
---VywGB/WGlW4DM4P8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Feb 10, 2014 at 12:09:29PM +0100, Linus Walleij wrote:
-> On Mon, Feb 10, 2014 at 11:40 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
->=20
-> > it seems like at least BACKLIGHT_LP8788 is missing a corresponding
-> > dependency as well.
-> >
-> > I have applied Sascha's patch to remove the obsolete HAVE_PWM symbol,
-> > and this will fix at least the build issues. However it will also cause
-> > the driver to fail at runtime because the pwm_*() functions won't work.
->=20
-> So it definately needs that API, not just stubs.
->=20
-> But isn't it proper for Kconfig to allow you to break things
-> like that by configuring out stuff and have stubs come in?
->=20
-> I'm a bit torn here.
-
-After thinking about this some more, I've come to the conclusion that
-the drivers should have the dependency. Kconfig should make sure that
-the resulting drivers work.
-
-If somebody wanted to knowingly build this driver with a configuration
-that won't work at runtime, then they should be using COMPILE_TEST
-instead.
-
-So I'm leaning towards applying this patch if there are no objections.
-
-Thierry
-
---VywGB/WGlW4DM4P8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTDetJAAoJEN0jrNd/PrOh4coP/Als6SaArd/CT4bpdFqdKj3Z
-QjwO4TnR8rKVpdgscGHGJmvdIJMvGP1euoYIFtgpOw4BccZfPJtYVNVLWWS+ovby
-jCmcj66wa++tsDsZWwVVVXOOxyBDTKzPuIBnAK3SQar4cntzufasiBqIjAchSx4l
-uj089YlQ99zq7PD0lTs4tzmkKqDd1UqkwqUZrjOmHdfQDSikjBv4bjjrmYCfbFcl
-2LLNcpRb7DnlYW5oKWwV9XC45LZ0YdXooVsoYrYDqqGXsHMcnxx3d6TTx8eMCshU
-UiyzNrNcvPaJx78xNhVagoQ+P9GididRqtnoahofgLmPYZmtZK9rOWwmoFLFLZeA
-+q3UTCW+iZou5YcXy0Zep6qrLRd9PAf5BcxEYf+gTVpZINwKXGY8W5GkVYZWnMKG
-/AAfF/PeUUm3wtfgN5zhfR1WwWdaHTyV61waI82c0hR2q2TiHxsQM/w6HF50HpD/
-QBpjgZrtVMbrvE2MfcSZKQnBmuJKOC5PZtcc48pGlZ2bWn2cbog0oo1k2zwN5qrd
-h3MnIwAbZRBxJJ4/aTxhPerBhwHGB6nkLnKK1THiBUUvXyLoqk8uph8XRFOAfY9J
-DTcLSXNUeuX3TPBdPx158VdiYGS1OZKxZ2GUGWcSNCNRgpdg5vlnP79jaZaMatsJ
-5O7fgf54k4kc5YN7zwc8
-=F3kA
------END PGP SIGNATURE-----
-
---VywGB/WGlW4DM4P8--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
