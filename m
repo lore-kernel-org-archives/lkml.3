@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaBZDG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 22:06:57 -0500
-Received: from science.horizon.com ([71.41.210.146]:54670 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751808AbaBZDGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 22:06:55 -0500
-Date: 25 Feb 2014 22:06:53 -0500
-Message-ID: <20140226030653.17328.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Cc: akpm@linux-foundation.org, dhowells@redhat.com, gcc@gcc.gnu.org,
-        linux@horizon.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
-        Ramana.Radhakrishnan@arm.com, torvalds@linux-foundation.org,
-        triegel@redhat.com, will.deacon@arm.com
+	id S1752043AbaBZDMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 22:12:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399AbaBZDMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Feb 2014 22:12:49 -0500
+Date: Tue, 25 Feb 2014 22:12:34 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com
+Subject: Re: [PATCH 09/21] perf, c2c: Add rbtree sorted on mmap2 data
+Message-ID: <20140226031234.GR25953@redhat.com>
+References: <1392053356-23024-1-git-send-email-dzickus@redhat.com>
+ <1392053356-23024-10-git-send-email-dzickus@redhat.com>
+ <20140218130405.GI4343@krava.brq.redhat.com>
+ <20140221024553.GZ25953@redhat.com>
+ <20140221165928.GB1121@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140221165928.GB1121@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<paulmck@linux.vnet.ibm.com> wrote:
-> <torvalds@linux-foundation.org> wrote:
->> I have for the last several years been 100% convinced that the Intel
->> memory ordering is the right thing, and that people who like weak
->> memory ordering are wrong and should try to avoid reproducing if at
->> all possible.
->
-> Are ARM and Power really the bad boys here?  Or are they instead playing
-> the role of the canary in the coal mine?
+On Fri, Feb 21, 2014 at 05:59:28PM +0100, Jiri Olsa wrote:
+> On Thu, Feb 20, 2014 at 09:45:53PM -0500, Don Zickus wrote:
+> > On Tue, Feb 18, 2014 at 02:04:05PM +0100, Jiri Olsa wrote:
+> > > On Mon, Feb 10, 2014 at 12:29:04PM -0500, Don Zickus wrote:
+> 
+> SNIP
+> 
+> > > > +
+> > > > +		if (l > r) return 1;
+> > > > +		if (l < r) return -1;
+> > > > +
+> > > > +		/* sorting by iaddr makes calculations easier later */
+> > > > +		if (left->mi->iaddr.al_addr > right->mi->iaddr.al_addr) return 1;
+> > > > +		if (left->mi->iaddr.al_addr < right->mi->iaddr.al_addr) return -1;
+> > > > +	}
+> > > > +
+> > > > +	return 0;
+> > > > +}
+> > > 
+> > > there's sort object doing exatly this over hist_entry's
+> > > 
+> > > Is there any reason not to use hist_entries?
+> > 
+> > So looking over hist_entry, I realize, what do I gain?  I implemented it
+> > and realized I had to add, 'cpumode', 'tid' and a 'private' field to
+> > struct hist_entry.  Then because I have my own report implementation, I
+> > still have to copy and paste a ton of stuff from builtin-report over to
+> > here (including callchain support).
+> 
+> you mean new sort_entry objects?
+> 
+> > 
+> > Not unless you are expecting me to add giant chunks of code to
+> > builtin-report.c?
+> 
+> it can be separated object, implementing new report iterator
+> 
+> I think that we should go on with existing sort code we have..
+> but I understand you might need some special usage.. i'll dive
+> in and try to find some answer ;-)
 
-To paraphrase some older threads, I think Linus's argument is that
-weak memory ordering is like branch delay slots: a way to make a simple
-implementation simpler, but ends up being no help to a more aggressive
-implementation.
+Do things fall apart if I do not use evsel->hists to store the hist_entry
+tree?  I need to combine two events (store and load) on to the same tree.
 
-Branch delay slots give a one-cycle bonus to in-order cores, but
-once you go superscalar and add branch prediction, they stop helping,
-and once you go full out of order, they're just an annoyance.
-
-Likewise, I can see the point that weak ordering can help make a simple
-cache interface simpler, but once you start doing speculative loads,
-you've already bought and paid for all the hardware you need to do
-stronger coherency.
-
-Another thing that requires all the strong-coherency machinery is
-a high-performance implementation of the various memory barrier and
-synchronization operations.  Yes, a low-performance (drain the pipeline)
-implementation is tolerable if the instructions aren't used frequently,
-but once you're really trying, it doesn't save complexity.
-
-Once you're there, strong coherency always doesn't actually cost you any
-time outside of critical synchronization code, and it both simplifies
-and speeds up the tricky synchronization software.
-
-
-So PPC and ARM's weak ordering are not the direction the future is going.
-Rather, weak ordering is something that's only useful in a limited
-technology window, which is rapidly passing.
-
-If you can find someone in IBM who's worked on the Z series cache
-coherency (extremely strong ordering), they probably have some useful
-insights.  The big question is if strong ordering, once you've accepted
-the implementation complexity and area, actually costs anything in
-execution time.  If there's an unavoidable cost which weak ordering saves,
-that's significant.
+Cheers,
+Don
