@@ -1,159 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaBZNoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 08:44:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717AbaBZNoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 08:44:18 -0500
-Message-ID: <530DEFA7.5060103@redhat.com>
-Date: Wed, 26 Feb 2014 14:44:07 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752537AbaBZNoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 08:44:44 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:43614 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaBZNom (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 08:44:42 -0500
+Date: Wed, 26 Feb 2014 08:44:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
+Subject: Re: linux-next: build failure after merge of the cgroup tree
+Message-ID: <20140226134439.GA17302@htj.dyndns.org>
+References: <20140226174655.b5430a1a2413ddb459dababe@canb.auug.org.au>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] zram: support REQ_DISCARD
-References: <1393392195-20743-1-git-send-email-iamjoonsoo.kim@lge.com> <20140226131625.GA2217@swordfish.minsk.epam.com>
-In-Reply-To: <20140226131625.GA2217@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226174655.b5430a1a2413ddb459dababe@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 02:16 PM, Sergey Senozhatsky wrote:
-> Hello,
+On Wed, Feb 26, 2014 at 05:46:55PM +1100, Stephen Rothwell wrote:
+> Hi Tejun,
 > 
-> On (02/26/14 14:23), Joonsoo Kim wrote:
->> zram is ram based block device and can be used by backend of filesystem.
->> When filesystem deletes a file, it normally doesn't do anything on data
->> block of that file. It just marks on metadata of that file. This behavior
->> has no problem on disk based block device, but has problems on ram based
->> block device, since we can't free memory used for data block. To overcome
->> this disadvantage, there is REQ_DISCARD functionality. If block device
->> support REQ_DISCARD and filesystem is mounted with discard option,
->> filesystem sends REQ_DISCARD to block device whenever some data blocks are
->> discarded. All we have to do is to handle this request.
->>
->> This patch implements to flag up QUEUE_FLAG_DISCARD and handle this
->> REQ_DISCARD request. With it, we can free memory used by zram if it isn't
->> used.
->>
->> v2: handle unaligned case commented by Jerome
->>
->> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>
->> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->> index 5ec61be..5364c1e 100644
->> --- a/drivers/block/zram/zram_drv.c
->> +++ b/drivers/block/zram/zram_drv.c
->> @@ -501,6 +501,36 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->>  	return ret;
->>  }
->>  
->> +static void zram_bio_discard(struct zram *zram, struct bio *bio)
->> +{
->> +	u32 index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->> +	size_t n = bio->bi_iter.bi_size;
->> +	size_t misalign;
->> +
->> +	/*
->> +	 * On some arch, logical block (4096) aligned request couldn't be
->> +	 * aligned to PAGE_SIZE, since their PAGE_SIZE aren't 4096.
->> +	 * Therefore we should handle this misaligned case here.
->> +	 */
->> +	misalign = (bio->bi_iter.bi_sector &
->> +			(SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
->> +	if (misalign) {
->> +		if (n < misalign)
->> +			return;
->> +
->> +		n -= misalign;
->> +		index++;
->> +	}
->> +
->> +	while (n >= PAGE_SIZE) {
->> +		write_lock(&zram->meta->tb_lock);
->> +		zram_free_page(zram, index);
->> +		write_unlock(&zram->meta->tb_lock);
->> +		index++;
->> +		n -= PAGE_SIZE;
->> +	}
->> +}
->> +
+> After merging the cgroup tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> a side note, do we need zram_bio_discard() function? I mean, can we handle
-> discard request in zram_bvec_rw(), where we already know index, etc. (passed
-> from __zram_make_request())?
+> kernel/cgroup.c: In function 'cgroup_mount':
+> kernel/cgroup.c:1572:2: error: too few arguments to function 'kernfs_mount'
+>   dentry = kernfs_mount(fs_type, flags, root->kf_root);
+>   ^
 > 
-
-We'd still have to make sure not to discard pages that are still partially
-used, but it might simplify the code: __zram_make_request() already takes
-care of splitting the request.
-
-> for example:
+> Caused by commit 2bd59d48ebfb ("cgroup: convert to kernfs") interacting
+> with commit fed95bab8d29 ("sysfs: fix namespace refcnt leak") from the
+> driver-core.current tree.
 > 
-> @@ -510,6 +510,11 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 ret = zram_bvec_write(zram, bvec, index, offset);
->         }
->  
-> +       if (unlikely(bio->bi_rw & REQ_DISCARD)) {
+> I added the following merge fix patch, but it may not be completely
+> correct, please check.
 
-+		if (!is_partial_io(bvec) {
+Yes, that should be fine for now.  I'll soon pull in Greg's tree into
+cgroup and apply Li's refcnt fix to cgroup too.
 
-> +               write_lock(&zram->meta->tb_lock);
-> +               zram_free_page(zram, index);
-> +               write_unlock(&zram->meta->tb_lock);
+Thanks.
 
-+		}
-
-Also this code might still call zram_bvec_read() and increase num_reads
-for discard request: I guess bio_data_dir(bio) == READ == 0 in this case.
-
-Btw, why __zram_make_request() has an that rw argument? All the information
-it needs is passed by the bio argument already. I kind of recollect to have
-seen a cleanup patch that get rid of it or is it just my imagination?
-
-Jerome
-
-> +       }
->         return ret;
->  }
-> 
-> 	-ss
-> 
->>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
->>  {
->>  	size_t index;
->> @@ -618,6 +648,12 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
->>  	struct bio_vec bvec;
->>  	struct bvec_iter iter;
->>  
->> +	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
->> +		zram_bio_discard(zram, bio);
->> +		bio_endio(bio, 0);
->> +		return;
->> +	}
->> +
->>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
->>  	offset = (bio->bi_iter.bi_sector &
->>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
->> @@ -784,6 +820,10 @@ static int create_device(struct zram *zram, int device_id)
->>  					ZRAM_LOGICAL_BLOCK_SIZE);
->>  	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
->>  	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
->> +	zram->disk->queue->limits.discard_granularity = PAGE_SIZE;
->> +	zram->disk->queue->limits.max_discard_sectors = UINT_MAX;
->> +	zram->disk->queue->limits.discard_zeroes_data = 1;
->> +	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, zram->disk->queue);
->>  
->>  	add_disk(zram->disk);
->>  
->> -- 
->> 1.7.9.5
->>
-
+-- 
+tejun
