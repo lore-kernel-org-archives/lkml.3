@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaBZTlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 14:41:45 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:38029 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064AbaBZThb (ORCPT
+	id S1754061AbaBZTha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 14:37:30 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:56502 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011AbaBZThZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 14:37:31 -0500
-Subject: [PATCH 4/9] PCI: Mark resources as IORESOURCE_UNSET if we can't
- assign them
+	Wed, 26 Feb 2014 14:37:25 -0500
+Subject: [PATCH 3/9] PCI: Remove pci_find_parent_resource() use for
+ allocation
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Wed, 26 Feb 2014 12:37:29 -0700
-Message-ID: <20140226193729.10125.54723.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Wed, 26 Feb 2014 12:37:23 -0700
+Message-ID: <20140226193723.10125.15799.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,128 +24,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When assigning addresses to resources, mark them with IORESOURCE_UNSET
-before we start and clear IORESOURCE_UNSET if assignment is successful.
-That means that if we print the resource during assignment, we will show
-the size, not a meaningless address.
+If the resource hasn't been allocated yet, pci_find_parent_resource() is
+documented as returning the region "where it should be allocated from."
+This is impossible in general because there may be several candidates: a
+prefetchable BAR can be put in either a prefetchable or non-prefetchable
+window, a transparent bridge may have overlapping positively- and
+subtractively-decoded windows, and a root bus may have several windows of
+the same type.
 
-Also, clear IORESOURCE_UNSET if we do assign an address, so we print the
-address when it is valid.
+Allocation should be done by pci_bus_alloc_resource(), which iterates
+through all bus resources and looks for the best match, e.g., one with the
+desired prefetchability attributes, and falls back to less-desired
+possibilities.
 
+The only valid use of pci_find_parent_resource() is to find the parent of
+an already-allocated resource so we can claim it via request_resource(),
+and all we need for that is a bus region of the correct type that contains
+the resource.
+
+Note that like 8c8def26bfaa ("PCI: allow matching of prefetchable resources
+to non-prefetchable windows"), this depends on pci_bus_for_each_resource()
+iterating through positively-decoded regions before subtractively-decoded
+ones.  We prefer not to return a subtractively-decoded region because
+requesting from it will likely conflict with the overlapping positively-
+decoded window (see Launchpad report below).
+
+Link: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/424142
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- drivers/pci/pci.c       |    2 ++
- drivers/pci/quirks.c    |    5 +++++
- drivers/pci/rom.c       |    2 ++
- drivers/pci/setup-res.c |    4 ++++
- 4 files changed, 13 insertions(+)
+ drivers/pci/pci.c |   39 +++++++++++++++++++++++----------------
+ 1 file changed, 23 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 99293fa40db9..dc9ce62be7aa 100644
+index 1febe90831b4..99293fa40db9 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -4244,6 +4244,7 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
- 				"Rounding up size of resource #%d to %#llx.\n",
- 				i, (unsigned long long)size);
- 		}
-+		r->flags |= IORESOURCE_UNSET;
- 		r->end = size - 1;
- 		r->start = 0;
- 	}
-@@ -4257,6 +4258,7 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
- 			r = &dev->resource[i];
- 			if (!(r->flags & IORESOURCE_MEM))
- 				continue;
-+			r->flags |= IORESOURCE_UNSET;
- 			r->end = resource_size(r) - 1;
- 			r->start = 0;
- 		}
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 5cb726c193de..6e596ab77fb9 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -296,6 +296,7 @@ static void quirk_s3_64M(struct pci_dev *dev)
- 	struct resource *r = &dev->resource[0];
- 
- 	if ((r->start & 0x3ffffff) || r->end != r->start + 0x3ffffff) {
-+		r->flags |= IORESOURCE_UNSET;
- 		r->start = 0;
- 		r->end = 0x3ffffff;
- 	}
-@@ -937,6 +938,8 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_AMD,	PCI_DEVICE_ID_AMD_FE_GATE_700C
- static void quirk_dunord(struct pci_dev *dev)
+@@ -401,33 +401,40 @@ EXPORT_SYMBOL_GPL(pci_find_ht_capability);
+  * @res: child resource record for which parent is sought
+  *
+  *  For given resource region of given device, return the resource
+- *  region of parent bus the given region is contained in or where
+- *  it should be allocated from.
++ *  region of parent bus the given region is contained in.
+  */
+ struct resource *
+ pci_find_parent_resource(const struct pci_dev *dev, struct resource *res)
  {
- 	struct resource *r = &dev->resource [1];
+ 	const struct pci_bus *bus = dev->bus;
++	struct resource *r;
+ 	int i;
+-	struct resource *best = NULL, *r;
+ 
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (!r)
+ 			continue;
+-		if (res->start && !(res->start >= r->start && res->end <= r->end))
+-			continue;	/* Not contained */
+-		if ((res->flags ^ r->flags) & (IORESOURCE_IO | IORESOURCE_MEM))
+-			continue;	/* Wrong type */
+-		if (!((res->flags ^ r->flags) & IORESOURCE_PREFETCH))
+-			return r;	/* Exact match */
+-		/* We can't insert a non-prefetch resource inside a prefetchable parent .. */
+-		if (r->flags & IORESOURCE_PREFETCH)
+-			continue;
+-		/* .. but we can put a prefetchable resource inside a non-prefetchable one */
+-		if (!best)
+-			best = r;
++		if (res->start && resource_contains(r, res)) {
 +
-+	r->flags |= IORESOURCE_UNSET;
- 	r->start = 0;
- 	r->end = 0xffffff;
++			/*
++			 * If the window is prefetchable but the BAR is
++			 * not, the allocator made a mistake.
++			 */
++			if (r->flags & IORESOURCE_PREFETCH &&
++			    !(res->flags & IORESOURCE_PREFETCH))
++				return NULL;
++
++			/*
++			 * If we're below a transparent bridge, there may
++			 * be both a positively-decoded aperture and a
++			 * subtractively-decoded region that contain the BAR.
++			 * We want the positively-decoded one, so this depends
++			 * on pci_bus_for_each_resource() giving us those
++			 * first.
++			 */
++			return r;
++		}
+ 	}
+-	return best;
++	return NULL;
  }
-@@ -1740,6 +1743,7 @@ static void quirk_tc86c001_ide(struct pci_dev *dev)
- 	struct resource *r = &dev->resource[0];
  
- 	if (r->start & 0x8) {
-+		r->flags |= IORESOURCE_UNSET;
- 		r->start = 0;
- 		r->end = 0xf;
- 	}
-@@ -1769,6 +1773,7 @@ static void quirk_plx_pci9050(struct pci_dev *dev)
- 			dev_info(&dev->dev,
- 				 "Re-allocating PLX PCI 9050 BAR %u to length 256 to avoid bit 7 bug\n",
- 				 bar);
-+			r->flags |= IORESOURCE_UNSET;
- 			r->start = 0;
- 			r->end = 0xff;
- 		}
-diff --git a/drivers/pci/rom.c b/drivers/pci/rom.c
-index 5d595724e5f4..c1839450d4d6 100644
---- a/drivers/pci/rom.c
-+++ b/drivers/pci/rom.c
-@@ -197,8 +197,10 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
- void pci_cleanup_rom(struct pci_dev *pdev)
- {
- 	struct resource *res = &pdev->resource[PCI_ROM_RESOURCE];
-+
- 	if (res->flags & IORESOURCE_ROM_COPY) {
- 		kfree((void*)(unsigned long)res->start);
-+		res->flags |= IORESOURCE_UNSET;
- 		res->flags &= ~IORESOURCE_ROM_COPY;
- 		res->start = 0;
- 		res->end = 0;
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 5c060b152ce6..0474b0217fdf 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -263,6 +263,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
- 	resource_size_t align, size;
- 	int ret;
- 
-+	res->flags |= IORESOURCE_UNSET;
- 	align = pci_resource_alignment(dev, res);
- 	if (!align) {
- 		dev_info(&dev->dev, "BAR %d: can't assign %pR "
-@@ -282,6 +283,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
- 		ret = pci_revert_fw_address(res, dev, resno, size);
- 
- 	if (!ret) {
-+		res->flags &= ~IORESOURCE_UNSET;
- 		res->flags &= ~IORESOURCE_STARTALIGN;
- 		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
- 		if (resno < PCI_BRIDGE_RESOURCES)
-@@ -297,6 +299,7 @@ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsiz
- 	resource_size_t new_size;
- 	int ret;
- 
-+	res->flags |= IORESOURCE_UNSET;
- 	if (!res->parent) {
- 		dev_info(&dev->dev, "BAR %d: can't reassign an unassigned resource %pR "
- 			 "\n", resno, res);
-@@ -307,6 +310,7 @@ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsiz
- 	new_size = resource_size(res) + addsize;
- 	ret = _pci_assign_resource(dev, resno, new_size, min_align);
- 	if (!ret) {
-+		res->flags &= ~IORESOURCE_UNSET;
- 		res->flags &= ~IORESOURCE_STARTALIGN;
- 		dev_info(&dev->dev, "BAR %d: reassigned %pR\n", resno, res);
- 		if (resno < PCI_BRIDGE_RESOURCES)
+ /**
 
