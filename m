@@ -1,118 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaBZCAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 21:00:30 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:45880 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaBZCA2 (ORCPT
+	id S1751604AbaBZCEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 21:04:53 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:58312 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaBZCEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 21:00:28 -0500
-Message-ID: <530D4AB3.4000700@linaro.org>
-Date: Wed, 26 Feb 2014 11:00:19 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 25 Feb 2014 21:04:52 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>
-Subject: Re: [PATCH v2 1/1] arm64: make a single hook to syscall_trace() for
- all syscall features
-References: <1391767651-5296-1-git-send-email-takahiro.akashi@linaro.org> <1393319683-2707-1-git-send-email-takahiro.akashi@linaro.org> <1393319683-2707-2-git-send-email-takahiro.akashi@linaro.org> <20140225150007.GB23136@mudshark.cambridge.arm.com>
-In-Reply-To: <20140225150007.GB23136@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+References: <1393352206.2577.36.camel@buesod1.americas.hpqcorp.net>
+Date: Tue, 25 Feb 2014 18:04:51 -0800
+Message-ID: <CANN689HfCT8uHKBeMHF-2Xa_eW9y9=UY7WdD1gW2EetqpcVSMw@mail.gmail.com>
+Subject: Re: [PATCH v2] mm: per-thread vma caching
+From: Michel Lespinasse <walken@google.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 12:00 AM, Will Deacon wrote:
-> On Tue, Feb 25, 2014 at 09:14:43AM +0000, AKASHI Takahiro wrote:
->> Currently syscall_trace() is called only for ptrace.
->> With additional TIF_xx flags defined, it is now called in all the cases
->> of audit, ftrace and seccomp in addition to ptrace.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> Acked-by: Richard Guy Briggs <rgb@redhat.com>
->> ---
->>   arch/arm64/include/asm/thread_info.h |   13 ++++++++++
->>   arch/arm64/kernel/entry.S            |    5 ++--
->>   arch/arm64/kernel/ptrace.c           |   45 +++++++++++++++++-----------------
->>   3 files changed, 38 insertions(+), 25 deletions(-)
+On Tue, Feb 25, 2014 at 10:16 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> This patch is a continuation of efforts trying to optimize find_vma(),
+> avoiding potentially expensive rbtree walks to locate a vma upon faults.
+> The original approach (https://lkml.org/lkml/2013/11/1/410), where the
+> largest vma was also cached, ended up being too specific and random, thus
+> further comparison with other approaches were needed. There are two things
+> to consider when dealing with this, the cache hit rate and the latency of
+> find_vma(). Improving the hit-rate does not necessarily translate in finding
+> the vma any faster, as the overhead of any fancy caching schemes can be too
+> high to consider.
 
-[...]
+Actually there is also the cost of keeping the cache up to date. I'm
+not saying that it's an issue in your proposal - I like the proposal,
+especially now that you are replacing the per-mm cache rather than
+adding something on top - but it is a factor to consider.
 
->> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->> index 6a8928b..c70133e 100644
->> --- a/arch/arm64/kernel/ptrace.c
->> +++ b/arch/arm64/kernel/ptrace.c
->> @@ -1062,31 +1062,30 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
->>   {
->>   	unsigned long saved_reg;
->>
->> -	if (!test_thread_flag(TIF_SYSCALL_TRACE))
->> -		return regs->syscallno;
->> -
->> -	if (is_compat_task()) {
->> -		/* AArch32 uses ip (r12) for scratch */
->> -		saved_reg = regs->regs[12];
->> -		regs->regs[12] = dir;
->> -	} else {
->> -		/*
->> -		 * Save X7. X7 is used to denote syscall entry/exit:
->> -		 *   X7 = 0 -> entry, = 1 -> exit
->> -		 */
->> -		saved_reg = regs->regs[7];
->> -		regs->regs[7] = dir;
->> -	}
->> +	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
->> +		if (is_compat_task()) {
->> +			/* AArch32 uses ip (r12) for scratch */
->> +			saved_reg = regs->regs[12];
->> +			regs->regs[12] = dir;
->> +		} else {
->> +			/*
->> +			 * Save X7. X7 is used to denote syscall entry/exit:
->> +			 *   X7 = 0 -> entry, = 1 -> exit
->> +			 */
->> +			saved_reg = regs->regs[7];
->> +			regs->regs[7] = dir;
->> +		}
->>
->> -	if (dir)
->> -		tracehook_report_syscall_exit(regs, 0);
->> -	else if (tracehook_report_syscall_entry(regs))
->> -		regs->syscallno = ~0UL;
->> +		if (dir)
->> +			tracehook_report_syscall_exit(regs, 0);
->> +		else if (tracehook_report_syscall_entry(regs))
->> +			regs->syscallno = ~0UL;
->>
->> -	if (is_compat_task())
->> -		regs->regs[12] = saved_reg;
->> -	else
->> -		regs->regs[7] = saved_reg;
->> +		if (is_compat_task())
->> +			regs->regs[12] = saved_reg;
->> +		else
->> +			regs->regs[7] = saved_reg;
->> +	}
->
-> Aren't these changes (to ptrace.c) just a giant NOP?
 
-Umm, the purpose of this big "if" is to run the code only if TIF_SYSCALL_TRACE is set,
-and to make it easy to add additional hooks, audit and ftrace, around tracehook_report_*()
-later on.
+> +static inline void __vmacache_invalidate(struct mm_struct *mm)
+> +{
+> +#ifdef CONFIG_MMU
+> +       vmacache_invalidate(mm);
+> +#else
+> +       mm->vmacache = NULL;
+> +#endif
+> +}
 
--Takahiro AKASHI
+Is there any reason why we can't use your proposal for !CONFIG_MMU as well ?
+(I'm assuming that we could reduce preprocessor checks by doing so)
 
-> Will
->
+
+> +void vmacache_invalidate_all(void)
+> +{
+> +       struct task_struct *g, *p;
+> +
+> +       rcu_read_lock();
+> +       for_each_process_thread(g, p) {
+> +               /*
+> +                * Only flush the vmacache pointers as the
+> +                * mm seqnum is already set and curr's will
+> +                * be set upon invalidation when the next
+> +                * lookup is done.
+> +                */
+> +               memset(p->vmacache, 0, sizeof(p->vmacache));
+> +       }
+> +       rcu_read_unlock();
+> +}
+
+Two things:
+
+- I believe we only need to invalidate vma caches for threads that
+share a given mm ? we should probably pass in that mm in order to
+avoid over-invalidation
+
+- My understanding is that the operation is safe because the caller
+has the mm's mmap_sem held for write, and other threads accessing the
+vma cache will have mmap_sem held at least for read, so we don't need
+extra locking to maintain the vma cache. Please 1- confirm this is the
+intention, 2- document this, and 3- only invalidate vma caches for
+threads that match the caller's mm so that mmap_sem locking can
+actually apply.
+
+
+> +struct vm_area_struct *vmacache_find(struct mm_struct *mm,
+> +                                    unsigned long addr)
+> +
+> +{
+> +       int i;
+> +
+> +       if (!vmacache_valid(mm))
+> +               return NULL;
+> +
+> +       for (i = 0; i < VMACACHE_SIZE; i++) {
+> +               struct vm_area_struct *vma = current->vmacache[i];
+> +
+> +               if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+> +                       return vma;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +
+> +void vmacache_update(struct mm_struct *mm, unsigned long addr,
+> +                    struct vm_area_struct *newvma)
+> +{
+> +       /*
+> +        * Hash based on the page number. Provides a good
+> +        * hit rate for workloads with good locality and
+> +        * those with random accesses as well.
+> +        */
+> +       int idx = (addr >> PAGE_SHIFT) & 3;
+> +       current->vmacache[idx] = newvma;
+> +}
+
+I did read the previous discussion about how to compute idx here. I
+did not at the time realize that you are searching all 4 vmacache
+entries on lookup - that is, we are only talking about eviction policy
+here, not a lookup hash policy.
+
+My understanding is that the reason both your current and your
+previous idx computations work, is that a random eviction policy would
+work too. Basically, what you do is pick some address bits that are
+'random enough' to use as an eviction policy.
+
+This is more of a question for Linus, but I am very surprised that I
+can't find an existing LRU eviction policy scheme in Linux. What I
+have in mind is to keep track of the order the cache entries have last
+been used. With 4 entries, there are 4! = 24 possible orders, which
+can be represented with an integer between 0 and 23. When
+vmacache_find suceeds, that integer is updated using a table lookup
+(table takes 24*4 = 96 bytes). In vmacache_update, the lru value
+module 4 indicates which cache way to evict (i.e. it's the one that's
+been least recently used).
+
+I don't think it makes sense to introduce such an LRU facility for
+this cache only, but it's so generically useful, I'm very surprised
+that it's not somewhere already and instead we see people inventing
+new eviction schemes over and over again...
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
