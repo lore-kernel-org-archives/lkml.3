@@ -1,190 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406AbaBZKvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 05:51:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaBZKvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 05:51:45 -0500
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kys@microsoft.com, abgupta@microsoft.com, haiyangz@microsoft.com,
-        jasowang@redhat.com, tomi.valkeinen@ti.com,
-        devel@linuxdriverproject.org, Gerd Hoffmann <kraxel@redhat.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: [PATCH v5 1/2] hyperv-fb: add support for generation 2 virtual machines.
-Date: Wed, 26 Feb 2014 11:51:24 +0100
-Message-Id: <1393411885-14895-2-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1393411885-14895-1-git-send-email-kraxel@redhat.com>
-References: <1393411885-14895-1-git-send-email-kraxel@redhat.com>
+	id S1751448AbaBZLBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 06:01:24 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:61192 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaBZLBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 06:01:22 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <1393263389.3091.82.camel@pizza.hi.pengutronix.de>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < CAL_Jsq+U9zU1i+STLHMBjY5BeEP6djYnJVE5X1ix-D2q_zWztQ@mail.gmail.com> < 20140217181451.7EB7FC4044D@trevor.secretlab.ca> <20140218070624.GP17250@ pengutronix.de> <20140218162627.32BA4C40517@trevor.secretlab.ca> < 1393263389.3091.82.camel@pizza.hi.pengutronix.de>
+Date: Wed, 26 Feb 2014 11:01:14 +0000
+Message-Id: <20140226110114.CF2C7C40A89@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UEFI-based generation 2 virtual machines support vmbus devices only.
-There is no pci bus.  Thus they use a different mechanism for the
-graphics framebuffer:  Instead of using the vga pci bar a chunk of
-memory muct be allocated from the hyperv mmio region declared using
-APCI.  This patch implements support for it.
+On Mon, 24 Feb 2014 18:36:29 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Am Dienstag, den 18.02.2014, 16:26 +0000 schrieb Grant Likely:
+> > > 
+> > > You can find it under Documentation/devicetree/bindings/media/video-interfaces.txt
+> > 
+> > Okay, I think I'm okay with moving the helpers, but I will make one
+> > requirement. I would like to have a short binding document describing
+> > the pattern being used. The document above talks a lot about video
+> > specific issues, but the helpers appear to be specifically about the
+> > tree walking properties of the API.
+> 
+> Reusing the non-video-secific parts of video-interfaces.txt, how about
+> the following:
 
-Based on a patch by Haiyang Zhang <haiyangz@microsoft.com>
+This is good, but I have some comments. This document describes itself
+as the common way for doing a device graph within the device tree, but
+there is already a well established pattern for device graphs that is
+used by the interrupts-extended, clocks and other bindings. Those are
+all domain-specific bindings, but the core concept is one device uses
+a resource provided by another device. The resource references construct
+a graph independent from the natural FDT node graph. (ie. the interrupts
+binding forms the interrupt graph. Same for the clock binding).
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
----
- drivers/video/hyperv_fb.c | 86 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 60 insertions(+), 26 deletions(-)
+So, while this binding does describe a pattern for separate device
+graphs, it is by no means the only common way of doing so.
 
-diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
-index 130708f..b7b3dd0 100644
---- a/drivers/video/hyperv_fb.c
-+++ b/drivers/video/hyperv_fb.c
-@@ -42,6 +42,7 @@
- #include <linux/completion.h>
- #include <linux/fb.h>
- #include <linux/pci.h>
-+#include <linux/efi.h>
- 
- #include <linux/hyperv.h>
- 
-@@ -212,6 +213,7 @@ struct synthvid_msg {
- 
- struct hvfb_par {
- 	struct fb_info *info;
-+	struct resource mem;
- 	bool fb_ready; /* fb device is ready */
- 	struct completion wait;
- 	u32 synthvid_version;
-@@ -460,13 +462,13 @@ static int synthvid_connect_vsp(struct hv_device *hdev)
- 		goto error;
- 	}
- 
--	if (par->synthvid_version == SYNTHVID_VERSION_WIN7) {
-+	if (par->synthvid_version == SYNTHVID_VERSION_WIN7)
- 		screen_depth = SYNTHVID_DEPTH_WIN7;
--		screen_fb_size = SYNTHVID_FB_SIZE_WIN7;
--	} else {
-+	else
- 		screen_depth = SYNTHVID_DEPTH_WIN8;
--		screen_fb_size = SYNTHVID_FB_SIZE_WIN8;
--	}
-+
-+	screen_fb_size = hdev->channel->offermsg.offer.
-+				mmio_megabytes * 1024 * 1024;
- 
- 	return 0;
- 
-@@ -627,26 +629,46 @@ static void hvfb_get_option(struct fb_info *info)
- /* Get framebuffer memory from Hyper-V video pci space */
- static int hvfb_getmem(struct fb_info *info)
- {
--	struct pci_dev *pdev;
--	ulong fb_phys;
-+	struct hvfb_par *par = info->par;
-+	struct pci_dev *pdev  = NULL;
- 	void __iomem *fb_virt;
-+	int gen2vm = efi_enabled(EFI_BOOT);
-+	int ret;
- 
--	pdev = pci_get_device(PCI_VENDOR_ID_MICROSOFT,
-+	par->mem.name = KBUILD_MODNAME;
-+	par->mem.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-+	if (gen2vm) {
-+		ret = allocate_resource(&hyperv_mmio, &par->mem,
-+					screen_fb_size,
-+					0, -1,
-+					screen_fb_size,
-+					NULL, NULL);
-+		if (ret != 0) {
-+			pr_err("Unable to allocate framebuffer memory\n");
-+			return -ENODEV;
-+		}
-+	} else {
-+		pdev = pci_get_device(PCI_VENDOR_ID_MICROSOFT,
- 			      PCI_DEVICE_ID_HYPERV_VIDEO, NULL);
--	if (!pdev) {
--		pr_err("Unable to find PCI Hyper-V video\n");
--		return -ENODEV;
--	}
-+		if (!pdev) {
-+			pr_err("Unable to find PCI Hyper-V video\n");
-+			return -ENODEV;
-+		}
- 
--	if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM) ||
--	    pci_resource_len(pdev, 0) < screen_fb_size)
--		goto err1;
-+		if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM) ||
-+		    pci_resource_len(pdev, 0) < screen_fb_size)
-+			goto err1;
- 
--	fb_phys = pci_resource_end(pdev, 0) - screen_fb_size + 1;
--	if (!request_mem_region(fb_phys, screen_fb_size, KBUILD_MODNAME))
--		goto err1;
-+		par->mem.end = pci_resource_end(pdev, 0);
-+		par->mem.start = par->mem.end - screen_fb_size + 1;
-+		ret = request_resource(&pdev->resource[0], &par->mem);
-+		if (ret != 0) {
-+			pr_err("Unable to request framebuffer memory\n");
-+			goto err1;
-+		}
-+	}
- 
--	fb_virt = ioremap(fb_phys, screen_fb_size);
-+	fb_virt = ioremap(par->mem.start, screen_fb_size);
- 	if (!fb_virt)
- 		goto err2;
- 
-@@ -654,30 +676,42 @@ static int hvfb_getmem(struct fb_info *info)
- 	if (!info->apertures)
- 		goto err3;
- 
--	info->apertures->ranges[0].base = pci_resource_start(pdev, 0);
--	info->apertures->ranges[0].size = pci_resource_len(pdev, 0);
--	info->fix.smem_start = fb_phys;
-+	if (gen2vm) {
-+		info->apertures->ranges[0].base = screen_info.lfb_base;
-+		info->apertures->ranges[0].size = screen_info.lfb_size;
-+	} else {
-+		info->apertures->ranges[0].base = pci_resource_start(pdev, 0);
-+		info->apertures->ranges[0].size = pci_resource_len(pdev, 0);
-+	}
-+
-+	info->fix.smem_start = par->mem.start;
- 	info->fix.smem_len = screen_fb_size;
- 	info->screen_base = fb_virt;
- 	info->screen_size = screen_fb_size;
- 
--	pci_dev_put(pdev);
-+	if (!gen2vm)
-+		pci_dev_put(pdev);
-+
- 	return 0;
- 
- err3:
- 	iounmap(fb_virt);
- err2:
--	release_mem_region(fb_phys, screen_fb_size);
-+	release_resource(&par->mem);
- err1:
--	pci_dev_put(pdev);
-+	if (!gen2vm)
-+		pci_dev_put(pdev);
-+
- 	return -ENOMEM;
- }
- 
- /* Release the framebuffer */
- static void hvfb_putmem(struct fb_info *info)
- {
-+	struct hvfb_par *par = info->par;
-+
- 	iounmap(info->screen_base);
--	release_mem_region(info->fix.smem_start, screen_fb_size);
-+	release_resource(&par->mem);
- }
- 
- 
--- 
-1.8.3.1
+I would like the document to acknowledge the difference from the
+phandle+args pattern used elsewhere and a description of when it would
+be appropriate to use this instead of a simpler binding.
+
+> 
+> "Common bindings for device graphs"
+> 
+> General concept
+> ---------------
+> 
+> The hierarchical organisation of the device tree is well suited to describe
+> control flow to devices, but data flow between devices that work together to
+> form a logical compound device can follow arbitrarily complex graphs.
+
+I would argue that this pattern isn't necessarily restricted to data
+flow descriptions. It wants to describe linkage between devices that are
+sufficiently complex that the simple binding doesn't do the job.
+
+> The device tree graph bindings allow to describe data bus connections between
+> individual devices, that can't be inferred from device tree parent-child
+> relationships. The common bindings do not contain any information about the
+> direction or type of data flow, they just map connections. Specific properties
+> of the connections can be set depending on the type of connection. To see
+> how this binding applies to video pipelines, see for example
+> Documentation/device-tree/bindings/media/video-interfaces.txt.
+
+Even if you don't want to declare the direction of data flow, there does
+need to be some guidance as to how the binding is constructed. Does
+device A point to device B? Or the other way around? Why would someone
+choose one over the other? I don't want to see a situation where A & B
+point to each other. Things get complex if the graph is allowed to be
+cyclical.
+
+> Data interfaces on devices are described by their child 'port' nodes. The port
+> node contains an 'endpoint' subnode for each remote device connected to this
+> port via a bus. If a port is connected to more than one remote device on the
+> same bus, an 'endpoint' child node must be provided for each of them. If more
+> than one port is present in a device node or there is more than one endpoint at
+> a port, or port node needs to be associated with a selected hardware interface,
+> a common scheme using '#address-cells', '#size-cells' and 'reg' properties is
+> used.
+> 
+> device {
+> 	...
+> 	#address-cells = <1>;
+> 	#size-cells = <0>;
+> 
+> 	port@0 {
+> 		...
+> 		endpoint@0 { ... };
+> 		endpoint@1 { ... };
+> 	};
+> 
+> 	port@1 { ... };
+> };
+> 
+> All 'port' nodes can be grouped under optional 'ports' node, which allows to
+> specify #address-cells, #size-cells properties independently for the 'port'
+> and 'endpoint' nodes and any child device nodes a device might have.
+> 
+> device {
+> 	...
+> 	ports {
+> 		#address-cells = <1>;
+> 		#size-cells = <0>;
+> 
+> 		port@0 {
+> 			...
+> 			endpoint@0 { ... };
+> 			endpoint@1 { ... };
+> 		};
+> 
+> 		port@1 { ... };
+> 	};
+> };
+> 
+> Each endpoint can contain a 'remote-endpoint' phandle property that points to
+> the corresponding endpoint in the port of the remote device. Two 'endpoint'
+> nodes are linked with each other through their 'remote-endpoint' phandles.
+
+I really don't like this aspect. It is far too easy to get wrong. Graphs
+should be one direction only.
+
+> 
+> device_1 {
+> 	port {
+> 		device_1_output: endpoint {
+> 			remote-endpoint = <&device_2_input>;
+> 		};
+> 	};
+> };
+> 
+> device_1 {
+> 	port {
+> 		device_2_input: endpoint {
+> 			remote-endpoint = <&device_1_output>;
+> 		};
+> 	};
+> };
+> 
+> 
+> Required properties
+> -------------------
+> 
+> If there is more than one 'port' or more than one 'endpoint' node or 'reg'
+> property is present in port and/or endpoint nodes the following properties
+> are required in a relevant parent node:
+> 
+>  - #address-cells : number of cells required to define port/endpoint
+> 		    identifier, should be 1.
+>  - #size-cells    : should be zero.
+> 
+> Optional endpoint properties
+> ----------------------------
+> 
+> - remote-endpoint: phandle to an 'endpoint' subnode of a remote device node.
+> 
+> 
 
