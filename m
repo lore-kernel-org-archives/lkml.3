@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaBZXmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 18:42:15 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:61178 "EHLO
+	id S1754596AbaBZXmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 18:42:23 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35609 "EHLO
 	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbaBZXmL (ORCPT
+	with ESMTP id S1754557AbaBZXmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 18:42:11 -0500
-Subject: [PATCH 6/7] tile PCI RC: Use default pcibios_enable_device()
+	Wed, 26 Feb 2014 18:42:18 -0500
+Subject: [PATCH 7/7] s390/PCI: Use generic pci_enable_resources()
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 26 Feb 2014 16:42:08 -0700
-Message-ID: <20140226234208.18970.41395.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Cc: Jan Glauber <jang@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com
+Date: Wed, 26 Feb 2014 16:42:15 -0700
+Message-ID: <20140226234215.18970.1743.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140226233541.18970.83328.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -23,42 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need anything arch-specific in pcibios_enable_device(), so drop
-the arch implementation and use the default generic one.
+The generic pci_enable_resources() does essentially the same thing as the
+code in the s390 version of pcibios_enable_device().
 
-Note: pci_enable_resources() checks that r->parent is non-NULL, which
-basically checks that pci_claim_resource() or request_resource() has been
-called for each BAR.  I don't see where that happens for tile, but this
-patch doesn't change that behavior, so if it worked before, it should still
-work.
+There are differences, but I don't think any of them are a problem.  The
+generic code:
+
+  - Checks everything up to PCI_NUM_RESOURCES, not PCI_BAR_COUNT (6), so
+    we'll now check the ROM resource, IOV resources, and bridge windows.
+
+  - Checks for res->flags & IORESOURCE_UNSET.  The s390 code never sets
+    IORESOURCE_UNSET, so this isn't a problem.
+
+  - Checks res->parent.  The s390 pcibios_add_device() calls
+    pci_claim_resource() on all BARs (except ROM, IOV, and bridge windows)
+    so this isn't a problem either.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
+CC: Jan Glauber <jang@linux.vnet.ibm.com>
+CC: linux390@de.ibm.com
 ---
- arch/tile/kernel/pci_gx.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ arch/s390/pci/pci.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
-index a97a6452b812..077b7bc437e5 100644
---- a/arch/tile/kernel/pci_gx.c
-+++ b/arch/tile/kernel/pci_gx.c
-@@ -1065,18 +1065,6 @@ char *__init pcibios_setup(char *str)
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 66670ff262a0..7d5fcaed3361 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -695,18 +695,7 @@ int pcibios_enable_device(struct pci_dev *pdev, int mask)
+ 	zpci_fmb_enable_device(zdev);
+ 	zpci_map_resources(zdev);
+ 
+-	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
+-	for (i = 0; i < PCI_BAR_COUNT; i++) {
+-		res = &pdev->resource[i];
+-
+-		if (res->flags & IORESOURCE_IO)
+-			return -EINVAL;
+-
+-		if (res->flags & IORESOURCE_MEM)
+-			cmd |= PCI_COMMAND_MEMORY;
+-	}
+-	pci_write_config_word(pdev, PCI_COMMAND, cmd);
+-	return 0;
++	return pci_enable_resources(pdev, mask);
  }
  
- /*
-- * Enable memory address decoding, as appropriate, for the
-- * device described by the 'dev' struct.
-- *
-- * This is called from the generic PCI layer, and can be called
-- * for bridges or endpoints.
-- */
--int pcibios_enable_device(struct pci_dev *dev, int mask)
--{
--	return pci_enable_resources(dev, mask);
--}
--
--/*
-  * Called for each device after PCI setup is done.
-  * We initialize the PCI device capabilities conservatively, assuming that
-  * all devices can only address the 32-bit DMA space. The exception here is
+ void pcibios_disable_device(struct pci_dev *pdev)
 
