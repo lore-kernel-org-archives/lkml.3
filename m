@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaBZUMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 15:12:48 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44136 "EHLO
+	id S1753802AbaBZULm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 15:11:42 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:44101 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaBZULn (ORCPT
+	with ESMTP id S1752061AbaBZULi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 15:11:43 -0500
+	Wed, 26 Feb 2014 15:11:38 -0500
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
         linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
-Subject: [PATCH 07/12] acpi: Ignore acpi_rsdp kernel parameter when trusted_kernel is true.
-Date: Wed, 26 Feb 2014 15:11:08 -0500
-Message-Id: <1393445473-15068-8-git-send-email-matthew.garrett@nebula.com>
+        linux-security-module@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 02/12] Enforce module signatures when trusted kernel is enabled
+Date: Wed, 26 Feb 2014 15:11:03 -0500
+Message-Id: <1393445473-15068-3-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
 References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
@@ -26,38 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@redhat.com>
+If trusted_kernel is true, require that all modules have valid signatures.
 
-This option allows userspace to pass the RSDP address to the kernel, which
-makes it possible for a user to execute arbitrary code in the kernel.
-Disable this when trusted_kernel is true.
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/acpi/osl.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/module.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fc1aa79..087a351 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -44,6 +44,7 @@
- #include <linux/list.h>
- #include <linux/jiffies.h>
- #include <linux/semaphore.h>
-+#include <linux/security.h>
+diff --git a/kernel/module.c b/kernel/module.c
+index d24fcf2..e0220db 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2448,7 +2448,7 @@ static int module_sig_check(struct load_info *info)
+ 	if (err < 0 && fips_enabled)
+ 		panic("Module verification failed with error %d in FIPS mode\n",
+ 		      err);
+-	if (err == -ENOKEY && !sig_enforce)
++	if ((err == -ENOKEY && !sig_enforce) && !get_trusted_kernel())
+ 		err = 0;
  
- #include <asm/io.h>
- #include <asm/uaccess.h>
-@@ -244,7 +245,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
- acpi_physical_address __init acpi_os_get_root_pointer(void)
- {
- #ifdef CONFIG_KEXEC
--	if (acpi_rsdp)
-+	if (acpi_rsdp && !get_trusted_kernel())
- 		return acpi_rsdp;
- #endif
- 
+ 	return err;
 -- 
 1.8.5.3
 
