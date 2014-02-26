@@ -1,165 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaBZWPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 17:15:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48195 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaBZWPR (ORCPT
+	id S1753933AbaBZWPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 17:15:46 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46406 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753856AbaBZWPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 17:15:17 -0500
-Date: Wed, 26 Feb 2014 23:15:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-cc: linus.walleij@linaro.org, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irq: Consider a negative return value of irq_startup()
- as an error
-In-Reply-To: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
-Message-ID: <alpine.DEB.2.02.1402262119560.4174@ionos.tec.linutronix.de>
-References: <1393345719-3707-1-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 26 Feb 2014 17:15:42 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] spi: sh-msiof: Add support for R-Car H2 and M2
+Date: Wed, 26 Feb 2014 23:16:57 +0100
+Message-ID: <38730952.JbtPf2mapG@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1393323673-2751-4-git-send-email-geert@linux-m68k.org>
+References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org> <1393323673-2751-4-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Feb 2014, Jean-Jacques Hiblot wrote:
+Hi Geert,
 
-> The irq_startup() function returns the return value of the
-> irq_startup callback of the underlying irq_chip. Currently this
-> value only tells if the interrupt is pending, but we can make it
-> also return an error code when it fails.
+Thank you for the patch.
+
+Overall the series is great. I ran some time ago into issues with CCF due to 
+the driver use of spi-bitbang, I'm happy to see this being fixed, thanks a 
+lot. I have one small comment below though.
+
+On Tuesday 25 February 2014 11:21:10 Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 > 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> Add support for the MSIOF variant in the R-Car H2 (r8a7790) and M2
+> (r8a7791) SoCs.
+> 
+> Binding documentation:
+>   - Add future-proof "renesas,msiof-<soctype>" compatible values,
+>   - The default for "renesas,rx-fifo-size" is 256 on R-Car H2 and M2,
+>   - "renesas,tx-fifo-size" and "renesas,rx-fifo-size" are deprecated for
+>     soctype-specific bindings,
+>   - Add example bindings.
+> 
+> Implementation:
+>   - MSIOF on R-Car H2 and M2 requires the transmission of dummy data if
+>     data is being received only (cfr. "Set SICTR.TSCKE to 1" and "Write
+>     dummy transmission data to SITFDR" in paragraph "Transmit and Receive
+>     Procedures" of the Hardware User's Manual).
+>   - As RX depends on TX, MSIOF on R-Car H2 and M2 also lacks the RSCR
+>     register (Receive Clock Select Register), and some bits in the RMDR1
+>     (Receive Mode Register 1) and TMDR2 (Transmit Mode Register 2)
+>     registers.
+>   - Use the recently introduced SPI_MASTER_MUST_TX flag to enable support
+>     for dummy transmission in the SPI core, and to differentiate from other
+>     MSIOF implementations in code paths that need this.
+>   - New DT compatible values ("renesas,msiof-r8a7790" and
+>     "renesas,msiof-r8a7791") are added, as well as new platform device
+>     names ("spi_r8a7790_msiof" and "spi_r8a7791_msiof").
+>   - The default RX FIFO size is 256 words on R-Car H2 and M2.
+> 
+> This is loosely based on a set of patches from Takashi Yoshii
+> <takasi-y@ops.dti.ne.jp>.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>
+> Cc: devicetree@vger.kernel.org
 > ---
+> v2:
+>   - Rebased on top of new "spi: sh-msiof: Move default FIFO sizes to device
+>     ID data",
+>   - The default RX FIFO size is 256 words on R-Car H2 and M2,
+>   - Deprecated overriding the FIFO size,
+>   - Synced DT example with node from real DTS.
 > 
-> Hi Thomas,
+>  Documentation/devicetree/bindings/spi/sh-msiof.txt |   23 +++++++++++++++--
+>  drivers/spi/spi-sh-msiof.c                         |   23 ++++++++++++++---
+>  2 files changed, 41 insertions(+), 5 deletions(-)
 > 
-> This patch updates the semantic of the return value of the irq_startup()
-> callback of an irq_chip : a negative value indicates an error. The purpose is
-> to make __setup_irq() fail if the irq_chip can't startup the interrupt.
+> diff --git a/Documentation/devicetree/bindings/spi/sh-msiof.txt
+> b/Documentation/devicetree/bindings/spi/sh-msiof.txt index
+> eae3c8c9300e..1f0cb33763a1 100644
+> --- a/Documentation/devicetree/bindings/spi/sh-msiof.txt
+> +++ b/Documentation/devicetree/bindings/spi/sh-msiof.txt
+> @@ -1,8 +1,13 @@
+>  Renesas MSIOF spi controller
+> 
+>  Required properties:
+> -- compatible           : "renesas,sh-msiof" for SuperH, or
+> +- compatible           : "renesas,msiof-<soctype>" for SoCs,
+> +			 "renesas,sh-msiof" for SuperH, or
+>  			 "renesas,sh-mobile-msiof" for SH Mobile series.
+> +			 Examples with soctypes are:
+> +			 "renesas,msiof-sh7724" (SH)
 
-How does that work?
+Given that the driver doesn't handle the "renesas,msiof-sh7724" compatible 
+string this might not be a good example. Furthermore SuperH doesn't have DT 
+support. I would thus drop the "renesas,sh-msiof" compatible string from patch 
+1/6 and wouldn't mention sh7724 here. I very much doubt that someone would 
+have developed DT support for SuperH on the side and shipped products that 
+would be broken by this change :-)
 
-    unsigned int    (*irq_startup)(struct irq_data *data);
+> +			 "renesas,msiof-r8a7790" (R-Car H2)
+> +			 "renesas,msiof-r8a7791" (R-Car M2)
+>  - reg                  : Offset and length of the register set for the
+> device - interrupt-parent     : The phandle for the interrupt controller
+> that services interrupts for this device
+> @@ -13,10 +18,24 @@ Required properties:
+>  Optional properties:
+>  - clocks               : Must contain a reference to the functional clock.
+>  - num-cs               : Total number of chip-selects (default is 1)
+> +
+> +Optional properties, deprecated for soctype-specific bindings:
+>  - renesas,tx-fifo-size : Overrides the default tx fifo size given in words
+>  			 (default is 64)
+>  - renesas,rx-fifo-size : Overrides the default rx fifo size given in words
+> -			 (default is 64)
+> +			 (default is 64, or 256 on R-Car H2 and M2)
+> 
+>  Pinctrl properties might be needed, too.  See
+>  Documentation/devicetree/bindings/pinctrl/renesas,*.
+> +
+> +Example:
+> +
+> +	msiof0: spi@e6e20000 {
+> +		compatible = "renesas,msiof-r8a7791";
+> +		reg = <0 0xe6e20000 0 0x0064>;
+> +		interrupts = <0 156 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&mstp0_clks R8A7791_CLK_MSIOF0>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		status = "disabled";
+> +	};
+> diff --git a/drivers/spi/spi-sh-msiof.c b/drivers/spi/spi-sh-msiof.c
+> index bf389184924d..3baef2bacaed 100644
+> --- a/drivers/spi/spi-sh-msiof.c
+> +++ b/drivers/spi/spi-sh-msiof.c
+> @@ -34,6 +34,7 @@
+>  struct sh_msiof_chipdata {
+>  	u16 tx_fifo_size;
+>  	u16 rx_fifo_size;
+> +	u16 master_flags;
+>  };
+> 
+>  struct sh_msiof_spi_priv {
+> @@ -214,7 +215,8 @@ static void sh_msiof_spi_set_clk_regs(struct
+> sh_msiof_spi_priv *p, k = min_t(int, k, ARRAY_SIZE(sh_msiof_spi_clk_table)
+> - 1);
+> 
+>  	sh_msiof_write(p, TSCR, sh_msiof_spi_clk_table[k].scr);
+> -	sh_msiof_write(p, RSCR, sh_msiof_spi_clk_table[k].scr);
+> +	if (!(p->chipdata->master_flags & SPI_MASTER_MUST_TX))
+> +		sh_msiof_write(p, RSCR, sh_msiof_spi_clk_table[k].scr);
+>  }
+> 
+>  static void sh_msiof_spi_set_pin_regs(struct sh_msiof_spi_priv *p,
+> @@ -237,6 +239,10 @@ static void sh_msiof_spi_set_pin_regs(struct
+> sh_msiof_spi_priv *p, tmp |= !cs_high << MDR1_SYNCAC_SHIFT;
+>  	tmp |= lsb_first << MDR1_BITLSB_SHIFT;
+>  	sh_msiof_write(p, TMDR1, tmp | MDR1_TRMD | TMDR1_PCON);
+> +	if (p->chipdata->master_flags & SPI_MASTER_MUST_TX) {
+> +		/* These bits are reserved if RX needs TX */
+> +		tmp &= ~0x0000ffff;
+> +	}
+>  	sh_msiof_write(p, RMDR1, tmp);
+> 
+>  	tmp = 0;
+> @@ -257,7 +263,7 @@ static void sh_msiof_spi_set_mode_regs(struct
+> sh_msiof_spi_priv *p, {
+>  	u32 dr2 = MDR2_BITLEN1(bits) | MDR2_WDLEN1(words);
+> 
+> -	if (tx_buf)
+> +	if (tx_buf || (p->chipdata->master_flags & SPI_MASTER_MUST_TX))
+>  		sh_msiof_write(p, TMDR2, dr2);
+>  	else
+>  		sh_msiof_write(p, TMDR2, dr2 | MDR2_GRPMASK1);
+> @@ -666,11 +672,20 @@ static u32 sh_msiof_spi_txrx_word(struct spi_device
+> *spi, unsigned nsecs, static const struct sh_msiof_chipdata sh_data = {
+>  	.tx_fifo_size = 64,
+>  	.rx_fifo_size = 64,
+> +	.master_flags = 0,
+> +};
+> +
+> +static const struct sh_msiof_chipdata r8a779x_data = {
+> +	.tx_fifo_size = 64,
+> +	.rx_fifo_size = 256,
+> +	.master_flags = SPI_MASTER_MUST_TX,
+>  };
+> 
+>  static const struct of_device_id sh_msiof_match[] = {
+>  	{ .compatible = "renesas,sh-msiof",        .data = &sh_data },
+>  	{ .compatible = "renesas,sh-mobile-msiof", .data = &sh_data },
+> +	{ .compatible = "renesas,msiof-r8a7790",   .data = &r8a779x_data },
+> +	{ .compatible = "renesas,msiof-r8a7791",   .data = &r8a779x_data },
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, sh_msiof_match);
+> @@ -789,7 +804,7 @@ static int sh_msiof_spi_probe(struct platform_device
+> *pdev) /* init master and bitbang code */
+>  	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+>  	master->mode_bits |= SPI_LSB_FIRST | SPI_3WIRE;
+> -	master->flags = 0;
+> +	master->flags = p->chipdata->master_flags;
+>  	master->bus_num = pdev->id;
+>  	master->dev.of_node = pdev->dev.of_node;
+>  	master->num_chipselect = p->info->num_chipselect;
+> @@ -832,6 +847,8 @@ static int sh_msiof_spi_remove(struct platform_device
+> *pdev)
+> 
+>  static struct platform_device_id spi_driver_ids[] = {
+>  	{ "spi_sh_msiof",	(kernel_ulong_t)&sh_data },
+> +	{ "spi_r8a7790_msiof",	(kernel_ulong_t)&r8a779x_data },
+> +	{ "spi_r8a7791_msiof",	(kernel_ulong_t)&r8a779x_data },
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(platform, spi_driver_ids);
 
-> I checked in the kernel for drivers impacted by this. It turns out that most
-> of the implementation of irq_startup() return 0. The only drivers that return
-> non-zero values are:
->  * arch/x86/kernel/apic/io_apic.c: returns 1 when an interrupt is pending
->  * drivers/pinctrl/pinctrl-adi2.c: may return -ENODEV.
+-- 
+Regards,
 
-   which is wrong to begin with.
- 
-> GPIO-based irq_chip could use this feature because an output gpio
-> can't be used as an interrupt, and thus a call to irq_startup() is
-> likely to fail. You can check out
-> http://www.spinics.net/lists/arm-kernel/msg302713.html for a
-> reference.
+Laurent Pinchart
 
-And that tells me that the design of the gpio stuff is just wrong.
-
-The whole drviers/gpio directory is full of this gpio_lock_as_irq()
-called from the guts of irq_chip callbacks braindamage.
-
-The comment above gpiod_lock_as_irq() is so wrong it's not even funny
-anymore.
-
-"....or in the .irq_enable() from its irq_chip implementation ..."
-
-	void            (*irq_enable)(struct irq_data *data);
-
-So how does that help, if the gpio is not available as irq?
-
-And no, you are not going to cure that design brainfart by adding a
-negative return value to a function returning unsigned int. And I'm
-not going to accept anything which is just a duct tape based
-workaround for a complete braindamaged design.
-
-Lets look at the usage sites:
-
-The following irqchip callback implementations printk some blurb and
-proceed:
-
- sirfsoc_gpio_irq_startup
- nmk_gpio_irq_startup
- msm_gpio_irq_startup
- u300_gpio_irq_enable
- byt_irq_startup
- mcp23s08_irq_startup
- lp_irq_startup
- intel_mid_irq_startup
- em_gio_irq_startup
- bcm_kona_gpio_irq_startup
- adnp_irq_startup
-
-The following functions return an error code from the set_type
-callback:
-
- tegra_gpio_irq_set_type
- gpio_irq_type
-
-The whole idiocy starts with commit d468bf9e, which tells people to
-call this from irq_startup/enable. But it fails to tell, that this is
-pointless because it wont prevent the interrupt from starting up.
-
-So 11 SoC lemmings followed and added this completely pointless
-nonsense to their drivers.
-
-Two lemmings added it to a function which can actually fail. Failure
-as well, because there is no guarantee that this function gets invoked
-before request_irq(). What's worse is that if request_irq() succeeds
-then the following code which tries to set the type fails for no
-obvious reason.
-
-Now at least Jean-Jacques tried to make it actually fail, but that
-turns out to be a failure on its own.
-
-Dammit, I told you folks often enough that workarounds in some
-subsystem do not actually cure a shortcoming in the core code. When
-the core code was written, the GPIO case which might actually fail was
-definitly not thought of. But that's not a reason for adding
-tasteless and useless workarounds to the GPIO subsystem.
-
-Of course you encouraged people to copy that nonsense all over the
-place. All startup functions do the same thing:
-
-    if (gpio_lock_as_irq() < 0)
-       dev_err("BLA");
-    unmask_irq();
-
-Plus the shutdown functions having the gpio_unlock_as_irq() +
-mask_irq() sequence. Sigh.
-
-So the proper solution to the problem if we want to use irq_startup()
-is:
-
-  Change the return value of the irq_startup() callback to int and
-  fixup all existing implementations. This wants to be done with a
-  coccinelle script. If you hurry up, I might squeeze it into 3.14 as
-  there is no risk at all. Otherwise this is going to happen after the
-  3.15 merge window closes.
-
-  After that's done, remove all the copies of startup/shutdown
-  nonsense in drivers/gpio and force all gpio chips to call
-  gpio_set_irq_chip*() instead of irq_set_irq_chip*() and add generic
-  irq_startup/shutdown callbacks which are implemented in the gpiolib
-  core code.
-
-There is a less intrusive alternative solution:
-
-  Mark the interrupt as GPIO based in the core and let the core call
-  conditonally the gpio_[un]lock_as_irq functions.
-
-And no, I'm not going to provide you the proper solution on the silver
-tablet this time. Go and figure it out yourself and if you're
-confident enough that it might be an acceptable solution, post it and
-we'll see.
-
-Thanks,
-
-	tglx
