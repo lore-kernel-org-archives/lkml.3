@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaBZBsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Feb 2014 20:48:25 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35744 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750888AbaBZBsY (ORCPT
+	id S1752016AbaBZBsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Feb 2014 20:48:41 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38710 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaBZBsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Feb 2014 20:48:24 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: "balbi@ti.com" <balbi@ti.com>, Peter Chen <Peter.Chen@freescale.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Date: Tue, 25 Feb 2014 17:48:17 -0800
-Subject: RE: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
-Thread-Topic: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
-Thread-Index: Ac8yVVzVNfgWWPIpSNGF0lzXwDG2nwAPwkZg
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC413885@SC-VEXCH4.marvell.com>
-References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
- <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
- <20140225011839.GD7540@shlinux1.ap.freescale.net>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
- <6ad74d797ecc473f922ffdb58c3e9c70@BN1PR03MB235.namprd03.prod.outlook.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A5@SC-VEXCH4.marvell.com>
- <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
- <20140225181234.GF23275@saruman.home>
-In-Reply-To: <20140225181234.GF23275@saruman.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Tue, 25 Feb 2014 20:48:37 -0500
+Message-ID: <530D47F4.2010204@codeaurora.org>
+Date: Tue, 25 Feb 2014 17:48:36 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-02-26_01:2014-02-26,2014-02-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1402250147
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] cpufreq: Set policy to non-NULL only after all hotplug
+ online work is done
+References: <1393225072-3997-1-git-send-email-skannan@codeaurora.org> <15001517.xLHO8lGdWr@vostro.rjw.lan> <530D06FF.201@codeaurora.org> <1789244.B5CzWbcp6h@vostro.rjw.lan>
+In-Reply-To: <1789244.B5CzWbcp6h@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1Q1mXmI027101
 
+On 02/25/2014 02:41 PM, Rafael J. Wysocki wrote:
+> On Tuesday, February 25, 2014 01:11:27 PM Saravana Kannan wrote:
+>> On 02/25/2014 05:04 AM, Rafael J. Wysocki wrote:
+>>> On Tuesday, February 25, 2014 02:20:57 PM Viresh Kumar wrote:
+>>>> On 25 February 2014 01:53, Saravana Kannan <skannan@codeaurora.org> wrote:
+>>>>> I was simplifying the scenario that causes it. We change the min/max using
+>>>>> ADJUST notifiers for multiple reasons -- thermal being one of them.
+>>>>>
+>>>>> thermal/cpu_cooling is one example of it.
+>>>>
+>>>> Just to understand the clear picture, you are actually hitting this bug? Or
+>>>> is this only a theoretical bug?
+>>>>
+>> This is a real bug. But the actual caller of cpufreq_update_policy() is
+>> a driver that's local to our tree. I'm just giving examples of upstream
+>> code that act in a similar way.
+>>
+>>>>> So, cpufreq_update_policy() can be called on any CPU. If that races with
+>>>>> someone offlining a CPU and onlining it, you'll get this crash.
+>>>>
+>>>> Then shouldn't that be fixed by locks? I think yes. That makes me agree with
+>>>> Srivatsa more here.
+>>>>
+>>>> Though I would say that your argument was also valid that 'policy' shouldn't be
+>>>> up for sale unless it is prepared to. And for that reason only I
+>>>> floated that question
+>>>> earlier: What exactly we need to make sure is initialized in policy? Because
+>>>> policy might keep changing in future as well and that needs locks to protect
+>>>> that stuff. Like min/max/governor/ etc..
+>>>
+>>> Well, that depends on what the current users expect it to look like initially.
+>>> It should be initialized to the point in which all of them can handle it
+>>> correctly.
+>>
+>> Yes, so let's not make it available until all of it is initialized.
+>
+> And is "fully initialized" actually well defined?
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: 2014Äê2ÔÂ26ÈÕ 2:13
-> To: Peter Chen
-> Cc: Neil Zhang; balbi@ti.com; gregkh@linuxfoundation.org;
-> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Alexander Shishkin
-> Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
-> 
-> Hi,
-> 
-> On Tue, Feb 25, 2014 at 07:46:08AM +0000, Peter Chen wrote:
-> > > > > > > Hardware zlt will try to send the zero length packet
-> > > > > > > automatically when the data transferd is multiple times of
-> > > > > > > max packet, this will cause issues on Windows.
-> > > > > > > So let's disable HW zlt by default.
-> > > > > >
-> > > > > > Would you have description that what kinds of issue on Windows
-> > > > > > if zlt is is selected?
-> > > > > >
-> > > > >
-> > > > > Enumeration will fail.
-> > > > >
-> > > >
-> > > > What causes enumeration fail, why it does not occur before?
-> > > >
-> > > A unexpected zero packet cause enumeration fail.
-> > > It's not easy that the descriptor is actually 1024 bytes, so not
-> > > easy to be found.
-> > >
-> >
-> > Chipidea bug too? Does it follow ch 8.5.3.2 Variable-length Data Stage, USB
-> 2.0 spec?
-> 
-> wait, this is a chipidea core ? Why aren't you guys using the chipidea driver
-> yet ? You need to switch over to that driver dude, we can't have duplicated
-> code in the tree.
-> 
-> I'm sorry, but I won't be taking this series, please use chipidea driver, it should
-> be very simple to add a glue layer for your core to the chipidea driver.
-> 
+The point in add dev/hot plug path after which we will no longer change 
+policy fields without sending further CPUFREQ_UPDATE_POLICY_CPU / 
+CPUFRE_NOTIFY notifiers.
 
-Yes, it use chipidea IP.
-But the driver is earlier than the chipidea one and we use it for our products.
-So it may be not that easy to switch to chipidea driver due to the stability.
+Pretty much the end of __cpufreq_add_dev() so that it's after:
+- cpufreq_init_policy()
+- And the update of userpolicy fields that after thie init call
 
-> --
-> Balbi
+>> I don't like the piece meal check. 6 months down the lane someone making
+>> changes might not remember this. The problem also applies for drivers
+>> that might not be upstreamed, etc.
+>
+> Please don't bring up out-of-the-tree drivers argument in mainline discussions,
+> it is meaningless here.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Sure. This also applies to in-tree code. The 6 months down the lane, 
+what fields are being looked at could still change and we might slip up 
+on making sure that the policy is not made available before that field 
+is initialized.
+
+>>>> So, probably a solution here might be a mix of both. Initialize policy to this
+>>>> minimum level and then make sure locking is used correctly..
+>>>
+>>> Yes.
+>>
+>> Rafael, It's not clear what you mean by the yes. Do you want to
+>> initialize it partly and make it available. I think that's always wrong.
+>
+> So what actually is your porposal?
+>
+
+Same as reply to "fully initialized". We make the policy after it's 
+fully initialized. After that point, any changes to the policy can be 
+tracked by registering for CPUFREQ_UPDATE_POLICY_CPU / CPUFREQ_NOTIFY.
+
+>>>>> The idea would exist, but we can just call cpufreq_generic_get() and pass it
+>>>>> policy->clk if it is not NULL. Does that work for you?
+>>>>
+>>>> No. Not all drivers implement clk interface. And so clk doesn't look to be the
+>>>> right parameter. I thought maybe 'policy' can be the right parameter and
+>>>> then people can get use policy->cpu to get cpu id out of it.
+>>>>
+>>>> But even that doesn't look to be a great idea. X86 drivers may share policy
+>>>> structure for CPUs that don't actually share a clock line. And so they do need
+>>>> right CPU number as parameter instead of policy. As they might be doing
+>>>> some tricky stuff there. Also, we need to make sure that ->get() returns
+>>>> the frequency at which CPU x is running.
+>>>
+>>> That's not going to work in at least some cases anyway, because for some types
+>>> of HW we simply can't retrieve the current frequency in a non-racy way.
+>>
+>> I think there's been a misunderstanding of what I'm proposing. The
+>> reference to policy->clk is only to get rid of the dependency that
+>> cpufreq_generic_get() has on the per cpu policy variable being filled.
+>> You can do that by just removing calls to get _IF_ clk is filled in.
+>
+> I still have a little problem understanding what you mean exactly.  At least
+> please explain the last sentence.
+
+Ok, here's some pseudo code to explain it better:
+
+Something like, replace all calls to cpufreq_driver->get with 
+__cpufreq_driver_get() with the fn being something like:
+
+unsigned int __cpufreq_driver_get(cpufreq_policy *policy)
+{
+   if (policy->clk)
+      return clk_get_rate(policy->clk) / 1000;
+   else
+      return cpufreq_driver->get(policy->cpu);
+}
+
+That way, we don't have to depend on cpufreq_cpu_get() to return a 
+policy in cpufreq_generic_get() for the existing add dev code path to 
+complete without an error (after my patch to advertise the policy struct 
+after it's fully initialized)
+
+This also avoid unnecessary function calls to ->get() when we just as 
+well know that it's going to call back into cpufreq_generic_get() and 
+get the clock rate. We can just do that in the framework.
+
+-Saravana
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
