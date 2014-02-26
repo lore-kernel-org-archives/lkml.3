@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaBZMwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 07:52:06 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60593 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaBZMwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 07:52:04 -0500
-Date: Wed, 26 Feb 2014 12:51:57 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Cyril Chemparathy <cyril@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 4/5] mfd: remove obsolete ti-ssp driver
-Message-ID: <20140226125157.GM9195@lee--X1>
-References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
- <1393418614-3968549-5-git-send-email-arnd@arndb.de>
+	id S1752042AbaBZMzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 07:55:23 -0500
+Received: from mail.efficios.com ([78.47.125.74]:41497 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814AbaBZMzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 07:55:22 -0500
+Date: Wed, 26 Feb 2014 12:55:20 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <1548442707.30678.1393419320104.JavaMail.zimbra@efficios.com>
+In-Reply-To: <8761o24md5.fsf@rustcorp.com.au>
+References: <1392074600-21977-1-git-send-email-mathieu.desnoyers@efficios.com> <20140213161156.3548df43@gandalf.local.home> <878uteecu0.fsf@rustcorp.com.au> <20140220103033.32860caf@gandalf.local.home> <87lhx59yap.fsf@rustcorp.com.au> <20140220230938.0bf9614b@gandalf.local.home> <1392970255.4346.14.camel@jlt4.sipsolutions.net> <8761o24md5.fsf@rustcorp.com.au>
+Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new
+ TAINT_UNSIGNED_MODULE
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393418614-3968549-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
+Thread-Index: CQwkCD8gDRdevl+EEF7Vr60BVMsnsw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The tnetv107x platform is getting removed, so this driver
-> is not needed any more.
+----- Original Message -----
+> From: "Rusty Russell" <rusty@rustcorp.com.au>
+> To: "Johannes Berg" <johannes@sipsolutions.net>, "Steven Rostedt" <rostedt@goodmis.org>
+> Cc: "Ingo Molnar" <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+> linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>, "David
+> Howells" <dhowells@redhat.com>, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+> Sent: Tuesday, February 25, 2014 9:51:50 PM
+> Subject: Re: [RFC PATCH] Fix: module signature vs tracepoints: add new TAINT_UNSIGNED_MODULE
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/Kconfig  |  11 --
->  drivers/mfd/Makefile |   1 -
->  drivers/mfd/ti-ssp.c | 465 ---------------------------------------------------
->  3 files changed, 477 deletions(-)
->  delete mode 100644 drivers/mfd/ti-ssp.c
+> Johannes Berg <johannes@sipsolutions.net> writes:
+> > Going on a tangent here - our use case is using backported upstream
+> > kernel modules (https://backports.wiki.kernel.org/) for delivering a
+> > driver to people who decided that they absolutely need to run with some
+> > random kernel (e.g. 3.10) but we don't yet support all the driver
+> > features they want/need in the kernel they picked.
+> 
+> Ah, a user!  See, that's not the "I forgot to sign my modules" case the
+> others were complaining about.
+> 
+> > We push our code upstream as soon as we can and typically only diverge
+> > from upstream by a few patches, so saying things like "crap" or "felony
+> > law breaker" about out-of-tree modules in general makes me furious.
+> 
+> Appreciated and understood.
+> 
+> I have applied Mathieu's patch to my pending tree, with Ingo's Nack
+> recorded.
 
-Applied, thanks.
+Hi Rusty,
+
+That RFC patch was superseded by a newer version, posted in a separate thread.
+There were documentation and other printout sites to update. I posted the
+non-RFC version of the patch here:
+
+https://lkml.org/lkml/2014/2/14/4
+
+(you should have it in your inbox)
+
+Please let me know if I need to repost it.
+
+Thanks!
+
+Mathieu
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
