@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaBZFXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 00:23:14 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46516 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaBZFXL (ORCPT
+	id S1751122AbaBZF0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 00:26:37 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:46031 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaBZF0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 00:23:11 -0500
-Date: Tue, 25 Feb 2014 21:23:06 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jeff Law <law@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-Message-ID: <20140226052306.GD8264@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
- <20140224172110.GO8264@linux.vnet.ibm.com>
- <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
- <20140224185341.GU8264@linux.vnet.ibm.com>
- <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
- <20140224223701.GC8264@linux.vnet.ibm.com>
- <CA+55aFxGaKtvx5YnOFC5hU9+ischxn=LN_yWiqjXwpNZePvWmw@mail.gmail.com>
- <CA+55aFwo9ZKxyN76cnkN7iQi7pKB+_tVD=re+RoMP4MiSajC8w@mail.gmail.com>
- <20140226001558.GY8264@linux.vnet.ibm.com>
- <530D6056.40305@redhat.com>
+	Wed, 26 Feb 2014 00:26:32 -0500
+Date: Tue, 25 Feb 2014 21:25:40 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Chinner <david@fromorbit.com>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
+        viro@zeniv.linux.org.uk, bpm@sgi.com, adilger.kernel@dilger.ca,
+        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v5 1/10] fs: Add new flag(FALLOC_FL_COLLAPSE_RANGE) for
+ fallocate
+In-Reply-To: <20140226015747.GN13647@dastard>
+Message-ID: <alpine.LSU.2.11.1402252049250.1586@eggly.anvils>
+References: <1392741464-20029-1-git-send-email-linkinjeon@gmail.com> <20140222140625.GD26637@thunk.org> <20140223213606.GE4317@dastard> <alpine.LSU.2.11.1402251525370.2380@eggly.anvils> <20140226015747.GN13647@dastard>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530D6056.40305@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022605-6688-0000-0000-000006FC219C
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 08:32:38PM -0700, Jeff Law wrote:
-> On 02/25/14 17:15, Paul E. McKenney wrote:
-> >>I have for the last several years been 100% convinced that the Intel
-> >>memory ordering is the right thing, and that people who like weak
-> >>memory ordering are wrong and should try to avoid reproducing if at
-> >>all possible. But given that we have memory orderings like power and
-> >>ARM, I don't actually see a sane way to get a good strong ordering.
-> >>You can teach compilers about cases like the above when they actually
-> >>see all the code and they could poison the value chain etc. But it
-> >>would be fairly painful, and once you cross object files (or even just
-> >>functions in the same compilation unit, for that matter), it goes from
-> >>painful to just "ridiculously not worth it".
-> >
-> >And I have indeed seen a post or two from you favoring stronger memory
-> >ordering over the past few years.  ;-)
-> I couldn't agree more.
+On Wed, 26 Feb 2014, Dave Chinner wrote:
+> On Tue, Feb 25, 2014 at 03:41:20PM -0800, Hugh Dickins wrote:
+> > On Mon, 24 Feb 2014, Dave Chinner wrote:
+> > > On Sat, Feb 22, 2014 at 09:06:25AM -0500, Theodore Ts'o wrote:
+> > > > On Wed, Feb 19, 2014 at 01:37:43AM +0900, Namjae Jeon wrote:
+> > > > > +	/*
+> > > > > +	 * There is no need to overlap collapse range with EOF, in which case
+> > > > > +	 * it is effectively a truncate operation
+> > > > > +	 */
+> > > > > +	if ((mode & FALLOC_FL_COLLAPSE_RANGE) &&
+> > > > > +	    (offset + len >= i_size_read(inode)))
+> > > > > +		return -EINVAL;
+> > > > > +
+> > > > 
+> > > > I wonder if we should just translate a collapse range that is
+> > > > equivalent to a truncate operation to, in fact, be a truncate
+> > > > operation?
+> > > 
+> > > Trying to collapse a range that extends beyond EOF, IMO, is likely
+> > > to only happen if the DVR/NLE application is buggy. Hence I think
+> > > that telling the application it is doing something that is likely to
+> > > be wrong is better than silently truncating the file....
+> > 
+> > I do agree with Ted on this point.  This is not an xfs ioctl added
+> > for one DVR/NLE application, it's a mode of a Linux system call.
+> > 
+> > We do not usually reject with an error when one system call happens
+> > to ask for something which can already be accomplished another way;
+> > nor nanny our callers.
+> > 
+> > It seems natural to me that COLLAPSE_RANGE should support beyond EOF;
+> > unless that adds significantly to implementation difficulties?
 > 
-> >
-> >Are ARM and Power really the bad boys here?  Or are they instead playing
-> >the role of the canary in the coal mine?
-> That's a question I've been struggling with recently as well.  I
-> suspect they (arm, power) are going to be the outliers rather than
-> the canary. While the weaker model may give them some advantages WRT
-> scalability, I don't think it'll ultimately be enough to overcome
-> the difficulty in writing correct low level code for them.
+> Yes, it does add to the implementation complexity significantly - it
+> adds data security issues that don't exist with the current API.
 > 
-> Regardless, they're here and we have to deal with them.
+> That is, Filesystems can have uninitialised blocks beyond EOF so
+> if we allow COLLAPSE_RANGE to shift them down within EOF, we now
+> have to ensure they are properly zeroed or marked as unwritten.
+> 
+> It also makes implementations more difficult. For example, XFS can
+> also have in-memory delayed allocation extents beyond EOF, and they
+> can't be brought into the range < EOF without either:
+> 
+> 	a) inserting zeroed pages with appropriately set up
+> 	and mapped bufferheads into the page cache for the range
+> 	that sits within EOF; or
+> 	b) truncating the delalloc extents beyond EOF before the
+> 	move
+> 
+> So, really, the moment you go beyond EOF filesystems have to do
+> quite a bit more validation and IO in the context of the system
+> call. It no longer becomes a pure extent manipulation offload - it
+> becomes a data security problem.
 
-Agreed...
+Those sound like problems you would already have solved for a
+simple extending truncate.
 
-							Thanx, Paul
+But I wasn't really thinking of the offset > i_size case, just the
+offset + len >= i_size case: which would end with i_size at offset,
+and the areas you're worried about still beyond EOF - or am I confused?
 
+> 
+> And, indeed, the specification that we are working to is that the
+> applications that want to collapse the range of a file are using
+> this function instead of read/memcpy/write/truncate, which by
+> definition means they cannot shift ranges of the file beyond EOF
+> into the new file.
+> 
+> So IMO the API defines the functionality as required by the
+> applications that require it and *no more*. If you need some
+> different behaviour - we can add it via additional flags in future
+> when you have an application that requires it. 
+
+You still seem to be thinking in terms of xfs ioctl hacks,
+rather than fully scoped Linux system calls.
+
+But it probably doesn't matter too much, if we start with an error,
+and later correct that to a full implementation - an xfstest or LTP
+test which expected failure will fail once it sees success, but no
+users harmed in the making of this change.
+
+> 
+> > Actually, is it even correct to fail at EOF?  What if fallocation
+> > with FALLOC_FL_KEEP_SIZE was used earlier, to allocate beyond EOF:
+> > shouldn't it be possible to shift that allocation down, along with
+> > the EOF, rather than leave it behind as a stranded island?
+> 
+> It does get shifted down - it just remains beyond EOF, just like it
+> was before the operation. And that is part of the specification of
+> COLLAPSE_RANGE - it was done so that preallocation (physical or
+> speculative delayed allocation) beyond EOF to avoid fragmentation as
+> the DVR continues to write is not screwed up by chopping out earlier
+> parts of the file.
+
+Yes, I was confused when I pictured a stranded island there.
+
+Hugh
