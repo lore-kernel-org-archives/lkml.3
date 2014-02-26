@@ -1,190 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaBZHb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 02:31:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48918 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748AbaBZHbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 02:31:53 -0500
-Message-ID: <530D9862.1070108@canonical.com>
-Date: Tue, 25 Feb 2014 23:31:46 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-CC: James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/8] security: apparmor: Use a more current logging style
-References: <cover.1393279025.git.joe@perches.com> <ff8a7d422cfa605de40dc64c103f27ed7a76e0cf.1393279025.git.joe@perches.com>
-In-Reply-To: <ff8a7d422cfa605de40dc64c103f27ed7a76e0cf.1393279025.git.joe@perches.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751443AbaBZHcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 02:32:15 -0500
+Received: from ozlabs.org ([203.10.76.45]:45544 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363AbaBZHcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 02:32:13 -0500
+Date: Wed, 26 Feb 2014 18:32:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the akpm-current tree with the ext3
+ tree
+Message-Id: <20140226183204.4ea7969f087360c565ac3d4e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/24/2014 01:59 PM, Joe Perches wrote:
-> Convert printks to pr_<level>.
-> Add pr_fmt.
-> Coalesce formats.
-> Remove embedded prefixes from logging.
-> 
+--Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-you missed one place,
+Hi Andrew,
 
---- a/security/apparmor/include/apparmor.h
-+++ b/security/apparmor/include/apparmor.h
-@@ -50,7 +50,7 @@ extern unsigned int aa_g_path_max;
- #define AA_DEBUG(fmt, args...)                                         \
-        do {                                                            \
-                if (aa_g_debug && printk_ratelimit())                   \
--                       printk(KERN_DEBUG "AppArmor: " fmt, ##args);    \
-+                       pr_debug(fmt, ##args);                          \
-        } while (0)
- 
- #define AA_ERROR(fmt, args...)                                         \
+Today's linux-next merge of the akpm-current tree got a conflict in
+fs/notify/fanotify/fanotify_user.c between commit ff57cd5863cf
+("fsnotify: Allocate overflow events with proper type") from the ext3
+tree and commit c40e3490382b ("fanotify: convert access_mutex to
+spinlock") from the akpm-current tree.
 
-other than that looks good.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: John Johansen <john.johansen@canonical.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> ---
->  security/apparmor/apparmorfs.c       | 2 ++
->  security/apparmor/crypto.c           | 2 ++
->  security/apparmor/include/apparmor.h | 2 +-
->  security/apparmor/lib.c              | 4 +++-
->  security/apparmor/lsm.c              | 2 ++
->  security/apparmor/match.c            | 5 +++--
->  security/apparmor/policy.c           | 2 ++
->  security/apparmor/procattr.c         | 2 ++
->  8 files changed, 17 insertions(+), 4 deletions(-)
-> 
-> diff --git a/security/apparmor/apparmorfs.c b/security/apparmor/apparmorfs.c
-> index 7db9954..d4b65cc 100644
-> --- a/security/apparmor/apparmorfs.c
-> +++ b/security/apparmor/apparmorfs.c
-> @@ -12,6 +12,8 @@
->   * License.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <linux/ctype.h>
->  #include <linux/security.h>
->  #include <linux/vmalloc.h>
-> diff --git a/security/apparmor/crypto.c b/security/apparmor/crypto.c
-> index 532471d..9506544 100644
-> --- a/security/apparmor/crypto.c
-> +++ b/security/apparmor/crypto.c
-> @@ -15,6 +15,8 @@
->   * it should be.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <crypto/hash.h>
->  
->  #include "include/apparmor.h"
-> diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
-> index 8fb1488..3065025 100644
-> --- a/security/apparmor/include/apparmor.h
-> +++ b/security/apparmor/include/apparmor.h
-> @@ -56,7 +56,7 @@ extern unsigned int aa_g_path_max;
->  #define AA_ERROR(fmt, args...)						\
->  	do {								\
->  		if (printk_ratelimit())					\
-> -			printk(KERN_ERR "AppArmor: " fmt, ##args);	\
-> +			pr_err(fmt, ##args);				\
->  	} while (0)
->  
->  /* Flag indicating whether initialization completed */
-> diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
-> index 6968992..432b1b6 100644
-> --- a/security/apparmor/lib.c
-> +++ b/security/apparmor/lib.c
-> @@ -12,6 +12,8 @@
->   * License.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <linux/mm.h>
->  #include <linux/slab.h>
->  #include <linux/string.h>
-> @@ -73,7 +75,7 @@ void aa_info_message(const char *str)
->  		aad.info = str;
->  		aa_audit_msg(AUDIT_APPARMOR_STATUS, &sa, NULL);
->  	}
-> -	printk(KERN_INFO "AppArmor: %s\n", str);
-> +	pr_info("%s\n", str);
->  }
->  
->  /**
-> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-> index 9981000..49f0180 100644
-> --- a/security/apparmor/lsm.c
-> +++ b/security/apparmor/lsm.c
-> @@ -12,6 +12,8 @@
->   * License.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <linux/security.h>
->  #include <linux/moduleparam.h>
->  #include <linux/mm.h>
-> diff --git a/security/apparmor/match.c b/security/apparmor/match.c
-> index 727eb42..688482a 100644
-> --- a/security/apparmor/match.c
-> +++ b/security/apparmor/match.c
-> @@ -12,6 +12,8 @@
->   * License.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <linux/errno.h>
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
-> @@ -140,8 +142,7 @@ static int verify_dfa(struct aa_dfa *dfa, int flags)
->  			if (DEFAULT_TABLE(dfa)[i] >= state_count)
->  				goto out;
->  			if (base_idx(BASE_TABLE(dfa)[i]) + 255 >= trans_count) {
-> -				printk(KERN_ERR "AppArmor DFA next/check upper "
-> -				       "bounds error\n");
-> +				pr_err("DFA next/check upper bounds error\n");
->  				goto out;
->  			}
->  		}
-> diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
-> index 705c287..4e20c1f 100644
-> --- a/security/apparmor/policy.c
-> +++ b/security/apparmor/policy.c
-> @@ -73,6 +73,8 @@
->   * FIXME: move profile lists to using rcu_lists
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include <linux/slab.h>
->  #include <linux/spinlock.h>
->  #include <linux/string.h>
-> diff --git a/security/apparmor/procattr.c b/security/apparmor/procattr.c
-> index b125acc..c105fc5 100644
-> --- a/security/apparmor/procattr.c
-> +++ b/security/apparmor/procattr.c
-> @@ -12,6 +12,8 @@
->   * License.
->   */
->  
-> +#define pr_fmt(fmt) "AppArmor: " fmt
-> +
->  #include "include/apparmor.h"
->  #include "include/context.h"
->  #include "include/policy.h"
-> 
+diff --cc fs/notify/fanotify/fanotify_user.c
+index 287a22c04149,c3406d633925..000000000000
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@@ -731,21 -690,9 +691,21 @@@ SYSCALL_DEFINE2(fanotify_init, unsigne
+  	group->fanotify_data.user =3D user;
+  	atomic_inc(&user->fanotify_listeners);
+ =20
+ +	oevent =3D kmem_cache_alloc(fanotify_event_cachep, GFP_KERNEL);
+ +	if (unlikely(!oevent)) {
+ +		fd =3D -ENOMEM;
+ +		goto out_destroy_group;
+ +	}
+ +	group->overflow_event =3D &oevent->fse;
+ +	fsnotify_init_event(group->overflow_event, NULL, FS_Q_OVERFLOW);
+ +	oevent->tgid =3D get_pid(task_tgid(current));
+ +	oevent->path.mnt =3D NULL;
+ +	oevent->path.dentry =3D NULL;
+ +
+  	group->fanotify_data.f_flags =3D event_f_flags;
+  #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+ +	oevent->response =3D 0;
+- 	mutex_init(&group->fanotify_data.access_mutex);
++ 	spin_lock_init(&group->fanotify_data.access_lock);
+  	init_waitqueue_head(&group->fanotify_data.access_waitq);
+  	INIT_LIST_HEAD(&group->fanotify_data.access_list);
+  	atomic_set(&group->fanotify_data.bypass_perm, 0);
 
+--Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTDZh8AAoJEMDTa8Ir7ZwVSuEQAIYbKmcIxOm69xgB8ad4kKuF
+vQ0MJFb3e1ytk7FOC+tJRO9OwpYeegmEtORwiGEVNdkgKrmN/qB/rM6cLdrJCKFR
+BhqoovptyHrGtm7KQQxdRbKZAYmXxiKOV4YtV+qypt+qBoSqyRiYf5E7GYQzSKkZ
+xCHdoJuX75QYp0Cbh+waoMy1e7NiOzSy/mmqUYUlZP6JB3IvL0Z1PoQzEOCGj1H7
+/3XtZM44OenkWYjO7YpwwDF41Q7l2ud1M2J58NXnB5F8oiRLu02XPOvcEWIhehx+
+qaDH4Gt4xKubaHbBdxueYuX7x/Sv3jhubSU3CM77GVQd5oLXN54+rbn+dN3CIeJI
+d93OIruzFDe0B28WicNHnxB1VP/wLwT1XDNn3nCIpuhxiMobZIbpkVnJqL81VIr9
+KaJl/dpl+yPTbOQMariowZivRbk/eicRGv9vqoj3lG8Zz+nxQWdwVTIBId8Gn1Q4
+D3QG1mjFznBbo65SBpwhxWQCNcJTbJQURxUUas7HV+ugNGspkJ7cs2J6vclKPv1K
+ZIe/FUqhXLDTs3FGKlMfwrTx9pGJlG4wlR5anXKJDBhHBAr+Vpath2n+vKgTgb7V
+M93Aj8UJf2vuuvXWP3mAKLrOpriIhz0VOrV5skM7mNeTgAczKWLHYR9AydzfqvSR
+OS4IKgav6lixpy8dTELY
+=Zqvu
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_Feb_2014_18_32_04_+1100_PFCBYfwc=c==r3VX--
