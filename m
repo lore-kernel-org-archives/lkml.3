@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaB0MHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:07:55 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53151 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751759AbaB0MHx (ORCPT
+	id S1752786AbaB0MIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:08:11 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:55444 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaB0MIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:07:53 -0500
-Date: Thu, 27 Feb 2014 12:07:23 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Dave P Martin <Dave.Martin@arm.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 4/7] perf: be less pessimistic when scheduling events
-Message-ID: <20140227120723.GH6945@e106331-lin.cambridge.arm.com>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-5-git-send-email-mark.rutland@arm.com>
- <20140210175854.GB27965@twins.programming.kicks-ass.net>
- <20140211174804.GC12476@e106331-lin.cambridge.arm.com>
- <20140225112936.GM9987@twins.programming.kicks-ass.net>
+	Thu, 27 Feb 2014 07:08:10 -0500
+Date: Thu, 27 Feb 2014 17:38:01 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, josh@joshtriplett.org
+Subject: [PATCH 28/46] kernel: Add prototype declaration to header file
+ linux/ftrace.h
+Message-ID: <5238e052310ffdcaae2287783013afc42d3f7266.1393493277.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140225112936.GM9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 11:29:36AM +0000, Peter Zijlstra wrote:
-> On Tue, Feb 11, 2014 at 05:48:05PM +0000, Mark Rutland wrote:
-> > On Mon, Feb 10, 2014 at 05:58:54PM +0000, Peter Zijlstra wrote:
-> > > On Mon, Feb 10, 2014 at 05:44:21PM +0000, Mark Rutland wrote:
-> > > > This patch makes ctx_flexible_sched_in attempt to schedule every group
-> > > > in the flexible_groups list even when earlier groups failed to schedule,
-> > > > enabling more groups to be scheduled simultaneously.
-> > > 
-> > > Since you're basically free to create as many events as you want, you can
-> > > (as an unprivilidged user) make the context switch to and from your task
-> > > arbitrarily expensive.
-> > 
-> > Not that it makes the approach any better, but surely this is already
-> > the case for software events? 
-> 
-> Yeah, software events are a problem; I realized this the moment I send
-> that email. However, software events do not have the O(n!) programming
-> fail hw events have.
-> 
-> AMD Fam15h has a O(n^4) termination of the O(n*n!) algorithm, the rest
-> of x86 has a normal O(n^2) bound.
+Add prototye declaration of function to header file
+include/linux/ftrace.h
+because it is used by more than one file.
 
-Ok. I hadn't realised how expensive the event constraint solving was for
-other architectures. For us it's a simple bitmap test at present.
+This eliminates the following warning in
+kernel/trace/trace_functions_graph.c:
+kernel/trace/trace_functions_graph.c:218:15: warning: no previous prototype for ‘ftrace_return_to_handler’ [-Wmissing-prototypes]
 
-> > I can create as many as I want, and they'll always try to schedule.
-> > 
-> > I'll take a look into other ways to stop disparate PMUs' events from
-> > adversely affecting each other. I guess it might not be possible to
-> > solve the general problem without allowing said expensive context
-> > switch.
-> 
-> So the problem you're facing is that you'll attach events for each PMU
-> available on the system to a particular task? And simply want to
-> continue scheduling even though a particular event will never fit on the
-> CPUs PMU its currently running on?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ include/linux/ftrace.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Basically, though s/fit on/be sane for/.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index da1c31f..c4d1048 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -673,6 +673,7 @@ typedef void (*trace_func_graph_ret_t)(struct ftrace_graph_ret *); /* return */
+ typedef int (*trace_func_graph_ent_t)(struct ftrace_graph_ent *); /* entry */
+ 
+ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace);
++unsigned long ftrace_return_to_handler(unsigned long frame_pointer);
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 
+-- 
+1.7.9.5
 
-> So the trivial work-around would be to create an event per cpu and set
-> event->cpu. That way you'll get the event_filter_match() exception in
-> ctx_flexible_sched_in() and we'll skip over all events that cannot be
-> programmed on this CPU.
-
-While that's trivial for the core, it's painful elsewhere. Either
-userspace has to figure out that it's on a heterogeneous system and
-create the additional events, or when initialising events we need to
-create the set of cpu-specific events transparently, avoiding recursion
-in the initialisation code.
-
-> The other approach is adding a cpumask to events, which would
-> drastically cut down on the amount of events you'd need to create; then
-> again, ARM doesn't have a silly amount of CPUs x86 has just quite yet.
-
-This sounds good, though with a slight alteration becomes better: with a
-pmu-specific filter function we could reuse the cpumask we use in the
-arch backend. No changes to events, just an additional (optional)
-callback on struct pmu.
-
-Thanks for the suggestions.
-
-Mark.
