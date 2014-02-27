@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719AbaB0Nim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:38:42 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44963 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753303AbaB0Nii (ORCPT
+	id S1753290AbaB0Nil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:38:41 -0500
+Received: from mv-drv-hcb003.ocn.ad.jp ([118.23.109.133]:33889 "EHLO
+	mv-drv-hcb003.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753384AbaB0Nii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 08:38:38 -0500
-Date: Thu, 27 Feb 2014 10:38:32 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 00/10] pinctrl: mvebu: remove hard-coded addresses from
- Dove pinctrl
-Message-ID: <20140227133831.GA28443@localhost>
-References: <1393231382-11078-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140224181023.GA1010@titan.lakedaemon.net>
- <CACRpkdZ+YGTyDj6i8c198MdRtz3GY-YBmVO9LysPCcmT4EC0cg@mail.gmail.com>
- <20140225151656.GI1010@titan.lakedaemon.net>
- <530CB725.5070904@gmail.com>
- <20140225154347.GJ1010@titan.lakedaemon.net>
- <530CEDB7.2070103@gmail.com>
- <20140225200447.GA1872@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140225200447.GA1872@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: delayed 171787 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 08:38:38 EST
+Date: Thu, 27 Feb 2014 22:38:26 +0900 (JST)
+Message-Id: <20140227.223826.522636360.anemo@mba.ocn.ne.jp>
+To: broonie@kernel.org
+Cc: iivanov@mm-sol.com, gsi@denx.de, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] spi: core: Validate length of the transfers in
+ message
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+In-Reply-To: <20140226001407.GM2927@sirena.org.uk>
+References: <1392890528-7417-1-git-send-email-iivanov@mm-sol.com>
+	<20140225.225528.453119424.anemo@mba.ocn.ne.jp>
+	<20140226001407.GM2927@sirena.org.uk>
+X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
+X-Pgp-Public-Key: http://wwwkeys.pgp.net:11371/pks/lookup?op=get&search=0x2874D52F
+X-Mailer: Mew version 6.3 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 03:04:47PM -0500, Jason Cooper wrote:
-> On Tue, Feb 25, 2014 at 08:23:35PM +0100, Sebastian Hesselbarth wrote:
-> > [Cooked down Cc list to relevant people and added Ezequiel who agreed
-> > to test on Armada 375/38x.]
-> > 
-[..]
+On Wed, 26 Feb 2014 09:14:07 +0900, Mark Brown <broonie@kernel.org> wrote:
+>>       + optionally defining short delays after transfers ... using
+>>         the spi_transfer.delay_usecs setting (this delay can be the
+>>         only protocol effect, if the buffer length is zero);
 > 
-> If you can drop the dtsi changes (I have them in mvebu/dt), and fix the
-> whitespace change, then we can merge them as is.
-> 
+> *sigh*  I guess it is valid, though frankly I'm concerned that this
+> isn't a good idea - it's certainly not going to work reliably given the
+> need for every driver to open code this, most of them get the delay
+> stuff wrong.
 
-Tested for-next on Armada 375 and Armada 385 development boards. The
-pinctrl debugfs looks correct.
+I don't object to the whole patch.  Validating in spi core is good of
+course, and "xfer->len % w_size" part looks no problem.
 
-I've been using for-next for a couple days now, without issues.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+I just want to keep ways to handle an odd device, for example, which
+requires long delay between chipselect and the first transfer, etc.
+
+---
+Atsushi Nemoto
