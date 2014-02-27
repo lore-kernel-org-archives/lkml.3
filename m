@@ -1,104 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaB0Rf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:35:57 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:5223 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751434AbaB0Rf4 (ORCPT
+	id S1753224AbaB0RiQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:38:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64083 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157AbaB0RiM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:35:56 -0500
-Date: Thu, 27 Feb 2014 12:35:53 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        stable@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFA][PATCH 2/5] ftrace/x86: One more missing sync after fixup
- of function modification failure
-Message-ID: <20140227123553.03ce3c4b@gandalf.local.home>
-In-Reply-To: <20140227171935.GD19580@localhost.localdomain>
-References: <20140227154616.703252665@goodmis.org>
-	<20140227154923.103932155@goodmis.org>
-	<20140227163731.GC19580@localhost.localdomain>
-	<20140227120014.7ba8b484@gandalf.local.home>
-	<20140227171935.GD19580@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 27 Feb 2014 12:38:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,556,1389772800"; 
+   d="scan'208";a="463567516"
+From: "Gross, Mark" <mark.gross@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+CC: Chen-Yu Tsai <wens@csie.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "mgross@linux.intel.com" <mgross@linux.intel.com>
+Subject: RE: [PATCH 2/4] net: rfkill: gpio: remove gpio names
+Thread-Topic: [PATCH 2/4] net: rfkill: gpio: remove gpio names
+Thread-Index: AQHPMgnseXKCUhyDPEGP65PBUfppSprJVqCw
+Date: Thu, 27 Feb 2014 17:38:09 +0000
+Message-ID: <BD75D217E5BAC84080F8EFB2582976378B327178@ORSMSX109.amr.corp.intel.com>
+References: <1392900697-27577-1-git-send-email-heikki.krogerus@linux.intel.com>
+	<1392900697-27577-3-git-send-email-heikki.krogerus@linux.intel.com>
+	<53062F97.3050407@wwwdotorg.org>
+	<CAGb2v66-tDZhrm9dnXe+PdQTaLZbw20sw3uYzLor2eXpVWmPMA@mail.gmail.com>
+	<5306E599.7020605@wwwdotorg.org>
+ <CACRpkdZBvKU31EDX=6=wVLXaQDAqD6VHtaE_mGnFLr1UYQAH9g@mail.gmail.com>
+In-Reply-To: <CACRpkdZBvKU31EDX=6=wVLXaQDAqD6VHtaE_mGnFLr1UYQAH9g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014 18:19:37 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Please know that no one should not consider me an authority on ACPI at this time.  But, I have some comments / context / thoughts below.
 
-> On Thu, Feb 27, 2014 at 12:00:14PM -0500, Steven Rostedt wrote:
-> > On Thu, 27 Feb 2014 17:37:32 +0100
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > 
-> > > On Thu, Feb 27, 2014 at 10:46:18AM -0500, Steven Rostedt wrote:
-> > > > [Request for Ack]
-> > > > 
-> > > > From: Petr Mladek <pmladek@suse.cz>
-> > > > 
-> > > > If a failure occurs while modifying ftrace function, it bails out and will
-> > > > remove the tracepoints to be back to what the code originally was.
-> > > > 
-> > > > There is missing the final sync run across the CPUs after the fix up is done
-> > > > and before the ftrace int3 handler flag is reset.
-> > > 
-> > > So IIUC the risk is that other CPUs may spuriously ignore non-ftrace traps if we don't sync the
-> > > other cores after reverting the int3 before decrementing the modifying_ftrace_code counter?
-> > 
-> > Actually, the bug is that they will not ignore the ftrace traps after
-> > we decrement modifying_ftrace_code counter. Here's the race:
-> > 
-> > 	CPU0				CPU1
-> > 	----				----
-> >   remove_breakpoint();
-> >   modifying_ftrace_code = 0;
-> > 
-> > 				[still sees breakpoint]
-> > 				<takes trap>
-> > 				[sees modifying_ftrace_code as zero]
-> > 				[no breakpoint handler]
-> > 				[goto failed case]
-> > 				[trap exception - kernel breakpoint, no
-> > 				 handler]
-> > 				BUG()
-> > 
-> > 
-> > Even if we had a smp_wmb() after removing the breakpoint and clearing
-> > the modifying_ftrace_code, we still need the smp_rmb() on the other
-> > CPUS. The run_sync() does a IPI on all CPUs doing the smp_rmb().
+Also I apologize in advance for any email formatting issues caused by replying to this via my work exchange account / outlook client.  Folks can use mgross@linux.intel.com to avoid outlook-isms from me in the future.
+
+> -----Original Message-----
+> From: Linus Walleij [mailto:linus.walleij@linaro.org]
+> Sent: Tuesday, February 25, 2014 1:14 AM
+> To: Stephen Warren; Alexandre Courbot; Grant Likely;
+> devicetree@vger.kernel.org
+> Cc: Chen-Yu Tsai; Heikki Krogerus; Johannes Berg; David S. Miller; Rhyland
+> Klein; linux-wireless; netdev; linux-kernel; Arnd Bergmann; Gross, Mark
+> Subject: Re: [PATCH 2/4] net: rfkill: gpio: remove gpio names
 > 
-> Ah ok. My understanding was indeed that it doesn't ignore the ftrace trap,
-> but I thought the consequence was that we return immediately from the trap
-> handler.
-
-I'll add my above cpu race diagram (is that what we call it?). That
-should make this change more understandable.
-
-
-> Ok but what I meant is to do this instead:
+> On Fri, Feb 21, 2014 at 6:35 AM, Stephen Warren
+> <swarren@wwwdotorg.org> wrote:
+> > On 02/20/2014 06:55 PM, Chen-Yu Tsai wrote:
 > 
->  fail_update:
->     probe_kernel_write((void *)ip, &old_code[0], 1);
-> +   run_sync()
->     goto out;
+> >> That's correct. However using con_id to pass this results in
+> >> different behavior across DT and ACPI. A better way is to export the
+> >> labeling function so consumers can set meaningful labels themselves.
+> >
+> > But this code is the consumer of those GPIOs. IF the parameter to
+> > devm_gpiod_get_index() isn't intended to be used, why does it exist?
 > 
-> Because with the current patch we also call run_sync() on add_break() failure.
+> Kerneldoc says:
+> 
+> /**
+>  * gpiod_get_index - obtain a GPIO from a multi-index GPIO function
+>  * @dev:        GPIO consumer, can be NULL for system-global GPIOs
+>  * @con_id:     function within the GPIO consumer
+>  * @idx:        index of the GPIO to obtain in the consumer
+>  *
+> 
+> Basically it is just exposing the fact that of_find_gpio() and
+> acpi_find_gpio() both take a con_id as argument.
+> 
+> If we drill into this, we find that it is used to conjure the arbitrary string
+> before the gpios in the DT case, like:
+> 
+> foo-gpios = <...>;
+> 
+> As in tegra30-beaver.dts...
+> 
+>     sdhci@78000000 {
+>             status = "okay";
+>             cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+>             wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>;
+>             power-gpios = <&gpio TEGRA_GPIO(D, 7) GPIO_ACTIVE_HIGH>;
+>             bus-width = <4>;
+>     };
+> 
+> Instead of passing the GPIOs as index 0,1,2 they are named and I do admit
+> this has a nice "things are under control" aspect to it.
+[Gross, Mark] FWIW I don't think this is as "under control" as you do.  Those names in the above sdhci example are derived from a specific SDHCI tegra spec sheet or schematic.  Those names likely come from the data sheet for the controller.  I would like SDHCI kernel drivers to work pretty much the same for all compatible controllers.  The set of compatible controllers have spec sheets that use different naming conventions for their pins and thus a name space pollution of the SDHCI enumeration ABI will be a problem.
 
-Ah ok (my turn to understand). Yeah, if the add_break() fails, then we
-don't need to do the run_sync().
+> 
+> In the ACPI case the con_id is not used for anything.
+> 
+> So it is basically there to satisfy the habit in some device tree bindings to
+> name gpio arrays instead of just passing gpios = <...>; (The latter should be
+> encouraged going forward.)
+[Gross, Mark] This is in fact just an idiom of the ACPI ABI inherited from writing linux drivers that work on systems with BIOS/FW developed for MS-Windows.  For the devices I work on we have a number of driver teams filing bugs against the BIOS/FW to add named GPIO objects to device name spaces such that they can directly query for the GPIO their driver needs and avoid assuming the 3rd GPIO is the special one they need for whatever...
 
-But this is just for now, to prevent the add_update_code() error from
-crashing. I have more patches that clean this up further. But they are
-for 3.15.
+So if you have the luxury of being able to influence (file bugs against or write) the platform enumeration ABI then with ACPI you can have a named gpio today.  Note: there is an expectation that the _PRP feature to go into the next version of ACPI and that should enable a trivial 1-1 mapping (when _prp is used by the ACPI platform) between the different platform enumeration API's (DT and ACPI).
 
--- Steve
+Still, from a platform enumeration ABI point of view I see the arbitrariness of indexes not much worse than the arbitrary naming of pins off of spec sheets or schematics.  Given that the authors of those specs/layouts come up with a new naming schemes every time they log into their workstations (especially for the schematics).  I do admit names are a little better but still have the scaling issue WRT namespaces and arbitrary naming by HW engineers over time.
+
+> 
+> As DT is ABI we need to keep this forever, and driver may need to look for
+> foo-gpios=<> and gpios=<> alike for backward compatibility if we'd change it,
+> sweet isn't it? :-)
+> 
+> I don't quite like this, as it is adding stupid nonsens arguments for ACPI GPIO
+> producers (which only take an index AFAICT), but it is a first sacrifice on the
+> altar of trying to mask the differences between DT and ACPI probe paths
+> about which I have mixed feelings.
+[Gross, Mark] I don't have mixed feelings.  I want to see converged probe paths that can handle both ACPI and DT platform ABI's seamlessly so we can reuse drivers across architectures effectively.  I think the _PRP will help with that even though its use assumes you have influence over the platform FW and this will not help with supporting of legacy BIOS's will burden us with gpio index assumptions.
+
+--mark
+
+> 
+> Yours,
+> LInus Walleij
