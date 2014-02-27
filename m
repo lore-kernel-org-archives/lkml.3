@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaB0Sya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:54:30 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11441 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752435AbaB0Sy3 (ORCPT
+	id S1753540AbaB0S65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:58:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36932 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129AbaB0S6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:54:29 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Feng Kan <fkan@apm.com>
-Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
-        "patches\@apm.com" <patches@apm.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vinayak Kale <vkale@apm.com>
-Subject: Re: [PATCH V2] irqchip:gic: change access of gicc_ctrl register to read modify write.
-In-Reply-To: <1393526095-31479-1-git-send-email-fkan@apm.com> (Feng Kan's
-	message of "Thu, 27 Feb 2014 18:34:55 +0000")
-Organization: ARM Ltd
-References: <1393526095-31479-1-git-send-email-fkan@apm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 27 Feb 2014 18:54:24 +0000
-Message-ID: <87zjlc2xpb.fsf@sofa.wild-wind.fr.eu.org>
+	Thu, 27 Feb 2014 13:58:55 -0500
+Date: Thu, 27 Feb 2014 11:00:32 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] typecheck: introduce assign_if() and
+ assign_if_enabled()
+Message-ID: <20140227190032.GA4421@kroah.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27 2014 at  6:34:55 pm GMT, Feng Kan <fkan@apm.com> wrote:
-> This change is made to preserve the GIC v2 releated bits in the
-> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-> The original code only set the enable/disable group bit in this register.
-> This code will preserve the bypass bits configured by the bootload except
-> the enable/disable bit. The main reason for this change is to allow the
-> bypass bits specified in the v2 spec to remain untouched by the current
-> GIC code. In the X-Gene platform, the bypass functionality is not used
-> and bypass must be disabled at all time.
->
-> Signed-off-by: Vinayak Kale <vkale@apm.com>
-> Acked-by: Anup Patel <apatel@apm.com>
-> Signed-off-by: Feng Kan <fkan@apm.com>
+On Mon, Feb 24, 2014 at 11:08:25AM -0600, Josh Cartwright wrote:
+> The assign_if() and assign_if_enable() macros are intended to be used
+> in static initializers for function pointers, where the pointer is
+> expected to be NULL when a compile-time condition does not hold.
+> 
+> These macros allow for implementing this behavior, without requiring the
+> functions be wrapped in #ifdef conditionals, and while providing
+> typesafety regardless of the value of the conditional.
+> 
+> For example, the following pattern is common:
+> 
+> 	#ifdef CONFIG_FOO
+> 	static void foo_callback(void)
+> 	{
+> 	}
+> 	#else
+> 	#define foo_callback NULL
+> 	#endif
+> 
+> 	static struct foo_object foo_obj = {
+> 		.callback = foo_callback,
+> 	};
+> 
+> Usage of assign_if_enabled() allows for achieving the same effect
+> without the preprocessor conditional, and in addition, allowing the
+> compiler to typecheck the function regardless of CONFIG_FOO.
+> 
+> 	static void foo_callback(void)
+> 	{
+> 	}
+> 
+> 	static struct foo_object foo_obj = {
+> 		.callback = assign_if_enabled(CONFIG_FOO, foo_callback),
+> 	};
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 > ---
-> V2 Changes:
-> 	- only mask off v2 bypass bits
->
->  drivers/irqchip/irq-gic.c |   22 +++++++++++++++++++---
->  1 files changed, 19 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 341c601..757581b 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  	void __iomem *dist_base = gic_data_dist_base(gic);
->  	void __iomem *base = gic_data_cpu_base(gic);
->  	unsigned int cpu_mask, cpu = smp_processor_id();
-> +	unsigned int ctrl_mask;
->  	int i;
+>  include/linux/typecheck.h | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/include/linux/typecheck.h b/include/linux/typecheck.h
+> index eb5b74a..04134c7 100644
+> --- a/include/linux/typecheck.h
+> +++ b/include/linux/typecheck.h
+> @@ -21,4 +21,22 @@
+>  	(void)__tmp; \
+>  })
 >  
->  	/*
-> @@ -449,13 +450,24 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
->  
->  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, base + GIC_CPU_CTRL);
-> +
-> +	ctrl_mask = readl(base + GIC_CPU_CTRL);
-> +	ctrl_mask |= 0x1;
-> +	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+> +/*
+> + * Intended for use in static object initializers,
+> + * assign_if(const_expr, function) evaluates to 'function' if 'const_expr',
+> + * otherwise NULL.
+> + *
+> + * The type of the assign_if() expression is typeof(function), and therefore
+> + * can provide typechecking regardless of 'const_expr'.
+> + *
+> + * gcc considers 'function' to be used and will not generate a 'defined but not
+> + * used' warning when not 'const_expr', however, gcc is smart enough to
+> + * eliminate 'function' if assign_if() is the only reference.
+> + */
 
-I think I'm quickly loosing the will to live, or at least to review this
-patch any further.
+What version of gcc started doing this?  Does llvm also do this?
 
-	M.
--- 
-AAAFNRAA
+thanks,
+
+greg k-h
