@@ -1,111 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaB0FAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:00:19 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:20112 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaB0FAQ (ORCPT
+	id S1751556AbaB0FAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:00:51 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40995 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaB0FAr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:00:16 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-19-530ec6595f53
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
-        "'Peter Korsgaard'" <jacmet@sunsite.dk>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
-Date: Thu, 27 Feb 2014 14:00:09 +0900
-Message-id: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8zeMUulUPjKSZTQeuQ54WfZho3Fg==
-Content-language: ko
-x-cr-hashedpuzzle: E0Ln FNIT LlOY Ns3B SJ9l TGa5 XsCb ZKUW bP8f cHyd eESL qLSM
- wL2r zGnk 0D2f
- 0FRO;5;aABlAHIAYgBlAHIAdABAAGcAbwBuAGQAbwByAC4AYQBwAGEAbgBhAC4AbwByAGcALgBhAHUAOwBqAGEAYwBtAGUAdABAAHMAdQBuAHMAaQB0AGUALgBkAGsAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG4AaQBjAG8AbABhAHMALgBmAGUAcgByAGUAQABhAHQAbQBlAGwALgBjAG8AbQA=;Sosha1_v1;7;{C07C2E4A-7B1C-4D91-8F58-3964F407DB65};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 27 Feb 2014 05:00:01
- GMT;WwBQAEEAVABDAEgAIAAxAC8ANQBdACAAaAB3AHIAbgBnADoAIABhAHQAbQBlAGwAIAAtACAAVQBzAGUAIABkAGUAdgBtAF8AYwBsAGsAXwBnAGUAdAAoACkA
-x-cr-puzzleid: {C07C2E4A-7B1C-4D91-8F58-3964F407DB65}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY93IY3zBBnMXaVu8PKRp0f1KxuL0
-	pWuMFpcXXmK1uLxrDpvFt8vN7A5sHgt+bWXx2HZA1aNvyypGj2mvz7N5fN4kF8AaxWWTkpqT
-	WZZapG+XwJVxbN9dloIPnBUfHjWyNzD2cXQxcnJICJhIfHm+hgXCFpO4cG89WxcjF4eQwDJG
-	iRdbf7PBFO3+Np8dIrGIUWLPwgfMEM5vRom37U9YQarYBNQkvnw5zA5iiwjoSfStb2QEKWIW
-	mMEoMfXjBGaQhLCAmcTxt8uAxnJwsAioStzb6AsS5hWwlVj06zcrhC0o8WPyPbCTmAW0JDZv
-	a2KFsOUlNq95ywzSKiGgLvHory6ICbJqyT5PiAoRiX0v3oFtlRBYwSrx6uYkZogHTCU2T5nJ
-	BJF4xC4x/eh7RpAEi4CAxLfJh1ggZspKbDoAVS8pcXDFDZYJjBKzkFw0C8lFs5BcNAvJ7gWM
-	LKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxQuJ14g7G+wesDzEmA62fyCwlmpwPjPe8knhD
-	YzMjC1MTU2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamAUMD8mmRTw
-	7PK2e8uaRffXnzorPpeXtf3D7qbTSxsuyepPUIk46sy1Jq/UotTnc0xj0Va1yxsWXGFhXtSr
-	GlEhG5RYWneTK8h1btq0e4IPlLew7zF68iOj6pj7xosXgq5rKj7S2DTF7Xy6vtDDTdpfNjs0
-	9d6UOfS4XGJ/ZdStrf71kXcPcjUosRRnJBpqMRcVJwIAk3qaO+0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAd3IY3zBBg8b1S1eHtK06H4lY3H6
-	0jVGi8sLL7FaXN41h83i2+Vmdgc2jwW/trJ4bDug6tG3ZRWjx7TX59k8Pm+SC2CNamC0yUhN
-	TEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHar6RQlphTChQK
-	SCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMOLbvLkvBB86KD48a2RsY+zi6GDk5JARM
-	JHZ/m88OYYtJXLi3nq2LkYtDSGARo8SehQ+YIZzfjBJv25+wglSxCahJfPlyGKxDREBPom99
-	IyNIEbPADEaJqR8nMIMkhAXMJI6/XQY0ioODRUBV4t5GX5Awr4CtxKJfv1khbEGJH5PvsYDY
-	zAJaEpu3NbFC2PISm9e8ZQZplRBQl3j0VxfEBFm1ZJ8nRIWIxL4X78C2SgisYJV4dXMSM8QD
-	phKbp8xkmsAoNAvJhllINsxCsmEWklkLGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgQn
-	g2dSOxhXNlgcYhTgYFTi4VVg4wsWYk0sK67MPcQowcGsJMJ7yAUoxJuSWFmVWpQfX1Sak1p8
-	iDEZ6P+JzFKiyfnARJVXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1M
-	HJxSDYw9Jzf4q4RbKc/Ydvxd9R/bDSdvqd4T/vZj1gzNG991/W9dCj5bniCrP08jyPsJD/8v
-	l3U76llE7dbsygl/8eTUXJGiGevFlM+8TawWnPzy55ZVrif0KrQNA4w+rCvIje69/j+52Uu0
-	5vr+BzsuVayRWrvm84vlFpcu5JjNKmlanJvRuIlpDW+WEktxRqKhFnNRcSIAKIc3mUoDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 27 Feb 2014 00:00:47 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Viresh Kumar" <viresh.kumar@linaro.org>,
+        "MyungJoo Ham" <myungjoo.ham@samsung.com>,
+        "Mark Brown" <broonie@kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20140227023455.GA15712@kahuna>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+References: <1392755543-28335-1-git-send-email-nm@ti.com>
+ <1392755543-28335-2-git-send-email-nm@ti.com>
+ <20140225055142.22529.21814@quantum> <530D0394.4020208@ti.com>
+ <20140227023455.GA15712@kahuna>
+Message-ID: <20140227050043.12081.54173@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC PATCH 1/6] PM / Voltagedomain: Add generic clk notifier handler for
+ regulator based dynamic voltage scaling
+Date: Wed, 26 Feb 2014 21:00:43 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_clk_get() to make cleanup paths simpler.
+Quoting Nishanth Menon (2014-02-26 18:34:55)
+> +/**
+> + * pm_runtime_get_rate() - Returns the device operational frequency
+> + * @dev:       Device to handle
+> + * @rate:      Returns rate in Hz.
+> + *
+> + * Returns appropriate error value in case of error conditions, else
+> + * returns 0 and rate is updated. The pm_domain logic does all the necessary
+> + * operation (which may consider magic hardware stuff) to provide the rate.
+> + *
+> + * NOTE: the rate returned is a snapshot and in many cases just a bypass
+> + * to clk api to set the rate.
+> + */
+> +int pm_runtime_get_rate(struct device *dev, unsigned long *rate)
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/char/hw_random/atmel-rng.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Instead of "rate", how about we use "level" and leave it undefined as to
+what that means? It would be equally valid for level to represent a
+clock rate, or an opp from a table of opp's, or a p-state, or some value
+passed to a PM microcontroller.
 
-diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-index dfeddf2..851bc7e 100644
---- a/drivers/char/hw_random/atmel-rng.c
-+++ b/drivers/char/hw_random/atmel-rng.c
-@@ -63,13 +63,13 @@ static int atmel_trng_probe(struct platform_device *pdev)
- 	if (IS_ERR(trng->base))
- 		return PTR_ERR(trng->base);
- 
--	trng->clk = clk_get(&pdev->dev, NULL);
-+	trng->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(trng->clk))
- 		return PTR_ERR(trng->clk);
- 
- 	ret = clk_enable(trng->clk);
- 	if (ret)
--		goto err_enable;
-+		return ret;
- 
- 	writel(TRNG_KEY | 1, trng->base + TRNG_CR);
- 	trng->rng.name = pdev->name;
-@@ -85,9 +85,6 @@ static int atmel_trng_probe(struct platform_device *pdev)
- 
- err_register:
- 	clk_disable(trng->clk);
--err_enable:
--	clk_put(trng->clk);
--
- 	return ret;
- }
- 
-@@ -99,7 +96,6 @@ static int atmel_trng_remove(struct platform_device *pdev)
- 
- 	writel(TRNG_KEY, trng->base + TRNG_CR);
- 	clk_disable(trng->clk);
--	clk_put(trng->clk);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+Code that is tightly coupled to the hardware would simply know what
+value to use with no extra sugar.
 
+Generic code would need to get the various supported "levels" populated
+at run time, but a DT binding could do that, or a query to the ACPI
+tables, or whatever.
 
+> +{
+> +       unsigned long flags;
+> +       int error = -ENOSYS;
+> +
+> +       if (!rate || !dev)
+> +               return -EINVAL;
+> +
+> +       spin_lock_irqsave(&dev->power.lock, flags);
+> +       if (!pm_runtime_active(dev)) {
+> +               error = -EINVAL;
+> +               goto out;
+> +       }
+> +
+> +       if (dev->pm_domain && dev->pm_domain->active_ops.get_rate)
+> +               error = dev->pm_domain->active_ops.get_rate(dev, rate);
+> +out:
+> +       spin_unlock_irqrestore(&dev->power.lock, flags);
+> +
+> +       return error;
+> +}
+> +
+> +/**
+> + * pm_runtime_set_rate() - Set a specific rate for the device operation
+> + * @dev:       Device to handle
+> + * @rate:      Rate to set in Hz
+> + *
+> + * Returns appropriate error value in case of error conditions, else
+> + * returns 0. The pm_domain logic does all the necessary operation (which
+> + * may include voltage scale operations or other magic hardware stuff) to
+> + * achieve the operation. It is guarenteed that the requested rate is achieved
+> + * on returning from this function if return value is 0.
+> + */
+> +int pm_runtime_set_rate(struct device *dev, unsigned long rate)
+
+Additionally I wonder if the function signature should include a way to
+specify the sub-unit of a device that we are operating on? This is a way
+to tackle the issues you raised regarding multiple clocks per device,
+etc. Two approaches come to mind:
+
+int pm_runtime_set_rate(struct device *dev, int index,
+				unsigned long rate);
+
+Where index is a sub-unit of struct device *dev. The second approach is
+to create a publicly declared structure representing the sub-unit. Some
+variations on that theme:
+
+int pm_runtime_set_rate(struct perf_domain *perfdm, unsigned long rate);
+
+or,
+
+int pm_runtime_set_rate(struct generic_power_domain *gpd,
+				unsigned long rate);
+
+or whatever that sub-unit looks like. The gpd thing might be a total
+layering violation, I don't know. Or perhaps it's a decent idea but it
+shouldn't be as a PM runtime call. Again, I dunno.
+
+Regards,
+Mike
