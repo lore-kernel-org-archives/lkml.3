@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaB0S0c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:26:32 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:55098 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831AbaB0S0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:26:30 -0500
-Date: Thu, 27 Feb 2014 19:26:09 +0100
-From: Guillaume Morin <guillaume@morinfr.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        matt.helsley@gmail.com, davem@davemloft.net, guillaume@morinfr.org
-Subject: Re: + exitc-call-proc_exit_connector-after-exit_state-is-set.patch
- added to -mm tree
-Message-ID: <20140227182609.GA26307@bender.morinfr.org>
-Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
-	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-	matt.helsley@gmail.com, davem@davemloft.net, guillaume@morinfr.org
-References: <530bbf59.78aTdR6Ql6kCpXnE%akpm@linux-foundation.org>
- <20140225151043.GA24546@redhat.com>
- <20140227144826.GA13313@bender.morinfr.org>
- <20140227164750.GC909@redhat.com>
+	id S1753332AbaB0S3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:29:42 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:63142 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaB0S3l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 13:29:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227164750.GC909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <86d2i85scf.fsf@hiro.keithp.com>
+References: <1393488699-6265-1-git-send-email-cworth@cworth.org>
+	<20140227084936.GI3852@intel.com>
+	<86d2i85scf.fsf@hiro.keithp.com>
+Date: Thu, 27 Feb 2014 15:29:40 -0300
+Message-ID: <CA+gsUGQO20x_2khKH-Eo4+Crnwtxx++k_9rsNMYgnwh0-eay=Q@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915/dp: Allow for 5.4Gbps for Haswell.
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+        Carl Worth <cworth@cworth.org>, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 Feb 17:47, Oleg Nesterov wrote:
-> Anyway, I only tried to say that "a small window between when the event
-> is delivered and the child become wait()-able." is not closed by this
-> patch. Sorry for not being clear enough.
+2014-02-27 15:21 GMT-03:00 Keith Packard <keithp@keithp.com>:
+> Ville Syrjälä <ville.syrjala@linux.intel.com> writes:
+>
+>> Todd already implemented 5.4Gbps support a while back. So it seems your
+>> tree is a bit out of date.
+>
+> I didn't find it on drm-intel-fixes-2014-02-14; can you explain which
+> tree it is present in?
 
-Ok, thanks for it making it clear.
+It's on the drm-intel-next-queued branch. Please notice we recently
+moved the tree from freedesktop.org/~danvet/drm-intel to
+freedesktop.org/drm-intel.
 
-> Nevermind. Please consider this trivial example:
-> 
-> 	tfunc(void *)
-> 	{
-> 		for (;;)
-> 			pause();
-> 	}
-> 
-> 	int main(void)
-> 	{
-> 		pthread_create(tfunc);
-> 		pthread_exit();
-> 	}
-> 
-> The main thread can exit and call proc_exit_connector() before
-> register_interest_for_pid(), but WNOHANG obviously can't succeed.
- 
-What matters is not the exit message of the main thread but the exit
-message from the last threaded dying.  In your example, it's fine that
-waitpid fails since the process is still around.  If you kill it, the
-connector will get a connector message for the thread you created in
-main().
+http://cgit.freedesktop.org/drm-intel/commit/?h=drm-intel-next-queued&id=06ea66b6bb445043dc25a9626254d5c130093199
 
-> But let me repeat just in case: I am not arguing with this change.
 
-That was my understanding from my message.  But I wanted to respond to
-make sure I understood your points correctly.
+>
+> --
+> keith.packard@intel.com
+>
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+>
 
-Thanks for your help.  I appreciate it.
 
-Guillaume.
 
 -- 
-Guillaume Morin <guillaume@morinfr.org>
+Paulo Zanoni
