@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223AbaB0BYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:24:51 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:40750 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751989AbaB0BYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:24:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvkJAG6TDlN5LJYe/2dsb2JhbABagwaDQ7h6hVSBFhd0gicBAQU6HCMQCAMYCSUPBSUDIROHeMoOFxaOPgeENwSMZotPh0aDDYdWgW+BUig
-Date: Thu, 27 Feb 2014 12:24:31 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-Message-ID: <20140227012431.GW13647@dastard>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
- <20140224005710.GH4317@dastard>
- <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
- <20140225041346.GA29907@dastard>
- <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
- <20140226011347.GL13647@dastard>
- <alpine.LSU.2.11.1402251856060.1114@eggly.anvils>
- <20140226064224.GU13647@dastard>
- <alpine.LSU.2.11.1402261454270.2808@eggly.anvils>
+	id S1754025AbaB0B2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:28:33 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:56541 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753262AbaB0B2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:28:32 -0500
+From: Gene Heskett <gheskett@wdtv.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Subject: Re: 3.13.5 : rm -rf running forever, one cpu at approx 100%
+Date: Wed, 26 Feb 2014 20:28:29 -0500
+References: <20140227005246.GB10367@milliways>
+In-Reply-To: <20140227005246.GB10367@milliways>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1402261454270.2808@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="windows-1256"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201402262028.29352.gheskett@wdtv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 03:08:58PM -0800, Hugh Dickins wrote:
-> On Wed, 26 Feb 2014, Dave Chinner wrote:
-> > On Tue, Feb 25, 2014 at 08:45:15PM -0800, Hugh Dickins wrote:
-> > > On Wed, 26 Feb 2014, Dave Chinner wrote:
-> > > > On Tue, Feb 25, 2014 at 03:23:35PM -0800, Hugh Dickins wrote:
-> > > > 
-> > > > > I should mention that when "we" implemented this thirty years ago,
-> > > > > we had a strong conviction that the system call should be idempotent:
-> > > > > that is, the len argument should indicate the final i_size, not the
-> > > > > amount being removed from it.  Now, I don't remember the grounds for
-> > > > > that conviction: maybe it was just an idealistic preference for how
-> > > > > to design a good system call.  I can certainly see that defining it
-> > > > > that way round would surprise many app programmers.  Just mentioning
-> > > > > this in case anyone on these lists sees a practical advantage to
-> > > > > doing it that way instead.
-> > > > 
-> > > > I don't see how specifying the end file size as an improvement. What
-> > > > happens if you are collapse a range in a file that is still being
-> > > > appended to by the application and so you race with a file size
-> > > > update? IOWs, with such an API the range to be collapsed is
-> > > > completely unpredictable, and IMO that's a fundamentally broken API.
-> > > 
-> > > That's fine if you don't see the idempotent API as an improvement,
-> > > I just wanted to put it on the table in case someone does see an
-> > > advantage to it.  But I think I'm missing something in your race
-> > > example: I don't see a difference between the two APIs there.
-> > 
-> > 
-> > Userspace can't sample the inode size via stat(2) and then use the value for a
-> > syscall atomically. i.e. if you specify the offset you want to
-> > collapse at, and the file size you want to have to define the region
-> > to collapse, then the length you need to collapse is (current inode
-> > size - end file size). If "current inode size" can change between
-> > the stat(2) and fallocate() call (and it can), then the length being
-> > collapsed is indeterminate....
-> 
-> Thanks for explaining more, I was just about to acknowledge what a good
-> example that is.  Indeed, it seems not unreasonable to be editing the
-> earlier part of a file while the later part of it is still streaming in.
-> 
-> But damn, it now occurs to me that there's still a problem at the
-> streaming end: its file write offset won't be updated to reflect
-> the collapse, so there would be a sparse hole at that end.  And
-> collapse returns -EPERM if IS_APPEND(inode).
+On Wednesday 26 February 2014, Ken Moffat wrote:
+>Hi,
+>
+> Short summary : on 3.13.5, rm -rf of an application source
+>directory on an ext4 filesystem sometimes takes forever (probably
+>isn't going anywhere), with one CPU pegged at all-but 100% utilization.
+>
+> I've nearly finished building a new system from source, to check
+>various desktop packages in linuxfromscratch.  On this build, much of
+>it is things I don't normally use and I needed to upgrade my
+>buildscripts, so most of it was built in chroot using 3.10.32.  But
+>late last night I booted the new system using 3.13.5 to finish the
+>build.  This morning I discovered that rm -rf for the icedtea source
+>directory was still running, and had taken over 5 hours of CPU time
+>(one CPU seemd to be running at close to 100%, the others had dropped
+>to their slowest frequency).  That script was running as root (yeah,
+>but it's a new system) and it looks as if /etc/passwd~ had got
+>trashed, because I could no longer su or login.  Not sure if that is
+>related, at this stage it might just be a side-effect of my scripts.
+>
+> Booted another system, chrooted, fixed up passwords.  Started
+>again after commenting out icedtea - I hadn't intended to build
+>what was an old version, I'd just forgotten it was in this script -
+>that's why I do things in userspace, not the kernel :-(
+>
+> Continued with remaining packages, but a couple of hours later I
+>saw a similar "one CPU at 100%, rm -rf GConf source taking forever"
+>problem.  Dumped all the processes with Alt-SysRQ-T [ huge log ] but
+>at that point 'rm' was merely 'ready' so I doubt there is anything
+>useful to see in the log.
+>
+> Built 3.13.4, booted to that.  So far, everything looks good - but
+>I'm now building the _current_ version of icedtea, so if this isn't
+>a new 3.13.5 problem I guess I'm fairly likely to see it tomorrow.
+>
+> Meanwhile, any suggestions about how I can debug this if I hit it
+>again, please ?
+>
+>ĸen
 
-Well, we figure that most applications won't be using append only
-inode flags for files that they know they want to edit at random
-offsets later on. ;)
+I don't have any help to offer Ken, but this walks and quacks much like a 
+duck I'm encountering in 3.13.5, with the backup program amanda, which uses 
+gnu tar.  To facilitate intelligent guesses as to the size of the various 
+levels of backup, amanda does a dummy collection using tar, sent to 
+/dev/null, using only the size it reports on the first pass.  Version 1.22, 
+quite old, works on 3.12.9, but not on 3.13.5.  I have now pulled in, built 
+and installed tar-1.27, and rebuilt amanda to let it know that the tar its 
+using is not in /usr/bin, but in /usr/local/bin.  Next run at 1:30AM
 
-However, I can see how DVR apps would use open(O_APPEND) to obtain
-the fd they write to because that sets the write position to the EOF
-on every write() call (i.e. in generic_write_checks()). And collapse
-range should behave sanely with this sort of usage.
+This freeze, using 100% of a core, but causing no visible disk activity has 
+killed my backups 3 nights running.  At this point I've no clue as to the 
+cause, but I will be watching this thread closely, it has a similar 
+description.
 
-e.g. XFS calls generic_write_checks() after it has taken the IO lock
-to set the current write position to EOF. Hence it will be correctly
-serialised against collapse range calls and so O_APPEND writes will
-not leave sparse holes if collapse range calls are interleaved with
-the write stream....
-
-Cheers,
-
-Dave.
-
+Cheers, Gene
 -- 
-Dave Chinner
-david@fromorbit.com
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Genes Web page <http://geneslinuxbox.net:6309/gene>
+
+NOTICE: Will pay 100 USD for an HP-4815A defective but
+complete probe assembly.
+
