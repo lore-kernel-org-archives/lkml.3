@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaB0UWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:22:48 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38410 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaB0UWq (ORCPT
+	id S1751974AbaB0UXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:23:20 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49143 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaB0UXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:22:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <530EBFC7.9030309@zytor.com>
-References: <1393462087.24588.50.camel@joe-AO722>
-	<530E8C2E.7080307@zytor.com>
-	<1393466619.24588.65.camel@joe-AO722>
-	<20140227022857.GC23659@thin>
-	<1393469594.24588.71.camel@joe-AO722>
-	<20140227025845.GA25145@thin>
-	<530EB103.5070406@zytor.com>
-	<1393472326.24588.82.camel@joe-AO722>
-	<20140227040050.GA8449@nicira.com>
-	<530EBCED.9020705@zytor.com>
-	<20140227042636.GA9592@nicira.com>
-	<530EBFC7.9030309@zytor.com>
-Date: Thu, 27 Feb 2014 12:22:45 -0800
-X-Google-Sender-Auth: iUfGy6i-lwxuhuLBy-meaUsDY8M
-Message-ID: <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Christopher Li <sparse@chrisli.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ben Pfaff <blp@nicira.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Feb 2014 15:23:13 -0500
+Date: Thu, 27 Feb 2014 15:23:08 -0500 (EST)
+Message-Id: <20140227.152308.974173030016192682.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3] atm: nicstar: remove interruptible_sleep_on_timeout
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201402271951.54970.arnd@arndb.de>
+References: <1393412516-3762435-11-git-send-email-arnd@arndb.de>
+	<20140226.110603.1107468127601575254.davem@davemloft.net>
+	<201402271951.54970.arnd@arndb.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 27 Feb 2014 12:23:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 8:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Quite frankly, this is silly in my opinion, *and* it is not guaranteed
-> by C either (read about "trap representations").
->>
-> Anything that moves data around in a generic fashion.  It can be as
-> simple as:
->
->         memcpy(foo, bar, sizeof *foo);
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 27 Feb 2014 19:51:54 +0100
 
-OK. I get it nobody wants a sizeof(_Bool) warning.
+> We are trying to finally kill off interruptible_sleep_on_timeout.
+> the two uses in the nicstar driver can be trivially replaced
+> with wait_event_interruptible_lock_irq_timeout, which prevents the
+> wake-up race and is able to check the buffer state with scq->lock
+> held.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Chas Williams <chas@cmf.nrl.navy.mil>
 
-I am going to apply this patch.
-
-Should we change the default to off then?
-
-Thanks.
-
-Chris
+Applied, thanks.
