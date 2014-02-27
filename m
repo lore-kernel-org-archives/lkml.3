@@ -1,126 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaB0Adt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:33:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54157 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbaB0Ads (ORCPT
+	id S1753788AbaB0Aiy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:38:54 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:52785 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaB0Aiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:33:48 -0500
-Date: Wed, 26 Feb 2014 16:33:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ales Novak <alnovak@suse.cz>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz
-Subject: Re: [PATCH] rtc: fix chardev initialization races
-Message-Id: <20140226163347.44eed76271b86c1021471e38@linux-foundation.org>
-In-Reply-To: <1393410793-7315-1-git-send-email-alnovak@suse.cz>
-References: <1393410793-7315-1-git-send-email-alnovak@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Feb 2014 19:38:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140226104702.GA8961@mudshark.cambridge.arm.com>
+References: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
+ <1393410552-21497-6-git-send-email-marc.ceeeee@gmail.com> <20140226104702.GA8961@mudshark.cambridge.arm.com>
+From: Gregory Fong <gregory.0xf0@gmail.com>
+Date: Wed, 26 Feb 2014 16:38:20 -0800
+Message-ID: <CADtm3G7JcO6+Sc6Dsw1swY09F7+-KSXjsQU8CBcH-K6On2aP_Q@mail.gmail.com>
+Subject: Re: [PATCH v7 5/9] ARM: Enable erratum 798181 for Broadcom Brahma-B15
+To: Will Deacon <will.deacon@arm.com>
+Cc: Marc Carino <marc.ceeeee@gmail.com>, Christian Daudt <bcm@fixthebug.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 11:33:13 +0100 Ales Novak <alnovak@suse.cz> wrote:
+Hi Will,
 
-> In many rtc modules, the chardevice file in rtc module probe is
-> being created prematurely. If the probe fails after the chardevice
-> file has been created (e.g. after rtc_device_register), it's possible
-> for a program to open() it, which subsequently can cause memory
-> corruption.
-> 
-> The race looks like that (thanks Jiri):
-> 
-> CPU0:                                CPU1:
-> sys_load_module()
->  do_init_module()
->   do_one_initcall()
->    cmos_do_probe()
->     rtc_device_register()
->      __register_chrdev()
->      cdev->owner = struct module*
->                                      open("/dev/rtc0")
->     rtc_device_unregister()
->   module_put()
->   free_module()
->    module_free(mod->module_core)
->    /* struct module *module is now
->       freed */
->                                       chrdev_open()
->                                        spin_lock(cdev_lock)
->                                        cdev_get()
->                                         try_module_get()
->                                          module_is_live()
->                                          /* dereferences already
->                                             freed struct module* */
-> 
-> This patch is proposing a solution, splitting the function
-> {devm_,}rtc_device_register into {devm_,}rtc_device_register{_fs,}.
-> The {devm_}rtc_device_register_fs which is creating the files, should
-> be called after it is clear that the probe will pass. It will set the
-> RTC_DEV_FILES_EXIST into rtc_device->flags.
-> 
-> In case of probe not passing, the rtc_device_unregister will try to
-> delete the files only if RTC_DEV_FILES_EXIST is set in rtc_device->flags.
-> 
-> ..
+On Wed, Feb 26, 2014 at 2:47 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Feb 26, 2014 at 10:29:08AM +0000, Marc Carino wrote:
+>> From: Gregory Fong <gregory.0xf0@gmail.com>
+>>
+>> Broadcom Brahma-B15 (r0p0..r0p2) is also affected by Cortex-A15
+>> erratum 798181, so enable the workaround for Brahma-B15.
 >
-> --- a/drivers/rtc/class.c
-> +++ b/drivers/rtc/class.c
-> @@ -252,6 +245,21 @@ exit:
->  }
->  EXPORT_SYMBOL_GPL(rtc_device_register);
->  
-> +/**
-> + * rtc_device_register_fs - creates dev+sysfs+proc files
-> + * for rtc device
-> + */
-> +void rtc_device_register_fs(struct device *dev, struct rtc_device *rtc)
-> +{
-> +	rtc_dev_add_device(rtc);
-> +	rtc_sysfs_add_device(rtc);
-> +	rtc_proc_add_device(rtc);
+> Really... *exactly* the same erratum? That sounds pretty unlikely, so I'd
+> really like to be sure that the workaround we have indeed solves your
+> problem (issuing a dummy TLBI to 0x0 + dsb, then followed by a dmb + clrex
+> on each core). The point is that the workaround doesn't simply perform
+> non-shareable invalidation on each core using IPIs.
 
-It's a bit sloppy that rtc core simply ignores the error codes from the
-driver core functions.  All these things could have failed and the
-driver just keeps on trying to work.
+Yes, it should be the same.  I've sent you more detail off-list.
 
-I guess that can be fixed separately, but perhaps you'd like to take a
-look, see how complex it will be to correctly unwind after such errors?
-
-> +	set_bit(RTC_DEV_FILES_EXIST, &rtc->flags);
-> +	dev_info(dev, "rtc core: registered %s as %s\n",
-> +			rtc->name, dev_name(&rtc->dev));
-> +}
-> +EXPORT_SYMBOL_GPL(rtc_device_register_fs);
->  
->  /**
->   * rtc_device_unregister - removes the previously registered RTC class device
-> @@ -262,13 +270,15 @@ void rtc_device_unregister(struct rtc_device *rtc)
->  {
->  	if (get_device(&rtc->dev) != NULL) {
->  		mutex_lock(&rtc->ops_lock);
-> -		/* remove innards of this RTC, then disable it, before
-> -		 * letting any rtc_class_open() users access it again
-> -		 */
-> -		rtc_sysfs_del_device(rtc);
-> -		rtc_dev_del_device(rtc);
-> -		rtc_proc_del_device(rtc);
-> -		device_unregister(&rtc->dev);
-> +		if (test_and_clear_bit(RTC_DEV_FILES_EXIST, &rtc->flags)) {
-> +			/* remove innards of this RTC, then disable it, before
-> +			 * letting any rtc_class_open() users access it again
-> +			 */
-> +			rtc_sysfs_del_device(rtc);
-> +			rtc_dev_del_device(rtc);
-> +			rtc_proc_del_device(rtc);
-> +			device_unregister(&rtc->dev);
-
-Presumably it doesn't matter, but it would be nice to do the del
-functions in the reverse order of the add functions. 
-rtc_proc_del_device() then rtc_sysfs_del_device() then
-rtc_dev_del_device().
-
+Regards,
+Gregory
