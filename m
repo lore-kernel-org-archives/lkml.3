@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaB0MAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:00:06 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:48607 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaB0MAE (ORCPT
+	id S1751769AbaB0MBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:01:31 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:59903 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaB0MB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:00:04 -0500
-Date: Thu, 27 Feb 2014 17:27:49 +0530
+	Thu, 27 Feb 2014 07:01:29 -0500
+Date: Thu, 27 Feb 2014 17:31:21 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, josh@joshtriplett.org
-Subject: [PATCH 23/46] kernel: Mark function as static in trace/ftrace.c
-Message-ID: <c61532a82efacf805f173a30d53d81bbd09d8dfd.1393493277.git.rashika.kheria@gmail.com>
+Subject: [PATCH 24/46] kernel: Mark function as static in
+ kernel/trace/ftrace.c and remove stub declaration from header file
+ include/linux/ftrace.h
+Message-ID: <745957305394a111ecb61440cfe82608e9c4e3aa.1393493277.git.rashika.kheria@gmail.com>
 References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -28,29 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Mark function as static in kernel/trace/ftrace.c because it is not used
 outside this file.
+Also, remove unused stub declaration from header file
+include/linux/ftrace.h.
 
-Thin eliminates the following warning in kernel/trace/ftrace.c:
-kernel/trace/ftrace.c:717:5: warning: no previous prototype for ‘ftrace_profile_pages_init’ [-Wmissing-prototypes]
+This eliminates the following warning in kernel/trace/ftrace.c:
+kernel/trace/ftrace.c:4268:6: warning: no previous prototype for ‘ftrace_release_mod’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ftrace.h |    1 -
+ kernel/trace/ftrace.c  |    2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index f4233b1..68ea184 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -532,7 +532,6 @@ static inline int skip_trace(unsigned long ip) { return 0; }
+ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+-static inline void ftrace_release_mod(struct module *mod) {}
+ static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	return -EINVAL;
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index cd7f76d..d110d8a 100644
+index d110d8a..9bacf45 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -714,7 +714,7 @@ static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
- 	       FTRACE_PROFILE_HASH_SIZE * sizeof(struct hlist_head));
- }
+@@ -4265,7 +4265,7 @@ static int ftrace_process_locs(struct module *mod,
  
--int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
-+static int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
+ #define next_to_ftrace_page(p) container_of(p, struct ftrace_page, next)
+ 
+-void ftrace_release_mod(struct module *mod)
++static void ftrace_release_mod(struct module *mod)
  {
- 	struct ftrace_profile_page *pg;
- 	int functions;
+ 	struct dyn_ftrace *rec;
+ 	struct ftrace_page **last_pg;
 -- 
 1.7.9.5
 
