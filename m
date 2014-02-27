@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaB0Hd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:33:57 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51294 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaB0Hdx (ORCPT
+	id S1752215AbaB0HeX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:34:23 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58488 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaB0HeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:33:53 -0500
-Subject: [PATCH -tip v7 14/26] x86: Use NOKPROBE_SYMBOL() instead of
- __kprobes annotation
+	Thu, 27 Feb 2014 02:34:20 -0500
+Subject: [PATCH -tip v7 25/26] kprobes: Introduce kprobe cache to reduce
+ cache misshits
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        fche@redhat.com, mingo@redhat.com,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, systemtap@sourceware.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Date: Thu, 27 Feb 2014 16:33:50 +0900
-Message-ID: <20140227073350.20992.34514.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Feb 2014 16:34:16 +0900
+Message-ID: <20140227073416.20992.11514.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -32,890 +29,322 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use NOKPROBE_SYMBOL macro for protecting functions
-from kprobes instead of __kprobes annotation under
-arch/x86.
+Introduce kprobe cache to reduce cache misshits for
+massive multiple kprobes.
+For stress testing kprobes, we need to activate kprobes
+as many as possible. This situation causes cache miss
+hit storm on kprobe hash-list. kprobe hashlist is already
+enlarged to 4k entries and this is still small for 40k
+kprobes.
 
-This applies nokprobe_inline annotation for some cases,
-because NOKPROBE_SYMBOL() will inhibit inlining by
-referring the symbol address.
+For example, when registering 40k probes on the hlist and
+enabling 20k probes, perf tools shows still a lot of
+cache-misses are on the get_kprobe.
+  ----
+  Samples: 4K of event 'cache-misses', Event count (approx.): 7473222
+  +  79.94%  [k] get_kprobe
+  +   5.55%  [k] ftrace_lookup_ip
+  +   1.23%  [k] kprobe_trace_func
+  ----
 
-This just folds a bunch of previous NOKPROBE_SYMBOL()
-cleanup patches for x86 to one patch.
+Also, I found that the most of the kprobes are not hit.
+In that case, to reduce cache-misses, we can reduce the
+random memory access by introducing a per-cpu cache which
+caches the address of frequently used kprobe data structure
+and its probe address.
 
-Changes from previous version:
- - Use nokprobe_inline instead of __always_inline.
+With kpcache enabled, the get_kprobe_cached goes down to
+around 3% of cache-misses with 20k probes.
+  ----
+  Samples: 578  of event 'cache-misses', Event count (approx.): 621689
+  +  18.37%  [k] ftrace_lookup_ip
+  +   6.74%  [k] kprobe_trace_func
+  +   3.92%  [k] kprobe_ftrace_handler
+  +   3.44%  [k] get_kprobe_cached
+  ----
+
+Of course this reduces the enabling time too:
+
+Without this fix (just enlarge hash table):
+(2303 sec, 1 min intervals for each 2000 probes enabled)
+
+      Enabling trace events: start at 1392794306
+      0 1392794307 a2mp_chan_alloc_skb_cb_38556
+      1 1392794307 a2mp_chan_close_cb_38555
+      ....
+      19997 1392796603 nfs4_negotiate_security_12119
+      19998 1392796603 nfs4_open_confirm_done_11767
+      19999 1392796603 nfs4_open_confirm_prepare_11779
+
+With this fix:
+(1768 sec, 1 min intervals for each 2000 probes enabled)
+  ----
+  Enabling trace events: start at 1392901057
+  0 1392901059 a2mp_chan_alloc_skb_cb_38558
+  1 1392901059 a2mp_chan_close_cb_38557
+  2 1392901059 a2mp_channel_create_38706
+  ....
+  19997 1392902824 nfs4_match_stateid_11734
+  19998 1392902824 nfs4_negotiate_security_12121
+  19999 1392902825 nfs4_open_confirm_done_11769
+  ----
+
+This patch implements a simple per-cpu 4way/4096entry cache
+for kprobes hlist. All get_kprobe on hot-path uses the cache
+and if the cache miss-hit, it searches kprobes on the hlist
+and inserts the found kprobes to the cache entry.
+When removing kprobes, it clears cache entries by using IPI,
+because it is per-cpu cache.
+
+Note that this consumes much memory (272KB/cpu) only for
+kprobes, and this is only good for the users who use
+thousands of probes at a time, e.g. kprobe stress testing.
+Thus I've added CONFIG_KPROBE_CACHE option for this feature.
+If you aren't interested in the stress testing, you should
+set CONFIG_KPROBE_CACHE=n.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- arch/x86/include/asm/traps.h             |    2 -
- arch/x86/kernel/apic/hw_nmi.c            |    3 +
- arch/x86/kernel/cpu/perf_event.c         |    3 +
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |    3 +
- arch/x86/kernel/dumpstack.c              |    9 ++--
- arch/x86/kernel/kprobes/core.c           |   77 +++++++++++++++++++-----------
- arch/x86/kernel/kprobes/ftrace.c         |   15 ++++--
- arch/x86/kernel/kprobes/opt.c            |    8 ++-
- arch/x86/kernel/kvm.c                    |    4 +-
- arch/x86/kernel/nmi.c                    |   18 +++++--
- arch/x86/kernel/traps.c                  |   20 +++++---
- arch/x86/mm/fault.c                      |   28 +++++++----
- 12 files changed, 121 insertions(+), 69 deletions(-)
+ arch/Kconfig                     |   10 +++
+ arch/x86/kernel/kprobes/core.c   |    2 -
+ arch/x86/kernel/kprobes/ftrace.c |    2 -
+ include/linux/kprobes.h          |    1 
+ kernel/kprobes.c                 |  125 +++++++++++++++++++++++++++++++++++---
+ 5 files changed, 128 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 58d66fe..ca32508 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -68,7 +68,7 @@ dotraplinkage void do_segment_not_present(struct pt_regs *, long);
- dotraplinkage void do_stack_segment(struct pt_regs *, long);
- #ifdef CONFIG_X86_64
- dotraplinkage void do_double_fault(struct pt_regs *, long);
--asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *);
-+asmlinkage struct pt_regs *sync_regs(struct pt_regs *);
- #endif
- dotraplinkage void do_general_protection(struct pt_regs *, long);
- dotraplinkage void do_page_fault(struct pt_regs *, unsigned long);
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index a698d71..73eb5b3 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -60,7 +60,7 @@ void arch_trigger_all_cpu_backtrace(void)
- 	smp_mb__after_clear_bit();
- }
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 80bbb8c..e38787e 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -46,6 +46,16 @@ config KPROBES
+ 	  for kernel debugging, non-intrusive instrumentation and testing.
+ 	  If in doubt, say "N".
  
--static int __kprobes
-+static int
- arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
- {
- 	int cpu;
-@@ -80,6 +80,7 @@ arch_trigger_all_cpu_backtrace_handler(unsigned int cmd, struct pt_regs *regs)
- 
- 	return NMI_DONE;
- }
-+NOKPROBE_SYMBOL(arch_trigger_all_cpu_backtrace_handler);
- 
- static int __init register_trigger_all_cpu_backtrace(void)
- {
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 895604f..c0dd9ba 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1273,7 +1273,7 @@ void perf_events_lapic_init(void)
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- }
- 
--static int __kprobes
-+static int
- perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- {
- 	u64 start_clock;
-@@ -1291,6 +1291,7 @@ perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- 
- 	return ret;
- }
-+NOKPROBE_SYMBOL(perf_event_nmi_handler);
- 
- struct event_constraint emptyconstraint;
- struct event_constraint unconstrained;
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index 4b8e4d3..8aa687b 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -593,7 +593,7 @@ out:
- 	return 1;
- }
- 
--static int __kprobes
-+static int
- perf_ibs_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- {
- 	int handled = 0;
-@@ -606,6 +606,7 @@ perf_ibs_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- 
- 	return handled;
- }
-+NOKPROBE_SYMBOL(perf_ibs_nmi_handler);
- 
- static __init int perf_ibs_pmu_init(struct perf_ibs *perf_ibs, char *name)
- {
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index d9c12d3..b74ebc7 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -200,7 +200,7 @@ static arch_spinlock_t die_lock = __ARCH_SPIN_LOCK_UNLOCKED;
- static int die_owner = -1;
- static unsigned int die_nest_count;
- 
--unsigned __kprobes long oops_begin(void)
-+unsigned long oops_begin(void)
- {
- 	int cpu;
- 	unsigned long flags;
-@@ -223,8 +223,9 @@ unsigned __kprobes long oops_begin(void)
- 	return flags;
- }
- EXPORT_SYMBOL_GPL(oops_begin);
-+NOKPROBE_SYMBOL(oops_begin);
- 
--void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
-+void oops_end(unsigned long flags, struct pt_regs *regs, int signr)
- {
- 	if (regs && kexec_should_crash(current))
- 		crash_kexec(regs);
-@@ -247,8 +248,9 @@ void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
- 		panic("Fatal exception");
- 	do_exit(signr);
- }
-+NOKPROBE_SYMBOL(oops_end);
- 
--int __kprobes __die(const char *str, struct pt_regs *regs, long err)
-+int __die(const char *str, struct pt_regs *regs, long err)
- {
- #ifdef CONFIG_X86_32
- 	unsigned short ss;
-@@ -291,6 +293,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
- #endif
- 	return 0;
- }
-+NOKPROBE_SYMBOL(__die);
- 
- /*
-  * This is gone through when something in the kernel has done something bad
++config KPROBE_CACHE
++	bool "Kprobe per-cpu cache for massive multiple probes"
++	depends on KPROBES
++	help
++	  For handling massive multiple kprobes with better performance,
++	  kprobe per-cpu cache is enabled by this option. This cache is
++	  only for users who would like to use more than 10,000 probes
++	  at a time, which is usually stress testing, debugging etc.
++	  If in doubt, say "N".
++
+ config JUMP_LABEL
+        bool "Optimize very unlikely/likely branches"
+        depends on HAVE_ARCH_JUMP_LABEL
 diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index ae5aafb..d00103a 100644
+index 8ef676f..374d207 100644
 --- a/arch/x86/kernel/kprobes/core.c
 +++ b/arch/x86/kernel/kprobes/core.c
-@@ -112,7 +112,8 @@ struct kretprobe_blackpoint kretprobe_blacklist[] = {
+@@ -576,7 +576,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
  
- const int kretprobe_blacklist_size = ARRAY_SIZE(kretprobe_blacklist);
+ 	kcb = get_kprobe_ctlblk();
+-	p = get_kprobe(addr);
++	p = get_kprobe_cached(addr);
  
--static void __kprobes __synthesize_relative_insn(void *from, void *to, u8 op)
-+static nokprobe_inline
-+void __synthesize_relative_insn(void *from, void *to, u8 op)
- {
- 	struct __arch_relative_insn {
- 		u8 op;
-@@ -125,21 +126,23 @@ static void __kprobes __synthesize_relative_insn(void *from, void *to, u8 op)
- }
- 
- /* Insert a jump instruction at address 'from', which jumps to address 'to'.*/
--void __kprobes synthesize_reljump(void *from, void *to)
-+void synthesize_reljump(void *from, void *to)
- {
- 	__synthesize_relative_insn(from, to, RELATIVEJUMP_OPCODE);
- }
-+NOKPROBE_SYMBOL(synthesize_reljump);
- 
- /* Insert a call instruction at address 'from', which calls address 'to'.*/
--void __kprobes synthesize_relcall(void *from, void *to)
-+void synthesize_relcall(void *from, void *to)
- {
- 	__synthesize_relative_insn(from, to, RELATIVECALL_OPCODE);
- }
-+NOKPROBE_SYMBOL(synthesize_relcall);
- 
- /*
-  * Skip the prefixes of the instruction.
-  */
--static kprobe_opcode_t *__kprobes skip_prefixes(kprobe_opcode_t *insn)
-+static kprobe_opcode_t *skip_prefixes(kprobe_opcode_t *insn)
- {
- 	insn_attr_t attr;
- 
-@@ -154,6 +157,7 @@ static kprobe_opcode_t *__kprobes skip_prefixes(kprobe_opcode_t *insn)
- #endif
- 	return insn;
- }
-+NOKPROBE_SYMBOL(skip_prefixes);
- 
- /*
-  * Returns non-zero if opcode is boostable.
-@@ -425,7 +429,8 @@ void arch_remove_kprobe(struct kprobe *p)
- 	}
- }
- 
--static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
-+static nokprobe_inline
-+void save_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
- 	kcb->prev_kprobe.kp = kprobe_running();
- 	kcb->prev_kprobe.status = kcb->kprobe_status;
-@@ -433,7 +438,8 @@ static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
- 	kcb->prev_kprobe.saved_flags = kcb->kprobe_saved_flags;
- }
- 
--static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
-+static nokprobe_inline
-+void restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
- 	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
-@@ -441,8 +447,9 @@ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- 	kcb->kprobe_saved_flags = kcb->prev_kprobe.saved_flags;
- }
- 
--static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
--				struct kprobe_ctlblk *kcb)
-+static nokprobe_inline
-+void set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
-+			struct kprobe_ctlblk *kcb)
- {
- 	__this_cpu_write(current_kprobe, p);
- 	kcb->kprobe_saved_flags = kcb->kprobe_old_flags
-@@ -451,7 +458,7 @@ static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 		kcb->kprobe_saved_flags &= ~X86_EFLAGS_IF;
- }
- 
--static void __kprobes clear_btf(void)
-+static nokprobe_inline void clear_btf(void)
- {
- 	if (test_thread_flag(TIF_BLOCKSTEP)) {
- 		unsigned long debugctl = get_debugctlmsr();
-@@ -461,7 +468,7 @@ static void __kprobes clear_btf(void)
- 	}
- }
- 
--static void __kprobes restore_btf(void)
-+static nokprobe_inline void restore_btf(void)
- {
- 	if (test_thread_flag(TIF_BLOCKSTEP)) {
- 		unsigned long debugctl = get_debugctlmsr();
-@@ -471,8 +478,7 @@ static void __kprobes restore_btf(void)
- 	}
- }
- 
--void __kprobes
--arch_prepare_kretprobe(struct kretprobe_instance *ri, struct pt_regs *regs)
-+void arch_prepare_kretprobe(struct kretprobe_instance *ri, struct pt_regs *regs)
- {
- 	unsigned long *sara = stack_addr(regs);
- 
-@@ -481,9 +487,10 @@ arch_prepare_kretprobe(struct kretprobe_instance *ri, struct pt_regs *regs)
- 	/* Replace the return addr with trampoline addr */
- 	*sara = (unsigned long) &kretprobe_trampoline;
- }
-+NOKPROBE_SYMBOL(arch_prepare_kretprobe);
- 
--static void __kprobes
--setup_singlestep(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb, int reenter)
-+static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
-+			     struct kprobe_ctlblk *kcb, int reenter)
- {
- 	if (setup_detour_execution(p, regs, reenter))
- 		return;
-@@ -519,14 +526,15 @@ setup_singlestep(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *k
- 	else
- 		regs->ip = (unsigned long)p->ainsn.insn;
- }
-+NOKPROBE_SYMBOL(setup_singlestep);
- 
- /*
-  * We have reentered the kprobe_handler(), since another probe was hit while
-  * within the handler. We save the original kprobes variables and just single
-  * step on the instruction of the new probe without calling any user handlers.
-  */
--static int __kprobes
--reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb)
-+static int reenter_kprobe(struct kprobe *p, struct pt_regs *regs,
-+			  struct kprobe_ctlblk *kcb)
- {
- 	switch (kcb->kprobe_status) {
- 	case KPROBE_HIT_SSDONE:
-@@ -554,12 +562,13 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
- 
- 	return 1;
- }
-+NOKPROBE_SYMBOL(reenter_kprobe);
- 
- /*
-  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
-  * remain disabled throughout this function.
-  */
--int __kprobes kprobe_int3_handler(struct pt_regs *regs)
-+int kprobe_int3_handler(struct pt_regs *regs)
- {
- 	kprobe_opcode_t *addr;
- 	struct kprobe *p;
-@@ -622,12 +631,13 @@ int __kprobes kprobe_int3_handler(struct pt_regs *regs)
- 	preempt_enable_no_resched();
- 	return 0;
- }
-+NOKPROBE_SYMBOL(kprobe_int3_handler);
- 
- /*
-  * When a retprobed function returns, this code saves registers and
-  * calls trampoline_handler() runs, which calls the kretprobe's handler.
-  */
--static void __used __kprobes kretprobe_trampoline_holder(void)
-+static void __used kretprobe_trampoline_holder(void)
- {
- 	asm volatile (
- 			".global kretprobe_trampoline\n"
-@@ -658,11 +668,13 @@ static void __used __kprobes kretprobe_trampoline_holder(void)
- #endif
- 			"	ret\n");
- }
-+NOKPROBE_SYMBOL(kretprobe_trampoline_holder);
-+NOKPROBE_SYMBOL(kretprobe_trampoline);
- 
- /*
-  * Called from kretprobe_trampoline
-  */
--__visible __used __kprobes void *trampoline_handler(struct pt_regs *regs)
-+__visible __used void *trampoline_handler(struct pt_regs *regs)
- {
- 	struct kretprobe_instance *ri = NULL;
- 	struct hlist_head *head, empty_rp;
-@@ -748,6 +760,7 @@ __visible __used __kprobes void *trampoline_handler(struct pt_regs *regs)
- 	}
- 	return (void *)orig_ret_address;
- }
-+NOKPROBE_SYMBOL(trampoline_handler);
- 
- /*
-  * Called after single-stepping.  p->addr is the address of the
-@@ -776,8 +789,8 @@ __visible __used __kprobes void *trampoline_handler(struct pt_regs *regs)
-  * jump instruction after the copied instruction, that jumps to the next
-  * instruction after the probepoint.
-  */
--static void __kprobes
--resume_execution(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb)
-+static void resume_execution(struct kprobe *p, struct pt_regs *regs,
-+			     struct kprobe_ctlblk *kcb)
- {
- 	unsigned long *tos = stack_addr(regs);
- 	unsigned long copy_ip = (unsigned long)p->ainsn.insn;
-@@ -852,12 +865,13 @@ resume_execution(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *k
- no_change:
- 	restore_btf();
- }
-+NOKPROBE_SYMBOL(resume_execution);
- 
- /*
-  * Interrupts are disabled on entry as trap1 is an interrupt gate and they
-  * remain disabled throughout this function.
-  */
--int __kprobes kprobe_debug_handler(struct pt_regs *regs)
-+int kprobe_debug_handler(struct pt_regs *regs)
- {
- 	struct kprobe *cur = kprobe_running();
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-@@ -892,8 +906,9 @@ out:
- 
- 	return 1;
- }
-+NOKPROBE_SYMBOL(kprobe_debug_handler);
- 
--int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
-+int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- {
- 	struct kprobe *cur = kprobe_running();
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-@@ -947,12 +962,13 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 
- 	return 0;
- }
-+NOKPROBE_SYMBOL(kprobe_fault_handler);
- 
- /*
-  * Wrapper routine for handling exceptions.
-  */
--int __kprobes
--kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *data)
-+int kprobe_exceptions_notify(struct notifier_block *self, unsigned long val,
-+			     void *data)
- {
- 	struct die_args *args = data;
- 	int ret = NOTIFY_DONE;
-@@ -972,8 +988,9 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
- 	}
- 	return ret;
- }
-+NOKPROBE_SYMBOL(kprobe_exceptions_notify);
- 
--int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
-+int setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct jprobe *jp = container_of(p, struct jprobe, kp);
- 	unsigned long addr;
-@@ -997,8 +1014,9 @@ int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
- 	regs->ip = (unsigned long)(jp->entry);
- 	return 1;
- }
-+NOKPROBE_SYMBOL(setjmp_pre_handler);
- 
--void __kprobes jprobe_return(void)
-+void jprobe_return(void)
- {
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
- 
-@@ -1014,8 +1032,10 @@ void __kprobes jprobe_return(void)
- 			"       nop			\n"::"b"
- 			(kcb->jprobe_saved_sp):"memory");
- }
-+NOKPROBE_SYMBOL(jprobe_return);
-+NOKPROBE_SYMBOL(jprobe_return_end);
- 
--int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
-+int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- {
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
- 	u8 *addr = (u8 *) (regs->ip - 1);
-@@ -1043,6 +1063,7 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(longjmp_break_handler);
- 
- bool arch_within_kprobe_blacklist(unsigned long addr)
- {
+ 	if (p) {
+ 		if (kprobe_running()) {
 diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
-index dcaa131..717b02a 100644
+index 717b02a..8178dd4 100644
 --- a/arch/x86/kernel/kprobes/ftrace.c
 +++ b/arch/x86/kernel/kprobes/ftrace.c
-@@ -25,8 +25,9 @@
+@@ -63,7 +63,7 @@ void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
+ 	/* Disable irq for emulating a breakpoint and avoiding preempt */
+ 	local_irq_save(flags);
  
- #include "common.h"
+-	p = get_kprobe((kprobe_opcode_t *)ip);
++	p = get_kprobe_cached((kprobe_opcode_t *)ip);
+ 	if (unlikely(!p) || kprobe_disabled(p))
+ 		goto end;
  
--static int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
--			     struct kprobe_ctlblk *kcb)
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e81bced..70c3314 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -339,6 +339,7 @@ extern int arch_prepare_kprobe_ftrace(struct kprobe *p);
+ 
+ /* Get the kprobe at this addr (if any) - called with preemption disabled */
+ struct kprobe *get_kprobe(void *addr);
++struct kprobe *get_kprobe_cached(void *addr);
+ void kretprobe_hash_lock(struct task_struct *tsk,
+ 			 struct hlist_head **head, unsigned long *flags);
+ void kretprobe_hash_unlock(struct task_struct *tsk, unsigned long *flags);
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 302ff42..65b18f6 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -90,6 +90,84 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ static LIST_HEAD(kprobe_blacklist);
+ static DEFINE_MUTEX(kprobe_blacklist_mutex);
+ 
++#ifdef CONFIG_KPROBE_CACHE
++/* Kprobe cache */
++#define KPCACHE_BITS	2
++#define KPCACHE_SIZE	(1 << KPCACHE_BITS)
++#define KPCACHE_INDEX(i)	((i) & (KPCACHE_SIZE - 1))
++
++struct kprobe_cache_entry {
++	unsigned long addr;
++	struct kprobe *kp;
++};
++
++struct kprobe_cache {
++	struct kprobe_cache_entry table[KPROBE_TABLE_SIZE][KPCACHE_SIZE];
++	int index[KPROBE_TABLE_SIZE];
++};
++
++static DEFINE_PER_CPU(struct kprobe_cache, kpcache);
++
++static inline
++struct kprobe *kpcache_get(unsigned long hash, unsigned long addr)
++{
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	struct kprobe *ret;
++	int idx = ACCESS_ONCE(cache->index[hash]);
++	int i;
++
++	for (i = 0; i < KPCACHE_SIZE; i++)
++		if (ent[i].addr == addr) {
++			ret = ent[i].kp;
++			/* Check the cache is updated */
++			if (unlikely(idx != cache->index[hash]))
++				break;
++			return ret;
++		}
++	return NULL;
++}
++
++static inline void kpcache_set(unsigned long hash, unsigned long addr,
++				struct kprobe *kp)
++{
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	int i = KPCACHE_INDEX(cache->index[hash]++);
++
++	/*
++	 * Setting must be done in this order for avoiding interruption;
++	 * (1)invalidate entry, (2)set the value, and (3)enable entry.
++	 */
++	ent[i].addr = 0;
++	barrier();
++	ent[i].kp = kp;
++	barrier();
++	ent[i].addr = addr;
++}
++
++static void kpcache_invalidate_this_cpu(void *addr)
++{
++	unsigned long hash = hash_ptr(addr, KPROBE_HASH_BITS);
++	struct kprobe_cache *cache = this_cpu_ptr(&kpcache);
++	struct kprobe_cache_entry *ent = &cache->table[hash][0];
++	int i;
++
++	for (i = 0; i < KPCACHE_SIZE; i++)
++		if (ent[i].addr == (unsigned long)addr)
++			ent[i].addr = 0;
++}
++
++/* This must be called after ensuring the kprobe is removed from hlist */
++static void kpcache_invalidate(unsigned long addr)
++{
++	on_each_cpu(kpcache_invalidate_this_cpu, (void *)addr, 1);
++}
++#else
++#define kpcache_get(hash, addr)		(NULL)
++#define kpcache_set(hash, addr, kp)	do {} while (0)
++#define kpcache_invalidate(addr)	do {} while (0)
++#endif
+ #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
+ /*
+  * kprobe->ainsn.insn points to the copy of the instruction to be
+@@ -296,18 +374,13 @@ static inline void reset_kprobe_instance(void)
+ 	__this_cpu_write(kprobe_instance, NULL);
+ }
+ 
+-/*
+- * This routine is called either:
+- * 	- under the kprobe_mutex - during kprobe_[un]register()
+- * 				OR
+- * 	- with preemption disabled - from arch/xxx/kernel/kprobes.c
+- */
+-struct kprobe *get_kprobe(void *addr)
 +static nokprobe_inline
-+int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
-+		      struct kprobe_ctlblk *kcb)
++struct kprobe *__get_kprobe(void *addr, unsigned long hash)
  {
- 	/*
- 	 * Emulate singlestep (and also recover regs->ip)
-@@ -41,18 +42,19 @@ static int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
- 	return 1;
- }
- 
--int __kprobes skip_singlestep(struct kprobe *p, struct pt_regs *regs,
--			      struct kprobe_ctlblk *kcb)
-+int skip_singlestep(struct kprobe *p, struct pt_regs *regs,
-+		    struct kprobe_ctlblk *kcb)
- {
- 	if (kprobe_ftrace(p))
- 		return __skip_singlestep(p, regs, kcb);
- 	else
- 		return 0;
- }
-+NOKPROBE_SYMBOL(skip_singlestep);
- 
- /* Ftrace callback handler for kprobes */
--void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
--				     struct ftrace_ops *ops, struct pt_regs *regs)
-+void kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
-+			   struct ftrace_ops *ops, struct pt_regs *regs)
- {
+ 	struct hlist_head *head;
  	struct kprobe *p;
- 	struct kprobe_ctlblk *kcb;
-@@ -84,6 +86,7 @@ void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
- end:
- 	local_irq_restore(flags);
+ 
+-	head = &kprobe_table[hash_ptr(addr, KPROBE_HASH_BITS)];
++	head = &kprobe_table[hash];
+ 	hlist_for_each_entry_rcu(p, head, hlist) {
+ 		if (p->addr == addr)
+ 			return p;
+@@ -315,8 +388,37 @@ struct kprobe *get_kprobe(void *addr)
+ 
+ 	return NULL;
  }
-+NOKPROBE_SYMBOL(kprobe_ftrace_handler);
++
++/*
++ * This routine is called either:
++ *  - under the kprobe_mutex - during kprobe_[un]register()
++ * OR
++ *  - with preemption disabled - from arch/xxx/kernel/kprobes.c
++ */
++struct kprobe *get_kprobe(void *addr)
++{
++	return __get_kprobe(addr, hash_ptr(addr, KPROBE_HASH_BITS));
++}
+ NOKPROBE_SYMBOL(get_kprobe);
  
- int arch_prepare_kprobe_ftrace(struct kprobe *p)
- {
-diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
-index fba7fb0..f304773 100644
---- a/arch/x86/kernel/kprobes/opt.c
-+++ b/arch/x86/kernel/kprobes/opt.c
-@@ -138,7 +138,8 @@ asm (
- #define INT3_SIZE sizeof(kprobe_opcode_t)
++/* This is called with preemption disabed from arch-depend functions */
++struct kprobe *get_kprobe_cached(void *addr)
++{
++	unsigned long hash = hash_ptr(addr, KPROBE_HASH_BITS);
++	struct kprobe *p;
++
++	p = kpcache_get(hash, (unsigned long)addr);
++	if (likely(p))
++		return p;
++
++	p = __get_kprobe(addr, hash);
++	if (likely(p))
++		kpcache_set(hash, (unsigned long)addr, p);
++	return p;
++}
++NOKPROBE_SYMBOL(get_kprobe_cached);
++
++
+ static int aggr_pre_handler(struct kprobe *p, struct pt_regs *regs);
  
- /* Optimized kprobe call back function: called from optinsn */
--static void __kprobes optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-+static void
-+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
- {
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
- 	unsigned long flags;
-@@ -168,6 +169,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op, struct pt_
- 	}
- 	local_irq_restore(flags);
- }
-+NOKPROBE_SYMBOL(optimized_callback);
- 
- static int copy_optimized_instructions(u8 *dest, u8 *src)
- {
-@@ -424,8 +426,7 @@ extern void arch_unoptimize_kprobes(struct list_head *oplist,
- 	}
- }
- 
--int  __kprobes
--setup_detour_execution(struct kprobe *p, struct pt_regs *regs, int reenter)
-+int setup_detour_execution(struct kprobe *p, struct pt_regs *regs, int reenter)
- {
- 	struct optimized_kprobe *op;
- 
-@@ -441,3 +442,4 @@ setup_detour_execution(struct kprobe *p, struct pt_regs *regs, int reenter)
- 	}
- 	return 0;
- }
-+NOKPROBE_SYMBOL(setup_detour_execution);
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 713f1b3..b86a0da 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -251,8 +251,9 @@ u32 kvm_read_and_reset_pf_reason(void)
- 	return reason;
- }
- EXPORT_SYMBOL_GPL(kvm_read_and_reset_pf_reason);
-+NOKPROBE_SYMBOL(kvm_read_and_reset_pf_reason);
- 
--dotraplinkage void __kprobes
-+dotraplinkage void
- do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-@@ -276,6 +277,7 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- 		break;
+ /* Return true if the kprobe is an aggregator */
+@@ -517,6 +619,7 @@ static void do_free_cleaned_kprobes(void)
+ 	list_for_each_entry_safe(op, tmp, &freeing_list, list) {
+ 		BUG_ON(!kprobe_unused(&op->kp));
+ 		list_del_init(&op->list);
++		kpcache_invalidate((unsigned long)op->kp.addr);
+ 		free_aggr_kprobe(&op->kp);
  	}
  }
-+NOKPROBE_SYMBOL(do_async_page_fault);
- 
- static void __init paravirt_ops_setup(void)
+@@ -1638,13 +1741,15 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
  {
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index b4872b99..c3e985d 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -110,7 +110,7 @@ static void nmi_max_handler(struct irq_work *w)
- 		a->handler, whole_msecs, decimal_msecs);
- }
+ 	struct kprobe *ap;
  
--static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
-+static int nmi_handle(unsigned int type, struct pt_regs *regs, bool b2b)
- {
- 	struct nmi_desc *desc = nmi_to_desc(type);
- 	struct nmiaction *a;
-@@ -146,6 +146,7 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
- 	/* return total number of NMI events handled */
- 	return handled;
- }
-+NOKPROBE_SYMBOL(nmi_handle);
- 
- int __register_nmi_handler(unsigned int type, struct nmiaction *action)
- {
-@@ -208,7 +209,7 @@ void unregister_nmi_handler(unsigned int type, const char *name)
- }
- EXPORT_SYMBOL_GPL(unregister_nmi_handler);
- 
--static __kprobes void
-+static void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
- {
- 	/* check to see if anyone registered against these types of errors */
-@@ -238,8 +239,9 @@ pci_serr_error(unsigned char reason, struct pt_regs *regs)
- 	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
- 	outb(reason, NMI_REASON_PORT);
- }
-+NOKPROBE_SYMBOL(pci_serr_error);
- 
--static __kprobes void
-+static void
- io_check_error(unsigned char reason, struct pt_regs *regs)
- {
- 	unsigned long i;
-@@ -269,8 +271,9 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
- 	reason &= ~NMI_REASON_CLEAR_IOCHK;
- 	outb(reason, NMI_REASON_PORT);
- }
-+NOKPROBE_SYMBOL(io_check_error);
- 
--static __kprobes void
-+static void
- unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- {
- 	int handled;
-@@ -298,11 +301,12 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 
- 	pr_emerg("Dazed and confused, but trying to continue\n");
- }
-+NOKPROBE_SYMBOL(unknown_nmi_error);
- 
- static DEFINE_PER_CPU(bool, swallow_nmi);
- static DEFINE_PER_CPU(unsigned long, last_nmi_rip);
- 
--static __kprobes void default_do_nmi(struct pt_regs *regs)
-+static void default_do_nmi(struct pt_regs *regs)
- {
- 	unsigned char reason = 0;
- 	int handled;
-@@ -401,6 +405,7 @@ static __kprobes void default_do_nmi(struct pt_regs *regs)
- 	else
- 		unknown_nmi_error(reason, regs);
- }
-+NOKPROBE_SYMBOL(default_do_nmi);
- 
- /*
-  * NMIs can hit breakpoints which will cause it to lose its
-@@ -520,7 +525,7 @@ static inline void nmi_nesting_postprocess(void)
- }
- #endif
- 
--dotraplinkage notrace __kprobes void
-+dotraplinkage notrace void
- do_nmi(struct pt_regs *regs, long error_code)
- {
- 	nmi_nesting_preprocess(regs);
-@@ -537,6 +542,7 @@ do_nmi(struct pt_regs *regs, long error_code)
- 	/* On i386, may loop back to preprocess */
- 	nmi_nesting_postprocess();
- }
-+NOKPROBE_SYMBOL(do_nmi);
- 
- void stop_nmi(void)
- {
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ba9abe9..3c8ae7d 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -106,7 +106,7 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
- 	preempt_count_dec();
- }
- 
--static int __kprobes
-+static nokprobe_inline int
- do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
- 		  struct pt_regs *regs,	long error_code)
- {
-@@ -136,7 +136,7 @@ do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
- 	return -1;
- }
- 
--static void __kprobes
-+static void
- do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 	long error_code, siginfo_t *info)
- {
-@@ -173,6 +173,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 	else
- 		force_sig(signr, tsk);
- }
-+NOKPROBE_SYMBOL(do_trap);
- 
- #define DO_ERROR(trapnr, signr, str, name)				\
- dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
-@@ -263,7 +264,7 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- }
- #endif
- 
--dotraplinkage void __kprobes
-+dotraplinkage void
- do_general_protection(struct pt_regs *regs, long error_code)
- {
- 	struct task_struct *tsk;
-@@ -309,9 +310,10 @@ do_general_protection(struct pt_regs *regs, long error_code)
- exit:
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(do_general_protection);
- 
- /* May run on IST stack. */
--dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_code)
-+dotraplinkage void notrace do_int3(struct pt_regs *regs, long error_code)
- {
- 	enum ctx_state prev_state;
- 
-@@ -355,6 +357,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- exit:
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(do_int3);
- 
- #ifdef CONFIG_X86_64
- /*
-@@ -362,7 +365,7 @@ exit:
-  * for scheduling or signal handling. The actual stack switch is done in
-  * entry.S
-  */
--asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
-+asmlinkage struct pt_regs *sync_regs(struct pt_regs *eregs)
- {
- 	struct pt_regs *regs = eregs;
- 	/* Did already sync */
-@@ -381,6 +384,7 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- 		*regs = *eregs;
- 	return regs;
- }
-+NOKPROBE_SYMBOL(sync_regs);
- #endif
- 
- /*
-@@ -407,7 +411,7 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
-  *
-  * May run on IST stack.
-  */
--dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
-+dotraplinkage void do_debug(struct pt_regs *regs, long error_code)
- {
- 	struct task_struct *tsk = current;
- 	enum ctx_state prev_state;
-@@ -491,6 +495,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- exit:
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(do_debug);
- 
- /*
-  * Note that we play around with the 'TS' bit in an attempt to get
-@@ -662,7 +667,7 @@ void math_state_restore(void)
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
- 
--dotraplinkage void __kprobes
-+dotraplinkage void
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
- 	enum ctx_state prev_state;
-@@ -688,6 +693,7 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- #endif
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(do_device_not_available);
- 
- #ifdef CONFIG_X86_32
- dotraplinkage void do_iret_error(struct pt_regs *regs, long error_code)
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 6dea040..e9c9adc6 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -8,7 +8,7 @@
- #include <linux/kdebug.h>		/* oops_begin/end, ...		*/
- #include <linux/module.h>		/* search_exception_table	*/
- #include <linux/bootmem.h>		/* max_low_pfn			*/
--#include <linux/kprobes.h>		/* __kprobes, ...		*/
-+#include <linux/kprobes.h>		/* NOKPROBE_SYMBOL, ...		*/
- #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
- #include <linux/perf_event.h>		/* perf_sw_event		*/
- #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
-@@ -45,7 +45,7 @@ enum x86_pf_error_code {
-  * Returns 0 if mmiotrace is disabled, or if the fault is not
-  * handled by mmiotrace:
-  */
--static inline int __kprobes
-+static nokprobe_inline int
- kmmio_fault(struct pt_regs *regs, unsigned long addr)
- {
- 	if (unlikely(is_kmmio_active()))
-@@ -54,7 +54,7 @@ kmmio_fault(struct pt_regs *regs, unsigned long addr)
- 	return 0;
- }
- 
--static inline int __kprobes kprobes_fault(struct pt_regs *regs)
-+static nokprobe_inline int kprobes_fault(struct pt_regs *regs)
- {
- 	int ret = 0;
- 
-@@ -261,7 +261,7 @@ void vmalloc_sync_all(void)
-  *
-  *   Handle a fault on the vmalloc or module mapping area
-  */
--static noinline __kprobes int vmalloc_fault(unsigned long address)
-+static noinline int vmalloc_fault(unsigned long address)
- {
- 	unsigned long pgd_paddr;
- 	pmd_t *pmd_k;
-@@ -291,6 +291,7 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 
- 	return 0;
- }
-+NOKPROBE_SYMBOL(vmalloc_fault);
- 
- /*
-  * Did it hit the DOS screen memory VA from vm86 mode?
-@@ -358,7 +359,7 @@ void vmalloc_sync_all(void)
-  *
-  * This assumes no large pages in there.
-  */
--static noinline __kprobes int vmalloc_fault(unsigned long address)
-+static noinline int vmalloc_fault(unsigned long address)
- {
- 	pgd_t *pgd, *pgd_ref;
- 	pud_t *pud, *pud_ref;
-@@ -425,6 +426,7 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 
- 	return 0;
- }
-+NOKPROBE_SYMBOL(vmalloc_fault);
- 
- #ifdef CONFIG_CPU_SUP_AMD
- static const char errata93_warning[] =
-@@ -922,7 +924,7 @@ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
-  * There are no security implications to leaving a stale TLB when
-  * increasing the permissions on a page.
-  */
--static noinline __kprobes int
-+static noinline int
- spurious_fault(unsigned long error_code, unsigned long address)
- {
- 	pgd_t *pgd;
-@@ -970,6 +972,7 @@ spurious_fault(unsigned long error_code, unsigned long address)
- 
- 	return ret;
- }
-+NOKPROBE_SYMBOL(spurious_fault);
- 
- int show_unhandled_signals = 1;
- 
-@@ -1021,7 +1024,7 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
-  * and the problem, and then passes it off to one of the appropriate
-  * routines.
-  */
--static void __kprobes
-+static void
- __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	struct vm_area_struct *vma;
-@@ -1247,8 +1250,9 @@ good_area:
- 
- 	up_read(&mm->mmap_sem);
- }
-+NOKPROBE_SYMBOL(__do_page_fault);
- 
--dotraplinkage void __kprobes
-+dotraplinkage void
- do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-@@ -1257,9 +1261,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	__do_page_fault(regs, error_code);
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(do_page_fault);
- 
--static void trace_page_fault_entries(struct pt_regs *regs,
--				     unsigned long error_code)
-+static nokprobe_inline void
-+trace_page_fault_entries(struct pt_regs *regs, unsigned long error_code)
- {
- 	if (user_mode(regs))
- 		trace_page_fault_user(read_cr2(), regs, error_code);
-@@ -1267,7 +1272,7 @@ static void trace_page_fault_entries(struct pt_regs *regs,
- 		trace_page_fault_kernel(read_cr2(), regs, error_code);
- }
- 
--dotraplinkage void __kprobes
-+dotraplinkage void
- trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-@@ -1277,3 +1282,4 @@ trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	__do_page_fault(regs, error_code);
- 	exception_exit(prev_state);
- }
-+NOKPROBE_SYMBOL(trace_do_page_fault);
+-	if (list_empty(&p->list))
++	if (list_empty(&p->list)) {
+ 		/* This is an independent kprobe */
++		kpcache_invalidate((unsigned long)p->addr);
+ 		arch_remove_kprobe(p);
+-	else if (list_is_singular(&p->list)) {
++	} else if (list_is_singular(&p->list)) {
+ 		/* This is the last child of an aggrprobe */
+ 		ap = list_entry(p->list.next, struct kprobe, list);
+ 		list_del(&p->list);
++		kpcache_invalidate((unsigned long)p->addr);
+ 		free_aggr_kprobe(ap);
+ 	}
+ 	/* Otherwise, do nothing. */
 
 
