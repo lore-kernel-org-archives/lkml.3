@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaB0DqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 22:46:13 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59298 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553AbaB0DqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 22:46:11 -0500
-X-IronPort-AV: E=Sophos;i="4.97,551,1389715200"; 
-   d="scan'208";a="9612983"
-Message-ID: <530EB4EF.8080800@cn.fujitsu.com>
-Date: Thu, 27 Feb 2014 11:45:51 +0800
-From: Li Guang <lig.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20120421 Iceape/2.0.11
+	id S1754658AbaB0Dti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 22:49:38 -0500
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:48611 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaB0Dth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 22:49:37 -0500
 MIME-Version: 1.0
-To: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-CC: Kieran Clancy <clancy.kieran@gmail.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
-        Dennis Jansen <dennis.jansen@web.de>
+In-Reply-To: <530E9BEF.8080601@cn.fujitsu.com>
+References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <530E9BEF.8080601@cn.fujitsu.com>
+From: Kieran Clancy <clancy.kieran@gmail.com>
+Date: Thu, 27 Feb 2014 14:19:05 +1030
+Message-ID: <CAGf84Q+Xd9EUjOEMe3+EMRhdPaFgnAjNDOoPZmf=gn8mi=FhWw@mail.gmail.com>
 Subject: Re: [PATCH] ACPI / EC: Clear stale EC events on Samsung systems
-References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <530E9BEF.8080601@cn.fujitsu.com> <530EA3E5.3010102@gmail.com> <530EAD92.6020807@cn.fujitsu.com> <530EB176.1050402@gmail.com>
-In-Reply-To: <530EB176.1050402@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 11:43:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 11:43:44,
-	Serialize complete at 2014/02/27 11:43:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Li Guang <lig.fnst@cn.fujitsu.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Juan Manuel Cabo wrote:
-> On 02/27/2014 12:14 AM, Li Guang wrote:
->    
->> oh, sorry, I'm referring internal EC firmware code
->> for Q event queuing, not ACPI SPEC, ;-)
->> for machine you tested, 8 is the queue size,
->> but for some unknown also nasty EC firmwares(let's suppose it exists),
->> it may queue more Q events.
->> and I saw several firmwares queued 32 events by default,
->> then, let's say, they be used for some samsung products,
->> and also they also forgot to deal with sleep/resume state,
->> then, we'll also leave stale Q event there.
+On Thu, Feb 27, 2014 at 12:29 PM, Li Guang <lig.fnst@cn.fujitsu.com> wrote:
+>> +#define ACPI_EC_CLEAR_MAX      20      /* Maximum number of events to
+>> query
+>> +                                        * when trying to clear the EC */
 >>
->> Thanks!
->>
->>      
-> We tested each on our different samsung models (intel, amd), and it
-> was 8 across. But you're right, there might be more in the future.
 >
->       I even saw a bug report in ubuntu's launchpad of an HP with a similar
-> sounding problem, ( https://bugs.launchpad.net/ubuntu/+source/linux-source-2.6.20/+bug/89860 )
-> which I have no idea if it was caused by the same issue, but if in the future,
-> the flag ec_clear_on_resume is used to match other DMI's, it might
-> be a good idea to make the max iteration count bigger.
 >
->        The only reason that there is a max iteration count, was to prevent
-> an unexpected case in which an unknown EC never returns 0 after
-> queue emptied. So far it hasn't been the case. Can we count on it?.
-> The loop currently does finish early when there are no more events.
+> 20 is enough?
+> the query index is length of a byte.
+
+On my machine, 8 seems to be enough, so 20 seems to be a conservative
+maximum. Just reading your other email, maybe we should set this to
+32? or 40? 100?
+
+If it's not enough, hopefully anyone seeing bugs will notice the
+warning "maximum of X stale EC events cleared".
+
+Here's what happens if I plug/replug the AC lots of times (more than
+8) during suspend:
+
+[ 8807.019800] ACPI : EC: ---> status = 0x29
+[ 8807.019804] ACPI : EC: ---> data = 0x66
+[ 8807.020790] ACPI : EC: ---> status = 0x29
+[ 8807.020793] ACPI : EC: ---> data = 0x66
+[ 8807.021793] ACPI : EC: ---> status = 0x29
+[ 8807.021798] ACPI : EC: ---> data = 0x66
+[ 8807.022831] ACPI : EC: ---> status = 0x29
+[ 8807.022834] ACPI : EC: ---> data = 0x66
+[ 8807.023788] ACPI : EC: ---> status = 0x29
+[ 8807.023792] ACPI : EC: ---> data = 0x66
+[ 8807.024787] ACPI : EC: ---> status = 0x29
+[ 8807.024791] ACPI : EC: ---> data = 0x66
+[ 8807.025787] ACPI : EC: ---> status = 0x29
+[ 8807.025790] ACPI : EC: ---> data = 0x66
+[ 8807.026787] ACPI : EC: ---> status = 0x29
+[ 8807.026790] ACPI : EC: ---> data = 0x66
+[ 8807.027786] ACPI : EC: ---> status = 0x09
+[ 8807.027790] ACPI : EC: ---> data = 0x00
+[ 8807.027792] ACPI : EC: 8 stale EC events cleared
+
+Note that most of these have SCI_EVT set, but the OS is not notified
+according to ACPI specs (seemingly because these events happened
+during sleep).
+
+The _Q66 method in my DSDT, is:
+
+                        P8XH (Zero, 0x66)
+                        If (LEqual (B1EX, One))
+                        {
+                            Notify (BAT1, 0x80)
+                        }
+
+So, basically, this is supposed to notify that the battery (BAT1 =
+PNP0C0A) has changed state, but they are stale events so we don't run
+the handlers.
+
+>> +static int EC_FLAGS_CLEAR_ON_RESUME; /* EC should be polled on
+>> boot/resume */
 >
-> I guess changing it 255 or 1000 would be enough, right?
+> seems name is implicit, what about EC_FLAGS_QEVENT_CLR_ON_RESUME?
+> seems too long :-)
+
+In my mind this is referring to the function name (acpi_ec_)clear.
+Perhaps we could just make the connection more explicit in the
+comment:
+
+/* needs acpi_ec_clear() on boot/resume */
+
+Not sure if this is better?
+
+>> +       /* Some hardware may need the EC to be cleared before use */
 >
->    
+> description is implicit, should specify what we clear is Q event, not EC.
 
-can't imagine 1K bytes be dissipated on Q event,
-EC's ram is usually expensive,
-I think 255 is really enough. :-)
+Are Q events the only thing we can get from the EC data port? I've
+read the relevant parts of the ACPI spec and I can't say I am 100%
+sure.
 
-Thanks!
-
-
-
+Thank you for your advice,
+Kieran.
