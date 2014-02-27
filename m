@@ -1,243 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaB0Nhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:37:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55021 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791AbaB0Nd2 (ORCPT
+	id S1753666AbaB0Nh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:37:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36036 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296AbaB0Nhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:33:28 -0500
-Date: Thu, 27 Feb 2014 05:32:53 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-06d50c65b1043b166d102accc081093f79d8f7e5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <20140224172207.GC9987@twins.programming.kicks-ass.net>
-References: <20140224172207.GC9987@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/idle: Remove stale old file
-Git-Commit-ID: 06d50c65b1043b166d102accc081093f79d8f7e5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Feb 2014 08:37:52 -0500
+Message-ID: <530F3F8B.4090509@ti.com>
+Date: Thu, 27 Feb 2014 19:07:15 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@deeprootsystems.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Cyril Chemparathy <cyril.chemparathy@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        <linux-gpio@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-spi@vger.kernel.org>
+Subject: Re: [PATCH 0/5] ARM: davinci: tnetv107x removal
+References: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1393418614-3968549-1-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  06d50c65b1043b166d102accc081093f79d8f7e5
-Gitweb:     http://git.kernel.org/tip/06d50c65b1043b166d102accc081093f79d8f7e5
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 24 Feb 2014 18:22:07 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Feb 2014 12:41:01 +0100
+(fixed Cyril's e-mail address)
 
-sched/idle: Remove stale old file
+On Wednesday 26 February 2014 06:13 PM, Arnd Bergmann wrote:
+> This series removes the TI davinci/tnetv107x platform that
+> has evidently bitrotted to the point where it's completely
+> useless. While we could probably fix it and add a defconfig,
+> it appears that there are actually no users of this platform,
+> and it complicates the davinci code base because it's
+> incompatible with all the other SoCs in there that are
+> based on ARM926T.
+> 
+> The five patches are completely independent of one another,
+> and applying them out of order is fine since we just want
+> to remove the code. However, I'm looking for an Ack from
+> Cyril Chemparathy and Sekhar Nori first, to be sure we
+> won't need this code in the future. Kevin Hilman has
+> already mentioned that he sees no reason to keep this
+> code.
 
-Commit cf37b6b48428d ("sched/idle: Move cpu/idle.c to sched/idle.c")
-said to simply move a file; somehow it got mangled and created an old
-version of the file and forgot to remove the old file.
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
-Fix this fail; add the lost change and remove the now identical old
-file.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: rjw@rjwysocki.net
-Cc: nicolas.pitre@linaro.org
-Cc: preeti@linux.vnet.ibm.com
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Link: http://lkml.kernel.org/r/20140224172207.GC9987@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/cpu/idle.c   | 147 ----------------------------------------------------
- kernel/sched/idle.c |  17 +++---
- 2 files changed, 10 insertions(+), 154 deletions(-)
-
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-deleted file mode 100644
-index b7976a1..0000000
---- a/kernel/cpu/idle.c
-+++ /dev/null
-@@ -1,147 +0,0 @@
--/*
-- * Generic entry point for the idle threads
-- */
--#include <linux/sched.h>
--#include <linux/cpu.h>
--#include <linux/cpuidle.h>
--#include <linux/tick.h>
--#include <linux/mm.h>
--#include <linux/stackprotector.h>
--
--#include <asm/tlb.h>
--
--#include <trace/events/power.h>
--
--static int __read_mostly cpu_idle_force_poll;
--
--void cpu_idle_poll_ctrl(bool enable)
--{
--	if (enable) {
--		cpu_idle_force_poll++;
--	} else {
--		cpu_idle_force_poll--;
--		WARN_ON_ONCE(cpu_idle_force_poll < 0);
--	}
--}
--
--#ifdef CONFIG_GENERIC_IDLE_POLL_SETUP
--static int __init cpu_idle_poll_setup(char *__unused)
--{
--	cpu_idle_force_poll = 1;
--	return 1;
--}
--__setup("nohlt", cpu_idle_poll_setup);
--
--static int __init cpu_idle_nopoll_setup(char *__unused)
--{
--	cpu_idle_force_poll = 0;
--	return 1;
--}
--__setup("hlt", cpu_idle_nopoll_setup);
--#endif
--
--static inline int cpu_idle_poll(void)
--{
--	rcu_idle_enter();
--	trace_cpu_idle_rcuidle(0, smp_processor_id());
--	local_irq_enable();
--	while (!tif_need_resched())
--		cpu_relax();
--	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
--	rcu_idle_exit();
--	return 1;
--}
--
--/* Weak implementations for optional arch specific functions */
--void __weak arch_cpu_idle_prepare(void) { }
--void __weak arch_cpu_idle_enter(void) { }
--void __weak arch_cpu_idle_exit(void) { }
--void __weak arch_cpu_idle_dead(void) { }
--void __weak arch_cpu_idle(void)
--{
--	cpu_idle_force_poll = 1;
--	local_irq_enable();
--}
--
--/*
-- * Generic idle loop implementation
-- */
--static void cpu_idle_loop(void)
--{
--	while (1) {
--		tick_nohz_idle_enter();
--
--		while (!need_resched()) {
--			check_pgt_cache();
--			rmb();
--
--			if (cpu_is_offline(smp_processor_id()))
--				arch_cpu_idle_dead();
--
--			local_irq_disable();
--			arch_cpu_idle_enter();
--
--			/*
--			 * In poll mode we reenable interrupts and spin.
--			 *
--			 * Also if we detected in the wakeup from idle
--			 * path that the tick broadcast device expired
--			 * for us, we don't want to go deep idle as we
--			 * know that the IPI is going to arrive right
--			 * away
--			 */
--			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
--				cpu_idle_poll();
--			} else {
--				if (!current_clr_polling_and_test()) {
--					stop_critical_timings();
--					rcu_idle_enter();
--					if (cpuidle_idle_call())
--						arch_cpu_idle();
--					if (WARN_ON_ONCE(irqs_disabled()))
--						local_irq_enable();
--					rcu_idle_exit();
--					start_critical_timings();
--				} else {
--					local_irq_enable();
--				}
--				__current_set_polling();
--			}
--			arch_cpu_idle_exit();
--		}
--
--		/*
--		 * Since we fell out of the loop above, we know
--		 * TIF_NEED_RESCHED must be set, propagate it into
--		 * PREEMPT_NEED_RESCHED.
--		 *
--		 * This is required because for polling idle loops we will
--		 * not have had an IPI to fold the state for us.
--		 */
--		preempt_set_need_resched();
--		tick_nohz_idle_exit();
--		schedule_preempt_disabled();
--	}
--}
--
--void cpu_startup_entry(enum cpuhp_state state)
--{
--	/*
--	 * This #ifdef needs to die, but it's too late in the cycle to
--	 * make this generic (arm and sh have never invoked the canary
--	 * init for the non boot cpus!). Will be fixed in 3.11
--	 */
--#ifdef CONFIG_X86
--	/*
--	 * If we're the non-boot CPU, nothing set the stack canary up
--	 * for us. The boot CPU already has it initialized but no harm
--	 * in doing it again. This is a good place for updating it, as
--	 * we wont ever return from this function (so the invalid
--	 * canaries already on the stack wont ever trigger).
--	 */
--	boot_init_stack_canary();
--#endif
--	__current_set_polling();
--	arch_cpu_idle_prepare();
--	cpu_idle_loop();
--}
-diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 14ca434..b7976a1 100644
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -108,14 +108,17 @@ static void cpu_idle_loop(void)
- 				__current_set_polling();
- 			}
- 			arch_cpu_idle_exit();
--			/*
--			 * We need to test and propagate the TIF_NEED_RESCHED
--			 * bit here because we might not have send the
--			 * reschedule IPI to idle tasks.
--			 */
--			if (tif_need_resched())
--				set_preempt_need_resched();
- 		}
-+
-+		/*
-+		 * Since we fell out of the loop above, we know
-+		 * TIF_NEED_RESCHED must be set, propagate it into
-+		 * PREEMPT_NEED_RESCHED.
-+		 *
-+		 * This is required because for polling idle loops we will
-+		 * not have had an IPI to fold the state for us.
-+		 */
-+		preempt_set_need_resched();
- 		tick_nohz_idle_exit();
- 		schedule_preempt_disabled();
- 	}
+Regards,
+Sekhar
