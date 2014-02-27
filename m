@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaB0WoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 17:44:09 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:37049 "EHLO
+	id S1752139AbaB0WsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 17:48:18 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35766 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaB0WoH (ORCPT
+	with ESMTP id S1751817AbaB0WsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 17:44:07 -0500
-Date: Thu, 27 Feb 2014 14:44:01 -0800
+	Thu, 27 Feb 2014 17:48:17 -0500
+Date: Thu, 27 Feb 2014 14:48:14 -0800
 From: josh@joshtriplett.org
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        Monam Agarwal <monamagarwal123@gmail.com>, opw-kernel@googlegroups.com,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [OPW kernel] [PATCH] checkpatch: Make "return is not a
- function" test quieter
-Message-ID: <20140227224401.GA30335@cloud>
-References: <20140227164152.GA26266@kroah.com>
- <20140227170811.GA28796@thin>
- <alpine.DEB.2.10.1402271811010.4439@hadrien>
- <20140227172017.GA29133@thin>
- <alpine.DEB.2.10.1402271822540.4439@hadrien>
- <1393523563.24588.101.camel@joe-AO722>
- <alpine.DEB.2.10.1402271856530.4439@hadrien>
- <1393524256.24588.103.camel@joe-AO722>
- <20140227184723.GA3905@kroah.com>
- <1393529230.24588.114.camel@joe-AO722>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 25/46] kernel: Add prototype declaration to header file
+ include/linux/ftrace.h
+Message-ID: <20140227224814.GB30335@cloud>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+ <f43d408c30c2a4bd326995992f26f8e727b281d9.1393493277.git.rashika.kheria@gmail.com>
+ <20140227143753.42451556@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1393529230.24588.114.camel@joe-AO722>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140227143753.42451556@gandalf.local.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:27:10AM -0800, Joe Perches wrote:
-> This test is a bit noisy and opinions seem to agree that
-> it should not warn in a lot more situations.
+On Thu, Feb 27, 2014 at 02:37:53PM -0500, Steven Rostedt wrote:
+> On Thu, 27 Feb 2014 17:32:47 +0530
+> Rashika Kheria <rashika.kheria@gmail.com> wrote:
 > 
-> It seems people agree that:
+> > Add prototype declaration of function to header file
+> > include/linux/ftrace.h because it is used by more than one file.
+> > 
+> > This eliminates the following warning in kernel/trace/ftrace.c:
+> > kernel/trace/ftrace.c:4914:5: warning: no previous prototype for ‘ftrace_graph_entry_stub’ [-Wmissing-prototypes]
+> > 
+> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > ---
+> >  include/linux/ftrace.h |    2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+> > index 68ea184..da1c31f 100644
+> > --- a/include/linux/ftrace.h
+> > +++ b/include/linux/ftrace.h
+> > @@ -672,6 +672,8 @@ struct ftrace_graph_ret {
+> >  typedef void (*trace_func_graph_ret_t)(struct ftrace_graph_ret *); /* return */
+> >  typedef int (*trace_func_graph_ent_t)(struct ftrace_graph_ent *); /* entry */
+> >  
+> > +int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace);
 > 
-> 	return (foo || bar);
-> and
-> 	return foo || bar;
+> This doesn't need to be in a header file as it is only called by
+> assmebly. But I have no problems with it being in one, but it should
+> have a comment stating this:
 > 
-> are both acceptable style and checkpatch should be silent
-> about them.
-> 
-> For now, it warns on parentheses around a simple constant
-> or a single function or a ternary.
-> 
-> 	return (foo);
-> 	return (foo(bar));
-> 	return (foo ? bar : baz);
-> 
-> The last ternary test may be quieted in the future.
-> 
-> Modify the deparenthesize function to only strip balanced
-> leading and trailing parentheses.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> /* This is only called by assembly code, declared here for consistency */
 
-I'd suggest dropping the warning for parenthesized ternaries as well,
-but in any case:
+That seems quite reasonable, yeah.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  scripts/checkpatch.pl | 22 +++++++++++++++-------
->  1 file changed, 15 insertions(+), 7 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 91308be..be4be81 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -439,9 +439,14 @@ our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
->  sub deparenthesize {
->  	my ($string) = @_;
->  	return "" if (!defined($string));
-> -	$string =~ s@^\s*\(\s*@@g;
-> -	$string =~ s@\s*\)\s*$@@g;
-> +
-> +	while ($string =~ /^\s*\(.*\)\s*$/) {
-> +		$string =~ s@^\s*\(\s*@@;
-> +		$string =~ s@\s*\)\s*$@@;
-> +	}
-> +
->  	$string =~ s@\s+@ @g;
-> +
->  	return $string;
->  }
->  
-> @@ -3362,14 +3367,17 @@ sub process {
->  			}
->  		}
->  
-> -# Return is not a function.
-> +# return is not a function
->  		if (defined($stat) && $stat =~ /^.\s*return(\s*)\(/s) {
->  			my $spacing = $1;
->  			if ($^V && $^V ge 5.10.0 &&
-> -			    $stat =~ /^.\s*return\s*$balanced_parens\s*;\s*$/) {
-> -				ERROR("RETURN_PARENTHESES",
-> -				      "return is not a function, parentheses are not required\n" . $herecurr);
-> -
-> +			    $stat =~ /^.\s*return\s*($balanced_parens)\s*;\s*$/) {
-> +				my $value = $1;
-> +				$value = deparenthesize($value);
-> +				if ($value =~ m/^\s*$FuncArg\s*(?:\?|$)/) {
-> +					ERROR("RETURN_PARENTHESES",
-> +					      "return is not a function, parentheses are not required\n" . $herecurr);
-> +				}
->  			} elsif ($spacing !~ /\s+/) {
->  				ERROR("SPACING",
->  				      "space required before the open parenthesis '('\n" . $herecurr);
-> 
-> 
-> -- 
-> You received this message because you are subscribed to the Google Groups "opw-kernel" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to opw-kernel+unsubscribe@googlegroups.com.
-> For more options, visit https://groups.google.com/groups/opt_out.
+- Josh Triplett
