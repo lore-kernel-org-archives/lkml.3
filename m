@@ -1,151 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaB0VrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:47:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39553 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaB0VrN (ORCPT
+	id S1752656AbaB0Vrh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:47:37 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63076 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752456AbaB0Vrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:47:13 -0500
-Date: Thu, 27 Feb 2014 13:47:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/2] mm: implement ->map_pages for page cache
-Message-Id: <20140227134711.329eb3c385098c8bce37c8d1@linux-foundation.org>
-In-Reply-To: <1393530827-25450-3-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1393530827-25450-3-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Feb 2014 16:47:35 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kieran Clancy <clancy.kieran@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Subject: Re: [PATCH] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Thu, 27 Feb 2014 23:02:38 +0100
+Message-ID: <10729829.62LVQtDGOg@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGf84Q+kHgfx6OaiEWFKs6kMmj_JiHLooeRxpXs7a64iC40zFw@mail.gmail.com>
+References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <2283771.eQo0eImXtS@vostro.rjw.lan> <CAGf84Q+kHgfx6OaiEWFKs6kMmj_JiHLooeRxpXs7a64iC40zFw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014 21:53:47 +0200 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-
-> filemap_map_pages() is generic implementation of ->map_pages() for
-> filesystems who uses page cache.
+On Thursday, February 27, 2014 11:39:42 AM Kieran Clancy wrote:
+> On Thu, Feb 27, 2014 at 11:46 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Thursday, February 27, 2014 11:29:53 AM Kieran Clancy wrote:
+> >>
+> >> Oh, and I should add that Juan and Dennis both helped to test the
+> >> patch extensively.
+> >
+> > You can use Tested-by or Reported-and-tested-by for that.
 > 
-> It should be safe to use filemap_map_pages() for ->map_pages() if
-> filesystem use filemap_fault() for ->fault().
-> 
-> ...
->
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1818,6 +1818,7 @@ extern void truncate_inode_pages_range(struct address_space *,
->  
->  /* generic vm_area_ops exported for stackable file systems */
->  extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
-> +extern void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf);
->  extern int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
->  
->  /* mm/page-writeback.c */
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 7a13f6ac5421..1bc12a96060d 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -33,6 +33,7 @@
->  #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
->  #include <linux/memcontrol.h>
->  #include <linux/cleancache.h>
-> +#include <linux/rmap.h>
->  #include "internal.h"
->  
->  #define CREATE_TRACE_POINTS
-> @@ -1726,6 +1727,76 @@ page_not_uptodate:
->  }
->  EXPORT_SYMBOL(filemap_fault);
->  
-> +void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
-> +{
-> +	struct radix_tree_iter iter;
-> +	void **slot;
-> +	struct file *file = vma->vm_file;
-> +	struct address_space *mapping = file->f_mapping;
-> +	loff_t size;
-> +	struct page *page;
-> +	unsigned long address = (unsigned long) vmf->virtual_address;
-> +	unsigned long addr;
-> +	pte_t *pte;
-> +
-> +	rcu_read_lock();
-> +	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, vmf->pgoff) {
-> +		if (iter.index > vmf->max_pgoff)
-> +			break;
-> +repeat:
-> +		page = radix_tree_deref_slot(slot);
-> +		if (radix_tree_exception(page)) {
-> +			if (radix_tree_deref_retry(page))
-> +				break;
-> +			else
-> +				goto next;
-> +		}
-> +
-> +		if (!page_cache_get_speculative(page))
-> +			goto repeat;
-> +
-> +		/* Has the page moved? */
-> +		if (unlikely(page != *slot)) {
-> +			page_cache_release(page);
-> +			goto repeat;
-> +		}
-> +
-> +		if (!PageUptodate(page) ||
-> +				PageReadahead(page) ||
-> +				PageHWPoison(page))
-> +			goto skip;
-> +		if (!trylock_page(page))
-> +			goto skip;
-> +
-> +		if (page->mapping != mapping || !PageUptodate(page))
-> +			goto unlock;
-> +
-> +		size = i_size_read(mapping->host) + PAGE_CACHE_SIZE - 1;
+> Is it okay to have someone listed as both 'Reviewed-by' and
+> 'Tested-by', or both 'Suggested-by' and 'Tested-by'?
 
-Could perhaps use round_up here.
+Yes, these are different things essentially and each of them requires time
+and effort on its own.
 
-> +		if (page->index >= size	>> PAGE_CACHE_SHIFT)
-> +			goto unlock;
-> +		pte = vmf->pte + page->index - vmf->pgoff;
-> +		if (!pte_none(*pte))
-> +			goto unlock;
-> +
-> +		if (file->f_ra.mmap_miss > 0)
-> +			file->f_ra.mmap_miss--;
+> Thank you for your help. Once I fix up these things, I will send a patch v2.
 
-I'm wondering about this.  We treat every speculative faultahead as a
-hit, whether or not userspace will actually touch that page.
+Thanks!
 
-What's the effect of this?  To cause the amount of physical readahead
-to increase?  But if userspace is in fact touching the file in a sparse
-random fashion, that is exactly the wrong thing to do?
-
-> +		addr = address + (page->index - vmf->pgoff) * PAGE_SIZE;
-> +		do_set_pte(vma, addr, page, pte, false, false);
-> +		unlock_page(page);
-> +		goto next;
-> +unlock:
-> +		unlock_page(page);
-> +skip:
-> +		page_cache_release(page);
-> +next:
-> +		if (page->index == vmf->max_pgoff)
-> +			break;
-> +	}
-> +	rcu_read_unlock();
-> +}
-> +EXPORT_SYMBOL(filemap_map_pages);
-> +
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
