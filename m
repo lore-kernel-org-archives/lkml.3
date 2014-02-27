@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591AbaB0SZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:25:08 -0500
-Received: from mout.gmx.net ([212.227.15.19]:64248 "EHLO mout.gmx.net"
+	id S1753641AbaB0S0c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:26:32 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:55098 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663AbaB0SZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:25:06 -0500
-From: xypron.glpk@gmx.de
-To: grant.likely@linaro.org
-Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] Memory leak in scripts/dtc/util.c
-Date: Thu, 27 Feb 2014 19:24:33 +0100
-Message-Id: <1393525473-12238-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:UEqMVvzqztIp7aq4QumI3ufyYSg/oi8e25Wn4NaoAts7MouoWoV
- BypOlCRLG3jvJYUQGH1kDGs21bd8V/iGB3GroSU4shOLdoyoWt5ZJNpfKonzEaqGln+J7c/
- cqR7Ed/DlvXrerP/ZCbfJjIOyFF8lGRQT5x5VpNCG+QSrzn1yeu/60zHH3W7duVtx8eFZia
- jOYeZVs5PhSUW19ior3AQ==
+	id S1752831AbaB0S0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 13:26:30 -0500
+Date: Thu, 27 Feb 2014 19:26:09 +0100
+From: Guillaume Morin <guillaume@morinfr.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        matt.helsley@gmail.com, davem@davemloft.net, guillaume@morinfr.org
+Subject: Re: + exitc-call-proc_exit_connector-after-exit_state-is-set.patch
+ added to -mm tree
+Message-ID: <20140227182609.GA26307@bender.morinfr.org>
+Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
+	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+	matt.helsley@gmail.com, davem@davemloft.net, guillaume@morinfr.org
+References: <530bbf59.78aTdR6Ql6kCpXnE%akpm@linux-foundation.org>
+ <20140225151043.GA24546@redhat.com>
+ <20140227144826.GA13313@bender.morinfr.org>
+ <20140227164750.GC909@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227164750.GC909@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+On 27 Feb 17:47, Oleg Nesterov wrote:
+> Anyway, I only tried to say that "a small window between when the event
+> is delivered and the child become wait()-able." is not closed by this
+> patch. Sorry for not being clear enough.
 
-buf was leaked if out of memory
+Ok, thanks for it making it clear.
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- scripts/dtc/util.c |    2 ++
- 1 file changed, 2 insertions(+)
+> Nevermind. Please consider this trivial example:
+> 
+> 	tfunc(void *)
+> 	{
+> 		for (;;)
+> 			pause();
+> 	}
+> 
+> 	int main(void)
+> 	{
+> 		pthread_create(tfunc);
+> 		pthread_exit();
+> 	}
+> 
+> The main thread can exit and call proc_exit_connector() before
+> register_interest_for_pid(), but WNOHANG obviously can't succeed.
+ 
+What matters is not the exit message of the main thread but the exit
+message from the last threaded dying.  In your example, it's fine that
+waitpid fails since the process is still around.  If you kill it, the
+connector will get a connector message for the thread you created in
+main().
 
-diff --git a/scripts/dtc/util.c b/scripts/dtc/util.c
-index 2422c34..a1e2e59 100644
---- a/scripts/dtc/util.c
-+++ b/scripts/dtc/util.c
-@@ -210,9 +210,11 @@ int utilfdt_read_err(const char *filename, char **buffp)
- 	do {
- 		/* Expand the buffer to hold the next chunk */
- 		if (offset == bufsize) {
-+			char *buf_old = buf;
- 			bufsize *= 2;
- 			buf = realloc(buf, bufsize);
- 			if (!buf) {
-+				buf = buf_old;
- 				ret = ENOMEM;
- 				break;
- 			}
+> But let me repeat just in case: I am not arguing with this change.
+
+That was my understanding from my message.  But I wanted to respond to
+make sure I understood your points correctly.
+
+Thanks for your help.  I appreciate it.
+
+Guillaume.
+
 -- 
-1.7.10.4
-
+Guillaume Morin <guillaume@morinfr.org>
