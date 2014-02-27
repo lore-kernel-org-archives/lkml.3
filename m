@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaB0UYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:24:44 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:59846 "EHLO smtp4.epfl.ch"
+	id S1752095AbaB0UYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:24:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37750 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290AbaB0UYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751550AbaB0UYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 15:24:42 -0500
-Message-ID: <530F9F03.40803@epfl.ch>
-Date: Thu, 27 Feb 2014 21:24:35 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+Message-ID: <530F9EB2.3070800@redhat.com>
+Date: Thu, 27 Feb 2014 15:23:14 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: fix spurious vendor compatible warnings
-References: <1393531019-25134-1-git-send-email-florian.vaussard@epfl.ch> <1393531808.24588.119.camel@joe-AO722>
-In-Reply-To: <1393531808.24588.119.camel@joe-AO722>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Jan Stancek <jstancek@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: page_alloc: reset aging cycle with GFP_THISNODE
+References: <1393360022-22566-1-git-send-email-hannes@cmpxchg.org> <20140226095422.GY6732@suse.de> <20140226171206.GU6963@cmpxchg.org> <20140226201333.GV6963@cmpxchg.org>
+In-Reply-To: <20140226201333.GV6963@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/26/2014 03:13 PM, Johannes Weiner wrote:
 
+> Would this be an acceptable replacement for 1/2?
 
-On 02/27/2014 09:10 PM, Joe Perches wrote:
-> On Thu, 2014-02-27 at 20:56 +0100, Florian Vaussard wrote:
->> With a compatible string like
->>
->> compatible = "foo";
->>
->> checkpatch will currently try to find "foo" in  vendor-prefixes.txt,
->> which is wrong since the vendor prefix is empty in this specific case.
->>
->> Skip the vendor test if the compatible is not like
->>
->> compatible = "vendor,something";
->>
->> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
->> ---
->>  scripts/checkpatch.pl | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
->> index 464dcef..35ec185 100755
->> --- a/scripts/checkpatch.pl
->> +++ b/scripts/checkpatch.pl
->> @@ -2058,6 +2058,7 @@ sub process {
->>  				my $vendor = $compat;
->>  				my $vendor_path = $dt_path . "vendor-prefixes.txt";
->>  				next if (! -f $vendor_path);
->> +				next if not $vendor =~ /^[a-zA-Z0-9]+\,.*/;
->>  				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
->>  				`grep -Eq "$vendor" $vendor_path`;
->>  				if ( $? >> 8 ) {
-> 
-> Some vendor names have dashes.
-> I don't know if underscores are allowed.
-> 
-> $ grep -rP --include=*.[ch] -oh "compatible\s*=\s*\"[^,]+,\w" * | \
->   sed -r -e 's/\s//g' -e 's/,.$//' | sort | uniq -c | grep "[_-]"
->       1 compatible="active-semi
->       8 compatible="asahi-kasei
-> 
+Looks reasonable to me. This should avoid the issues that
+were observed with NUMA migrations.
 
-Good catch. In ePAPR v1.1, I could not find any strict requirement. It
-is just saying:
+> ---
+>
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch 1/2] mm: page_alloc: exempt GFP_THISNODE allocations from zone
+>   fairness
+>
+> Jan Stancek reports manual page migration encountering allocation
+> failures after some pages when there is still plenty of memory free,
+> and bisected the problem down to 81c0a2bb515f ("mm: page_alloc: fair
+> zone allocator policy").
+>
+> The problem is that GFP_THISNODE obeys the zone fairness allocation
+> batches on one hand, but doesn't reset them and wake kswapd on the
+> other hand.  After a few of those allocations, the batches are
+> exhausted and the allocations fail.
+>
+> Fixing this means either having GFP_THISNODE wake up kswapd, or
+> GFP_THISNODE not participating in zone fairness at all.  The latter
+> seems safer as an acute bugfix, we can clean up later.
+>
+> Reported-by: Jan Stancek <jstancek@redhat.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org> # 3.12+
 
-The recommended format is “manufacturer,model”, where manufacturer is a
-string describing the name of the manufacturer (such as a stock ticker
-symbol), and model specifies the model number.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-If I am not mistaking, the stock ticker symbol will not contain exotic
-characters, but it is not always available. So we should probably add
-the '-. I am not sure for the '_'.
-
-Florian
