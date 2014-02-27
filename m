@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaB0Nb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:31:59 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49128 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751296AbaB0Nb5 (ORCPT
+	id S1753309AbaB0NcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:32:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54944 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaB0NcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:31:57 -0500
-Message-ID: <530F3E47.5040904@hurleysoftware.com>
-Date: Thu, 27 Feb 2014 08:31:51 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 27 Feb 2014 08:32:08 -0500
+Date: Thu, 27 Feb 2014 05:31:32 -0800
+From: tip-bot for George McCollister <tipbot@zytor.com>
+Message-ID: <tip-791c9e0292671a3bfa95286bb5c08129d8605618@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, george.mccollister@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, george.mccollister@gmail.com, tglx@linutronix.de
+In-Reply-To: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
+References: <1392767811-28916-1-git-send-email-george.mccollister@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix double normalization of vruntime
+Git-Commit-ID: 791c9e0292671a3bfa95286bb5c08129d8605618
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Ray Strode <halfline@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Werner Fink <werner@suse.de>
-Subject: Re: [PATCH] tty: Add sysfs symlink for console name->tty device
-References: <1393425651-7374-1-git-send-email-peter@hurleysoftware.com> <CAPXgP112sBy+ErD3xYK8=+0tfXPY80wb8Zco5cJKuKkv7+ZViA@mail.gmail.com>
-In-Reply-To: <CAPXgP112sBy+ErD3xYK8=+0tfXPY80wb8Zco5cJKuKkv7+ZViA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 06:13 AM, Kay Sievers wrote:
-> On Wed, Feb 26, 2014 at 3:40 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> Enable a user-space process to discover the underlying tty device
->> for a console, if one exists, and when the tty device is later
->> created or destroyed.
->>
->> Add sysfs symlinks for registered consoles to their respective
->> devices in [sys/class,sys/devices/virtual]/tty/console.
->> Scan consoles at tty device (un)registration to handle deferred
->> console<->device (un)binding.
->
-> What tool is supposed to read that? I can't think of anything
-> interested in this, as soon as we have fixed the "active" console
-> output.
+Commit-ID:  791c9e0292671a3bfa95286bb5c08129d8605618
+Gitweb:     http://git.kernel.org/tip/791c9e0292671a3bfa95286bb5c08129d8605618
+Author:     George McCollister <george.mccollister@gmail.com>
+AuthorDate: Tue, 18 Feb 2014 17:56:51 -0600
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 27 Feb 2014 12:29:38 +0100
 
-Kay,
+sched: Fix double normalization of vruntime
 
-With all due respect, that "fix" is a ridiculous hack, being done
-for self-serving expedience. It already caused one user-space breakage
-which you did not expect.
+dequeue_entity() is called when p->on_rq and sets se->on_rq = 0
+which appears to guarentee that the !se->on_rq condition is met.
+If the task has done set_current_state(TASK_INTERRUPTIBLE) without
+schedule() the second condition will be met and vruntime will be
+incorrectly adjusted twice.
 
-This sysfs interface is superior in every way.
+In certain cases this can result in the task's vruntime never increasing
+past the vruntime of other tasks on the CFS' run queue, starving them of
+CPU time.
 
-Regards,
-Peter Hurley
+This patch changes switched_from_fair() to use !p->on_rq instead of
+!se->on_rq.
 
+I'm able to cause a task with a priority of 120 to starve all other
+tasks with the same priority on an ARM platform running 3.2.51-rt72
+PREEMPT RT by writing one character at time to a serial tty (16550 UART)
+in a tight loop. I'm also able to verify making this change corrects the
+problem on that platform and kernel version.
+
+Signed-off-by: George McCollister <george.mccollister@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1392767811-28916-1-git-send-email-george.mccollister@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7815709..9b4c4f3 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7001,15 +7001,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+ 	/*
+-	 * Ensure the task's vruntime is normalized, so that when its
++	 * Ensure the task's vruntime is normalized, so that when it's
+ 	 * switched back to the fair class the enqueue_entity(.flags=0) will
+ 	 * do the right thing.
+ 	 *
+-	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
+-	 * have normalized the vruntime, if it was !on_rq, then only when
++	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
++	 * have normalized the vruntime, if it's !on_rq, then only when
+ 	 * the task is sleeping will it still have non-normalized vruntime.
+ 	 */
+-	if (!se->on_rq && p->state != TASK_RUNNING) {
++	if (!p->on_rq && p->state != TASK_RUNNING) {
+ 		/*
+ 		 * Fix up our vruntime so that the current sleep doesn't
+ 		 * cause 'unlimited' sleep bonus.
