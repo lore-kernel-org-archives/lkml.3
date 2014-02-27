@@ -1,125 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaB0Lla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:41:30 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46165 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699AbaB0Ll1 (ORCPT
+	id S1752415AbaB0LkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:40:21 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:9521 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaB0LkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:41:27 -0500
-Date: Thu, 27 Feb 2014 17:02:27 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        josh@joshtriplett.org
-Subject: [PATCH 07/46] kernel: Mark functions as static and remove unused
- function in events/core.c
-Message-ID: <100ad46ac1a69a1604b0c810259c2a26cf79417d.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Feb 2014 06:40:19 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-f7-530f242259ed
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/3] f2fs: remove costly bit operations for f2fs_find_entry
+Date: Thu, 27 Feb 2014 20:38:37 +0900
+Message-id: <1393501119-12976-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zI10lFf5gg61zeSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyjh4+BZjwXWBivnT
+	97A2MK7g7WLk5JAQMJG4+m87K4QtJnHh3nq2LkYuDiGBZYwSxxZcZ4Up2th0mRUiMZ1R4uzf
+	o+wQTieTxOVlT5m6GDk42AS0JTbvNwBpEBFgllgw9TwjSA2zwARGif+L3rOAJIQFvCUeT7rF
+	BmKzCKhK/P43lRmkl1fAXWLz0zyIZdoS255PBOuVEHjMJnGudzUzRL2AxLfJh1hA6iUEZCU2
+	HWCGqJeUOLjiBssERsEFjAyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MUJCcOIOxvsHrA8x
+	JgONm8gsJZqcDwzhvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJpCeWpGanphakFsUXleak
+	Fh9iZOLglGpgFLJ7ZNq22rNcNXlHrXWlfRPXGTcuuTauE7EXlqvIMSfmnF4r8uR8wc3SgHur
+	Ns5a39noLH0rdF711QcrZ+RND+PYe9R3nsYnDvOpL/SWPz9x5Bubem/ftBNx25uasp8flp48
+	9evePq3HJjfrZgnf/+hnMl13epP1rxXv7AV9RfN42dbOX7DCUomlOCPRUIu5qDgRACpX6lRX	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQV0lFf5ggzuTOCyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8w4ePgWY8F1gYr50/ewNjCu4O1i5OSQEDCR2Nh0mRXCFpO4cG89WxcjF4eQ
+	wHRGibN/j7JDOJ1MEpeXPWXqYuTgYBPQlti83wCkQUSAWWLB1POMIDXMAhMYJf4ves8CkhAW
+	8JZ4POkWG4jNIqAq8fvfVGaQXl4Bd4nNT/MglmlLbHs+kXECI/cCRoZVjKKpBckFxUnpuYZ6
+	xYm5xaV56XrJ+bmbGMEB/kxqB+PKBotDjAIcjEo8vApsfMFCrIllxZW5hxglOJiVRHjXM/EH
+	C/GmJFZWpRblxxeV5qQWH2JMBlo+kVlKNDkfGH15JfGGxiZmRpZGZhZGJubmpAkrifMeaLUO
+	FBJITyxJzU5NLUgtgtnCxMEp1cB48rtURRlL0psDJ9eUcEZM/RP74tNHpc3l2axb3nPoTu/3
+	s/4SOm/XKSaze1Ybaz/M54+d4BoT7rKP+cecp1NC1GL2tMzW4878z7Oa2/HMGtWE8A38Kstb
+	roWsmiSw3ovBtFVW70LF3nOz3zRdXDn3rUb+WTf/pgpru73fc9x7dmhqaIu25ccosRRnJBpq
+	MRcVJwIAHZmzdbQCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in kernel/events/core.c because they are not
-used outside this file. Also, remove unused function in
-kernel/events/core.c.
+It turns out that a bit operation like find_next_bit is not always fast enough
+for f2fs_find_entry.
+Instead, it is pretty much simple and fast to traverse each dentries.
 
-This eliminates the following warning in kernel/events/core.c:
-kernel/events/core.c:182:6: warning: no previous prototype for ‘update_perf_cpu_limits’ [-Wmissing-prototypes]
-kernel/events/core.c:470:6: warning: no previous prototype for ‘perf_cgroup_switch’ [-Wmissing-prototypes]
-kernel/events/core.c:781:6: warning: no previous prototype for ‘perf_cpu_hrtimer_cancel’ [-Wmissing-prototypes]
-kernel/events/core.c:6574:13: warning: no previous prototype for ‘perf_init_event’ [-Wmissing-prototypes]
-kernel/events/core.c:7707:5: warning: no previous prototype for ‘perf_event_init_context’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- kernel/events/core.c |   36 ++++--------------------------------
- 1 file changed, 4 insertions(+), 32 deletions(-)
+ fs/f2fs/dir.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 56003c6..672e51f 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -179,7 +179,7 @@ static int perf_sample_period_ns __read_mostly	= DEFAULT_SAMPLE_PERIOD_NS;
- static int perf_sample_allowed_ns __read_mostly =
- 	DEFAULT_SAMPLE_PERIOD_NS * DEFAULT_CPU_TIME_MAX_PERCENT / 100;
- 
--void update_perf_cpu_limits(void)
-+static void update_perf_cpu_limits(void)
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index d5a2c9e..c3ea8f8 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -93,16 +93,20 @@ static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
+ 			f2fs_hash_t namehash, struct page **res_page)
  {
- 	u64 tmp = perf_sample_period_ns;
+ 	struct f2fs_dir_entry *de;
+-	unsigned long bit_pos, end_pos, next_pos;
++	unsigned long bit_pos = 0;
+ 	struct f2fs_dentry_block *dentry_blk = kmap(dentry_page);
+-	int slots;
++	int max_len = 0;
  
-@@ -467,7 +467,7 @@ perf_cgroup_set_timestamp(struct task_struct *task,
-  * mode SWOUT : schedule out everything
-  * mode SWIN : schedule in based on cgroup for next
-  */
--void perf_cgroup_switch(struct task_struct *task, int mode)
-+static void perf_cgroup_switch(struct task_struct *task, int mode)
- {
- 	struct perf_cpu_context *cpuctx;
- 	struct pmu *pmu;
-@@ -777,34 +777,6 @@ static enum hrtimer_restart perf_cpu_hrtimer_handler(struct hrtimer *hr)
- 	return ret;
+-	bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
+-					NR_DENTRY_IN_BLOCK, 0);
+ 	while (bit_pos < NR_DENTRY_IN_BLOCK) {
+ 		de = &dentry_blk->dentry[bit_pos];
+-		slots = GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
+-
++		if (!test_bit_le(bit_pos, &dentry_blk->dentry_bitmap)) {
++			if (bit_pos == 0)
++				max_len = 1;
++			else if (!test_bit_le(bit_pos - 1, &dentry_blk->dentry_bitmap))
++				max_len++;
++			bit_pos++;
++			continue;
++		}
+ 		if (early_match_name(name, namelen, namehash, de)) {
+ 			if (!memcmp(dentry_blk->filename[bit_pos],
+ 							name, namelen)) {
+@@ -110,20 +114,18 @@ static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
+ 				goto found;
+ 			}
+ 		}
+-		next_pos = bit_pos + slots;
+-		bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
+-				NR_DENTRY_IN_BLOCK, next_pos);
+-		if (bit_pos >= NR_DENTRY_IN_BLOCK)
+-			end_pos = NR_DENTRY_IN_BLOCK;
+-		else
+-			end_pos = bit_pos;
+-		if (*max_slots < end_pos - next_pos)
+-			*max_slots = end_pos - next_pos;
++		if (max_len > *max_slots) {
++			*max_slots = max_len;
++			max_len = 0;
++		}
++		bit_pos += GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
+ 	}
+ 
+ 	de = NULL;
+ 	kunmap(dentry_page);
+ found:
++	if (max_len > *max_slots)
++		*max_slots = max_len;
+ 	return de;
  }
  
--/* CPU is going down */
--void perf_cpu_hrtimer_cancel(int cpu)
--{
--	struct perf_cpu_context *cpuctx;
--	struct pmu *pmu;
--	unsigned long flags;
--
--	if (WARN_ON(cpu != smp_processor_id()))
--		return;
--
--	local_irq_save(flags);
--
--	rcu_read_lock();
--
--	list_for_each_entry_rcu(pmu, &pmus, entry) {
--		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
--
--		if (pmu->task_ctx_nr == perf_sw_context)
--			continue;
--
--		hrtimer_cancel(&cpuctx->hrtimer);
--	}
--
--	rcu_read_unlock();
--
--	local_irq_restore(flags);
--}
--
- static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
- {
- 	struct hrtimer *hr = &cpuctx->hrtimer;
-@@ -6571,7 +6543,7 @@ void perf_pmu_unregister(struct pmu *pmu)
- 	free_pmu_context(pmu);
- }
- 
--struct pmu *perf_init_event(struct perf_event *event)
-+static struct pmu *perf_init_event(struct perf_event *event)
- {
- 	struct pmu *pmu = NULL;
- 	int idx;
-@@ -7704,7 +7676,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
- /*
-  * Initialize the perf_event context in task_struct
-  */
--int perf_event_init_context(struct task_struct *child, int ctxn)
-+static int perf_event_init_context(struct task_struct *child, int ctxn)
- {
- 	struct perf_event_context *child_ctx, *parent_ctx;
- 	struct perf_event_context *cloned_ctx;
 -- 
-1.7.9.5
+1.8.4.474.g128a96c
 
