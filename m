@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaB0N3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:29:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54750 "EHLO
+	id S1753121AbaB0N34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:29:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54780 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021AbaB0N32 (ORCPT
+	with ESMTP id S1753094AbaB0N3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:29:28 -0500
-Date: Thu, 27 Feb 2014 05:29:05 -0800
+	Thu, 27 Feb 2014 08:29:54 -0500
+Date: Thu, 27 Feb 2014 05:29:28 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-5ea8415407a76c4a85ac971ec82d110161cd77f1@git.kernel.org>
+Message-ID: <tip-9e8c06eaba76392644825a72d965ffa5f2a5784a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
@@ -20,11 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1392825179-5228-5-git-send-email-jolsa@redhat.com>
-References: <1392825179-5228-5-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1392825179-5228-7-git-send-email-jolsa@redhat.com>
+References: <1392825179-5228-7-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add libdw DWARF post unwind support
-Git-Commit-ID: 5ea8415407a76c4a85ac971ec82d110161cd77f1
+Subject: [tip:perf/core] perf tests: Add NO_LIBDW_DWARF_UNWIND make test
+Git-Commit-ID: 9e8c06eaba76392644825a72d965ffa5f2a5784a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,26 +37,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5ea8415407a76c4a85ac971ec82d110161cd77f1
-Gitweb:     http://git.kernel.org/tip/5ea8415407a76c4a85ac971ec82d110161cd77f1
+Commit-ID:  9e8c06eaba76392644825a72d965ffa5f2a5784a
+Gitweb:     http://git.kernel.org/tip/9e8c06eaba76392644825a72d965ffa5f2a5784a
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 19 Feb 2014 16:52:57 +0100
+AuthorDate: Wed, 19 Feb 2014 16:52:59 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Feb 2014 09:29:36 -0300
+CommitDate: Mon, 24 Feb 2014 09:29:37 -0300
 
-perf tools: Add libdw DWARF post unwind support
+perf tests: Add NO_LIBDW_DWARF_UNWIND make test
 
-Adding libdw DWARF post unwind support, which is part of
-elfutils-devel/libdw-dev package from version 0.158.
-
-The new code is contained in unwin-libdw.c object, and implements
-unwind__get_entries unwind interface function.
-
-New Makefile variable NO_LIBDW_DWARF_UNWIND was added to control its
-compilation, and is marked as disabled now.  It's factored with the rest
-of the Makefile unwind build code in the next patch.
-
-Arch specific code was added for x86.
+Adding make test for NO_LIBDW_DWARF_UNWIND option, plus updating minimal
+build test with it.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -67,369 +58,37 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1392825179-5228-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1392825179-5228-7-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf                |  11 ++
- tools/perf/arch/x86/Makefile            |   3 +
- tools/perf/arch/x86/util/unwind-libdw.c |  51 ++++++++
- tools/perf/config/Makefile              |   1 +
- tools/perf/util/unwind-libdw.c          | 210 ++++++++++++++++++++++++++++++++
- tools/perf/util/unwind-libdw.h          |  21 ++++
- 6 files changed, 297 insertions(+)
+ tools/perf/tests/make | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index bde91f8..2dff0b8 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -57,6 +57,12 @@ include config/utilities.mak
- # Define NO_LIBAUDIT if you do not want libaudit support
- #
- # Define NO_LIBBIONIC if you do not want bionic support
-+#
-+# Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
-+# for dwarf backtrace post unwind.
-+
-+# temporarily disabled
-+NO_LIBDW_DWARF_UNWIND := 1
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 2d24954..5daeae1 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -27,6 +27,7 @@ make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
+ make_no_demangle    := NO_DEMANGLE=1
+ make_no_libelf      := NO_LIBELF=1
+ make_no_libunwind   := NO_LIBUNWIND=1
++make_no_libdw_dwarf_unwind := NO_LIBDW_DWARF_UNWIND=1
+ make_no_backtrace   := NO_BACKTRACE=1
+ make_no_libnuma     := NO_LIBNUMA=1
+ make_no_libaudit    := NO_LIBAUDIT=1
+@@ -50,6 +51,7 @@ make_install_pdf    := install-pdf
+ make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
+ make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
+ make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
++make_minimal        += NO_LIBDW_DWARF_UNWIND=1
  
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-@@ -478,6 +484,11 @@ ifndef NO_DWARF
- endif # NO_DWARF
- endif # NO_LIBELF
- 
-+ifndef NO_LIBDW_DWARF_UNWIND
-+  LIB_OBJS += $(OUTPUT)util/unwind-libdw.o
-+  LIB_H += util/unwind-libdw.h
-+endif
-+
- ifndef NO_LIBUNWIND
-   LIB_OBJS += $(OUTPUT)util/unwind-libunwind.o
- endif
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 4fa9be9..37c4652 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -7,6 +7,9 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
-+ifndef NO_LIBDW_DWARF_UNWIND
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libdw.o
-+endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
- LIB_H += arch/$(ARCH)/util/tsc.h
-diff --git a/tools/perf/arch/x86/util/unwind-libdw.c b/tools/perf/arch/x86/util/unwind-libdw.c
-new file mode 100644
-index 0000000..c4b7217
---- /dev/null
-+++ b/tools/perf/arch/x86/util/unwind-libdw.c
-@@ -0,0 +1,51 @@
-+#include <elfutils/libdwfl.h>
-+#include "../../util/unwind-libdw.h"
-+#include "../../util/perf_regs.h"
-+
-+bool libdw__arch_set_initial_registers(Dwfl_Thread *thread, void *arg)
-+{
-+	struct unwind_info *ui = arg;
-+	struct regs_dump *user_regs = &ui->sample->user_regs;
-+	Dwarf_Word dwarf_regs[17];
-+	unsigned nregs;
-+
-+#define REG(r) ({						\
-+	Dwarf_Word val = 0;					\
-+	perf_reg_value(&val, user_regs, PERF_REG_X86_##r);	\
-+	val;							\
-+})
-+
-+	if (user_regs->abi == PERF_SAMPLE_REGS_ABI_32) {
-+		dwarf_regs[0] = REG(AX);
-+		dwarf_regs[1] = REG(CX);
-+		dwarf_regs[2] = REG(DX);
-+		dwarf_regs[3] = REG(BX);
-+		dwarf_regs[4] = REG(SP);
-+		dwarf_regs[5] = REG(BP);
-+		dwarf_regs[6] = REG(SI);
-+		dwarf_regs[7] = REG(DI);
-+		dwarf_regs[8] = REG(IP);
-+		nregs = 9;
-+	} else {
-+		dwarf_regs[0]  = REG(AX);
-+		dwarf_regs[1]  = REG(DX);
-+		dwarf_regs[2]  = REG(CX);
-+		dwarf_regs[3]  = REG(BX);
-+		dwarf_regs[4]  = REG(SI);
-+		dwarf_regs[5]  = REG(DI);
-+		dwarf_regs[6]  = REG(BP);
-+		dwarf_regs[7]  = REG(SP);
-+		dwarf_regs[8]  = REG(R8);
-+		dwarf_regs[9]  = REG(R9);
-+		dwarf_regs[10] = REG(R10);
-+		dwarf_regs[11] = REG(R11);
-+		dwarf_regs[12] = REG(R12);
-+		dwarf_regs[13] = REG(R13);
-+		dwarf_regs[14] = REG(R14);
-+		dwarf_regs[15] = REG(R15);
-+		dwarf_regs[16] = REG(IP);
-+		nregs = 17;
-+	}
-+
-+	return dwfl_thread_state_registers(thread, 0, nregs, dwarf_regs);
-+}
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 074fa61..c040d86 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -261,6 +261,7 @@ ifdef NO_LIBELF
-   NO_DWARF := 1
-   NO_DEMANGLE := 1
-   NO_LIBUNWIND := 1
-+  NO_LIBDW_DWARF_UNWIND := 1
- else
-   ifeq ($(feature-libelf), 0)
-     ifeq ($(feature-glibc), 1)
-diff --git a/tools/perf/util/unwind-libdw.c b/tools/perf/util/unwind-libdw.c
-new file mode 100644
-index 0000000..67db73e
---- /dev/null
-+++ b/tools/perf/util/unwind-libdw.c
-@@ -0,0 +1,210 @@
-+#include <linux/compiler.h>
-+#include <elfutils/libdw.h>
-+#include <elfutils/libdwfl.h>
-+#include <inttypes.h>
-+#include <errno.h>
-+#include "unwind.h"
-+#include "unwind-libdw.h"
-+#include "machine.h"
-+#include "thread.h"
-+#include "types.h"
-+#include "event.h"
-+#include "perf_regs.h"
-+
-+static char *debuginfo_path;
-+
-+static const Dwfl_Callbacks offline_callbacks = {
-+	.find_debuginfo		= dwfl_standard_find_debuginfo,
-+	.debuginfo_path		= &debuginfo_path,
-+	.section_address	= dwfl_offline_section_address,
-+};
-+
-+static int __report_module(struct addr_location *al, u64 ip,
-+			    struct unwind_info *ui)
-+{
-+	Dwfl_Module *mod;
-+	struct dso *dso = NULL;
-+
-+	thread__find_addr_location(ui->thread, ui->machine,
-+				   PERF_RECORD_MISC_USER,
-+				   MAP__FUNCTION, ip, al);
-+
-+	if (al->map)
-+		dso = al->map->dso;
-+
-+	if (!dso)
-+		return 0;
-+
-+	mod = dwfl_addrmodule(ui->dwfl, ip);
-+	if (!mod)
-+		mod = dwfl_report_elf(ui->dwfl, dso->short_name,
-+				      dso->long_name, -1, al->map->start,
-+				      false);
-+
-+	return mod && dwfl_addrmodule(ui->dwfl, ip) == mod ? 0 : -1;
-+}
-+
-+static int report_module(u64 ip, struct unwind_info *ui)
-+{
-+	struct addr_location al;
-+
-+	return __report_module(&al, ip, ui);
-+}
-+
-+static int entry(u64 ip, struct unwind_info *ui)
-+
-+{
-+	struct unwind_entry e;
-+	struct addr_location al;
-+
-+	if (__report_module(&al, ip, ui))
-+		return -1;
-+
-+	e.ip  = ip;
-+	e.map = al.map;
-+	e.sym = al.sym;
-+
-+	pr_debug("unwind: %s:ip = 0x%" PRIx64 " (0x%" PRIx64 ")\n",
-+		 al.sym ? al.sym->name : "''",
-+		 ip,
-+		 al.map ? al.map->map_ip(al.map, ip) : (u64) 0);
-+
-+	return ui->cb(&e, ui->arg);
-+}
-+
-+static pid_t next_thread(Dwfl *dwfl, void *arg, void **thread_argp)
-+{
-+	/* We want only single thread to be processed. */
-+	if (*thread_argp != NULL)
-+		return 0;
-+
-+	*thread_argp = arg;
-+	return dwfl_pid(dwfl);
-+}
-+
-+static int access_dso_mem(struct unwind_info *ui, Dwarf_Addr addr,
-+			  Dwarf_Word *data)
-+{
-+	struct addr_location al;
-+	ssize_t size;
-+
-+	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
-+			      MAP__FUNCTION, addr, &al);
-+	if (!al.map) {
-+		pr_debug("unwind: no map for %lx\n", (unsigned long)addr);
-+		return -1;
-+	}
-+
-+	if (!al.map->dso)
-+		return -1;
-+
-+	size = dso__data_read_addr(al.map->dso, al.map, ui->machine,
-+				   addr, (u8 *) data, sizeof(*data));
-+
-+	return !(size == sizeof(*data));
-+}
-+
-+static bool memory_read(Dwfl *dwfl __maybe_unused, Dwarf_Addr addr, Dwarf_Word *result,
-+			void *arg)
-+{
-+	struct unwind_info *ui = arg;
-+	struct stack_dump *stack = &ui->sample->user_stack;
-+	u64 start, end;
-+	int offset;
-+	int ret;
-+
-+	ret = perf_reg_value(&start, &ui->sample->user_regs, PERF_REG_SP);
-+	if (ret)
-+		return false;
-+
-+	end = start + stack->size;
-+
-+	/* Check overflow. */
-+	if (addr + sizeof(Dwarf_Word) < addr)
-+		return false;
-+
-+	if (addr < start || addr + sizeof(Dwarf_Word) > end) {
-+		ret = access_dso_mem(ui, addr, result);
-+		if (ret) {
-+			pr_debug("unwind: access_mem 0x%" PRIx64 " not inside range"
-+				 " 0x%" PRIx64 "-0x%" PRIx64 "\n",
-+				addr, start, end);
-+			return false;
-+		}
-+		return true;
-+	}
-+
-+	offset  = addr - start;
-+	*result = *(Dwarf_Word *)&stack->data[offset];
-+	pr_debug("unwind: access_mem addr 0x%" PRIx64 ", val %lx, offset %d\n",
-+		 addr, (unsigned long)*result, offset);
-+	return true;
-+}
-+
-+static const Dwfl_Thread_Callbacks callbacks = {
-+	.next_thread		= next_thread,
-+	.memory_read		= memory_read,
-+	.set_initial_registers	= libdw__arch_set_initial_registers,
-+};
-+
-+static int
-+frame_callback(Dwfl_Frame *state, void *arg)
-+{
-+	struct unwind_info *ui = arg;
-+	Dwarf_Addr pc;
-+
-+	if (!dwfl_frame_pc(state, &pc, NULL)) {
-+		pr_err("%s", dwfl_errmsg(-1));
-+		return DWARF_CB_ABORT;
-+	}
-+
-+	return entry(pc, ui) || !(--ui->max_stack) ?
-+	       DWARF_CB_ABORT : DWARF_CB_OK;
-+}
-+
-+int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
-+			struct machine *machine, struct thread *thread,
-+			struct perf_sample *data,
-+			int max_stack)
-+{
-+	struct unwind_info ui = {
-+		.sample		= data,
-+		.thread		= thread,
-+		.machine	= machine,
-+		.cb		= cb,
-+		.arg		= arg,
-+		.max_stack	= max_stack,
-+	};
-+	Dwarf_Word ip;
-+	int err = -EINVAL;
-+
-+	if (!data->user_regs.regs)
-+		return -EINVAL;
-+
-+	ui.dwfl = dwfl_begin(&offline_callbacks);
-+	if (!ui.dwfl)
-+		goto out;
-+
-+	err = perf_reg_value(&ip, &data->user_regs, PERF_REG_IP);
-+	if (err)
-+		goto out;
-+
-+	err = report_module(ip, &ui);
-+	if (err)
-+		goto out;
-+
-+	if (!dwfl_attach_state(ui.dwfl, EM_NONE, thread->tid, &callbacks, &ui))
-+		goto out;
-+
-+	err = dwfl_getthread_frames(ui.dwfl, thread->tid, frame_callback, &ui);
-+
-+	if (err && !ui.max_stack)
-+		err = 0;
-+
-+ out:
-+	if (err)
-+		pr_debug("unwind: failed with '%s'\n", dwfl_errmsg(-1));
-+
-+	dwfl_end(ui.dwfl);
-+	return 0;
-+}
-diff --git a/tools/perf/util/unwind-libdw.h b/tools/perf/util/unwind-libdw.h
-new file mode 100644
-index 0000000..417a142
---- /dev/null
-+++ b/tools/perf/util/unwind-libdw.h
-@@ -0,0 +1,21 @@
-+#ifndef __PERF_UNWIND_LIBDW_H
-+#define __PERF_UNWIND_LIBDW_H
-+
-+#include <elfutils/libdwfl.h>
-+#include "event.h"
-+#include "thread.h"
-+#include "unwind.h"
-+
-+bool libdw__arch_set_initial_registers(Dwfl_Thread *thread, void *arg);
-+
-+struct unwind_info {
-+	Dwfl			*dwfl;
-+	struct perf_sample      *sample;
-+	struct machine          *machine;
-+	struct thread           *thread;
-+	unwind_entry_cb_t	cb;
-+	void			*arg;
-+	int			max_stack;
-+};
-+
-+#endif /* __PERF_UNWIND_LIBDW_H */
+ # $(run) contains all available tests
+ run := make_pure
+@@ -66,6 +68,7 @@ run += make_no_ui
+ run += make_no_demangle
+ run += make_no_libelf
+ run += make_no_libunwind
++run += make_no_libdw_dwarf_unwind
+ run += make_no_backtrace
+ run += make_no_libnuma
+ run += make_no_libaudit
