@@ -1,97 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaB0QsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:48:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaB0QsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:48:05 -0500
-Date: Thu, 27 Feb 2014 17:47:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        matt.helsley@gmail.com, davem@davemloft.net, guillaume@morinfr.org
-Subject: Re: + exitc-call-proc_exit_connector-after-exit_state-is-set.patch
-	added to -mm tree
-Message-ID: <20140227164750.GC909@redhat.com>
-References: <530bbf59.78aTdR6Ql6kCpXnE%akpm@linux-foundation.org> <20140225151043.GA24546@redhat.com> <20140227144826.GA13313@bender.morinfr.org>
+	id S1753373AbaB0QtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:49:04 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:56110 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaB0QtB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:49:01 -0500
+Date: Thu, 27 Feb 2014 16:48:57 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 3/3] arm64: Add architecture support for PCI
+Message-ID: <20140227164857.GQ1692@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	"linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1393506599-11561-1-git-send-email-Liviu.Dudau@arm.com>
+ <1393506599-11561-4-git-send-email-Liviu.Dudau@arm.com>
+ <5402126.Dbh9PNPIjR@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <5402126.Dbh9PNPIjR@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 27 Feb 2014 16:48:58.0155 (UTC) FILETIME=[CF0BDFB0:01CF33DB]
+X-MC-Unique: 114022716485910801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140227144826.GA13313@bender.morinfr.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27, Guillaume Morin wrote:
->
-> On 25 Feb 16:10, Oleg Nesterov wrote:
-> > > pid_t pid = fork();
-> > > if (pid > 0) {
-> > > 	register_interest_for_pid(pid);
-> > > 	if (waitpid(pid, NULL, WNOHANG) > 0)
-> > > 	{
-> > > 	  /* We might have raced with exit() */
-> > > 	}
-> >
-> > Just in case... Even with this patch the code above is still "racy" if the
-> > child is multi-threaded. Plus it should obviously filter-out subthreads.
-> > And afaics there is no way to make it reliable, even if you change the
-> > code above so that waitpid() is called only after the last thread exits
-> > WNOHANG still can fail.
-> > Not that I am not arguing with this change. Although I hope that someone
-> > can confirm that netlink_broadcast() is safe even if release_task(current)
-> > was already called, so that the caller has no pids, sighand, is not visible
-> > via /proc/, etc.
->
-> I was too succinct, I think.  What I am trying to do is to close a race
-> when a short-lived *process* dies before register_interest_for_pid()
-> interprets the connector message correctly, (i.e realizes this is an
-> exit message for a pid that the parent created).
-
-Yes, I misunderstood the changelog, thanks.
-
-Anyway, I only tried to say that "a small window between when the event
-is delivered and the child become wait()-able." is not closed by this
-patch. Sorry for not being clear enough.
-
-> You clarified for me that a ptraced process is a case where this race
-> could still happen.  That's a good point.  Fortunately, in the case of a
-> short-lived process, this is not a common scenario.
+On Thu, Feb 27, 2014 at 04:06:24PM +0000, Arnd Bergmann wrote:
+> On Thursday 27 February 2014 13:09:59 Liviu Dudau wrote:
+> 
+> > +/*
+> > + * PCI address space differs from physical memory address space
+> > + */
+> > +#define PCI_DMA_BUS_IS_PHYS	(0)
+> > +
+> > +extern int isa_dma_bridge_buggy;
+> 
+> I got curious about isa_dma_bridge_buggy: apparently this is a quirk for
+> some old x86 bridges. We don't have those on arm64, and we also don't have
+> ISA_DMA_API, so just define this to (0).
 
 OK.
 
-> You seem to say it's possible for all threads to have completed
-> exit_notify() and sent their exit message to the connector before
-> register_interest_for_pid() does its job and still have waitpid(WNOHANG)
-> fails.  Is it correct?
+> 
+> > +static inline int pci_domain_nr(struct pci_bus *bus)
+> > +{
+> > +	struct pci_host_bridge *bridge = to_pci_host_bridge(bus->bridge);
+> > +
+> > +	if (bridge)
+> > +		return bridge->domain_nr;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static inline int pci_proc_domain(struct pci_bus *bus)
+> > +{
+> > +	return pci_domain_nr(bus);
+> > +}
+> 
+> And this one I would change to always return '1': we can deal with
+> domain numbers showing up in /procfs for all buses, since there is
+> no legacy software to worry about.
 
-And I indeed said this, but I was wrong ;) Sorry. somehow I forgot
-that with this patch release_task(sub_thread) is always called before
-proc_exit_connector() (and I even asked if this is safe above).
+Will do, thanks for reviewing this.
 
-However, I still do not see how you can ensure that all threads have
-already exited to rely on WNOHANG.
+> 
+> > diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
+> > new file mode 100644
+> > index 0000000..496df41
+> > --- /dev/null
+> > +++ b/arch/arm64/kernel/pci.c
+> > @@ -0,1 +1,126 @@
+> 
+> Ok, this is nice and short. Let's see if we can reduce it to nothing ;-)
+> 
+> > +/*
+> > + * Called after each bus is probed, but before its children are examined
+> > + */
+> > +void pcibios_fixup_bus(struct pci_bus *bus)
+> > +{
+> > +	struct pci_dev *dev;
+> > +	struct resource *res;
+> > +	int i;
+> > +
+> > +	if (!pci_is_root_bus(bus)) {
+> > +		pci_read_bridge_bases(bus);
+> > +
+> > +		pci_bus_for_each_resource(bus, res, i) {
+> > +			if (!res || !res->flags || res->parent)
+> > +				continue;
+> > +
+> > +			/*
+> > +			 * If we are going to reassign everything, we can
+> > +			 * shrink the P2P resource to have zero size to
+> > +			 * save space
+> > +			 */
+> > +			if (pci_has_flag(PCI_REASSIGN_ALL_RSRC)) {
+> > +				res->flags |= IORESOURCE_UNSET;
+> > +				res->start = 0;
+> > +				res->end = -1;
+> > +				continue;
+> > +			}
+> > +		}
+> > +	}
+> > +
+> > +	list_for_each_entry(dev, &bus->devices, bus_list) {
+> > +		/* Ignore fully discovered devices */
+> > +		if (dev->is_added)
+> > +			continue;
+> > +
+> > +		set_dev_node(&dev->dev, pcibus_to_node(dev->bus));
+> > +
+> > +		/* Read default IRQs and fixup if necessary */
+> > +		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL(pcibios_fixup_bus);
+> 
+> Shrinking the P2P resources I suppose is optional, but everything
+> else is in fact needed for any DT based architecture. Could this
+> be turned into a generic helper function in the PCI core that we
+> can call from architecture code?
+> 
+> If you name it pci_generic_fixup_bus(), we can add a weak helper
+> like:
+> 
+> void __weak pcibios_fixup_bus(struct pci_bus *bus)
+> {
+> 	pci_generic_fixup_bus(bus);
+> }
+> 
+> for architectures like arm64 that don't actually need to do anything
+> else.
 
-Nevermind. Please consider this trivial example:
+Sure, it can be done. Don't know what is the policy for these kind of functions
+that are used by architectures, but I can try sending a patch that adds the
+weak implementations in the core PCI code.
 
-	tfunc(void *)
-	{
-		for (;;)
-			pause();
-	}
+> 
+> > +/*
+> > + * We don't have to worry about legacy ISA devices, so nothing to do here
+> > + */
+> > +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+> > +				resource_size_t size, resource_size_t align)
+> > +{
+> > +	return ALIGN(res->start, align);
+> > +}
+> > +EXPORT_SYMBOL(pcibios_align_resource);
+> 
+> Where did this come from? 
 
-	int main(void)
-	{
-		pthread_create(tfunc);
-		pthread_exit();
-	}
+>From an internal version that Will posted. See, we do talk to each other ;)
 
-The main thread can exit and call proc_exit_connector() before
-register_interest_for_pid(), but WNOHANG obviously can't succeed.
 
-So I am still not sure this patch can solve the problem you described.
-But let me repeat just in case: I am not arguing with this change.
+> The most common implementation seems to be
+> 
+> resource_size_t pcibios_align_resource(void *data, const struct resource *res,
+> 				resource_size_t size, resource_size_t align)
+> {
+> 	return start;
+> }
+> EXPORT_SYMBOL(pcibios_align_resource);
+> 
+> if you don't have to worry about ISA devices. The ALIGN() part seems to
+> be handled by __find_resource() already.
+> 
+> I'd say that should be made the default implementation in the PCI core.
+> 
+> I'm also pretty sure you don't need the EXPORT_SYMBOL, since the PCI
+> core cannot be a loadable module (yet).
 
-Oleg.
+OK.
+
+> 
+> > +int pcibios_enable_device(struct pci_dev *dev, int mask)
+> > +{
+> > +	return pci_enable_resources(dev, mask);
+> > +}
+> > +
+> > +void pcibios_fixup_bridge_ranges(struct list_head *resources)
+> > +{
+> > +}
+> 
+> These are clearly the right implementations, but they should be weak
+> functions, too.
+
+pcibios_enable_devices is already subject to a patch series from Bjorn that make
+the weak implementation do the right thing for arm64, so the final version will
+not contain this.
+
+> 
+> > +#define IO_SPACE_PAGES	((IO_SPACE_LIMIT + 1) / PAGE_SIZE)
+> > +static DECLARE_BITMAP(pci_iospace, IO_SPACE_PAGES);
+> > +
+> > +unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr)
+> > +{
+> > +	unsigned long start, len, virt_start;
+> > +	int err;
+> > +
+> > +	if (res->end > IO_SPACE_LIMIT)
+> > +		return -EINVAL;
+> > +
+> > +	/*
+> > +	 * try finding free space for the whole size first,
+> > +	 * fall back to 64K if not available
+> > +	 */
+> > +	len = resource_size(res);
+> > +	start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
+> > +				res->start / PAGE_SIZE, len / PAGE_SIZE, 0);
+> > +	if (start == IO_SPACE_PAGES && len > SZ_64K) {
+> > +		len = SZ_64K;
+> > +		start = 0;
+> > +		start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
+> > +					start, len / PAGE_SIZE, 0);
+> > +	}
+> > +
+> > +	/* no 64K area found */
+> > +	if (start == IO_SPACE_PAGES)
+> > +		return -ENOMEM;
+> > +
+> > +	/* ioremap physical aperture to virtual aperture */
+> > +	virt_start = start * PAGE_SIZE + (unsigned long)PCI_IOBASE;
+> > +	err = ioremap_page_range(virt_start, virt_start + len,
+> > +				phys_addr, __pgprot(PROT_DEVICE_nGnRE));
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	bitmap_set(pci_iospace, start, len / PAGE_SIZE);
+> > +
+> > +	/* return io_offset */
+> > +	return start * PAGE_SIZE - res->start;
+> > +}
+> 
+> Maybe this can become an optional helper function with a separate Kconfig symbol
+> to enable it.
+
+Probably need to find a different name for it as well when it moves into core, arm
+already has an externalised function with this name.
+
+Best regards,
+Liviu
+
+> 
+> 	Arnd
+> 
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
