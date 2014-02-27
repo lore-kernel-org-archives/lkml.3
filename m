@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaB0Liu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:38:50 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:63198 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaB0Lit (ORCPT
+	id S1751255AbaB0LjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:39:12 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40736 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaB0LjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:38:49 -0500
-Date: Thu, 27 Feb 2014 17:06:33 +0530
+	Thu, 27 Feb 2014 06:39:10 -0500
+Date: Thu, 27 Feb 2014 17:09:03 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        josh@joshtriplett.org
-Subject: [PATCH 10/46] kernel: Mark function as static in
- events/hw_breakpoint.c
-Message-ID: <8631068ba409f5487664e2d287b9aedc3250645f.1393493276.git.rashika.kheria@gmail.com>
+Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>, josh@joshtriplett.org
+Subject: [PATCH 11/46] kernel: Add prototype declaration in kernel/gcov/base.c
+Message-ID: <6fc7e35882693c30f7f7adad20838a123fac29c3.1393493276.git.rashika.kheria@gmail.com>
 References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -28,31 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in kernel/events/hw_breakpoint.c because it is
-not used outside this file.
+Add prototype declarations of functions in kernel/gcov/base.c. These
+functions are required by GCC builtins and hence can not be removed
+despite of their unreferenced appearance in kernel source.
 
-This eliminates the following warning in kernel/events/hw_breakpoint.c:
-kernel/events/hw_breakpoint.c:83:12: warning: no previous prototype for ‘hw_breakpoint_weight’ [-Wmissing-prototypes]
+This eliminates the following warning in kernel/gcov/base.c:
+kernel/gcov/base.c:30:6: warning: no previous prototype for ‘__gcov_init’ [-Wmissing-prototypes]
+kernel/gcov/base.c:58:6: warning: no previous prototype for ‘__gcov_flush’ [-Wmissing-prototypes]
+kernel/gcov/base.c:64:6: warning: no previous prototype for ‘__gcov_merge_add’ [-Wmissing-prototypes]
+kernel/gcov/base.c:70:6: warning: no previous prototype for ‘__gcov_merge_single’ [-Wmissing-prototypes]
+kernel/gcov/base.c:76:6: warning: no previous prototype for‘__gcov_merge_delta’ [-Wmissing-prototypes]
+kernel/gcov/base.c:82:6: warning: no previous prototype for ‘__gcov_merge_ior’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/events/hw_breakpoint.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/gcov/base.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 1559fb0..c044eaf 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -80,7 +80,7 @@ struct bp_busy_slots {
- /* Serialize accesses to the above constraints */
- static DEFINE_MUTEX(nr_bp_mutex);
- 
--__weak int hw_breakpoint_weight(struct perf_event *bp)
-+static int hw_breakpoint_weight(struct perf_event *bp)
+diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
+index f45b75b..c0cb53a 100644
+--- a/kernel/gcov/base.c
++++ b/kernel/gcov/base.c
+@@ -27,6 +27,7 @@ static DEFINE_MUTEX(gcov_lock);
+  * __gcov_init is called by gcc-generated constructor code for each object
+  * file compiled with -fprofile-arcs.
+  */
++void __gcov_init(struct gcov_info *info);
+ void __gcov_init(struct gcov_info *info)
  {
- 	return 1;
+ 	static unsigned int gcov_version;
+@@ -55,30 +56,35 @@ EXPORT_SYMBOL(__gcov_init);
+  * These functions may be referenced by gcc-generated profiling code but serve
+  * no function for kernel profiling.
+  */
++void __gcov_flush(void);
+ void __gcov_flush(void)
+ {
+ 	/* Unused. */
  }
+ EXPORT_SYMBOL(__gcov_flush);
+ 
++void __gcov_merge_add(gcov_type *counters, unsigned int n_counters);
+ void __gcov_merge_add(gcov_type *counters, unsigned int n_counters)
+ {
+ 	/* Unused. */
+ }
+ EXPORT_SYMBOL(__gcov_merge_add);
+ 
++void __gcov_merge_single(gcov_type *counters, unsigned int n_counters);
+ void __gcov_merge_single(gcov_type *counters, unsigned int n_counters)
+ {
+ 	/* Unused. */
+ }
+ EXPORT_SYMBOL(__gcov_merge_single);
+ 
++void __gcov_merge_delta(gcov_type *counters, unsigned int n_counters);
+ void __gcov_merge_delta(gcov_type *counters, unsigned int n_counters)
+ {
+ 	/* Unused. */
+ }
+ EXPORT_SYMBOL(__gcov_merge_delta);
+ 
++void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters);
+ void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters)
+ {
+ 	/* Unused. */
 -- 
 1.7.9.5
 
