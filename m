@@ -1,138 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaB0Bvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:51:36 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11595 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752649AbaB0Bve (ORCPT
+	id S1754462AbaB0BwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:52:07 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43866 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754329AbaB0BwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:51:34 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <timur@tabi.org>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] ASoC: fsl-sai: Add SND_SOC_DAIFMT_DSP_A/B support.
-Date: Thu, 27 Feb 2014 08:45:01 +0800
-Message-ID: <1393461901-23844-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Wed, 26 Feb 2014 20:52:05 -0500
+Message-ID: <530E9A43.5030003@hurleysoftware.com>
+Date: Wed, 26 Feb 2014 20:52:03 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: The sheer number of sparse warnings in the kernel
+References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <530E82B2.3040305@zytor.com>
+In-Reply-To: <530E82B2.3040305@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o Add SND_SOC_DAIFMT_DSP_A support.
-o Add SND_SOC_DAIFMT_DSP_B support.
+On 02/26/2014 07:11 PM, H. Peter Anvin wrote:
+> On 02/26/2014 03:28 PM, Greg KH wrote:
+>>>
+>>> What do we need to do to actually make our tools be able to do work for
+>>> us?  Newbie projects to clean up?  Trying to get the larger Linux
+>>> companies to put resources on it?
+>>
+>> It's not the easiest "newbie" project as usually the first reflex to
+>> "just cast it away" is wrong for a lot of sparse warnings.  I know this
+>> from people trying to fix up the sparse warnings in drivers/staging/
+>>
+>
+> I have seen this phenomenon, too.  I also see a bunch of sparse warnings
+> which are clearly bogus, for example complaining about sizeof(bool) when
+> in bits like:
+>
+> 		__this_cpu_write(swallow_nmi, false);
+>
+> So getting this to the point where it is genuinely useful and can be
+> made a ubiquitous part of the Linux development process is going to take
+> more work and probably involve improvements to sparse so we can indicate
+> in the kernel sources when something is okay or removing completely
+> bogus warnings, and so on.
+>
+> The bigger question, again, is what do we need to do to make this
+> happen, assuming it is worth doing?  We certainly have had bugs,
+> including security holes, which sparse would have caught.  At the same
+> time, this kind of work tends to not be the kind that attract the top
+> hackers, unfortunately, as it is not "fun".
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- sound/soc/fsl/fsl_sai.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
- sound/soc/fsl/fsl_sai.h |  1 +
- 2 files changed, 43 insertions(+), 3 deletions(-)
+Well there was that "should we do a bug-fix-only 4.0 release?" message
+from Linus back at the 3.12 release.
 
-diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-index 26d9f5e..c4a4231 100644
---- a/sound/soc/fsl/fsl_sai.c
-+++ b/sound/soc/fsl/fsl_sai.c
-@@ -108,15 +108,44 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
- 	/* DAI mode */
- 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
- 	case SND_SOC_DAIFMT_I2S:
--		/* Data on rising edge of bclk, frame low, 1clk before data */
-+		/*
-+		 * Frame low, 1clk before data, one word length for frame sync,
-+		 * frame sync starts one serial clock cycle earlier,
-+		 * that is, together with the last bit of the previous
-+		 * data word.
-+		 */
- 		val_cr2 &= ~FSL_SAI_CR2_BCP;
- 		val_cr4 |= FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP;
- 		break;
- 	case SND_SOC_DAIFMT_LEFT_J:
--		/* Data on rising edge of bclk, frame high, 0clk before data */
-+		/*
-+		 * Frame high, one word length for frame sync,
-+		 * frame sync asserts with the first bit of the frame.
-+		 */
- 		val_cr2 &= ~FSL_SAI_CR2_BCP;
- 		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
- 		break;
-+	case SND_SOC_DAIFMT_DSP_A:
-+		/*
-+		 * Frame high, 1clk before data, one bit for frame sync,
-+		 * frame sync starts one serial clock cycle earlier,
-+		 * that is, together with the last bit of the previous
-+		 * data word.
-+		 */
-+		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr4 &= ~FSL_SAI_CR4_FSP;
-+		val_cr4 |= FSL_SAI_CR4_FSE;
-+		sai->is_dsp_mode = true;
-+		break;
-+	case SND_SOC_DAIFMT_DSP_B:
-+		/*
-+		 * Frame high, one bit for frame sync,
-+		 * frame sync asserts with the first bit of the frame.
-+		 */
-+		val_cr2 &= ~FSL_SAI_CR2_BCP;
-+		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
-+		sai->is_dsp_mode = true;
-+		break;
- 	case SND_SOC_DAIFMT_RIGHT_J:
- 		/* To be done */
- 	default:
-@@ -219,7 +248,9 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
- 	val_cr5 &= ~FSL_SAI_CR5_W0W_MASK;
- 	val_cr5 &= ~FSL_SAI_CR5_FBT_MASK;
- 
--	val_cr4 |= FSL_SAI_CR4_SYWD(word_width);
-+	if (!sai->is_dsp_mode)
-+		val_cr4 |= FSL_SAI_CR4_SYWD(word_width);
-+
- 	val_cr5 |= FSL_SAI_CR5_WNW(word_width);
- 	val_cr5 |= FSL_SAI_CR5_W0W(word_width);
- 
-@@ -245,6 +276,10 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
- 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
- 	u32 tcsr, rcsr;
- 
-+	/*
-+	 * The transmitter bit clock and frame sync are to be
-+	 * used by both the transmitter and receiver.
-+	 */
- 	regmap_update_bits(sai->regmap, FSL_SAI_TCR2, FSL_SAI_CR2_SYNC,
- 			   ~FSL_SAI_CR2_SYNC);
- 	regmap_update_bits(sai->regmap, FSL_SAI_RCR2, FSL_SAI_CR2_SYNC,
-@@ -261,6 +296,10 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
- 		tcsr &= ~FSL_SAI_CSR_FRDE;
- 	}
- 
-+	/*
-+	 * It is recommended that the transmitter is the last enabled
-+	 * and the first disabled.
-+	 */
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
-diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
-index 1571459..e432260 100644
---- a/sound/soc/fsl/fsl_sai.h
-+++ b/sound/soc/fsl/fsl_sai.h
-@@ -103,6 +103,7 @@ struct fsl_sai {
- 
- 	bool big_endian_regs;
- 	bool big_endian_data;
-+	bool is_dsp_mode;
- 
- 	struct snd_dmaengine_dai_dma_data dma_params_rx;
- 	struct snd_dmaengine_dai_dma_data dma_params_tx;
--- 
-1.8.4
+Or do like Geert does with the build message regressions/fixes. I always scan
+that to make sure none of my work is in it :)  (And that could be chunked
+up by maintainer).
 
+Just a thought.
 
+Regards,
+Peter Hurley
