@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaB0Vv2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:51:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaB0Vv0 (ORCPT
+	id S1752313AbaB0VwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:52:06 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:60013 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751573AbaB0VwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:51:26 -0500
-Date: Thu, 27 Feb 2014 13:51:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>,
-        "majianpeng" <majianpeng@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] md / procfs: avoid Oops if md-mod removed while
- /proc/mdstat is being polled.
-Message-Id: <20140227135125.92a56ff656b3ca8d0b5d9029@linux-foundation.org>
-In-Reply-To: <20140228083443.64c92382@notabene.brown>
-References: <20140227172445.13644477@notabene.brown>
-	<20140227125807.d034c50c7fe2e1a9f3c38ec1@linux-foundation.org>
-	<20140228083443.64c92382@notabene.brown>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 27 Feb 2014 16:52:05 -0500
+Date: Thu, 27 Feb 2014 22:51:45 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        alsa-devel@alsa-project.org, linux-watchdog@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] ARM: dove: prepare new Dove DT Kconfig variable
+Message-ID: <20140227215145.GR1484@spo001.leaseweb.com>
+References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com> <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 08:34:43 +1100 NeilBrown <neilb@suse.de> wrote:
+Hi Sebastian,
 
-> On Thu, 27 Feb 2014 12:58:07 -0800 Andrew Morton <akpm@linux-foundation.org>
-> wrote:
+Acked-by me.
+
+Kind regards,
+Wim.
+
+> DT-enabled Dove will move over from ARCH_DOVE in mach-dove to MACH_DOVE in
+> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
+> DT-only MACH_DOVE to mmc, thermal, wdt, and asoc Kconfigs.
 > 
-> > On Thu, 27 Feb 2014 17:24:45 +1100 NeilBrown <neilb@suse.de> wrote:
-> > 
-> > > If poll or select is waiting on /proc/mdstat when md-mod is unloaded
-> > > an oops will ensure when the poll/select completes.
-> > > 
-> > > This is because the wait_queue_head which is registered with poll_wait()
-> > > is local to the module and no longer exists when the poll completes and
-> > > detaches that wait_queue_head (in poll_free_wait -> remove_wait_queue).
-> > > 
-> > > To fix this we need the wait_queue_head to have (at least) the same life
-> > > time as the proc_dir_entry.  So this patch places it in that structure.
-> > > 
-> > > We:
-> > >   - add pde_poll_wait to struct proc_dir_entry
-> > >   - call poll_wait() passing this when poll() is called on the proc file
-> > >   - export a function proc_wake_up which will call wake_up() on pde_poll_wait
-> > > 
-> > > and make use of all that in md.c
-> > 
-> > This sounds wrong.  If a userspace process is waiting on
-> > md_event_waiters then the md module is "busy" and the rmmod attempt
-> > should fail?
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Chris Ball <chris@printf.net>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+> Cc: Liam Girdwood <lgirdwood@gmail.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: alsa-devel@alsa-project.org
+> Cc: linux-watchdog@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/mmc/host/Kconfig   | 2 +-
+>  drivers/thermal/Kconfig    | 2 +-
+>  drivers/watchdog/Kconfig   | 2 +-
+>  sound/soc/kirkwood/Kconfig | 2 +-
+>  4 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> Al Viro says "no" quite firmly.
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 1384f67abe21..a69e48b582e5 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -168,7 +168,7 @@ config MMC_SDHCI_ESDHC_IMX
+>  
+>  config MMC_SDHCI_DOVE
+>  	tristate "SDHCI support on Marvell's Dove SoC"
+> -	depends on ARCH_DOVE
+> +	depends on ARCH_DOVE || MACH_DOVE
+>  	depends on MMC_SDHCI_PLTFM
+>  	select MMC_SDHCI_IO_ACCESSORS
+>  	help
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 35c066489a19..07b5e56e9a97 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -150,7 +150,7 @@ config KIRKWOOD_THERMAL
+>  
+>  config DOVE_THERMAL
+>  	tristate "Temperature sensor on Marvell Dove SoCs"
+> -	depends on ARCH_DOVE
+> +	depends on ARCH_DOVE || MACH_DOVE
+>  	depends on OF
+>  	help
+>  	  Support for the Dove thermal sensor driver in the Linux thermal
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 79d25894343a..5659c62a175c 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -292,7 +292,7 @@ config DAVINCI_WATCHDOG
+>  
+>  config ORION_WATCHDOG
+>  	tristate "Orion watchdog"
+> -	depends on ARCH_ORION5X || ARCH_KIRKWOOD || ARCH_DOVE
+> +	depends on ARCH_ORION5X || ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE
+>  	select WATCHDOG_CORE
+>  	help
+>  	  Say Y here if to include support for the watchdog timer
+> diff --git a/sound/soc/kirkwood/Kconfig b/sound/soc/kirkwood/Kconfig
+> index 78ed4a42ad21..a1506d57e646 100644
+> --- a/sound/soc/kirkwood/Kconfig
+> +++ b/sound/soc/kirkwood/Kconfig
+> @@ -1,6 +1,6 @@
+>  config SND_KIRKWOOD_SOC
+>  	tristate "SoC Audio for the Marvell Kirkwood and Dove chips"
+> -	depends on ARCH_KIRKWOOD || ARCH_DOVE || COMPILE_TEST
+> +	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE || COMPILE_TEST
+>  	help
+>  	  Say Y or M if you want to add support for codecs attached to
+>  	  the Kirkwood I2S interface. You will also need to select the
+> -- 
+> 1.8.5.3
 > 
-> I think the core argument is that
-> 
->   rmmod md-mod < /proc/mdstat
-> 
-> would deadlock.
-
-Well, only if the rmmod hangs around waiting for the module to go idle.
-I'm thinking rmmod should fail.  EBUSY.
-
-> http://marc.info/?l=linux-fsdevel&m=133024267507384
-
-Why don't a billion blocking-procfs-read sites have this problem?
-
-
