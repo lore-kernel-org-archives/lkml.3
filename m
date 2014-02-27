@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaB0NWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:22:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.130]:56456 "EHLO
+	id S1752733AbaB0NXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:23:18 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:58950 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356AbaB0NWU (ORCPT
+	with ESMTP id S1750904AbaB0NXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:22:20 -0500
+	Thu, 27 Feb 2014 08:23:17 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linaro-kernel@lists.linaro.org
 Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
@@ -16,37 +16,36 @@ Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/4] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-Date: Thu, 27 Feb 2014 14:22:13 +0100
-Message-ID: <6845675.ZDsMtaSPuS@wuerfel>
+Subject: Re: [PATCH v2 3/4] pci: Introduce a domain number for pci_host_bridge.
+Date: Thu, 27 Feb 2014 14:22:39 +0100
+Message-ID: <7263969.1aniqAkfKX@wuerfel>
 User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1393506402-11474-3-git-send-email-Liviu.Dudau@arm.com>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <1393506402-11474-3-git-send-email-Liviu.Dudau@arm.com>
+In-Reply-To: <1393506402-11474-4-git-send-email-Liviu.Dudau@arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <1393506402-11474-4-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:esLHAFSLR90FI3b/Ae1AyRif3JJgjvF1lPEsgt7Oiep
- Q09HhSaNisWB9vrkfWwzpzBEQOcx2CjLzd4anqWJ2X3ZLFj+cn
- 10Qg8OBthAWrO0Sl7v6xR8PZeRBTBYROK2GmHKIrDSbJkx3xyo
- j2DjyKPwdGUQQDVX1pvu7RGiCteBnxtQZCh8jiwdubCvTjryi9
- QuvJFKjphxWfvc+fBWFetaoEMWcTdOtqUoOvpqLRogPOxTf3pd
- Ad9uiT8/xZzVEB9frbK7anoas6ajj/jCr2kfd+dtSULGCmcgWd
- Sz2yBZdEa65a+Mtq3xoWRzNphmKl9lEBiltphb+el/gV8Shg4R
- fJKALnNZY4Zp+ByBGssU=
+X-Provags-ID: V02:K0:L2JovWySWsSk1SIoc1zddR5HSH+EhTGvXG3dE0JEnEy
+ YoBZCW71ms2GnmbJkRy7B00/W7+I8/udmfx09KAP5e8nBC+vsd
+ iYkSYwUy7iSCtA35odaWjD5zG2Ust5KMzt/uxy2JdkFbxmXLlY
+ MX3TbQmE5HYKcR3nxG5aCe/Myw4n5O6g2Hxe7oFo3fhyEm9XD2
+ emsxU+0LAV5Ifw2NnJexp+yj4xec6oGTcXyxmnHx/uj4i3G5oI
+ 96ttkRvqW3sUku5z8ogMgPVREdnlE9ZPJwtwJbFNYCKn69xf7G
+ xtnVyp3a33wAfPGOZq70lSNLNkcJuOhthXoR9YBHPM428B3Ntq
+ CYmFLrmg2Px5dy8vh1hA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014 13:06:40 Liviu Dudau wrote:
-> Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
-> As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
-> the creation order has been changed for no good reason. Revert the order of
-> creation as we are going to depend on the pci_host_bridge structure to retrieve the
-> domain number of the root bus.
+On Thursday 27 February 2014 13:06:41 Liviu Dudau wrote:
+> Make it easier to discover the domain number of a bus by storing
+> the number in pci_host_bridge for the root bus. Several architectures
+> have their own way of storing this information, so it makes sense
+> to try to unify the code. While at this, add a new function that
+> creates a root bus in a given domain and make pci_create_root_bus()
+> a wrapper around this function.
 > 
 > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 > 
 
-Looks good to me.
-
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
