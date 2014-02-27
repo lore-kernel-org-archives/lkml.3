@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaB0QSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:18:44 -0500
-Received: from s3.sipsolutions.net ([144.76.43.152]:35217 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaB0QSl (ORCPT
+	id S1753347AbaB0QUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:20:09 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:33050 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129AbaB0QUH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:18:41 -0500
-Message-ID: <1393517912.4648.5.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 2/4] mac80211: set NET_NAME_USER for user-space created
- ifs
-From: Johannes Berg <johannes@sipsolutions.net>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Date: Thu, 27 Feb 2014 17:18:32 +0100
-In-Reply-To: <CANq1E4RNbtbdVhC2PgyZMGN_duScbmCOGeMxAYiKLL-8H=EWSA@mail.gmail.com> (sfid-20140227_155615_730008_8D7E77AA)
-References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
-	 <1393512434-1325-3-git-send-email-dh.herrmann@gmail.com>
-	 <1393512787.4648.1.camel@jlt4.sipsolutions.net>
-	 <CANq1E4RNbtbdVhC2PgyZMGN_duScbmCOGeMxAYiKLL-8H=EWSA@mail.gmail.com>
-	 (sfid-20140227_155615_730008_8D7E77AA)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Feb 2014 11:20:07 -0500
+Date: Thu, 27 Feb 2014 16:20:03 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] pci: Add support for creating a generic
+ host_bridge from device tree
+Message-ID: <20140227162003.GP1692@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	"linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
+ <18746655.qWHLpMg2Yy@wuerfel>
+ <20140227141322.GL1692@e106497-lin.cambridge.arm.com>
+ <5722634.VerP6OyMlP@wuerfel>
+MIME-Version: 1.0
+In-Reply-To: <5722634.VerP6OyMlP@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 27 Feb 2014 16:20:03.0796 (UTC) FILETIME=[C549B140:01CF33D7]
+X-MC-Unique: 114022716200400901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 15:56 +0100, David Herrmann wrote:
-
-> >> +++ b/net/mac80211/iface.c
-> >> @@ -1620,6 +1620,7 @@ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
-> >>                                       + IEEE80211_ENCRYPT_HEADROOM;
-> >>               ndev->needed_tailroom = IEEE80211_ENCRYPT_TAILROOM;
-> >>
-> >> +             ndev->name_assign_type = NET_NAME_USER;
-> >
-> > this is wrong because we call this in main.c with a "wlan%d" argument
-> > for the name, which gets expanded.
+On Thu, Feb 27, 2014 at 03:58:41PM +0000, Arnd Bergmann wrote:
+> On Thursday 27 February 2014 14:13:22 Liviu Dudau wrote:
+> > 
+> > It is useful for host bridge drivers as this is the only place where we store
+> > the physical CPU address for the IO range. This is then needed when setting up the
+> > translation registers. Also used when calling the pci_ioremap_io function that I'm
+> > introducing in the AArch64 patches.
 > 
-> Whoops, yeah, same issue as with ath6kl where I fixed it with a
-> separate "name_assign_type" argument. I will do the same here for v2.
+> I don't understand what translation windows you are talking about. Is this
+> about how the PCI spaces are mapped into the CPU address space? If so, I
+> would strongly recommend to have this handled by the boot loader before
+> calling into the kernel. For ARM32, we have a lot of embedded systems
+> that require the PCI host driver to set up those windows, but actually
+> it would be much better to just have the firmware tell us what the setup
+> is and that use that.
 
-I'm not sure that helps - the user could potentially pass "foobar%d" as
-the interface name and get a number assigned by the kernel. In that case
-you probably *don't* want to set it to "name assigned by user"?
+The AXI to PCI bridge that I'm using has a set of registers for doing address translation.
+When it sees an AXI translation that matches the programmed translation window will
+convert it into a PCI write using the PCI address base written in that translation window.
+In other words you basically program the DT range into those address translation registers
+and the bridge does the AXI to PCI conversion for you.
 
-Maybe this whole thing can just be handled in __dev_alloc_name() since
-no kernel user should pass just a string without "%d" in it.
+> 
+> > Whole patch is still under legal review, but the fragment for setting up the ATR looks
+> > like this:
+> > 
+> >         list_for_each_entry(window, &bridge->windows, list) {
+> >                 res = window->res;
+> >                 offset = window->offset;
+> >                 wsize = ilog2(resource_size(res)) - 1;
+> > 
+> >                 if (resource_type(res) == IORESOURCE_MEM)
+> >                         update_atr_entry(pp->base + ATR_REG_whatever,
+> >                                 res->start,                             /* CPU address */
+> >                                 res->start - offset,                    /* PCI address */
+> >                                 0, wsize);
+> >                 else if (resource_type(res) == IORESOURCE_IO) {
+> >                         io_offset = pci_ioremap_io(res, bridge->io_base + offset);
+> >                         update_atr_entry(pp->base + ATR_REG_whatever,
+> >                                 bridge->io_base + res->start + offset,  /* CPU address */
+> >                                 res->start,                             /* PCI address */
+> >                                 0x20000, wsize);
+> >                 }
+> >         }
+> 
+> Hmm, I again don't see how 'bridge->io_base + res->start + offset' is
+> the correct address here. What is it you are trying to pass into
+> update_atr_entry()?
 
-johannes
+The physical CPU address where the IO range starts. 
+
+For IO:
+  res->start = beginning of logical I/O port block
+  offset = window->offset = res->start - range.pci_addr
+  bridge->io_base = range.cpu_addr
+
+  bridge->io_base + res->start + offset = range.cpu_addr + res->start + res->start - range.pci_addr
+
+Hmm, writting code without coffee .... :) 
+
+Lucky for me res->start = range.pci_addr = 0, but I can see now where I've got it wrong. Thanks!
+
+Liviu
+
+> 
+> 	Arnd
+> 
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
