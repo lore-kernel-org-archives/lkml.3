@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaB0Qby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:31:54 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41210 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaB0QbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:31:13 -0500
-Message-ID: <530F68BE.2070505@oracle.com>
-Date: Thu, 27 Feb 2014 11:33:02 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753598AbaB0Qbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:31:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54927 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004AbaB0Qbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:31:50 -0500
+Date: Thu, 27 Feb 2014 17:31:43 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dougthompson@xmission.com, bhelgaas@google.com, JBeulich@suse.com,
+        dan.carpenter@oracle.com, linux-kernel@vger.kernel.org,
+        linux-edac@vger.kernel.org, linux-pci@vger.kernel.org,
+        Arindam.Nath@amd.com
+Subject: Re: [PATCH] amd64_edac: Add support for newer F16h models
+Message-ID: <20140227163143.GI18191@pd.tnic>
+References: <1392913726-16961-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
-Subject: Re: [Xen-devel] [PATCH] xen: add support for MSI message groups
-References: <1393431884-1120-1-git-send-email-roger.pau@citrix.com> <530F51E9.1070703@oracle.com> <530F5DA0.3060408@citrix.com>
-In-Reply-To: <530F5DA0.3060408@citrix.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1392913726-16961-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 10:45 AM, Roger Pau Monné wrote:
->>
->> @@ -291,7 +290,10 @@ static int xen_initdom_setup_msi_irqs(struct
->> pci_dev *dev, int nvec, int type)
->>                      (pci_domain_nr(dev->bus) << 16);
->>            map_irq.devfn = dev->devfn;
->>    -        if (type == PCI_CAP_ID_MSIX) {
->> +        if (type == PCI_CAP_ID_MSI && nvec > 1) {
->> +            map_irq.type = MAP_PIRQ_TYPE_MULTI_MSI;
->> +            map_irq.entry_nr = nvec;
->>
->> Are we overloading entry_nr here with a different meaning? I thought it
->> was meant to be entry number (in MSI-X table for example), not number of
->> entries.
-> In the case of MSI message groups (MAP_PIRQ_TYPE_MULTI_MSI) entry_nr is
-> the number of vectors to setup, so yes, it's an overloading of entry_nr.
+On Thu, Feb 20, 2014 at 10:28:46AM -0600, Aravind Gopalakrishnan wrote:
+> Extending ECC decoding support for F16h M30h.
+> 
+> Tested on F16h M30h with ECC turned on using mce_amd_inj module and
+> the patch works fine.
+> 
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> Tested-by: Arindam Nath <Arindam.Nath@amd.com>
 
-Then I think we should at least make a note of this in physdev.h. (Or 
-maybe even make entry_nr a union with nvec or some such, although that 
-would look rather hacky).
+Acked-by: Borislav Petkov <bp@suse.de>
 
-> ....
->
->>
->> index 42721d1..eb13326d 100644
->> --- a/include/xen/interface/physdev.h
->> +++ b/include/xen/interface/physdev.h
->> @@ -131,6 +131,7 @@ struct physdev_irq {
->>    #define MAP_PIRQ_TYPE_GSI        0x1
->>    #define MAP_PIRQ_TYPE_UNKNOWN        0x2
->>    #define MAP_PIRQ_TYPE_MSI_SEG        0x3
->> +#define MAP_PIRQ_TYPE_MULTI_MSI        0x4
->> Formatting.
-> I don't get the formatting problem, it's the same formatting that the
-> other MAP_PIRQ_TYPE_* use, and if the patch is applied formatting is OK.
->
+-- 
+Regards/Gruss,
+    Boris.
 
-That's because my client messed up whitespaces. You can look for example 
-at https://lkml.org/lkml/2014/2/26/352 to see the extra tab.
-
--boris
+Sent from a fat crate under my desk. Formatting is fine.
+--
