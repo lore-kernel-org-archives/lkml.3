@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaB0Lsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:48:35 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52423 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742AbaB0Lse (ORCPT
+	id S1752495AbaB0LtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:49:21 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:64754 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaB0LtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:48:34 -0500
-Date: Thu, 27 Feb 2014 11:48:05 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Dave P Martin <Dave.Martin@arm.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 7/7] perf: kill perf_event_context::pmu
-Message-ID: <20140227114805.GG6945@e106331-lin.cambridge.arm.com>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-8-git-send-email-mark.rutland@arm.com>
- <20140210181026.GD27965@twins.programming.kicks-ass.net>
- <20140211175651.GA15200@e106331-lin.cambridge.arm.com>
- <20140225113100.GN9987@twins.programming.kicks-ass.net>
+	Thu, 27 Feb 2014 06:49:19 -0500
+Date: Thu, 27 Feb 2014 12:49:10 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@samba.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20140227114910.GB26449@gmail.com>
+References: <1393269045-11572-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140225113100.GN9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1393269045-11572-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 11:31:00AM +0000, Peter Zijlstra wrote:
-> On Tue, Feb 11, 2014 at 05:56:51PM +0000, Mark Rutland wrote:
-> > Another option would be to have a context per-pmu. Each context's pmu
-> > pointer would be valid, and (other than the case of software events) it
-> > doesn't make sense to place events from disparate PMUs into the same
-> > group anyway. Then you don't need a fixed sized pmu list in the context
-> > or some arcane list structs.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 > 
-> No it does make sense; for example on hardware that doesn't have a PMI
-> you can create a software event + hardware event group and have the
-> software interrupt read the hardware counter and still get 'some'
-> sampling.
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit a9d3f94ec7708427b9f05a65246d3fd6e287fa51:
+> 
+>   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-02-22 17:20:46 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to 98e9f03bbf2cb21a60f94b8b700eb5d38470819d:
+> 
+>   perf symbols: Destroy unused symsrcs (2014-02-24 11:13:08 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> . Fix annotation on stdio/GTK+ interfaces (Namhyung Kim)
+> 
+> . Fix file descriptor leaking while searching DSOs for suitable symtab (Namhyung Kim).
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Namhyung Kim (2):
+>       perf annotate: Check availability of annotate when processing samples
+>       perf symbols: Destroy unused symsrcs
+> 
+>  tools/perf/builtin-report.c | 40 ++++++++++++++++++++++++----------------
+>  tools/perf/builtin-top.c    |  6 ++++--
+>  tools/perf/util/annotate.c  |  9 ++++++++-
+>  tools/perf/util/annotate.h  |  2 ++
+>  tools/perf/util/symbol.c    |  2 ++
+>  5 files changed, 40 insertions(+), 19 deletions(-)
 
-Sure, I called out software events as an exception above.
+Pulled, thanks a lot Arnaldo!
 
-Does it ever make sense to group two hardware events for disparate
-hardware PMUs?
-
-Cheers,
-Mark.
+	Ingo
