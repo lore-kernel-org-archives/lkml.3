@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbaB0DeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 22:34:17 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:57261 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752466AbaB0DeP (ORCPT
+	id S1754637AbaB0Diw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 22:38:52 -0500
+Received: from smtprelay0100.hostedemail.com ([216.40.44.100]:59947 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751929AbaB0Div (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 22:34:15 -0500
-X-Sasl-enc: YCHKrtBsnLT6PDSO5Z+TP38bh1wqyNx9Mocrem4wUGl8 1393472050
-Date: Wed, 26 Feb 2014 19:37:16 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: linux-next: build failure after merge of the char-misc tree
-Message-ID: <20140227033716.GC31199@kroah.com>
-References: <20140221164711.9e62ae1f03fe1166943a2a14@canb.auug.org.au>
- <20140226174721.3f27c7ca917e9c73b0fb8ce5@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226174721.3f27c7ca917e9c73b0fb8ce5@canb.auug.org.au>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 26 Feb 2014 22:38:51 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7904:8603:10004:10400:10450:10455:10848:11232:11233:11658:11914:12262:12517:12519:12663:12679:12740:13069:13311:13357:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shop58_2fd14404d7662
+X-Filterd-Recvd-Size: 2549
+Message-ID: <1393472326.24588.82.camel@joe-AO722>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
+        Christopher Li <sparse@chrisli.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Feb 2014 19:38:46 -0800
+In-Reply-To: <530EB103.5070406@zytor.com>
+References: <530E6F76.1070605@zytor.com>
+	 <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com>
+	 <1393466619.24588.65.camel@joe-AO722> <20140227022857.GC23659@thin>
+	 <1393469594.24588.71.camel@joe-AO722> <20140227025845.GA25145@thin>
+	 <530EB103.5070406@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 05:47:21PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
+(adding Ben Pfaff and Christopher Li)
+
+On Wed, 2014-02-26 at 19:29 -0800, H. Peter Anvin wrote:
+> On 02/26/2014 06:58 PM, Josh Triplett wrote:
+> > On Wed, Feb 26, 2014 at 06:53:14PM -0800, Joe Perches wrote:
+> >> Allow an override to emit or not the sizeof(bool) warning
+> >> Add a description to the manpage.
+> >>
+> >> Signed-off-by: Joe Perches <joe@perches.com>
+> > 
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
 > 
-> On Fri, 21 Feb 2014 16:47:11 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > After merging the char-misc tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > In file included from drivers/misc/mei/hw-txe.c:25:0:
-> > drivers/misc/mei/hw-txe.h:63:1: error: unknown type name 'irqreturn_t'
-> >  irqreturn_t mei_txe_irq_quick_handler(int irq, void *dev_id);
-> >  ^
-> > 
-> > Caused by commit 266f6178d1f1 ("mei: txe: add hw-txe.h header file") but
-> > probably exposed by commit 46cb7b1bd86f ("PCI: Remove unused SR-IOV VF
-> > Migration support") from the pci tree which removed the include of
-> > irqreturn.h from pci.h ...
-> > 
-> > See Rule 1 from Documentation/SubmitChecklist ...
-> > 
-> > I added the following merge fix patch (this should be applied to the
-> > char-misc tree):
+> I have to admit that this particular warning is a bit odd to me.  I'm
+> wondering what kind of bugs it was intended to catch.
 > 
-> Ping?
+> In particular, things that incorrectly assumes the size of bool to be
+> anything in particular would seem unlikely to actually use sizeof().
 
-I've merged everything together, and it all builds properly for me in
-the char-misc branches, so I don't see what is missing.  What did I do
-wrong?
+Dunno, the commit log for the commit that added it doesn't quite
+match the code and is seemingly unaware that the c99 spec doesn't
+specify sizeof(bool).
 
-confused,
+Ben Pfaff <blp@nicira.com>
+Date:   Wed May 4 16:39:54 2011 -0700
 
-greg k-h
+    evaluate: Allow sizeof(_Bool) to succeed.
+    
+    Without this commit, sizeof(_Bool) provokes an error with "cannot size
+    expression" because _Bool is a 1-bit type and thus not a multiple of a full
+    byte in size.  But sizeof(_Bool) is valid C that should evaluate to 1, so
+    this commit fixes the problem and adds a regression test.
+    
+    Signed-off-by: Ben Pfaff <blp@nicira.com>
+    Signed-off-by: Christopher Li <sparse@chrisli.org>
+
+
