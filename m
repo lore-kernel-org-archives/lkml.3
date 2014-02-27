@@ -1,113 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaB0OT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 09:19:59 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55299 "EHLO arroyo.ext.ti.com"
+	id S1753135AbaB0OT4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 09:19:56 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41878 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555AbaB0OTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 09:19:13 -0500
+	id S1752521AbaB0OTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 09:19:10 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <lee.jones@linaro.org>, <tony@atomide.com>, <bcousson@baylibre.com>
 CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v9 4/9] mfd: omap-usb-host: Use clock names as per function for reference clocks
-Date: Thu, 27 Feb 2014 16:18:26 +0200
-Message-ID: <1393510711-4697-5-git-send-email-rogerq@ti.com>
+Subject: [PATCH v9 2/9] mfd: omap-usb-host: Always fail on clk_get() error
+Date: Thu, 27 Feb 2014 16:18:24 +0200
+Message-ID: <1393510711-4697-3-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393510711-4697-1-git-send-email-rogerq@ti.com>
 References: <1393510711-4697-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a meaningful name for the reference clocks so that it indicates the function.
+Be more strict and always fail on clk_get() error.
 
-Update the OMAP4+ USB Host node as well to be in sync with the changes.
-
-CC: Benoît Cousson <bcousson@baylibre.com>
 CC: Lee Jones <lee.jones@linaro.org>
 CC: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/boot/dts/omap4.dtsi |  6 ++++++
- arch/arm/boot/dts/omap5.dtsi |  6 ++++++
- drivers/mfd/omap-usb-host.c  | 12 ++++++------
- 3 files changed, 18 insertions(+), 6 deletions(-)
+ drivers/mfd/omap-usb-host.c | 62 +++++++++++++++++++++++++++++----------------
+ 1 file changed, 40 insertions(+), 22 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index d3f8a6e..39a05ce 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -697,6 +697,12 @@
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ranges;
-+			clocks = <&init_60m_fclk>,
-+				 <&xclk60mhsp1_ck>,
-+				 <&xclk60mhsp2_ck>;
-+			clock-names = "refclk_60m_int",
-+				      "refclk_60m_ext_p1",
-+				      "refclk_60m_ext_p2";
- 
- 			usbhsohci: ohci@4a064800 {
- 				compatible = "ti,ohci-omap3", "usb-ohci";
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index a72813a..d4dae48 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -775,6 +775,12 @@
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ranges;
-+			clocks = <&l3init_60m_fclk>,
-+				 <&xclk60mhsp1_ck>,
-+				 <&xclk60mhsp2_ck>;
-+			clock-names = "refclk_60m_int",
-+				      "refclk_60m_ext_p1",
-+				      "refclk_60m_ext_p2";
- 
- 			usbhsohci: ohci@4a064800 {
- 				compatible = "ti,ohci-omap3", "usb-ohci";
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 865c276..651e249 100644
+index c63bfdf..c31baa7 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -718,24 +718,24 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		goto err_mem;
+@@ -695,7 +695,8 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 							    "ehci_logic_fck");
+ 			if (IS_ERR(omap->ehci_logic_fck)) {
+ 				ret = PTR_ERR(omap->ehci_logic_fck);
+-				dev_dbg(dev, "ehci_logic_fck failed:%d\n", ret);
++				dev_err(dev, "ehci_logic_fck failed:%d\n", ret);
++				goto err_mem;
+ 			}
+ 		}
+ 		goto initialize;
+@@ -749,51 +750,68 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 		 * them
+ 		 */
+ 		omap->utmi_clk[i] = devm_clk_get(dev, clkname);
+-		if (IS_ERR(omap->utmi_clk[i]))
+-			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
+-				clkname, PTR_ERR(omap->utmi_clk[i]));
++		if (IS_ERR(omap->utmi_clk[i])) {
++			ret = PTR_ERR(omap->utmi_clk[i]);
++			dev_err(dev, "Failed to get clock : %s : %d\n",
++				clkname, ret);
++			goto err_mem;
++		}
+ 
+ 		snprintf(clkname, sizeof(clkname),
+ 				"usb_host_hs_hsic480m_p%d_clk", i + 1);
+ 		omap->hsic480m_clk[i] = devm_clk_get(dev, clkname);
+-		if (IS_ERR(omap->hsic480m_clk[i]))
+-			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
+-				clkname, PTR_ERR(omap->hsic480m_clk[i]));
++		if (IS_ERR(omap->hsic480m_clk[i])) {
++			ret = PTR_ERR(omap->hsic480m_clk[i]);
++			dev_err(dev, "Failed to get clock : %s : %d\n",
++				clkname, ret);
++			goto err_mem;
++		}
+ 
+ 		snprintf(clkname, sizeof(clkname),
+ 				"usb_host_hs_hsic60m_p%d_clk", i + 1);
+ 		omap->hsic60m_clk[i] = devm_clk_get(dev, clkname);
+-		if (IS_ERR(omap->hsic60m_clk[i]))
+-			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
+-				clkname, PTR_ERR(omap->hsic60m_clk[i]));
++		if (IS_ERR(omap->hsic60m_clk[i])) {
++			ret = PTR_ERR(omap->hsic60m_clk[i]);
++			dev_err(dev, "Failed to get clock : %s : %d\n",
++				clkname, ret);
++			goto err_mem;
++		}
  	}
  
--	omap->xclk60mhsp1_ck = devm_clk_get(dev, "xclk60mhsp1_ck");
-+	omap->xclk60mhsp1_ck = devm_clk_get(dev, "refclk_60m_ext_p1");
- 	if (IS_ERR(omap->xclk60mhsp1_ck)) {
- 		ret = PTR_ERR(omap->xclk60mhsp1_ck);
--		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
-+		dev_err(dev, "refclk_60m_ext_p1 failed error:%d\n", ret);
- 		goto err_mem;
+ 	if (is_ehci_phy_mode(pdata->port_mode[0])) {
+ 		ret = clk_set_parent(omap->utmi_p1_gfclk,
+ 					omap->xclk60mhsp1_ck);
+-		if (ret != 0)
+-			dev_dbg(dev, "xclk60mhsp1_ck set parent failed: %d\n",
+-					ret);
++		if (ret != 0) {
++			dev_err(dev, "xclk60mhsp1_ck set parent failed: %d\n",
++				ret);
++			goto err_mem;
++		}
+ 	} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
+ 		ret = clk_set_parent(omap->utmi_p1_gfclk,
+ 					omap->init_60m_fclk);
+-		if (ret != 0)
+-			dev_dbg(dev, "P0 init_60m_fclk set parent failed: %d\n",
+-					ret);
++		if (ret != 0) {
++			dev_err(dev, "P0 init_60m_fclk set parent failed: %d\n",
++				ret);
++			goto err_mem;
++		}
  	}
  
--	omap->xclk60mhsp2_ck = devm_clk_get(dev, "xclk60mhsp2_ck");
-+	omap->xclk60mhsp2_ck = devm_clk_get(dev, "refclk_60m_ext_p2");
- 	if (IS_ERR(omap->xclk60mhsp2_ck)) {
- 		ret = PTR_ERR(omap->xclk60mhsp2_ck);
--		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
-+		dev_err(dev, "refclk_60m_ext_p2 failed error:%d\n", ret);
- 		goto err_mem;
+ 	if (is_ehci_phy_mode(pdata->port_mode[1])) {
+ 		ret = clk_set_parent(omap->utmi_p2_gfclk,
+ 					omap->xclk60mhsp2_ck);
+-		if (ret != 0)
+-			dev_dbg(dev, "xclk60mhsp2_ck set parent failed: %d\n",
+-					ret);
++		if (ret != 0) {
++			dev_err(dev, "xclk60mhsp2_ck set parent failed: %d\n",
++				ret);
++			goto err_mem;
++		}
+ 	} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
+ 		ret = clk_set_parent(omap->utmi_p2_gfclk,
+ 						omap->init_60m_fclk);
+-		if (ret != 0)
+-			dev_dbg(dev, "P1 init_60m_fclk set parent failed: %d\n",
+-					ret);
++		if (ret != 0) {
++			dev_err(dev, "P1 init_60m_fclk set parent failed: %d\n",
++				ret);
++			goto err_mem;
++		}
  	}
  
--	omap->init_60m_fclk = devm_clk_get(dev, "init_60m_fclk");
-+	omap->init_60m_fclk = devm_clk_get(dev, "refclk_60m_int");
- 	if (IS_ERR(omap->init_60m_fclk)) {
- 		ret = PTR_ERR(omap->init_60m_fclk);
--		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
-+		dev_err(dev, "refclk_60m_int failed error:%d\n", ret);
- 		goto err_mem;
- 	}
- 
+ initialize:
 -- 
 1.8.3.2
 
