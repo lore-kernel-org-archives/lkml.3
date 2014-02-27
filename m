@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaB0Bi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:38:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:46008 "EHLO
+	id S1754346AbaB0Bmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:42:53 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:48526 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751989AbaB0Biz (ORCPT
+	by vger.kernel.org with ESMTP id S1753702AbaB0Bmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:38:55 -0500
-Date: Wed, 26 Feb 2014 20:38:53 -0500
+	Wed, 26 Feb 2014 20:42:52 -0500
+Date: Wed, 26 Feb 2014 20:42:50 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFA][PATCH 0/4] tracing: Request for acks on fixing tracepoint
- code
-Message-ID: <20140226203853.09b7d843@gandalf.local.home>
-In-Reply-To: <1677033958.31194.1393450578584.JavaMail.zimbra@efficios.com>
-References: <20140226190140.590029589@goodmis.org>
-	<1677033958.31194.1393450578584.JavaMail.zimbra@efficios.com>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] tracepoint: Do not waste memory on mods with no
+ tracepoints
+Message-ID: <20140226204250.36de98b1@gandalf.local.home>
+In-Reply-To: <87lhwx2y8k.fsf@rustcorp.com.au>
+References: <20140226110313.4d92fb83@gandalf.local.home>
+	<87lhwx2y8k.fsf@rustcorp.com.au>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,54 +30,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 21:36:18 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On Thu, 27 Feb 2014 11:00:35 +1030
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-> ----- Original Message -----
-> > From: "Steven Rostedt" <rostedt@goodmis.org>
-> > To: linux-kernel@vger.kernel.org
-> > Cc: "Ingo Molnar" <mingo@kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>, "Peter Zijlstra"
-> > <peterz@infradead.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, "Mathieu Desnoyers"
-> > <mathieu.desnoyers@efficios.com>
-> > Sent: Wednesday, February 26, 2014 2:01:40 PM
-> > Subject: [RFA][PATCH 0/4] tracing: Request for acks on fixing tracepoint code
-> > 
-> > [ Request for Acks ]
-> > 
-> > Due to module tainting, we have tracepoints that silently do not work.
-> > That will be solved another way. But the trace event infrastructure should
-> > not be created for tainted modules. That is, the debugfs files should
-> > not exist for them.
-> > 
-> > By moving the tracepoint module taint test into tracepoint.h, we can
-> > reuse that same test when creating the module tracepoint events.
-> > 
-> > Note, I had to remove the tracepoint.h include from module.h as there
-> > was nothing in module.h that required tracepoint.h, but this broke
-> > a couple of event files (migrate.h and writeback.h) because they did
-> > not include tracepoint.h, and were just lucky that it was included
-> > by module.h.
+> Steven Rostedt <rostedt@goodmis.org> writes:
+> > No reason to allocate tp_module structures for modules that have no
+> > tracepoints. This just wastes memory.
+> >
+> > Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
+> > Cc: stable@vger.kernel.org # 3.2+
 > 
-> When designing tracepoint.h, a lot of care went into making sure it did
-> not have needless dependency on other headers, since this header is
-> expected to be included into many other files and headers, thus posing
-> a clear risk of becoming yet another root of an include dependency hell.
+> Really?  CC:stable?  To save an insignificant amount of memory?
 
-Well, module.h is included in many more.
+I agree that this rational alone is not sufficient for stable. But this
+is required for another patch that warns when tracepoints are not
+loaded by a module due to taints. We don't want to warn on all modules.
+
 
 > 
-> While I agree on adding the API you propose, why made it a static inline ?
-> This adds this dependency from tracepoint.h on module.h. Instead, we could
-> just declare a symbol, and implement a tracepoint_module_has_bad_taint()
-> within kernel/tracepoint.c. It should not be a fast path anyway, so I don't
-> see the point it making it a static inline.
-> 
-> I also recommend sticking to the tracepoint_*() API (rather than trace_*).
+> The definition of stable seems to be shifting away from "fixes for
+> problems with significant effects".  I obviously missed the memo.
 
-Well, as this is now not just for tracepoints, but also used by the
-trace_events, and because the name is already too big (but
-descriptive), I rather not change it.
-
-But as a compromise, I can move it to ftrace_event.h instead.
+Not telling users that tracepoints were not activated, but acting in
+every other way like they are is to me a "significant effect". This
+just happened to be something that fixing this depended on.
 
 -- Steve
+
+
