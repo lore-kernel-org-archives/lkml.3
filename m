@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaB0CCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 21:02:31 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:35209 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbaB0CCa convert rfc822-to-8bit (ORCPT
+	id S1754638AbaB0CDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 21:03:44 -0500
+Received: from smtprelay0078.hostedemail.com ([216.40.44.78]:44904 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754424AbaB0CDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 21:02:30 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        "Masanari Iida" <standby24x7@gmail.com>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <52FF9EFC.2060707@overkiz.com>
-Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org
-References: <1392124507-14463-1-git-send-email-standby24x7@gmail.com>
- <52FA2338.3030707@overkiz.com> <52FF9EFC.2060707@overkiz.com>
-Message-ID: <20140227020226.12081.28850@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk:at91: Fix memory leak in of_at91_clk_master_setup()
-Date: Wed, 26 Feb 2014 18:02:26 -0800
+	Wed, 26 Feb 2014 21:03:42 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:334:355:368:369:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:4321:4605:5007:7652:8603:10004:10026:10400:10450:10455:10848:11026:11658:11914:12296:12438:12517:12519:12555:13019:13069:13311:13357:14093:14097:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sound27_5a67346a6033d
+X-Filterd-Recvd-Size: 2497
+Message-ID: <1393466619.24588.65.camel@joe-AO722>
+Subject: [PATCH] sparse: Allow override of sizeof(bool) warning
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, linux-sparse@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Feb 2014 18:03:39 -0800
+In-Reply-To: <530E8C2E.7080307@zytor.com>
+References: <530E6F76.1070605@zytor.com>
+	 <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Boris BREZILLON (2014-02-15 09:08:12)
-> Hi Mike,
-> 
-> Could you take this patch for the next 3.14 release ?
+Allow an override to emit or not the sizeof(bool) warning
 
-Taken in for the next batch of fixes.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ evaluate.c | 3 ++-
+ lib.c      | 2 ++
+ lib.h      | 1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
-Regards,
-Mike
+diff --git a/evaluate.c b/evaluate.c
+index 6655615..a45f59b 100644
+--- a/evaluate.c
++++ b/evaluate.c
+@@ -2057,7 +2057,8 @@ static struct symbol *evaluate_sizeof(struct expression *expr)
+ 	}
+ 
+ 	if (size == 1 && is_bool_type(type)) {
+-		warning(expr->pos, "expression using sizeof bool");
++		if (Wsizeof_bool)
++			warning(expr->pos, "expression using sizeof bool");
+ 		size = bits_in_char;
+ 	}
+ 
+diff --git a/lib.c b/lib.c
+index bf3e91c..676b72e 100644
+--- a/lib.c
++++ b/lib.c
+@@ -225,6 +225,7 @@ int Wone_bit_signed_bitfield = 1;
+ int Wparen_string = 0;
+ int Wptr_subtraction_blows = 0;
+ int Wreturn_void = 0;
++int Wsizeof_bool = 1;
+ int Wshadow = 0;
+ int Wtransparent_union = 0;
+ int Wtypesign = 0;
+@@ -437,6 +438,7 @@ static const struct warning {
+ 	{ "paren-string", &Wparen_string },
+ 	{ "ptr-subtraction-blows", &Wptr_subtraction_blows },
+ 	{ "return-void", &Wreturn_void },
++	{ "sizeof-bool", &Wsizeof_bool },
+ 	{ "shadow", &Wshadow },
+ 	{ "transparent-union", &Wtransparent_union },
+ 	{ "typesign", &Wtypesign },
+diff --git a/lib.h b/lib.h
+index f09b338..7e3432f 100644
+--- a/lib.h
++++ b/lib.h
+@@ -119,6 +119,7 @@ extern int Wone_bit_signed_bitfield;
+ extern int Wparen_string;
+ extern int Wptr_subtraction_blows;
+ extern int Wreturn_void;
++extern int Wsizeof_bool;
+ extern int Wshadow;
+ extern int Wtransparent_union;
+ extern int Wtypesign;
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> On 11/02/2014 14:18, Boris BREZILLON wrote:
-> > On 11/02/2014 14:15, Masanari Iida wrote:
-> >> cppcheck detected following error
-> >> [clk-master.c:245]: (error) Memory leak: characteristics
-> >>
-> >> The original code forgot to free characteristics when
-> >> irq_of_parse_and_map() failed.
-> >>
-> >> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> > Acked-by Boris BREZILLON <b.brezillon@overkiz.com>
-> >
-> > Thanks for fixing this.
-> >
-> > Best Regards,
-> >
-> > Boris
-> >> ---
-> >>   drivers/clk/at91/clk-master.c | 2 +-
-> >>   1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/clk/at91/clk-master.c 
-> >> b/drivers/clk/at91/clk-master.c
-> >> index bd313f7..c1af80b 100644
-> >> --- a/drivers/clk/at91/clk-master.c
-> >> +++ b/drivers/clk/at91/clk-master.c
-> >> @@ -242,7 +242,7 @@ of_at91_clk_master_setup(struct device_node *np, 
-> >> struct at91_pmc *pmc,
-> >>         irq = irq_of_parse_and_map(np, 0);
-> >>       if (!irq)
-> >> -        return;
-> >> +        goto out_free_characteristics;
-> >>         clk = at91_clk_register_master(pmc, irq, name, num_parents,
-> >>                          parent_names, layout,
-> >
-> 
+
+
