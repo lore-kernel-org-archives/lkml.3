@@ -1,57 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaB0RXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:23:15 -0500
-Received: from mailapp01.imgtec.com ([195.89.28.114]:39661 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaB0RXM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:23:12 -0500
-X-Greylist: delayed 1027 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 12:23:12 EST
-Message-ID: <530F707A.8060603@imgtec.com>
-Date: Thu, 27 Feb 2014 17:06:02 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        Ben Pfaff <blp@nicira.com>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@joshtriplett.org>, <linux-sparse@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-References: <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722> <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com> <1393472326.24588.82.camel@joe-AO722> <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com> <20140227082529.GA18210@pd.tnic> <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com> <20140227152435.GA7982@thunk.org> <530F5E53.5070208@zytor.com> <20140227161004.GT26722@mwanda> <530F6D43.5020006@zytor.com>
-In-Reply-To: <530F6D43.5020006@zytor.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
+	id S1753910AbaB0RX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:23:57 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:55107 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753800AbaB0RXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 12:23:47 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alex Thorlton <athorlton@sgi.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH 1/4] mm, s390: Revert "thp: make MADV_HUGEPAGE check for mm->def_flags"
+Date: Thu, 27 Feb 2014 11:23:23 -0600
+Message-Id: <40ad55e4434df1e0b76c09b811c02a565a0b0025.1393516106.git.athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <cover.1393516106.git.athorlton@sgi.com>
+References: <cover.1393516106.git.athorlton@sgi.com>
+In-Reply-To: <cover.1393516106.git.athorlton@sgi.com>
+References: <cover.1393516106.git.athorlton@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/02/14 16:52, H. Peter Anvin wrote:
-> On 02/27/2014 08:10 AM, Dan Carpenter wrote:
->>
->> That last assumption has to change for the Meta architecture.
->>
->> https://lwn.net/Articles/522188/
->>
->> On meta, the structs and unions are padded to 4 bytes unless they are
->> explicitly marked as __packed.
->>
-> 
-> One have to wonder how likely they are to have that not continually break...
+This reverts commit 8e72033f2a489b6c98c4e3c7cc281b1afd6cb85c, and adds
+in code to fix up any issues caused by the revert.
 
-Well it's only when it deals with stored/portable data formats that it's
-an issue, and in those cases some amount of care over packing has
-usually already been taken. It most often causes problems when one small
-struct/union containing only chars or shorts is nested inside another
-struct which is marked as packed (on the unfortunately mistaken
-assumption that the inner struct cannot have padding at the end so
-doesn't need packing itself).
+The revert is necessary because hugepage_madvise would return -EINVAL
+when VM_NOHUGEPAGE is set, which will break subsequent chunks of this
+patch set.
 
-But yeh, it is a PITA.
+Here's a snip of an e-mail from Gerald detailing the original purpose
+of this code, and providing justification for the revert:
 
-Cheers
-James
+<snip>
+The intent of 8e72033f2a48 was to guard against any future programming
+errors that may result in an madvice(MADV_HUGEPAGE) on guest mappings,
+which would crash the kernel.
+
+Martin suggested adding the bit to arch/s390/mm/pgtable.c, if 8e72033f2a48
+was to be reverted, because that check will also prevent a kernel crash
+in the case described above, it will now send a SIGSEGV instead.
+
+This would now also allow to do the madvise on other parts, if needed,
+so it is a more flexible approach. One could also say that it would have
+been better to do it this way right from the beginning... 
+</snip>
+
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+Cc: linux-api@vger.kernel.org
+
+---
+ arch/s390/mm/pgtable.c | 3 +++
+ mm/huge_memory.c       | 4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index 3584ed9..a87cdb4 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -504,6 +504,9 @@ static int gmap_connect_pgtable(unsigned long address, unsigned long segment,
+ 	if (!pmd_present(*pmd) &&
+ 	    __pte_alloc(mm, vma, pmd, vmaddr))
+ 		return -ENOMEM;
++	/* large pmds cannot yet be handled */
++	if (pmd_large(*pmd))
++		return -EFAULT;
+ 	/* pmd now points to a valid segment table entry. */
+ 	rmap = kmalloc(sizeof(*rmap), GFP_KERNEL|__GFP_REPEAT);
+ 	if (!rmap)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 82166bf..a4310a5 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1968,8 +1968,6 @@ out:
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-
+ 	switch (advice) {
+ 	case MADV_HUGEPAGE:
+ 		/*
+@@ -1977,8 +1975,6 @@ int hugepage_madvise(struct vm_area_struct *vma,
+ 		 */
+ 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+-		if (mm->def_flags & VM_NOHUGEPAGE)
+-			return -EINVAL;
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+ 		/*
+-- 
+1.7.12.4
+
