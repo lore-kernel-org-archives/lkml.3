@@ -1,314 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaB0Nfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:35:32 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:49351 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132AbaB0NfX (ORCPT
+	id S1753572AbaB0Nf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:35:29 -0500
+Received: from mga02.intel.com ([134.134.136.20]:56066 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139AbaB0NfX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 08:35:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,555,1389772800"; 
+   d="scan'208";a="463431280"
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chew, Kean Ho" <kean.ho.chew@intel.com>,
+        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+Subject: RE: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
+Thread-Topic: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
+Thread-Index: AQHPMwBv2djQrKF+B0qVvtI3oBWPk5rISP8AgACFakD//8DsgIAAiedA
+Date: Thu, 27 Feb 2014 13:34:57 +0000
+Message-ID: <604BF5F4C5D71041942BC7E84ED659EA0155B371@PGSMSX103.gar.corp.intel.com>
+References: <1390240808-18582-1-git-send-email-chiau.ee.chew@intel.com>
+ <20140226143822.GG29779@ulmo.nvidia.com> <20140227090152.GH5018@intel.com>
+ <604BF5F4C5D71041942BC7E84ED659EA0155B2E7@PGSMSX103.gar.corp.intel.com>
+ <20140227131337.GN5018@intel.com>
+In-Reply-To: <20140227131337.GN5018@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [78.145.137.174]
-In-Reply-To: <1393506599-11561-4-git-send-email-Liviu.Dudau@arm.com>
-References: <1393506599-11561-1-git-send-email-Liviu.Dudau@arm.com>
-	<1393506599-11561-4-git-send-email-Liviu.Dudau@arm.com>
-Date: Thu, 27 Feb 2014 13:35:22 +0000
-Message-ID: <CAPcvp5G_xZQqcySBfxFbCBCmeYL3n6OeaVW6qZ2k3cGQkga2QA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] arm64: Add architecture support for PCI
-From: Andrew Murray <amurray@embedded-bits.co.uk>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 February 2014 13:09, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> Use the generic host bridge functions to provide support for
-> PCI Express on arm64. There is no support for ISA memory.
->
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->
->  create mode 100644 arch/arm64/include/asm/pci.h
->  create mode 100644 arch/arm64/kernel/pci.c
->
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 27bbcfc..d1c8568 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -62,7 +62,7 @@ config MMU
->         def_bool y
->
->  config NO_IOPORT
-> -       def_bool y
-> +       def_bool y if !PCI
->
->  config STACKTRACE_SUPPORT
->         def_bool y
-> @@ -134,6 +134,23 @@ menu "Bus support"
->  config ARM_AMBA
->         bool
->
-> +config PCI
-> +       bool "PCI support"
-> +       help
-> +         This feature enables support for PCIe bus system. If you say Y
-> +         here, the kernel will include drivers and infrastructure code
-> +         to support PCIe bus devices.
-> +
-> +config PCI_DOMAINS
-> +       def_bool PCI
-> +
-> +config PCI_SYSCALL
-> +       def_bool PCI
-> +
-> +source "drivers/pci/Kconfig"
-> +source "drivers/pci/pcie/Kconfig"
-> +source "drivers/pci/hotplug/Kconfig"
-> +
->  endmenu
->
->  menu "Kernel Features"
-> diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-> index 71c53ec..46924bc 100644
-> --- a/arch/arm64/include/asm/Kbuild
-> +++ b/arch/arm64/include/asm/Kbuild
-> @@ -26,6 +26,7 @@ generic-y += mman.h
->  generic-y += msgbuf.h
->  generic-y += mutex.h
->  generic-y += pci.h
-> +generic-y += pci-bridge.h
->  generic-y += poll.h
->  generic-y += posix_types.h
->  generic-y += resource.h
-> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> index 7846a6b..67463a5 100644
-> --- a/arch/arm64/include/asm/io.h
-> +++ b/arch/arm64/include/asm/io.h
-> @@ -120,7 +120,8 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
->  /*
->   *  I/O port access primitives.
->   */
-> -#define IO_SPACE_LIMIT         0xffff
-> +#define arch_has_dev_port()    (1)
-> +#define IO_SPACE_LIMIT         0x1ffffff
->  #define PCI_IOBASE             ((void __iomem *)(MODULES_VADDR - SZ_32M))
->
->  static inline u8 inb(unsigned long addr)
-> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-> new file mode 100644
-> index 0000000..3edf9e0
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/pci.h
-> @@ -0,0 +1,47 @@
-> +#ifndef __ASM_PCI_H
-> +#define __ASM_PCI_H
-> +#ifdef __KERNEL__
-> +
-> +#include <linux/types.h>
-> +#include <linux/slab.h>
-> +#include <linux/dma-mapping.h>
-> +
-> +#include <asm/io.h>
-> +#include <asm-generic/pci-bridge.h>
-> +#include <asm-generic/pci-dma-compat.h>
-> +
-> +#define PCIBIOS_MIN_IO         0x1000
-> +#define PCIBIOS_MIN_MEM                0
-> +
-> +/*
-> + * Set to 1 if the kernel should re-assign all PCI bus numbers
-> + */
-> +#define pcibios_assign_all_busses() \
-> +       (pci_has_flag(PCI_REASSIGN_ALL_BUS))
-> +
-> +/*
-> + * PCI address space differs from physical memory address space
-> + */
-> +#define PCI_DMA_BUS_IS_PHYS    (0)
-> +
-> +extern int isa_dma_bridge_buggy;
-> +
-> +static inline int pci_domain_nr(struct pci_bus *bus)
-> +{
-> +       struct pci_host_bridge *bridge = to_pci_host_bridge(bus->bridge);
-> +
-> +       if (bridge)
-> +               return bridge->domain_nr;
-> +
-> +       return 0;
-> +}
-> +
-> +static inline int pci_proc_domain(struct pci_bus *bus)
-> +{
-> +       return pci_domain_nr(bus);
-> +}
-> +
-> +extern unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr);
-> +
-> +#endif  /* __KERNEL__ */
-> +#endif  /* __ASM_PCI_H */
-> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-> index 2d4554b..64fc479 100644
-> --- a/arch/arm64/kernel/Makefile
-> +++ b/arch/arm64/kernel/Makefile
-> @@ -20,6 +20,7 @@ arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
->  arm64-obj-$(CONFIG_EARLY_PRINTK)       += early_printk.o
->  arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)  += sleep.o suspend.o
->  arm64-obj-$(CONFIG_JUMP_LABEL)         += jump_label.o
-> +arm64-obj-$(CONFIG_PCI)                        += pci.o
->
->  obj-y                                  += $(arm64-obj-y) vdso/
->  obj-m                                  += $(arm64-obj-m)
-> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> new file mode 100644
-> index 0000000..496df41
-> --- /dev/null
-> +++ b/arch/arm64/kernel/pci.c
-> @@ -0,1 +1,126 @@
-> +/*
-> + * Code borrowed from powerpc/kernel/pci-common.c
-> + *
-> + * Copyright (C) 2003 Anton Blanchard <anton@au.ibm.com>, IBM
-> + * Copyright (C) 2014 ARM Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/mm.h>
-> +#include <linux/of_pci.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/slab.h>
-> +
-> +#include <asm/pci-bridge.h>
-> +
-> +
-> +/*
-> + * Called after each bus is probed, but before its children are examined
-> + */
-> +void pcibios_fixup_bus(struct pci_bus *bus)
-> +{
-> +       struct pci_dev *dev;
-> +       struct resource *res;
-> +       int i;
-> +
-> +       if (!pci_is_root_bus(bus)) {
-> +               pci_read_bridge_bases(bus);
-> +
-> +               pci_bus_for_each_resource(bus, res, i) {
-> +                       if (!res || !res->flags || res->parent)
-> +                               continue;
-> +
-> +                       /*
-> +                        * If we are going to reassign everything, we can
-> +                        * shrink the P2P resource to have zero size to
-> +                        * save space
-> +                        */
-> +                       if (pci_has_flag(PCI_REASSIGN_ALL_RSRC)) {
-> +                               res->flags |= IORESOURCE_UNSET;
-> +                               res->start = 0;
-> +                               res->end = -1;
-> +                               continue;
-> +                       }
-> +               }
-> +       }
-> +
-> +       list_for_each_entry(dev, &bus->devices, bus_list) {
-> +               /* Ignore fully discovered devices */
-> +               if (dev->is_added)
-> +                       continue;
-> +
-> +               set_dev_node(&dev->dev, pcibus_to_node(dev->bus));
-> +
-> +               /* Read default IRQs and fixup if necessary */
-> +               dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-> +       }
-> +}
-> +EXPORT_SYMBOL(pcibios_fixup_bus);
-> +
-> +/*
-> + * We don't have to worry about legacy ISA devices, so nothing to do here
-> + */
-> +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-> +                               resource_size_t size, resource_size_t align)
-> +{
-> +       return ALIGN(res->start, align);
-> +}
-> +EXPORT_SYMBOL(pcibios_align_resource);
-> +
-> +int pcibios_enable_device(struct pci_dev *dev, int mask)
-> +{
-> +       return pci_enable_resources(dev, mask);
-> +}
 
-It looks like you will soon be able to remove this and rely on the
-shinny new weak implementation of pcibios_enable_device now
-(http://www.spinics.net/lists/linux-pci/msg29387.html)
 
-Andrew Murray
+> -----Original Message-----
+> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
+> Sent: Thursday, February 27, 2014 9:14 PM
+> To: Chew, Chiau Ee
+> Cc: Thierry Reding; linux-pwm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Chew, Kean Ho; Chang, Rebecca Swee Fun
+> Subject: Re: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
+> 
+> On Thu, Feb 27, 2014 at 09:03:41AM +0000, Chew, Chiau Ee wrote:
+> > > > > +static int pwm_lpss_probe(struct platform_device *pdev) {
+> > > > > +	struct device *dev = &pdev->dev;
+> > > > > +	struct pwm_lpss_chip *lpwm;
+> > > > > +	int ret;
+> > > > > +
+> > > > > +	lpwm = dev_get_platdata(dev);
+> > > >
+> > > > struct pwm_lpss_chip is defined in this source file, how can
+> > > > anybody else know what to fill platform_data with?
+> > >
+> > > Good point. Chiau Ee, do you recall why that thing is there in the first place?
+> >
+> > This is added because we would eventually want to have PCI enumeration
+> > support added. I think we shall find a way to better enable both the
+> > ACPI enumeration and PCI enumeration support.
+> 
+> Agreed. For now, can you please drop the platform data thing from the driver?
+> Thanks.
+> 
 
-> +
-> +void pcibios_fixup_bridge_ranges(struct list_head *resources)
-> +{
-> +}
-> +
-> +#define IO_SPACE_PAGES ((IO_SPACE_LIMIT + 1) / PAGE_SIZE)
-> +static DECLARE_BITMAP(pci_iospace, IO_SPACE_PAGES);
-> +
-> +unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr)
-> +{
-> +       unsigned long start, len, virt_start;
-> +       int err;
-> +
-> +       if (res->end > IO_SPACE_LIMIT)
-> +               return -EINVAL;
-> +
-> +       /*
-> +        * try finding free space for the whole size first,
-> +        * fall back to 64K if not available
-> +        */
-> +       len = resource_size(res);
-> +       start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
-> +                               res->start / PAGE_SIZE, len / PAGE_SIZE, 0);
-> +       if (start == IO_SPACE_PAGES && len > SZ_64K) {
-> +               len = SZ_64K;
-> +               start = 0;
-> +               start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
-> +                                       start, len / PAGE_SIZE, 0);
-> +       }
-> +
-> +       /* no 64K area found */
-> +       if (start == IO_SPACE_PAGES)
-> +               return -ENOMEM;
-> +
-> +       /* ioremap physical aperture to virtual aperture */
-> +       virt_start = start * PAGE_SIZE + (unsigned long)PCI_IOBASE;
-> +       err = ioremap_page_range(virt_start, virt_start + len,
-> +                               phys_addr, __pgprot(PROT_DEVICE_nGnRE));
-> +       if (err)
-> +               return err;
-> +
-> +       bitmap_set(pci_iospace, start, len / PAGE_SIZE);
-> +
-> +       /* return io_offset */
-> +       return start * PAGE_SIZE - res->start;
-> +}
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Ok. Noted.
+
+> > > > > +	if (!lpwm) {
+> > > > > +		lpwm = pwm_lpss_acpi_get_pdata(pdev);
+> > > > > +		if (!lpwm)
+> > > > > +			return -ENODEV;
+> > > > > +	}
+> > > > [...]
+> > > > > +static struct platform_driver pwm_lpss_driver = {
+> > > > > +	.driver = {
+> > > > > +		.name = "pwm-lpss",
+> > > > > +		.acpi_match_table = ACPI_PTR(pwm_lpss_acpi_match),
+> > > >
+> > > > ACPI_PTR not needed since the table will always be there.
+> > >
+> > > OK.
+> > >
+> > > >
+> > > > > +	},
+> > > > > +	.probe = pwm_lpss_probe,
+> > > > > +	.remove = pwm_lpss_remove,
+> > > > > +};
+> > > > > +module_platform_driver(pwm_lpss_driver);
+> > > > > +
+> > > > > +MODULE_DESCRIPTION("PWM driver for Intel LPSS");
+> > > > > +MODULE_AUTHOR("Mika Westerberg
+> > > <mika.westerberg@linux.intel.com>");
+> > > > > +MODULE_LICENSE("GPL");
+> > > >
+> > > > The file header says GPL v2, but "GPL" here means "GPL v2 or later".
+> > >
+> > > OK, we will change that to GPLv2.
+> > >
+> > > Thanks a lot for your review! We will do the changes and submit v2.
+> >
+> > Ok. I will make the changes accordingly.
+> 
+> Thanks.
