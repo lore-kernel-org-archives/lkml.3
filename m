@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaB0PYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:24:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.131]:57158 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaB0PYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:24:05 -0500
-Message-ID: <1393514533.28343.19.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
- workqueue
-From: Mike Galbraith <bitbucket@online.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Date: Thu, 27 Feb 2014 16:22:13 +0100
-In-Reply-To: <20140227144331.GA19580@localhost.localdomain>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
-	 <52F8A51F.4090909@cn.fujitsu.com>
-	 <20140210184729.GL4250@linux.vnet.ibm.com>
-	 <20140212182336.GD5496@localhost.localdomain>
-	 <1392614801.5565.92.camel@marge.simpson.net>
-	 <20140227144331.GA19580@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:1R1R0ffJUN2Xc944U8U4hJOJqGxSauoCnlYm00Webu/
- j8Zz1pIRjN4Omgpc/PaoU9DhQoLHLe+9wRl+p09o8zzraMtuhP
- VGQeD7aixxplo+e83cqnlXO7+LdLnDD4+uwJczHd1CrsR6Ng6K
- pXkb8Rv8VDl86rMCVL0a1YKTymlCSOQKlArT4qqnfqGUlOWPXq
- Vmy3gO0HAu0PRCu/FjN9J6uAXPuaB51k3ZsuxW5AalLWLLytun
- qG1Y7RdKLZp0wwkVLHKy+Wz4uB6IwSndLhXbN3m6eceez6CGEI
- PYyYuNA/xj1spkzozM5aJT1afLzpFkReYGFauPCs/b46cck1Ot
- DBiMltEy/Us8RBMwb0wgee55DO3/iYHCsLboTxdUP
+	id S1752807AbaB0PY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:24:58 -0500
+Received: from imap.thunk.org ([74.207.234.97]:34849 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532AbaB0PY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 10:24:56 -0500
+Date: Thu, 27 Feb 2014 10:24:35 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
+        Ben Pfaff <blp@nicira.com>, Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+Message-ID: <20140227152435.GA7982@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+	Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
+	Christopher Li <sparse@chrisli.org>,
+	Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <530E8C2E.7080307@zytor.com>
+ <1393466619.24588.65.camel@joe-AO722>
+ <20140227022857.GC23659@thin>
+ <1393469594.24588.71.camel@joe-AO722>
+ <20140227025845.GA25145@thin>
+ <530EB103.5070406@zytor.com>
+ <1393472326.24588.82.camel@joe-AO722>
+ <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
+ <20140227082529.GA18210@pd.tnic>
+ <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 15:43 +0100, Frederic Weisbecker wrote: 
-> On Mon, Feb 17, 2014 at 06:26:41AM +0100, Mike Galbraith wrote:
-> > On Wed, 2014-02-12 at 19:23 +0100, Frederic Weisbecker wrote: 
-> > > On Mon, Feb 10, 2014 at 10:47:29AM -0800, Paul E. McKenney wrote:
-> > > > On Mon, Feb 10, 2014 at 06:08:31PM +0800, Lai Jiangshan wrote:
-> > > > > Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > > 
-> > > > Thank you all, queued for 3.15.
-> > > > 
-> > > > We should also have some facility for moving the SRCU workqueues to
-> > > > housekeeping/timekeeping kthreads in the NO_HZ_FULL case.  Or does
-> > > > this patch already have that effect?
-> > > 
-> > > Kevin Hilman and me plan to try to bring a new Kconfig option that could let
-> > > us control the unbound workqueues affinity through sysfs.
-> > 
-> > Handing control to the user seemed like a fine thing, so I started
-> > making a boot option to enable it.  Forcing WQ_SYSFS on at sysfs
-> > decision spot doesn't go well, init order matters :)  Post init frobbing
-> > required if you want to see/frob all unbound.
-> 
-> I'm curious about the details. Is that because some workqueues are registered
-> before sysfs is even initialized?
+On Thu, Feb 27, 2014 at 07:10:25AM -0800, H. Peter Anvin wrote:
+> Keep in mind, too, that for the kernel we don't care about the full
+> C standard but a subset.  We rely on extrastandard behavior all over
+> the place.  For all ABIs supported by the kernel, sizeof(_Book) == 1
+> and so everything is sane.
 
-Yeah.  I put in a test, and told it if not ready, go get ready and flag
-yourself as having BTDT (one registration being plenty), but that only
-made a different explosion.  Post-init rescan is definitely a better
-plan, it can't be worse :)
+Do we have a fairly comprehensive list of what these extrastandard
+requirements / assumptions are?  It might be a good idea to have one
+that we can point to, so that (a) people who are trying to define a
+new architecture knows what they need to handle, (b) and so we can
+give a list of things that static code analyzers like smatch and
+coverity and sparse should be able to suppress (perhaps in a Linux
+kernel-only mode).
 
--Mike
-
+					- Ted
