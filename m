@@ -1,216 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaB0B7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:59:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:25311 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531AbaB0B7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:59:31 -0500
-X-IronPort-AV: E=Sophos;i="4.97,551,1389715200"; 
-   d="scan'208";a="9612319"
-Message-ID: <530E9BEF.8080601@cn.fujitsu.com>
-Date: Thu, 27 Feb 2014 09:59:11 +0800
-From: Li Guang <lig.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20120421 Iceape/2.0.11
+	id S1754601AbaB0B7p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:59:45 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:58656 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaB0B7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:59:42 -0500
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Feb 2014 20:59:41 EST
+X-Original-SENDERIP: 10.185.110.87
+X-Original-MAILFROM: chanho.min@lge.com
+X-AuditID: 9c930173-b7f9b6d000006d39-d9-530c4a506789
+Subject: Re : [PATCH 4/8] lib: Add prototype declarations in lib/clz_ctz.c
+References: <7bf34999aea7f3d1441dc8fc344882a814da6e06.1393313946.git.rashika.kheria@gmail.com>
+In-Reply-To: <7bf34999aea7f3d1441dc8fc344882a814da6e06.1393313946.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMKsWRWlGSWpSXmKPExsVyMfSOpm6gF0+wwfTZlhYfr11gd2D06Hp7
+	hSmAMYrLJiU1J7MstUjfLoErY93JiILPfBWz+x4zNTAu4eli5OSQEDCRmPllERuELSZx4d56
+	MFtIYAejxIMZqV2MXEB2L6PEnZf72UESLAK3WSUanytDNFRKNDbcZOxi5AAqUpd4s94Aor6H
+	SeL9klvMEPWqEv97j4H1sgnoS3ycdpgVxBYRUJDY3PuMFaSBWWAKo8SGKV1MIAlhAVeJixOe
+	soDYvAJxEsd3ToRaECfR/CUMIiwocXLmE7ASZqC9f+ZdYgYpYRaQllj+jwMiLC/RvHU22Amc
+	AvESv1/+B/tLVEBFYsrJbWwTGEVnIZk0C8mkWQiTZiGZtICRZRWjsI+7q6NvkKuPp4GpXk56
+	ql5yfu4mRmAkzJnMWLyD8cRUm0OMAhyMSjy8ncXcwUKsiWXFlbmHGCU5mJREef858gQL8SXl
+	p1RmJBZnxBeV5qQWH2KU4GBWEuHl9ADK8aYkVlalFuXDpKQ5WJTEedekegUJCaQnlqRmp6YW
+	pBbBZJk42A8xynBwKEnwKnoCdQsWpaanVqRl5pQgq+EE2cADtMEYpIa3uCAxtzgzHSJ/itGY
+	Y/KGn58YOY4f/fOJUYglLz8vVUqc194dqFQApDSjNA9uGiytXWKUlRLmZWRgYBDiATonN7ME
+	Vf4VozgwBIR5TUEW8mTmlcDtewV0ChPQKUelwU4pSURISTUwmopKr0zXOGLs5Kt2+y7Xmoul
+	mU7KT8r9Htn99vpyW+jWOn3ebTsTpxow+5TNX8fH9i8hbM+8FHPPVZwXHzJ1t+sssrKTKpd8
+	KGL3LvlJCYdmh6JjaGeq8MYqR7MffPe3N1TdjF87/VnewdCzdxbwpCkdcjnn4tdxW6K0295t
+	1u+t2+/quv5RYinOSDTUYi4qTgQAinI/U2YDAAA=
 MIME-Version: 1.0
-To: Kieran Clancy <clancy.kieran@gmail.com>
-CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Dennis Jansen <dennis.jansen@web.de>
-Subject: Re: [PATCH] ACPI / EC: Clear stale EC events on Samsung systems
-References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com>
-In-Reply-To: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 09:56:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 09:57:04,
-	Serialize complete at 2014/02/27 09:57:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Reply-To: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
+X-Priority: 3 (Normal)
+Auto-Submitted: auto-generated
+From: "=?EUC-KR?B?uc7C+cij?=" <chanho.min@lge.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>, josh@joshtriplett.org
+Message-ID: <OFFE1CC7B6.1A38C928-ON49257C8C.00099492-49257C8C.00099493@lge.com>
+Date: Thu, 27 Feb 2014 10:44:38 +0900
+X-MIMETrack: Serialize by Router on LGEKRHQMS17A/LGE/LG Group(Release 8.5.3FP3HF583 | August
+ 9, 2013) at 2014/02/27 10:44:39
+Content-type: text/plain; charset=EUC-KR
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1R1xmqT003458
 
-Kieran Clancy wrote:
-> A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
-> continue to log events during sleep (lid open/close, AC plug/unplug,
-> battery level change), which accumulate in the EC until a buffer fills.
-> After the buffer is full (tests suggest it holds 8 events), GPEs stop
-> being triggered for new events. This state persists on wake or even on
-> power cycle, and prevents new events from being registered until the EC
-> is manually polled.
->
->    
 
-that's really nasty EC firmware!
-
-> This is the root cause of a number of bugs, including AC not being
-> detected properly, lid close not triggering suspend, and low ambient
-> light not triggering the keyboard backlight. The bug also seemed to be
-> responsible for performance issues on at least one user's machine.
+> -----Original Message-----
+> From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
+> Sent: Tuesday, February 25, 2014 4:46 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Andrew Morton; Rashika Kheria; Chanho Min; josh@joshtriplett.org
+> Subject: [PATCH 4/8] lib: Add prototype declarations in lib/clz_ctz.c
 >
-> Juan Manuel Cabo found the cause of bug and the workaround of polling
-> the EC manually on wake.
+> Add prototype declarations of functions in lib/clz_ctz.c. These
+> functions are required by GCC builtins and hence can not be removed
+> despite of their unreferenced appearance in kernel source.
 >
-> This patch:
-> - Adds a function acpi_ec_clear() which polls the EC, at most
->    ACPI_EC_CLEAR_MAX (currently 20) times. A warning is logged if this
->    limit is reached.
-> - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
->    system vendor is Samsung. This check could be replaced by several more
->    specific DMI vendor/product pairs, but it's likely that the bug
->    affects more Samsung products than just the five series mentioned
->    above. Further, it should not be harmful to run acpi_ec_clear() on
->    systems without the bug; it will return immediately after finding no
->    data waiting.
-> - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
-> - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
+> This eliminates the following warning in lib/clz_ctz.c:
+> lib/clz_ctz.c:16:12: warning: no previous prototype for °Æ__ctzsi2°Ø [-Wmissing-prototypes]
+> lib/clz_ctz.c:22:12: warning: no previous prototype for °Æ__clzsi2°Ø [-Wmissing-prototypes]
+> lib/clz_ctz.c:44:12: warning: no previous prototype for °Æ__clzdi2°Ø [-Wmissing-prototypes]
+> lib/clz_ctz.c:50:12: warning: no previous prototype for °Æ__ctzdi2°Ø [-Wmissing-prototypes]
 >
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
-> Signed-off-by: Kieran Clancy<clancy.kieran@gmail.com>
-> Signed-off-by: Lan Tianyu<tianyu.lan@intel.com>
-> Signed-off-by: Juan Manuel Cabo<juanmanuel.cabo@gmail.com>
-> Signed-off-by: Dennis Jansen<dennis.jansen@web.de>
-> Tested-by: Maurizio D'Addona<mauritiusdadd@gmail.com>
-> Tested-by: San Zamoyski<san@plusnet.pl>
-> ---
->   drivers/acpi/ec.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 61 insertions(+)
->
-> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> index 959d41a..f437d9a 100644
-> --- a/drivers/acpi/ec.c
-> +++ b/drivers/acpi/ec.c
-> @@ -67,6 +67,8 @@ enum ec_command {
->   #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
->   #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
->   #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
-> +#define ACPI_EC_CLEAR_MAX	20	/* Maximum number of events to query
-> +					 * when trying to clear the EC */
->    
-
-20 is enough?
-the query index is length of a byte.
-
->
->   enum {
->   	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
-> @@ -116,6 +118,7 @@ EXPORT_SYMBOL(first_ec);
->   static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
->   static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
->   static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-> +static int EC_FLAGS_CLEAR_ON_RESUME; /* EC should be polled on boot/resume */
->    
-
-seems name is implicit, what about EC_FLAGS_QEVENT_CLR_ON_RESUME?
-seems too long :-)
-
->
->   /* --------------------------------------------------------------------------
->                                Transaction Management
-> @@ -440,6 +443,26 @@ acpi_handle ec_get_handle(void)
->
->   EXPORT_SYMBOL(ec_get_handle);
->
-> +static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-> +
-> +/* run with locked ec mutex */
-> +static void acpi_ec_clear(struct acpi_ec *ec)
-> +{
-> +	int i, status;
-> +	u8 value = 0;
-> +
-> +	for (i = 0; i<  ACPI_EC_CLEAR_MAX; i++) {
-> +		status = acpi_ec_query_unlocked(ec,&value);
-> +		if (status || !value)
-> +			break;
-> +	}
-> +
-> +	if (i == ACPI_EC_CLEAR_MAX)
-> +		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
-> +	else
-> +		pr_info("%d stale EC events cleared\n", i);
-> +}
-> +
->   void acpi_ec_block_transactions(void)
->   {
->   	struct acpi_ec *ec = first_ec;
-> @@ -463,6 +486,10 @@ void acpi_ec_unblock_transactions(void)
->   	mutex_lock(&ec->mutex);
->   	/* Allow transactions to be carried out again */
->   	clear_bit(EC_FLAGS_BLOCKED,&ec->flags);
-> +
-> +	if (EC_FLAGS_CLEAR_ON_RESUME)
-> +		acpi_ec_clear(ec);
-> +
->   	mutex_unlock(&ec->mutex);
->   }
->
-> @@ -821,6 +848,13 @@ static int acpi_ec_add(struct acpi_device *device)
->
->   	/* EC is fully operational, allow queries */
->   	clear_bit(EC_FLAGS_QUERY_PENDING,&ec->flags);
-> +
-> +	/* Some hardware may need the EC to be cleared before use */
->    
-
-description is implicit, should specify what we clear is Q event, not EC.
-
-Thanks!
-Li Guang
-
-> +	if (EC_FLAGS_CLEAR_ON_RESUME) {
-> +		mutex_lock(&ec->mutex);
-> +		acpi_ec_clear(ec);
-> +		mutex_unlock(&ec->mutex);
-> +	}
->   	return ret;
->   }
->
-> @@ -922,6 +956,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
->   	return 0;
->   }
->
-> +/*
-> + * On some hardware it is necessary to clear events accumulated by the EC during
-> + * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-> + * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-> + *
-> + * https://bugzilla.kernel.org/show_bug.cgi?id=44161
-> + *
-> + * Ideally, the EC should also be instructed not to accumulate events during
-> + * sleep (which Windows seems to do somehow), but the interface to control this
-> + * behaviour is not known at this time.
-> + *
-> + * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
-> + * however it is very likely that other Samsung models are affected.
-> + *
-> + * On systems which don't accumulate EC events during sleep, this extra check
-> + * should be harmless.
-> + */
-> +static int ec_clear_on_resume(const struct dmi_system_id *id)
-> +{
-> +	pr_debug("Detected system needing EC poll on resume.\n");
-> +	EC_FLAGS_CLEAR_ON_RESUME = 1;
-> +	return 0;
-> +}
-> +
->   static struct dmi_system_id ec_dmi_table[] __initdata = {
->   	{
->   	ec_skip_dsdt_scan, "Compal JFL92", {
-> @@ -965,6 +1023,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
->   	ec_validate_ecdt, "ASUS hardware", {
->   	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
->   	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
-> +	{
-> +	ec_clear_on_resume, "Samsung hardware", {
-> +	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
->   	{},
->   };
->
->    
-
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Chanho Min <chanho.min@lge.com>ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
