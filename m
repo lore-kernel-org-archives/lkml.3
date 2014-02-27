@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaB0Hgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:36:41 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36182 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaB0HeD (ORCPT
+	id S1752545AbaB0Hg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:36:59 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:58358 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbaB0HeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:34:03 -0500
-Subject: [PATCH -tip v7 18/26] sched: Use NOKPROBE_SYMBOL macro in sched
+	Thu, 27 Feb 2014 02:34:00 -0500
+Subject: [PATCH -tip v7 17/26] notifier: Use NOKPROBE_SYMBOL macro in
+ notifier
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Feb 2014 16:33:59 +0900
-Message-ID: <20140227073359.20992.7768.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Date: Thu, 27 Feb 2014 16:33:57 +0900
+Message-ID: <20140227073357.20992.96437.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -30,46 +30,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use NOKPROBE_SYMBOL macro to protect functions from
-kprobes instead of __kprobes annotation in sched/core.c.
+kprobes instead of __kprobes annotation in notifier.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/sched/core.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/notifier.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 55d31fa..09716bb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2484,7 +2484,7 @@ notrace unsigned long get_parent_ip(unsigned long addr)
- #if defined(CONFIG_PREEMPT) && (defined(CONFIG_DEBUG_PREEMPT) || \
- 				defined(CONFIG_PREEMPT_TRACER))
- 
--void __kprobes preempt_count_add(int val)
-+void preempt_count_add(int val)
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 2d5cc4c..61fc78a 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
+  *	@returns:	notifier_call_chain returns the value returned by the
+  *			last notifier function called.
+  */
+-static int __kprobes notifier_call_chain(struct notifier_block **nl,
+-					unsigned long val, void *v,
+-					int nr_to_call,	int *nr_calls)
++static int notifier_call_chain(struct notifier_block **nl,
++			       unsigned long val, void *v,
++			       int nr_to_call, int *nr_calls)
  {
- #ifdef CONFIG_DEBUG_PREEMPT
- 	/*
-@@ -2510,8 +2510,9 @@ void __kprobes preempt_count_add(int val)
+ 	int ret = NOTIFY_DONE;
+ 	struct notifier_block *nb, *next_nb;
+@@ -102,6 +102,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
  	}
+ 	return ret;
  }
- EXPORT_SYMBOL(preempt_count_add);
-+NOKPROBE_SYMBOL(preempt_count_add);
++NOKPROBE_SYMBOL(notifier_call_chain);
  
--void __kprobes preempt_count_sub(int val)
-+void preempt_count_sub(int val)
+ /*
+  *	Atomic notifier chain routines.  Registration and unregistration
+@@ -172,9 +173,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+  *	Otherwise the return value is the return value
+  *	of the last notifier function called.
+  */
+-int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+-					unsigned long val, void *v,
+-					int nr_to_call, int *nr_calls)
++int __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
++				 unsigned long val, void *v,
++				 int nr_to_call, int *nr_calls)
  {
- #ifdef CONFIG_DEBUG_PREEMPT
- 	/*
-@@ -2532,6 +2533,7 @@ void __kprobes preempt_count_sub(int val)
- 	__preempt_count_sub(val);
+ 	int ret;
+ 
+@@ -184,13 +185,15 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ 	return ret;
  }
- EXPORT_SYMBOL(preempt_count_sub);
-+NOKPROBE_SYMBOL(preempt_count_sub);
+ EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
++NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
  
- #endif
+-int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+-		unsigned long val, void *v)
++int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
++			       unsigned long val, void *v)
+ {
+ 	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
+ }
+ EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
++NOKPROBE_SYMBOL(atomic_notifier_call_chain);
  
+ /*
+  *	Blocking notifier chain routines.  All access to the chain is
+@@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+ 
+ static ATOMIC_NOTIFIER_HEAD(die_chain);
+ 
+-int notrace __kprobes notify_die(enum die_val val, const char *str,
++int notrace notify_die(enum die_val val, const char *str,
+ 	       struct pt_regs *regs, long err, int trap, int sig)
+ {
+ 	struct die_args args = {
+@@ -540,6 +543,7 @@ int notrace __kprobes notify_die(enum die_val val, const char *str,
+ 	};
+ 	return atomic_notifier_call_chain(&die_chain, val, &args);
+ }
++NOKPROBE_SYMBOL(notify_die);
+ 
+ int register_die_notifier(struct notifier_block *nb)
+ {
 
 
