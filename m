@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaB0PY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:24:58 -0500
-Received: from imap.thunk.org ([74.207.234.97]:34849 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532AbaB0PY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:24:56 -0500
-Date: Thu, 27 Feb 2014 10:24:35 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, Joe Perches <joe@perches.com>,
-        Ben Pfaff <blp@nicira.com>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-Message-ID: <20140227152435.GA7982@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-	Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
-	Christopher Li <sparse@chrisli.org>,
-	Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <530E8C2E.7080307@zytor.com>
- <1393466619.24588.65.camel@joe-AO722>
- <20140227022857.GC23659@thin>
- <1393469594.24588.71.camel@joe-AO722>
- <20140227025845.GA25145@thin>
- <530EB103.5070406@zytor.com>
- <1393472326.24588.82.camel@joe-AO722>
- <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
- <20140227082529.GA18210@pd.tnic>
- <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1753138AbaB0P0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:26:52 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:51662 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751613AbaB0P0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 10:26:47 -0500
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>,
+        Pankaj Dev <pankaj.dev@st.com>
+Subject: [PATCH v0 06/15] drivers: clk: st: Support for A9 MUX clocks
+Date: Thu, 27 Feb 2014 16:24:19 +0100
+Message-Id: <1393514668-17440-7-git-send-email-gabriel.fernandez@st.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393514668-17440-1-git-send-email-gabriel.fernandez@st.com>
+References: <1393514668-17440-1-git-send-email-gabriel.fernandez@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 07:10:25AM -0800, H. Peter Anvin wrote:
-> Keep in mind, too, that for the kernel we don't care about the full
-> C standard but a subset.  We rely on extrastandard behavior all over
-> the place.  For all ABIs supported by the kernel, sizeof(_Book) == 1
-> and so everything is sane.
+The patch supports the A9-mux clocks used by ClockGenA9
 
-Do we have a fairly comprehensive list of what these extrastandard
-requirements / assumptions are?  It might be a good idea to have one
-that we can point to, so that (a) people who are trying to define a
-new architecture knows what they need to handle, (b) and so we can
-give a list of things that static code analyzers like smatch and
-coverity and sparse should be able to suppress (perhaps in a Linux
-kernel-only mode).
+A9-mux clock : Multiplexer inside ClockGenA9. A9 clock can be driven by
+either PLL or External clock (with an optional divide-by-2). This is
+implemented as 3-parent clock : PLL, Ext-clk OR Ext-clk/2
 
-					- Ted
+Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
+---
+ drivers/clk/st/clkgen-mux.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
+index 7ccff62..a329906 100644
+--- a/drivers/clk/st/clkgen-mux.c
++++ b/drivers/clk/st/clkgen-mux.c
+@@ -570,6 +570,17 @@ static struct clkgen_mux_data clkgen_mux_c_vcc_sd_416 = {
+ 	.lock = &clkgenf_lock,
+ };
+ 
++static struct clkgen_mux_data stih415_a9_mux_data = {
++	.offset = 0,
++	.shift = 1,
++	.width = 2,
++};
++static struct clkgen_mux_data stih416_a9_mux_data = {
++	.offset = 0,
++	.shift = 0,
++	.width = 2,
++};
++
+ static struct of_device_id mux_of_match[] = {
+ 	{
+ 		.compatible = "st,stih416-clkgenc-vcc-hd",
+@@ -591,6 +602,14 @@ static struct of_device_id mux_of_match[] = {
+ 		.compatible = "st,stih416-clkgenf-vcc-sd",
+ 		.data = &clkgen_mux_c_vcc_sd_416,
+ 	},
++	{
++		.compatible = "st,stih415-clkgen-a9-mux",
++		.data = &stih415_a9_mux_data,
++	},
++	{
++		.compatible = "st,stih416-clkgen-a9-mux",
++		.data = &stih416_a9_mux_data,
++	},
+ 	{}
+ };
+ 
+-- 
+1.9.0
+
