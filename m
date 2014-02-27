@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaB0A6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:58:25 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:55893 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069AbaB0A6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:58:23 -0500
-Message-ID: <530E8DAD.3080604@iki.fi>
-Date: Thu, 27 Feb 2014 02:58:21 +0200
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754571AbaB0BAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:00:06 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56155 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754237AbaB0BAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:00:04 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kieran Clancy <clancy.kieran@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Dennis Jansen <dennis.jansen@web.de>
+Subject: Re: [PATCH] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Thu, 27 Feb 2014 02:15:05 +0100
+Message-ID: <348372796.ZazosLsa0U@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.13.0+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGf84QK75jsXdnehwDNr8g+dCvdQKQ7+bgXmsbF_YFMKKYoGGw@mail.gmail.com>
+References: <1393429360-4344-1-git-send-email-clancy.kieran@gmail.com> <1670100.tBHUbYFGo0@vostro.rjw.lan> <CAGf84QK75jsXdnehwDNr8g+dCvdQKQ7+bgXmsbF_YFMKKYoGGw@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Vcelak <jv@fcelda.cz>, linux-media@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] [media] rtl28xxu: add chipset version comments
- into device list
-References: <530DB488.9030901@iki.fi> <1393439620-7993-1-git-send-email-jv@fcelda.cz> <1393439620-7993-2-git-send-email-jv@fcelda.cz>
-In-Reply-To: <1393439620-7993-2-git-send-email-jv@fcelda.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.184.75
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied, thanks!
-Antti
+On Thursday, February 27, 2014 11:15:05 AM Kieran Clancy wrote:
+> On Thu, Feb 27, 2014 at 10:15 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Thursday, February 27, 2014 02:12:40 AM Kieran Clancy wrote:
+> >> Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+> >> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> >> Signed-off-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+> >> Signed-off-by: Dennis Jansen <dennis.jansen@web.de>
+> >
+> > There are too many sign-offs under this patch.  I suppose some of them
+> > should be Acked-by or Reviewed-by.
+> >
+> > Are you the author?
+> 
+> Sorry about that, I wasn't sure of the best way to acknowledge the
+> people involved.
+> 
+> I am the primary author, but I based the loop which calls
+> acpi_ec_query_unlocked() on a patch by Lan Tianyu. Juan provided the
+> initial idea (userspace workaround), and Dennis and Lan Tianyu
+> reviewed and suggested some changes to the code.
+> 
+> What would you usually do this kind of situation?
 
-On 26.02.2014 20:33, Jan Vcelak wrote:
-> Signed-off-by: Jan Vcelak <jv@fcelda.cz>
-> ---
->   drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 3 +++
->   1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> index b9eb662..ab1deac 100644
-> --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-> @@ -1382,6 +1382,7 @@ static const struct dvb_usb_device_properties rtl2832u_props = {
->   };
->
->   static const struct usb_device_id rtl28xxu_id_table[] = {
-> +	/* RTL2831U devices: */
->   	{ DVB_USB_DEVICE(USB_VID_REALTEK, USB_PID_REALTEK_RTL2831U,
->   		&rtl2831u_props, "Realtek RTL2831U reference design", NULL) },
->   	{ DVB_USB_DEVICE(USB_VID_WIDEVIEW, USB_PID_FREECOM_DVBT,
-> @@ -1389,6 +1390,7 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
->   	{ DVB_USB_DEVICE(USB_VID_WIDEVIEW, USB_PID_FREECOM_DVBT_2,
->   		&rtl2831u_props, "Freecom USB2.0 DVB-T", NULL) },
->
-> +	/* RTL2832U devices: */
->   	{ DVB_USB_DEVICE(USB_VID_REALTEK, 0x2832,
->   		&rtl2832u_props, "Realtek RTL2832U reference design", NULL) },
->   	{ DVB_USB_DEVICE(USB_VID_REALTEK, 0x2838,
-> @@ -1432,6 +1434,7 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
->   	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
->   		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
->
-> +	/* RTL2832P devices: */
->   	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
->   		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
->   	{ }
->
+I usually add acknowledgements to the changelog without using any tags,
+like "This patch is based on previous work by <somebody>."  And then you
+can give a link to that work in References:.
 
+> I suppose I could put something such as:
+>
+> Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+> Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
+> Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
+> 
+> Would this be preferable?
+
+Yes, that'd be fine by me.
+
+Thanks!
 
 -- 
-http://palosaari.fi/
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
