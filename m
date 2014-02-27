@@ -1,126 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206AbaB0RAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:00:18 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:52406 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752458AbaB0RAR (ORCPT
+	id S1753357AbaB0RBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:01:15 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:40231 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639AbaB0RBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:00:17 -0500
-Date: Thu, 27 Feb 2014 12:00:14 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        stable@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
-Subject: Re: [RFA][PATCH 2/5] ftrace/x86: One more missing sync after fixup
- of function modification failure
-Message-ID: <20140227120014.7ba8b484@gandalf.local.home>
-In-Reply-To: <20140227163731.GC19580@localhost.localdomain>
-References: <20140227154616.703252665@goodmis.org>
-	<20140227154923.103932155@goodmis.org>
-	<20140227163731.GC19580@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 27 Feb 2014 12:01:13 -0500
+Date: Thu, 27 Feb 2014 19:01:09 +0200
+From: Amir Vadai <amirv@mellanox.com>
+To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: mlx4_core: DMA-API: device driver tries to sync DMA memory it
+ has not allocated
+Message-ID: <20140227170107.GB24226@mtl-eit-vdi-22.mtl.labs.mlnx>
+References: <20131210144416.31b7002c@thinkpad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210144416.31b7002c@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014 17:37:32 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Thu, Feb 27, 2014 at 10:46:18AM -0500, Steven Rostedt wrote:
-> > [Request for Ack]
-> > 
-> > From: Petr Mladek <pmladek@suse.cz>
-> > 
-> > If a failure occurs while modifying ftrace function, it bails out and will
-> > remove the tracepoints to be back to what the code originally was.
-> > 
-> > There is missing the final sync run across the CPUs after the fix up is done
-> > and before the ftrace int3 handler flag is reset.
+On 10/12/13 14:44 +0100, Gerald Schaefer wrote:
+> Hi,
 > 
-> So IIUC the risk is that other CPUs may spuriously ignore non-ftrace traps if we don't sync the
-> other cores after reverting the int3 before decrementing the modifying_ftrace_code counter?
-
-Actually, the bug is that they will not ignore the ftrace traps after
-we decrement modifying_ftrace_code counter. Here's the race:
-
-	CPU0				CPU1
-	----				----
-  remove_breakpoint();
-  modifying_ftrace_code = 0;
-
-				[still sees breakpoint]
-				<takes trap>
-				[sees modifying_ftrace_code as zero]
-				[no breakpoint handler]
-				[goto failed case]
-				[trap exception - kernel breakpoint, no
-				 handler]
-				BUG()
-
-
-Even if we had a smp_wmb() after removing the breakpoint and clearing
-the modifying_ftrace_code, we still need the smp_rmb() on the other
-CPUS. The run_sync() does a IPI on all CPUs doing the smp_rmb().
-
+> During network stress test with CONFIG_DMA_API_DEBUG=y we get the following
+> message on the server side:
 > 
-> > 
-> > Link: http://lkml.kernel.org/r/1393258342-29978-2-git-send-email-pmladek@suse.cz
-> > 
-> > Fixes: 8a4d0a687a5 "ftrace: Use breakpoint method to update ftrace caller"
-> > Cc: stable@vger.kernel.org # 3.5+
-> > Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  arch/x86/kernel/ftrace.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> > index 6b566c8..69885e2 100644
-> > --- a/arch/x86/kernel/ftrace.c
-> > +++ b/arch/x86/kernel/ftrace.c
-> > @@ -660,8 +660,8 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
-> >  		ret = -EPERM;
-> >  		goto out;
-> >  	}
-> > -	run_sync();
-> >   out:
-> > +	run_sync();
-> >  	return ret;
-> >  
-> >   fail_update:
+> [57523.955982] mlx4_core 0000:00:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x0000000143d2c202] [size=1526 bytes]
+> [57523.956018] ------------[ cut here ]------------
+> [57523.956021] WARNING: at /home/dailybuild/builder/packages/BUILD/linux-3.12.3-20131209/lib/dma-debug.c:986
+> [57523.956022] Modules linked in: mlx4_en dm_multipath scsi_dh mlx4_core eadm_sch dm_mod lcs autofs4
+> [57523.956034] CPU: 3 PID: 20 Comm: ksoftirqd/3 Not tainted 3.12.3-65.x.20131209-s390xdefault #1
+> [57523.956037] task: 000000026f47cb60 ti: 000000026f484000 task.ti: 000000026f484000
+> [57523.956044] Krnl PSW : 0404e00180000000 00000000004a0422 (check_sync+0xf2/0x52c)
+> [57523.956047]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:2 PM:0 EA:3
+> [57523.956047] Krnl GPRS: 0000000000000111 000000008b767e9c 0000000000000092 0000000000000000
+> [57523.956051]            00000000004a041e 0000000000000000 00000000000005f6 0000000143d2c202
+> [57523.956053]            000000026f487a98 0000000000000001 0000000000a71144 000000026f10dd60
+> [57523.956055]            0000000000000000 000000000075bb18 00000000004a041e 000000026f487980
+> [57523.956064] Krnl Code: 00000000004a0412: c020002143d7        larl    %r2,8c8bc0
+> [57523.956064]            00000000004a0418: c0e50012717a        brasl   %r14,6ee70c
+> [57523.956064]           #00000000004a041e: a7f40001            brc     15,4a0420
+> [57523.956064]           >00000000004a0422: e330a0000012        lt      %r3,0(%r10)
+> [57523.956064]            00000000004a0428: a7740201            brc     7,4a082a
+> [57523.956064]            00000000004a042c: a7f401f3            brc     15,4a0812
+> [57523.956064]            00000000004a0430: d5078030c030        clc     48(8,%r8),48(%r12)
+> [57523.956064]            00000000004a0436: a7c40070            brc     12,4a0516
+> [57523.956081] Call Trace:
+> [57523.956084] ([<00000000004a041e>] check_sync+0xee/0x52c)
+> [57523.956087]  [<00000000004a0a26>] debug_dma_sync_single_for_cpu+0x66/0x74
+> [57523.956094]  [<000003ff801fcae0>] mlx4_en_complete_rx_desc+0x15c/0x240 [mlx4_en]
+> [57523.956098]  [<000003ff801fe1fa>] mlx4_en_process_rx_cq+0x56a/0xb58 [mlx4_en]
+> [57523.956101]  [<000003ff801fe8ea>] mlx4_en_poll_rx_cq+0x92/0xf8 [mlx4_en]
+> [57523.956105]  [<00000000005d558c>] net_rx_action+0xa0/0x2f0
+> [57523.956109]  [<000000000013cd10>] __do_softirq+0x1e8/0x480
+> [57523.956111]  [<000000000013cfe4>] run_ksoftirqd+0x3c/0x80
+> [57523.956114]  [<000000000016f496>] smpboot_thread_fn+0x2c6/0x2e8
+> [57523.956118]  [<0000000000163834>] kthread+0xd0/0xe4
+> [57523.956123]  [<00000000006ff19e>] kernel_thread_starter+0x6/0xc
+> [57523.956125]  [<00000000006ff198>] kernel_thread_starter+0x0/0xc
+> [57523.956127] 1 lock held by ksoftirqd/3/20:
+> [57523.956129]  #0:  (&(&dma_entry_hash[i].lock)->rlock){-.-...}, at: [<000000000049f1d6>] get_hash_bucket+0x4a/0x64
+> [57523.956135] Last Breaking-Event-Address:
+> [57523.956137]  [<00000000004a041e>] check_sync+0xee/0x52c
+> [57523.956139] ---[ end trace ec82af84e1d16c5f ]---
 > 
-> This could be further optimized by rather calling run_sync() in the end of the
-> fail_update block (after the probe_kernel_write revert) otherwise even failure on
-> setting the break will result in run_sync(), which doesn't appear to be needed. But
-> that's really just nitpicking as it's a rare failure codepath and shouldn't hurt.
+> --
 
-No, the run_sync() must be done after removing the breakpoint. Again,
-we don't want one of these breakpoints to be called on another CPU and
-then see modifying_ftrace_code as zero. That is bad. The final
-run_sync() is required.
+Hi Gerald,
 
-I think I'll update the change log to include my race flow graph from
-above.
+It seems that I missed this mail.
 
--- Steve
+I didn't see this warning in our lab in x86 platform.
+Is it reproduced easily on PPC?
+Any hints how to reproduce it in our lab?
 
+Do you have a 'good' version that didn't have the warning?
 
-> 
-> In any case, the fix looks correct.
-> 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> > -- 
-> > 1.8.5.3
-> > 
-> > 
-
+Thanks,
+Amir
