@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaB0Qvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:51:55 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18996 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaB0Qvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:51:54 -0500
-Date: Thu, 27 Feb 2014 19:47:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Reza Snowdon <rs@mage.me.uk>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        speakup@braille.uwo.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: speakup: buffers: Fixed a return value coding
- style issue.
-Message-ID: <20140227164751.GU26722@mwanda>
-References: <1393518402-24860-1-git-send-email-rs@mage.me.uk>
+	id S1753251AbaB0QxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:53:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57375 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaB0QxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:53:22 -0500
+Message-ID: <530F6D43.5020006@zytor.com>
+Date: Thu, 27 Feb 2014 08:52:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393518402-24860-1-git-send-email-rs@mage.me.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
+        Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
+        Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+References: <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722> <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com> <1393472326.24588.82.camel@joe-AO722> <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com> <20140227082529.GA18210@pd.tnic> <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com> <20140227152435.GA7982@thunk.org> <530F5E53.5070208@zytor.com> <20140227161004.GT26722@mwanda>
+In-Reply-To: <20140227161004.GT26722@mwanda>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 04:26:42PM +0000, Reza Snowdon wrote:
-> Fixed a coding style issue.
+On 02/27/2014 08:10 AM, Dan Carpenter wrote:
 > 
-> Signed-off-by: Reza Snowdon <rs@mage.me.uk>
-> ---
->  drivers/staging/speakup/buffers.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> That last assumption has to change for the Meta architecture.
 > 
-> diff --git a/drivers/staging/speakup/buffers.c b/drivers/staging/speakup/buffers.c
-> index 382973e..8d7caa7 100644
-> --- a/drivers/staging/speakup/buffers.c
-> +++ b/drivers/staging/speakup/buffers.c
-> @@ -55,7 +55,8 @@ static int synth_buffer_free(void)
->  
->  int synth_buffer_empty(void)
->  {
-> -	return (buff_in == buff_out);
-> +	int buff_comparison = (buff_in == buff_out);
-> +	return buff_comparison;
+> https://lwn.net/Articles/522188/
+> 
+> On meta, the structs and unions are padded to 4 bytes unless they are
+> explicitly marked as __packed.
+> 
 
-This isn't simpler than the original code.
+One have to wonder how likely they are to have that not continually break...
 
-Just do:
+	-hpa
 
-int synth_buffer_empty(void)
-{
-	return buff_in == buff_out;
-}
-
-regards,
-dan carpenter
 
