@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaB0MIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:08:11 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55444 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaB0MIK (ORCPT
+	id S1752001AbaB0MJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:09:20 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:45383 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaB0MJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:08:10 -0500
-Date: Thu, 27 Feb 2014 17:38:01 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, josh@joshtriplett.org
-Subject: [PATCH 28/46] kernel: Add prototype declaration to header file
- linux/ftrace.h
-Message-ID: <5238e052310ffdcaae2287783013afc42d3f7266.1393493277.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+	Thu, 27 Feb 2014 07:09:19 -0500
+Date: Thu, 27 Feb 2014 13:09:16 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL v3] liblockdep fixes for v3.14
+Message-ID: <20140227120916.GA9712@gmail.com>
+References: <530EAD6E.6010600@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+In-Reply-To: <530EAD6E.6010600@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototye declaration of function to header file
-include/linux/ftrace.h
-because it is used by more than one file.
 
-This eliminates the following warning in
-kernel/trace/trace_functions_graph.c:
-kernel/trace/trace_functions_graph.c:218:15: warning: no previous prototype for ‘ftrace_return_to_handler’ [-Wmissing-prototypes]
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- include/linux/ftrace.h |    1 +
- 1 file changed, 1 insertion(+)
+> The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+> 
+>   Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+> 
+> are available in the git repository at:
+> 
+>   https://github.com/sashalevin/liblockdep.git liblockdep-fixes
+> 
+> for you to fetch changes up to 7b8853419d3344b06cff64b4dc926805698eeba5:
+> 
+>   tools/liblockdep: Use realpath for srctree and objtree (2014-02-26 21:22:01 -0500)
+> 
+> ----------------------------------------------------------------
+> Ira W. Snyder (3):
+>       tools/liblockdep: Fix initialization code path
+>       tools/liblockdep: Fix include of asm/hash.h
+>       tools/liblockdep: Add include directory to allow tests to compile
+> 
+> Sasha Levin (2):
+>       tools/liblockdep: Mark runtests.sh as executable
+>       tools/liblockdep: Add a stub for new rcu_is_watching
+> 
+> Wang Nan (1):
+>       tools/liblockdep: Use realpath for srctree and objtree
+> 
+>  tools/lib/lockdep/Makefile             | 6 +++---
+>  tools/lib/lockdep/preload.c            | 2 +-
+>  tools/lib/lockdep/run_tests.sh         | 0
+>  tools/lib/lockdep/uinclude/asm/hash.h  | 6 ++++++
+>  tools/lib/lockdep/uinclude/linux/rcu.h | 5 +++++
+>  5 files changed, 15 insertions(+), 4 deletions(-)
+>  mode change 100644 => 100755 tools/lib/lockdep/run_tests.sh
+>  create mode 100644 tools/lib/lockdep/uinclude/asm/hash.h
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index da1c31f..c4d1048 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -673,6 +673,7 @@ typedef void (*trace_func_graph_ret_t)(struct ftrace_graph_ret *); /* return */
- typedef int (*trace_func_graph_ent_t)(struct ftrace_graph_ent *); /* entry */
- 
- int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace);
-+unsigned long ftrace_return_to_handler(unsigned long frame_pointer);
- 
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
--- 
-1.7.9.5
+Pulled, thanks a lot Sasha!
 
+	Ingo
