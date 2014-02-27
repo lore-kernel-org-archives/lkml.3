@@ -1,355 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751100AbaB0Gxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 01:53:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3613 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742AbaB0Gxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 01:53:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,552,1389772800"; 
-   d="scan'208";a="482714587"
-Message-ID: <1393484014.2637.14.camel@rzhang1-mobl4>
-Subject: Re: [PATCH] thermal: add generic IIO channel thermal sensor driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: eduardo.valentin@ti.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, grant.likely@linaro.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Feb 2014 14:53:34 +0800
-In-Reply-To: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
-References: <1391651007-29813-1-git-send-email-courtney.cavin@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751384AbaB0GyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:54:09 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:37483 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaB0GyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 01:54:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393459641.25123.21.camel@buesod1.americas.hpqcorp.net>
+References: <1393459641.25123.21.camel@buesod1.americas.hpqcorp.net>
+Date: Wed, 26 Feb 2014 22:47:10 -0800
+Message-ID: <CANN689FmKv1wy-sM--VOnEc=+r9=xesfT4frq=3TEH-uMHhjjA@mail.gmail.com>
+Subject: Re: [PATCH v3] mm: per-thread vma caching
+From: Michel Lespinasse <walken@google.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-05 at 17:43 -0800, Courtney Cavin wrote:
-> This driver is a generic method for using IIO ADC channels as thermal
-> sensors.
-> 
-> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+Agree with Linus; this is starting to look pretty good.
 
-Eduardo,
+I still have nits though :)
 
-what do you think of this patch?
+On Wed, Feb 26, 2014 at 4:07 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> @@ -0,0 +1,45 @@
+> +#ifndef __LINUX_VMACACHE_H
+> +#define __LINUX_VMACACHE_H
+> +
+> +#include <linux/mm.h>
+> +
+> +#ifdef CONFIG_MMU
+> +#define VMACACHE_BITS 2
+> +#else
+> +#define VMACACHE_BITS 0
+> +#endif
 
-thanks,
-rui
-> ---
->  .../devicetree/bindings/thermal/iio-thermal.txt    |  46 +++++
->  drivers/thermal/Kconfig                            |  13 ++
->  drivers/thermal/Makefile                           |   1 +
->  drivers/thermal/iio_thermal.c                      | 207 +++++++++++++++++++++
->  4 files changed, 267 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/iio-thermal.txt
->  create mode 100644 drivers/thermal/iio_thermal.c
-> 
-> diff --git a/Documentation/devicetree/bindings/thermal/iio-thermal.txt b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-> new file mode 100644
-> index 0000000..3be11b6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/iio-thermal.txt
-> @@ -0,0 +1,46 @@
-> +Generic IIO channel thermal sensor bindings
-> +
-> +compatible:
-> +	Usage: required
-> +	Type: string
-> +	Desc: compatible string, must be "iio-thermal"
-> +
-> +conversion-method:
-> +	Usage: required
-> +	Type: string
-> +	Desc: How to convert IIO voltage values to temperature, one of:
-> +		"interpolation" - interpolate between values in lookup table
-> +		"scalar" - use values as multiplier and divisor
-> +
-> +conversion-values:
-> +	Usage: required
-> +	Type: u32 array, 2-tuples
-> +	Desc: lookup table for conversion, for conversion-method:
-> +		"interpolation" - 2-tuples of < uV mK >; micro-volts to
-> +				  milli-kelvin; table must ascend
-> +		"scalar" - single scalar 2-tuple as < M D >; where:
-> +			   mK = uV * M / D
-> +
-> +io-channels:
-> +	Usage: required
-> +	Type: prop-encoded-array
-> +	Desc: See bindings/iio/iio-bindings.txt; must be a voltage channel
-> +
-> +Example:
-> +
-> +vadc: some_vadc {
-> +	compatible = "...";
-> +	#io-channel-cells = <1>;
-> +};
-> +
-> +iio-thermal {
-> +	compatible = "iio-thermal";
-> +	io-channels = <&vadc 0>;
-> +	conversion-method = "interpolation";
-> +	conversion-values = <
-> +		  30000 398200
-> +		 385000 318200
-> +		1738000 233200
-> +	>;
-> +};
-> +
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index 35c0664..f83a8e8 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -114,6 +114,19 @@ config THERMAL_EMULATION
->  	  because userland can easily disable the thermal policy by simply
->  	  flooding this sysfs node with low temperature values.
->  
-> +config IIO_THERMAL
-> +	tristate "Temperature sensor driver for generic IIO channels"
-> +	depends on IIO
-> +	depends on THERMAL_OF
-> +	help
-> +	  Support for generic IIO channels, such as ADCs.  This driver allows
-> +	  you to expose an IIO voltage channel as a thermal sensor.  This is
-> +	  implemented as a thermal sensor, not a thermal zone, and thus
-> +	  requires DT defined thermal infrastructure in order to be useful.
-> +
-> +	  If you aren't sure that you need this support, or haven't configured
-> +	  a thermal infrastructure in device tree, you should say 'N' here.
-> +
->  config IMX_THERMAL
->  	tristate "Temperature sensor driver for Freescale i.MX SoCs"
->  	depends on CPU_THERMAL
-> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> index 54e4ec9..0ee2c92 100644
-> --- a/drivers/thermal/Makefile
-> +++ b/drivers/thermal/Makefile
-> @@ -25,6 +25,7 @@ obj-y				+= samsung/
->  obj-$(CONFIG_DOVE_THERMAL)  	+= dove_thermal.o
->  obj-$(CONFIG_DB8500_THERMAL)	+= db8500_thermal.o
->  obj-$(CONFIG_ARMADA_THERMAL)	+= armada_thermal.o
-> +obj-$(CONFIG_IIO_THERMAL)	+= iio_thermal.o
->  obj-$(CONFIG_IMX_THERMAL)	+= imx_thermal.o
->  obj-$(CONFIG_DB8500_CPUFREQ_COOLING)	+= db8500_cpufreq_cooling.o
->  obj-$(CONFIG_INTEL_POWERCLAMP)	+= intel_powerclamp.o
-> diff --git a/drivers/thermal/iio_thermal.c b/drivers/thermal/iio_thermal.c
-> new file mode 100644
-> index 0000000..df21dbc
-> --- /dev/null
-> +++ b/drivers/thermal/iio_thermal.c
-> @@ -0,0 +1,207 @@
-> +/*
-> + * An IIO channel based thermal sensor driver
-> + *
-> + * Copyright (C) 2014 Sony Mobile Communications, AB
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/consumer.h>
-> +#include <linux/thermal.h>
-> +#include <linux/err.h>
-> +#include <linux/of.h>
-> +
-> +#define MILLIKELVIN_0C 273150
-> +
-> +struct iio_thermal_conv {
-> +	s32 *values;
-> +	int ntuple;
-> +	long (*convert)(const struct iio_thermal_conv *, int val);
-> +};
-> +
-> +struct iio_thermal {
-> +	struct thermal_zone_device *tz;
-> +	struct iio_channel *chan;
-> +	struct iio_thermal_conv conv;
-> +};
-> +
-> +static int iio_bsearch(const struct iio_thermal_conv *conv, s32 input)
-> +{
-> +	int h = conv->ntuple - 1;
-> +	int l = 0;
-> +
-> +	while (h - 1 > l) {
-> +		int m = (l + h) & ~1;
-> +		s32 v = conv->values[m];
-> +		if (v < input)
-> +			l = m >> 1;
-> +		else
-> +			h = m >> 1;
-> +	}
-> +
-> +	return h;
-> +}
-> +
-> +static long iio_thermal_interpolate(const struct iio_thermal_conv *conv, int v)
-> +{
-> +	int n;
-> +
-> +	n = iio_bsearch(conv, v);
-> +	if (n == 0 || n == conv->ntuple) {
-> +		BUG();
-> +	} else {
-> +		s32 *pts = &conv->values[(n-1)*2];
-> +		s32 sx = pts[3] - pts[1];
-> +		s32 sy = pts[2] - pts[0];
-> +		return sx * (v - pts[0]) / sy + pts[1];
-> +	}
-> +}
-> +
-> +static long iio_thermal_scale(const struct iio_thermal_conv *conv, int v)
-> +{
-> +	return div_s64((s64)v * conv->values[0], conv->values[1]);
-> +}
-> +
-> +static int iio_thermal_get_temp(void *pdata, long *value)
-> +{
-> +	struct iio_thermal *iio = pdata;
-> +	long temp;
-> +	int val;
-> +	int rc;
-> +
-> +	rc = iio_read_channel_processed(iio->chan, &val);
-> +	if (rc)
-> +		return rc;
-> +
-> +	temp = iio->conv.convert(&iio->conv, val);
-> +
-> +	/* thermal core wants milli-celsius; we deal in milli-kelvin */
-> +	temp = temp - MILLIKELVIN_0C;
-> +
-> +	/*
-> +	 * Although it would appear that the temperature value here is a
-> +	 * signed value for sensors, the underlying thermal zone core
-> +	 * doesn't deal with negative temperature. Cut this value off at 0C.
-> +	 */
-> +	*value = (temp < 0) ? 0 : temp;
-> +
-> +	return 0;
-> +}
-> +
-> +static int iio_thermal_probe(struct platform_device *pdev)
-> +{
-> +	struct iio_thermal *iio;
-> +	const void *values;
-> +	const char *type;
-> +	int rc;
-> +
-> +	dev_info(&pdev->dev, "registering IIO thermal device\n");
-> +	iio = devm_kzalloc(&pdev->dev, sizeof(*iio), GFP_KERNEL);
-> +	if (!iio)
-> +		return -ENOMEM;
-> +
-> +	values = of_get_property(pdev->dev.of_node,
-> +			"conversion-values", &iio->conv.ntuple);
-> +	if (values == NULL || (iio->conv.ntuple % (sizeof(u32) * 2)) != 0) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-> +		return -EINVAL;
-> +	}
-> +	iio->conv.ntuple /= sizeof(u32) * 2;
-> +	iio->conv.values = devm_kzalloc(&pdev->dev,
-> +			sizeof(u32) * 2 * iio->conv.ntuple, GFP_KERNEL);
-> +	if (!iio->conv.values)
-> +		return -ENOMEM;
-> +
-> +	rc = of_property_read_u32_array(pdev->dev.of_node,
-> +			"conversion-values", (u32 *)iio->conv.values,
-> +			iio->conv.ntuple * 2);
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion values\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	rc = of_property_read_string(pdev->dev.of_node,
-> +			"conversion-method", &type);
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "invalid/missing conversion method\n");
-> +		return rc;
-> +	}
-> +	if (!strcmp(type, "interpolation") && iio->conv.ntuple > 1) {
-> +		if (iio->conv.values[0] > iio->conv.values[2]) {
-> +			dev_err(&pdev->dev,
-> +					"conversion values should ascend\n");
-> +			return rc;
-> +		}
-> +		iio->conv.convert = iio_thermal_interpolate;
-> +	} else if (!strcmp(type, "scalar") && iio->conv.ntuple == 1) {
-> +		iio->conv.convert = iio_thermal_scale;
-> +	} else {
-> +		dev_err(&pdev->dev, "invalid conversion method for values\n");
-> +		return rc;
-> +	}
-> +
-> +	iio->chan = iio_channel_get(&pdev->dev, NULL);
-> +	if (IS_ERR(iio->chan)) {
-> +		dev_err(&pdev->dev, "invalid/missing iio channel\n");
-> +		return PTR_ERR(iio->chan);
-> +	}
-> +	if (iio->chan->channel->type != IIO_VOLTAGE) {
-> +		dev_err(&pdev->dev, "specified iio channel is not voltage\n");
-> +		iio_channel_release(iio->chan);
-> +		return -EINVAL;
-> +	}
-> +	platform_set_drvdata(pdev, iio);
-> +
-> +	iio->tz = thermal_zone_of_sensor_register(&pdev->dev, 0, iio,
-> +			iio_thermal_get_temp, NULL);
-> +	if (IS_ERR(iio->tz)) {
-> +		dev_err(&pdev->dev, "failed to register thermal sensor\n");
-> +		iio_channel_release(iio->chan);
-> +		return PTR_ERR(iio->tz);
-> +	}
-> +	dev_info(&pdev->dev, "successfully registered IIO thermal sensor\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int iio_thermal_remove(struct platform_device *pdev)
-> +{
-> +	struct iio_thermal *iio;
-> +
-> +	iio = platform_get_drvdata(pdev);
-> +
-> +	thermal_zone_of_sensor_unregister(&pdev->dev, iio->tz);
-> +	iio_channel_release(iio->chan);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id iio_thermal_match[] = {
-> +	{ .compatible = "iio-thermal", },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, iio_thermal_match);
-> +
-> +static struct platform_driver iio_thermal = {
-> +	.driver = {
-> +		.name = "iio-thermal",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = iio_thermal_match,
-> +	},
-> +	.probe = iio_thermal_probe,
-> +	.remove = iio_thermal_remove,
-> +};
-> +module_platform_driver(iio_thermal);
-> +
-> +MODULE_DESCRIPTION("Thermal driver for IIO ADCs");
-> +MODULE_LICENSE("GPL v2");
+I wouldn't even both with the #ifdef here - why not just always use 2 bits ?
 
+> +#define vmacache_flush(tsk)                                     \
+> +       do {                                                     \
+> +               memset(tsk->vmacache, 0, sizeof(tsk->vmacache)); \
+> +       } while (0)
 
+I think inline functions are preferred
+
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index 8740213..9a5347b 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -768,16 +768,19 @@ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
+>   */
+>  static void delete_vma_from_mm(struct vm_area_struct *vma)
+>  {
+> +       int i;
+>         struct address_space *mapping;
+>         struct mm_struct *mm = vma->vm_mm;
+> +       struct task_struct *curr = current;
+>
+>         kenter("%p", vma);
+>
+>         protect_vma(vma, 0);
+>
+>         mm->map_count--;
+> -       if (mm->mmap_cache == vma)
+> -               mm->mmap_cache = NULL;
+> +       for (i = 0; i < VMACACHE_SIZE; i++)
+> +               if (curr->vmacache[i] == vma)
+> +                       curr->vmacache[i] = NULL;
+
+Why is the invalidation done differently here ? shouldn't it be done
+by bumping the mm's sequence number so that invalidation works accross
+all threads sharing that mm ?
+
+> +#ifndef CONFIG_MMU
+> +struct vm_area_struct *vmacache_find_exact(struct mm_struct *mm,
+> +                                          unsigned long start,
+> +                                          unsigned long end)
+> +{
+> +       int i;
+> +
+> +       if (!vmacache_valid(mm))
+> +               return NULL;
+> +
+> +       for (i = 0; i < VMACACHE_SIZE; i++) {
+> +               struct vm_area_struct *vma = current->vmacache[i];
+> +
+> +               if (vma && vma->vm_start == start && vma->vm_end == end)
+> +                       return vma;
+> +       }
+> +
+> +       return NULL;
+> +
+> +}
+> +#endif
+
+I think the caller could do instead
+vma = vmacache_find(mm, start)
+if (vma && vma->vm_start == start && vma->vm_end == end) {
+}
+
+I.e. better deal with it at the call site than add a new vmacache
+function for it.
+
+These are nits, the code looks good already.
+
+I would like to propose an LRU eviction scheme to replace your
+VMACACHE_HASH mechanism; I will probably do that as a follow-up once
+you have the code in andrew's tree.
+
+Reviewed-by: Michel Lespinasse <walken@google.com>
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
