@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaB0ROm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:14:42 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:36214 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaB0ROk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:14:40 -0500
+	id S1753498AbaB0RQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:16:52 -0500
+Received: from mail.efficios.com ([78.47.125.74]:47931 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaB0RQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 12:16:50 -0500
+Date: Thu, 27 Feb 2014 17:16:52 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, stable@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Message-ID: <1115204009.31806.1393521412861.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140227120925.7da36f0b@gandalf.local.home>
+References: <20140227154616.703252665@goodmis.org> <20140227154923.563572071@goodmis.org> <1493277105.31789.1393518830647.JavaMail.zimbra@efficios.com> <20140227120925.7da36f0b@gandalf.local.home>
+Subject: Re: [RFA][PATCH 5/5] tracepoint: Warn and notify if tracepoints are
+ not loaded due to module taint
 MIME-Version: 1.0
-In-Reply-To: <1393517912.4648.5.camel@jlt4.sipsolutions.net>
-References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
-	<1393512434-1325-3-git-send-email-dh.herrmann@gmail.com>
-	<1393512787.4648.1.camel@jlt4.sipsolutions.net>
-	<CANq1E4RNbtbdVhC2PgyZMGN_duScbmCOGeMxAYiKLL-8H=EWSA@mail.gmail.com>
-	<1393517912.4648.5.camel@jlt4.sipsolutions.net>
-Date: Thu, 27 Feb 2014 18:14:40 +0100
-Message-ID: <CANq1E4TBeNbovfpVF1ByxostkNczdcK5R3c0jQ=qKp6V299kCg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] mac80211: set NET_NAME_USER for user-space created ifs
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracepoint: Warn and notify if tracepoints are not loaded due to module taint
+Thread-Index: 4WJjpeoEduJcban4ArbM0muYxfeJLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>,
+> "Peter Zijlstra" <peterz@infradead.org>, "Frederic Weisbecker" <fweisbec@gmail.com>, stable@vger.kernel.org,
+> "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>
+> Sent: Thursday, February 27, 2014 12:09:25 PM
+> Subject: Re: [RFA][PATCH 5/5] tracepoint: Warn and notify if tracepoints are not loaded due to module taint
+> 
+> On Thu, 27 Feb 2014 16:33:50 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> 
+> > I'd recommend the following message instead:
+> > 
+> >  pr_err("Module '%s' is tainted, ignoring its tracepoints\n",
+> > 
+> 
+> Better?
 
-On Thu, Feb 27, 2014 at 5:18 PM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Thu, 2014-02-27 at 15:56 +0100, David Herrmann wrote:
->
->> >> +++ b/net/mac80211/iface.c
->> >> @@ -1620,6 +1620,7 @@ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
->> >>                                       + IEEE80211_ENCRYPT_HEADROOM;
->> >>               ndev->needed_tailroom = IEEE80211_ENCRYPT_TAILROOM;
->> >>
->> >> +             ndev->name_assign_type = NET_NAME_USER;
->> >
->> > this is wrong because we call this in main.c with a "wlan%d" argument
->> > for the name, which gets expanded.
->>
->> Whoops, yeah, same issue as with ath6kl where I fixed it with a
->> separate "name_assign_type" argument. I will do the same here for v2.
->
-> I'm not sure that helps - the user could potentially pass "foobar%d" as
-> the interface name and get a number assigned by the kernel. In that case
-> you probably *don't* want to set it to "name assigned by user"?
->
-> Maybe this whole thing can just be handled in __dev_alloc_name() since
-> no kernel user should pass just a string without "%d" in it.
+Yep, thanks!
 
-Nope, I still want to set NET_NAME_USER in that case. It's not about
-the %d suffix, it's about who chooses the suffix. If wpas decides to
-use p2p-wlanX-%d, this is fine, as it's a virtual device where stable
-IDs are not required at all.
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Thanks
-David
+> 
+> -- Steve
+> 
+> From 08ea384dc937d75a2a1444a06c3e4553bd118fc1 Mon Sep 17 00:00:00 2001
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> Date: Mon, 24 Feb 2014 11:06:04 -0500
+> Subject: [PATCH] tracepoint: Warn and notify if tracepoints are not loaded
+> due
+>  to module taint
+> 
+> If a module is loaded that is tainted with anything but OOT or CRAP, then
+> it will not create the tracepoint infrastructure for the module. The user
+> needs
+> to be warned when this happens instead of exiting silently.
+> 
+> Fixes: 97e1c18e8d17 "tracing: Kernel Tracepoints"
+> Cc: stable@vger.kernel.org
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/tracepoint.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index 63630ae..1d33831 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -649,8 +649,12 @@ static int tracepoint_module_coming(struct module *mod)
+>  	 * module headers (for forced load), to make sure we don't cause a crash.
+>  	 * Staging and out-of-tree GPL modules are fine.
+>  	 */
+> -	if (trace_module_has_bad_taint(mod))
+> +	if (trace_module_has_bad_taint(mod)) {
+> +		pr_err("Module '%s' is tainted, ignoring its tracepoints\n",
+> +		       mod->name);
+>  		return 0;
+> +	}
+> +
+>  	mutex_lock(&tracepoints_mutex);
+>  	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
+>  	if (!tp_mod) {
+> --
+> 1.8.1.4
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
