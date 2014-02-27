@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaB0Sno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:43:44 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46636 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaB0Snn (ORCPT
+	id S1753752AbaB0SsP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:48:15 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:46621 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753048AbaB0SsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:43:43 -0500
-Message-ID: <530F87CC.8090000@oracle.com>
-Date: Thu, 27 Feb 2014 13:45:32 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Roger Pau Monne <roger.pau@citrix.com>
-CC: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH v2] xen: add support for MSI message groups
-References: <530F68BE.2070505@oracle.com> <1393524935-4216-1-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1393524935-4216-1-git-send-email-roger.pau@citrix.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 27 Feb 2014 13:48:10 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: [PATCHv2 3/7] ARM: at91/dt: at91-ariag25: remove useless adc properties
+Date: Thu, 27 Feb 2014 19:47:54 +0100
+Message-Id: <1393526878-22311-4-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1393526878-22311-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1393526878-22311-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 01:15 PM, Roger Pau Monne wrote:
-> Add support for MSI message groups for Xen Dom0 using the
-> MAP_PIRQ_TYPE_MULTI_MSI pirq map type.
->
-> In order to keep track of which pirq is the first one in the group all
-> pirqs in the MSI group except for the first one have the newly
-> introduced PIRQ_MSI_GROUP flag set. This prevents calling
-> PHYSDEVOP_unmap_pirq on them, since the unmap must be done with the
-> first pirq in the group.
+Remove the properties that are not used anymore by the at91_adc driver.
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Douglas Gilbert <dgilbert@interlog.com>
+---
+ arch/arm/boot/dts/at91-ariag25.dts | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
+index cce45f5177f9..55ab6180e350 100644
+--- a/arch/arm/boot/dts/at91-ariag25.dts
++++ b/arch/arm/boot/dts/at91-ariag25.dts
+@@ -129,7 +129,6 @@
+ 			adc0: adc@f804c000 {
+ 				status = "okay";
+ 				atmel,adc-channels-used = <0xf>;
+-				atmel,adc-num-channels = <4>;
+ 			};
+ 
+ 			dbgu: serial@fffff200 {
+-- 
+1.8.3.2
 
