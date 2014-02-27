@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaB0Vd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:33:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47144 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaB0Vcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:32:55 -0500
-Date: Thu, 27 Feb 2014 22:32:52 +0100
-From: Jan Kara <jack@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] bdi: Avoid oops on device removal
-Message-ID: <20140227213252.GA18830@quack.suse.cz>
-References: <1393367354-5172-1-git-send-email-jack@suse.cz>
- <1393367354-5172-3-git-send-email-jack@suse.cz>
- <20140227200748.GA466@htj.dyndns.org>
+	id S1753282AbaB0Vej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:34:39 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:55442 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaB0Veg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 16:34:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227200748.GA466@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140226215452.GA11468@earth.universe>
+References: <1393375569-21751-1-git-send-email-sre@debian.org>
+	<1393375569-21751-2-git-send-email-sre@debian.org>
+	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
+	<20140226215452.GA11468@earth.universe>
+Date: Thu, 27 Feb 2014 22:34:35 +0100
+Message-ID: <CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
+Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jonathan Cameron <jic23@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio@vger.kernel.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-02-14 15:07:48, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Feb 25, 2014 at 11:29:14PM +0100, Jan Kara wrote:
-> > +static void bdi_wakeup_thread(struct backing_dev_info *bdi)
-> > +{
-> > +	spin_lock_bh(&bdi->wb_lock);
-> > +	if (test_bit(BDI_registered, &bdi->state))
-> > +		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-> > +	spin_unlock_bh(&bdi->wb_lock);
-> > +}
-> 
-> I wonder whether this can be smarter without requiring wb_lock each
-> timer but this probably is the simplest for -stable backports.
-  We could be clever, check whether the work is already queued for
-execution and bail out without taking wb_lock if yes (that would also
-save us some unnecessary juggling in try_to_grab_pending() for the situation
-were the work is already queued). But I'm not sure how to cleanly implement
-this...
+Hi Sebastian,
 
-> >  static void bdi_queue_work(struct backing_dev_info *bdi,
-> >  			   struct wb_writeback_work *work)
-> >  {
-> >  	trace_writeback_queue(bdi, work);
-> >  
-> >  	spin_lock_bh(&bdi->wb_lock);
-> > +	if (!test_bit(BDI_registered, &bdi->state)) {
-> > +		if (work->done)
-> > +			complete(work->done);
-> > +		goto out_unlock;
-> > +	}
-> >  	list_add_tail(&work->list, &bdi->work_list);
-> > -	spin_unlock_bh(&bdi->wb_lock);
-> > -
-> >  	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-> > +out_unlock:
-> > +	spin_unlock_bh(&bdi->wb_lock);
-> >  }
-> >  
-> > +
-> > +
-> 
-> Why three blank lines?
-  A mistake. Will fix.
+On Wed, Feb 26, 2014 at 10:54 PM, Sebastian Reichel <sre@debian.org> wrote:
+> Hi,
+>
+> On Wed, Feb 26, 2014 at 10:43:40PM +0100, Belisko Marek wrote:
+>> [...]
+>> > +       int val, err;
+>> > +       err = iio_read_channel_average_raw(channel, &val);
+>> Where this function comes from? I cannot find it in current linux-next
+>> (only iio_read_channel_raw()). Am I missing some patches? Thx.
+>
+> Ah right. I planned to send a patch adding this function together
+> with the rx51-battery patchset, but it seems I forgot to include it.
+>
+> Sorry for the inconvenience. I will send it out as a separate patch
+> now.
+>
+>> BTW when I convert to iio consumer and use DT some of values work
+>> but some of them just report 0 :( (I don't have latest twl4030-madc
+>> iio patches).
+>
+> Can you retry with the twl4030-madc iio patch from today? The
+> older patchsets, which do not contain the "tested on real hw"
+> note are slightly broken.
+Well I've tried and it's worse :). I got during booting:
+[    2.218383] ERROR: could not get IIO channel /battery:temp(0)
+[    2.224639] platform battery.4: Driver twl4030_madc_battery
+requests probe deferral
+Not sure if it's just error or warning but temp is always reported as
+0 (and also other values in sysfs).
 
-> Other than that,
-> 
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-  Thanks!
+My patches ca be found here:
+https://patchwork.kernel.org/patch/3735981/
+https://patchwork.kernel.org/patch/3735961/
+https://patchwork.kernel.org/patch/3735941/
 
-							Honza
+>
+> -- Sebastian
+
+BR,
+
+marek
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
