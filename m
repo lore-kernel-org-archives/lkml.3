@@ -1,276 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaB0QtE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:49:04 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56110 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaB0QtB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:49:01 -0500
-Date: Thu, 27 Feb 2014 16:48:57 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140227164857.GQ1692@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	"linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>
-References: <1393506599-11561-1-git-send-email-Liviu.Dudau@arm.com>
- <1393506599-11561-4-git-send-email-Liviu.Dudau@arm.com>
- <5402126.Dbh9PNPIjR@wuerfel>
-MIME-Version: 1.0
-In-Reply-To: <5402126.Dbh9PNPIjR@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 27 Feb 2014 16:48:58.0155 (UTC) FILETIME=[CF0BDFB0:01CF33DB]
-X-MC-Unique: 114022716485910801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753446AbaB0QwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:52:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3958 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752966AbaB0QwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:52:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,555,1389772800"; 
+   d="scan'208";a="490994029"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: "David E. Box" <david.e.box@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com,
+        jacob.jun.pan@intel.com
+Subject: [PATCH RESEND V3 2/2] x86: IOSF: Change IOSF_MBI Kconfig to default y
+Date: Thu, 27 Feb 2014 08:50:21 -0800
+Message-Id: <1393519821-17318-1-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1393443617-8923-3-git-send-email-david.e.box@linux.intel.com>
+References: <1393296442-12942-1-git-send-email-david.e.box@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 04:06:24PM +0000, Arnd Bergmann wrote:
-> On Thursday 27 February 2014 13:09:59 Liviu Dudau wrote:
-> 
-> > +/*
-> > + * PCI address space differs from physical memory address space
-> > + */
-> > +#define PCI_DMA_BUS_IS_PHYS	(0)
-> > +
-> > +extern int isa_dma_bridge_buggy;
-> 
-> I got curious about isa_dma_bridge_buggy: apparently this is a quirk for
-> some old x86 bridges. We don't have those on arm64, and we also don't have
-> ISA_DMA_API, so just define this to (0).
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-OK.
+The IOSF Mailbox interface is an access mechanism used by drivers to communicate
+with the configuration registers of devices connected on the fabric of Intel SOC
+platforms. The interface is ubiquitous enough that we need to ensure the
+availability of the driver in non-EXPERT configured x86 kernels. Make the module
+built-in so drivers can access device registers that need configuration during
+early boot.
 
-> 
-> > +static inline int pci_domain_nr(struct pci_bus *bus)
-> > +{
-> > +	struct pci_host_bridge *bridge = to_pci_host_bridge(bus->bridge);
-> > +
-> > +	if (bridge)
-> > +		return bridge->domain_nr;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static inline int pci_proc_domain(struct pci_bus *bus)
-> > +{
-> > +	return pci_domain_nr(bus);
-> > +}
-> 
-> And this one I would change to always return '1': we can deal with
-> domain numbers showing up in /procfs for all buses, since there is
-> no legacy software to worry about.
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+---
+ arch/x86/Kconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Will do, thanks for reviewing this.
-
-> 
-> > diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> > new file mode 100644
-> > index 0000000..496df41
-> > --- /dev/null
-> > +++ b/arch/arm64/kernel/pci.c
-> > @@ -0,1 +1,126 @@
-> 
-> Ok, this is nice and short. Let's see if we can reduce it to nothing ;-)
-> 
-> > +/*
-> > + * Called after each bus is probed, but before its children are examined
-> > + */
-> > +void pcibios_fixup_bus(struct pci_bus *bus)
-> > +{
-> > +	struct pci_dev *dev;
-> > +	struct resource *res;
-> > +	int i;
-> > +
-> > +	if (!pci_is_root_bus(bus)) {
-> > +		pci_read_bridge_bases(bus);
-> > +
-> > +		pci_bus_for_each_resource(bus, res, i) {
-> > +			if (!res || !res->flags || res->parent)
-> > +				continue;
-> > +
-> > +			/*
-> > +			 * If we are going to reassign everything, we can
-> > +			 * shrink the P2P resource to have zero size to
-> > +			 * save space
-> > +			 */
-> > +			if (pci_has_flag(PCI_REASSIGN_ALL_RSRC)) {
-> > +				res->flags |= IORESOURCE_UNSET;
-> > +				res->start = 0;
-> > +				res->end = -1;
-> > +				continue;
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	list_for_each_entry(dev, &bus->devices, bus_list) {
-> > +		/* Ignore fully discovered devices */
-> > +		if (dev->is_added)
-> > +			continue;
-> > +
-> > +		set_dev_node(&dev->dev, pcibus_to_node(dev->bus));
-> > +
-> > +		/* Read default IRQs and fixup if necessary */
-> > +		dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(pcibios_fixup_bus);
-> 
-> Shrinking the P2P resources I suppose is optional, but everything
-> else is in fact needed for any DT based architecture. Could this
-> be turned into a generic helper function in the PCI core that we
-> can call from architecture code?
-> 
-> If you name it pci_generic_fixup_bus(), we can add a weak helper
-> like:
-> 
-> void __weak pcibios_fixup_bus(struct pci_bus *bus)
-> {
-> 	pci_generic_fixup_bus(bus);
-> }
-> 
-> for architectures like arm64 that don't actually need to do anything
-> else.
-
-Sure, it can be done. Don't know what is the policy for these kind of functions
-that are used by architectures, but I can try sending a patch that adds the
-weak implementations in the core PCI code.
-
-> 
-> > +/*
-> > + * We don't have to worry about legacy ISA devices, so nothing to do here
-> > + */
-> > +resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-> > +				resource_size_t size, resource_size_t align)
-> > +{
-> > +	return ALIGN(res->start, align);
-> > +}
-> > +EXPORT_SYMBOL(pcibios_align_resource);
-> 
-> Where did this come from? 
-
->From an internal version that Will posted. See, we do talk to each other ;)
-
-
-> The most common implementation seems to be
-> 
-> resource_size_t pcibios_align_resource(void *data, const struct resource *res,
-> 				resource_size_t size, resource_size_t align)
-> {
-> 	return start;
-> }
-> EXPORT_SYMBOL(pcibios_align_resource);
-> 
-> if you don't have to worry about ISA devices. The ALIGN() part seems to
-> be handled by __find_resource() already.
-> 
-> I'd say that should be made the default implementation in the PCI core.
-> 
-> I'm also pretty sure you don't need the EXPORT_SYMBOL, since the PCI
-> core cannot be a loadable module (yet).
-
-OK.
-
-> 
-> > +int pcibios_enable_device(struct pci_dev *dev, int mask)
-> > +{
-> > +	return pci_enable_resources(dev, mask);
-> > +}
-> > +
-> > +void pcibios_fixup_bridge_ranges(struct list_head *resources)
-> > +{
-> > +}
-> 
-> These are clearly the right implementations, but they should be weak
-> functions, too.
-
-pcibios_enable_devices is already subject to a patch series from Bjorn that make
-the weak implementation do the right thing for arm64, so the final version will
-not contain this.
-
-> 
-> > +#define IO_SPACE_PAGES	((IO_SPACE_LIMIT + 1) / PAGE_SIZE)
-> > +static DECLARE_BITMAP(pci_iospace, IO_SPACE_PAGES);
-> > +
-> > +unsigned long pci_ioremap_io(const struct resource *res, phys_addr_t phys_addr)
-> > +{
-> > +	unsigned long start, len, virt_start;
-> > +	int err;
-> > +
-> > +	if (res->end > IO_SPACE_LIMIT)
-> > +		return -EINVAL;
-> > +
-> > +	/*
-> > +	 * try finding free space for the whole size first,
-> > +	 * fall back to 64K if not available
-> > +	 */
-> > +	len = resource_size(res);
-> > +	start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
-> > +				res->start / PAGE_SIZE, len / PAGE_SIZE, 0);
-> > +	if (start == IO_SPACE_PAGES && len > SZ_64K) {
-> > +		len = SZ_64K;
-> > +		start = 0;
-> > +		start = bitmap_find_next_zero_area(pci_iospace, IO_SPACE_PAGES,
-> > +					start, len / PAGE_SIZE, 0);
-> > +	}
-> > +
-> > +	/* no 64K area found */
-> > +	if (start == IO_SPACE_PAGES)
-> > +		return -ENOMEM;
-> > +
-> > +	/* ioremap physical aperture to virtual aperture */
-> > +	virt_start = start * PAGE_SIZE + (unsigned long)PCI_IOBASE;
-> > +	err = ioremap_page_range(virt_start, virt_start + len,
-> > +				phys_addr, __pgprot(PROT_DEVICE_nGnRE));
-> > +	if (err)
-> > +		return err;
-> > +
-> > +	bitmap_set(pci_iospace, start, len / PAGE_SIZE);
-> > +
-> > +	/* return io_offset */
-> > +	return start * PAGE_SIZE - res->start;
-> > +}
-> 
-> Maybe this can become an optional helper function with a separate Kconfig symbol
-> to enable it.
-
-Probably need to find a different name for it as well when it moves into core, arm
-already has an externalised function with this name.
-
-Best regards,
-Liviu
-
-> 
-> 	Arnd
-> 
-> 
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d3b1f8b..4de5205 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2385,11 +2385,12 @@ config X86_DMA_REMAP
+ 	depends on STA2X11
+ 
+ config IOSF_MBI
+-	bool
++	bool "IOSF MBI support" if EXPERT
++	default y
+ 	depends on PCI
+ 	---help---
+ 	  To be selected by modules requiring access to the Intel OnChip System
+-	  Fabric (IOSF) Sideband MailBox Interface (MBI). For MBI platforms
++	  Fabric (IOSF) Sideband MailBox Interface (MBI). For IOSF platforms
+ 	  enumerable by PCI.
+ 
+ source "net/Kconfig"
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.7.10.4
 
