@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaB0Hdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:33:53 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36126 "EHLO
+	id S1751787AbaB0Hdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:33:46 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36091 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaB0Hdu (ORCPT
+	with ESMTP id S1751546AbaB0Hdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:33:50 -0500
-Subject: [PATCH -tip v7 13/26] x86: Allow kprobes on text_poke/hw_breakpoint
+	Thu, 27 Feb 2014 02:33:43 -0500
+Subject: [PATCH -tip v7 08/26] kprobes/x86: Call exception handlers directly
+ from do_int3/do_debug
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Feb 2014 16:33:47 +0900
-Message-ID: <20140227073347.20992.76162.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 27 Feb 2014 16:33:35 +0900
+Message-ID: <20140227073335.20992.44567.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -28,66 +33,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow kprobes on text_poke/hw_breakpoint because
-those are not related to the critical int3-debug
-recursive path of kprobes at this moment.
+To avoid a kernel crash by probing on lockdep code, call
+kprobe_int3_handler and kprobe_debug_handler directly
+from do_int3 and do_debug. Since there is a locking code
+in notify_die, lockdep code can be invoked. And because
+the lockdep involves printk() related things, theoretically,
+we need to prohibit probing on much more code...
+
+Anyway, most of the int3 handlers in the kernel are already
+called from do_int3 directly, e.g. ftrace_int3_handler,
+poke_int3_handler, kgdb_ll_trap. Actually only
+kprobe_exceptions_notify is on the notifier_call_chain.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/kernel/alternative.c   |    3 +--
- arch/x86/kernel/hw_breakpoint.c |    5 ++---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/kprobes.h |    2 ++
+ arch/x86/kernel/kprobes/core.c |   24 +++---------------------
+ arch/x86/kernel/traps.c        |   10 ++++++++++
+ 3 files changed, 15 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index df94598..703130f 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -5,7 +5,6 @@
- #include <linux/mutex.h>
- #include <linux/list.h>
- #include <linux/stringify.h>
--#include <linux/kprobes.h>
- #include <linux/mm.h>
- #include <linux/vmalloc.h>
- #include <linux/memory.h>
-@@ -551,7 +550,7 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
-  *
-  * Note: Must be called under text_mutex.
+diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
+index 9454c16..53cdfb2 100644
+--- a/arch/x86/include/asm/kprobes.h
++++ b/arch/x86/include/asm/kprobes.h
+@@ -116,4 +116,6 @@ struct kprobe_ctlblk {
+ extern int kprobe_fault_handler(struct pt_regs *regs, int trapnr);
+ extern int kprobe_exceptions_notify(struct notifier_block *self,
+ 				    unsigned long val, void *data);
++extern int kprobe_int3_handler(struct pt_regs *regs);
++extern int kprobe_debug_handler(struct pt_regs *regs);
+ #endif /* _ASM_X86_KPROBES_H */
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 4708d6e..566958e 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -559,7 +559,7 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
+  * remain disabled throughout this function.
   */
--void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
-+void *text_poke(void *addr, const void *opcode, size_t len)
+-static int __kprobes kprobe_handler(struct pt_regs *regs)
++int __kprobes kprobe_int3_handler(struct pt_regs *regs)
  {
- 	unsigned long flags;
- 	char *vaddr;
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index a67b47c..5f9cf20 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -32,7 +32,6 @@
- #include <linux/irqflags.h>
- #include <linux/notifier.h>
- #include <linux/kallsyms.h>
--#include <linux/kprobes.h>
- #include <linux/percpu.h>
- #include <linux/kdebug.h>
- #include <linux/kernel.h>
-@@ -424,7 +423,7 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
-  * NOTIFY_STOP returned for all other cases
-  *
+ 	kprobe_opcode_t *addr;
+ 	struct kprobe *p;
+@@ -857,7 +857,7 @@ no_change:
+  * Interrupts are disabled on entry as trap1 is an interrupt gate and they
+  * remain disabled throughout this function.
   */
--static int __kprobes hw_breakpoint_handler(struct die_args *args)
-+static int hw_breakpoint_handler(struct die_args *args)
+-static int __kprobes post_kprobe_handler(struct pt_regs *regs)
++int __kprobes kprobe_debug_handler(struct pt_regs *regs)
  {
- 	int i, cpu, rc = NOTIFY_STOP;
- 	struct perf_event *bp;
-@@ -511,7 +510,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
- /*
-  * Handle debug exception notifications.
-  */
--int __kprobes hw_breakpoint_exceptions_notify(
-+int hw_breakpoint_exceptions_notify(
- 		struct notifier_block *unused, unsigned long val, void *data)
- {
- 	if (val != DIE_DEBUG)
+ 	struct kprobe *cur = kprobe_running();
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+@@ -960,22 +960,7 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
+ 	if (args->regs && user_mode_vm(args->regs))
+ 		return ret;
+ 
+-	switch (val) {
+-	case DIE_INT3:
+-		if (kprobe_handler(args->regs))
+-			ret = NOTIFY_STOP;
+-		break;
+-	case DIE_DEBUG:
+-		if (post_kprobe_handler(args->regs)) {
+-			/*
+-			 * Reset the BS bit in dr6 (pointed by args->err) to
+-			 * denote completion of processing
+-			 */
+-			(*(unsigned long *)ERR_PTR(args->err)) &= ~DR_STEP;
+-			ret = NOTIFY_STOP;
+-		}
+-		break;
+-	case DIE_GPF:
++	if (val == DIE_GPF) {
+ 		/*
+ 		 * To be potentially processing a kprobe fault and to
+ 		 * trust the result from kprobe_running(), we have
+@@ -984,9 +969,6 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
+ 		if (!preemptible() && kprobe_running() &&
+ 		    kprobe_fault_handler(args->regs, args->trapnr))
+ 			ret = NOTIFY_STOP;
+-		break;
+-	default:
+-		break;
+ 	}
+ 	return ret;
+ }
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 57409f6..e5d4a70 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -334,6 +334,11 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 		goto exit;
+ #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
+ 
++#ifdef CONFIG_KPROBES
++	if (kprobe_int3_handler(regs))
++		return;
++#endif
++
+ 	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+ 			SIGTRAP) == NOTIFY_STOP)
+ 		goto exit;
+@@ -440,6 +445,11 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	/* Store the virtualized DR6 value */
+ 	tsk->thread.debugreg6 = dr6;
+ 
++#ifdef CONFIG_KPROBES
++	if (kprobe_debug_handler(regs))
++		goto exit;
++#endif
++
+ 	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
+ 							SIGTRAP) == NOTIFY_STOP)
+ 		goto exit;
 
 
