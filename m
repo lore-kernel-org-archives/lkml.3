@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaB0Lqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:46:50 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52398 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751717AbaB0Lqt (ORCPT
+	id S1752780AbaB0LrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:47:06 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:33038 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbaB0LrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:46:49 -0500
-Date: Thu, 27 Feb 2014 11:46:13 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, Dave P Martin <Dave.Martin@arm.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 3/7] perf: kill perf_event_context_type
-Message-ID: <20140227114613.GF6945@e106331-lin.cambridge.arm.com>
-References: <1392054264-23570-1-git-send-email-mark.rutland@arm.com>
- <1392054264-23570-4-git-send-email-mark.rutland@arm.com>
- <20140225113848.GO9987@twins.programming.kicks-ass.net>
+	Thu, 27 Feb 2014 06:47:04 -0500
+Date: Thu, 27 Feb 2014 12:46:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/12] perf/core improvements and fixes
+Message-ID: <20140227114658.GA26449@gmail.com>
+References: <1393271800-17505-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140225113848.GO9987@twins.programming.kicks-ass.net>
-Thread-Topic: [PATCH 3/7] perf: kill perf_event_context_type
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1393271800-17505-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 11:38:48AM +0000, Peter Zijlstra wrote:
-> On Mon, Feb 10, 2014 at 05:44:20PM +0000, Mark Rutland wrote:
-> > Currently perf_event_context::type is used to determine whether a
-> > context is cpu-bound or task-bound. However perf_event_context::task can
-> > be used to determine this just as cheaply, and requires no additional
-> > initialisation.
-> > 
-> > This patch removes perf_event_context::type, and modifies existing users
-> > to check check perf_event_context::task instead. The now unused enum
-> > perf_event_context_type is removed.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 > 
-> > @@ -7130,7 +7129,7 @@ SYSCALL_DEFINE5(perf_event_open,
-> >  		 * task or CPU context:
-> >  		 */
-> >  		if (move_group) {
-> > -			if (group_leader->ctx->type != ctx->type)
-> > +			if (group_leader->ctx->task != ctx->task)
-> >  				goto err_context;
-> >  		} else {
-> >  			if (group_leader->ctx != ctx)
+> Hi Ingo,
 > 
-> That's not an equivalent statement. ctx->task (t1) != ctx->task (t2)
-> while they're still both of the same type.
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 7e74efcf76c16f851df5c838c143c4a1865ea9fa:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-02-22 17:26:24 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 1029f9fedf87fa6f52096991588fa54ffd159584:
+> 
+>   perf symbols: Check compatible symtab type before loading dso (2014-02-24 16:25:01 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes
+> 
+> . Add support for the new DWARF unwinder library in elfutils (Jiri Olsa)
+> 
+> . Fix build race in the generation of bison files (Jiri Olsa)
+> 
+> . Further streamline the feature detection display, trimming it a bit to
+>   show just the libraries detected, using VF=1 gets a more verbose output,
+>   showing the less interesting feature checks as well (Jiri Olsa).
+> 
+> . Check compatible symtab type before loading dso (Namhyung Kim)
+> 
+> . Check return value of filename__read_debuglink() (Stephane Eranian)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       perf tools: Warn the user about how to enable libunwind support
+> 
+> Jiri Olsa (9):
+>       perf tests: Fix *.o make tests
+>       perf tests: Add pmu-bison.o make test
+>       perf tools: Fix bison OUTPUT directories dependency
+>       perf tools: Factor features display code
+>       perf tools: Add variable display for VF make output
+>       perf tools: Add feature check for libdw dwarf unwind
+>       perf tools: Add libdw DWARF post unwind support
+>       perf tools: Setup default dwarf post unwinder
+>       perf tests: Add NO_LIBDW_DWARF_UNWIND make test
+> 
+> Namhyung Kim (1):
+>       perf symbols: Check compatible symtab type before loading dso
+> 
+> Stephane Eranian (1):
+>       perf symbols: Check return value of filename__read_debuglink()
+> 
+>  tools/perf/Makefile.perf                           |  24 ++-
+>  tools/perf/arch/x86/Makefile                       |   5 +
+>  tools/perf/arch/x86/util/unwind-libdw.c            |  51 +++++
+>  tools/perf/config/Makefile                         | 232 +++++++++++++++------
+>  tools/perf/config/feature-checks/Makefile          |   6 +-
+>  tools/perf/config/feature-checks/test-all.c        |   5 +
+>  .../feature-checks/test-libdw-dwarf-unwind.c       |  13 ++
+>  tools/perf/tests/make                              |  25 ++-
+>  tools/perf/util/dso.c                              |   4 +-
+>  tools/perf/util/symbol-elf.c                       |   2 +
+>  tools/perf/util/symbol.c                           |  61 +++++-
+>  tools/perf/util/unwind-libdw.c                     | 210 +++++++++++++++++++
+>  tools/perf/util/unwind-libdw.h                     |  21 ++
+>  13 files changed, 569 insertions(+), 90 deletions(-)
+>  create mode 100644 tools/perf/arch/x86/util/unwind-libdw.c
+>  create mode 100644 tools/perf/config/feature-checks/test-libdw-dwarf-unwind.c
+>  create mode 100644 tools/perf/util/unwind-libdw.c
+>  create mode 100644 tools/perf/util/unwind-libdw.h
 
-True. However, that case seems fishy -- if group semantics are respected
-a group with events in different tasks should never have any of its
-events scheduled and enabled.
+Pulled, thanks a lot Arnaldo!
 
-For all but the sw leader, hw follower case we reject groups spanning
-multiple tasks, and the fact we allow that particular case appears to be
-a bug (more on that below).
+Btw., the build output looks weird now - on a system that used to pass 
+all feature tests there's this output:
 
-> Now I don't think you'll ever end up with different tasks in this case
-> so it might still work out; but you don't mention this and I'd have to
-> like think to make sure.
+  BUILD:   Doing 'make -j12' parallel build
+config/Makefile:288: No libdw DWARF unwind found, Please install 
+elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR
 
-The short answer is we can, but that itself appears to be a bug. My
-patch is not sufficient as it doesn't protect accesses to ctx->task.
-Unfortunately even with appropriate locking, we'll race with the context
-switch optimisation and may reject sane requests from userspace (as we
-currently do in other cases).
+Auto-detecting system features:
+...                         dwarf: [ on  ]
+...                         glibc: [ on  ]
+...                          gtk2: [ on  ]
+...                      libaudit: [ on  ]
+...                        libbfd: [ on  ]
+...                        libelf: [ on  ]
+...                       libnuma: [ on  ]
+...                       libperl: [ on  ]
+...                     libpython: [ on  ]
+...                      libslang: [ on  ]
+...                     libunwind: [ on  ]
+...            libdw-dwarf-unwind: [ OFF ]
+...     DWARF post unwind library: libunwind
 
-Commit b04243ef7006 (perf: Complete software pmu grouping) allowed pure
-software groups to be moved into a hardware context by comparing
-ctx->type rather than ctx. This dropped the implicit test that ctx->task
-is the same across the two events. Thus if a task-following hardware
-event is created with a software group leader following another task,
-said software event will be pulled across tasks into the hardware
-context of the new event's task. This is not the case for any other
-hw/sw leader/follower combination as ctx rather than ctx->type is still
-compared. Where the ctx comparison fails we return -EINVAL (which we
-used to for the sw leader, hw follower case also).
+but:
 
-I'll rework my original patch to try to make that behaviour consistent.
-However there's another race I'm not sure how to deal with.
+   Package elfutils-devel-0.156-5.fc19.x86_64 already installed and latest version
 
-Since commit 5a3126d4fe7c (perf: Fix the perf context switch
-optimization) creating an event, forking, then creating a follower of
-the original event will only succeed if the context switch optimisation
-never came into play between the parent and a child, or came into play
-multiple times and returned the original context to the parent. This
-affects all cases other than the sw leader, hw follower case, where it
-is masked by the behaviour above.
+Also, the information content of this line is unclear to me:
 
-Cheers,
-Mark.
+...     DWARF post unwind library: libunwind
+
+
+what does that line want to tell?
+
+Thanks,
+
+	Ingo
