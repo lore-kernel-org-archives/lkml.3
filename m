@@ -1,72 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaB0VQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:16:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaB0VQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:16:45 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: libseccomp-discuss@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [libseccomp-discuss] Making a universal list of syscalls?
-Date: Thu, 27 Feb 2014 16:16:29 -0500
-Message-ID: <3314313.Fyy7jKNWkG@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.12.2 (Linux/3.12.9-gentoo; KDE/4.12.2; x86_64; ; )
-In-Reply-To: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-References: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751915AbaB0VUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:20:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39384 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaB0VT7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 16:19:59 -0500
+Date: Thu, 27 Feb 2014 13:19:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/3] mm, hugetlbfs: fix rmapping for anonymous hugepages
+ with page_pgoff()
+Message-Id: <20140227131957.d81cf9a643f4d3fd6b8d8b16@linux-foundation.org>
+In-Reply-To: <1393475977-3381-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1393475977-3381-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1393475977-3381-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 27, 2014 12:40:32 PM Andy Lutomirski wrote:
-> Currently, dealing with Linux syscalls in an architecture-independent
-> way is a mess.  Here are some issues:
+On Wed, 26 Feb 2014 23:39:36 -0500 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+
+> page->index stores pagecache index when the page is mapped into file mapping
+> region, and the index is in pagecache size unit, so it depends on the page
+> size. Some of users of reverse mapping obviously assumes that page->index
+> is in PAGE_CACHE_SHIFT unit, so they don't work for anonymous hugepage.
 > 
->  1. There's no clean way to map between syscall names and numbers on
-> different architectures.  The kernel contains a number of tables (that
-> work differently for different architectures).  strace has some arcane
-> mechanism.  libseccomp has another.
+> For example, consider that we have 3-hugepage vma and try to mbind the 2nd
+> hugepage to migrate to another node. Then the vma is split and migrate_page()
+> is called for the 2nd hugepage (belonging to the middle vma.)
+> In migrate operation, rmap_walk_anon() tries to find the relevant vma to
+> which the target hugepage belongs, but here we miscalculate pgoff.
+> So anon_vma_interval_tree_foreach() grabs invalid vma, which fires VM_BUG_ON.
+> 
+> This patch introduces a new API that is usable both for normal page and
+> hugepage to get PAGE_SIZE offset from page->index. Users should clearly
+> distinguish page_index for pagecache index and page_pgoff for page offset.
 
-This is a major pain point for libseccomp, what we have now is passable, and 
-it works, but I cringe each time I look at it because I worry about 
-maintaining it.  I would be very happy if the kernel had some 
-header/file/whatever that could be used by userspace applications to map 
-syscall names/numbers for each architecture.
+So this patch is really independent of the page-walker changes, but the
+page walker changes need it.  So it is appropriate that this patch be
+staged before that series, and separately.  Agree?
 
->  2. There's no clean way to map between syscall argument registers and
-> logical syscall arguments.  Each architecture knows how to do it, as
-> do strace and glibc, but I suspect that *everyone* else gets it wrong.
->  Especially on ARM.
+> Reported-by: Sasha Levin <sasha.levin@oracle.com> # if the reported problem is fixed
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: stable@vger.kernel.org # 3.12+
 
-I remember looking into this with libseccomp, around the ARM time frame with 
-Andy, and I believe I managed to reassure myself - not well, mind you - that 
-we were *ok* with seccomp/libseccomp.  However, having a argument mapping 
-document/header/etc. would go a long way here.
+Why cc:stable?  This problem will only cause runtime issues when the
+page walker patches are present?
 
->  3. Determining which architectures have which syscalls is a mess.
-> Recent kernel builds love to warn me that finit_module is missing on
-> x86_64.  This is simply not true.  I have no idea why.
+> index 4f591df66778..a8bd14f42032 100644
+> --- next-20140220.orig/include/linux/pagemap.h
+> +++ next-20140220/include/linux/pagemap.h
+> @@ -316,6 +316,19 @@ static inline loff_t page_file_offset(struct page *page)
+>  	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
+>  }
+>  
+> +extern pgoff_t hugepage_pgoff(struct page *page);
+> +
+> +/*
+> + * page->index stores pagecache index whose unit is not always PAGE_SIZE.
+> + * This function converts it into PAGE_SIZE offset.
+> + */
+> +#define page_pgoff(page)					\
+> +({								\
+> +	unlikely(PageHuge(page)) ?				\
+> +		hugepage_pgoff(page) :				\
+> +		page->index >> (PAGE_CACHE_SHIFT - PAGE_SHIFT);	\
+> +})
 
-Closely related to item #1.  Also a major pain for libseccomp for the same 
-reasons.
+- I don't think this needs to be implemented in a macro?  Can we do
+  it in good old C?
 
->  5. Decoding ucontext from SIGSYS is a mess.  I have prototype code
-> for libseccomp that can do it, but it gets the arguments wrong due to
-> ABI issues.  See (2).
+- Is PageHuge() the appropriate test?
+  /*
+   * PageHuge() only returns true for hugetlbfs pages, but not for normal or
+   * transparent huge pages.  See the PageTransHuge() documentation for more
+   * details.
+   */
 
-I've actually been sitting on some of Andy's libseccomp code for this for a 
-while now because the solution is very fiddly.  Improvements here could make 
-life much easier for us and remove a lot of my hesitation in merging Andy's 
-code.
+- Should page->index be shifted right or left?  Probably left - I
+  doubt if PAGE_CACHE_SHIFT will ever be less than PAGE_SHIFT.
 
--- 
-paul moore
-security and virtualization @ redhat
+- I'm surprised we don't have a general what-is-this-page's-order
+  function, so you can just do
+
+	static inline pgoff_t page_pgoff(struct page *page)
+	{
+		return page->index << page_size_order(page);
+	}
+
+  And I think this would be a better implementation, as the (new)
+  page_size_order() could be used elsewhere.
+
+  page_size_order() would be a crappy name - can't think of anything
+  better at present.
+
+> --- next-20140220.orig/mm/memory-failure.c
+> +++ next-20140220/mm/memory-failure.c
+> @@ -404,7 +404,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+>  	if (av == NULL)	/* Not actually mapped anymore */
+>  		return;
+>  
+> -	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+
+See this did a left shift.
+
+> +	pgoff = page_pgoff(page);
+>  	read_lock(&tasklist_lock);
+>  	for_each_process (tsk) {
+>  		struct anon_vma_chain *vmac;
+> @@ -437,7 +437,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+>  	mutex_lock(&mapping->i_mmap_mutex);
+>  	read_lock(&tasklist_lock);
+>  	for_each_process(tsk) {
+> -		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+
+him too.
+
+> +		pgoff_t pgoff = page_pgoff(page);
+>  
+>  		if (!task_early_kill(tsk))
+>  			continue;
+> diff --git next-20140220.orig/mm/rmap.c next-20140220/mm/rmap.c
+> index 9056a1f00b87..78405051474a 100644
+> --- next-20140220.orig/mm/rmap.c
+> +++ next-20140220/mm/rmap.c
+> @@ -515,11 +515,7 @@ void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
+>  static inline unsigned long
+>  __vma_address(struct page *page, struct vm_area_struct *vma)
+>  {
+> -	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+
+And him.
+
+> -
+> -	if (unlikely(is_vm_hugetlb_page(vma)))
+> -		pgoff = page->index << huge_page_order(page_hstate(page));
+> -
+> +	pgoff_t pgoff = page_pgoff(page);
+>  	return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+>  }
+>  
+> @@ -1598,7 +1594,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
+>  static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+>  {
+>  	struct anon_vma *anon_vma;
+> -	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+
+again.
+
+> +	pgoff_t pgoff = page_pgoff(page);
+>  	struct anon_vma_chain *avc;
+>  	int ret = SWAP_AGAIN;
 
