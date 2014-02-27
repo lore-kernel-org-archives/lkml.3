@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaB0Kmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:42:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33857 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaB0Kmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:42:35 -0500
-Date: Thu, 27 Feb 2014 11:42:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: Or Gerlitz <or.gerlitz@gmail.com>, Roland Dreier <roland@kernel.org>,
-        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <530F0C4F.9030200@mellanox.com>
-Message-ID: <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz>
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752315AbaB0Kpd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:45:33 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:50787 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751058AbaB0Kpb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:45:31 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <thierry.reding@gmail.com>
+CC: <linux-pwm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv10 0/4] Add Freescale FTM PWM support
+Date: Thu, 27 Feb 2014 17:39:48 +0800
+Message-ID: <1393493992-26073-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Or Gerlitz wrote:
+Changed in V10:
+  Fix some bugs and adjust the code from Thierry's comments.
 
-> ipoib is coded over the verbs API (include/rdma/ib_verbs.h)  --- so tracking
-> the path from ipoib through the verbs api into mlx4 should be similar exercise
-> as doing so for mlx5, but let's 1st treat the higher level elements involved
-> with this patch.
-> 
-> Can you shed some light why the problem happens only for NFS, and not for
-> example with other IP/TCP storage protocols?
->
-> For example, do you expect it to happen with iSCSI/TCP too? the Linux 
-> iSCSI initiator 1st open a TCP socket from user space to the target, 
-> next they do login exchange over this socket and later provide the 
-> socket to the kernel iscsi code to use as the back-end of a SCSI block 
-> device registered with the SCSI midlayer
 
-Frankly, no idea. There was a problem with swapping over NFS, as writeback 
-was deadlocked with memory reclaim (memory needs to be allocated so that 
-swap could be accessed to reclaim memory). That's fixed by allocating the 
-buffers from PF_MEMALLOC reserve, introduced by Mel's and Peter's patchset 
-back in 3.9 or so. Oh, and the same has been done for swapping over NBD, 
-btw. Maybe iSCSI needs similar treatment, maybe it has it already, I 
-haven't checked. We haven't seen a bugreport for that though.
+Xiubo Li (4):
+  pwm: Add Freescale FTM PWM driver support
+  ARM: dts: vf610: Add Freescale FTM PWM node.
+  ARM: dts: vf610-twr: Enables FTM PWM device.
+  Documentation: Add device tree bindings for Freescale FTM PWM.
 
-> > I don't think we have, and it indeed should be rather easy to add. The 
-> > more challenging part of the problem is where (and based on which 
-> > data) the flag would actually be set up on the netdevice so that it's 
-> > not horrible layering violation.
-> 
-> I assume that in the same manner netdevices advertize features to the 
-> networking core, the core can provide them operating directives after 
-> they register themselves.
-
-Whatever suits you best. To sum it up:
-
-- mlx4 is confirmed to have this problem, and we know how that problem 
-  happens -- see the paragraph in the changelog explaining the dependency 
-  between memory reclaim and allocation of TX ring
-
-- we have a work around which requires human interaction in order 
-  to provide the information whether GFP_NOFS should be used or not
-
-- I can very well understand why Mellanox would see that as a hack, but if 
-  more comprehensive fix is necessary, I'd expect those who understand 
-  the code the best to come up with a solution/proposal. I'd assume that 
-  you don't  want to keep the code with known and easily triggerable 
-  deadlock out there unfixed.
-
-- where I see the potential for layering violation in any 'general' 
-  solution is that it's the filesystem that has to be "talking" to the 
-  underlying netdevice, i.e. you'll have to make filesystem 
-  netdevice-aware, right?
-
-Thanks,
+ .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        |  35 ++
+ arch/arm/boot/dts/vf610-twr.dts                    |   6 +
+ arch/arm/boot/dts/vf610.dtsi                       |  13 +
+ drivers/pwm/Kconfig                                |  10 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-fsl-ftm.c                          | 496 +++++++++++++++++++++
+ 6 files changed, 561 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-fsl-ftm.txt
+ create mode 100644 drivers/pwm/pwm-fsl-ftm.c
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.4
+
+
