@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaB0AQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:16:30 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:40083 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaB0AQ1 convert rfc822-to-8bit (ORCPT
+	id S1754238AbaB0AQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:16:41 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53489 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607AbaB0AQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:16:27 -0500
-Content-Type: text/plain; charset="utf-8"
+	Wed, 26 Feb 2014 19:16:37 -0500
+Date: Wed, 26 Feb 2014 18:13:58 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/9] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+Message-ID: <20140227001358.GF18563@joshc.qualcomm.com>
+References: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
+ <1393441562-685-2-git-send-email-sboyd@codeaurora.org>
+ <20140226235959.GD18563@joshc.qualcomm.com>
+ <530E8154.9060403@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1393392247-6247-4-git-send-email-pankaj.dubey@samsung.com>
-Cc: "Pankaj Dubey" <pankaj.dubey@samsung.com>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Ben Dooks" <ben-linux@fluff.org>
-References: <1393392247-6247-1-git-send-email-pankaj.dubey@samsung.com>
- <1393392247-6247-4-git-send-email-pankaj.dubey@samsung.com>
-Message-ID: <20140227001620.12081.28601@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 3/3] ARM: S3C24XX: select COMMON_CLK_SAMSUNG for S3C24XX
-Date: Wed, 26 Feb 2014 16:16:20 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530E8154.9060403@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Pankaj Dubey (2014-02-25 21:24:07)
-> CC: Ben Dooks <ben-linux@fluff.org>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> CC: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-s3c24xx/Kconfig |    3 +++
->  1 file changed, 3 insertions(+)
+On Wed, Feb 26, 2014 at 04:05:40PM -0800, Stephen Boyd wrote:
+> On 02/26/14 15:59, Josh Cartwright wrote:
+> > On Wed, Feb 26, 2014 at 11:05:54AM -0800, Stephen Boyd wrote:
+> >> Use the regmap APIs for this driver instead of custom pm8xxx
+> >> APIs. This breaks this driver's dependency on the pm8xxx APIs and
+> >> allows us to easily port it to other bus protocols in the future.
+> >>
+> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >> ---
+> >>  drivers/input/misc/pmic8xxx-pwrkey.c | 4 ++++
+> >>  1 file changed, 4 insertions(+)
+> >>
+> >> diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
+> >> index 0e1a05f95858..cf6125dc3b51 100644
+> >> --- a/drivers/input/misc/pmic8xxx-pwrkey.c
+> >> +++ b/drivers/input/misc/pmic8xxx-pwrkey.c
+> >> @@ -120,6 +120,10 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
+> >>  		return -ENOMEM;
+> >>  	}
+> >>  
+> >> +	regmap = dev_get_regmap(pdev->dev.parent, NULL);
+> >> +	if (!regmap)
+> >> +		return -ENODEV;
+> >> +
+> > This looks really weird.  A previous version of patch was included in
+> > v3.14-rc1 (1e63bd9cc4), which already included a very similar hunk...
+> >
+> > Maybe the fact that the hunk isn't identical is why a rebase didn't drop
+> > it (and instead, now if this gets merged, we'll have unnecessary
+> > duplication).
+> >
 > 
-> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-> index 80373da..5cf82a1 100644
-> --- a/arch/arm/mach-s3c24xx/Kconfig
-> +++ b/arch/arm/mach-s3c24xx/Kconfig
-> @@ -40,6 +40,7 @@ config CPU_S3C2410
->  config CPU_S3C2412
->         bool "SAMSUNG S3C2412"
->         select COMMON_CLK
-> +       select COMMON_CLK_SAMSUNG
+> Ah yeah, sorry about that. This patch should just be ignored. I don't
+> think it affects anything else in the series?
 
-I guess this depends on Heiko's "[PATCH 00/12] ARM: S3C24XX: convert
-s3c2410, s3c2440 s3c2442 to common clock framework" series?
+Yep, I think this can be safely ignored.
 
-Regards,
-Mike
+However, I think it needs to be made clear that your if "Modernize pm8921
+with irqdomains, regmap, DT" lands before this patchset, this will start
+breaking randconfig builds.  It isn't clear to me how this dependency
+should be handled.
 
->         select CPU_ARM926T
->         select CPU_LLSERIAL_S3C2440
->         select S3C2412_COMMON_CLK
-> @@ -51,6 +52,7 @@ config CPU_S3C2412
->  config CPU_S3C2416
->         bool "SAMSUNG S3C2416/S3C2450"
->         select COMMON_CLK
-> +       select COMMON_CLK_SAMSUNG
->         select CPU_ARM926T
->         select CPU_LLSERIAL_S3C2440
->         select S3C2416_PM if PM
-> @@ -89,6 +91,7 @@ config CPU_S3C244X
->  config CPU_S3C2443
->         bool "SAMSUNG S3C2443"
->         select COMMON_CLK
-> +       select COMMON_CLK_SAMSUNG
->         select CPU_ARM920T
->         select CPU_LLSERIAL_S3C2440
->         select S3C2443_COMMON_CLK
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
