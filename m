@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaB0X6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 18:58:08 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46804 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751224AbaB0X6F (ORCPT
+	id S1752748AbaB0X6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 18:58:16 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55062 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaB0X6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 18:58:05 -0500
-Message-ID: <1393545459.14067.79.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v2 1/2] net: macb: Check DMA mappings for error
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <michal.simek@xilinx.com>
-Date: Thu, 27 Feb 2014 23:57:39 +0000
-In-Reply-To: <1393538285-28297-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1393538285-28297-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-REnZseB9rYb9yHTq8IRs"
-X-Mailer: Evolution 3.8.5-2+b2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 82.132.232.167
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 27 Feb 2014 18:58:11 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>, Robin Holt <robin.m.holt@gmail.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: [PATCH v6 1/2] ARM: avoid tracers in soft_restart
+Date: Thu, 27 Feb 2014 15:57:57 -0800
+Message-Id: <1393545478-14908-2-git-send-email-sebastian.capella@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1393545478-14908-1-git-send-email-sebastian.capella@linaro.org>
+References: <1393545478-14908-1-git-send-email-sebastian.capella@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use of tracers in local_irq_disable is causes recursive aborts when
+called with irqs disabled and using a temporary stack (hibernation).
+Replace local_irq_disable with raw_local_irq_disable instead to
+avoid tracers.
 
---=-REnZseB9rYb9yHTq8IRs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Robin Holt <robin.m.holt@gmail.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+---
+ arch/arm/kernel/process.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Thu, 2014-02-27 at 13:58 -0800, Soren Brinkmann wrote:
-[...]
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/c=
-adence/macb.c
-> index 3190d38e16fb..a9c2ccfc1740 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -632,11 +632,16 @@ static void gem_rx_refill(struct macb *bp)
->  					   "Unable to allocate sk_buff\n");
->  				break;
->  			}
-> -			bp->rx_skbuff[entry] =3D skb;
-> =20
->  			/* now fill corresponding descriptor entry */
->  			paddr =3D dma_map_single(&bp->pdev->dev, skb->data,
->  					       bp->rx_buffer_size, DMA_FROM_DEVICE);
-> +			if (dma_mapping_error(&bp->pdev->dev, paddr)) {
-> +				dev_kfree_skb(skb);
-> +				break;
-> +			}
-> +
-> +			bp->rx_skbuff[entry] =3D skb;
-> =20
->  			if (entry =3D=3D RX_RING_SIZE - 1)
->  				paddr |=3D MACB_BIT(RX_WRAP);
-> @@ -1040,6 +1045,10 @@ static int macb_start_xmit(struct sk_buff *skb, st=
-ruct net_device *dev)
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 92f7b15..f58b723 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -100,7 +100,7 @@ void soft_restart(unsigned long addr)
+ 	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
+ 
+ 	/* Disable interrupts first */
+-	local_irq_disable();
++	raw_local_irq_disable();
+ 	local_fiq_disable();
+ 
+ 	/* Disable the L2 if we're the last man standing. */
+-- 
+1.7.9.5
 
-A bit more context:
-
-	entry =3D macb_tx_ring_wrap(bp->tx_head);
-	bp->tx_head++;
-
->  	netdev_vdbg(bp->dev, "Allocated ring entry %u\n", entry);
->  	mapping =3D dma_map_single(&bp->pdev->dev, skb->data,
->  				 len, DMA_TO_DEVICE);
-> +	if (dma_mapping_error(&bp->pdev->dev, mapping)) {
-> +		kfree_skb(skb);
-> +		goto unlock;
-> +	}
-
-You need to move the bp->tx_head increment below this error check.
-Sorry I didn't spot this the first time.
-
-Ben.
-
->  	tx_skb =3D &bp->tx_skb[entry];
->  	tx_skb->skb =3D skb;
-> @@ -1066,6 +1075,7 @@ static int macb_start_xmit(struct sk_buff *skb, str=
-uct net_device *dev)
->  	if (CIRC_SPACE(bp->tx_head, bp->tx_tail, TX_RING_SIZE) < 1)
->  		netif_stop_queue(dev);
-> =20
-> +unlock:
->  	spin_unlock_irqrestore(&bp->lock, flags);
-> =20
->  	return NETDEV_TX_OK;
-
---=20
-Ben Hutchings
-It is easier to change the specification to fit the program than vice versa=
-.
-
---=-REnZseB9rYb9yHTq8IRs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAUw/Q8+e/yOyVhhEJAQqywg/+Ivi3z8MWimM6uUBsqbXLLIujaQGiu6Y+
-b7rI3fljaIhAV9PFgurc4wcxtoYlXKZG8mWjWUdwwIeOZqLhO9fryqf9U4DvKLr8
-uM0Oua2Aa7E2EGa8U5CMIU6DVRJ3w0/0WqaBv1ERCE9dhUKJqq4uK2S69VKmlt9N
-QwdMgFHc0cj2x8xRPZKbpHqlOlzvajUYlZCSYkS3ZNE+BvNumZCwH0qzumfcX0Yg
-PvH55qwDnCDbhPP69h7yn7fpXHiKuiF3gAF64vcM3T3L7TDNDoQNe6kvqIk5obSY
-WBMfsBSfbZtrSn44gfQzHnSJe5se8Zhs2GWCnXBMWPXNQDWpwFcRZKje1JS9PdqY
-a+stuXFnU5h87NmknyzPnxysQP7PWGx5gWwfD/GxFQQlzDISgQf/OBvmGFiM1IKf
-M77XpvgfJKkBZPiE/BavXzu/PYreMdl0GsFvz9hddWqpOh9dBL/rAx4ePt93/x+o
-cQ+nqGU07e8CLaGhqoMAF3LUr2CYzTe1Lcbr6T3Cs3bNxfEdW+e5mGV/bOTEI2p4
-5oWOkhrLVIljQnA29vTISfKQ1dbTtweOiLqOhwDeSnZa3VX9SpgRieqiP5Rqz/9Z
-53kGqy5CP1FGAI/bAuMWPhHMzg8FXlmNmXfyUM9VfR701yPXPsEepkydnGpYPUaG
-FAGjmDCD+mA=
-=cG6d
------END PGP SIGNATURE-----
-
---=-REnZseB9rYb9yHTq8IRs--
