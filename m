@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaB0R00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:26:26 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:58564 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753329AbaB0R0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:26:23 -0500
-Date: Thu, 27 Feb 2014 11:26:28 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        schwidefsky@de.ibm.com, rientjes@google.com, riel@redhat.com,
-        pbonzini@redhat.com, mingo@kernel.org, mgorman@suse.de,
-        kirill.shutemov@linux.intel.com, heiko.carstens@de.ibm.com,
-        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com, ebiederm@xmission.com,
-        aarcange@redhat.com
-Subject: Re: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
- added to -mm tree
-Message-ID: <20140227172628.GD18555@sgi.com>
-References: <20140226145025.GA12571@redhat.com>
- <530E0306.7020601@de.ibm.com>
- <20140226153144.GA15527@redhat.com>
- <20140226165759.GB22802@laptop.programming.kicks-ass.net>
- <20140226172253.GQ3041@sgi.com>
- <20140226180603.GA25644@redhat.com>
- <530E4028.70903@de.ibm.com>
- <20140226193917.GR3041@sgi.com>
- <20140226152434.8faabadc7f4f8d6475d58f88@linux-foundation.org>
- <20140227000153.GC18555@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227000153.GC18555@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752856AbaB0RWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:22:17 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55471 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaB0RWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 12:22:15 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v5 4/7] of: Reduce indentation in of_graph_get_next_endpoint
+Date: Thu, 27 Feb 2014 18:35:37 +0100
+Message-Id: <1393522540-22887-5-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.0.rc3
+In-Reply-To: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
+References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 06:01:53PM -0600, Alex Thorlton wrote:
-> On Wed, Feb 26, 2014 at 03:24:34PM -0800, Andrew Morton wrote:
-> > On Wed, 26 Feb 2014 13:39:17 -0600 Alex Thorlton <athorlton@sgi.com> wrote:
-> > 
-> > > > 
-> > > > 
-> > > > > I'd suggest the patch below on top of your changes, but I won't argue.
-> > > 
-> > > I like this approach, and your updated comment as well.  This should
-> > > probably go in as [PATCH 2/4] in my series.  Do I need to spin a v5
-> > > with this new patch included in the series, or will Andrew pull this in?
-> > 
-> > Paolo's comments on Oleg's patch remain unaddressed, so please take a
-> > look at that and send out the final version?
-> 
-> Got it.  I'll get that to you tonight/tomorrow morning.
+A 'return endpoint;' at the end of the (!prev) case allows to
+reduce the indentation level of the (prev) case.
 
-Just kicked out another version of the patch that should cover all
-comments/suggestions.  Let me know if you need anything else from me!
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/of/base.c | 42 ++++++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
-- Alex
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 6e650cf..8ecca7a 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -2026,32 +2026,34 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 			pr_err("%s(): no endpoint nodes specified for %s\n",
+ 			       __func__, parent->full_name);
+ 		of_node_put(node);
+-	} else {
+-		port = of_get_parent(prev);
+-		if (WARN_ONCE(!port, "%s(): endpoint has no parent node\n",
+-			      __func__))
+-			return NULL;
+ 
+-		/* Avoid dropping prev node refcount to 0. */
+-		of_node_get(prev);
+-		endpoint = of_get_next_child(port, prev);
+-		if (endpoint) {
+-			of_node_put(port);
+-			return endpoint;
+-		}
++		return endpoint;
++	}
+ 
+-		/* No more endpoints under this port, try the next one. */
+-		do {
+-			port = of_get_next_child(parent, port);
+-			if (!port)
+-				return NULL;
+-		} while (of_node_cmp(port->name, "port"));
++	port = of_get_parent(prev);
++	if (WARN_ONCE(!port, "%s(): endpoint has no parent node\n",
++		      __func__))
++		return NULL;
+ 
+-		/* Pick up the first endpoint in this port. */
+-		endpoint = of_get_next_child(port, NULL);
++	/* Avoid dropping prev node refcount to 0. */
++	of_node_get(prev);
++	endpoint = of_get_next_child(port, prev);
++	if (endpoint) {
+ 		of_node_put(port);
++		return endpoint;
+ 	}
+ 
++	/* No more endpoints under this port, try the next one. */
++	do {
++		port = of_get_next_child(parent, port);
++		if (!port)
++			return NULL;
++	} while (of_node_cmp(port->name, "port"));
++
++	/* Pick up the first endpoint in this port. */
++	endpoint = of_get_next_child(port, NULL);
++	of_node_put(port);
++
+ 	return endpoint;
+ }
+ EXPORT_SYMBOL(of_graph_get_next_endpoint);
+-- 
+1.8.5.3
+
