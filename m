@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaB0E4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 23:56:21 -0500
-Received: from ozlabs.org ([203.10.76.45]:50853 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929AbaB0E4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 23:56:20 -0500
-Date: Thu, 27 Feb 2014 15:56:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thierry Reding <thierry.reding@gmail.com>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>, Paul Bolle <pebolle@tiscali.nl>
-Subject: linux-next: manual merge of the pwm tree with the usb tree
-Message-Id: <20140227155613.16a690cf5423d4889d887273@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Feb_2014_15_56_13_+1100_W_ZJjhlM=7NYIzxe"
+	id S1751360AbaB0FAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:00:19 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:20112 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaB0FAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 00:00:16 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-19-530ec6595f53
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
+Cc: linux-kernel@vger.kernel.org, "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
+        "'Peter Korsgaard'" <jacmet@sunsite.dk>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
+Date: Thu, 27 Feb 2014 14:00:09 +0900
+Message-id: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8zeMUulUPjKSZTQeuQ54WfZho3Fg==
+Content-language: ko
+x-cr-hashedpuzzle: E0Ln FNIT LlOY Ns3B SJ9l TGa5 XsCb ZKUW bP8f cHyd eESL qLSM
+ wL2r zGnk 0D2f
+ 0FRO;5;aABlAHIAYgBlAHIAdABAAGcAbwBuAGQAbwByAC4AYQBwAGEAbgBhAC4AbwByAGcALgBhAHUAOwBqAGEAYwBtAGUAdABAAHMAdQBuAHMAaQB0AGUALgBkAGsAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG4AaQBjAG8AbABhAHMALgBmAGUAcgByAGUAQABhAHQAbQBlAGwALgBjAG8AbQA=;Sosha1_v1;7;{C07C2E4A-7B1C-4D91-8F58-3964F407DB65};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
+ 27 Feb 2014 05:00:01
+ GMT;WwBQAEEAVABDAEgAIAAxAC8ANQBdACAAaAB3AHIAbgBnADoAIABhAHQAbQBlAGwAIAAtACAAVQBzAGUAIABkAGUAdgBtAF8AYwBsAGsAXwBnAGUAdAAoACkA
+x-cr-puzzleid: {C07C2E4A-7B1C-4D91-8F58-3964F407DB65}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY93IY3zBBnMXaVu8PKRp0f1KxuL0
+	pWuMFpcXXmK1uLxrDpvFt8vN7A5sHgt+bWXx2HZA1aNvyypGj2mvz7N5fN4kF8AaxWWTkpqT
+	WZZapG+XwJVxbN9dloIPnBUfHjWyNzD2cXQxcnJICJhIfHm+hgXCFpO4cG89WxcjF4eQwDJG
+	iRdbf7PBFO3+Np8dIrGIUWLPwgfMEM5vRom37U9YQarYBNQkvnw5zA5iiwjoSfStb2QEKWIW
+	mMEoMfXjBGaQhLCAmcTxt8uAxnJwsAioStzb6AsS5hWwlVj06zcrhC0o8WPyPbCTmAW0JDZv
+	a2KFsOUlNq95ywzSKiGgLvHory6ICbJqyT5PiAoRiX0v3oFtlRBYwSrx6uYkZogHTCU2T5nJ
+	BJF4xC4x/eh7RpAEi4CAxLfJh1ggZspKbDoAVS8pcXDFDZYJjBKzkFw0C8lFs5BcNAvJ7gWM
+	LKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxQuJ14g7G+wesDzEmA62fyCwlmpwPjPe8knhD
+	YzMjC1MTU2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamAUMD8mmRTw
+	7PK2e8uaRffXnzorPpeXtf3D7qbTSxsuyepPUIk46sy1Jq/UotTnc0xj0Va1yxsWXGFhXtSr
+	GlEhG5RYWneTK8h1btq0e4IPlLew7zF68iOj6pj7xosXgq5rKj7S2DTF7Xy6vtDDTdpfNjs0
+	9d6UOfS4XGJ/ZdStrf71kXcPcjUosRRnJBpqMRcVJwIAk3qaO+0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAd3IY3zBBg8b1S1eHtK06H4lY3H6
+	0jVGi8sLL7FaXN41h83i2+Vmdgc2jwW/trJ4bDug6tG3ZRWjx7TX59k8Pm+SC2CNamC0yUhN
+	TEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHar6RQlphTChQK
+	SCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMOLbvLkvBB86KD48a2RsY+zi6GDk5JARM
+	JHZ/m88OYYtJXLi3nq2LkYtDSGARo8SehQ+YIZzfjBJv25+wglSxCahJfPlyGKxDREBPom99
+	IyNIEbPADEaJqR8nMIMkhAXMJI6/XQY0ioODRUBV4t5GX5Awr4CtxKJfv1khbEGJH5PvsYDY
+	zAJaEpu3NbFC2PISm9e8ZQZplRBQl3j0VxfEBFm1ZJ8nRIWIxL4X78C2SgisYJV4dXMSM8QD
+	phKbp8xkmsAoNAvJhllINsxCsmEWklkLGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgQn
+	g2dSOxhXNlgcYhTgYFTi4VVg4wsWYk0sK67MPcQowcGsJMJ7yAUoxJuSWFmVWpQfX1Sak1p8
+	iDEZ6P+JzFKiyfnARJVXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1M
+	HJxSDYw9Jzf4q4RbKc/Ydvxd9R/bDSdvqd4T/vZj1gzNG991/W9dCj5bniCrP08jyPsJD/8v
+	l3U76llE7dbsygl/8eTUXJGiGevFlM+8TawWnPzy55ZVrif0KrQNA4w+rCvIje69/j+52Uu0
+	5vr+BzsuVayRWrvm84vlFpcu5JjNKmlanJvRuIlpDW+WEktxRqKhFnNRcSIAKIc3mUoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Feb_2014_15_56_13_+1100_W_ZJjhlM=7NYIzxe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use devm_clk_get() to make cleanup paths simpler.
 
-Hi Thierry,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/char/hw_random/atmel-rng.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Today's linux-next merge of the pwm tree got a conflict in
-arch/arm/Kconfig between commit f6723b569a67 ("usb: host: remove selects
-of USB_ARCH_HAS_?HCI") from the usb tree and commit 557fe99d9d49 ("pwm:
-Remove obsolete HAVE_PWM Kconfig symbol") from the pwm tree.
+diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+index dfeddf2..851bc7e 100644
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -63,13 +63,13 @@ static int atmel_trng_probe(struct platform_device *pdev)
+ 	if (IS_ERR(trng->base))
+ 		return PTR_ERR(trng->base);
+ 
+-	trng->clk = clk_get(&pdev->dev, NULL);
++	trng->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(trng->clk))
+ 		return PTR_ERR(trng->clk);
+ 
+ 	ret = clk_enable(trng->clk);
+ 	if (ret)
+-		goto err_enable;
++		return ret;
+ 
+ 	writel(TRNG_KEY | 1, trng->base + TRNG_CR);
+ 	trng->rng.name = pdev->name;
+@@ -85,9 +85,6 @@ static int atmel_trng_probe(struct platform_device *pdev)
+ 
+ err_register:
+ 	clk_disable(trng->clk);
+-err_enable:
+-	clk_put(trng->clk);
+-
+ 	return ret;
+ }
+ 
+@@ -99,7 +96,6 @@ static int atmel_trng_remove(struct platform_device *pdev)
+ 
+ 	writel(TRNG_KEY, trng->base + TRNG_CR);
+ 	clk_disable(trng->clk);
+-	clk_put(trng->clk);
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/Kconfig
-index c85745d2d20a,cc6ce44064a2..000000000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -628,7 -629,7 +625,6 @@@ config ARCH_LPC32X
-  	select CPU_ARM926T
-  	select GENERIC_CLOCKEVENTS
-  	select HAVE_IDE
-- 	select HAVE_PWM
- -	select USB_ARCH_HAS_OHCI
-  	select USE_OF
-  	help
-  	  Support for the NXP LPC32XX family of processors
-
---Signature=_Thu__27_Feb_2014_15_56_13_+1100_W_ZJjhlM=7NYIzxe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTDsVxAAoJEMDTa8Ir7ZwVPMIQAI9m/jUABxm4d2aCjjrFVTfA
-nF7YGPTSQlGxMkYzNHKHrHBXtOVJKMF5KO+eMFNjo7SzKFkSGl9BN99xQq/DeYb9
-qLXrF9UzeyKb40Iml6LWzv+xfOPIYYYKYcJwc/V/9Bk6lr9ihHWPNL7B/Dx4O+Ys
-IYoS9Aq8aM2aYIbbWI32cnBH11ucsnSUfxZElDLoNA+2eD++nF4b60AA/3whf1gF
-5oUXkuGYzrZkjf81pBff9+9fw7/Su9+DOForS8q65rbEBd1YBjW4ldXwDYZUg1Wx
-3gR7oJnaIuyp1vQUR3c6piKXxx3JQT+nTo6CGq+MYgudsrC8D3DkTKaFI1YWTsha
-CiBYVehNNZiJJwx8o7KmMu+8SRkq/KlmFC/d5Gzsqakx0NZMeLdLoWSCDEhBzTqe
-iZBUH1UqsFdwXwu8PebPu4Nbi5FjWRiVMLwTcbgtLdeAovdcoek7Sp0NjxDc2zkh
-+tMs79sPaAJop2sOLNKVlrKRsYRwaPEEGEMhChWSPwfyNLUQXiZuFo8kaxnrg5SF
-7GkY/dET3FUp0nSLAJXqJpkrWG8v3vfHnm3WTL0apSTti3c06C8OV3PI1u7An2n0
-tii9FpYc0AdLQqqPI1j36MAf1lFEgoM2911KmBwmGFDW8r4jk1K1DhXfpw8L0kvu
-QiH7dTYQ35MK4e4UnCLD
-=t6V5
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_Feb_2014_15_56_13_+1100_W_ZJjhlM=7NYIzxe--
