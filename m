@@ -1,95 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaB0S65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:58:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36932 "EHLO
+	id S1753688AbaB0TAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:00:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36943 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaB0S6z (ORCPT
+	with ESMTP id S1752589AbaB0TAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:58:55 -0500
-Date: Thu, 27 Feb 2014 11:00:32 -0800
+	Thu, 27 Feb 2014 14:00:42 -0500
+Date: Thu, 27 Feb 2014 11:02:19 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Josh Cartwright <joshc@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] typecheck: introduce assign_if() and
- assign_if_enabled()
-Message-ID: <20140227190032.GA4421@kroah.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] PM: define new ASSIGN_*_PM_OPS macros based on
+ assign_if
+Message-ID: <20140227190219.GB4421@kroah.com>
 References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
- <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-3-git-send-email-joshc@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
+In-Reply-To: <1393261707-30565-3-git-send-email-joshc@codeaurora.org>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 11:08:25AM -0600, Josh Cartwright wrote:
-> The assign_if() and assign_if_enable() macros are intended to be used
-> in static initializers for function pointers, where the pointer is
-> expected to be NULL when a compile-time condition does not hold.
+On Mon, Feb 24, 2014 at 11:08:26AM -0600, Josh Cartwright wrote:
+> Similar to the SET_*_PM_OPS(), these functions are to be used in
+> initializers of struct dev_pm_ops, for example:
 > 
-> These macros allow for implementing this behavior, without requiring the
-> functions be wrapped in #ifdef conditionals, and while providing
-> typesafety regardless of the value of the conditional.
-> 
-> For example, the following pattern is common:
-> 
-> 	#ifdef CONFIG_FOO
-> 	static void foo_callback(void)
-> 	{
-> 	}
-> 	#else
-> 	#define foo_callback NULL
-> 	#endif
-> 
-> 	static struct foo_object foo_obj = {
-> 		.callback = foo_callback,
+> 	static const struct dev_pm_ops foo_pm_ops = {
+> 		ASSIGN_RUNTIME_PM_OPS(foo_rpm_suspend, foo_rpm_resume, NULL)
+> 		ASSIGN_SYSTEM_SLEEP_PM_OPS(foo_suspend, foo_resume)
 > 	};
 > 
-> Usage of assign_if_enabled() allows for achieving the same effect
-> without the preprocessor conditional, and in addition, allowing the
-> compiler to typecheck the function regardless of CONFIG_FOO.
+> Unlike their SET_*_PM_OPS() counter parts, it is unnecessary to wrap the
+> function callbacks in #ifdeffery in order to prevent 'defined but not
+> used' warnings when the corresponding CONFIG_PM* options are unset.
 > 
-> 	static void foo_callback(void)
-> 	{
-> 	}
-> 
-> 	static struct foo_object foo_obj = {
-> 		.callback = assign_if_enabled(CONFIG_FOO, foo_callback),
-> 	};
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
 > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 > ---
->  include/linux/typecheck.h | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
+>  include/linux/pm.h | 39 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
 > 
-> diff --git a/include/linux/typecheck.h b/include/linux/typecheck.h
-> index eb5b74a..04134c7 100644
-> --- a/include/linux/typecheck.h
-> +++ b/include/linux/typecheck.h
-> @@ -21,4 +21,22 @@
->  	(void)__tmp; \
->  })
+> diff --git a/include/linux/pm.h b/include/linux/pm.h
+> index db2be5f..3810d56 100644
+> --- a/include/linux/pm.h
+> +++ b/include/linux/pm.h
+> @@ -299,6 +299,15 @@ struct dev_pm_ops {
+>  	int (*runtime_idle)(struct device *dev);
+>  };
 >  
-> +/*
-> + * Intended for use in static object initializers,
-> + * assign_if(const_expr, function) evaluates to 'function' if 'const_expr',
-> + * otherwise NULL.
-> + *
-> + * The type of the assign_if() expression is typeof(function), and therefore
-> + * can provide typechecking regardless of 'const_expr'.
-> + *
-> + * gcc considers 'function' to be used and will not generate a 'defined but not
-> + * used' warning when not 'const_expr', however, gcc is smart enough to
-> + * eliminate 'function' if assign_if() is the only reference.
+> +#define assign_if_pm_sleep(fn) \
+> +	assign_if_enabled(CONFIG_PM_SLEEP, fn)
+> +
+> +#define assign_if_pm_runtime(fn) \
+> +	assign_if_enabled(CONFIG_PM_RUNTIME, fn)
+> +
+> +#define assign_if_pm(fn) \
+> +	assign_if_enabled(CONFIG_PM, fn)
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>  #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+>  	.suspend = suspend_fn, \
+> @@ -342,6 +351,36 @@ struct dev_pm_ops {
+>  #endif
+>  
+>  /*
+> + * The ASSIGN_* variations of the above make wrapping the associated callback
+> + * functions in preprocessor defines unnecessary.
 > + */
+> +#define ASSIGN_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+> +	.suspend = assign_if_pm_sleep(suspend_fn), \
+> +	.resume = assign_if_pm_sleep(resume_fn), \
+> +	.freeze = assign_if_pm_sleep(suspend_fn), \
+> +	.thaw = assign_if_pm_sleep(resume_fn), \
+> +	.poweroff = assign_if_pm_sleep(suspend_fn), \
+> +	.restore = assign_if_pm_sleep(resume_fn),
+> +
+> +#define ASSIGN_LATE_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+> +	.suspend_late = assign_if_pm_sleep(suspend_fn), \
+> +	.resume_early = assign_if_pm_sleep(resume_fn), \
+> +	.freeze_late = assign_if_pm_sleep(suspend_fn), \
+> +	.thaw_early = assign_if_pm_sleep(resume_fn), \
+> +	.poweroff_late = assign_if_pm_sleep(suspend_fn), \
+> +	.restore_early = assign_if_pm_sleep(resume_fn),
+> +
+> +#define ASSIGN_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
+> +	.runtime_suspend = assign_if_pm_runtime(suspend_fn), \
+> +	.runtime_resume = assign_if_pm_runtime(resume_fn), \
+> +	.runtime_idle = assign_if_pm_runtime(idle_fn),
+> +
+> +#define ASSIGN_PM_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
+> +	.runtime_suspend = assign_if_pm(suspend_fn), \
+> +	.runtime_resume = assign_if_pm(resume_fn), \
+> +	.runtime_idle = assign_if_pm(idle_fn),
 
-What version of gcc started doing this?  Does llvm also do this?
+Ugh, what a mess, really?  Is it that hard to get the #ifdef right in
+the code?  Why not just always define the functions and then also always
+have them in the structures, and if the feature isn't enabled, just
+don't call/use them?
 
-thanks,
+Yes, it would cause a _very_ tiny increase in code size if the option is
+disabled, but really, does anyone ever disable those options becides on
+the dreaded 'make randconfig' checkers?
+
+It seems that would solve the problem much easier than this macro hell.
+
+ick.
 
 greg k-h
