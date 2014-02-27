@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaB0Qyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:54:53 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52309 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaB0Qyw convert rfc822-to-8bit (ORCPT
+	id S1753206AbaB0RAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:00:18 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:52406 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752458AbaB0RAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:54:52 -0500
-Date: Thu, 27 Feb 2014 16:54:49 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 4/4] pci: Add support for creating a generic
- host_bridge from device tree
-Message-ID: <20140227165449.GR1692@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	"linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
- <5722634.VerP6OyMlP@wuerfel>
- <20140227162003.GP1692@e106497-lin.cambridge.arm.com>
- <5679503.gWR3MVnuZs@wuerfel>
+	Thu, 27 Feb 2014 12:00:17 -0500
+Date: Thu, 27 Feb 2014 12:00:14 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        stable@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFA][PATCH 2/5] ftrace/x86: One more missing sync after fixup
+ of function modification failure
+Message-ID: <20140227120014.7ba8b484@gandalf.local.home>
+In-Reply-To: <20140227163731.GC19580@localhost.localdomain>
+References: <20140227154616.703252665@goodmis.org>
+	<20140227154923.103932155@goodmis.org>
+	<20140227163731.GC19580@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5679503.gWR3MVnuZs@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 27 Feb 2014 16:54:50.0548 (UTC) FILETIME=[A116C740:01CF33DC]
-X-MC-Unique: 114022716545003001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 04:45:24PM +0000, Arnd Bergmann wrote:
-> On Thursday 27 February 2014 16:20:03 Liviu Dudau wrote:
-> > On Thu, Feb 27, 2014 at 03:58:41PM +0000, Arnd Bergmann wrote:
-> > > On Thursday 27 February 2014 14:13:22 Liviu Dudau wrote:
-> > > > 
-> > > > It is useful for host bridge drivers as this is the only place where we store
-> > > > the physical CPU address for the IO range. This is then needed when setting up the
-> > > > translation registers. Also used when calling the pci_ioremap_io function that I'm
-> > > > introducing in the AArch64 patches.
-> > > 
-> > > I don't understand what translation windows you are talking about. Is this
-> > > about how the PCI spaces are mapped into the CPU address space? If so, I
-> > > would strongly recommend to have this handled by the boot loader before
-> > > calling into the kernel. For ARM32, we have a lot of embedded systems
-> > > that require the PCI host driver to set up those windows, but actually
-> > > it would be much better to just have the firmware tell us what the setup
-> > > is and that use that.
+On Thu, 27 Feb 2014 17:37:32 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Thu, Feb 27, 2014 at 10:46:18AM -0500, Steven Rostedt wrote:
+> > [Request for Ack]
 > > 
-> > The AXI to PCI bridge that I'm using has a set of registers for doing address translation.
-> > When it sees an AXI translation that matches the programmed translation window will
-> > convert it into a PCI write using the PCI address base written in that translation window.
-> > In other words you basically program the DT range into those address translation registers
-> > and the bridge does the AXI to PCI conversion for you.
+> > From: Petr Mladek <pmladek@suse.cz>
+> > 
+> > If a failure occurs while modifying ftrace function, it bails out and will
+> > remove the tracepoints to be back to what the code originally was.
+> > 
+> > There is missing the final sync run across the CPUs after the fix up is done
+> > and before the ftrace int3 handler flag is reset.
 > 
-> Right. That should definitely be done in the boot loader
-> before Linux is started.
+> So IIUC the risk is that other CPUs may spuriously ignore non-ftrace traps if we don't sync the
+> other cores after reverting the int3 before decrementing the modifying_ftrace_code counter?
 
-There are examples of other host controllers doing similar things. pci-tegra.c does it in
-tegra_pcie_setup_translations(), pcie-designware.c has dw_pcie_prog_viewport_*() functions.
+Actually, the bug is that they will not ignore the ftrace traps after
+we decrement modifying_ftrace_code counter. Here's the race:
 
-I'm afraid for the moment the bootloader on my platform is not going to be of too much use on
-this, so it will have to be initially in Linux.
+	CPU0				CPU1
+	----				----
+  remove_breakpoint();
+  modifying_ftrace_code = 0;
 
-Best regards,
-Liviu
+				[still sees breakpoint]
+				<takes trap>
+				[sees modifying_ftrace_code as zero]
+				[no breakpoint handler]
+				[goto failed case]
+				[trap exception - kernel breakpoint, no
+				 handler]
+				BUG()
+
+
+Even if we had a smp_wmb() after removing the breakpoint and clearing
+the modifying_ftrace_code, we still need the smp_rmb() on the other
+CPUS. The run_sync() does a IPI on all CPUs doing the smp_rmb().
 
 > 
+> > 
+> > Link: http://lkml.kernel.org/r/1393258342-29978-2-git-send-email-pmladek@suse.cz
+> > 
+> > Fixes: 8a4d0a687a5 "ftrace: Use breakpoint method to update ftrace caller"
+> > Cc: stable@vger.kernel.org # 3.5+
+> > Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  arch/x86/kernel/ftrace.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> > index 6b566c8..69885e2 100644
+> > --- a/arch/x86/kernel/ftrace.c
+> > +++ b/arch/x86/kernel/ftrace.c
+> > @@ -660,8 +660,8 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+> >  		ret = -EPERM;
+> >  		goto out;
+> >  	}
+> > -	run_sync();
+> >   out:
+> > +	run_sync();
+> >  	return ret;
+> >  
+> >   fail_update:
 > 
-> 	Arnd
-> 
-> 
+> This could be further optimized by rather calling run_sync() in the end of the
+> fail_update block (after the probe_kernel_write revert) otherwise even failure on
+> setting the break will result in run_sync(), which doesn't appear to be needed. But
+> that's really just nitpicking as it's a rare failure codepath and shouldn't hurt.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+No, the run_sync() must be done after removing the breakpoint. Again,
+we don't want one of these breakpoints to be called on another CPU and
+then see modifying_ftrace_code as zero. That is bad. The final
+run_sync() is required.
+
+I think I'll update the change log to include my race flow graph from
+above.
+
+-- Steve
+
+
+> 
+> In any case, the fix looks correct.
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> > -- 
+> > 1.8.5.3
+> > 
+> > 
 
