@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaB0BVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:21:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48032 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700AbaB0BVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:21:22 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+5PVA6Y2R1OP1dwvh+zE2puE0nJr0ChUgXz9wsMU3XZ2ZwfZg@mail.gmail.com>
-References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <20140226232954.GA17791@kroah.com> <530E7963.10209@zytor.com> <530E7AAF.3070908@zytor.com> <CA+5PVA6Y2R1OP1dwvh+zE2puE0nJr0ChUgXz9wsMU3XZ2ZwfZg@mail.gmail.com>
+	id S1754223AbaB0BYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:24:51 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:40750 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751989AbaB0BYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:24:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvkJAG6TDlN5LJYe/2dsb2JhbABagwaDQ7h6hVSBFhd0gicBAQU6HCMQCAMYCSUPBSUDIROHeMoOFxaOPgeENwSMZotPh0aDDYdWgW+BUig
+Date: Thu, 27 Feb 2014 12:24:31 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
+        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
+        mtk.manpages@gmail.com, lczerner@redhat.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
+ for fallocate
+Message-ID: <20140227012431.GW13647@dastard>
+References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com>
+ <20140224005710.GH4317@dastard>
+ <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au>
+ <20140225041346.GA29907@dastard>
+ <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
+ <20140226011347.GL13647@dastard>
+ <alpine.LSU.2.11.1402251856060.1114@eggly.anvils>
+ <20140226064224.GU13647@dastard>
+ <alpine.LSU.2.11.1402261454270.2808@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: The sheer number of sparse warnings in the kernel
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 26 Feb 2014 17:21:00 -0800
-To: Josh Boyer <jwboyer@fedoraproject.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <8e4515ef-9627-4da6-994e-ba14655481c0@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1402261454270.2808@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That would be good.
+On Wed, Feb 26, 2014 at 03:08:58PM -0800, Hugh Dickins wrote:
+> On Wed, 26 Feb 2014, Dave Chinner wrote:
+> > On Tue, Feb 25, 2014 at 08:45:15PM -0800, Hugh Dickins wrote:
+> > > On Wed, 26 Feb 2014, Dave Chinner wrote:
+> > > > On Tue, Feb 25, 2014 at 03:23:35PM -0800, Hugh Dickins wrote:
+> > > > 
+> > > > > I should mention that when "we" implemented this thirty years ago,
+> > > > > we had a strong conviction that the system call should be idempotent:
+> > > > > that is, the len argument should indicate the final i_size, not the
+> > > > > amount being removed from it.  Now, I don't remember the grounds for
+> > > > > that conviction: maybe it was just an idealistic preference for how
+> > > > > to design a good system call.  I can certainly see that defining it
+> > > > > that way round would surprise many app programmers.  Just mentioning
+> > > > > this in case anyone on these lists sees a practical advantage to
+> > > > > doing it that way instead.
+> > > > 
+> > > > I don't see how specifying the end file size as an improvement. What
+> > > > happens if you are collapse a range in a file that is still being
+> > > > appended to by the application and so you race with a file size
+> > > > update? IOWs, with such an API the range to be collapsed is
+> > > > completely unpredictable, and IMO that's a fundamentally broken API.
+> > > 
+> > > That's fine if you don't see the idempotent API as an improvement,
+> > > I just wanted to put it on the table in case someone does see an
+> > > advantage to it.  But I think I'm missing something in your race
+> > > example: I don't see a difference between the two APIs there.
+> > 
+> > 
+> > Userspace can't sample the inode size via stat(2) and then use the value for a
+> > syscall atomically. i.e. if you specify the offset you want to
+> > collapse at, and the file size you want to have to define the region
+> > to collapse, then the length you need to collapse is (current inode
+> > size - end file size). If "current inode size" can change between
+> > the stat(2) and fallocate() call (and it can), then the length being
+> > collapsed is indeterminate....
+> 
+> Thanks for explaining more, I was just about to acknowledge what a good
+> example that is.  Indeed, it seems not unreasonable to be editing the
+> earlier part of a file while the later part of it is still streaming in.
+> 
+> But damn, it now occurs to me that there's still a problem at the
+> streaming end: its file write offset won't be updated to reflect
+> the collapse, so there would be a sparse hole at that end.  And
+> collapse returns -EPERM if IS_APPEND(inode).
 
-On February 26, 2014 5:19:51 PM PST, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->On Wed, Feb 26, 2014 at 6:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 02/26/2014 03:31 PM, H. Peter Anvin wrote:
->>> On 02/26/2014 03:29 PM, Greg KH wrote:
->>>> On Wed, Feb 26, 2014 at 03:28:59PM -0800, Greg KH wrote:
->>>>> On Wed, Feb 26, 2014 at 02:49:26PM -0800, H. Peter Anvin wrote:
->>>>>> The number of sparse errors in the current kernel is staggering,
->and it
->>>>>> makes sparse a lot less valuable of a tool that it otherwise
->could be.
->>>>>> On a build of x86-64 allyesconfig I'm getting 20,676 sparse
->messages.
->>>>>> Out of those, 12,358 come from linux/err.h.  Given that the
->latter
->>>>>> basically spams *everything*, I can only conclude that almost
->noone uses
->>>>>> sparse unless they have a filter script.
->>>>>
->>>>> What errors are you seeing from err.h?  I don't see those when
->building
->>>>> different subdirectories with sparse (which is how I normally use
->it.)
->>>>>
->>>>> And what version of sparse are you running:
->>>>>     $ sparse --version
->>>>>     v0.4.5-rc1-407-g345e8943fc36
->>>>
->>>> Ah, 0.5.0 is now out, maybe you should update to that version?
->>>>
->>>
->>> Yes... it looks like the 0.4.5-rc1 that shipped in Fedora is indeed
->out
->>> of date.  With 0.5.0 I "only" see 8,207 messages, which means that
->at
->>> least the linux/err.h issue is gone.
->>>
->>
->> For what it's worth, the rpm is called sparse-0.4.5.rc1-2.fc19.x86_64
->> and sparse --version reports 0.4.4...
->
->Fedora rawhide has sparse-0.5.0-1.fc21.  If it matters, we could
->probably update F20 and F19 with that.
->
->josh
+Well, we figure that most applications won't be using append only
+inode flags for files that they know they want to edit at random
+offsets later on. ;)
+
+However, I can see how DVR apps would use open(O_APPEND) to obtain
+the fd they write to because that sets the write position to the EOF
+on every write() call (i.e. in generic_write_checks()). And collapse
+range should behave sanely with this sort of usage.
+
+e.g. XFS calls generic_write_checks() after it has taken the IO lock
+to set the current write position to EOF. Hence it will be correctly
+serialised against collapse range calls and so O_APPEND writes will
+not leave sparse holes if collapse range calls are interleaved with
+the write stream....
+
+Cheers,
+
+Dave.
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Dave Chinner
+david@fromorbit.com
