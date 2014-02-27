@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaB0Ekk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 23:40:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754764AbaB0Ej6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 23:39:58 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] mm/pagewalk.c: fix end address calculation in walk_page_range()
-Date: Wed, 26 Feb 2014 23:39:35 -0500
-Message-Id: <1393475977-3381-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1393475977-3381-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1393475977-3381-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754866AbaB0Ema (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 23:42:30 -0500
+Received: from mailout.micron.com ([137.201.242.129]:53071 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465AbaB0Em3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 23:42:29 -0500
+From: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+To: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
+	<asamymuthupa@micron.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: mtip32xx blk-mq status?
+Thread-Topic: mtip32xx blk-mq status?
+Thread-Index: AQHPMylN4UdzMEUVyEOU6piuIPCFcJrIfXiAgAAHX5A=
+Date: Thu, 27 Feb 2014 04:42:00 +0000
+Message-ID: <80B89753B40C5141A3E2D53FE7A2A8A982C86A74@NTXBOIMBX02.micron.com>
+References: <20140226192945.GA26603@infradead.org>
+ <530E5859.1080303@kernel.dk>
+In-Reply-To: <530E5859.1080303@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20534.003
+x-tm-as-result: No--54.165600-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we try to walk over inside a vma, walk_page_range() tries to walk
-until vma->vm_end even if a given end is before that point.
-So this patch takes the smaller one as an end address.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- mm/pagewalk.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> On 2014-02-26 11:29, Christoph Hellwig wrote:
+> > Hi all,
+> >
+> > with blk-mq stabilizing in mainline and Jens using mtip32xx as tje
+> major
+> > example drivers in the past is there any progress on getting the
+> > conversion finished and merged?
+> 
+> I'll pick up the pieces as soon as I get back and can test again. The
+> basic conversion is easy enough, I'll just dust that off. On top of
+> that
+> I started splitting the issue groups up, since it actually gets you a
+> good step further than just the basic conversion.
 
-diff --git next-20140220.orig/mm/pagewalk.c next-20140220/mm/pagewalk.c
-index 416e981243b1..b418407ff4da 100644
---- next-20140220.orig/mm/pagewalk.c
-+++ next-20140220/mm/pagewalk.c
-@@ -321,8 +321,9 @@ int walk_page_range(unsigned long start, unsigned long end,
- 			next = vma->vm_start;
- 		} else { /* inside the found vma */
- 			walk->vma = vma;
--			next = vma->vm_end;
--			err = walk_page_test(start, end, walk);
-+			next = min_t(unsigned long, end, vma->vm_end);
-+
-+			err = walk_page_test(start, next, walk);
- 			if (skip_lower_level_walking(walk))
- 				continue;
- 			if (err)
--- 
-1.8.5.3
+If you have a public branch for the latter, send it our way.  We can
+help with the SRSI testing.
+ 
+> The only problem area I ran into was the special case of the unaligned
+> writes.
 
+Yup, it's a painful limitation.  If you need any p420m hardware, let me 
+know.
+
+-Sam
