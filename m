@@ -1,135 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaB0SPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:15:04 -0500
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:45532 "HELO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753697AbaB0SO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:14:58 -0500
-From: Loc Ho <lho@apm.com>
-To: kishon@ti.com, tj@kernel.org
-Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: [PATCH v12 4/4] arm64: Add APM X-Gene SoC 15Gbps Multi-purpose PHY DTS entries
-Date: Thu, 27 Feb 2014 11:14:08 -0700
-Message-Id: <1393524848-8207-5-git-send-email-lho@apm.com>
-X-Mailer: git-send-email 1.5.5
-In-Reply-To: <1393524848-8207-4-git-send-email-lho@apm.com>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
- <1393524848-8207-2-git-send-email-lho@apm.com>
- <1393524848-8207-3-git-send-email-lho@apm.com>
- <1393524848-8207-4-git-send-email-lho@apm.com>
+	id S1753820AbaB0SPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:15:53 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:16110 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796AbaB0SPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 13:15:45 -0500
+X-IronPort-AV: E=Sophos;i="4.97,556,1389744000"; 
+   d="scan'208";a="106370370"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH v2] xen: add support for MSI message groups
+Date: Thu, 27 Feb 2014 19:15:35 +0100
+Message-ID: <1393524935-4216-1-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+In-Reply-To: <530F68BE.2070505@oracle.com>
+References: <530F68BE.2070505@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the DTS entries for the APM X-Gene SoC 15Gbps Multi-purpose
-PHY driver. The PHY for SATA controller 2 and 3 are enabled by default.
+Add support for MSI message groups for Xen Dom0 using the
+MAP_PIRQ_TYPE_MULTI_MSI pirq map type.
 
-Signed-off-by: Loc Ho <lho@apm.com>
-Signed-off-by: Tuan Phan <tphan@apm.com>
-Signed-off-by: Suman Tripathi <stripathi@apm.com>
+In order to keep track of which pirq is the first one in the group all
+pirqs in the MSI group except for the first one have the newly
+introduced PIRQ_MSI_GROUP flag set. This prevents calling
+PHYSDEVOP_unmap_pirq on them, since the unmap must be done with the
+first pirq in the group.
+
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 ---
- arch/arm64/boot/dts/apm-storm.dtsi |   75 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
+Tested with an Intel ICH8 AHCI SATA controller.
+---
+Changes since v1:
+ - Add comments reflecting the new usage of entry_nr in
+   physdev_map_pirq.
+---
+ arch/x86/pci/xen.c                   |   29 ++++++++++++++------
+ drivers/xen/events/events_base.c     |   47 +++++++++++++++++++++++-----------
+ drivers/xen/events/events_internal.h |    1 +
+ include/xen/events.h                 |    2 +-
+ include/xen/interface/physdev.h      |   10 ++++++-
+ 5 files changed, 62 insertions(+), 27 deletions(-)
 
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index d37d736..c78ddcf 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -176,6 +176,51 @@
- 				reg-names = "csr-reg";
- 				clock-output-names = "eth8clk";
- 			};
-+
-+			sataphy1clk: sataphy1clk@1f21c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f21c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy1clk";
-+				status = "disabled";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x00>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
-+
-+			sataphy2clk: sataphy1clk@1f22c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f22c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy2clk";
-+				status = "ok";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x3a>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
-+
-+			sataphy3clk: sataphy1clk@1f23c000 {
-+				compatible = "apm,xgene-device-clock";
-+				#clock-cells = <1>;
-+				clocks = <&socplldiv2 0>;
-+				clock-names = "socplldiv2";
-+				reg = <0x0 0x1f23c000 0x0 0x1000>;
-+				reg-names = "csr-reg";
-+				clock-output-names = "sataphy3clk";
-+				status = "ok";
-+				csr-offset = <0x4>;
-+				csr-mask = <0x3a>;
-+				enable-offset = <0x0>;
-+				enable-mask = <0x06>;
-+			};
- 		};
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 103e702..905956f 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -178,6 +178,7 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	i = 0;
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		irq = xen_bind_pirq_msi_to_irq(dev, msidesc, v[i],
++					       (type == PCI_CAP_ID_MSI) ? nvec : 1,
+ 					       (type == PCI_CAP_ID_MSIX) ?
+ 					       "pcifront-msi-x" :
+ 					       "pcifront-msi",
+@@ -245,6 +246,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 				"xen: msi already bound to pirq=%d\n", pirq);
+ 		}
+ 		irq = xen_bind_pirq_msi_to_irq(dev, msidesc, pirq,
++					       (type == PCI_CAP_ID_MSI) ? nvec : 1,
+ 					       (type == PCI_CAP_ID_MSIX) ?
+ 					       "msi-x" : "msi",
+ 					       DOMID_SELF);
+@@ -269,9 +271,6 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	int ret = 0;
+ 	struct msi_desc *msidesc;
  
- 		serial0: serial@1c020000 {
-@@ -187,5 +232,35 @@
- 			interrupt-parent = <&gic>;
- 			interrupts = <0x0 0x4c 0x4>;
- 		};
+-	if (type == PCI_CAP_ID_MSI && nvec > 1)
+-		return 1;
+-
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		struct physdev_map_pirq map_irq;
+ 		domid_t domid;
+@@ -291,7 +290,10 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 			      (pci_domain_nr(dev->bus) << 16);
+ 		map_irq.devfn = dev->devfn;
+ 
+-		if (type == PCI_CAP_ID_MSIX) {
++		if (type == PCI_CAP_ID_MSI && nvec > 1) {
++			map_irq.type = MAP_PIRQ_TYPE_MULTI_MSI;
++			map_irq.entry_nr = nvec;
++		} else if (type == PCI_CAP_ID_MSIX) {
+ 			int pos;
+ 			u32 table_offset, bir;
+ 
+@@ -308,6 +310,16 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		if (pci_seg_supported)
+ 			ret = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq,
+ 						    &map_irq);
++		if (type == PCI_CAP_ID_MSI && nvec > 1 && ret) {
++			/*
++			 * If MAP_PIRQ_TYPE_MULTI_MSI is not available
++			 * there's nothing else we can do in this case.
++			 * Just set ret > 0 so driver can retry with
++			 * single MSI.
++			 */
++			ret = 1;
++			goto out;
++		}
+ 		if (ret == -EINVAL && !pci_domain_nr(dev->bus)) {
+ 			map_irq.type = MAP_PIRQ_TYPE_MSI;
+ 			map_irq.index = -1;
+@@ -324,11 +336,10 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 			goto out;
+ 		}
+ 
+-		ret = xen_bind_pirq_msi_to_irq(dev, msidesc,
+-					       map_irq.pirq,
+-					       (type == PCI_CAP_ID_MSIX) ?
+-					       "msi-x" : "msi",
+-						domid);
++		ret = xen_bind_pirq_msi_to_irq(dev, msidesc, map_irq.pirq,
++		                               (type == PCI_CAP_ID_MSI) ? nvec : 1,
++		                               (type == PCI_CAP_ID_MSIX) ? "msi-x" : "msi",
++		                               domid);
+ 		if (ret < 0)
+ 			goto out;
+ 	}
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index f4a9e33..ff20ae2 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -391,10 +391,10 @@ static void xen_irq_init(unsigned irq)
+ 	list_add_tail(&info->list, &xen_irq_list_head);
+ }
+ 
+-static int __must_check xen_allocate_irq_dynamic(void)
++static int __must_check xen_allocate_irqs_dynamic(int nvec)
+ {
+ 	int first = 0;
+-	int irq;
++	int i, irq;
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ 	/*
+@@ -408,14 +408,22 @@ static int __must_check xen_allocate_irq_dynamic(void)
+ 		first = get_nr_irqs_gsi();
+ #endif
+ 
+-	irq = irq_alloc_desc_from(first, -1);
++	irq = irq_alloc_descs_from(first, nvec, -1);
+ 
+-	if (irq >= 0)
+-		xen_irq_init(irq);
++	if (irq >= 0) {
++		for (i = 0; i < nvec; i++)
++			xen_irq_init(irq + i);
++	}
+ 
+ 	return irq;
+ }
+ 
++static inline int __must_check xen_allocate_irq_dynamic(void)
++{
 +
-+		phy1: phy@1f21a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f21a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy1clk 0>;
-+			status = "disabled";
-+			apm,tx-boost-gain = <30 30 30 30 30 30>;
-+			apm,tx-eye-tuning = <2 10 10 2 10 10>;
-+		};
++	return xen_allocate_irqs_dynamic(1);
++}
 +
-+		phy2: phy@1f22a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f22a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy2clk 0>;
-+			status = "ok";
-+			apm,tx-boost-gain = <30 30 30 30 30 30>;
-+			apm,tx-eye-tuning = <1 10 10 2 10 10>;
-+		};
+ static int __must_check xen_allocate_irq_gsi(unsigned gsi)
+ {
+ 	int irq;
+@@ -741,22 +749,25 @@ int xen_allocate_pirq_msi(struct pci_dev *dev, struct msi_desc *msidesc)
+ }
+ 
+ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-			     int pirq, const char *name, domid_t domid)
++			     int pirq, int nvec, const char *name, domid_t domid)
+ {
+-	int irq, ret;
++	int i, irq, ret;
+ 
+ 	mutex_lock(&irq_mapping_update_lock);
+ 
+-	irq = xen_allocate_irq_dynamic();
++	irq = xen_allocate_irqs_dynamic(nvec);
+ 	if (irq < 0)
+ 		goto out;
+ 
+-	irq_set_chip_and_handler_name(irq, &xen_pirq_chip, handle_edge_irq,
+-			name);
++	for (i = 0; i < nvec; i++) {
++		irq_set_chip_and_handler_name(irq + i, &xen_pirq_chip, handle_edge_irq, name);
 +
-+		phy3: phy@1f23a000 {
-+			compatible = "apm,xgene-phy";
-+			reg = <0x0 0x1f23a000 0x0 0x100>;
-+			#phy-cells = <1>;
-+			clocks = <&sataphy3clk 0>;
-+			status = "ok";
-+			apm,tx-boost-gain = <31 31 31 31 31 31>;
-+			apm,tx-eye-tuning = <2 10 10 2 10 10>;
-+		};
- 	};
- };
++		ret = xen_irq_info_pirq_setup(irq + i, 0, pirq + i, 0, domid,
++					      i == 0 ? 0 : PIRQ_MSI_GROUP);
++		if (ret < 0)
++			goto error_irq;
++	}
+ 
+-	ret = xen_irq_info_pirq_setup(irq, 0, pirq, 0, domid, 0);
+-	if (ret < 0)
+-		goto error_irq;
+ 	ret = irq_set_msi_desc(irq, msidesc);
+ 	if (ret < 0)
+ 		goto error_irq;
+@@ -764,7 +775,8 @@ out:
+ 	mutex_unlock(&irq_mapping_update_lock);
+ 	return irq;
+ error_irq:
+-	__unbind_from_irq(irq);
++	for (; i >= 0; i--)
++		__unbind_from_irq(irq + i);
+ 	mutex_unlock(&irq_mapping_update_lock);
+ 	return ret;
+ }
+@@ -783,7 +795,12 @@ int xen_destroy_irq(int irq)
+ 	if (!desc)
+ 		goto out;
+ 
+-	if (xen_initial_domain()) {
++	/*
++	 * If trying to remove a vector in a MSI group different
++	 * than the first one skip the PIRQ unmap unless this vector
++	 * is the first one in the group.
++	 */
++	if (xen_initial_domain() && !(info->u.pirq.flags & PIRQ_MSI_GROUP)) {
+ 		unmap_irq.pirq = info->u.pirq.pirq;
+ 		unmap_irq.domid = info->u.pirq.domid;
+ 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
+diff --git a/drivers/xen/events/events_internal.h b/drivers/xen/events/events_internal.h
+index 677f41a..50c2050a 100644
+--- a/drivers/xen/events/events_internal.h
++++ b/drivers/xen/events/events_internal.h
+@@ -53,6 +53,7 @@ struct irq_info {
+ 
+ #define PIRQ_NEEDS_EOI	(1 << 0)
+ #define PIRQ_SHAREABLE	(1 << 1)
++#define PIRQ_MSI_GROUP	(1 << 2)
+ 
+ struct evtchn_ops {
+ 	unsigned (*max_channels)(void);
+diff --git a/include/xen/events.h b/include/xen/events.h
+index c9c85cf..2ae7e03 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -102,7 +102,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
+ int xen_allocate_pirq_msi(struct pci_dev *dev, struct msi_desc *msidesc);
+ /* Bind an PSI pirq to an irq. */
+ int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-			     int pirq, const char *name, domid_t domid);
++			     int pirq, int nvec, const char *name, domid_t domid);
+ #endif
+ 
+ /* De-allocates the above mentioned physical interrupt. */
+diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+index 42721d1..610dba9 100644
+--- a/include/xen/interface/physdev.h
++++ b/include/xen/interface/physdev.h
+@@ -131,6 +131,7 @@ struct physdev_irq {
+ #define MAP_PIRQ_TYPE_GSI		0x1
+ #define MAP_PIRQ_TYPE_UNKNOWN		0x2
+ #define MAP_PIRQ_TYPE_MSI_SEG		0x3
++#define MAP_PIRQ_TYPE_MULTI_MSI		0x4
+ 
+ #define PHYSDEVOP_map_pirq		13
+ struct physdev_map_pirq {
+@@ -141,11 +142,16 @@ struct physdev_map_pirq {
+     int index;
+     /* IN or OUT */
+     int pirq;
+-    /* IN - high 16 bits hold segment for MAP_PIRQ_TYPE_MSI_SEG */
++    /* IN - high 16 bits hold segment for ..._MSI_SEG and ..._MULTI_MSI */
+     int bus;
+     /* IN */
+     int devfn;
+-    /* IN */
++    /* IN
++     * - For MSI-X contains entry number.
++     * - For MSI with ..._MULTI_MSI contains number of vectors.
++     * OUT (..._MULTI_MSI only)
++     * - Number of vectors allocated.
++     */
+     int entry_nr;
+     /* IN */
+     uint64_t table_base;
 -- 
-1.5.5
+1.7.7.5 (Apple Git-26)
 
