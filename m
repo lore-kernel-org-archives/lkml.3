@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaB0TEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:04:07 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61220 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753790AbaB0TEF (ORCPT
+	id S1753681AbaB0TFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:05:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:52093 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104AbaB0TFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:04:05 -0500
-Message-ID: <530F8C21.9070602@linaro.org>
-Date: Thu, 27 Feb 2014 11:04:01 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 27 Feb 2014 14:05:02 -0500
+Date: Thu, 27 Feb 2014 13:02:59 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Loc Ho <lho@apm.com>
+CC: <kishon@ti.com>, <tj@kernel.org>, <olof@lixom.net>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <ddutile@redhat.com>,
+        <jcm@redhat.com>, <patches@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Subject: Re: [PATCH v12 3/4] PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY
+ driver
+Message-ID: <20140227190259.GC4862@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1393524848-8207-1-git-send-email-lho@apm.com>
+ <1393524848-8207-2-git-send-email-lho@apm.com>
+ <1393524848-8207-3-git-send-email-lho@apm.com>
+ <1393524848-8207-4-git-send-email-lho@apm.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC][PATCH] staging: Fix build issues with new binder API
-References: <1393453747-12513-1-git-send-email-john.stultz@linaro.org> <20140227033400.GA31199@kroah.com>
-In-Reply-To: <20140227033400.GA31199@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
+Content-Disposition: inline
+In-Reply-To: <1393524848-8207-4-git-send-email-lho@apm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 07:34 PM, Greg KH wrote:
-> On Wed, Feb 26, 2014 at 02:29:07PM -0800, John Stultz wrote:
->> The new 64bit binder API causes build issues on 32bit ARM
->> due to the lack of 64bit __get_user_asm_* implementation.
-> So no one ever tested this out on ARM?  Really, that seems odd...
+--LwW0XdcUbUexiWVK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Its my bad, I was focused on the 32bit legacy compatibility code in my
-testing because the userspace I have only works with that.
+Hi,
 
-Arve actually warned about this in one of his mails, but I mistakenly
-thought it was an issue w/ 3.10 and earlier kernels and had since been
-addressed.
+On Thu, Feb 27, 2014 at 11:14:07AM -0700, Loc Ho wrote:
+> +/*
+> + * This function is used to configure the PHY to operation as either SAT=
+A Gen1
+> + * or Gen2 speed.
+> + */
+> +static void xgene_phy_sata_force_gen(struct xgene_phy_ctx *ctx,
+> +				     int lane, int gen)
 
+why do you need to *force* the generation ? Is this because of some
+silicon errata ? It almost seems like this should be done through link
+negotiation between both link partners.
 
-> Anyway, if you want this to always be on, that's fine with me, your
-> choice :)
+--=20
+balbi
 
-I think its the best option for now, but wanted to send it out for
-comment to see if anyone objected.
+--LwW0XdcUbUexiWVK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I'm about to head for a conference so I'll be offline until around
-Monday. While at the conference I'm going to be working with folks to
-see if we can't get the real solution (a __get_user_asm_64
-implementation) sorted.  But if there are no objections, it might be
-best to queue this for staging-next so folks don't hit the issue in the
-meantime.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-thanks
--john
+iQIcBAEBAgAGBQJTD4vjAAoJEIaOsuA1yqREcU8P/3ZS9KNms08cXSMj1uAFPNFh
+3CPHf7MFJI0kwNaeSIvsvsMf9FelziGBtxsXKTTBKgKv0LmyaNcz6XHj8F/GtAdE
+hX6vjyB4ktxBFyU8VbeOkJqqddtVudEC/ZFl6iXxcVL6Jg3N1gEH/j8W4hosqyJU
+STMaV0Hj7hp1pOrYeMCjvRgHEkkAY3q9xqnJp1+4/9Js7wXpvt/YSPKjRJ303k0N
+dlCLy0vPNZiAaWZogdx+MvrJtpY3aOxKBHqSKTHmClaSrNlJVDUyHE6IT7ViigLM
+Nck5qYS3T2OLuZbirGGHmMtk/cLWIDCoGaRRkp8XrNX9/6oJBhjPdqvEbJDRzbko
+MqavfzzvhNXElWdxaVaWW0Hj51Fb+5k+kYuYoPOMNufDovpvjaFlzs7TJLcTkHy2
+qUHjz6qjQQ7rWKb0ITw4oZU+3vSfFsDKHAe+XXzuG+gF+0Rs+4C0ZxcDiHPgJXgE
+qLXt0vyX32Nd3h8ghb3UdstwWH7IYLjMna4vZ6rGy05SyOAPNHjZpPAL3QVHCTOB
+sGV0JGBx7cE+uFqr1xmpCVyYAa9RDFOT3n2ZyFUWI5HIcWkehjEzDwcwgaYn+Vl1
+xlr4IYmq4SMhSpREsaYalyxUximCSP9k8bUqFT1Oo/DxXqVOihcIX8ji8+0FM/M7
+DHMC4kpgLzarods/i/RK
+=cHF/
+-----END PGP SIGNATURE-----
 
-
-
-
-
+--LwW0XdcUbUexiWVK--
