@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaB0Ecj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 23:32:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49409 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477AbaB0Eci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 23:32:38 -0500
-Message-ID: <530EBFC7.9030309@zytor.com>
-Date: Wed, 26 Feb 2014 20:32:07 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754607AbaB0EjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 23:39:15 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:40334 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaB0EjO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 23:39:14 -0500
 MIME-Version: 1.0
-To: Ben Pfaff <blp@nicira.com>
-CC: Joe Perches <joe@perches.com>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-References: <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722> <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722> <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com> <1393472326.24588.82.camel@joe-AO722> <20140227040050.GA8449@nicira.com> <530EBCED.9020705@zytor.com> <20140227042636.GA9592@nicira.com>
-In-Reply-To: <20140227042636.GA9592@nicira.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1393454296-32735-1-git-send-email-cworth@cworth.org>
+References: <1393454296-32735-1-git-send-email-cworth@cworth.org>
+Date: Wed, 26 Feb 2014 20:39:12 -0800
+Message-ID: <CAF8JNh+7p7-cNkBv3CB3ZVsi7JrqzPf1bdzsA4rJqKUcY=dZ0Q@mail.gmail.com>
+Subject: Re: wacom: Fixes for stylus pressure values for Thinkpad Yoga
+From: Ping Cheng <pinglinux@gmail.com>
+To: Carl Worth <cworth@cworth.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jason Gerecke <killertofu@gmail.com>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 08:26 PM, Ben Pfaff wrote:
-> 
->> Because sizeof(_Bool) is a little bit special compare to sizeof(long).
->> In the case of long, all sizeof(long) * 8 bits are use in the actual value.
->> But for the _Bool, only the 1 bit is used in the 8 bits size. In other words,
->> the _Bool has a special case of the actual bit size is not a multiple of 8.
+Hi Carl,
 
-Quite frankly, this is silly in my opinion, *and* it is not guaranteed
-by C either (read about "trap representations").
+Thank you for the heads up. I believe Jason's patchset 4 of 4
+(http://www.spinics.net/lists/linux-input/msg29435.html) fixed the
+issue for your device and for other's. The patch was submitted last
+month. If you can test the set on your device and give us a Tested-by
+here, it will help Dmitry to merge the patch upstream.
 
->> Sparse has two hats, it is a C compiler front end, and more often it is
->> used in the Linux kernel source sanitize checking. Depending on the sizeof
->> _Bool sounds a little bit suspicious in the kernel. I would love to the heard
->> your actual usage case of the sizeof(_Bool). Why do you care about this
->> warning?
+Thank you for your effort.
 
-Anything that moves data around in a generic fashion.  It can be as
-simple as:
+Ping
 
-	memcpy(foo, bar, sizeof *foo);
-
-	-hpa
-
+On Wed, Feb 26, 2014 at 2:38 PM, Carl Worth <cworth@cworth.org> wrote:
+> This series of patches fixes the pressure values reported for the
+> wacom tablet built-in to a Lenovo ThinkPad Yoga laptop. Prior to this
+> patch series, if I slowly increased stylus pressure, (expecting a
+> gradual increase of values from 0 to 1023), I instead received values
+> that increased slowly to 255, then reset to 0 and increased slowly
+> again, etc.
+>
+> The buggy arithmetic that is updated here appears to exist in
+> identical forms for other drivers. I did not update any code that I
+> was not able to test directly. But it looks like wacom_pl_irq and
+> wacom_dtu_irq potentially have similar bugs, (depending on the actual
+> pressure_max values encountered in practice).
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
