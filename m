@@ -1,78 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaB0Xot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 18:44:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33940 "EHLO mail.zytor.com"
+	id S1752786AbaB0XrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 18:47:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22630 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaB0Xor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 18:44:47 -0500
-Message-ID: <530FCDD6.3060701@zytor.com>
-Date: Thu, 27 Feb 2014 15:44:22 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752268AbaB0XrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 18:47:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,558,1389772800"; 
+   d="scan'208";a="491208764"
+Date: Thu, 27 Feb 2014 15:52:43 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Felipe Balbi <balbi@ti.com>, Josh Cartwright <joshc@codeaurora.org>,
+        linux-pm@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] usb: phy: msm: use ASSIGN_*_PM_OPS variants
+Message-ID: <20140227235243.GC21032@psi-dev26.jf.intel.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-4-git-send-email-joshc@codeaurora.org>
+ <20140225183336.GH23275@saruman.home>
+ <20140227190324.GC4421@kroah.com>
+ <20140227234129.GA21032@psi-dev26.jf.intel.com>
+ <20140227234425.GA32426@kroah.com>
 MIME-Version: 1.0
-To: sbsiddha@gmail.com, Linus Torvalds <torvalds@linux-foundation.org>
-CC: Nate Eldredge <nate@thatsmathematics.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
-        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
-Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt
- flag
-References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>	 <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>	 <CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>	 <CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>	 <CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com> <1391325599.6481.5.camel@europa>
-In-Reply-To: <1391325599.6481.5.camel@europa>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227234425.GA32426@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, picking up this thread which got dropped on the floor...
-
-On 02/01/2014 11:19 PM, Suresh Siddha wrote:
+On Thu, Feb 27, 2014 at 03:44:25PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Feb 27, 2014 at 03:41:31PM -0800, David Cohen wrote:
+> > On Thu, Feb 27, 2014 at 11:03:24AM -0800, Greg Kroah-Hartman wrote:
+> > > On Tue, Feb 25, 2014 at 12:33:36PM -0600, Felipe Balbi wrote:
+> > > > Hi,
+> > > > 
+> > > > On Mon, Feb 24, 2014 at 11:08:27AM -0600, Josh Cartwright wrote:
+> > > > > Use ASSIGN_SYSTEM_SLEEP_PM_OPS and ASSIGN_RUNTIME_PM_OPS in the
+> > > > > initializer for msm_otg_dev_pm_ops.  Doing so allows us to eliminate
+> > > > > preprocessor conditionals around the specified callbacks.
+> > > > > 
+> > > > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > > > ---
+> > > > >  drivers/usb/phy/phy-msm-usb.c | 13 +++----------
+> > > > >  1 file changed, 3 insertions(+), 10 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> > > > > index 5b37b81..c04f2e3 100644
+> > > > > --- a/drivers/usb/phy/phy-msm-usb.c
+> > > > > +++ b/drivers/usb/phy/phy-msm-usb.c
+> > > > > @@ -414,8 +414,6 @@ static int msm_otg_reset(struct usb_phy *phy)
+> > > > >  #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
+> > > > >  #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
+> > > > >  
+> > > > > -#ifdef CONFIG_PM
+> > > > > -
+> > > > >  #define USB_PHY_SUSP_DIG_VOL  500000
+> > > > >  static int msm_hsusb_config_vddcx(int high)
+> > > > >  {
+> > > > > @@ -609,7 +607,6 @@ skip_phy_resume:
+> > > > >  
+> > > > >  	return 0;
+> > > > >  }
+> > > > > -#endif
+> > > > >  
+> > > > >  static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
+> > > > >  {
+> > > > > @@ -1664,7 +1661,6 @@ static int msm_otg_remove(struct platform_device *pdev)
+> > > > >  	return 0;
+> > > > >  }
+> > > > >  
+> > > > > -#ifdef CONFIG_PM_RUNTIME
+> > > > >  static int msm_otg_runtime_idle(struct device *dev)
+> > > > >  {
+> > > > >  	struct msm_otg *motg = dev_get_drvdata(dev);
+> > > > > @@ -1699,9 +1695,7 @@ static int msm_otg_runtime_resume(struct device *dev)
+> > > > >  	dev_dbg(dev, "OTG runtime resume\n");
+> > > > >  	return msm_otg_resume(motg);
+> > > > >  }
+> > > > > -#endif
+> > > > >  
+> > > > > -#ifdef CONFIG_PM_SLEEP
+> > > > >  static int msm_otg_pm_suspend(struct device *dev)
+> > > > >  {
+> > > > >  	struct msm_otg *motg = dev_get_drvdata(dev);
+> > > > > @@ -1731,12 +1725,11 @@ static int msm_otg_pm_resume(struct device *dev)
+> > > > >  
+> > > > >  	return 0;
+> > > > >  }
+> > > > > -#endif
+> > > > >  
+> > > > >  static const struct dev_pm_ops msm_otg_dev_pm_ops = {
+> > > > > -	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+> > > > > -	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+> > > > > -				msm_otg_runtime_idle)
+> > > > > +	ASSIGN_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+> > > > > +	ASSIGN_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+> > > > > +			      msm_otg_runtime_idle)
+> > > > 
+> > > > if the patch introducing assign_if() gets accepted, I'm ok with this
+> > > > patch.
+> > > 
+> > > I can't take that patch at this point in time, it's just too ugly...
+> > > 
+> > > As are those crazy SET_SYSTEM_SLEEP_PM_OPS() macros, ick, who made those
+> > > things?
+> > > 
+> > > What language are we trying to program in here people?
+> > 
+> > Since we're discussing this topic here, I'd like point my RFC which gets
+> > rid of same ifdeffery in a different way:
+> > http://lkml.org/lkml/2013/12/13/4
 > 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index e8368c6..4e5f770 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -5,6 +5,7 @@
->   *  General FPU state handling cleanups
->   *	Gareth Hughes <gareth@valinux.com>, May 2000
->   */
-> +#include <linux/bootmem.h>
->  #include <linux/module.h>
->  #include <linux/regset.h>
->  #include <linux/sched.h>
-> @@ -186,6 +187,10 @@ void fpu_init(void)
->  	if (xstate_size == 0)
->  		init_thread_xstate();
->  
-> +	if (!current->thread.fpu.state)
-> +		current->thread.fpu.state =
-> +			alloc_bootmem_align(xstate_size, __alignof__(struct xsave_struct));
-> +
->  	mxcsr_feature_mask_init();
->  	xsave_init();
->  	eager_fpu_init();
+> Again, why can't we just always define these fields in the structure,
+> then we don't need any crazy, complicated mess for assigning the
+> function pointers?
+> 
+> Again, the odds that this config option is ever disabled in "real"
+> systems is so low these days, I have half a mind just to rip it out
+> entirely as the amount of work spent on compiler warnings and the like
+> in this area has proably offset any power savings the code was supposed
+> to save on systems :(
 
-So this bit is giving me a bit of a headache, specifically
-alloc_bootmem_align() is an __init function and fpu_init() obviously isn't.
+That makes sense :)
+Thanks for your feedback.
 
-I am doubly confused because init_thread_xstate() only sets the xstate
-without any XSAVE features, so the memory allocation we get there will
-be insufficient later -- in fact, only a few lines further down the
-function, when xsave_init() is called.
+BR, David
 
-I'm wondering if we could put this somewhere inside
-xstate_enable_boot_cpu() instead, maybe?
-
-I'm assuming the reason you didn't want to in eager_fpu_init_bp()
-anymore is because you want the allocation to happen regardless of if
-eagerfpu is enabled, correct?
-
-	-hpa
-
-
+> 
+> ick.
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
