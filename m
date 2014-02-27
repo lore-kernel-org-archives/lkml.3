@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaB0Hdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:33:46 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36091 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaB0Hdn (ORCPT
+	id S1751849AbaB0Hdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:33:50 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51241 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790AbaB0Hdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:33:43 -0500
-Subject: [PATCH -tip v7 08/26] kprobes/x86: Call exception handlers directly
- from do_int3/do_debug
+	Thu, 27 Feb 2014 02:33:46 -0500
+Subject: [PATCH -tip v7 11/26] kprobes: Allow probe on some kprobe functions
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 27 Feb 2014 16:33:35 +0900
-Message-ID: <20140227073335.20992.44567.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Thu, 27 Feb 2014 16:33:42 +0900
+Message-ID: <20140227073342.20992.48419.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -33,129 +29,732 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid a kernel crash by probing on lockdep code, call
-kprobe_int3_handler and kprobe_debug_handler directly
-from do_int3 and do_debug. Since there is a locking code
-in notify_die, lockdep code can be invoked. And because
-the lockdep involves printk() related things, theoretically,
-we need to prohibit probing on much more code...
+There is no need to prohibit probing on the functions
+used for preparation, registeration, optimization,
+controll etc. Those are safely probed because those are
+not invoked from breakpoint/fault/debug handlers,
+there is no chance to cause recursive exceptions.
 
-Anyway, most of the int3 handlers in the kernel are already
-called from do_int3 directly, e.g. ftrace_int3_handler,
-poke_int3_handler, kgdb_ll_trap. Actually only
-kprobe_exceptions_notify is on the notifier_call_chain.
+Following functions are now removed from the kprobes blacklist.
+add_new_kprobe
+aggr_kprobe_disabled
+alloc_aggr_kprobe
+alloc_aggr_kprobe
+arm_all_kprobes
+__arm_kprobe
+arm_kprobe
+arm_kprobe_ftrace
+check_kprobe_address_safe
+collect_garbage_slots
+collect_garbage_slots
+collect_one_slot
+debugfs_kprobe_init
+__disable_kprobe
+disable_kprobe
+disarm_all_kprobes
+__disarm_kprobe
+disarm_kprobe
+disarm_kprobe_ftrace
+do_free_cleaned_kprobes
+do_optimize_kprobes
+do_unoptimize_kprobes
+enable_kprobe
+force_unoptimize_kprobe
+free_aggr_kprobe
+free_aggr_kprobe
+__free_insn_slot
+__get_insn_slot
+get_optimized_kprobe
+__get_valid_kprobe
+init_aggr_kprobe
+init_aggr_kprobe
+in_nokprobe_functions
+kick_kprobe_optimizer
+kill_kprobe
+kill_optimized_kprobe
+kprobe_addr
+kprobe_optimizer
+kprobe_queued
+kprobe_seq_next
+kprobe_seq_start
+kprobe_seq_stop
+kprobes_module_callback
+kprobes_open
+optimize_all_kprobes
+optimize_kprobe
+prepare_kprobe
+prepare_optimized_kprobe
+register_aggr_kprobe
+register_jprobe
+register_jprobes
+register_kprobe
+register_kprobes
+register_kretprobe
+register_kretprobe
+register_kretprobes
+register_kretprobes
+report_probe
+show_kprobe_addr
+try_to_optimize_kprobe
+unoptimize_all_kprobes
+unoptimize_kprobe
+unregister_jprobe
+unregister_jprobes
+unregister_kprobe
+__unregister_kprobe_bottom
+unregister_kprobes
+__unregister_kprobe_top
+unregister_kretprobe
+unregister_kretprobe
+unregister_kretprobes
+unregister_kretprobes
+wait_for_kprobe_optimizer
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- arch/x86/include/asm/kprobes.h |    2 ++
- arch/x86/kernel/kprobes/core.c |   24 +++---------------------
- arch/x86/kernel/traps.c        |   10 ++++++++++
- 3 files changed, 15 insertions(+), 21 deletions(-)
+ kernel/kprobes.c |  153 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 76 insertions(+), 77 deletions(-)
 
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 9454c16..53cdfb2 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -116,4 +116,6 @@ struct kprobe_ctlblk {
- extern int kprobe_fault_handler(struct pt_regs *regs, int trapnr);
- extern int kprobe_exceptions_notify(struct notifier_block *self,
- 				    unsigned long val, void *data);
-+extern int kprobe_int3_handler(struct pt_regs *regs);
-+extern int kprobe_debug_handler(struct pt_regs *regs);
- #endif /* _ASM_X86_KPROBES_H */
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 4708d6e..566958e 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -559,7 +559,7 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
-  * Interrupts are disabled on entry as trap3 is an interrupt gate and they
-  * remain disabled throughout this function.
-  */
--static int __kprobes kprobe_handler(struct pt_regs *regs)
-+int __kprobes kprobe_int3_handler(struct pt_regs *regs)
- {
- 	kprobe_opcode_t *addr;
- 	struct kprobe *p;
-@@ -857,7 +857,7 @@ no_change:
-  * Interrupts are disabled on entry as trap1 is an interrupt gate and they
-  * remain disabled throughout this function.
-  */
--static int __kprobes post_kprobe_handler(struct pt_regs *regs)
-+int __kprobes kprobe_debug_handler(struct pt_regs *regs)
- {
- 	struct kprobe *cur = kprobe_running();
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-@@ -960,22 +960,7 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
- 	if (args->regs && user_mode_vm(args->regs))
- 		return ret;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 5ffc687..4db2cc6 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -138,13 +138,13 @@ struct kprobe_insn_cache kprobe_insn_slots = {
+ 	.insn_size = MAX_INSN_SIZE,
+ 	.nr_garbage = 0,
+ };
+-static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c);
++static int collect_garbage_slots(struct kprobe_insn_cache *c);
  
--	switch (val) {
--	case DIE_INT3:
--		if (kprobe_handler(args->regs))
--			ret = NOTIFY_STOP;
--		break;
--	case DIE_DEBUG:
--		if (post_kprobe_handler(args->regs)) {
--			/*
--			 * Reset the BS bit in dr6 (pointed by args->err) to
--			 * denote completion of processing
--			 */
--			(*(unsigned long *)ERR_PTR(args->err)) &= ~DR_STEP;
--			ret = NOTIFY_STOP;
--		}
--		break;
--	case DIE_GPF:
-+	if (val == DIE_GPF) {
- 		/*
- 		 * To be potentially processing a kprobe fault and to
- 		 * trust the result from kprobe_running(), we have
-@@ -984,9 +969,6 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
- 		if (!preemptible() && kprobe_running() &&
- 		    kprobe_fault_handler(args->regs, args->trapnr))
- 			ret = NOTIFY_STOP;
--		break;
--	default:
--		break;
- 	}
+ /**
+  * __get_insn_slot() - Find a slot on an executable page for an instruction.
+  * We allocate an executable page if there's no room on existing ones.
+  */
+-kprobe_opcode_t __kprobes *__get_insn_slot(struct kprobe_insn_cache *c)
++kprobe_opcode_t *__get_insn_slot(struct kprobe_insn_cache *c)
+ {
+ 	struct kprobe_insn_page *kip;
+ 	kprobe_opcode_t *slot = NULL;
+@@ -201,7 +201,7 @@ out:
+ }
+ 
+ /* Return 1 if all garbages are collected, otherwise 0. */
+-static int __kprobes collect_one_slot(struct kprobe_insn_page *kip, int idx)
++static int collect_one_slot(struct kprobe_insn_page *kip, int idx)
+ {
+ 	kip->slot_used[idx] = SLOT_CLEAN;
+ 	kip->nused--;
+@@ -222,7 +222,7 @@ static int __kprobes collect_one_slot(struct kprobe_insn_page *kip, int idx)
+ 	return 0;
+ }
+ 
+-static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c)
++static int collect_garbage_slots(struct kprobe_insn_cache *c)
+ {
+ 	struct kprobe_insn_page *kip, *next;
+ 
+@@ -244,8 +244,8 @@ static int __kprobes collect_garbage_slots(struct kprobe_insn_cache *c)
+ 	return 0;
+ }
+ 
+-void __kprobes __free_insn_slot(struct kprobe_insn_cache *c,
+-				kprobe_opcode_t *slot, int dirty)
++void __free_insn_slot(struct kprobe_insn_cache *c,
++		      kprobe_opcode_t *slot, int dirty)
+ {
+ 	struct kprobe_insn_page *kip;
+ 
+@@ -361,7 +361,7 @@ void __kprobes opt_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ }
+ 
+ /* Free optimized instructions and optimized_kprobe */
+-static __kprobes void free_aggr_kprobe(struct kprobe *p)
++static void free_aggr_kprobe(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -399,7 +399,7 @@ static inline int kprobe_disarmed(struct kprobe *p)
+ }
+ 
+ /* Return true(!0) if the probe is queued on (un)optimizing lists */
+-static int __kprobes kprobe_queued(struct kprobe *p)
++static int kprobe_queued(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -415,7 +415,7 @@ static int __kprobes kprobe_queued(struct kprobe *p)
+  * Return an optimized kprobe whose optimizing code replaces
+  * instructions including addr (exclude breakpoint).
+  */
+-static struct kprobe *__kprobes get_optimized_kprobe(unsigned long addr)
++static struct kprobe *get_optimized_kprobe(unsigned long addr)
+ {
+ 	int i;
+ 	struct kprobe *p = NULL;
+@@ -447,7 +447,7 @@ static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
+  * Optimize (replace a breakpoint with a jump) kprobes listed on
+  * optimizing_list.
+  */
+-static __kprobes void do_optimize_kprobes(void)
++static void do_optimize_kprobes(void)
+ {
+ 	/* Optimization never be done when disarmed */
+ 	if (kprobes_all_disarmed || !kprobes_allow_optimization ||
+@@ -475,7 +475,7 @@ static __kprobes void do_optimize_kprobes(void)
+  * Unoptimize (replace a jump with a breakpoint and remove the breakpoint
+  * if need) kprobes listed on unoptimizing_list.
+  */
+-static __kprobes void do_unoptimize_kprobes(void)
++static void do_unoptimize_kprobes(void)
+ {
+ 	struct optimized_kprobe *op, *tmp;
+ 
+@@ -507,7 +507,7 @@ static __kprobes void do_unoptimize_kprobes(void)
+ }
+ 
+ /* Reclaim all kprobes on the free_list */
+-static __kprobes void do_free_cleaned_kprobes(void)
++static void do_free_cleaned_kprobes(void)
+ {
+ 	struct optimized_kprobe *op, *tmp;
+ 
+@@ -519,13 +519,13 @@ static __kprobes void do_free_cleaned_kprobes(void)
+ }
+ 
+ /* Start optimizer after OPTIMIZE_DELAY passed */
+-static __kprobes void kick_kprobe_optimizer(void)
++static void kick_kprobe_optimizer(void)
+ {
+ 	schedule_delayed_work(&optimizing_work, OPTIMIZE_DELAY);
+ }
+ 
+ /* Kprobe jump optimizer */
+-static __kprobes void kprobe_optimizer(struct work_struct *work)
++static void kprobe_optimizer(struct work_struct *work)
+ {
+ 	mutex_lock(&kprobe_mutex);
+ 	/* Lock modules while optimizing kprobes */
+@@ -561,7 +561,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ }
+ 
+ /* Wait for completing optimization and unoptimization */
+-static __kprobes void wait_for_kprobe_optimizer(void)
++static void wait_for_kprobe_optimizer(void)
+ {
+ 	mutex_lock(&kprobe_mutex);
+ 
+@@ -580,7 +580,7 @@ static __kprobes void wait_for_kprobe_optimizer(void)
+ }
+ 
+ /* Optimize kprobe if p is ready to be optimized */
+-static __kprobes void optimize_kprobe(struct kprobe *p)
++static void optimize_kprobe(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -614,7 +614,7 @@ static __kprobes void optimize_kprobe(struct kprobe *p)
+ }
+ 
+ /* Short cut to direct unoptimizing */
+-static __kprobes void force_unoptimize_kprobe(struct optimized_kprobe *op)
++static void force_unoptimize_kprobe(struct optimized_kprobe *op)
+ {
+ 	get_online_cpus();
+ 	arch_unoptimize_kprobe(op);
+@@ -624,7 +624,7 @@ static __kprobes void force_unoptimize_kprobe(struct optimized_kprobe *op)
+ }
+ 
+ /* Unoptimize a kprobe if p is optimized */
+-static __kprobes void unoptimize_kprobe(struct kprobe *p, bool force)
++static void unoptimize_kprobe(struct kprobe *p, bool force)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -684,7 +684,7 @@ static void reuse_unused_kprobe(struct kprobe *ap)
+ }
+ 
+ /* Remove optimized instructions */
+-static void __kprobes kill_optimized_kprobe(struct kprobe *p)
++static void kill_optimized_kprobe(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -710,7 +710,7 @@ static void __kprobes kill_optimized_kprobe(struct kprobe *p)
+ }
+ 
+ /* Try to prepare optimized instructions */
+-static __kprobes void prepare_optimized_kprobe(struct kprobe *p)
++static void prepare_optimized_kprobe(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -719,7 +719,7 @@ static __kprobes void prepare_optimized_kprobe(struct kprobe *p)
+ }
+ 
+ /* Allocate new optimized_kprobe and try to prepare optimized instructions */
+-static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
++static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+@@ -734,13 +734,13 @@ static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+ 	return &op->kp;
+ }
+ 
+-static void __kprobes init_aggr_kprobe(struct kprobe *ap, struct kprobe *p);
++static void init_aggr_kprobe(struct kprobe *ap, struct kprobe *p);
+ 
+ /*
+  * Prepare an optimized_kprobe and optimize it
+  * NOTE: p must be a normal registered kprobe
+  */
+-static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
++static void try_to_optimize_kprobe(struct kprobe *p)
+ {
+ 	struct kprobe *ap;
+ 	struct optimized_kprobe *op;
+@@ -774,7 +774,7 @@ out:
+ }
+ 
+ #ifdef CONFIG_SYSCTL
+-static void __kprobes optimize_all_kprobes(void)
++static void optimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -797,7 +797,7 @@ out:
+ 	mutex_unlock(&kprobe_mutex);
+ }
+ 
+-static void __kprobes unoptimize_all_kprobes(void)
++static void unoptimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -848,7 +848,7 @@ int proc_kprobes_optimization_handler(struct ctl_table *table, int write,
+ #endif /* CONFIG_SYSCTL */
+ 
+ /* Put a breakpoint for a probe. Must be called with text_mutex locked */
+-static void __kprobes __arm_kprobe(struct kprobe *p)
++static void __arm_kprobe(struct kprobe *p)
+ {
+ 	struct kprobe *_p;
+ 
+@@ -863,7 +863,7 @@ static void __kprobes __arm_kprobe(struct kprobe *p)
+ }
+ 
+ /* Remove the breakpoint of a probe. Must be called with text_mutex locked */
+-static void __kprobes __disarm_kprobe(struct kprobe *p, bool reopt)
++static void __disarm_kprobe(struct kprobe *p, bool reopt)
+ {
+ 	struct kprobe *_p;
+ 
+@@ -898,13 +898,13 @@ static void reuse_unused_kprobe(struct kprobe *ap)
+ 	BUG_ON(kprobe_unused(ap));
+ }
+ 
+-static __kprobes void free_aggr_kprobe(struct kprobe *p)
++static void free_aggr_kprobe(struct kprobe *p)
+ {
+ 	arch_remove_kprobe(p);
+ 	kfree(p);
+ }
+ 
+-static __kprobes struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
++static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+ {
+ 	return kzalloc(sizeof(struct kprobe), GFP_KERNEL);
+ }
+@@ -918,7 +918,7 @@ static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
+ static int kprobe_ftrace_enabled;
+ 
+ /* Must ensure p->addr is really on ftrace */
+-static int __kprobes prepare_kprobe(struct kprobe *p)
++static int prepare_kprobe(struct kprobe *p)
+ {
+ 	if (!kprobe_ftrace(p))
+ 		return arch_prepare_kprobe(p);
+@@ -927,7 +927,7 @@ static int __kprobes prepare_kprobe(struct kprobe *p)
+ }
+ 
+ /* Caller must lock kprobe_mutex */
+-static void __kprobes arm_kprobe_ftrace(struct kprobe *p)
++static void arm_kprobe_ftrace(struct kprobe *p)
+ {
+ 	int ret;
+ 
+@@ -942,7 +942,7 @@ static void __kprobes arm_kprobe_ftrace(struct kprobe *p)
+ }
+ 
+ /* Caller must lock kprobe_mutex */
+-static void __kprobes disarm_kprobe_ftrace(struct kprobe *p)
++static void disarm_kprobe_ftrace(struct kprobe *p)
+ {
+ 	int ret;
+ 
+@@ -962,7 +962,7 @@ static void __kprobes disarm_kprobe_ftrace(struct kprobe *p)
+ #endif
+ 
+ /* Arm a kprobe with text_mutex */
+-static void __kprobes arm_kprobe(struct kprobe *kp)
++static void arm_kprobe(struct kprobe *kp)
+ {
+ 	if (unlikely(kprobe_ftrace(kp))) {
+ 		arm_kprobe_ftrace(kp);
+@@ -979,7 +979,7 @@ static void __kprobes arm_kprobe(struct kprobe *kp)
+ }
+ 
+ /* Disarm a kprobe with text_mutex */
+-static void __kprobes disarm_kprobe(struct kprobe *kp, bool reopt)
++static void disarm_kprobe(struct kprobe *kp, bool reopt)
+ {
+ 	if (unlikely(kprobe_ftrace(kp))) {
+ 		disarm_kprobe_ftrace(kp);
+@@ -1189,7 +1189,7 @@ static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
+ * Add the new probe to ap->list. Fail if this is the
+ * second jprobe at the address - two jprobes can't coexist
+ */
+-static int __kprobes add_new_kprobe(struct kprobe *ap, struct kprobe *p)
++static int add_new_kprobe(struct kprobe *ap, struct kprobe *p)
+ {
+ 	BUG_ON(kprobe_gone(ap) || kprobe_gone(p));
+ 
+@@ -1213,7 +1213,7 @@ static int __kprobes add_new_kprobe(struct kprobe *ap, struct kprobe *p)
+  * Fill in the required fields of the "manager kprobe". Replace the
+  * earlier kprobe in the hlist with the manager kprobe
+  */
+-static void __kprobes init_aggr_kprobe(struct kprobe *ap, struct kprobe *p)
++static void init_aggr_kprobe(struct kprobe *ap, struct kprobe *p)
+ {
+ 	/* Copy p's insn slot to ap */
+ 	copy_kprobe(p, ap);
+@@ -1239,8 +1239,7 @@ static void __kprobes init_aggr_kprobe(struct kprobe *ap, struct kprobe *p)
+  * This is the second or subsequent kprobe at the address - handle
+  * the intricacies
+  */
+-static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+-					  struct kprobe *p)
++static int register_aggr_kprobe(struct kprobe *orig_p, struct kprobe *p)
+ {
+ 	int ret = 0;
+ 	struct kprobe *ap = orig_p;
+@@ -1318,7 +1317,7 @@ bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+ 	       addr < (unsigned long)__kprobes_text_end;
+ }
+ 
+-static bool __kprobes within_kprobe_blacklist(unsigned long addr)
++static bool within_kprobe_blacklist(unsigned long addr)
+ {
+ 	struct kprobe_blacklist_entry *ent;
+ 
+@@ -1342,7 +1341,7 @@ static bool __kprobes within_kprobe_blacklist(unsigned long addr)
+  * This returns encoded errors if it fails to look up symbol or invalid
+  * combination of parameters.
+  */
+-static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
++static kprobe_opcode_t *kprobe_addr(struct kprobe *p)
+ {
+ 	kprobe_opcode_t *addr = p->addr;
+ 
+@@ -1365,7 +1364,7 @@ invalid:
+ }
+ 
+ /* Check passed kprobe is valid and return kprobe in kprobe_table. */
+-static struct kprobe * __kprobes __get_valid_kprobe(struct kprobe *p)
++static struct kprobe *__get_valid_kprobe(struct kprobe *p)
+ {
+ 	struct kprobe *ap, *list_p;
+ 
+@@ -1397,8 +1396,8 @@ static inline int check_kprobe_rereg(struct kprobe *p)
  	return ret;
  }
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 57409f6..e5d4a70 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -334,6 +334,11 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 		goto exit;
- #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
  
-+#ifdef CONFIG_KPROBES
-+	if (kprobe_int3_handler(regs))
-+		return;
-+#endif
-+
- 	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 			SIGTRAP) == NOTIFY_STOP)
- 		goto exit;
-@@ -440,6 +445,11 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	/* Store the virtualized DR6 value */
- 	tsk->thread.debugreg6 = dr6;
+-static __kprobes int check_kprobe_address_safe(struct kprobe *p,
+-					       struct module **probed_mod)
++static int check_kprobe_address_safe(struct kprobe *p,
++				     struct module **probed_mod)
+ {
+ 	int ret = 0;
+ 	unsigned long ftrace_addr;
+@@ -1460,7 +1459,7 @@ out:
+ 	return ret;
+ }
  
-+#ifdef CONFIG_KPROBES
-+	if (kprobe_debug_handler(regs))
-+		goto exit;
-+#endif
-+
- 	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
- 							SIGTRAP) == NOTIFY_STOP)
- 		goto exit;
+-int __kprobes register_kprobe(struct kprobe *p)
++int register_kprobe(struct kprobe *p)
+ {
+ 	int ret;
+ 	struct kprobe *old_p;
+@@ -1522,7 +1521,7 @@ out:
+ EXPORT_SYMBOL_GPL(register_kprobe);
+ 
+ /* Check if all probes on the aggrprobe are disabled */
+-static int __kprobes aggr_kprobe_disabled(struct kprobe *ap)
++static int aggr_kprobe_disabled(struct kprobe *ap)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -1538,7 +1537,7 @@ static int __kprobes aggr_kprobe_disabled(struct kprobe *ap)
+ }
+ 
+ /* Disable one kprobe: Make sure called under kprobe_mutex is locked */
+-static struct kprobe *__kprobes __disable_kprobe(struct kprobe *p)
++static struct kprobe *__disable_kprobe(struct kprobe *p)
+ {
+ 	struct kprobe *orig_p;
+ 
+@@ -1565,7 +1564,7 @@ static struct kprobe *__kprobes __disable_kprobe(struct kprobe *p)
+ /*
+  * Unregister a kprobe without a scheduler synchronization.
+  */
+-static int __kprobes __unregister_kprobe_top(struct kprobe *p)
++static int __unregister_kprobe_top(struct kprobe *p)
+ {
+ 	struct kprobe *ap, *list_p;
+ 
+@@ -1622,7 +1621,7 @@ disarmed:
+ 	return 0;
+ }
+ 
+-static void __kprobes __unregister_kprobe_bottom(struct kprobe *p)
++static void __unregister_kprobe_bottom(struct kprobe *p)
+ {
+ 	struct kprobe *ap;
+ 
+@@ -1638,7 +1637,7 @@ static void __kprobes __unregister_kprobe_bottom(struct kprobe *p)
+ 	/* Otherwise, do nothing. */
+ }
+ 
+-int __kprobes register_kprobes(struct kprobe **kps, int num)
++int register_kprobes(struct kprobe **kps, int num)
+ {
+ 	int i, ret = 0;
+ 
+@@ -1656,13 +1655,13 @@ int __kprobes register_kprobes(struct kprobe **kps, int num)
+ }
+ EXPORT_SYMBOL_GPL(register_kprobes);
+ 
+-void __kprobes unregister_kprobe(struct kprobe *p)
++void unregister_kprobe(struct kprobe *p)
+ {
+ 	unregister_kprobes(&p, 1);
+ }
+ EXPORT_SYMBOL_GPL(unregister_kprobe);
+ 
+-void __kprobes unregister_kprobes(struct kprobe **kps, int num)
++void unregister_kprobes(struct kprobe **kps, int num)
+ {
+ 	int i;
+ 
+@@ -1691,7 +1690,7 @@ unsigned long __weak arch_deref_entry_point(void *entry)
+ 	return (unsigned long)entry;
+ }
+ 
+-int __kprobes register_jprobes(struct jprobe **jps, int num)
++int register_jprobes(struct jprobe **jps, int num)
+ {
+ 	struct jprobe *jp;
+ 	int ret = 0, i;
+@@ -1722,19 +1721,19 @@ int __kprobes register_jprobes(struct jprobe **jps, int num)
+ }
+ EXPORT_SYMBOL_GPL(register_jprobes);
+ 
+-int __kprobes register_jprobe(struct jprobe *jp)
++int register_jprobe(struct jprobe *jp)
+ {
+ 	return register_jprobes(&jp, 1);
+ }
+ EXPORT_SYMBOL_GPL(register_jprobe);
+ 
+-void __kprobes unregister_jprobe(struct jprobe *jp)
++void unregister_jprobe(struct jprobe *jp)
+ {
+ 	unregister_jprobes(&jp, 1);
+ }
+ EXPORT_SYMBOL_GPL(unregister_jprobe);
+ 
+-void __kprobes unregister_jprobes(struct jprobe **jps, int num)
++void unregister_jprobes(struct jprobe **jps, int num)
+ {
+ 	int i;
+ 
+@@ -1799,7 +1798,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ 	return 0;
+ }
+ 
+-int __kprobes register_kretprobe(struct kretprobe *rp)
++int register_kretprobe(struct kretprobe *rp)
+ {
+ 	int ret = 0;
+ 	struct kretprobe_instance *inst;
+@@ -1852,7 +1851,7 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
+ }
+ EXPORT_SYMBOL_GPL(register_kretprobe);
+ 
+-int __kprobes register_kretprobes(struct kretprobe **rps, int num)
++int register_kretprobes(struct kretprobe **rps, int num)
+ {
+ 	int ret = 0, i;
+ 
+@@ -1870,13 +1869,13 @@ int __kprobes register_kretprobes(struct kretprobe **rps, int num)
+ }
+ EXPORT_SYMBOL_GPL(register_kretprobes);
+ 
+-void __kprobes unregister_kretprobe(struct kretprobe *rp)
++void unregister_kretprobe(struct kretprobe *rp)
+ {
+ 	unregister_kretprobes(&rp, 1);
+ }
+ EXPORT_SYMBOL_GPL(unregister_kretprobe);
+ 
+-void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
++void unregister_kretprobes(struct kretprobe **rps, int num)
+ {
+ 	int i;
+ 
+@@ -1899,24 +1898,24 @@ void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
+ EXPORT_SYMBOL_GPL(unregister_kretprobes);
+ 
+ #else /* CONFIG_KRETPROBES */
+-int __kprobes register_kretprobe(struct kretprobe *rp)
++int register_kretprobe(struct kretprobe *rp)
+ {
+ 	return -ENOSYS;
+ }
+ EXPORT_SYMBOL_GPL(register_kretprobe);
+ 
+-int __kprobes register_kretprobes(struct kretprobe **rps, int num)
++int register_kretprobes(struct kretprobe **rps, int num)
+ {
+ 	return -ENOSYS;
+ }
+ EXPORT_SYMBOL_GPL(register_kretprobes);
+ 
+-void __kprobes unregister_kretprobe(struct kretprobe *rp)
++void unregister_kretprobe(struct kretprobe *rp)
+ {
+ }
+ EXPORT_SYMBOL_GPL(unregister_kretprobe);
+ 
+-void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
++void unregister_kretprobes(struct kretprobe **rps, int num)
+ {
+ }
+ EXPORT_SYMBOL_GPL(unregister_kretprobes);
+@@ -1930,7 +1929,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+ #endif /* CONFIG_KRETPROBES */
+ 
+ /* Set the kprobe gone and remove its instruction buffer. */
+-static void __kprobes kill_kprobe(struct kprobe *p)
++static void kill_kprobe(struct kprobe *p)
+ {
+ 	struct kprobe *kp;
+ 
+@@ -1954,7 +1953,7 @@ static void __kprobes kill_kprobe(struct kprobe *p)
+ }
+ 
+ /* Disable one kprobe */
+-int __kprobes disable_kprobe(struct kprobe *kp)
++int disable_kprobe(struct kprobe *kp)
+ {
+ 	int ret = 0;
+ 
+@@ -1970,7 +1969,7 @@ int __kprobes disable_kprobe(struct kprobe *kp)
+ EXPORT_SYMBOL_GPL(disable_kprobe);
+ 
+ /* Enable one kprobe */
+-int __kprobes enable_kprobe(struct kprobe *kp)
++int enable_kprobe(struct kprobe *kp)
+ {
+ 	int ret = 0;
+ 	struct kprobe *p;
+@@ -2043,8 +2042,8 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+ }
+ 
+ /* Module notifier call back, checking kprobes on the module */
+-static int __kprobes kprobes_module_callback(struct notifier_block *nb,
+-					     unsigned long val, void *data)
++static int kprobes_module_callback(struct notifier_block *nb,
++				   unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+ 	struct hlist_head *head;
+@@ -2145,7 +2144,7 @@ static int __init init_kprobes(void)
+ }
+ 
+ #ifdef CONFIG_DEBUG_FS
+-static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
++static void report_probe(struct seq_file *pi, struct kprobe *p,
+ 		const char *sym, int offset, char *modname, struct kprobe *pp)
+ {
+ 	char *kprobe_type;
+@@ -2174,12 +2173,12 @@ static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
+ 		(kprobe_ftrace(pp) ? "[FTRACE]" : ""));
+ }
+ 
+-static void __kprobes *kprobe_seq_start(struct seq_file *f, loff_t *pos)
++static void *kprobe_seq_start(struct seq_file *f, loff_t *pos)
+ {
+ 	return (*pos < KPROBE_TABLE_SIZE) ? pos : NULL;
+ }
+ 
+-static void __kprobes *kprobe_seq_next(struct seq_file *f, void *v, loff_t *pos)
++static void *kprobe_seq_next(struct seq_file *f, void *v, loff_t *pos)
+ {
+ 	(*pos)++;
+ 	if (*pos >= KPROBE_TABLE_SIZE)
+@@ -2187,12 +2186,12 @@ static void __kprobes *kprobe_seq_next(struct seq_file *f, void *v, loff_t *pos)
+ 	return pos;
+ }
+ 
+-static void __kprobes kprobe_seq_stop(struct seq_file *f, void *v)
++static void kprobe_seq_stop(struct seq_file *f, void *v)
+ {
+ 	/* Nothing to do */
+ }
+ 
+-static int __kprobes show_kprobe_addr(struct seq_file *pi, void *v)
++static int show_kprobe_addr(struct seq_file *pi, void *v)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p, *kp;
+@@ -2223,7 +2222,7 @@ static const struct seq_operations kprobes_seq_ops = {
+ 	.show  = show_kprobe_addr
+ };
+ 
+-static int __kprobes kprobes_open(struct inode *inode, struct file *filp)
++static int kprobes_open(struct inode *inode, struct file *filp)
+ {
+ 	return seq_open(filp, &kprobes_seq_ops);
+ }
+@@ -2235,7 +2234,7 @@ static const struct file_operations debugfs_kprobes_operations = {
+ 	.release        = seq_release,
+ };
+ 
+-static void __kprobes arm_all_kprobes(void)
++static void arm_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -2263,7 +2262,7 @@ already_enabled:
+ 	return;
+ }
+ 
+-static void __kprobes disarm_all_kprobes(void)
++static void disarm_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+ 	struct kprobe *p;
+@@ -2347,7 +2346,7 @@ static const struct file_operations fops_kp = {
+ 	.llseek =	default_llseek,
+ };
+ 
+-static int __kprobes debugfs_kprobe_init(void)
++static int __init debugfs_kprobe_init(void)
+ {
+ 	struct dentry *dir, *file;
+ 	unsigned int value = 1;
 
 
