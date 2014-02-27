@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaB0L6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:58:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0L6J (ORCPT
+	id S1752676AbaB0MAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:00:06 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:48607 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaB0MAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:58:09 -0500
-Date: Thu, 27 Feb 2014 12:58:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 18/46] kernel: Mark functions as static in sched/fair.c
-Message-ID: <20140227115805.GE9987@twins.programming.kicks-ass.net>
+	Thu, 27 Feb 2014 07:00:04 -0500
+Date: Thu, 27 Feb 2014 17:27:49 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, josh@joshtriplett.org
+Subject: [PATCH 23/46] kernel: Mark function as static in trace/ftrace.c
+Message-ID: <c61532a82efacf805f173a30d53d81bbd09d8dfd.1393493277.git.rashika.kheria@gmail.com>
 References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
- <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:20:19PM +0530, Rashika Kheria wrote:
-> @@ -5266,7 +5266,7 @@ static unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu)
->  	return smt_gain;
->  }
->  
-> -unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
-> +static unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
->  {
->  	return default_scale_smt_power(sd, cpu);
->  }
+Mark function as static in kernel/trace/ftrace.c because it is not used
+outside this file.
 
-Fuck no; please think before sending.
+Thin eliminates the following warning in kernel/trace/ftrace.c:
+kernel/trace/ftrace.c:717:5: warning: no previous prototype for ‘ftrace_profile_pages_init’ [-Wmissing-prototypes]
 
-I'm going to ignore all patches from you henceforth.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index cd7f76d..d110d8a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -714,7 +714,7 @@ static void ftrace_profile_reset(struct ftrace_profile_stat *stat)
+ 	       FTRACE_PROFILE_HASH_SIZE * sizeof(struct hlist_head));
+ }
+ 
+-int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
++static int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
+ {
+ 	struct ftrace_profile_page *pg;
+ 	int functions;
+-- 
+1.7.9.5
+
