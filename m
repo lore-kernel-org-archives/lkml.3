@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaB0Ndb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:33:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55019 "EHLO
+	id S1753410AbaB0Nda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:33:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55018 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566AbaB0Nd0 (ORCPT
+	with ESMTP id S1752070AbaB0Nd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 08:33:26 -0500
-Date: Thu, 27 Feb 2014 05:32:31 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, peterz@infradead.org, drew.richardson@arm.com,
-        stable@vger.kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, peterz@infradead.org, drew.richardson@arm.com,
-        stable@vger.kernel.org, tglx@linutronix.de
+Date: Thu, 27 Feb 2014 05:32:42 -0800
+From: tip-bot for Dietmar Eggemann <tipbot@zytor.com>
+Message-ID: <tip-f5f9739d7a0ccbdcf913a0b3604b134129d14f7e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, dietmar.eggemann@arm.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
+        linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <530DCDC5.1060406@arm.com>
+References: <530DCDC5.1060406@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix hotplug splat
-Git-Commit-ID: e3703f8cdfcf39c25c4338c3ad8e68891cca3731
+Subject: [tip:sched/core] sched: Put rq'
+ s sched_avg under CONFIG_FAIR_GROUP_SCHED
+Git-Commit-ID: f5f9739d7a0ccbdcf913a0b3604b134129d14f7e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,70 +34,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e3703f8cdfcf39c25c4338c3ad8e68891cca3731
-Gitweb:     http://git.kernel.org/tip/e3703f8cdfcf39c25c4338c3ad8e68891cca3731
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 24 Feb 2014 12:06:12 +0100
+Commit-ID:  f5f9739d7a0ccbdcf913a0b3604b134129d14f7e
+Gitweb:     http://git.kernel.org/tip/f5f9739d7a0ccbdcf913a0b3604b134129d14f7e
+Author:     Dietmar Eggemann <dietmar.eggemann@arm.com>
+AuthorDate: Wed, 26 Feb 2014 11:19:33 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Feb 2014 12:38:03 +0100
+CommitDate: Thu, 27 Feb 2014 12:41:00 +0100
 
-perf: Fix hotplug splat
+sched: Put rq's sched_avg under CONFIG_FAIR_GROUP_SCHED
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+The struct sched_avg of struct rq is only used in case group
+scheduling is enabled inside __update_tg_runnable_avg() to update
+per-cpu representation of a task group.  I.e. that there is no need to
+maintain the runnable avg of a rq in the !CONFIG_FAIR_GROUP_SCHED case.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
+This patch guards struct sched_avg of struct rq and
+update_rq_runnable_avg() with CONFIG_FAIR_GROUP_SCHED.
 
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
+There is an extra empty definition for update_rq_runnable_avg()
+necessary for the !CONFIG_FAIR_GROUP_SCHED && CONFIG_SMP case.
 
-Reported-by: Drew Richardson <drew.richardson@arm.com>
+The function print_cfs_group_stats() which prints out struct sched_avg
+of struct rq is already guarded with CONFIG_FAIR_GROUP_SCHED.
+
+Reviewed-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: <stable@vger.kernel.org>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Link: http://lkml.kernel.org/r/530DCDC5.1060406@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c  | 13 +++++++------
+ kernel/sched/sched.h |  4 ++--
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 56003c6..fa0b2d4 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7856,14 +7856,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a3a41c61..be4f7d9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2374,12 +2374,19 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
+ 	}
  }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7887,11 +7887,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
 +
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
++static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
++{
++	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
++	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 						 int force_update) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
++static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ static inline void __update_task_entity_contrib(struct sched_entity *se)
+@@ -2478,12 +2485,6 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
  }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
+ 
+-static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+-{
+-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
+-	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+-}
+-
+ /* Add the load generated by se into cfs_rq's child load-average */
+ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 						  struct sched_entity *se,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index d608125..046084e 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -541,6 +541,8 @@ struct rq {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
++
++	struct sched_avg avg;
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ 	/*
+@@ -630,8 +632,6 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
+ #endif
+-
+-	struct sched_avg avg;
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
