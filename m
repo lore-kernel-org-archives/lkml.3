@@ -1,111 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaB0WD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 17:03:26 -0500
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:56120 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751255AbaB0WDX (ORCPT
+	id S1752903AbaB0WDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 17:03:46 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55207 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477AbaB0WDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 17:03:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140227213427.GG5375@saruman.home>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
-	<1393524848-8207-2-git-send-email-lho@apm.com>
-	<20140227190102.GB4862@saruman.home>
-	<CAPw-ZT=F07=T0=z=iT=hxJ0+609RBDYRL=MXF5dQoEowLjsRjQ@mail.gmail.com>
-	<20140227205039.GE5375@saruman.home>
-	<CAPw-ZT=7cu1NoxrBL48RUJV04ofrnNkF=p=23VFfu8ZZWmkQWQ@mail.gmail.com>
-	<20140227213427.GG5375@saruman.home>
-Date: Thu, 27 Feb 2014 14:03:21 -0800
-Message-ID: <CAPw-ZT=6cF77FjVZhXkR4thvkoxDH=aEikoDQjcpskMXE+F8OA@mail.gmail.com>
-Subject: Re: [PATCH v12 1/4] PHY: Add function set_speed to generic PHY framework
-From: Loc Ho <lho@apm.com>
-To: balbi@ti.com
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
-        "patches@apm.com" <patches@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Feb 2014 17:03:44 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/4] ARM: mvebu: move DT Dove to MVEBU
+Date: Thu, 27 Feb 2014 23:03:33 +0100
+Message-Id: <1393538613-28293-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1393536486-3827-4-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1393536486-3827-4-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI,
+With all the DT support preparation done, we are able to move Dove
+to MVEBU easily. Legacy non-DT mach-dove is left untouched to rot
+for a while before removal. Also, convert SATA PHY Kconfig entry,
+which is DT-only.
 
->> >> >> This patch adds function set_speed to the generic PHY framework operation
->> >> >> structure. This function can be called to instruct the PHY underlying layer
->> >> >> at specified lane to configure for specified speed in hertz.
->> >> >
->> >> > why ? looks like clk_set_rate() is your friend here. Can you be more
->> >> > descriptive of the use case ? When will this be used ?
->> >> >
->> >>
->> >> The phy_set_speed is used to configure the operation speed of the PHY
->> >> at run-time. The clock interface in general is used to configure the
->> >> clock input to the IP. I don't believe they are the same thing. Maybe
->> >> it will be clear in my response to your second email
->> >
->> > The problem with this is that you end up adding SATA-specific details to
->> > something which is supposed to be generic.
->>
->> Setting the operation speed is pretty generic from an interface point
->> of view. An generic multi-purpose PHY can support multiple speed. If
->
-> no it's not. Specially when you consider that your "speed" argument can
-> be just about anything and depending on the underlying bus, it *will* be
-> treated differently. Note that e.g. in OMAP devices the exact *same* PHY
-> IP is used for PCIe, SATA and USB... now, let's assume for the sake of
-> argument that we were to implement ->set_speed() in that environment,
-> how do you plan to do that ? a 6MHz arguments isn't valid from USB stand
-> point and could mean different things in PCIe or SATA.
->
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changelog:
+v1->v2:
+- just rename CONFIG_ARCH_DOVE to CONFIG_MACH_DOVE in dts/Makefile
+  (Suggested by Jason Cooper)
 
-Correct me if I am wrong here. If the same PHY is used for PCIe, SATA,
-and USB, would you not need to indicate what speed the PHY should be
-operated at - unless the underlying IP magically negotiate and
-configured automatically? If so, what about PHY isn't so intelligent?
-How should you suggest that we handle these?
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/Makefile                           |  2 +-
+ arch/arm/mach-dove/Kconfig                           | 12 ------------
+ arch/arm/mach-dove/Makefile                          |  1 -
+ arch/arm/mach-mvebu/Kconfig                          | 12 ++++++++++++
+ arch/arm/mach-mvebu/Makefile                         |  1 +
+ arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} | 20 ++++++++------------
+ drivers/phy/Kconfig                                  |  2 +-
+ 7 files changed, 23 insertions(+), 27 deletions(-)
+ rename arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} (61%)
 
->> the upper layer wish to operate at an specified speed (say for testing
->> purpose and etc), it can be allowed.
->
-> anything for testing purposes, should be limited to test scenarios.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 032030361bef..21317af7fe48 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -55,7 +55,7 @@ dtb-$(CONFIG_ARCH_BERLIN) += \
+ 	berlin2cd-google-chromecast.dtb
+ dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+ 	da850-evm.dtb
+-dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
++dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
+ 	dove-cubox.dtb \
+ 	dove-d2plug.dtb \
+ 	dove-d3plug.dtb \
+diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
+index 0bc7cdf8cf46..d8c439c89ea9 100644
+--- a/arch/arm/mach-dove/Kconfig
++++ b/arch/arm/mach-dove/Kconfig
+@@ -20,18 +20,6 @@ config MACH_CM_A510
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  CompuLab CM-A510 Board.
+ 
+-config MACH_DOVE_DT
+-	bool "Marvell Dove Flattened Device Tree"
+-	select DOVE_CLK
+-	select ORION_IRQCHIP
+-	select ORION_TIMER
+-	select REGULATOR
+-	select REGULATOR_FIXED_VOLTAGE
+-	select USE_OF
+-	help
+-	  Say 'Y' here if you want your kernel to support the
+-	  Marvell Dove using flattened device tree.
+-
+ endmenu
+ 
+ endif
+diff --git a/arch/arm/mach-dove/Makefile b/arch/arm/mach-dove/Makefile
+index cbc5c0618788..b608a21919fb 100644
+--- a/arch/arm/mach-dove/Makefile
++++ b/arch/arm/mach-dove/Makefile
+@@ -2,5 +2,4 @@ obj-y				+= common.o
+ obj-$(CONFIG_DOVE_LEGACY)	+= irq.o mpp.o
+ obj-$(CONFIG_PCI)		+= pcie.o
+ obj-$(CONFIG_MACH_DOVE_DB)	+= dove-db-setup.o
+-obj-$(CONFIG_MACH_DOVE_DT)	+= board-dt.o
+ obj-$(CONFIG_MACH_CM_A510)	+= cm-a510.o
+diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+index 5e269d7263ce..966e5c6b9944 100644
+--- a/arch/arm/mach-mvebu/Kconfig
++++ b/arch/arm/mach-mvebu/Kconfig
+@@ -46,6 +46,18 @@ config MACH_ARMADA_XP
+ 	  Say 'Y' here if you want your kernel to support boards based
+ 	  on the Marvell Armada XP SoC with device tree.
+ 
++config MACH_DOVE
++	bool "Marvell Dove boards" if ARCH_MULTI_V7
++	select CACHE_L2X0
++	select CPU_PJ4
++	select DOVE_CLK
++	select ORION_IRQCHIP
++	select ORION_TIMER
++	select PINCTRL_DOVE
++	help
++	  Say 'Y' here if you want your kernel to support the
++	  Marvell Dove using flattened device tree.
++
+ endmenu
+ 
+ endif
+diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
+index 878aebe98dcc..dd3e7188f75d 100644
+--- a/arch/arm/mach-mvebu/Makefile
++++ b/arch/arm/mach-mvebu/Makefile
+@@ -5,6 +5,7 @@ AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
+ 
+ obj-y				 += system-controller.o mvebu-soc-id.o
+ obj-$(CONFIG_MACH_ARMADA_370_XP) += armada-370-xp.o
++obj-$(CONFIG_MACH_DOVE)		 += dove.o
+ obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
+ obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)        += hotplug.o
+diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-mvebu/dove.c
+similarity index 61%
+rename from arch/arm/mach-dove/board-dt.c
+rename to arch/arm/mach-mvebu/dove.c
+index 49fa9abd09da..5e5a43624237 100644
+--- a/arch/arm/mach-dove/board-dt.c
++++ b/arch/arm/mach-mvebu/dove.c
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/mach-dove/board-dt.c
++ * arch/arm/mach-mvebu/dove.c
+  *
+  * Marvell Dove 88AP510 System On Chip FDT Board
+  *
+@@ -9,17 +9,14 @@
+  */
+ 
+ #include <linux/init.h>
+-#include <linux/clk-provider.h>
++#include <linux/mbus.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <asm/hardware/cache-tauros2.h>
+ #include <asm/mach/arch.h>
+-#include <mach/dove.h>
+-#include <mach/pm.h>
+-#include <plat/common.h>
+ #include "common.h"
+ 
+-static void __init dove_dt_init(void)
++static void __init dove_init(void)
+ {
+ 	pr_info("Dove 88AP510 SoC\n");
+ 
+@@ -30,14 +27,13 @@ static void __init dove_dt_init(void)
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
+-static const char * const dove_dt_board_compat[] = {
++static const char * const dove_dt_compat[] = {
+ 	"marvell,dove",
+ 	NULL
+ };
+ 
+-DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
+-	.map_io		= dove_map_io,
+-	.init_machine	= dove_dt_init,
+-	.restart	= dove_restart,
+-	.dt_compat	= dove_dt_board_compat,
++DT_MACHINE_START(DOVE_DT, "Marvell Dove")
++	.init_machine	= dove_init,
++	.restart	= mvebu_restart,
++	.dt_compat	= dove_dt_compat,
+ MACHINE_END
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index c7a551c2d5f1..ffd7f07adca3 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -24,7 +24,7 @@ config PHY_EXYNOS_MIPI_VIDEO
+ 
+ config PHY_MVEBU_SATA
+ 	def_bool y
+-	depends on ARCH_KIRKWOOD || ARCH_DOVE
++	depends on ARCH_KIRKWOOD || MACH_DOVE
+ 	depends on OF
+ 	select GENERIC_PHY
+ 
+-- 
+1.8.5.3
 
-Testing purpose is only one use case. Another use case is to limit the
-speed so that I can confirm the driver actually works with various
-speed of the device and handle correctly.
-
->
->> > After negoatiation, don't you
->> > get any interrupt from your PHY indicating that link speed negotiation
->> > is done ? Or is that IRQ only on AHCI IP ?
->>
->> There is NO interrupt from the PHY. The IRQ is assoicated with the
->> AHCI IP. With SATA host flow, it starts off with an COMRESET to start
->> the link negotiation. At that point, it will poll for completion.
->>
->> Any other concerns?
->
-> hey, calm down... just trying to prevent us from applying something
-> which isn't truly generic and I don't think "->set_speed" is generic
-> enough. The semantics of the "speed" argument won't be valid for all use
-> cases.
->
-> I can already see people using that to pass
-> USB_SPEED_{LOW,FULL,HIGH,SUPER}, instead of actual speed numbers. We wil
-> end up with a mess to handle from a PHY driver, specially in cases such
-> as OMAP where, as mentioned above, the same IP is used for SATA, PCIe
-> and USB3.
->
-
-This PHY isn't as "intelligent" as other PHY's. What would you suggest
-as I need an method to indicate to the underlying PHY that I want to
-operate at an specified speed?
-
--Loc
