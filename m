@@ -1,136 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaB0QHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:07:35 -0500
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:59660 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaB0QHb (ORCPT
+	id S1753183AbaB0QId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:08:33 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:60076 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaB0QIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:07:31 -0500
-X-Greylist: delayed 163794 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 11:07:31 EST
-Message-ID: <1393517246.3884.16.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3] mm: per-thread vma caching
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Feb 2014 08:07:26 -0800
-In-Reply-To: <CANN689FmKv1wy-sM--VOnEc=+r9=xesfT4frq=3TEH-uMHhjjA@mail.gmail.com>
-References: <1393459641.25123.21.camel@buesod1.americas.hpqcorp.net>
-	 <CANN689FmKv1wy-sM--VOnEc=+r9=xesfT4frq=3TEH-uMHhjjA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Feb 2014 11:08:32 -0500
+Date: Thu, 27 Feb 2014 17:08:30 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
+Message-ID: <20140227160830.GQ22728@two.firstfloor.org>
+References: <1392703661-15104-1-git-send-email-zheng.z.yan@intel.com>
+ <530D53EF.9090706@amacapital.net>
+ <CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
+ <CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
+ <20140226185513.GL22728@two.firstfloor.org>
+ <CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
+ <20140227123507.GB11475@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227123507.GB11475@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-26 at 22:47 -0800, Michel Lespinasse wrote:
-> Agree with Linus; this is starting to look pretty good.
+On Thu, Feb 27, 2014 at 01:35:07PM +0100, Ingo Molnar wrote:
 > 
-> I still have nits though :)
+> * Andy Lutomirski <luto@amacapital.net> wrote:
 > 
-> On Wed, Feb 26, 2014 at 4:07 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > @@ -0,0 +1,45 @@
-> > +#ifndef __LINUX_VMACACHE_H
-> > +#define __LINUX_VMACACHE_H
-> > +
-> > +#include <linux/mm.h>
-> > +
-> > +#ifdef CONFIG_MMU
-> > +#define VMACACHE_BITS 2
-> > +#else
-> > +#define VMACACHE_BITS 0
-> > +#endif
-> 
-> I wouldn't even both with the #ifdef here - why not just always use 2 bits ?
-
-Sure.
-
-> > +#define vmacache_flush(tsk)                                     \
-> > +       do {                                                     \
-> > +               memset(tsk->vmacache, 0, sizeof(tsk->vmacache)); \
-> > +       } while (0)
-> 
-> I think inline functions are preferred
-
-Indeed, but I used a macro instead because we don't have access to
-'struct task_struct' from vmacache.h, since we also include it in
-sched.h.
-
-> 
-> > diff --git a/mm/nommu.c b/mm/nommu.c
-> > index 8740213..9a5347b 100644
-> > --- a/mm/nommu.c
-> > +++ b/mm/nommu.c
-> > @@ -768,16 +768,19 @@ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
-> >   */
-> >  static void delete_vma_from_mm(struct vm_area_struct *vma)
-> >  {
-> > +       int i;
-> >         struct address_space *mapping;
-> >         struct mm_struct *mm = vma->vm_mm;
-> > +       struct task_struct *curr = current;
+> > On Wed, Feb 26, 2014 at 10:55 AM, Andi Kleen <andi@firstfloor.org> wrote:
 > >
-> >         kenter("%p", vma);
-> >
-> >         protect_vma(vma, 0);
-> >
-> >         mm->map_count--;
-> > -       if (mm->mmap_cache == vma)
-> > -               mm->mmap_cache = NULL;
-> > +       for (i = 0; i < VMACACHE_SIZE; i++)
-> > +               if (curr->vmacache[i] == vma)
-> > +                       curr->vmacache[i] = NULL;
+> > >> I'm suggesting a perf event option, just like the way that PEBS 
+> > >> works.
+> > >
+> > > Right now it's a somewhat experimental feature and just having the 
+> > > sysctl is fine. [...]
 > 
-> Why is the invalidation done differently here ? shouldn't it be done
-> by bumping the mm's sequence number so that invalidation works accross
-> all threads sharing that mm ?
+> NACKed-by: Ingo Molnar <mingo@kernel.org>
 
-You are absolutely right. I will update this.
+You forgot to propose an alternative? 
 
-> 
-> > +#ifndef CONFIG_MMU
-> > +struct vm_area_struct *vmacache_find_exact(struct mm_struct *mm,
-> > +                                          unsigned long start,
-> > +                                          unsigned long end)
-> > +{
-> > +       int i;
-> > +
-> > +       if (!vmacache_valid(mm))
-> > +               return NULL;
-> > +
-> > +       for (i = 0; i < VMACACHE_SIZE; i++) {
-> > +               struct vm_area_struct *vma = current->vmacache[i];
-> > +
-> > +               if (vma && vma->vm_start == start && vma->vm_end == end)
-> > +                       return vma;
-> > +       }
-> > +
-> > +       return NULL;
-> > +
-> > +}
-> > +#endif
-> 
-> I think the caller could do instead
-> vma = vmacache_find(mm, start)
-> if (vma && vma->vm_start == start && vma->vm_end == end) {
-> }
-> 
-> I.e. better deal with it at the call site than add a new vmacache
-> function for it.
-
-But that would require two vma checks as the vmacache_find() function
-needs to verify the matching vmas before returning. I had also thought
-of passing a pointer to a matching function where we do the default (the
-addr within a range) or the exact lookup. Seemed more of an overkill so
-I just went with just adding a vmacache_find_exact() for !CONFIG_MMU.
-
-Thanks,
-Davidlohr
-
+-Andi
