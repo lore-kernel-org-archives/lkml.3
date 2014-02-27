@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaB0LaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:30:09 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:47511 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370AbaB0LaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:30:07 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: Mike Galbraith <bitbucket@online.de>
-Subject: Re: 3.13.5 : rm -rf running forever, one cpu at approx 100%
-Date: Thu, 27 Feb 2014 06:30:04 -0500
-Cc: Ken Moffat <zarniwhoop@ntlworld.com>, linux-kernel@vger.kernel.org
-References: <20140227005246.GB10367@milliways> <20140227034535.GC14346@milliways> <1393476762.5519.35.camel@marge.simpson.net>
-In-Reply-To: <1393476762.5519.35.camel@marge.simpson.net>
+	id S1752282AbaB0LaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:30:19 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:60000 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaB0LaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 06:30:13 -0500
+Date: Thu, 27 Feb 2014 17:00:05 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        kgdb-bugreport@lists.sourceforge.net, josh@joshtriplett.org
+Subject: [PATCH 06/46] kernel: Include appropriate header file in
+ kernel/debug/kdb/kdb_keyboard.c
+Message-ID: <c8d6b1907e8f8452fae0b0f0b341f7e81ab20cfb.1393493276.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402270630.05236.gheskett@wdtv.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 February 2014, Mike Galbraith wrote:
->On Thu, 2014-02-27 at 03:45 +0000, Ken Moffat wrote:
->> On Thu, Feb 27, 2014 at 04:26:35AM +0100, Mike Galbraith wrote:
->> > I would start with strace to see if a task is looping in userspace,
->> > then move on to perf top -g -p <pid> (or perf record/report) to peek
->> > at what it's up to in the kernel.  Once you have the where,
->> > trace_printk() is the best thing since sliced bread (which ranks
->> > just below printk()).
->> > 
->> > -Mike
->>  
->>  Thanks.  I'll need to build perf.
->
->You may want to build the kernel with frame-pointers too, for easy gdb
->list *0x(hexnum) of *func()+0x(hexoffset) use.  Crash is also pretty
->handy both for rummaging live via crash vmlinux /proc/kcore, and for
->leisurely postmortem analysis if you set the box up to crashdump in
->advance, and force a dump (poke sysrq-c or echo c > /proc/sysrq-trigger)
->when you see the bad thing happen.  Crash has all kinds of goodies,
->including invocation of gdb.
->
->-Mike
+Include appropriate header file kernel/debug/kdb/kdb_private.h in
+kernel/debug/kdb/kdb_keyboard.c because it contains prototype definition
+of functions defined in kernel/debug/kdb/kdb_keyboard.c.
 
-It doesn't look as if I'll have to guys.  Amanda is about 1/2 done and 
-running normally by switching from tar-1.22 to tar-1.27.  So I'm going to 
-toddle off in the general direction of a bed and let amanda send me an 
-email when its done.
+This eliminates the following warning in
+kernel/debug/kdb/kdb_keyboard.c:
+kernel/debug/kdb/kdb_keyboard.c:199:6: warning: no previous prototype for ‘kdb_kbd_cleanup_state’ [-Wmissing-prototypes]
 
-And it did, including some "strange" reports I have yet to decipher. Diffs 
-in the tar's probably.  But it did not hang.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/debug/kdb/kdb_keyboard.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Cheers, Gene
+diff --git a/kernel/debug/kdb/kdb_keyboard.c b/kernel/debug/kdb/kdb_keyboard.c
+index 118527a..f1405da 100644
+--- a/kernel/debug/kdb/kdb_keyboard.c
++++ b/kernel/debug/kdb/kdb_keyboard.c
+@@ -14,6 +14,8 @@
+ #include <linux/module.h>
+ #include <linux/io.h>
+ 
++#include "kdb_private.h"
++
+ /* Keyboard Controller Registers on normal PCs. */
+ 
+ #define KBD_STATUS_REG		0x64	/* Status register (R) */
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
+1.7.9.5
 
