@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaB0Lb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:31:28 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:61570 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaB0Lb1 (ORCPT
+	id S1751761AbaB0LdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:33:03 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:61574 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaB0LdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:31:27 -0500
-Date: Thu, 27 Feb 2014 16:59:07 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Vincent <vincent.stehle@laposte.net>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Emese Revfy <re.emese@gmail.com>, Andrey Vagin <avagin@openvz.org>,
-        Jesper Derehag <jderehag@hotmail.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        kgdb-bugreport@lists.sourceforge.net, josh@joshtriplett.org
-Subject: [PATCH 05/46] kernel: Include appropriate header file in
- kernel/signal.c
-Message-ID: <ffebeb9154859c6e109c825597c473dd6527f6bc.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+	Thu, 27 Feb 2014 06:33:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPXgP11+GUhMk+JPzCMZ4w_CQrbFTwqQm0g7HMfsrppACGcOTg@mail.gmail.com>
+References: <1393253450-12217-1-git-send-email-hare@suse.de>
+	<CANq1E4Tt4bomRh9i1CL6LDYFi4afX1pPABJSczRSGsMJZsiqqg@mail.gmail.com>
+	<530C4B65.2060207@suse.de>
+	<CANq1E4RypUFd5vHbLnqM8tdFr3P7gLR=HTtYhf=Bf4nWtPbCiQ@mail.gmail.com>
+	<CAPXgP11+GUhMk+JPzCMZ4w_CQrbFTwqQm0g7HMfsrppACGcOTg@mail.gmail.com>
+Date: Thu, 27 Feb 2014 12:33:00 +0100
+Message-ID: <CANq1E4THSkTHMn95v9dSzPmk_+o4DSqWv3R11tO6gTsjHR7yjw@mail.gmail.com>
+Subject: Re: [PATCHv3] tty: Set correct tty name in 'active' sysfs attribute
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Hannes Reinecke <hare@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ray Strode <halfline@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Werner Fink <werner@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file kernel/debug/kdb/kdb_private.h in
-kernel/signal.c because it contains prototype definitions of functions
-declared in kernel/signal.c.
+Hi
 
-Also, include include/linux/kdb.h in
-include/linux/kdb_private.h to remove the following errors:
-kernel/debug/kdb/kdb_private.h:172:2: error: unknown type name ‘kdb_func_t’
-kernel/debug/kdb/kdb_private.h:178:2: error: unknown type name ‘kdb_repeat_t’
-kernel/debug/kdb/kdb_private.h:196:5: error: expected ‘)’ before ‘int’
-Inclusion of kdb.h is necessary because it typedefs the above keywords.
+On Thu, Feb 27, 2014 at 12:16 PM, Kay Sievers <kay@vrfy.org> wrote:
+> On Tue, Feb 25, 2014 at 10:38 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> On Tue, Feb 25, 2014 at 8:51 AM, Hannes Reinecke <hare@suse.de> wrote:
+>
+>>> Positive?
+>>> I thought this was precisely the problem, ->device() changing the
+>>> index '0' into something non-zero.
+>>> The reports we had were that the line 'tty0' changed into 'tty1'.
+>>> Hence ->device() converted cs[i]->index (which is '0') into index
+>>> (which is '1').
+>>> Hence the check would be correct, wouldn't it?
+>>
+>> If "cs[i]" points to tty0, then cs[i]->index is 0. If you call
+>> ->device(), it will store 1 (or !=0) in "index". Thus, "(driver &&
+>> (index > 0))" will be true and you will write tty1 into the file
+>> instead of tty0. So you don't want to check whether the new value is
+>> non-zero, but whether the *previous* value was 0, turning this into:
+>>
+>> if (driver && (cs[i]->index > 0 || driver->major != TTY_MAJOR))
+>>
+>> So loosely speaking, we use the new code only for devices which either
+>> are not a VT or have an idx > 0. Otherwise, we use our fallback.
+>
+> Hannes, David, care to update the patch to do that? It all sounds fine
+> to me. And we should get this merged again.
 
-This eliminates the following warning in kernel/signal.c:
-kernel/signal.c:3640:1: warning: no previous prototype for ‘kdb_send_sig_info’ [-Wmissing-prototypes]
+I have picked it up and resent a fixed patch. I screwed up the version
+field, so it's called v3 again.. sorry.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/debug/kdb/kdb_private.h |    1 +
- kernel/signal.c                |    1 +
- 2 files changed, 2 insertions(+)
-
-diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 7afd3c8..e7f2c35 100644
---- a/kernel/debug/kdb/kdb_private.h
-+++ b/kernel/debug/kdb/kdb_private.h
-@@ -13,6 +13,7 @@
-  */
- 
- #include <linux/kgdb.h>
-+#include <linux/kdb.h>
- #include "../debug_core.h"
- 
- /* Kernel Debugger Command codes.  Must not overlap with error codes. */
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 52f881d..aa1cc60 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -42,6 +42,7 @@
- #include <asm/siginfo.h>
- #include <asm/cacheflush.h>
- #include "audit.h"	/* audit_signal_info() */
-+#include "debug/kdb/kdb_private.h"
- 
- /*
-  * SLAB caches for signal bits.
--- 
-1.7.9.5
-
+Thanks
+David
