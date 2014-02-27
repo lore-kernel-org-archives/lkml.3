@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaB0MpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:45:13 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:44767 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaB0MpH (ORCPT
+	id S1752863AbaB0Mp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:45:57 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:51230 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751382AbaB0Mp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:45:07 -0500
-Date: Thu, 27 Feb 2014 13:45:01 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/12] perf/core improvements and fixes
-Message-ID: <20140227124501.GA11916@gmail.com>
-References: <1393271800-17505-1-git-send-email-acme@infradead.org>
- <20140227114658.GA26449@gmail.com>
- <20140227120227.GC9614@krava.brq.redhat.com>
- <20140227123052.GA11475@gmail.com>
- <20140227124047.GF9614@krava.brq.redhat.com>
+	Thu, 27 Feb 2014 07:45:56 -0500
+Message-ID: <530F2E26.1040304@st.com>
+Date: Thu, 27 Feb 2014 13:23:02 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227124047.GF9614@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Patrice CHOTARD <patrice.chotard@st.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Cc: <alexandre.torgue@st.com>, Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 1/4] ARM: STi: add stid127 soc support
+References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <1391093744-19905-2-git-send-email-patrice.chotard@st.com>
+In-Reply-To: <1391093744-19905-2-git-send-email-patrice.chotard@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Patrice,
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+Could you add an overview documentation as it has been done for other 
+STi platforms?
 
-> On Thu, Feb 27, 2014 at 01:30:52PM +0100, Ingo Molnar wrote:
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > On Thu, Feb 27, 2014 at 12:46:58PM +0100, Ingo Molnar wrote:
-> > > > 
-> > > > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > > > 
-> > > > > From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > > > > 
-> 
-> SNIP
-> 
-> > > > Pulled, thanks a lot Arnaldo!
-> > > > 
-> > > > Btw., the build output looks weird now - on a system that used to pass 
-> > > > all feature tests there's this output:
-> > > > 
-> > > >   BUILD:   Doing 'make -j12' parallel build
-> > > > config/Makefile:288: No libdw DWARF unwind found, Please install 
-> > > > elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR
-> > > > 
-> > > > Auto-detecting system features:
-> > > > ...                         dwarf: [ on  ]
-> > > > ...                         glibc: [ on  ]
-> > > > ...                          gtk2: [ on  ]
-> > > > ...                      libaudit: [ on  ]
-> > > > ...                        libbfd: [ on  ]
-> > > > ...                        libelf: [ on  ]
-> > > > ...                       libnuma: [ on  ]
-> > > > ...                       libperl: [ on  ]
-> > > > ...                     libpython: [ on  ]
-> > > > ...                      libslang: [ on  ]
-> > > > ...                     libunwind: [ on  ]
-> > > > ...            libdw-dwarf-unwind: [ OFF ]
-> > > > ...     DWARF post unwind library: libunwind
-> > > > 
-> > > > but:
-> > > > 
-> > > >    Package elfutils-devel-0.156-5.fc19.x86_64 already installed and latest version
-> > > > 
-> > > > Also, the information content of this line is unclear to me:
-> > > > 
-> > > > ...     DWARF post unwind library: libunwind
-> > > > 
-> > > > 
-> > > > what does that line want to tell?
-> > > 
-> > > this tells what DWARF unwind library is compiled
-> > > in.. 'libunwind' in this case
-> > 
-> > So my (stylistic) complaint is that it's really reading weird in a 
-> > table generated with the following purpose:
-> > 
-> >       Auto-detecting system features:
-> > 
-> > Also, we already know that libunwind is present, because just in the 
-> > line before it, it says:
-> > 
-> >     ...                     libunwind: [ on  ]
-> > 
-> > So it's doubly confusing. How about not displaying that line at all? 
-> > Is there a strong reason to not keep 'OFF' messages on a single line?
-> 
-> well, on/OFF lines are only about detecting libs
-> 
-> this line:
-> 'DWARF post unwind library: libunwind'
-> 
-> is about telling which one goes in.. could be you have both
-> libraries detected and need to choose one or keep default
-
-Okay - but that is not at all clear from the output.
+See Documentation/arm/sti/stih416-overview.txt
 
 Thanks,
+Maxime
 
-	Ingo
+On 01/30/2014 03:55 PM, Patrice CHOTARD wrote:
+> From: Alexandre TORGUE <alexandre.torgue@st.com>
+>
+> This patch adds support to STiD127 SoC.
+> The main adaptation is the L2 cache way size compare to STiH41x SoCs.
+>
+> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+> Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+> ---
+>   arch/arm/mach-sti/board-dt.c |    6 ++++++
+>   1 file changed, 6 insertions(+)
+>
+> diff --git a/arch/arm/mach-sti/board-dt.c b/arch/arm/mach-sti/board-dt.c
+> index 1217fb5..be018a9 100644
+> --- a/arch/arm/mach-sti/board-dt.c
+> +++ b/arch/arm/mach-sti/board-dt.c
+> @@ -9,6 +9,7 @@
+>
+>   #include <linux/irq.h>
+>   #include <linux/of_platform.h>
+> +#include <linux/of.h>
+>   #include <asm/hardware/cache-l2x0.h>
+>   #include <asm/mach/arch.h>
+>
+> @@ -18,6 +19,10 @@ void __init stih41x_l2x0_init(void)
+>   {
+>   	u32 way_size = 0x4;
+>   	u32 aux_ctrl;
+> +
+> +	if (of_machine_is_compatible("st,stid127"))
+> +		way_size = 0x3;
+> +
+>   	/* may be this can be encoded in macros like BIT*() */
+>   	aux_ctrl = (0x1 << L2X0_AUX_CTRL_SHARE_OVERRIDE_SHIFT) |
+>   		(0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
+> @@ -36,6 +41,7 @@ static void __init stih41x_machine_init(void)
+>   static const char *stih41x_dt_match[] __initdata = {
+>   	"st,stih415",
+>   	"st,stih416",
+> +	"st,stid127",
+>   	NULL
+>   };
+>
+>
