@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaB0DMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 22:12:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:54535 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754475AbaB0DMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 22:12:12 -0500
-Date: Thu, 27 Feb 2014 14:12:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1754650AbaB0DNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 22:13:38 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:4361 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751929AbaB0DNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 22:13:37 -0500
+Date: Wed, 26 Feb 2014 22:13:35 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Regression with wait_event_timeout in next-20140226
-Message-Id: <20140227141205.257c6dc9ab6da4fc11ee97ce@canb.auug.org.au>
-In-Reply-To: <20140226165043.GA22802@laptop.programming.kicks-ass.net>
-References: <530E17C7.1030504@free-electrons.com>
-	<20140226165043.GA22802@laptop.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__27_Feb_2014_14_12_05_+1100_=qyQd+eR/_8Gve+l"
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFA][PATCH 3/4] tracing/module: Remove include of tracepoint.h
+ from module.h
+Message-ID: <20140226221335.3e30572a@gandalf.local.home>
+In-Reply-To: <20140226190644.730153889@goodmis.org>
+References: <20140226190140.590029589@goodmis.org>
+	<20140226190644.730153889@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_Feb_2014_14_12_05_+1100_=qyQd+eR/_8Gve+l
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 26 Feb 2014 14:01:43 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Hi Peter,
+> [ Request for Ack ]
+> 
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> There's nothing in the module.h header that requires tracepoint.h to be
+> included. Soon, tracepoint.h will require struct module, and will have to
+> include module.h. To avoid include hell, we need to remove the include of
+> tracepoint.h from module.h.
+> 
+> A stable patch will require this change, so include stable in the Cc.
+> 
+> Cc: stable@vger.kernel.org # 2.6.31+
 
-On Wed, 26 Feb 2014 17:50:43 +0100 Peter Zijlstra <peterz@infradead.org> wr=
-ote:
->
-> On Wed, Feb 26, 2014 at 05:35:19PM +0100, Gregory CLEMENT wrote:
-> >=20
-> > while testing next-20140226 I got an issue with the function
-> > wait_event_timeout. When this function timed out instead of returning
-> > 0, it returned the value of the timeout passed in parameter. I found
-> > that reverting "sched/wait: Suppress Sparse 'variable shadowing'
-> > warning" fixed this regression.
-> >=20
-> > I got this issue in the driver drivers/i2c/busses/i2c-mv64xxx.c.
->=20
-> Ah indeed. We actually rely on the shadowing for ___wait_cond_timeout().
->=20
-> We further used the __ret variable in __wait_event_timeout()'s cmd
-> argument: __ret =3D schedule_timeout(__ret). That now explicitly uses the
-> wrong __ret.
->=20
-> Yeah, we need to pull that patch.
+Hi Rusty,
 
-I have reverted that commit from linux-next for today pending some other
-resolution.
+This patch doesn't need to be stable, and can wait till v3.15. But I
+have other patches that will break with this patch (headers that needed
+to include tracepoint.h and not depend on a header chain to include it).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Can you give me your Acked-by for this, and I'll just add it to my 3.15
+queue?
 
---Signature=_Thu__27_Feb_2014_14_12_05_+1100_=qyQd+eR/_8Gve+l
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-- Steve
 
-iQIcBAEBCAAGBQJTDq0JAAoJEMDTa8Ir7ZwV6pwP/0GSEP/c6AFLdFOaFxxDFEYW
-ouDBlC+cuexvjc+tdDKABKNRtRqhCqAGj5qxMNNlb9jtNVetoFQLlw/I9qWsAt4M
-ADmlsHdKiCVmeGL83DhJIcgdqb1AK0PWnjJbIPyiIjXa5KabF2u7sNaRo1N99F7D
-WJskvpcZYAavze7Q7ok0yi5sL8kWIcaDF4mNPw0L6chIoDj5Z8GBS8ku94g5GmKI
-IG4uUk156R+e3ChJyCmQGHLhCcc68VrhZ0jp4DBoL31/VLnZDuZoJPVrSaL+6rWs
-0wreyZIlwNSIV5qfAasdD67kR7ETAFrP8mgAu+xCR+dltoG4K9MXtwUWGH6pxEfG
-fONjvQNX3wK4jwoOwaQXMTZAt/VS/0QZwSZt5/xU8zGLlBzYawYR2LCuAfdRA3bW
-Q6rN9FX0obHXo41+5K0LREiZQe4ifJzyVfoUr8Pehv6Vp9iVjvP4McfDrlLoyH5r
-ZDQiGNAkWOx6ofE9hk4KzqGfeHFTOocNWiieRFi+2/1E37Qntq4q0MqdQ3Qqd+zG
-6kBDZpyynTRO7xRCrcl30oWhOI0J2Ep7fUu6GP/Gu8Y+CjY/fiRx4puGhMgUgcs4
-s3PpcVu2f4nC0BeBghS6C/5nH2pmiNpWIWhG5zN33vtgfYqlnDQpfSySRvi3hr4Y
-umjzd1oIccQLwVdw/4G0
-=FGxf
------END PGP SIGNATURE-----
 
---Signature=_Thu__27_Feb_2014_14_12_05_+1100_=qyQd+eR/_8Gve+l--
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/linux/module.h | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index eaf60ff..6cc28d9 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -15,7 +15,6 @@
+>  #include <linux/stringify.h>
+>  #include <linux/kobject.h>
+>  #include <linux/moduleparam.h>
+> -#include <linux/tracepoint.h>
+>  #include <linux/export.h>
+>  
+>  #include <linux/percpu.h>
+
