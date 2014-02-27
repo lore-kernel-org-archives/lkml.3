@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638AbaB0CDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 21:03:44 -0500
-Received: from smtprelay0078.hostedemail.com ([216.40.44.78]:44904 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754424AbaB0CDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 21:03:42 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:334:355:368:369:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3867:4321:4605:5007:7652:8603:10004:10026:10400:10450:10455:10848:11026:11658:11914:12296:12438:12517:12519:12555:13019:13069:13311:13357:14093:14097:19904:19999,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sound27_5a67346a6033d
-X-Filterd-Recvd-Size: 2497
-Message-ID: <1393466619.24588.65.camel@joe-AO722>
-Subject: [PATCH] sparse: Allow override of sizeof(bool) warning
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, linux-sparse@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 26 Feb 2014 18:03:39 -0800
-In-Reply-To: <530E8C2E.7080307@zytor.com>
-References: <530E6F76.1070605@zytor.com>
-	 <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754519AbaB0CFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 21:05:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37982 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaB0CFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 21:05:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,551,1389772800"; 
+   d="scan'208";a="482578578"
+Message-ID: <530E9BC6.5090207@intel.com>
+Date: Thu, 27 Feb 2014 09:58:30 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dave Hansen <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] x86, mpx: add documentation on Intel MPX
+References: <1393162071-23995-1-git-send-email-qiaowei.ren@intel.com> <1393162071-23995-2-git-send-email-qiaowei.ren@intel.com> <530E5A7D.9060902@intel.com>
+In-Reply-To: <530E5A7D.9060902@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow an override to emit or not the sizeof(bool) warning
+On 02/27/2014 05:19 AM, Dave Hansen wrote:
+> On 02/23/2014 05:27 AM, Qiaowei Ren wrote:
+>> +The other case that generates a #BR is when a BNDSTX instruction
+>> +attempts to save bounds to a BD entry marked as invalid. This is
+>> +an indication that no BT exists for this entry. In this case the
+>> +fault handler will allocate a new BT.
+>
+> Hi Qiaowei,
+>
+> Can you make an effort to move these comments over to the code?  The
+> bounds-table allocation function is a much more appropriate place for
+> this text than the Documentation/ file.
+>
+Ok. They will be moved.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- evaluate.c | 3 ++-
- lib.c      | 2 ++
- lib.h      | 1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/evaluate.c b/evaluate.c
-index 6655615..a45f59b 100644
---- a/evaluate.c
-+++ b/evaluate.c
-@@ -2057,7 +2057,8 @@ static struct symbol *evaluate_sizeof(struct expression *expr)
- 	}
- 
- 	if (size == 1 && is_bool_type(type)) {
--		warning(expr->pos, "expression using sizeof bool");
-+		if (Wsizeof_bool)
-+			warning(expr->pos, "expression using sizeof bool");
- 		size = bits_in_char;
- 	}
- 
-diff --git a/lib.c b/lib.c
-index bf3e91c..676b72e 100644
---- a/lib.c
-+++ b/lib.c
-@@ -225,6 +225,7 @@ int Wone_bit_signed_bitfield = 1;
- int Wparen_string = 0;
- int Wptr_subtraction_blows = 0;
- int Wreturn_void = 0;
-+int Wsizeof_bool = 1;
- int Wshadow = 0;
- int Wtransparent_union = 0;
- int Wtypesign = 0;
-@@ -437,6 +438,7 @@ static const struct warning {
- 	{ "paren-string", &Wparen_string },
- 	{ "ptr-subtraction-blows", &Wptr_subtraction_blows },
- 	{ "return-void", &Wreturn_void },
-+	{ "sizeof-bool", &Wsizeof_bool },
- 	{ "shadow", &Wshadow },
- 	{ "transparent-union", &Wtransparent_union },
- 	{ "typesign", &Wtypesign },
-diff --git a/lib.h b/lib.h
-index f09b338..7e3432f 100644
---- a/lib.h
-+++ b/lib.h
-@@ -119,6 +119,7 @@ extern int Wone_bit_signed_bitfield;
- extern int Wparen_string;
- extern int Wptr_subtraction_blows;
- extern int Wreturn_void;
-+extern int Wsizeof_bool;
- extern int Wshadow;
- extern int Wtransparent_union;
- extern int Wtypesign;
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
-
-
+Thanks,
+Qiaowei
