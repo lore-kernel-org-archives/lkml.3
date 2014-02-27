@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaB0LLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:11:16 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:49824 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143AbaB0LLL (ORCPT
+	id S1752626AbaB0LLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:11:37 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:63557 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546AbaB0LLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:11:11 -0500
-Date: Thu, 27 Feb 2014 16:38:50 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>, Tony Lu <zlu@tilera.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Alex Elder <alex.elder@linaro.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Andre Naujoks <nautsch2@gmail.com>, Jason Baron <jbaron@akamai.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@infradead.org>, Robin Holt <holt@sgi.com>,
-        Tony Luck <tony.luck@intel.com>, Alex Thorlton <athorlton@sgi.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Chen Gang <gang.chen@asianux.com>, josh@joshtriplett.org
-Subject: [PATCH 02/46] kernel: Add prototype definition to
- include/linux/kernel.h
-Message-ID: <644cc80558c61ce1f498393a77df366ad0d7b960.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+	Thu, 27 Feb 2014 06:11:14 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, veeableful@gmail.com, josh@joshtriplett.org,
+        rashika.kheria@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] staging: bcm: fix checkpatch error 'assignment in if condition'
+Date: Thu, 27 Feb 2014 20:11:09 +0900
+Message-ID: <6252391.VE6NA7AxT4@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declaration to header file include/linux/kernel.h because
-it is used by more than one file.
 
-This also eliminates the following warning in kernel/panic.c:
-kernel/panic.c:55:13: warning: no previous prototype for ‘panic_smp_self_stop’ [-Wmissing-prototypes]
+clean up checkpatch errors and bClassificationSucceed is set to "TRUE"
+proper location.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+If protocal is not TCP or UDP, when it checks protocal, bClassificationSucceed
+must be set to TRUE.
+Also the end of do-while(0) loop, bClassificationSucceed is set to TRUE.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- arch/tile/kernel/smp.c |    1 +
- include/linux/kernel.h |    2 ++
- kernel/panic.c         |    1 +
- 3 files changed, 4 insertions(+)
+ drivers/staging/bcm/Qos.c |   32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index 01e8ab2..8b645fd 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -19,6 +19,7 @@
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/kernel.h>
- #include <asm/cacheflush.h>
- #include <asm/homecache.h>
+diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
+index ead57b4..4f31583 100644
+--- a/drivers/staging/bcm/Qos.c
++++ b/drivers/staging/bcm/Qos.c
+@@ -230,51 +230,47 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
  
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 196d1ea..c7cee7d 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -154,6 +154,8 @@ struct completion;
- struct pt_regs;
- struct user;
+ 		//**************Checking IP header parameter**************************//
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Trying to match Source IP Address");
+-		if (false == (bClassificationSucceed =
+-			MatchSrcIpAddress(pstClassifierRule, iphd->saddr)))
++		if (!MatchSrcIpAddress(pstClassifierRule, iphd->saddr))
+ 			break;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Source IP Address Matched");
  
-+void __weak panic_smp_self_stop(void);
-+
- #ifdef CONFIG_PREEMPT_VOLUNTARY
- extern int _cond_resched(void);
- # define might_resched() _cond_resched()
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 6d63003..14e08c2 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -23,6 +23,7 @@
- #include <linux/sysrq.h>
- #include <linux/init.h>
- #include <linux/nmi.h>
-+#include <linux/kernel.h>
+-		if (false == (bClassificationSucceed =
+-			MatchDestIpAddress(pstClassifierRule, iphd->daddr)))
++		if (!MatchDestIpAddress(pstClassifierRule, iphd->daddr))
+ 			break;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination IP Address Matched");
  
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
+-		if (false == (bClassificationSucceed =
+-			MatchTos(pstClassifierRule, iphd->tos)))
+-		{
++		if (!MatchTos(pstClassifierRule, iphd->tos)) {
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "TOS Match failed\n");
+ 			break;
+ 		}
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "TOS Matched");
+ 
+-		if (false == (bClassificationSucceed =
+-			MatchProtocol(pstClassifierRule, iphd->protocol)))
++		if (!MatchProtocol(pstClassifierRule, iphd->protocol))
+ 			break;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Protocol Matched");
+ 
+ 		//if protocol is not TCP or UDP then no need of comparing source port and destination port
+-		if (iphd->protocol != TCP && iphd->protocol != UDP)
++		if (iphd->protocol != TCP && iphd->protocol != UDP) {
++			bClassificationSucceed = TRUE;
+ 			break;
++		}
+ 		//******************Checking Transport Layer Header field if present *****************//
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Source Port %04x",
+ 			(iphd->protocol == UDP) ? xprt_hdr->uhdr.source : xprt_hdr->thdr.source);
+ 
+-		if (false == (bClassificationSucceed =
+-			MatchSrcPort(pstClassifierRule,
+-				ntohs((iphd->protocol == UDP) ?
+-				xprt_hdr->uhdr.source : xprt_hdr->thdr.source))))
++		if (!MatchSrcPort(pstClassifierRule,
++				  ntohs((iphd->protocol == UDP) ?
++				  xprt_hdr->uhdr.source : xprt_hdr->thdr.source)))
+ 			break;
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Src Port Matched");
+ 
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination Port %04x",
+ 			(iphd->protocol == UDP) ? xprt_hdr->uhdr.dest :
+ 			xprt_hdr->thdr.dest);
+-		if (false == (bClassificationSucceed =
+-			MatchDestPort(pstClassifierRule,
+-			ntohs((iphd->protocol == UDP) ?
+-			xprt_hdr->uhdr.dest : xprt_hdr->thdr.dest))))
++		if (!MatchDestPort(pstClassifierRule,
++				   ntohs((iphd->protocol == UDP) ?
++				   xprt_hdr->uhdr.dest : xprt_hdr->thdr.dest)))
+ 			break;
++		bClassificationSucceed = TRUE;
+ 	} while (0);
+ 
+ 	if (TRUE == bClassificationSucceed)
 -- 
 1.7.9.5
+
 
