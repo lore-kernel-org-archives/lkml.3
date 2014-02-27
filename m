@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaB0Itl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:49:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20406 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844AbaB0Itk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:49:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,553,1389772800"; 
-   d="scan'208";a="490767687"
-Date: Thu, 27 Feb 2014 10:49:36 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Carl Worth <cworth@cworth.org>
-Cc: intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915/dp: Allow for 5.4Gbps for Haswell.
-Message-ID: <20140227084936.GI3852@intel.com>
-References: <1393488699-6265-1-git-send-email-cworth@cworth.org>
+	id S1751622AbaB0Iv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:51:27 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:64180 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaB0IvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 03:51:25 -0500
+Message-ID: <530EFC89.2010409@suse.cz>
+Date: Thu, 27 Feb 2014 09:51:21 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393488699-6265-1-git-send-email-cworth@cworth.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        jwboyer@fedoraproject.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org
+Subject: Re: 3.12-stable kernel tree being taken over by Jiri Slaby
+References: <20140226231910.GA8789@kroah.com> <20140226.183927.1607497823277720839.davem@davemloft.net> <530EFA78.1020802@suse.cz>
+In-Reply-To: <530EFA78.1020802@suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 12:11:39AM -0800, Carl Worth wrote:
-> With Haswell, 5.4Gbps is supported. And almost all of the code was
-> already in place already. All that was missing was this tiny bit of
-> additional wiring.
+On 02/27/2014 09:42 AM, Jiri Slaby wrote:
+> On 02/27/2014 12:39 AM, David Miller wrote:
+>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Date: Wed, 26 Feb 2014 15:19:10 -0800
+>>
+>>> David, I don't know if you want to keep doing 3.12-networking patches or
+>>> not, I'll let you work that out with Jiri directly.
+>>
+>> 3.12 and 3.13 are very similar, so the work is minimal, therefore I'm
+>> likely to keep doing it.
+> 
+> Hi, do you have any plans including:
+> commit 18fc25c94eadc52a42c025125af24657a93638c0
+> Author: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+> Date:   Mon Dec 2 15:41:39 2013 -0800
+> 
+>     rds: prevent BUG_ON triggered on congestion update to loopback
+> 
+> which is not needed for 3.13, but is needed for 3.12 to fix CVE-2012-2372?
 
-Todd already implemented 5.4Gbps support a while back. So it seems your
-tree is a bit out of date.
+Nevermind, cherry-pick taught me, that it is already in 3.12.8. We just
+have a different fix in the suse tree which should be dropped now.
+
+Sorry for the noise.
 
 -- 
-Ville Syrjälä
-Intel OTC
+js
+suse labs
