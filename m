@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaB0MxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:53:16 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:35444 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaB0MxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:53:14 -0500
-Date: Thu, 27 Feb 2014 13:53:09 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [GIT PULL] timers update for 3.15
-Message-ID: <20140227125306.GA17608@localhost.localdomain>
-References: <1393433525-5765-1-git-send-email-fweisbec@gmail.com>
- <20140227121707.GE9712@gmail.com>
+	id S1752200AbaB0My1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:54:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaB0My0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 07:54:26 -0500
+Message-ID: <530F3579.8030903@redhat.com>
+Date: Thu, 27 Feb 2014 13:54:17 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227121707.GE9712@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kiszka <jan.kiszka@siemens.com>, linux-kernel@vger.kernel.org
+CC: kvm@vger.kernel.org, mtosatti@redhat.com, gleb@kernel.org,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: [PATCH v2 0/2] KVM: x86: more xsave and mpx improvements
+References: <1393433681-22888-1-git-send-email-pbonzini@redhat.com> <530F1F55.1020209@siemens.com>
+In-Reply-To: <530F1F55.1020209@siemens.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 01:17:07PM +0100, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Ingo,
-> > 
-> > Please pull the timers/core branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	timers/core
-> > ---
-> > 
-> > * The patch from Viresh removes some unecessary scheduler IPIs that wake
-> >   up the CPUs when deferrable timers are enqueued on remote targets.
-> > 
-> >   In practice I have seen on boot some of these IPIs from various
-> >   sources:  MCE, vmstat/SLAB, cpufreq. They happen either on initcall
-> >   or cpu hotplug. Since these timers are enqueued on all CPUs, there
-> >   are some potential big rounds of IPIs that are spared with this patch.
-> >   
-> >   But it's just what I've seen on my own machine on boot. I expect some
-> >   more scenarios where a few IPIs will be avoided depending on configs
-> >   and usecases because we have some more users of deferrable timers.
-> > 
-> > * Kconfig text made clearer for full dynticks by Paul Gortmaker.
-> > 
-> > Thanks,
-> > 	Frederic
-> > ---
-> > 
-> > Paul Gortmaker (1):
-> >       nohz: ensure users are aware boot CPU is not NO_HZ_FULL
-> > 
-> > Viresh Kumar (1):
-> >       timer: Spare IPI when deferrable timer is queued on idle remote targets
-> > 
-> > 
-> >  kernel/time/Kconfig | 2 +-
-> >  kernel/timer.c      | 9 ++++++++-
-> >  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> So I wanted to pull this fine set of commits, just to discover that 
-> Thomas already pulled it into timers/core :-)
+Il 27/02/2014 12:19, Jan Kiszka ha scritto:
+> On 2014-02-26 17:54, Paolo Bonzini wrote:
+>> Here are the patches I mentioned while reviewing Liu Jinsong's MPX
+>> series.
+>>
+>> Patch 1 is a further cleanup of xcr0 handling, and patch 2 introduces
+>> nested virtualization support for MPX.
+>>
+>> Please review.
+>>
+>> Thanks,
+>>
+>> Paolo
+>>
+>> Paolo Bonzini (2):
+>>   KVM: x86: introduce kvm_supported_xcr0()
+>>   KVM: x86: Add nested virtualization support for MPX
+>>
+>>  arch/x86/kvm/cpuid.c | 27 ++++++++++++++++-----------
+>>  arch/x86/kvm/vmx.c   | 17 +++++++++++++++++
+>>  arch/x86/kvm/x86.c   |  4 +---
+>>  arch/x86/kvm/x86.h   |  2 ++
+>>  4 files changed, 36 insertions(+), 14 deletions(-)
+>>
+>
+> Is this round different from the other v2?
 
-Ah! Now I understand why it was pulled silently in the evening ;)
+No, they're the same.
+
+Paolo
+
