@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaB0BwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:52:07 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43866 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754329AbaB0BwF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:52:05 -0500
-Message-ID: <530E9A43.5030003@hurleysoftware.com>
-Date: Wed, 26 Feb 2014 20:52:03 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: The sheer number of sparse warnings in the kernel
-References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com> <530E82B2.3040305@zytor.com>
-In-Reply-To: <530E82B2.3040305@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1754532AbaB0ByO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:54:14 -0500
+Received: from ozlabs.org ([203.10.76.45]:52980 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaB0ByM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:54:12 -0500
+Date: Thu, 27 Feb 2014 12:53:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the drm-tegra tree
+Message-Id: <20140227125357.795646e8ee6ea60f79423162@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__27_Feb_2014_12_53_57_+1100_0+8xSkHeTutKMwQ2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 07:11 PM, H. Peter Anvin wrote:
-> On 02/26/2014 03:28 PM, Greg KH wrote:
->>>
->>> What do we need to do to actually make our tools be able to do work for
->>> us?  Newbie projects to clean up?  Trying to get the larger Linux
->>> companies to put resources on it?
->>
->> It's not the easiest "newbie" project as usually the first reflex to
->> "just cast it away" is wrong for a lot of sparse warnings.  I know this
->> from people trying to fix up the sparse warnings in drivers/staging/
->>
->
-> I have seen this phenomenon, too.  I also see a bunch of sparse warnings
-> which are clearly bogus, for example complaining about sizeof(bool) when
-> in bits like:
->
-> 		__this_cpu_write(swallow_nmi, false);
->
-> So getting this to the point where it is genuinely useful and can be
-> made a ubiquitous part of the Linux development process is going to take
-> more work and probably involve improvements to sparse so we can indicate
-> in the kernel sources when something is okay or removing completely
-> bogus warnings, and so on.
->
-> The bigger question, again, is what do we need to do to make this
-> happen, assuming it is worth doing?  We certainly have had bugs,
-> including security holes, which sparse would have caught.  At the same
-> time, this kind of work tends to not be the kind that attract the top
-> hackers, unfortunately, as it is not "fun".
+--Signature=_Thu__27_Feb_2014_12_53_57_+1100_0+8xSkHeTutKMwQ2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well there was that "should we do a bug-fix-only 4.0 release?" message
-from Linus back at the 3.12 release.
+Hi Thierry,
 
-Or do like Geert does with the build message regressions/fixes. I always scan
-that to make sure none of my work is in it :)  (And that could be chunked
-up by maintainer).
+After merging the drm-tegra tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Just a thought.
+drivers/gpu/drm/tegra/sor.c: In function 'tegra_sor_init':
+drivers/gpu/drm/tegra/sor.c:924:22: error: 'TEGRA_OUTPUT_LVDS' undeclared (=
+first use in this function)
 
-Regards,
-Peter Hurley
+Caused by commit 765db82ce08a ("drm/tegra: Add eDP support").
+
+I have used the drm-tegra tree from next-20140226 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__27_Feb_2014_12_53_57_+1100_0+8xSkHeTutKMwQ2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTDprCAAoJEMDTa8Ir7ZwVZ18P/2gRHKXUtOZTBMLRMk12Re5S
+fFXcSY7HCJUdRFAQqnCJDOpyIOH3qhZ3s6L3G1G6Z7ryHF0epstqsbCNzYP8PtUe
+4S8Sj4R3Wr0/Uf20Z+p3g184O/wnNN9lcv8uv6CeW41VCTN64bFpetS/FlpOfjNl
+sNEhs7hyQOjTqQrj3JPG6OLlWpBPneqgbAHCkpgM5guuMJVBCUSDkHB6Q3JRTXEy
+YqAfXQQvUTvL9qJzkMDA4NPVldPn67mYBA9EgUD3F+lu2fl8FJmMf5qnTJV4tJYo
+/waVVs/uPKPAe4QWGByV8NP/PfO6Qobgybxn+a0um6EKlhijHS7hz+bw84wHwSZt
+qDhNUKsMu2N8xl+VCbfWesCmNMLI28oo95oPVftXoeG1fvK39n1odbWDpOKKEs+W
+N+oAiOeS+WeLxwOoNdODScLUAOnkPgvLbYx+ZbQz0+VIAQagkjxt89BMyQr7C/ru
+9XxjUG/Luel54TMm241rxy+2VugLFcBX/tHPT5OGgBHNTCr4VGFDytM6+YJXQF+p
+LfwXxL3bLCiDa5ZGEur9BkYpv9E4kB4t4PlJ8kQABavxYt1mtm0etMWZcJk7FEhG
+J51m15VBoCwg9GmHDFjRkuIlzs/9YGzhZO7EdBesbBuWtcawfFu+y7R+ZVWq54Cr
+lYCysuokTBuhuH+fG6Od
+=vKau
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_Feb_2014_12_53_57_+1100_0+8xSkHeTutKMwQ2--
