@@ -1,170 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaB0KiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:38:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55710 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125AbaB0KiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:38:18 -0500
-X-IronPort-AV: E=Sophos;i="4.97,553,1389715200"; 
-   d="scan'208";a="9615209"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: viro@zeniv.linux.org.uk, bcrl@kvack.org, jmoyer@redhat.com,
-        kosaki.motohiro@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com
-Cc: linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
-Date: Thu, 27 Feb 2014 18:40:15 +0800
-Message-Id: <1393497616-16428-2-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 18:35:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/02/27 18:35:03,
-	Serialize complete at 2014/02/27 18:35:03
+	id S1752506AbaB0KjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:39:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.131]:55131 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbaB0KjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:39:13 -0500
+Message-ID: <1393497512.8200.37.camel@marge.simpson.net>
+Subject: Re: [patch] sched: don't use nutty scale_rt_power() output
+From: Mike Galbraith <bitbucket@online.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Feb 2014 11:38:32 +0100
+In-Reply-To: <20140227094035.GZ9987@twins.programming.kicks-ass.net>
+References: <1393229211.5599.72.camel@marge.simpson.net>
+	 <20140227094035.GZ9987@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:jEo58aVssRtCwPtXX2Z0GAP1bI0DLH53pTGYI6XA0Wx
+ yp5cxAcRbpySl91BI+kY1KRol2nUQ6cNry2g9g1X/fAYYh1mYK
+ 1vlKevWSvedizrnKgHO27LzdJ+PwEF9fKqLok/t4nU8d8ROBF9
+ GBxRghuVAwg20rugBhG3rHrVfd81ht/xKLnLrJ77msNpT9/9hc
+ ZTnk5uFSQgsMKxWWAInM6z+zOn/ge2961AsK/XTb0+cnu+zxtL
+ PqEbDlmoweRX2As2PVMoyMI4ON+aa5bIXrot6j3KUgbbVRcY/X
+ LlMLycbp3vjzJRDQBEAoWZSE9FdNWHJcm8FuCCOYto6biosRXE
+ sx0tQxywN6el6mGZjWz/SWP2lBhdmTLam09ju/aVU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AIO ring page migration has been implemented by the following patch:
+On Thu, 2014-02-27 at 10:40 +0100, Peter Zijlstra wrote: 
+> On Mon, Feb 24, 2014 at 09:06:51AM +0100, Mike Galbraith wrote:
+> > Hi Peter,
+> > 
+> > I wonder if the below makes sense for mainline.
+> > 
+> > Background: I received some rather surprising news recently, a user of
+> > old 2.6.32 kernels regularly receive log spam stemming from old 208 day
+> > era warnings/protections inserted to prevent explosions from what was at
+> > the time unknown bad juju happening (but don't report logs that look
+> > like graffiti artist with an unlimited supply of spray paint gone mad).
+> > 
+> > The kernel that emitted the below does NOT contain..
+> > 9993bc63 sched/x86: Fix overflow in cyc2ns_offset
+> > ..though these folks use kexec fwtw.  They're one of those "You update
+> > your kernel IFF world stops spinning" users, so will likely not be
+> > terribly interested in me making their boxen say BUG(), and may even be
+> > doing something naughty that induces it for all I know.
+> > 
+> > In any case, NOT using nutty output from the intentionally racy function
+> > seems like a good plan no matter who or what makes weird unreproducible
+> > (elsewhere) sh*t happen.  Wedging a bent 64 bit peg into 32 bit hole
+> > could make boom, on top of doing funny things to balancing. 
+> > 
+> > sched: don't use nutty scale_rt_power() output
+> > 
+> > Boxen instructed to gripe if they see nutty cpu_power catch us
+> > trashing it while seriously dazed and confused for an unknown reason.
+> > 
+> > Dec 18 05:50:56 kernel: [40091179.401405] update_group_power: cpu_power = 3148183471
+> > Dec 18 05:51:01 /usr/sbin/cron[2279]: (root) CMD (/opt/blah/fix_cdr_bin.job >> /opt/blah/fix_cdr_bin.out 2>&1)
+> > Dec 18 05:51:06 kernel: [40091189.455713] update_cpu_power: cpu_power = 19495027282; scale_rt = 19495027282
+> > Dec 18 05:51:16 kernel: [22076800.665578] update_cpu_power: cpu_power = 2671067611; scale_rt = 18428729677871137243
+> > Dec 18 05:51:16 kernel: [40091199.188773] update_cpu_power: cpu_power = 2675064501; scale_rt = 18428729677875134133
+> > 
+> > Don't do that, make a scary warning instead.
+> > 
+> 
+> Yeah, I'm in two minds about that. Crappy clocks can make a whole lot of
+> missery. Then again, we usually guard against them going backwards.
+> 
+> How about something like so? Most other sites don't complain about
+> clocks going backwards either, they just deal with it.
 
-        https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/aio.c?id=36bc08cc01709b4a9bb563b35aa530241ddc63e3
+Yeah, better to warp protect scale_rt_power() directly.
 
-In this patch, ctx->completion_lock is used to prevent other processes
-from accessing the ring page being migrated.
+This small set of identical weird ass boxen should be reliable tsc.
+They jump back and forth in time by _exactly 208 days_, and do that
+straight from boot, and randomly thereafter.  Wish I could get my hands
+on one of the things, but that ain't gonna happen.
 
-But in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring(),
-when writing to the ring page, they didn't take ctx->completion_lock.
+Those boxen have long uptimes, which proves you can survive with a sched
+clock that's going completely bonkers, which is kinda surprising to me.
+On a busy box, I'd expect some poor victim to eat the mother of all
+latency hits.
 
-As a result, for example, we have the following problem:
+> ---
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5564,6 +5564,7 @@ static unsigned long scale_rt_power(int
+>  {
+>  	struct rq *rq = cpu_rq(cpu);
+>  	u64 total, available, age_stamp, avg;
+> +	s64 delta;
+>  
+>  	/*
+>  	 * Since we're reading these variables without serialization make sure
+> @@ -5572,7 +5573,11 @@ static unsigned long scale_rt_power(int
+>  	age_stamp = ACCESS_ONCE(rq->age_stamp);
+>  	avg = ACCESS_ONCE(rq->rt_avg);
+>  
+> -	total = sched_avg_period() + (rq_clock(rq) - age_stamp);
+> +	delta = rq_clock(rq) - age_stamp;
+> +	if (unlikely(delta < 0))
+> +		delta = 0;
+> +
+> +	total = sched_avg_period() + delta;
+>  
+>  	if (unlikely(total < avg)) {
+>  		/* Ensures that power won't end up being negative */
 
-            thread 1                      |              thread 2
-                                          |
-aio_migratepage()                         |
- |-> take ctx->completion_lock            |
- |-> migrate_page_copy(new, old)          |
- |   *NOW*, ctx->ring_pages[idx] == old   |
-                                          |
-                                          |    *NOW*, ctx->ring_pages[idx] == old
-                                          |    aio_read_events_ring()
-                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
-                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
-                                          |     |-> kunmap_atomic(ring);
-                                          |
- |-> ctx->ring_pages[idx] = new           |
- |   *BUT NOW*, the content of            |
- |    ring_pages[idx] is old.             |
- |-> release ctx->completion_lock         |
-
-As above, the new ring page will not be updated.
-
-The solution is taking ctx->completion_lock in thread 2, which means,
-in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring() when
-writing to ring pages.
-
-Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- fs/aio.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 062a5f6..50c089c 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -366,6 +366,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	int nr_pages;
- 	int i;
- 	struct file *file;
-+	unsigned long flags;
- 
- 	/* Compensate for the ring buffer's head/tail overlap entry */
- 	nr_events += 2;	/* 1 is required, 2 for good luck */
-@@ -437,6 +438,14 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	ctx->user_id = ctx->mmap_base;
- 	ctx->nr_events = nr_events; /* trusted copy */
- 
-+	/*
-+	 * The aio ring pages are user space pages, so they can be migrated.
-+	 * When writing to an aio ring page, we should ensure the page is not
-+	 * being migrated. Aio page migration procedure is protected by
-+	 * ctx->completion_lock, so we add this lock here.
-+	 */
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	ring->nr = nr_events;	/* user copy */
- 	ring->id = ~0U;
-@@ -448,6 +457,8 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	kunmap_atomic(ring);
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+
- 	return 0;
- }
- 
-@@ -542,6 +553,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 	unsigned i, new_nr;
- 	struct kioctx_table *table, *old;
- 	struct aio_ring *ring;
-+	unsigned long flags;
- 
- 	spin_lock(&mm->ioctx_lock);
- 	rcu_read_lock();
-@@ -556,9 +568,19 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
-+					/*
-+					 * Accessing ring pages must be done
-+					 * holding ctx->completion_lock to
-+					 * prevent aio ring page migration
-+					 * procedure from migrating ring pages.
-+					 */
-+					spin_lock_irqsave(&ctx->completion_lock,
-+							  flags);
- 					ring = kmap_atomic(ctx->ring_pages[0]);
- 					ring->id = ctx->id;
- 					kunmap_atomic(ring);
-+					spin_unlock_irqrestore(
-+						&ctx->completion_lock, flags);
- 					return 0;
- 				}
- 
-@@ -1021,6 +1043,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	unsigned head, tail, pos;
- 	long ret = 0;
- 	int copy_ret;
-+	unsigned long flags;
- 
- 	mutex_lock(&ctx->ring_lock);
- 
-@@ -1066,11 +1089,21 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 		head %= ctx->nr_events;
- 	}
- 
-+	/*
-+	 * The aio ring pages are user space pages, so they can be migrated.
-+	 * When writing to an aio ring page, we should ensure the page is not
-+	 * being migrated. Aio page migration procedure is protected by
-+	 * ctx->completion_lock, so we add this lock here.
-+	 */
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	ring->head = head;
- 	kunmap_atomic(ring);
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+
- 	pr_debug("%li  h%u t%u\n", ret, head, tail);
- 
- 	put_reqs_available(ctx, ret);
--- 
-1.8.3.1
 
