@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaB0Uy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:54:29 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:45610 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaB0Uy2 (ORCPT
+	id S1752354AbaB0Uza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:55:30 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:33897 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaB0Uz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:54:28 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: [PATCH v1.1/3] ARM: config: Add qcom_defconfig
-Date: Thu, 27 Feb 2014 12:54:24 -0800
-Message-Id: <1393534464-14620-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <530F985E.5030503@codeaurora.org>
-References: <530F985E.5030503@codeaurora.org>
+	Thu, 27 Feb 2014 15:55:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393533563.24588.127.camel@joe-AO722>
+References: <1393462087.24588.50.camel@joe-AO722>
+	<530E8C2E.7080307@zytor.com>
+	<1393466619.24588.65.camel@joe-AO722>
+	<20140227022857.GC23659@thin>
+	<1393469594.24588.71.camel@joe-AO722>
+	<20140227025845.GA25145@thin>
+	<530EB103.5070406@zytor.com>
+	<1393472326.24588.82.camel@joe-AO722>
+	<20140227040050.GA8449@nicira.com>
+	<530EBCED.9020705@zytor.com>
+	<20140227042636.GA9592@nicira.com>
+	<530EBFC7.9030309@zytor.com>
+	<CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
+	<faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
+	<1393533563.24588.127.camel@joe-AO722>
+Date: Thu, 27 Feb 2014 12:55:28 -0800
+X-Google-Sender-Auth: EmqN4o-kZGXxvL2PMy3w62lmnMw
+Message-ID: <CANeU7QnZika4XsdS_=UwPc5uZgv2-m5vMdmZLyCynKK2YNKLvQ@mail.gmail.com>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Christopher Li <sparse@chrisli.org>
+To: Joe Perches <joe@perches.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a defconfig for mach-qcom platforms (copied from msm_defconfig).
-Although these platforms are part of the multi-platform kernel, it's
-useful to have a stripped down version of the defconfig that just
-selects the DT based Qualcomm platforms and drivers.
+On Thu, Feb 27, 2014 at 12:39 PM, Joe Perches <joe@perches.com> wrote:
+> Please use V3 as I stuffed up the alphabetic order
+> of sizeof and shadow.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+Please send it your V3 then :-)
 
-Changes since v1:
- * Added CONFIG_DEVTMPFS/DEVTMPFS_MOUNT per Josh
+>
+> I'm not sure it matters much, but the linux-kernel
+> Makefile wouldn't need to be changed if Wsizeof_bool
+> is default 0.
 
- arch/arm/configs/{msm_defconfig => qcom_defconfig} | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
- copy arch/arm/configs/{msm_defconfig => qcom_defconfig} (97%)
+It seems default to off is the right thing to do.
 
-diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/qcom_defconfig
-similarity index 97%
-copy from arch/arm/configs/msm_defconfig
-copy to arch/arm/configs/qcom_defconfig
-index c5858b9eb516..5f11d6de9084 100644
---- a/arch/arm/configs/msm_defconfig
-+++ b/arch/arm/configs/qcom_defconfig
-@@ -17,7 +17,7 @@ CONFIG_MODULE_UNLOAD=y
- CONFIG_MODULE_FORCE_UNLOAD=y
- CONFIG_MODVERSIONS=y
- CONFIG_PARTITION_ADVANCED=y
--CONFIG_ARCH_MSM_DT=y
-+CONFIG_ARCH_QCOM=y
- CONFIG_ARCH_MSM8X60=y
- CONFIG_ARCH_MSM8960=y
- CONFIG_ARCH_MSM8974=y
-@@ -27,7 +27,6 @@ CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_HIGHPTE=y
- CONFIG_CLEANCACHE=y
--CONFIG_CC_STACKPROTECTOR=y
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
-@@ -49,6 +48,8 @@ CONFIG_IP_PNP_DHCP=y
- # CONFIG_IPV6 is not set
- CONFIG_CFG80211=y
- CONFIG_RFKILL=y
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_SCSI=y
-@@ -111,7 +112,6 @@ CONFIG_USB_SERIAL=y
- CONFIG_USB_GADGET=y
- CONFIG_USB_GADGET_DEBUG_FILES=y
- CONFIG_USB_GADGET_VBUS_DRAW=500
--CONFIG_NEW_LEDS=y
- CONFIG_RTC_CLASS=y
- CONFIG_STAGING=y
- CONFIG_COMMON_CLK_QCOM=y
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+>
+> Here's a couple of other nits:
+>
+> Maybe the evaluate.c "size = bits_in_char;" assignment
+>
+>         if (size == 1 && is_bool_type(type)) {
+> -               warning(expr->pos, "expression using sizeof bool");
+> +               if (Wsizeof_bool)
+> +                       warning(expr->pos, "expression using sizeof bool");
+>                 size = bits_in_char;
+>         }
+>
+> should be
+>
+>         size = sizeof(_Bool) * 8;
 
+The reason to use bits_in_xxxx is to allow sparse application to over write
+the size of int etc. If you don't like the bits_in_char here. You can introduce
+bits_in_bool and set that to sizeof(Bool)*8 by default. That way you don't
+hard code it.
+
+> And also, in sparse.1, Josh Triplett is shown as
+> the maintainer.  Maybe that should be changed to
+> Christopher Li
+
+Maybe a separate patch.
+
+Waiting for your V3.
+
+Chris
