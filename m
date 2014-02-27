@@ -1,73 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaB0NhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:37:17 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65029 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090AbaB0NhO (ORCPT
+	id S1753643AbaB0Nhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:37:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55021 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791AbaB0Nd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:37:14 -0500
+	Thu, 27 Feb 2014 08:33:28 -0500
+Date: Thu, 27 Feb 2014 05:32:53 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-06d50c65b1043b166d102accc081093f79d8f7e5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org
+In-Reply-To: <20140224172207.GC9987@twins.programming.kicks-ass.net>
+References: <20140224172207.GC9987@twins.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/idle: Remove stale old file
+Git-Commit-ID: 06d50c65b1043b166d102accc081093f79d8f7e5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <530F3E47.5040904@hurleysoftware.com>
-References: <1393425651-7374-1-git-send-email-peter@hurleysoftware.com>
- <CAPXgP112sBy+ErD3xYK8=+0tfXPY80wb8Zco5cJKuKkv7+ZViA@mail.gmail.com> <530F3E47.5040904@hurleysoftware.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 27 Feb 2014 14:36:52 +0100
-Message-ID: <CAPXgP12ATVb_L2sCaNWN4tozN1Cu0efSWb-VTXdqui4SFkzc=w@mail.gmail.com>
-Subject: Re: [PATCH] tty: Add sysfs symlink for console name->tty device
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Ray Strode <halfline@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Werner Fink <werner@suse.de>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 2:31 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 02/27/2014 06:13 AM, Kay Sievers wrote:
->>
->> On Wed, Feb 26, 2014 at 3:40 PM, Peter Hurley <peter@hurleysoftware.com>
->> wrote:
->>>
->>> Enable a user-space process to discover the underlying tty device
->>> for a console, if one exists, and when the tty device is later
->>> created or destroyed.
->>>
->>> Add sysfs symlinks for registered consoles to their respective
->>> devices in [sys/class,sys/devices/virtual]/tty/console.
->>> Scan consoles at tty device (un)registration to handle deferred
->>> console<->device (un)binding.
->>
->> What tool is supposed to read that? I can't think of anything
->> interested in this, as soon as we have fixed the "active" console
->> output.
+Commit-ID:  06d50c65b1043b166d102accc081093f79d8f7e5
+Gitweb:     http://git.kernel.org/tip/06d50c65b1043b166d102accc081093f79d8f7e5
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 24 Feb 2014 18:22:07 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 27 Feb 2014 12:41:01 +0100
 
-> With all due respect, that "fix" is a ridiculous hack,
+sched/idle: Remove stale old file
 
-No, it is not. It's fine to handle tty0 special, as it is special.
+Commit cf37b6b48428d ("sched/idle: Move cpu/idle.c to sched/idle.c")
+said to simply move a file; somehow it got mangled and created an old
+version of the file and forgot to remove the old file.
 
-> being done
-> for self-serving expedience.
+Fix this fail; add the lost change and remove the now identical old
+file.
 
-I don't see the problem.
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: rjw@rjwysocki.net
+Cc: nicolas.pitre@linaro.org
+Cc: preeti@linux.vnet.ibm.com
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Link: http://lkml.kernel.org/r/20140224172207.GC9987@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/cpu/idle.c   | 147 ----------------------------------------------------
+ kernel/sched/idle.c |  17 +++---
+ 2 files changed, 10 insertions(+), 154 deletions(-)
 
-> It already caused one user-space breakage
-> which you did not expect.
-
-That is normal way to do things, only people who don't do things don't
-break things. And broken things get fixed, and the "active" file is still
-fixable, and that is what we should do.
-
-We don't need to invent new things because we did not get things right
-with the first try.
-
-> This sysfs interface is superior in every way.
-
-But nothing uses it now, and probably never will, so I don't see the
-need for it at this moment.
-
-Kay
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+deleted file mode 100644
+index b7976a1..0000000
+--- a/kernel/cpu/idle.c
++++ /dev/null
+@@ -1,147 +0,0 @@
+-/*
+- * Generic entry point for the idle threads
+- */
+-#include <linux/sched.h>
+-#include <linux/cpu.h>
+-#include <linux/cpuidle.h>
+-#include <linux/tick.h>
+-#include <linux/mm.h>
+-#include <linux/stackprotector.h>
+-
+-#include <asm/tlb.h>
+-
+-#include <trace/events/power.h>
+-
+-static int __read_mostly cpu_idle_force_poll;
+-
+-void cpu_idle_poll_ctrl(bool enable)
+-{
+-	if (enable) {
+-		cpu_idle_force_poll++;
+-	} else {
+-		cpu_idle_force_poll--;
+-		WARN_ON_ONCE(cpu_idle_force_poll < 0);
+-	}
+-}
+-
+-#ifdef CONFIG_GENERIC_IDLE_POLL_SETUP
+-static int __init cpu_idle_poll_setup(char *__unused)
+-{
+-	cpu_idle_force_poll = 1;
+-	return 1;
+-}
+-__setup("nohlt", cpu_idle_poll_setup);
+-
+-static int __init cpu_idle_nopoll_setup(char *__unused)
+-{
+-	cpu_idle_force_poll = 0;
+-	return 1;
+-}
+-__setup("hlt", cpu_idle_nopoll_setup);
+-#endif
+-
+-static inline int cpu_idle_poll(void)
+-{
+-	rcu_idle_enter();
+-	trace_cpu_idle_rcuidle(0, smp_processor_id());
+-	local_irq_enable();
+-	while (!tif_need_resched())
+-		cpu_relax();
+-	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+-	rcu_idle_exit();
+-	return 1;
+-}
+-
+-/* Weak implementations for optional arch specific functions */
+-void __weak arch_cpu_idle_prepare(void) { }
+-void __weak arch_cpu_idle_enter(void) { }
+-void __weak arch_cpu_idle_exit(void) { }
+-void __weak arch_cpu_idle_dead(void) { }
+-void __weak arch_cpu_idle(void)
+-{
+-	cpu_idle_force_poll = 1;
+-	local_irq_enable();
+-}
+-
+-/*
+- * Generic idle loop implementation
+- */
+-static void cpu_idle_loop(void)
+-{
+-	while (1) {
+-		tick_nohz_idle_enter();
+-
+-		while (!need_resched()) {
+-			check_pgt_cache();
+-			rmb();
+-
+-			if (cpu_is_offline(smp_processor_id()))
+-				arch_cpu_idle_dead();
+-
+-			local_irq_disable();
+-			arch_cpu_idle_enter();
+-
+-			/*
+-			 * In poll mode we reenable interrupts and spin.
+-			 *
+-			 * Also if we detected in the wakeup from idle
+-			 * path that the tick broadcast device expired
+-			 * for us, we don't want to go deep idle as we
+-			 * know that the IPI is going to arrive right
+-			 * away
+-			 */
+-			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
+-				cpu_idle_poll();
+-			} else {
+-				if (!current_clr_polling_and_test()) {
+-					stop_critical_timings();
+-					rcu_idle_enter();
+-					if (cpuidle_idle_call())
+-						arch_cpu_idle();
+-					if (WARN_ON_ONCE(irqs_disabled()))
+-						local_irq_enable();
+-					rcu_idle_exit();
+-					start_critical_timings();
+-				} else {
+-					local_irq_enable();
+-				}
+-				__current_set_polling();
+-			}
+-			arch_cpu_idle_exit();
+-		}
+-
+-		/*
+-		 * Since we fell out of the loop above, we know
+-		 * TIF_NEED_RESCHED must be set, propagate it into
+-		 * PREEMPT_NEED_RESCHED.
+-		 *
+-		 * This is required because for polling idle loops we will
+-		 * not have had an IPI to fold the state for us.
+-		 */
+-		preempt_set_need_resched();
+-		tick_nohz_idle_exit();
+-		schedule_preempt_disabled();
+-	}
+-}
+-
+-void cpu_startup_entry(enum cpuhp_state state)
+-{
+-	/*
+-	 * This #ifdef needs to die, but it's too late in the cycle to
+-	 * make this generic (arm and sh have never invoked the canary
+-	 * init for the non boot cpus!). Will be fixed in 3.11
+-	 */
+-#ifdef CONFIG_X86
+-	/*
+-	 * If we're the non-boot CPU, nothing set the stack canary up
+-	 * for us. The boot CPU already has it initialized but no harm
+-	 * in doing it again. This is a good place for updating it, as
+-	 * we wont ever return from this function (so the invalid
+-	 * canaries already on the stack wont ever trigger).
+-	 */
+-	boot_init_stack_canary();
+-#endif
+-	__current_set_polling();
+-	arch_cpu_idle_prepare();
+-	cpu_idle_loop();
+-}
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index 14ca434..b7976a1 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -108,14 +108,17 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
+-			/*
+-			 * We need to test and propagate the TIF_NEED_RESCHED
+-			 * bit here because we might not have send the
+-			 * reschedule IPI to idle tasks.
+-			 */
+-			if (tif_need_resched())
+-				set_preempt_need_resched();
+ 		}
++
++		/*
++		 * Since we fell out of the loop above, we know
++		 * TIF_NEED_RESCHED must be set, propagate it into
++		 * PREEMPT_NEED_RESCHED.
++		 *
++		 * This is required because for polling idle loops we will
++		 * not have had an IPI to fold the state for us.
++		 */
++		preempt_set_need_resched();
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
