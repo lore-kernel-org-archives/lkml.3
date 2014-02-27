@@ -1,481 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742AbaB0GUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 01:20:35 -0500
-Received: from smtp-out-121.synserver.de ([212.40.185.121]:1041 "EHLO
-	smtp-out-167.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751421AbaB0GUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 01:20:34 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 15121
-Message-ID: <530ED945.2050907@metafoo.de>
-Date: Thu, 27 Feb 2014 07:20:53 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] clk: axi-clkgen: Add support for v2
-References: <1392629513-6114-1-git-send-email-lars@metafoo.de> <20140227010421.12081.82707@quantum>
-In-Reply-To: <20140227010421.12081.82707@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752387AbaB0GY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:24:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57867 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276AbaB0GY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 01:24:57 -0500
+Date: Thu, 27 Feb 2014 17:24:45 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        "majianpeng" <majianpeng@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] md / procfs: avoid Oops if md-mod removed while
+ /proc/mdstat is being polled.
+Message-ID: <20140227172445.13644477@notabene.brown>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/go0y1zVCsVM/NqISGITolbd"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 02:04 AM, Mike Turquette wrote:
-> Quoting Lars-Peter Clausen (2014-02-17 01:31:53)
->> This patch adds support for the new v2 version of the axi-clkgen core.
->> Unfortunately the method of accessing the registers is quite different on v2,
->> while the content still stays largely the same. So the patch adds a small
->> abstraction layer which implements the specific read and write functions for v1
->> and v2 in callback functions.
->
-> Hi,
->
-> This patch almost doubles the size of clk-axi-clkgen.c. Should it be a
-> separate clock driver? I guess that depends on the relationship between
-> "v1" and "v2". Are both of those versions of the clkgen core going into
-> production?
+--Sig_/go0y1zVCsVM/NqISGITolbd
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
 
-The only thing that is different between the two versions is how the PLL 
-registers are accessed. The content that is written to those register is a 
-100% identical. So splitting it up into two drivers makes no sense, since 
-you'd have to copy&paste all the application logic. Both versions of the 
-core can be found in the wild.
 
-- Lars
+If poll or select is waiting on /proc/mdstat when md-mod is unloaded
+an oops will ensure when the poll/select completes.
 
->
-> Regards,
-> Mike
->
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>   .../devicetree/bindings/clock/axi-clkgen.txt       |   2 +-
->>   drivers/clk/clk-axi-clkgen.c                       | 312 ++++++++++++++++++---
->>   2 files changed, 270 insertions(+), 44 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/clock/axi-clkgen.txt b/Documentation/devicetree/bindings/clock/axi-clkgen.txt
->> index 028b493..20e1704 100644
->> --- a/Documentation/devicetree/bindings/clock/axi-clkgen.txt
->> +++ b/Documentation/devicetree/bindings/clock/axi-clkgen.txt
->> @@ -5,7 +5,7 @@ This binding uses the common clock binding[1].
->>   [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
->>
->>   Required properties:
->> -- compatible : shall be "adi,axi-clkgen".
->> +- compatible : shall be "adi,axi-clkgen-1.00.a" or "adi,axi-clkgen-2.00.a".
->>   - #clock-cells : from common clock binding; Should always be set to 0.
->>   - reg : Address and length of the axi-clkgen register set.
->>   - clocks : Phandle and clock specifier for the parent clock.
->> diff --git a/drivers/clk/clk-axi-clkgen.c b/drivers/clk/clk-axi-clkgen.c
->> index 8137327..1127ee4 100644
->> --- a/drivers/clk/clk-axi-clkgen.c
->> +++ b/drivers/clk/clk-axi-clkgen.c
->> @@ -17,23 +17,75 @@
->>   #include <linux/module.h>
->>   #include <linux/err.h>
->>
->> -#define AXI_CLKGEN_REG_UPDATE_ENABLE   0x04
->> -#define AXI_CLKGEN_REG_CLK_OUT1                0x08
->> -#define AXI_CLKGEN_REG_CLK_OUT2                0x0c
->> -#define AXI_CLKGEN_REG_CLK_DIV         0x10
->> -#define AXI_CLKGEN_REG_CLK_FB1         0x14
->> -#define AXI_CLKGEN_REG_CLK_FB2         0x18
->> -#define AXI_CLKGEN_REG_LOCK1           0x1c
->> -#define AXI_CLKGEN_REG_LOCK2           0x20
->> -#define AXI_CLKGEN_REG_LOCK3           0x24
->> -#define AXI_CLKGEN_REG_FILTER1         0x28
->> -#define AXI_CLKGEN_REG_FILTER2         0x2c
->> +#define AXI_CLKGEN_V1_REG_UPDATE_ENABLE        0x04
->> +#define AXI_CLKGEN_V1_REG_CLK_OUT1     0x08
->> +#define AXI_CLKGEN_V1_REG_CLK_OUT2     0x0c
->> +#define AXI_CLKGEN_V1_REG_CLK_DIV      0x10
->> +#define AXI_CLKGEN_V1_REG_CLK_FB1      0x14
->> +#define AXI_CLKGEN_V1_REG_CLK_FB2      0x18
->> +#define AXI_CLKGEN_V1_REG_LOCK1                0x1c
->> +#define AXI_CLKGEN_V1_REG_LOCK2                0x20
->> +#define AXI_CLKGEN_V1_REG_LOCK3                0x24
->> +#define AXI_CLKGEN_V1_REG_FILTER1      0x28
->> +#define AXI_CLKGEN_V1_REG_FILTER2      0x2c
->> +
->> +#define AXI_CLKGEN_V2_REG_RESET                0x40
->> +#define AXI_CLKGEN_V2_REG_DRP_CNTRL    0x70
->> +#define AXI_CLKGEN_V2_REG_DRP_STATUS   0x74
->> +
->> +#define AXI_CLKGEN_V2_RESET_MMCM_ENABLE        BIT(1)
->> +#define AXI_CLKGEN_V2_RESET_ENABLE     BIT(0)
->> +
->> +#define AXI_CLKGEN_V2_DRP_CNTRL_SEL    BIT(29)
->> +#define AXI_CLKGEN_V2_DRP_CNTRL_READ   BIT(28)
->> +
->> +#define AXI_CLKGEN_V2_DRP_STATUS_BUSY  BIT(16)
->> +
->> +#define MMCM_REG_CLKOUT0_1     0x08
->> +#define MMCM_REG_CLKOUT0_2     0x09
->> +#define MMCM_REG_CLK_FB1       0x14
->> +#define MMCM_REG_CLK_FB2       0x15
->> +#define MMCM_REG_CLK_DIV       0x16
->> +#define MMCM_REG_LOCK1         0x18
->> +#define MMCM_REG_LOCK2         0x19
->> +#define MMCM_REG_LOCK3         0x1a
->> +#define MMCM_REG_FILTER1       0x4e
->> +#define MMCM_REG_FILTER2       0x4f
->> +
->> +struct axi_clkgen;
->> +
->> +struct axi_clkgen_mmcm_ops {
->> +       void (*enable)(struct axi_clkgen *axi_clkgen, bool enable);
->> +       int (*write)(struct axi_clkgen *axi_clkgen, unsigned int reg,
->> +                    unsigned int val, unsigned int mask);
->> +       int (*read)(struct axi_clkgen *axi_clkgen, unsigned int reg,
->> +                   unsigned int *val);
->> +};
->>
->>   struct axi_clkgen {
->>          void __iomem *base;
->> +       const struct axi_clkgen_mmcm_ops *mmcm_ops;
->>          struct clk_hw clk_hw;
->>   };
->>
->> +static void axi_clkgen_mmcm_enable(struct axi_clkgen *axi_clkgen,
->> +       bool enable)
->> +{
->> +       axi_clkgen->mmcm_ops->enable(axi_clkgen, enable);
->> +}
->> +
->> +static int axi_clkgen_mmcm_write(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int val, unsigned int mask)
->> +{
->> +       return axi_clkgen->mmcm_ops->write(axi_clkgen, reg, val, mask);
->> +}
->> +
->> +static int axi_clkgen_mmcm_read(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int *val)
->> +{
->> +       return axi_clkgen->mmcm_ops->read(axi_clkgen, reg, val);
->> +}
->> +
->>   static uint32_t axi_clkgen_lookup_filter(unsigned int m)
->>   {
->>          switch (m) {
->> @@ -156,6 +208,148 @@ static void axi_clkgen_read(struct axi_clkgen *axi_clkgen,
->>          *val = readl(axi_clkgen->base + reg);
->>   }
->>
->> +static unsigned int axi_clkgen_v1_map_mmcm_reg(unsigned int reg)
->> +{
->> +       switch (reg) {
->> +       case MMCM_REG_CLKOUT0_1:
->> +               return AXI_CLKGEN_V1_REG_CLK_OUT1;
->> +       case MMCM_REG_CLKOUT0_2:
->> +               return AXI_CLKGEN_V1_REG_CLK_OUT2;
->> +       case MMCM_REG_CLK_FB1:
->> +               return AXI_CLKGEN_V1_REG_CLK_FB1;
->> +       case MMCM_REG_CLK_FB2:
->> +               return AXI_CLKGEN_V1_REG_CLK_FB2;
->> +       case MMCM_REG_CLK_DIV:
->> +               return AXI_CLKGEN_V1_REG_CLK_DIV;
->> +       case MMCM_REG_LOCK1:
->> +               return AXI_CLKGEN_V1_REG_LOCK1;
->> +       case MMCM_REG_LOCK2:
->> +               return AXI_CLKGEN_V1_REG_LOCK2;
->> +       case MMCM_REG_LOCK3:
->> +               return AXI_CLKGEN_V1_REG_LOCK3;
->> +       case MMCM_REG_FILTER1:
->> +               return AXI_CLKGEN_V1_REG_FILTER1;
->> +       case MMCM_REG_FILTER2:
->> +               return AXI_CLKGEN_V1_REG_FILTER2;
->> +       default:
->> +               return 0;
->> +       }
->> +}
->> +
->> +static int axi_clkgen_v1_mmcm_write(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int val, unsigned int mask)
->> +{
->> +       reg = axi_clkgen_v1_map_mmcm_reg(reg);
->> +       if (reg == 0)
->> +               return -EINVAL;
->> +
->> +       axi_clkgen_write(axi_clkgen, reg, val);
->> +
->> +       return 0;
->> +}
->> +
->> +static int axi_clkgen_v1_mmcm_read(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int *val)
->> +{
->> +       reg = axi_clkgen_v1_map_mmcm_reg(reg);
->> +       if (reg == 0)
->> +               return -EINVAL;
->> +
->> +       axi_clkgen_read(axi_clkgen, reg, val);
->> +
->> +       return 0;
->> +}
->> +
->> +static void axi_clkgen_v1_mmcm_enable(struct axi_clkgen *axi_clkgen,
->> +       bool enable)
->> +{
->> +       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_V1_REG_UPDATE_ENABLE, enable);
->> +}
->> +
->> +static const struct axi_clkgen_mmcm_ops axi_clkgen_v1_mmcm_ops = {
->> +       .write = axi_clkgen_v1_mmcm_write,
->> +       .read = axi_clkgen_v1_mmcm_read,
->> +       .enable = axi_clkgen_v1_mmcm_enable,
->> +};
->> +
->> +static int axi_clkgen_wait_non_busy(struct axi_clkgen *axi_clkgen)
->> +{
->> +       unsigned int timeout = 10000;
->> +       unsigned int val;
->> +
->> +       do {
->> +               axi_clkgen_read(axi_clkgen, AXI_CLKGEN_V2_REG_DRP_STATUS, &val);
->> +       } while ((val & AXI_CLKGEN_V2_DRP_STATUS_BUSY) && --timeout);
->> +
->> +       if (val & AXI_CLKGEN_V2_DRP_STATUS_BUSY)
->> +               return -EIO;
->> +
->> +       return val & 0xffff;
->> +}
->> +
->> +static int axi_clkgen_v2_mmcm_read(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int *val)
->> +{
->> +       unsigned int reg_val;
->> +       int ret;
->> +
->> +       ret = axi_clkgen_wait_non_busy(axi_clkgen);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       reg_val = AXI_CLKGEN_V2_DRP_CNTRL_SEL | AXI_CLKGEN_V2_DRP_CNTRL_READ;
->> +       reg_val |= (reg << 16);
->> +
->> +       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_V2_REG_DRP_CNTRL, reg_val);
->> +
->> +       ret = axi_clkgen_wait_non_busy(axi_clkgen);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       *val = ret;
->> +
->> +       return 0;
->> +}
->> +
->> +static int axi_clkgen_v2_mmcm_write(struct axi_clkgen *axi_clkgen,
->> +       unsigned int reg, unsigned int val, unsigned int mask)
->> +{
->> +       unsigned int reg_val = 0;
->> +       int ret;
->> +
->> +       ret = axi_clkgen_wait_non_busy(axi_clkgen);
->> +       if (ret < 0)
->> +               return ret;
->> +
->> +       if (mask != 0xffff) {
->> +               axi_clkgen_v2_mmcm_read(axi_clkgen, reg, &reg_val);
->> +               reg_val &= ~mask;
->> +       }
->> +
->> +       reg_val |= AXI_CLKGEN_V2_DRP_CNTRL_SEL | (reg << 16) | (val & mask);
->> +
->> +       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_V2_REG_DRP_CNTRL, reg_val);
->> +
->> +       return 0;
->> +}
->> +
->> +static void axi_clkgen_v2_mmcm_enable(struct axi_clkgen *axi_clkgen,
->> +       bool enable)
->> +{
->> +       unsigned int val = AXI_CLKGEN_V2_RESET_ENABLE;
->> +
->> +       if (enable)
->> +               val |= AXI_CLKGEN_V2_RESET_MMCM_ENABLE;
->> +
->> +       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_V2_REG_RESET, val);
->> +}
->> +
->> +static const struct axi_clkgen_mmcm_ops axi_clkgen_v2_mmcm_ops = {
->> +       .write = axi_clkgen_v2_mmcm_write,
->> +       .read = axi_clkgen_v2_mmcm_read,
->> +       .enable = axi_clkgen_v2_mmcm_enable,
->> +};
->> +
->>   static struct axi_clkgen *clk_hw_to_axi_clkgen(struct clk_hw *clk_hw)
->>   {
->>          return container_of(clk_hw, struct axi_clkgen, clk_hw);
->> @@ -184,33 +378,29 @@ static int axi_clkgen_set_rate(struct clk_hw *clk_hw,
->>          filter = axi_clkgen_lookup_filter(m - 1);
->>          lock = axi_clkgen_lookup_lock(m - 1);
->>
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_UPDATE_ENABLE, 0);
->> -
->>          axi_clkgen_calc_clk_params(dout, &low, &high, &edge, &nocount);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_CLK_OUT1,
->> -               (high << 6) | low);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_CLK_OUT2,
->> -               (edge << 7) | (nocount << 6));
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_CLKOUT0_1,
->> +               (high << 6) | low, 0xefff);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_CLKOUT0_2,
->> +               (edge << 7) | (nocount << 6), 0x03ff);
->>
->>          axi_clkgen_calc_clk_params(d, &low, &high, &edge, &nocount);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_CLK_DIV,
->> -               (edge << 13) | (nocount << 12) | (high << 6) | low);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_CLK_DIV,
->> +               (edge << 13) | (nocount << 12) | (high << 6) | low, 0x3fff);
->>
->>          axi_clkgen_calc_clk_params(m, &low, &high, &edge, &nocount);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_CLK_FB1,
->> -               (high << 6) | low);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_CLK_FB2,
->> -               (edge << 7) | (nocount << 6));
->> -
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_LOCK1, lock & 0x3ff);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_LOCK2,
->> -               (((lock >> 16) & 0x1f) << 10) | 0x1);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_LOCK3,
->> -               (((lock >> 24) & 0x1f) << 10) | 0x3e9);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_FILTER1, filter >> 16);
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_FILTER2, filter);
->> -
->> -       axi_clkgen_write(axi_clkgen, AXI_CLKGEN_REG_UPDATE_ENABLE, 1);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_CLK_FB1,
->> +               (high << 6) | low, 0xefff);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_CLK_FB2,
->> +               (edge << 7) | (nocount << 6), 0x03ff);
->> +
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_LOCK1, lock & 0x3ff, 0x3ff);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_LOCK2,
->> +               (((lock >> 16) & 0x1f) << 10) | 0x1, 0x7fff);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_LOCK3,
->> +               (((lock >> 24) & 0x1f) << 10) | 0x3e9, 0x7fff);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_FILTER1, filter >> 16, 0x9900);
->> +       axi_clkgen_mmcm_write(axi_clkgen, MMCM_REG_FILTER2, filter, 0x9900);
->>
->>          return 0;
->>   }
->> @@ -236,11 +426,11 @@ static unsigned long axi_clkgen_recalc_rate(struct clk_hw *clk_hw,
->>          unsigned int reg;
->>          unsigned long long tmp;
->>
->> -       axi_clkgen_read(axi_clkgen, AXI_CLKGEN_REG_CLK_OUT1, &reg);
->> +       axi_clkgen_mmcm_read(axi_clkgen, MMCM_REG_CLKOUT0_1, &reg);
->>          dout = (reg & 0x3f) + ((reg >> 6) & 0x3f);
->> -       axi_clkgen_read(axi_clkgen, AXI_CLKGEN_REG_CLK_DIV, &reg);
->> +       axi_clkgen_mmcm_read(axi_clkgen, MMCM_REG_CLK_DIV, &reg);
->>          d = (reg & 0x3f) + ((reg >> 6) & 0x3f);
->> -       axi_clkgen_read(axi_clkgen, AXI_CLKGEN_REG_CLK_FB1, &reg);
->> +       axi_clkgen_mmcm_read(axi_clkgen, MMCM_REG_CLK_FB1, &reg);
->>          m = (reg & 0x3f) + ((reg >> 6) & 0x3f);
->>
->>          if (d == 0 || dout == 0)
->> @@ -255,14 +445,45 @@ static unsigned long axi_clkgen_recalc_rate(struct clk_hw *clk_hw,
->>          return tmp;
->>   }
->>
->> +static int axi_clkgen_enable(struct clk_hw *clk_hw)
->> +{
->> +       struct axi_clkgen *axi_clkgen = clk_hw_to_axi_clkgen(clk_hw);
->> +
->> +       axi_clkgen_mmcm_enable(axi_clkgen, true);
->> +
->> +       return 0;
->> +}
->> +
->> +static void axi_clkgen_disable(struct clk_hw *clk_hw)
->> +{
->> +       struct axi_clkgen *axi_clkgen = clk_hw_to_axi_clkgen(clk_hw);
->> +
->> +       axi_clkgen_mmcm_enable(axi_clkgen, false);
->> +}
->> +
->>   static const struct clk_ops axi_clkgen_ops = {
->>          .recalc_rate = axi_clkgen_recalc_rate,
->>          .round_rate = axi_clkgen_round_rate,
->>          .set_rate = axi_clkgen_set_rate,
->> +       .enable = axi_clkgen_enable,
->> +       .disable = axi_clkgen_disable,
->>   };
->>
->> +static const struct of_device_id axi_clkgen_ids[] = {
->> +       {
->> +               .compatible = "adi,axi-clkgen-1.00.a",
->> +               .data = &axi_clkgen_v1_mmcm_ops
->> +       }, {
->> +               .compatible = "adi,axi-clkgen-2.00.a",
->> +               .data = &axi_clkgen_v2_mmcm_ops,
->> +       },
->> +       { },
->> +};
->> +MODULE_DEVICE_TABLE(of, axi_clkgen_ids);
->> +
->>   static int axi_clkgen_probe(struct platform_device *pdev)
->>   {
->> +       const struct of_device_id *id;
->>          struct axi_clkgen *axi_clkgen;
->>          struct clk_init_data init;
->>          const char *parent_name;
->> @@ -270,10 +491,19 @@ static int axi_clkgen_probe(struct platform_device *pdev)
->>          struct resource *mem;
->>          struct clk *clk;
->>
->> +       if (!pdev->dev.of_node)
->> +               return -ENODEV;
->> +
->> +       id = of_match_node(axi_clkgen_ids, pdev->dev.of_node);
->> +       if (!id)
->> +               return -ENODEV;
->> +
->>          axi_clkgen = devm_kzalloc(&pdev->dev, sizeof(*axi_clkgen), GFP_KERNEL);
->>          if (!axi_clkgen)
->>                  return -ENOMEM;
->>
->> +       axi_clkgen->mmcm_ops = id->data;
->> +
->>          mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>          axi_clkgen->base = devm_ioremap_resource(&pdev->dev, mem);
->>          if (IS_ERR(axi_clkgen->base))
->> @@ -289,10 +519,12 @@ static int axi_clkgen_probe(struct platform_device *pdev)
->>
->>          init.name = clk_name;
->>          init.ops = &axi_clkgen_ops;
->> -       init.flags = 0;
->> +       init.flags = CLK_SET_RATE_GATE;
->>          init.parent_names = &parent_name;
->>          init.num_parents = 1;
->>
->> +       axi_clkgen_mmcm_enable(axi_clkgen, false);
->> +
->>          axi_clkgen->clk_hw.init = &init;
->>          clk = devm_clk_register(&pdev->dev, &axi_clkgen->clk_hw);
->>          if (IS_ERR(clk))
->> @@ -309,12 +541,6 @@ static int axi_clkgen_remove(struct platform_device *pdev)
->>          return 0;
->>   }
->>
->> -static const struct of_device_id axi_clkgen_ids[] = {
->> -       { .compatible = "adi,axi-clkgen-1.00.a" },
->> -       { },
->> -};
->> -MODULE_DEVICE_TABLE(of, axi_clkgen_ids);
->> -
->>   static struct platform_driver axi_clkgen_driver = {
->>          .driver = {
->>                  .name = "adi-axi-clkgen",
->> --
->> 1.8.0
->>
+This is because the wait_queue_head which is registered with poll_wait()
+is local to the module and no longer exists when the poll completes and
+detaches that wait_queue_head (in poll_free_wait -> remove_wait_queue).
 
+To fix this we need the wait_queue_head to have (at least) the same life
+time as the proc_dir_entry.  So this patch places it in that structure.
+
+We:
+  - add pde_poll_wait to struct proc_dir_entry
+  - call poll_wait() passing this when poll() is called on the proc file
+  - export a function proc_wake_up which will call wake_up() on pde_poll_wa=
+it
+
+and make use of all that in md.c
+
+Reported-by: "majianpeng" <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+--
+
+Do we have a maintainer for fs/proc ??
+If I could get a couple of Acks, or constructive comments, on this,
+I would  appreciate it.
+Thanks,
+NeilBrown
+
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 4ad5cc4e63e8..1bf70d9c55d3 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -193,12 +193,12 @@ EXPORT_SYMBOL_GPL(bio_clone_mddev);
+  *  start array, stop array, error, add device, remove device,
+  *  start build, activate spare
+  */
+-static DECLARE_WAIT_QUEUE_HEAD(md_event_waiters);
++static struct proc_dir_entry *mdstat_pde;
+ static atomic_t md_event_count;
+ void md_new_event(struct mddev *mddev)
+ {
+ 	atomic_inc(&md_event_count);
+-	wake_up(&md_event_waiters);
++	proc_wake_up(mdstat_pde);
+ }
+ EXPORT_SYMBOL_GPL(md_new_event);
+=20
+@@ -208,7 +208,7 @@ EXPORT_SYMBOL_GPL(md_new_event);
+ static void md_new_event_inintr(struct mddev *mddev)
+ {
+ 	atomic_inc(&md_event_count);
+-	wake_up(&md_event_waiters);
++	proc_wake_up(mdstat_pde);
+ }
+=20
+ /*
+@@ -7187,8 +7187,6 @@ static unsigned int mdstat_poll(struct file *filp, po=
+ll_table *wait)
+ 	struct seq_file *seq =3D filp->private_data;
+ 	int mask;
+=20
+-	poll_wait(filp, &md_event_waiters, wait);
+-
+ 	/* always allow read */
+ 	mask =3D POLLIN | POLLRDNORM;
+=20
+@@ -8557,7 +8555,7 @@ static void md_geninit(void)
+ {
+ 	pr_debug("md: sizeof(mdp_super_t) =3D %d\n", (int)sizeof(mdp_super_t));
+=20
+-	proc_create("mdstat", S_IRUGO, NULL, &md_seq_fops);
++	mdstat_pde =3D proc_create("mdstat", S_IRUGO, NULL, &md_seq_fops);
+ }
+=20
+ static int __init md_init(void)
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index b7f268eb5f45..c579da4cd765 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -357,6 +357,7 @@ static struct proc_dir_entry *__proc_create(struct proc=
+_dir_entry **parent,
+ 	atomic_set(&ent->count, 1);
+ 	spin_lock_init(&ent->pde_unload_lock);
+ 	INIT_LIST_HEAD(&ent->pde_openers);
++	init_waitqueue_head(&ent->pde_poll_wait);
+ out:
+ 	return ent;
+ }
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 124fc43c7090..353fc199e8b5 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -234,13 +234,21 @@ static unsigned int proc_reg_poll(struct file *file, =
+struct poll_table_struct *p
+ 	unsigned int (*poll)(struct file *, struct poll_table_struct *);
+ 	if (use_pde(pde)) {
+ 		poll =3D pde->proc_fops->poll;
+-		if (poll)
++		if (poll) {
++			poll_wait(file, &pde->pde_poll_wait, pts);
+ 			rv =3D poll(file, pts);
++		}
+ 		unuse_pde(pde);
+ 	}
+ 	return rv;
+ }
+=20
++void proc_wake_up(struct proc_dir_entry *pde)
++{
++	wake_up(&pde->pde_poll_wait);
++}
++EXPORT_SYMBOL_GPL(proc_wake_up);
++
+ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, u=
+nsigned long arg)
+ {
+ 	struct proc_dir_entry *pde =3D PDE(file_inode(file));
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 651d09a11dde..6f9f84eecded 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -46,6 +46,7 @@ struct proc_dir_entry {
+ 	struct completion *pde_unload_completion;
+ 	struct list_head pde_openers;	/* who did ->open, but not ->release */
+ 	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
++	wait_queue_head_t pde_poll_wait; /* For proc_reg_poll */
+ 	u8 namelen;
+ 	char name[];
+ };
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 608e60a74c3c..a4a3d5f001ef 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -34,6 +34,7 @@ static inline struct proc_dir_entry *proc_create(
+ 	return proc_create_data(name, mode, parent, proc_fops, NULL);
+ }
+=20
++extern void proc_wake_up(struct proc_dir_entry *pde);
+ extern void proc_set_size(struct proc_dir_entry *, loff_t);
+ extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
+ extern void *PDE_DATA(const struct inode *);
+
+--Sig_/go0y1zVCsVM/NqISGITolbd
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBUw7aLTnsnt1WYoG5AQK1Vw/9GY0co1BnJ4ceZzVAw+25O2ch9SQXKDij
+hVzMQbJDNregPSTkmHhYQ4URr0W0qszFV6vaYOTyCBGb+1uYWRWemqHupp+wUgoJ
+kZxsDBQwaDIX6gL6mZTIHGQqBbUSnoImgw1kNFiZB8OI1+gvVx9SeHAVmsYOaTyb
+dGyfqdfAkiB/B+mDAvXIR9ma7a4y3b/p4h/QcTSozn2+5m263mlVCRbKqFI2WjSf
+y/XTnYnQ1l8P5k7yQlLrf+2WjeR3Fua3X2YHrjp2n6ngjggp5TydwbvWxnfU1zol
+2WM5wiDWCJWij/6KSuDldAlLRXYUNQcv/uKkhzE4gCZbhPsHZlguvpvGQOM4r4G2
+XUTYm5ISvGqV1oU53mf50r9jmUROLWYVuytWJosAFOREeEfXj9RN3AYaHYKNnG/B
+cnfj6f9s+3tSyJFRGtSiFDKWKZR3A5gFSAl2Ch6jGxwbGiSnWz6pDYkZjN/OvhxG
+ii92U5/2qAmwgBfImGvXxZtvmc5n9yHkFMyBINXRRR/mD4n7xKnRLk9nziGn1AqL
+Nt1eiZ9M7KJbwP8rGtYXyHU4z22Mp0s/wecW56ndayH6x9LnaCpT3DZ8czVX+/Gv
+/BxEHtsCY1YQkK+Dg5yty5yhVhxh3MfpuJgVEAzxFdWafyTEIierPdnHZ74TVguF
+/CcvLryUmlU=
+=8/OW
+-----END PGP SIGNATURE-----
+
+--Sig_/go0y1zVCsVM/NqISGITolbd--
