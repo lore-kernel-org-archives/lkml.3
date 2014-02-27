@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaB0MRO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:17:14 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:58893 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaB0MRM (ORCPT
+	id S1752982AbaB0MR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:17:27 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62550 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaB0MRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:17:12 -0500
-Date: Thu, 27 Feb 2014 13:17:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [GIT PULL] timers update for 3.15
-Message-ID: <20140227121707.GE9712@gmail.com>
-References: <1393433525-5765-1-git-send-email-fweisbec@gmail.com>
+	Thu, 27 Feb 2014 07:17:13 -0500
+Date: Thu, 27 Feb 2014 17:47:04 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Li Zefan <lizefan@huawei.com>,
+        josh@joshtriplett.org
+Subject: [PATCH 34/46] kernel: Include appropriate header file in hung_task.c
+Message-ID: <924c0b5b5df9a890b1bc24f70f9aa9a8a5c39d7f.1393493277.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1393433525-5765-1-git-send-email-fweisbec@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Include appropriate header file include/linux/sched/sysctl.h in
+kernel/hung_task.c because it has function declaration of function
+defined in kernel/hung_task.c.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+This elimiantes the following warning in kernel/hung_task.c:
+kernel/hung_task.c:195:5: warning: no previous prototype for ‘proc_dohung_task_timeout_secs’ [-Wmissing-prototypes]
 
-> Ingo,
-> 
-> Please pull the timers/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/core
-> ---
-> 
-> * The patch from Viresh removes some unecessary scheduler IPIs that wake
->   up the CPUs when deferrable timers are enqueued on remote targets.
-> 
->   In practice I have seen on boot some of these IPIs from various
->   sources:  MCE, vmstat/SLAB, cpufreq. They happen either on initcall
->   or cpu hotplug. Since these timers are enqueued on all CPUs, there
->   are some potential big rounds of IPIs that are spared with this patch.
->   
->   But it's just what I've seen on my own machine on boot. I expect some
->   more scenarios where a few IPIs will be avoided depending on configs
->   and usecases because we have some more users of deferrable timers.
-> 
-> * Kconfig text made clearer for full dynticks by Paul Gortmaker.
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Paul Gortmaker (1):
->       nohz: ensure users are aware boot CPU is not NO_HZ_FULL
-> 
-> Viresh Kumar (1):
->       timer: Spare IPI when deferrable timer is queued on idle remote targets
-> 
-> 
->  kernel/time/Kconfig | 2 +-
->  kernel/timer.c      | 9 ++++++++-
->  2 files changed, 9 insertions(+), 2 deletions(-)
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/hung_task.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-So I wanted to pull this fine set of commits, just to discover that 
-Thomas already pulled it into timers/core :-)
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 0b9c169..2704c36 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -16,6 +16,7 @@
+ #include <linux/export.h>
+ #include <linux/sysctl.h>
+ #include <linux/utsname.h>
++#include <linux/sched/sysctl.h>
+ #include <trace/events/sched.h>
+ 
+ /*
+-- 
+1.7.9.5
 
-	Ingo
