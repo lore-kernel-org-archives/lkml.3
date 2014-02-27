@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaB0RNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:13:25 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47216 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979AbaB0RNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:13:24 -0500
-Date: Thu, 27 Feb 2014 18:13:17 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        dougthompson@xmission.com, bhelgaas@google.com, JBeulich@suse.com,
-        dan.carpenter@oracle.com, linux-kernel@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-pci@vger.kernel.org,
-        Arindam.Nath@amd.com
-Subject: Re: [PATCH] amd64_edac: Add support for newer F16h models
-Message-ID: <20140227171317.GL18191@pd.tnic>
-References: <1392913726-16961-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+	id S1753479AbaB0ROm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:14:42 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36214 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaB0ROk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 12:14:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1392913726-16961-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1393517912.4648.5.camel@jlt4.sipsolutions.net>
+References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
+	<1393512434-1325-3-git-send-email-dh.herrmann@gmail.com>
+	<1393512787.4648.1.camel@jlt4.sipsolutions.net>
+	<CANq1E4RNbtbdVhC2PgyZMGN_duScbmCOGeMxAYiKLL-8H=EWSA@mail.gmail.com>
+	<1393517912.4648.5.camel@jlt4.sipsolutions.net>
+Date: Thu, 27 Feb 2014 18:14:40 +0100
+Message-ID: <CANq1E4TBeNbovfpVF1ByxostkNczdcK5R3c0jQ=qKp6V299kCg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] mac80211: set NET_NAME_USER for user-space created ifs
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 20, 2014 at 10:28:46AM -0600, Aravind Gopalakrishnan wrote:
-> Extending ECC decoding support for F16h M30h.
-> 
-> Tested on F16h M30h with ECC turned on using mce_amd_inj module and
-> the patch works fine.
-> 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> Tested-by: Arindam Nath <Arindam.Nath@amd.com>
+Hi
 
-Added hpa's ack and applied,
+On Thu, Feb 27, 2014 at 5:18 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Thu, 2014-02-27 at 15:56 +0100, David Herrmann wrote:
+>
+>> >> +++ b/net/mac80211/iface.c
+>> >> @@ -1620,6 +1620,7 @@ int ieee80211_if_add(struct ieee80211_local *local, const char *name,
+>> >>                                       + IEEE80211_ENCRYPT_HEADROOM;
+>> >>               ndev->needed_tailroom = IEEE80211_ENCRYPT_TAILROOM;
+>> >>
+>> >> +             ndev->name_assign_type = NET_NAME_USER;
+>> >
+>> > this is wrong because we call this in main.c with a "wlan%d" argument
+>> > for the name, which gets expanded.
+>>
+>> Whoops, yeah, same issue as with ath6kl where I fixed it with a
+>> separate "name_assign_type" argument. I will do the same here for v2.
+>
+> I'm not sure that helps - the user could potentially pass "foobar%d" as
+> the interface name and get a number assigned by the kernel. In that case
+> you probably *don't* want to set it to "name assigned by user"?
+>
+> Maybe this whole thing can just be handled in __dev_alloc_name() since
+> no kernel user should pass just a string without "%d" in it.
 
-Thanks.
+Nope, I still want to set NET_NAME_USER in that case. It's not about
+the %d suffix, it's about who chooses the suffix. If wpas decides to
+use p2p-wlanX-%d, this is fine, as it's a virtual device where stable
+IDs are not required at all.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks
+David
