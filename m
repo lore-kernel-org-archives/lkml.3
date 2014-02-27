@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaB0Nam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:30:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54857 "EHLO
+	id S1752976AbaB0N3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:29:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54735 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbaB0Nag (ORCPT
+	with ESMTP id S1752936AbaB0N3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:30:36 -0500
-Date: Thu, 27 Feb 2014 05:30:12 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-1029f9fedf87fa6f52096991588fa54ffd159584@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, adrian.hunter@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        namhyung@kernel.org, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1392859976-32760-4-git-send-email-namhyung@kernel.org>
-References: <1392859976-32760-4-git-send-email-namhyung@kernel.org>
+	Thu, 27 Feb 2014 08:29:18 -0500
+Date: Thu, 27 Feb 2014 05:28:34 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-huoxnou7sw85lm58k3pi1xhw@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Check compatible symtab type before loading dso
-Git-Commit-ID: 1029f9fedf87fa6f52096991588fa54ffd159584
+Subject: [tip:perf/core] perf tools:
+  Warn the user about how to enable libunwind support
+Git-Commit-ID: 7a0447d61d2d754988add992be2b46d4587ae86a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,131 +36,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1029f9fedf87fa6f52096991588fa54ffd159584
-Gitweb:     http://git.kernel.org/tip/1029f9fedf87fa6f52096991588fa54ffd159584
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 20 Feb 2014 10:32:56 +0900
+Commit-ID:  7a0447d61d2d754988add992be2b46d4587ae86a
+Gitweb:     http://git.kernel.org/tip/7a0447d61d2d754988add992be2b46d4587ae86a
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 20 Feb 2014 16:08:18 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Feb 2014 16:25:01 -0300
+CommitDate: Mon, 24 Feb 2014 09:29:36 -0300
 
-perf symbols: Check compatible symtab type before loading dso
+perf tools: Warn the user about how to enable libunwind support
 
-When loading a dso it'll look for symbol tables of all possible types.
-However it's just wasted of time to check incompatible types - like
-trying kernel module when loading user library.
+When one has libunwind installed somewhere the perf tools build process
+doesn't expects it to be, this happens:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+  [acme@ssdandy linux]$ make O=/tmp/build/perf -C tools/perf/ install-bin
+  make: Entering directory `/home/acme/git/linux/tools/perf'
+    BUILD:   Doing 'make -j8' parallel build
+  config/Makefile:312: No libunwind found, disabling post unwind support.  Please install libunwind-dev[el] >= 1.1
+
+  Auto-detecting system features:
+  <SNIP>
+  ...                     libunwind: [ OFF ]
+
+Change the message so that it tells how to use a non-standard libunwind
+install directory:
+
+  config/Makefile:312: No libunwind found, disabling post unwind support.  Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR
+
+  [acme@ssdandy linux]$ make LIBUNWIND_DIR=/opt/libunwind-git/ O=/tmp/build/perf -C tools/perf/ install-bin
+  make: Entering directory `/home/acme/git/linux/tools/perf'
+    BUILD:   Doing 'make -j8' parallel build
+
+  Auto-detecting system features:
+  <SNIP>
+  ...                     libunwind: [ on  ]
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1392859976-32760-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/n/tip-huoxnou7sw85lm58k3pi1xhw@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 61 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 52 insertions(+), 9 deletions(-)
+ tools/perf/config/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 46e2ede..0ada68b 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1251,6 +1251,46 @@ out_failure:
- 	return -1;
- }
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 97a64c4..9429805 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -309,7 +309,7 @@ endif # NO_LIBELF
  
-+static bool dso__is_compatible_symtab_type(struct dso *dso, bool kmod,
-+					   enum dso_binary_type type)
-+{
-+	switch (type) {
-+	case DSO_BINARY_TYPE__JAVA_JIT:
-+	case DSO_BINARY_TYPE__DEBUGLINK:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
-+	case DSO_BINARY_TYPE__FEDORA_DEBUGINFO:
-+	case DSO_BINARY_TYPE__UBUNTU_DEBUGINFO:
-+	case DSO_BINARY_TYPE__BUILDID_DEBUGINFO:
-+	case DSO_BINARY_TYPE__OPENEMBEDDED_DEBUGINFO:
-+		return !kmod && dso->kernel == DSO_TYPE_USER;
-+
-+	case DSO_BINARY_TYPE__KALLSYMS:
-+	case DSO_BINARY_TYPE__VMLINUX:
-+	case DSO_BINARY_TYPE__KCORE:
-+		return dso->kernel == DSO_TYPE_KERNEL;
-+
-+	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
-+	case DSO_BINARY_TYPE__GUEST_VMLINUX:
-+	case DSO_BINARY_TYPE__GUEST_KCORE:
-+		return dso->kernel == DSO_TYPE_GUEST_KERNEL;
-+
-+	case DSO_BINARY_TYPE__GUEST_KMODULE:
-+	case DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE:
-+		/*
-+		 * kernel modules know their symtab type - it's set when
-+		 * creating a module dso in machine__new_module().
-+		 */
-+		return kmod && dso->symtab_type == type;
-+
-+	case DSO_BINARY_TYPE__BUILD_ID_CACHE:
-+		return true;
-+
-+	case DSO_BINARY_TYPE__NOT_FOUND:
-+	default:
-+		return false;
-+	}
-+}
-+
- int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- {
- 	char *name;
-@@ -1261,6 +1301,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	int ss_pos = 0;
- 	struct symsrc ss_[2];
- 	struct symsrc *syms_ss = NULL, *runtime_ss = NULL;
-+	bool kmod;
- 
- 	dso__set_loaded(dso, map->type);
- 
-@@ -1301,7 +1342,11 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	if (!name)
- 		return -1;
- 
--	/* Iterate over candidate debug images.
-+	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
-+		dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
-+
-+	/*
-+	 * Iterate over candidate debug images.
- 	 * Keep track of "interesting" ones (those which have a symtab, dynsym,
- 	 * and/or opd section) for processing.
- 	 */
-@@ -1311,6 +1356,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 
- 		enum dso_binary_type symtab_type = binary_type_symtab[i];
- 
-+		if (!dso__is_compatible_symtab_type(dso, kmod, symtab_type))
-+			continue;
-+
- 		if (dso__read_binary_type_filename(dso, symtab_type,
- 						   root_dir, name, PATH_MAX))
- 			continue;
-@@ -1351,15 +1399,10 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
- 	if (!runtime_ss && syms_ss)
- 		runtime_ss = syms_ss;
- 
--	if (syms_ss) {
--		int km;
--
--		km = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
--		     dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
--		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, km);
--	} else {
-+	if (syms_ss)
-+		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, kmod);
-+	else
- 		ret = -1;
--	}
- 
- 	if (ret > 0) {
- 		int nr_plt;
+ ifndef NO_LIBUNWIND
+   ifneq ($(feature-libunwind), 1)
+-    msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
++    msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
+     NO_LIBUNWIND := 1
+   else
+     ifeq ($(ARCH),arm)
