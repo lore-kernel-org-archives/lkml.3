@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaB0PLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:11:43 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:2860 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032AbaB0PLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:11:41 -0500
-Message-ID: <1393513469.6784.58.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 03/46] kernel: Move prototype declaration to header file
- include/linux/cpu.h
-From: Toshi Kani <toshi.kani@hp.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Borislav Petkov <bp@alien8.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Jones <drjones@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        David Miller <davem@davemloft.net>, josh@joshtriplett.org
-Date: Thu, 27 Feb 2014 08:04:29 -0700
-In-Reply-To: <2f6da4289a80fcde70aec12f65c135fbf719e338.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-	 <2f6da4289a80fcde70aec12f65c135fbf719e338.1393493276.git.rashika.kheria@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1752729AbaB0PL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:11:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55990 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaB0PL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 10:11:26 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140227082529.GA18210@pd.tnic>
+References: <530E6F76.1070605@zytor.com> <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722> <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722> <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com> <1393472326.24588.82.camel@joe-AO722> <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com> <20140227082529.GA18210@pd.tnic>
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 27 Feb 2014 07:10:25 -0800
+To: Borislav Petkov <bp@alien8.de>
+CC: Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
+        Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 16:42 +0530, Rashika Kheria wrote:
-> Add prototype declaration to header file include/linux/cpu.h because
-> they are used by more than one file.
-> 
-> This eliminates the following warning in kernel/cpu.c:
-> kernel/cpu.c:512:13: warning: no previous prototype for ‘arch_enable_nonboot_cpus_begin’ [-Wmissing-prototypes]
-> kernel/cpu.c:516:13: warning: no previous prototype for ‘arch_enable_nonboot_cpus_end’ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  arch/x86/kernel/smpboot.c |    1 +
->  include/linux/cpu.h       |    2 ++
->  2 files changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index a32da80..e428764 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -49,6 +49,7 @@
->  #include <linux/bootmem.h>
->  #include <linux/err.h>
->  #include <linux/nmi.h>
-> +#include <linux/cpu.h>
->  #include <linux/tboot.h>
->  #include <linux/stackprotector.h>
->  #include <linux/gfp.h>
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 03e235ad..9f633b0 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -38,6 +38,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
->  
->  extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
->  extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
-> +void arch_enable_nonboot_cpus_begin(void);
-> +void arch_enable_nonboot_cpus_end(void);
-
-Can we simply include linux/smp.h, which defines them already?
-
-Thanks,
--Toshi
+Keep in mind, too, that for the kernel we don't care about the full C standard but a subset.  We rely on extrastandard behavior all over the place.  For all ABIs supported by the kernel, sizeof(_Book) == 1 and so everything is sane.
 
 
+On February 27, 2014 12:25:29 AM PST, Borislav Petkov <bp@alien8.de> wrote:
+>On Wed, Feb 26, 2014 at 07:42:37PM -0800, H. Peter Anvin wrote:
+>> sizeof(_Bool), like for many other types, is ABI-dependent, but that
+>> doesn't mean it is illegitimate.
+>>
+>> I don't think C99 says that it is invalid (which means C99 doesn't
+>> permit is to be a packed bitmap.)
+>
+>Ok, but what can be said about the __pcpu_size_call() use case where we
+>do sizeof(bool)? We have there accessors for sizes 1,2,4 and 8. Can we
+>simply assume that the ABI will give us a size of bool which is one of
+>those?
+>
+>What if sizeof(bool) is 3?
+>
+>Or, are we saying that sizeof(bool) will always be of some natural,
+>native size like byte, short, int or long so we're good there?
+>
+>Thanks.
 
->  
->  #ifdef CONFIG_HOTPLUG_CPU
->  extern void unregister_cpu(struct cpu *cpu);
-
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
