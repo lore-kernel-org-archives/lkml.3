@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaB0Xrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 18:47:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33965 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268AbaB0Xrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 18:47:32 -0500
-Message-ID: <530FCE6C.4080808@zytor.com>
-Date: Thu, 27 Feb 2014 15:46:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752081AbaB0Xvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 18:51:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:57956 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaB0Xva (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 18:51:30 -0500
+Date: Thu, 27 Feb 2014 17:48:50 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] typecheck: introduce assign_if() and
+ assign_if_enabled()
+Message-ID: <20140227234850.GC7308@joshc.qualcomm.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-2-git-send-email-joshc@codeaurora.org>
+ <20140227190032.GA4421@kroah.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu>	<530B841F.5050803@zytor.com>	<alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>	<530B90A5.3090302@zytor.com>	<20140224141329.1cd3bb52@gandalf.local.home>	<20140224193043.GP6835@laptop.programming.kicks-ass.net>	<530C12CA.6070308@zytor.com>	<alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>	<dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>	<20140225094352.73e0e28c@gandalf.local.home>	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>	<20140227173150.4e5ed747@gandalf.local.home>	<530FC1C6.5040209@zytor.com> <20140227183008.6be081b7@gandalf.local.home>
-In-Reply-To: <20140227183008.6be081b7@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227190032.GA4421@kroah.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 03:30 PM, Steven Rostedt wrote:
-> On Thu, 27 Feb 2014 14:52:54 -0800
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Thu, Feb 27, 2014 at 11:00:32AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Feb 24, 2014 at 11:08:25AM -0600, Josh Cartwright wrote:
+> > +/*
+> > + * Intended for use in static object initializers,
+> > + * assign_if(const_expr, function) evaluates to 'function' if 'const_expr',
+> > + * otherwise NULL.
+> > + *
+> > + * The type of the assign_if() expression is typeof(function), and therefore
+> > + * can provide typechecking regardless of 'const_expr'.
+> > + *
+> > + * gcc considers 'function' to be used and will not generate a 'defined but not
+> > + * used' warning when not 'const_expr', however, gcc is smart enough to
+> > + * eliminate 'function' if assign_if() is the only reference.
+> > + */
 > 
->> On 02/27/2014 02:31 PM, Steven Rostedt wrote:
->>>
->>> Yeah, something is getting mesed up.
->>>
->>
->> What it *looks* like to me is that we try to nest the cr2 save/restore,
->> which doesn't nest because it is a percpu variable.
->>
->> ... except in the x86-64 case, we *ALSO* save/restore cr2 inside
->> entry_64.S, which makes the stuff in do_nmi completely redundant and
->> there for no good reason.
-> 
-> Peter, look at the code. That percpu cr2 is in a #ifdef CONFIG_X86_32
-> section. That is, it isn't even executed. That's i386 code. The only
-> place the cr2 is saved for x86_64 is in entry_64.S.
-> 
+> What version of gcc started doing this?  Does llvm also do this?
 
-Right, egg on my face.  However, I still think it would make more sense
-for it to nest the way entry_64.S does if at all possible.
+I'll need to dig up some old gcc's to give this a more thorough
+testing; testing with clang 3.4, and it appears to have the same
+behavior, at least when I throw a trivial usecase at it.
 
-That makes this even more confusing, though.  I would still like to see
-what happens with the patch I sent Vince.
+	$ clang --version
+	clang version 3.4 (tags/RELEASE_34/final)
+	Target: x86_64-unknown-linux-gnu
+	Thread model: posix
 
-	-hpa
+	$ cat test.c
+	static void foo(void)
+	{
+		extern void BROKEN(void);
+		BROKEN();
+	}
+	void (*callback)(void) = 0 ? foo : 0;
 
+	$ clang -Wall -Werror -c test.c
 
+	$ size test.o
+	   text	   data	    bss	    dec	    hex	filename
+	      0	      0	      8	      8	      8	/tmp/test.o
+
+	$ nm test.o
+	0000000000000000 B callback
+
+Although, given the feedback on the other patches, assign_if() may
+become just be a solution in search of a problem :).
+
+Thanks,
+  Josh
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
