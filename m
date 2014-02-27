@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaB0WLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 17:11:08 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37027 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaB0WLH (ORCPT
+	id S1752086AbaB0WSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 17:18:22 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59745 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817AbaB0WSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 17:11:07 -0500
-X-IronPort-AV: E=Sophos;i="4.97,557,1389744000"; 
-   d="scan'208";a="104828279"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>,
-        <dev@openvswitch.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH v2] openvswitch: Disable bottom half when grabbing stats lock in userspace context
-Date: Thu, 27 Feb 2014 22:10:59 +0000
-Message-ID: <1393539059-21727-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 27 Feb 2014 17:18:20 -0500
+Date: Thu, 27 Feb 2014 23:18:19 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v3 3/3] ARM hibernation / suspend-to-disk
+Message-ID: <20140227221819.GA6910@amd.pavel.ucw.cz>
+References: <1393372920-3896-1-git-send-email-sebastian.capella@linaro.org>
+ <1393372920-3896-4-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393372920-3896-4-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The megaflow feature introduced per-CPU stats, and the new code did some
-refactoring as well [1]. However the new functions doesn't disable bottom halves
-when locking the stat, and as they can be called from userspace context, they
-can be interrupted by netif_receive_skb.
+Hi!
+On Tue 2014-02-25 16:02:00, Sebastian Capella wrote:
+> From: Russ Dill <Russ.Dill@ti.com>
+> 
+> Enable hibernation for ARM architectures and provide ARM
+> architecture specific calls used during hibernation.
+> 
+> The swsusp hibernation framework depends on the
+> platform first having functional suspend/resume.
+> 
+> Then, in order to enable hibernation on a given platform, a
+> platform_hibernation_ops structure may need to be registered with
+> the system in order to save/restore any SoC-specific / cpu specific
+> state needing (re)init over a suspend-to-disk/resume-from-disk cycle.
+> 
+> For example:
+> 
+>      - "secure" SoCs that have different sets of control registers
+>        and/or different CR reg access patterns.
+> 
+>      - SoCs with L2 caches as the activation sequence there is
+>        SoC-dependent; a full off-on cycle for L2 is not done
+>        by the hibernation support code.
+> 
+>      - SoCs requiring steps on wakeup _before_ the "generic" parts
+>        done by cpu_suspend / cpu_resume can work correctly.
+> 
+>      - SoCs having persistent state which is maintained during suspend
+>        and resume, but will be lost during the power off cycle after
+>        suspend-to-disk.
+> 
+> This is a rebase/rework of Frank Hofmann's v5 hibernation patchset.
+> 
 
-[1] e298e50570: openvswitch: Per cpu flow stats.
+> +/*
+> + * Snapshot kernel memory and reset the system.
+> + * soft_restart is not technically needed, but is used
+> + * to get success returned from cpu_suspend.
+> + * After resume, the hibernation snapshot is written out.
+> + */
+> +static int notrace __swsusp_arch_save_image(unsigned long unused)
+> +{
+> +	int ret;
+> +
+> +	ret = swsusp_save();
+> +	if (ret == 0)
+> +		soft_restart(virt_to_phys(cpu_resume));
+> +	return ret;
+> +}
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-v2: use _bh instead of _irqsave/restore
- net/openvswitch/flow.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+This is static, so maybe arch_save_image() is better name?
 
-diff --git a/net/openvswitch/flow.c b/net/openvswitch/flow.c
-index 16f4b46..9110cf4 100644
---- a/net/openvswitch/flow.c
-+++ b/net/openvswitch/flow.c
-@@ -90,13 +90,13 @@ static void stats_read(struct flow_stats *stats,
- 		       struct ovs_flow_stats *ovs_stats,
- 		       unsigned long *used, __be16 *tcp_flags)
- {
--	spin_lock(&stats->lock);
-+	spin_lock_bh(&stats->lock);
- 	if (time_after(stats->used, *used))
- 		*used = stats->used;
- 	*tcp_flags |= stats->tcp_flags;
- 	ovs_stats->n_packets += stats->packet_count;
- 	ovs_stats->n_bytes += stats->byte_count;
--	spin_unlock(&stats->lock);
-+	spin_unlock_bh(&stats->lock);
- }
- 
- void ovs_flow_stats_get(struct sw_flow *flow, struct ovs_flow_stats *ovs_stats,
-@@ -130,12 +130,12 @@ void ovs_flow_stats_get(struct sw_flow *flow, struct ovs_flow_stats *ovs_stats,
- 
- static void stats_reset(struct flow_stats *stats)
- {
--	spin_lock(&stats->lock);
-+	spin_lock_bh(&stats->lock);
- 	stats->used = 0;
- 	stats->packet_count = 0;
- 	stats->byte_count = 0;
- 	stats->tcp_flags = 0;
--	spin_unlock(&stats->lock);
-+	spin_unlock_bh(&stats->lock);
- }
- 
- void ovs_flow_stats_clear(struct sw_flow *flow)
+> +static u8 __swsusp_resume_stk[PAGE_SIZE/2] __nosavedata;
+
+resume_stack?
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
