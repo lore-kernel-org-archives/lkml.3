@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaB0RX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:23:57 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:55107 "EHLO relay.sgi.com"
+	id S1753893AbaB0RX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:23:56 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:55108 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753800AbaB0RXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753802AbaB0RXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 12:23:47 -0500
 From: Alex Thorlton <athorlton@sgi.com>
 To: linux-kernel@vger.kernel.org
@@ -24,9 +24,9 @@ Cc: Alex Thorlton <athorlton@sgi.com>,
         Alexander Viro <viro@zeniv.linux.org.uk>, linux390@de.ibm.com,
         linux-s390@vger.kernel.org, linux-mm@kvack.org,
         linux-api@vger.kernel.org
-Subject: [PATCH 1/4] mm, s390: Revert "thp: make MADV_HUGEPAGE check for mm->def_flags"
-Date: Thu, 27 Feb 2014 11:23:23 -0600
-Message-Id: <40ad55e4434df1e0b76c09b811c02a565a0b0025.1393516106.git.athorlton@sgi.com>
+Subject: [PATCH 2/4] mm, s390: Ignore MADV_HUGEPAGE on s390 to prevent SIGSEGV in qemu
+Date: Thu, 27 Feb 2014 11:23:24 -0600
+Message-Id: <c856e298ae180842638bdf85d74436ad8bbb84e4.1393516106.git.athorlton@sgi.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <cover.1393516106.git.athorlton@sgi.com>
 References: <cover.1393516106.git.athorlton@sgi.com>
@@ -36,32 +36,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 8e72033f2a489b6c98c4e3c7cc281b1afd6cb85c, and adds
-in code to fix up any issues caused by the revert.
+As Christian pointed out, the recent 'Revert "thp: make MADV_HUGEPAGE
+check for mm->def_flags"' breaks qemu, it does QEMU_MADV_HUGEPAGE for
+all kvm pages but this doesn't work after s390_enable_sie/thp_split_mm.
 
-The revert is necessary because hugepage_madvise would return -EINVAL
-when VM_NOHUGEPAGE is set, which will break subsequent chunks of this
-patch set.
+Paolo suggested that instead of failing on the call to madvise, we
+simply ignore the call (return 0).
 
-Here's a snip of an e-mail from Gerald detailing the original purpose
-of this code, and providing justification for the revert:
-
-<snip>
-The intent of 8e72033f2a48 was to guard against any future programming
-errors that may result in an madvice(MADV_HUGEPAGE) on guest mappings,
-which would crash the kernel.
-
-Martin suggested adding the bit to arch/s390/mm/pgtable.c, if 8e72033f2a48
-was to be reverted, because that check will also prevent a kernel crash
-in the case described above, it will now send a SIGSEGV instead.
-
-This would now also allow to do the madvise on other parts, if needed,
-so it is a more flexible approach. One could also say that it would have
-been better to do it this way right from the beginning... 
-</snip>
-
-Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
 Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
 Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
@@ -84,46 +69,29 @@ Cc: linux-mm@kvack.org
 Cc: linux-api@vger.kernel.org
 
 ---
- arch/s390/mm/pgtable.c | 3 +++
- mm/huge_memory.c       | 4 ----
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ mm/huge_memory.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 3584ed9..a87cdb4 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -504,6 +504,9 @@ static int gmap_connect_pgtable(unsigned long address, unsigned long segment,
- 	if (!pmd_present(*pmd) &&
- 	    __pte_alloc(mm, vma, pmd, vmaddr))
- 		return -ENOMEM;
-+	/* large pmds cannot yet be handled */
-+	if (pmd_large(*pmd))
-+		return -EFAULT;
- 	/* pmd now points to a valid segment table entry. */
- 	rmap = kmalloc(sizeof(*rmap), GFP_KERNEL|__GFP_REPEAT);
- 	if (!rmap)
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 82166bf..a4310a5 100644
+index a4310a5..61d234d 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1968,8 +1968,6 @@ out:
- int hugepage_madvise(struct vm_area_struct *vma,
- 		     unsigned long *vm_flags, int advice)
+@@ -1970,6 +1970,15 @@ int hugepage_madvise(struct vm_area_struct *vma,
  {
--	struct mm_struct *mm = vma->vm_mm;
--
  	switch (advice) {
  	case MADV_HUGEPAGE:
++#ifdef CONFIG_S390
++		/*
++		 * qemu blindly sets MADV_HUGEPAGE on all allocations, but s390
++		 * can't handle this properly after s390_enable_sie, so we simply
++		 * ignore the madvise to prevent qemu from causing a SIGSEGV.
++		 */
++		if (mm_has_pgste(vma->vm_mm))
++			return 0;
++#endif
  		/*
-@@ -1977,8 +1975,6 @@ int hugepage_madvise(struct vm_area_struct *vma,
+ 		 * Be somewhat over-protective like KSM for now!
  		 */
- 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
- 			return -EINVAL;
--		if (mm->def_flags & VM_NOHUGEPAGE)
--			return -EINVAL;
- 		*vm_flags &= ~VM_NOHUGEPAGE;
- 		*vm_flags |= VM_HUGEPAGE;
- 		/*
 -- 
 1.7.12.4
 
