@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaB0JJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 04:09:53 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:40435 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaB0JJq (ORCPT
+	id S1751930AbaB0JM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 04:12:28 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:41147 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750965AbaB0JMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 04:09:46 -0500
+	Thu, 27 Feb 2014 04:12:23 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: Peter Chen <Peter.Chen@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Date: Thu, 27 Feb 2014 01:12:10 -0800
+Subject: RE: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Topic: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+Thread-Index: Ac8zBpkmGOD9cgN1TDODqguqNxuDeQAlSdLg
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE54EC413C73@SC-VEXCH4.marvell.com>
+References: <1393228996-14787-1-git-send-email-zhangwm@marvell.com>
+ <1393228996-14787-3-git-send-email-zhangwm@marvell.com>
+ <20140225011839.GD7540@shlinux1.ap.freescale.net>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC413563@SC-VEXCH4.marvell.com>
+ <6ad74d797ecc473f922ffdb58c3e9c70@BN1PR03MB235.namprd03.prod.outlook.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC4135A5@SC-VEXCH4.marvell.com>
+ <bce87beb86d34377ac3dae0645622edf@BN1PR03MB235.namprd03.prod.outlook.com>
+ <20140225181234.GF23275@saruman.home>
+ <175CCF5F49938B4D99B2E3EF7F558EBE54EC413885@SC-VEXCH4.marvell.com>
+ <20140226151913.GF30028@saruman.home>
+In-Reply-To: <20140226151913.GF30028@saruman.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <20140226214236.GO22728@two.firstfloor.org>
-References: <530D53EF.9090706@amacapital.net>
-	<CABPqkBSECV6iG4T60-OTZsV2CrCtV=awUSt7SGLTdkX9i8T90g@mail.gmail.com>
-	<CALCETrWXDYsxXBWPqNS8cK69756DNj5sUyk-Fho2r_5_wh-=mg@mail.gmail.com>
-	<20140226185513.GL22728@two.firstfloor.org>
-	<CALCETrVQ8SBg+YLuPmDevL+f2dzBjLJucfMvVHaB04E8QJSGXw@mail.gmail.com>
-	<530E3E47.8010205@gmail.com>
-	<CALCETrUHiDqT+VRbdEnGsEkMFqQt+ZqX+RTenp1ets8XMhrQ2Q@mail.gmail.com>
-	<530E4B42.5090401@gmail.com>
-	<20140226205322.GM22728@two.firstfloor.org>
-	<530E5DE7.7060904@gmail.com>
-	<20140226214236.GO22728@two.firstfloor.org>
-Date: Thu, 27 Feb 2014 10:09:44 +0100
-Message-ID: <CABPqkBQcN=tA7o=9Zc8XeUYZB6PHXZoKJUcp7Z_sn9YW3+VpGA@mail.gmail.com>
-Subject: Re: [PATCH v3 00/14] perf, x86: Haswell LBR call stack support
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>, Andy Lutomirski <luto@amacapital.net>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-27_03:2014-02-26,2014-02-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1402270009
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, Feb 26, 2014 at 10:42 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Wed, Feb 26, 2014 at 02:34:31PM -0700, David Ahern wrote:
->> On 2/26/14, 1:53 PM, Andi Kleen wrote:
->> >>Is there some reason not to enable frame pointers?
->> >
->> >It makes code slower.
->>
-
-That is what I have been told by compiler people too.
-
-This is especially true of small functions which C++ object-oriented
-code is full of. And that's how large programs are written with these
-days.
-
-The other problem with FP is hat you need to have everything
-compiled with it. It is not always obvious how to check this, without
-going to assembly. There is no indication in the ELF headers, AFAIK.
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1R9CcEe005430
 
 
->> Sure there is some overhead because of the push, mov, pop
->> instructions per function. But, take for example the simple program
->> below. Compile with and without frame pointers
->
-> I'm not criticizing your choice, just saying that
-> it's often not practical to get FP everywhere
-> (and I bet you missed some cases too)
->
-> <.. micro benchmark snipped...>
->
-> The CPU you're using has special hardware to avoid the main
-> problems with FP. It can still cause slow downs in other
-> cases (e.g. one register less). But there are other
-> CPUs where this special hardware is not available.
->
-> You may not care about these cases, but other people do.
->
->> >wrong annotations, out of date or broken dwarf library etc.)
->>
->> dwarf is often just not usable:
->
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: 2014Äê2ÔÂ26ÈÕ 23:19
+> To: Neil Zhang
+> Cc: balbi@ti.com; Peter Chen; gregkh@linuxfoundation.org;
+> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Alexander Shishkin
+> Subject: Re: [PATCH 2/6] usb: gadget: mv_udc: disable HW zlt for ep0
+> 
+> Hi,
+> 
+> On Tue, Feb 25, 2014 at 05:48:17PM -0800, Neil Zhang wrote:
+> > > > > > > > > Hardware zlt will try to send the zero length packet
+> > > > > > > > > automatically when the data transferd is multiple times
+> > > > > > > > > of max packet, this will cause issues on Windows.
+> > > > > > > > > So let's disable HW zlt by default.
+> > > > > > > >
+> > > > > > > > Would you have description that what kinds of issue on
+> > > > > > > > Windows if zlt is is selected?
+> > > > > > > >
+> > > > > > >
+> > > > > > > Enumeration will fail.
+> > > > > > >
+> > > > > >
+> > > > > > What causes enumeration fail, why it does not occur before?
+> > > > > >
+> > > > > A unexpected zero packet cause enumeration fail.
+> > > > > It's not easy that the descriptor is actually 1024 bytes, so not
+> > > > > easy to be found.
+> > > > >
+> > > >
+> > > > Chipidea bug too? Does it follow ch 8.5.3.2 Variable-length Data
+> > > > Stage, USB
+> > > 2.0 spec?
+> > >
+> > > wait, this is a chipidea core ? Why aren't you guys using the
+> > > chipidea driver yet ? You need to switch over to that driver dude,
+> > > we can't have duplicated code in the tree.
+> > >
+> > > I'm sorry, but I won't be taking this series, please use chipidea
+> > > driver, it should be very simple to add a glue layer for your core to the
+> chipidea driver.
+> > >
+> >
+> > Yes, it use chipidea IP.
+> > But the driver is earlier than the chipidea one and we use it for our
+> > products.
+> > So it may be not that easy to switch to chipidea driver due to the
+> > stability.
+> 
+> that's nonsense, the average chipidea glue layer is ~80 LOCs. You can write
+> that in less than 2 hours and give it a try. We cannot have duplicate drivers in
+> the tree and development effort *must* be shared.
+> 
+> If you guys use the same IP, why wouldn't you use the same chipidea driver ?
+> 
+> sorry, you didn't convince me.
 
-The first problem with the dwarf approach is that it incurs some
-overhead during sampling. You need to copy a chunk of the user stack
-in each sample. Not clear how much you need.
+It's too sad!
+Anyway we will estimate the chipidea driver to see whether it meets our requirement.
 
-The second problem is security. You are saving random chunks of stack
-in the perf.data file. Who knows what it contains. In many environments this
-is a showstopper.
+> 
+> --
+> Balbi
 
-The Haswell LBR call stack is a good compromise, though as Andi
-pointed out it has its tradeoffs.  It does not work in all
-cases. But it has the speed and the security. It is model specific.
-But I can live with that. PMU always comes with incremental
-improvements.
-
-> I agree (altough I haven't seen that error before)
->
->
->> That is a huge difference. Not to mention the fact the dwarf file is
->> useless which means radically lowering sample rate and increasing
->> mmap size.
->
-> Yep.
->
-> It's just fundamentally inefficient for profiling.
->
-> -Andi
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
