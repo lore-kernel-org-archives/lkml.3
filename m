@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaB0Vsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:48:38 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:55632 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaB0Vsg (ORCPT
+	id S1752745AbaB0VtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:49:12 -0500
+Received: from smtprelay0143.hostedemail.com ([216.40.44.143]:35919 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750942AbaB0VtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:48:36 -0500
-Message-ID: <530FB2AE.8020204@gmail.com>
-Date: Thu, 27 Feb 2014 22:48:30 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] ARM: dove: move Dove DT to MVEBU
-References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140227214543.GK1872@titan.lakedaemon.net>
-In-Reply-To: <20140227214543.GK1872@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 27 Feb 2014 16:49:10 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7652:7903:8603:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13161:13229:13311:13357:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: shelf66_6cd0ff581362a
+X-Filterd-Recvd-Size: 3322
+Message-ID: <1393537746.24588.143.camel@joe-AO722>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Joe Perches <joe@perches.com>
+To: Christopher Li <sparse@chrisli.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Feb 2014 13:49:06 -0800
+In-Reply-To: <CANeU7QnZika4XsdS_=UwPc5uZgv2-m5vMdmZLyCynKK2YNKLvQ@mail.gmail.com>
+References: <1393462087.24588.50.camel@joe-AO722>
+	 <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722>
+	 <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722>
+	 <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com>
+	 <1393472326.24588.82.camel@joe-AO722> <20140227040050.GA8449@nicira.com>
+	 <530EBCED.9020705@zytor.com> <20140227042636.GA9592@nicira.com>
+	 <530EBFC7.9030309@zytor.com>
+	 <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
+	 <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
+	 <1393533563.24588.127.camel@joe-AO722>
+	 <CANeU7QnZika4XsdS_=UwPc5uZgv2-m5vMdmZLyCynKK2YNKLvQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 10:45 PM, Jason Cooper wrote:
-> On Thu, Feb 27, 2014 at 10:28:01PM +0100, Sebastian Hesselbarth wrote:
->> Thanks to DT conversion effort, Marvell Dove with DT support is now
->> ready to leave mach-dove and hop into mach-mvebu. As discussed with
->> MVEBU maintainers, we first add dove.c now and keep on migrating
->> it with Armada 3xx SoCs the next cycle.
->>
->> Patch 1 adds a DT node for the system controller found on Marvell
->> MVEBU SoCs.
->>
->> Patch 2 copies an approach taken by Andrew Lunn for Kirkwood-to-MVEBU
->> patches, that add MACH_DOVE for Dove in mach-mvebu to distinguish it
->> from ARCH_DOVE in mach-dove, where drivers still support both non-DT
->> and DT.
->>
->> Patch 3 then moves mach-dove/board-dt.c to mach-mvebu/dove.c with
->> minor cleanups and converts drivers/phy/Kconfig to MACH_DOVE for
->> a DT-only driver.
->>
->> Patch 4 finally adds MACH_DOVE and some of its drivers to multi_v7
->> defconfig.
->>
->> The patches are based on v3.14-rc4, recently posted mvebu/pinctrl-cleanup
->> and mvebu/pinctrl-dove branches: v3.14-rc4 is required for a irqchip
->> driver fix when SPARSE_IRQ is set, the pinctrl branches remove hard-coded
->> addresses from Dove's pinctrl driver.
->
-> If I were to base this series on v3.14-rc1, I would need to pull in
->
->    mvebu/pinctrl-dove (which draws in mvebu/pinctrl-cleanup)
->    mvebu/irqchip-fixes
->
-> and that should be all.  iiuc, these are boot-time requirements, not
-> build or merge requirements, correct?
+On Thu, 2014-02-27 at 12:55 -0800, Christopher Li wrote:
+> On Thu, Feb 27, 2014 at 12:39 PM, Joe Perches <joe@perches.com> wrote:
 
-Yes, all are boot-time requirements only.
+> > Maybe the evaluate.c "size = bits_in_char;" assignment
+> >
+> >         if (size == 1 && is_bool_type(type)) {
+> > -               warning(expr->pos, "expression using sizeof bool");
+> > +               if (Wsizeof_bool)
+> > +                       warning(expr->pos, "expression using sizeof bool");
+> >                 size = bits_in_char;
+> >         }
+> >
+> > should be
+> >
+> >         size = sizeof(_Bool) * 8;
+> 
+> The reason to use bits_in_xxxx is to allow sparse application to over write
+> the size of int etc. If you don't like the bits_in_char here. You can introduce
+> bits_in_bool and set that to sizeof(Bool)*8 by default. That way you don't
+> hard code it.
 
-Sebastian
+There already is a bits_in_bool and it's default 1.
+
+$ git grep -E "\bbits_in_\w+\s*=[^=]"
+lib.c:          bits_in_long = 64;
+lib.c:          bits_in_pointer = 64;
+target.c:int bits_in_bool = 1;
+target.c:int bits_in_char = 8;
+target.c:int bits_in_short = 16;
+target.c:int bits_in_int = 32;
+target.c:int bits_in_long = 32;
+target.c:int bits_in_longlong = 64;
+target.c:int bits_in_longlonglong = 128;
+target.c:int bits_in_float = 32;
+target.c:int bits_in_double = 64;
+target.c:int bits_in_longdouble = 80;
+target.c:int bits_in_pointer = 32;
+target.c:int bits_in_enum = 32;
+
+> > And also, in sparse.1, Josh Triplett is shown as
+> > the maintainer.  Maybe that should be changed to
+> > Christopher Li
+> 
+> Maybe a separate patch.
+
+That's fine with me too.  If you're the maintainer,
+I think you should do that patch.  I don't see a need
+for me to send any more right now though.
+
+cheers, Joe
+
