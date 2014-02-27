@@ -1,89 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaB0Uql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:46:41 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55451 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaB0Uqj (ORCPT
+	id S1751901AbaB0Uwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:52:30 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40019 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaB0Uw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:46:39 -0500
-Date: Thu, 27 Feb 2014 21:46:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jenny Tc <jenny.tc@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        freemangordon@abv.bg, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140227204636.GA5053@amd.pavel.ucw.cz>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
- <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
- <20140204113640.GD2450@amd.pavel.ucw.cz>
- <20140220051655.GB2498@jenny-desktop>
- <20140221144529.GB5238@amd.pavel.ucw.cz>
- <20140226025444.GA21449@jenny-desktop>
+	Thu, 27 Feb 2014 15:52:29 -0500
+Message-ID: <530FA586.3010400@de.ibm.com>
+Date: Thu, 27 Feb 2014 21:52:22 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140226025444.GA21449@jenny-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vlad Yasevich <vyasevic@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022720-8372-0000-0000-000008D34EDD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-02-26 08:24:44, Jenny Tc wrote:
-> On Fri, Feb 21, 2014 at 03:45:29PM +0100, Pavel Machek wrote:
-> > On Thu 2014-02-20 10:46:55, Jenny Tc wrote:
-> > > On Tue, Feb 04, 2014 at 12:36:40PM +0100, Pavel Machek wrote:
-> > > > > --- a/drivers/power/Kconfig
-> > > > > +++ b/drivers/power/Kconfig
-> > > > > @@ -22,6 +22,19 @@ config POWER_SUPPLY_CHARGER
-> > > > >  	  drivers to keep the charging logic outside and the charger driver
-> > > > >  	  just need to abstract the charger hardware.
-> > > > >  
-> > > > > +config POWER_SUPPLY_CHARGING_ALGO_PSE
-> > > > > +	bool "PSE compliant charging algorithm"
-> > > > > +	help
-> > > > > +	  Say Y here to select Product Safety Engineering (PSE) compliant
-> > > > > +	  charging algorithm. As per PSE standard the battery characteristics
-> > > > > +	  and thereby the charging rates can vary on different temperature
-> > > > > +	  zones. This config will enable PSE compliant charging algorithm with
-> > > > > +	  maintenance charging support. At runtime the algorithm will be
-> > > > > +	  selected by the psy charger driver based on the type of the battery
-> > > > > +	  charging profile.
-> > > > 
-> > > > Information where to expect PSE compliant chargers would be nice.
-> > > 
-> > > This algorithm can be used with non PSE compliant chargers also. This is a SW
-> > > based charging algorithm.
-> > 
-> > Ok, but you need to explain for the users when it might be good idea
-> > to select this option...
-> > 
-> > Or maybe this should not be user configurable and drivers should just
-> > select it?
-> 
-> The idea is to allow pluggable charging algorithms. Currently we have only one
-> charging algorithm proposed, but can have other charging algorithms (like pulse
-> charging, rule based charging etc.). Based on the platform need, the algorithms
-> can be selected. So this should be a user configurable option. I can add more
-> explanation on when to select this option.
+Vlad,
 
-Yes please. Because with current description, user has no chance.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
+    macvtap: Add support of packet capture on macvtap device.
+
+causes a performance regression for iperf traffic between two KVM guests
+on my s390 system. Both guests are connected via two macvtaps on the same OSA
+network card.
+Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
+~4Gbit/sec
+
+Latency seems to be unchanges (uperf 1byte ping pong).
+
+According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
+patch and ~  40000 bytes without. So for some reason this patch causes the
+network stack to do segmentation. (the guest kernel stays the same, only host 
+kernel is changed).
+
+Any ideas?
+
+
+Christian
+
