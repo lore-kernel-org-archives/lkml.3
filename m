@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaB0KhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:37:05 -0500
-Received: from mx.treblig.org ([80.68.94.177]:41249 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaB0KhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:37:02 -0500
-X-Greylist: delayed 1852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 05:37:02 EST
-Date: Thu, 27 Feb 2014 09:56:35 +0000
-From: "Dr. David Alan Gilbert" <dave@treblig.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: The sheer number of sparse warnings in the kernel
-Message-ID: <20140227095635.GA1816@gallifrey>
-References: <530E6F76.1070605@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530E6F76.1070605@zytor.com>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/3.2.2-kvm-i386-20120306 (i686)
-X-Uptime: 09:50:38 up 25 days,  3:34,  1 user,  load average: 0.00, 0.01, 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752272AbaB0KiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:38:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55710 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202AbaB0KiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:38:15 -0500
+X-IronPort-AV: E=Sophos;i="4.97,553,1389715200"; 
+   d="scan'208";a="9615208"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: viro@zeniv.linux.org.uk, bcrl@kvack.org, jmoyer@redhat.com,
+        kosaki.motohiro@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com
+Cc: linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Bug fix in aio ring page migration.
+Date: Thu, 27 Feb 2014 18:40:14 +0800
+Message-Id: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/27 18:35:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/02/27 18:35:03,
+	Serialize complete at 2014/02/27 18:35:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* H. Peter Anvin (hpa@zytor.com) wrote:
-> The number of sparse errors in the current kernel is staggering, and it
-> makes sparse a lot less valuable of a tool that it otherwise could be.
-> On a build of x86-64 allyesconfig I'm getting 20,676 sparse messages.
-> Out of those, 12,358 come from linux/err.h.  Given that the latter
-> basically spams *everything*, I can only conclude that almost noone uses
-> sparse unless they have a filter script.
+This patch-set fixes the following two problems:
 
-I did a bit of sparse fixing a few years ago; my strategy then was to
-get used to which types of warnings were more likely to be real
-and ignore all the rest - it was the only way to find anything useful from
-them.
+1. Need to use ctx->completion_lock to protect ring pages 
+   from being mis-written while migration.
 
-There were some that were very fruitful; the warnings for gfp_t types were
-great at spotting where someone had swapped the parameters to kmalloc
-for example.
+2. Need memory barrier to ensure memory copy is done before 
+   ctx->ring_pages[] is updated.
 
-Dave
+NOTE: AIO ring page migration was implemented since Linux 3.12.
+      So we need to merge these two patches into 3.12 stable tree.  
+
+
+Tang Chen (2):
+  aio, memory-hotplug: Fix confliction when migrating and accessing ring
+    pages.
+  aio, mem-hotplug: Add memory barrier to aio ring page migration.
+
+ fs/aio.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
 -- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+1.8.3.1
+
