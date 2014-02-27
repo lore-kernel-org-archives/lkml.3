@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaB0Gmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 01:42:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49972 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0Gmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 01:42:50 -0500
-Message-ID: <530EDE41.1000809@ti.com>
-Date: Thu, 27 Feb 2014 12:12:09 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Loc Ho <lho@apm.com>
-CC: Tejun Heo <tj@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
-        "patches@apm.com" <patches@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: Re: [PATCH RESEND v10 3/4] PHY: add APM X-Gene SoC 15Gbps Multi-purpose
- PHY driver
-References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com> <1393308882-3964-3-git-send-email-lho@apm.com> <1393308882-3964-4-git-send-email-lho@apm.com> <530DB713.6000701@ti.com> <CAPw-ZT=eLbxt3wPL7hrZFtxTP9vGxbRyBY2Yoh77pq9ypphCaw@mail.gmail.com> <530ED4EF.1060000@ti.com> <CAPw-ZTnLYbUjQTm7QhJO5EMNqN5+dtWndSRUZn_bgMGvmNEu0Q@mail.gmail.com> <530EDC65.8060106@ti.com>
-In-Reply-To: <530EDC65.8060106@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751448AbaB0GoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:44:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16368 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbaB0GoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 01:44:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,552,1389772800"; 
+   d="scan'208";a="490714889"
+Message-ID: <1393483447.2637.10.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/1] thermal: fix default governor assignment
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Wei Ni <wni@nvidia.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 27 Feb 2014 14:44:07 +0800
+In-Reply-To: <1389725137-16147-1-git-send-email-eduardo.valentin@ti.com>
+References: <1389725137-16147-1-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014 12:04 PM, Kishon Vijay Abraham I wrote:
-> On Thursday 27 February 2014 11:55 AM, Loc Ho wrote:
->> Hi,
->>
->>>>>> +
->>>>>> +static void sds_wr(void __iomem *csr_base, u32 indirect_cmd_reg,
->>>>>> +                  u32 indirect_data_reg, u32 addr, u32 data)
->>>>>> +{
->>>>>> +       u32 val;
->>>>>> +       u32 cmd;
->>>>>> +
->>>>>> +       cmd = CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK;
->>>>>> +       cmd = CFG_IND_ADDR_SET(cmd, addr);
->>>>>
->>>>>
->>>>>
->>>>> This looks hacky. If 'CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK'
->>>>> should
->>>>> be set then it should be part of the second argument. From the macro
->>>>> 'CFG_IND_ADDR_SET' the first argument should be more like the
->>>>> current value
->>>>> present in the register right? I feel the macro (CFG_IND_ADDR_SET)
->>>>> is not
->>>>> used in the way it is intended to.
->>>>
->>>>
->>>> The macro XXX_SET is intended to update an field within the register.
->>>> The update field is returned. The first assignment lines are setting
->>>> another field. Those two lines can be written as:
->>>>
->>>> cmd = 0;
->>>> cmd |= CFG_IND_WR_CMD_MASK;            ==> Set the CMD bit
->>>> cmd |= CFG_IND_CMD_DONE_MASK;        ==> Set the DONE bit
->>>> cmd = CFG_IND_ADDR_SET(cmd, addr);    ===> Set the field ADDR
->>>
->>>
->>> #define  CFG_IND_ADDR_SET(dst, src) \
->>>                  (((dst) & ~0x003ffff0) | (((u32)(src)<<4) &
->>> 0x003ffff0))
->>>
->>>  From this macro the first argument should be the present value in that
->>> register. Here you reset the address bits and write the new address
->>> bits.
->>
->> Yes.. This is correct. I am clearing x number of bit and then set new
->> value.
->>
->>> IMO the first argument should be the value in 'csr_base +
->>> indirect_cmd_reg'.
->>> So it resets the address bits in 'csr_base + indirect_cmd_reg' and write
->>> down the new address bits.
->>
->> Yes.. The above code does just that. In addition, I am also setting
->> the bits CFG_IND_WR_CMD_MASK and CFG_IND_CMD_DONE_MASK with the two
->> previous statement. Think of the code flow as follow:
->>
->> val = readl(some void * address); /* read the register */
->
-> Where are you reading the register in your code (before CFG_IND_ADDR_SET)?
->> val = XXXX_SET(val, 0x1);            /* set bit 0  - assuming XXXX set
->> bit 0 only */
-> If you want to set other bits (other than address) don't use
-> CFG_IND_ADDR_SET macro. That looks hacky to me.
+On Tue, 2014-01-14 at 14:45 -0400, Eduardo Valentin wrote:
+> When registering a thermal zone, passing an invalid
+> .governor_name via struct thermal_zone_params may
+> create a thermal zone without a governor, when it
+> is supposed to be the default governor.
+> 
+> This patch fixes this issue by assigning the
+> default governor, whenever the zone has a governor
+> set to NULL.
+> 
+please check if the patch at https://patchwork.kernel.org/patch/3730391/
+fixes the same problem?
 
-huh.. looked it again and I think only the readl is missing. If you can 
-add that, it should be fine.
+thanks,
+rui
 
-How about something like this
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Reported-by: Wei Ni <wni@nvidia.com>
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  drivers/thermal/thermal_core.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+> index a621e90..967d980 100644
+> --- a/drivers/thermal/thermal_core.c
+> +++ b/drivers/thermal/thermal_core.c
+> @@ -89,7 +89,7 @@ int thermal_register_governor(struct thermal_governor *governor)
+>  	list_for_each_entry(pos, &thermal_tz_list, node) {
+>  		if (pos->governor)
+>  			continue;
+> -		if (pos->tzp)
+> +		if (pos->tzp && pos->tzp->governor_name)
+>  			name = pos->tzp->governor_name;
+>  		else
+>  			name = DEFAULT_THERMAL_GOVERNOR;
+> @@ -1527,9 +1527,10 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+>  	/* Update 'this' zone's governor information */
+>  	mutex_lock(&thermal_governor_lock);
+>  
+> -	if (tz->tzp)
+> +	if (tz->tzp && tz->tzp->governor_name)
+>  		tz->governor = __find_governor(tz->tzp->governor_name);
+> -	else
+> +
+> +	if (!tz->governor)
+>  		tz->governor = __find_governor(DEFAULT_THERMAL_GOVERNOR);
+>  
+>  	mutex_unlock(&thermal_governor_lock);
 
-val = readl(csr_base + indirect_cmd_reg);
-val = CFG_IND_ADDR_SET(val, addr);
-val |= CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK;
-writel(val, csr_base + indirect_cmd_reg);
 
-Cheers
-Kishon
