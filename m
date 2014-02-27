@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaB0Kax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:30:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46107 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaB0Kaw (ORCPT
+	id S1752041AbaB0Kcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:32:42 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:2951 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaB0Kck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:30:52 -0500
-Date: Thu, 27 Feb 2014 11:30:31 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140227103031.GA9987@twins.programming.kicks-ass.net>
-References: <20140225163010.GG24636@pd.tnic>
- <CABPqkBT3O2VwV48OC9TgCLKrEnC_qokxU8_odMZQ+d+55wdKgA@mail.gmail.com>
- <20140225173946.GH24636@pd.tnic>
- <CABPqkBTk+KA2kd7Qge2SkNXebDoh9Ntc2L_E3p2k42sbMxoYXw@mail.gmail.com>
- <20140225221027.GB21559@pd.tnic>
- <CABPqkBSH-cHDZ16y0WMyJ2e-kmJ6G_8DkJXPDa7pc4Hp63xG4g@mail.gmail.com>
- <20140226092903.GA22639@pd.tnic>
- <CABPqkBTxQpihn574NArDri0q8ZAOZxXSCSTBfoYfnSxjUH6q6g@mail.gmail.com>
- <20140226095956.GB22639@pd.tnic>
- <CABPqkBS04H6GOT4prZ3v=YZMdj=3KHkW77ON67p8f_Wor17kpw@mail.gmail.com>
+	Thu, 27 Feb 2014 05:32:40 -0500
+Message-ID: <530F1392.2090407@huawei.com>
+Date: Thu, 27 Feb 2014 18:29:38 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBS04H6GOT4prZ3v=YZMdj=3KHkW77ON67p8f_Wor17kpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cpuset: fix a locking issue in cpuset_migrate_mm()
+References: <530F1117.1020605@huawei.com>
+In-Reply-To: <530F1117.1020605@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:12:32AM +0100, Stephane Eranian wrote:
-> As a asides, my SNB and HSW desktops with 3.14-rc4 are totally unstable.
-> They  hang if I type make in my kernel tree. Whereas 3.14-rc3 is stable. I am
-> not so sure this is all related to the uncore IMC support, though.
+On 2014/2/27 18:19, Li Zefan wrote:
+> I can trigger a lockdep warning:
+> 
+>   # mount -t cgroup -o cpuset xxx /cgroup
+>   # mkdir /cgroup/cpuset
+>   # mkdir /cgroup/tmp
+>   # echo 0 > /cgroup/tmp/cpuset.cpus
+>   # echo 0 > /cgroup/tmp/cpuset.mems
+>   # echo 1 > /cgroup/tmp/cpuset.memory_migrate
+>   # echo $$ > /cgroup/tmp/tasks
+>   # echo 1 > /cgruop/tmp/cpuset.mems
+> 
+>   ===============================
+>   [ INFO: suspicious RCU usage. ]
+>   3.14.0-rc1-0.1-default+ #32 Not tainted
+>   -------------------------------
+>   include/linux/cgroup.h:682 suspicious rcu_dereference_check() usage!
+>   ...
+>     [<ffffffff81582174>] dump_stack+0x72/0x86
+>     [<ffffffff810b8f01>] lockdep_rcu_suspicious+0x101/0x140
+>     [<ffffffff81105ba1>] cpuset_migrate_mm+0xb1/0xe0
+>   ...
+> 
+> We used to hold cgroup_mutex when calling cpuset_migrate_mm(), but now
+> we hold cpuset_mutex, which causes task_css() to complain.
+> 
+> This is not a false-positive but a real issue.
+> 
+> Holding cpuset_mutex won't prevent a task's cpuset from changing, and
 
-Unstable with 3.14-rc4-tip you mean? Yeah, there's a rather crucial
-patch missing. I'll try and get Thomas to merge it if Ingo doesn't show
-up soon.
+I meant it won't prevent a task from migrating to another cpuset.
+
+> it won't prevent the original task->cgroup from destroying during this
+> change.
+
+
