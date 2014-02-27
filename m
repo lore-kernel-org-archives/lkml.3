@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaB0V2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:28:21 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:63319 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaB0V2S (ORCPT
+	id S1752190AbaB0V21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:28:27 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:60564 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaB0V2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:28:18 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] ARM: dove: add system controller node
-Date: Thu, 27 Feb 2014 22:28:02 +0100
-Message-Id: <1393536486-3827-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 27 Feb 2014 16:28:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Thu, 27 Feb 2014 13:28:22 -0800
+X-Google-Sender-Auth: Xr3wdp5fubZA5ROVVYJcGW7IIfs
+Message-ID: <CA+55aFwOe_m3cfQDGxmcBavhyQTqQQNGvACR4YPLaazM_0oyUw@mail.gmail.com>
+Subject: Re: [PATCHv3 0/2] mm: map few pages around fault address if they are
+ in page cache
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a DT node for the system-controller found on Marvell Dove
-SoCs.
+On Thu, Feb 27, 2014 at 11:53 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Here's new version of faultaround patchset. It took a while to tune it and
+> collect performance data.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/boot/dts/dove.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+Andrew, mind taking this into -mm with my acks? It's based on top of
+Kirill's cleanup patches that I think are also in your tree.
 
-diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-index 187fd46b7b5e..bd63452b18c0 100644
---- a/arch/arm/boot/dts/dove.dtsi
-+++ b/arch/arm/boot/dts/dove.dtsi
-@@ -186,6 +186,11 @@
- 				reg = <0x20000 0x80>, <0x800100 0x8>;
- 			};
- 
-+			sysc: system-ctrl@20000 {
-+				compatible = "marvell,orion-system-controller";
-+				reg = <0x20000 0x110>;
-+			};
-+
- 			bridge_intc: bridge-interrupt-ctrl@20110 {
- 				compatible = "marvell,orion-bridge-intc";
- 				interrupt-controller;
--- 
-1.8.5.3
+Kirill - no complaints from me. I do have two minor issues that you
+might satisfy, but I think the patch is fine as-is.
 
+The issues/questions are:
+
+ (a) could you test this on a couple of different architectures? Even
+if you just have access to intel machines, testing it across a couple
+of generations of microarchitectures would be good. The reason I say
+that is that from my profiles, it *looks* like the page fault costs
+are relatively higher on Ivybridge/Haswell than on some earlier
+uarchs.
+
+   Now, I may well be wrong about the uarch issue, and maybe I just
+didn't notice it as much before. I've stared at a lot of profiles over
+the years, though, and the page fault cost seems to stand out much
+more than it used to. And don't get me wrong - it might not be because
+Ivy/Haswell is any worse, it might just be that exception performance
+hasn't improved together with some other improvements.
+
+ (b) I suspect we should try to strongly discourage filesystems from
+actually using map_pages unless they use the standard
+filemap_map_pages function as-is. Even with the fairly clean
+interface, and forcing people to use "do_set_pte()", I think the docs
+might want to try to more explicitly discourage people from using this
+to do their own hacks..
+
+Hmm? Either way, even without those questions answered, I'm happy with
+how your patches look.
+
+                    Linus
