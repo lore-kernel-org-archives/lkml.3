@@ -1,117 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaB0SMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:12:50 -0500
-Received: from vivithemage.co.uk ([213.138.103.165]:45554 "EHLO
-	mail.mage.me.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaB0SMt (ORCPT
+	id S1753445AbaB0SOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:14:22 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:37479 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751467AbaB0SOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:12:49 -0500
-Message-ID: <530F8020.3040000@mage.me.uk>
-Date: Thu, 27 Feb 2014 18:12:48 +0000
-From: "rs@mage.me.uk" <rs@mage.me.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, speakup@braille.uwo.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: speakup: buffers: Fixed a return value coding
- style issue.
-References: <1393518402-24860-1-git-send-email-rs@mage.me.uk> <20140227164051.GA25183@kroah.com>
-In-Reply-To: <20140227164051.GA25183@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------070703090107090505070208"
+	Thu, 27 Feb 2014 13:14:19 -0500
+From: Loc Ho <lho@apm.com>
+To: kishon@ti.com, tj@kernel.org
+Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
+        Loc Ho <lho@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Subject: [PATCH v12 0/4] PHY: Add APM X-Gene SoC 15Gbps Multi-purpose PHY support
+Date: Thu, 27 Feb 2014 11:14:04 -0700
+Message-Id: <1393524848-8207-1-git-send-email-lho@apm.com>
+X-Mailer: git-send-email 1.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070703090107090505070208
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+This patch adds support for APM X-Gene SoC 15Gbps Multi-purpose PHY. This
+is the physical layer interface for the corresponding host controller. This
+driver uses the PHY generic framework. In addition, the PHY generic
+framework is patched to provide an function to set the speed of the PHY.
 
-When checking buffers.c with checkpatch.pl it throws the following 
-error: drivers/staging/speakup/buffers.c:58: ERROR: return is not a 
-function, parentheses are not required
+v12:
+* Add driver depend on HAS_IOMEM and OF
+* Fix comment typo in header file phy-xgene.
+* Change all macro shift value in hex to decimal
+* Add time out for while loop to function sds_wr and sds_rd
+* Set proper return value if failed to get IO resource 0
+* Move devm_of_phy_provider_register to last operation in probe function
+* Remove driver registration print statement
+* Replace module init/exit with module_platform_driver
+* Change license to GPL v2
 
-I watched one of your talks, it's very informative and concise: 
-http://www.youtube.com/watch?v=LLBrBBImJt4&feature=youtu.be
+v11:
+* Add comment to function phy_set_speed
+* Add commit log for documentation patch file
+* Minor comment update to function xgene_phy_force_lat_summer_cal and
+  xgene_phy_sata_force_gen
 
-Thanks,
-Reza Snowdon
+v10
+* Update comment for function xgene_phy_force_lat_summer_cal and
+  xgene_phy_sata_force_gen with function style fully-winged style
 
-On 27/02/14 16:40, Greg KH wrote:
-> On Thu, Feb 27, 2014 at 04:26:42PM +0000, Reza Snowdon wrote:
->> Fixed a coding style issue.
->>
->> Signed-off-by: Reza Snowdon <rs@mage.me.uk>
->> ---
->>   drivers/staging/speakup/buffers.c |    3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/speakup/buffers.c b/drivers/staging/speakup/buffers.c
->> index 382973e..8d7caa7 100644
->> --- a/drivers/staging/speakup/buffers.c
->> +++ b/drivers/staging/speakup/buffers.c
->> @@ -55,7 +55,8 @@ static int synth_buffer_free(void)
->>
->>   int synth_buffer_empty(void)
->>   {
->> -	return (buff_in == buff_out);
->> +	int buff_comparison = (buff_in == buff_out);
->> +	return buff_comparison;
->
-> What's wrong with the original code here?  If anything, just drop the
-> (), but really, it's fine, leave it alone, it's obvious what is
-> happening is ok.
->
-> thanks,
->
-> greg k-h
->
+v9
+* Update CMU parameter setting for register 13
+* Add required delay when configure CMU PLL, Manual Calibration PLL, and VCO
+  PLL
+* Add comment for CMU PLL calibration loop delay of 10us
+* Add required delay for stopping and starting summer calibrations
+* Update comment for summer and latch calibration delays
+* Update comment for PHY reset Rx delay and decrease max sleep time from 500
+  to 150us
+* Always program the DFE (equalizer) setting to 0x7e00 as with original version
+* Fix Tx speed selection to always using Gen3 setting when force to an
+  specified generation speed
 
+v8
+* Update binding documentation
+* Remove XGENE_PHY_DTS and XGENE_PHY_EXT_DTS defines
+* Remove support for internal clock
+* Remove support for external reference CMU
+* Remove the need for external reference resource DTS entry and its related
+  code
 
--- 
-Regards,
-Reza Snowdon
+v7
+* Add/Update PHY CMU/lane parameters and its default values
+* Rename variable enable_manual_cal to preA3Chip
+* Remove function phy_rd, phy_wr, and phy_wr_flush
+* Change function cmu_wr, cmu_rd, cmu_toggle1to0, cmu_clrbits, cmu_setbits,
+  serdes_wr, serdes_rd, serdes_clrbits, and serdes_setbits to take context
+  instead void *
+* Remove function serdes_toggle1to0
+* Decrease the polling time from 10ms to 1ms on CMU calibration complete
+  detection
+* Move all SATA specify code in function xgene_phy_hw_initialize into
+  function xgene_phy_hw_init_sata
+* Add usleep_range after starting summer/latch calibrations
+* Add usleep_range between receiver reset (function xgene_phy_reset_rxd)
+* Save and restore PHY register 31 instead writing 0 in function
+  xgene_phy_gen_avg_val
+* Update function xgene_phy_sata_force_gen programming sequences
+* Add support to reset the receiver lane in function xgene_phy_set_speed
+  if speed is 0
+* Update PHY parameters in DTS per controller
+* Some minor code clean up
 
---------------070703090107090505070208
-Content-Type: text/x-patch;
- name="0001-Staging-speakup-buffers-Fixed-a-return-coding-style-.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-Staging-speakup-buffers-Fixed-a-return-coding-style-.pa";
- filename*1="tch"
+v6
+* Move PHY document to Documentation/devicetree/binding/phy
+* Remove _ADDR from all register defines
+* Update clock-names property for sataphy1clk, sataphy2clk, and sataphy3clk
 
->From a2dda399463c20f63306e31b743e0c9c3be2ca3a Mon Sep 17 00:00:00 2001
-From: Reza Snowdon <rs@mage.me.uk>
-Date: Thu, 27 Feb 2014 17:57:59 +0000
-Subject: [PATCH] Staging: speakup: buffers: Fixed a return coding style issue
+v5
+* Update DTS binding documentation
+* Remove direct clock access and use clock interface instead
+* Change override parameters to decimal instead hex values
+* Change apm,tx-amplitude, apm,tx-pre-cursor1, apm,tx-pre-cursor2,
+  apm,tx-post-cursor to be unit of uV
 
-When checking buffers.c with checkpatch.pl it throws the following error: drivers/staging/speakup/buffers.c:58: ERROR: return is not a function, parentheses are not required
+v4
+* Update documentation with 'apm,' instead 'apm-'
+* Change DTS override parameter to have 'apm,'
+* Add select GENERIC_PHY to Kconfig PHY_XGENE
+* Make override parameters to be pair of three values instead one
+* Some minor comment and indentation changes
+* Remove error register addition offset
+* Add ULL to constants
+* Use module_init instead subsys_initcall
+* Make DTS node based on first register address
+* Update override setting values
 
-Fixed error by removing parenthesis.
+v3
+* Major re-write of the code based on various review comments
+* Support external clock only at the moment
+* Support SATA mode only at the moment
+* No UEFI support at the moment
 
-Signed-off-by: Reza Snowdon <rs@mage.me.uk>
+v2
+* Remove port knowledge from functions
+* Make all functions static
+* Remove ID completely
+* Make resource requirement based on compatible type
+* Rename override PHY parameters with more descriptive name
+* Add override PHY parameter for per controller, per port, and per speed
+* Patch the generic PHY frame to expose set_speed operation
+
+v1
+* Initial version
+
+Signed-off-by: Loc Ho <lho@apm.com>
+Signed-off-by: Tuan Phan <tphan@apm.com>
+Signed-off-by: Suman Tripathi <stripathi@apm.com>
 ---
- drivers/staging/speakup/buffers.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Loc Ho (4):
+  PHY: Add function set_speed to generic PHY framework
+  Documentation: Add APM X-Gene SoC 15Gbps Multi-purpose PHY driver
+    binding documentation
+  PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY driver
+  arm64: Add APM X-Gene SoC 15Gbps Multi-purpose PHY DTS entries
 
-diff --git a/drivers/staging/speakup/buffers.c b/drivers/staging/speakup/buffers.c
-index 382973e..5e6ec13 100644
---- a/drivers/staging/speakup/buffers.c
-+++ b/drivers/staging/speakup/buffers.c
-@@ -55,7 +55,7 @@ static int synth_buffer_free(void)
- 
- int synth_buffer_empty(void)
- {
--	return (buff_in == buff_out);
-+	return buff_in == buff_out;
- }
- EXPORT_SYMBOL_GPL(synth_buffer_empty);
- 
--- 
-1.7.10.4
+ .../devicetree/bindings/phy/apm-xgene-phy.txt      |   79 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   75 +
+ drivers/phy/Kconfig                                |    7 +
+ drivers/phy/Makefile                               |    2 +
+ drivers/phy/phy-core.c                             |   30 +
+ drivers/phy/phy-xgene.c                            | 1813 ++++++++++++++++++++
+ include/linux/phy/phy.h                            |    8 +
+ 7 files changed, 2014 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/apm-xgene-phy.txt
+ create mode 100644 drivers/phy/phy-xgene.c
 
-
---------------070703090107090505070208--
