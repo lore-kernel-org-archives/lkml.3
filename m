@@ -1,228 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaB0V25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:28:57 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:60873 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaB0V2T (ORCPT
+	id S1752276AbaB0V27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:28:59 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:65151 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaB0V2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 16:28:19 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] ARM: mvebu: move DT Dove to MVEBU
-Date: Thu, 27 Feb 2014 22:28:04 +0100
-Message-Id: <1393536486-3827-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 4/4] ARM: add Marvell Dove and some drivers to multi_v7 defconfig
+Date: Thu, 27 Feb 2014 22:28:05 +0100
+Message-Id: <1393536486-3827-5-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With all the DT support preparation done, we are able to move Dove
-to MVEBU easily. Legacy non-DT mach-dove is left untouched to rot
-for a while before removal. Also, convert SATA PHY Kconfig entry,
-which is DT-only.
+With Marvell Dove now being part of the multi_v7 family, add some Dove
+specific drivers to multi_v7 defconfig.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/Makefile                           | 12 ++++++------
- arch/arm/mach-dove/Kconfig                           | 12 ------------
- arch/arm/mach-dove/Makefile                          |  1 -
- arch/arm/mach-mvebu/Kconfig                          | 12 ++++++++++++
- arch/arm/mach-mvebu/Makefile                         |  1 +
- arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} | 20 ++++++++------------
- drivers/phy/Kconfig                                  |  2 +-
- 7 files changed, 28 insertions(+), 32 deletions(-)
- rename arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} (61%)
+ arch/arm/configs/multi_v7_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 032030361bef..376a2573e500 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -55,11 +55,6 @@ dtb-$(CONFIG_ARCH_BERLIN) += \
- 	berlin2cd-google-chromecast.dtb
- dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
- 	da850-evm.dtb
--dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
--	dove-cubox.dtb \
--	dove-d2plug.dtb \
--	dove-d3plug.dtb \
--	dove-dove-db.dtb
- dtb-$(CONFIG_ARCH_EFM32) += efm32gg-dk3750.dtb
- dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
- 	exynos4210-smdkv310.dtb \
-@@ -132,7 +127,12 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
- 	armada-xp-gp.dtb \
- 	armada-xp-netgear-rn2120.dtb \
- 	armada-xp-matrix.dtb \
--	armada-xp-openblocks-ax3-4.dtb
-+	armada-xp-openblocks-ax3-4.dtb \
-+	dove-cm-a510.dtb \
-+	dove-cubox.dtb \
-+	dove-d2plug.dtb \
-+	dove-d3plug.dtb \
-+	dove-dove-db.dtb
- dtb-$(CONFIG_ARCH_MXC) += \
- 	imx25-karo-tx25.dtb \
- 	imx25-pdk.dtb \
-diff --git a/arch/arm/mach-dove/Kconfig b/arch/arm/mach-dove/Kconfig
-index 0bc7cdf8cf46..d8c439c89ea9 100644
---- a/arch/arm/mach-dove/Kconfig
-+++ b/arch/arm/mach-dove/Kconfig
-@@ -20,18 +20,6 @@ config MACH_CM_A510
- 	  Say 'Y' here if you want your kernel to support the
- 	  CompuLab CM-A510 Board.
- 
--config MACH_DOVE_DT
--	bool "Marvell Dove Flattened Device Tree"
--	select DOVE_CLK
--	select ORION_IRQCHIP
--	select ORION_TIMER
--	select REGULATOR
--	select REGULATOR_FIXED_VOLTAGE
--	select USE_OF
--	help
--	  Say 'Y' here if you want your kernel to support the
--	  Marvell Dove using flattened device tree.
--
- endmenu
- 
- endif
-diff --git a/arch/arm/mach-dove/Makefile b/arch/arm/mach-dove/Makefile
-index cbc5c0618788..b608a21919fb 100644
---- a/arch/arm/mach-dove/Makefile
-+++ b/arch/arm/mach-dove/Makefile
-@@ -2,5 +2,4 @@ obj-y				+= common.o
- obj-$(CONFIG_DOVE_LEGACY)	+= irq.o mpp.o
- obj-$(CONFIG_PCI)		+= pcie.o
- obj-$(CONFIG_MACH_DOVE_DB)	+= dove-db-setup.o
--obj-$(CONFIG_MACH_DOVE_DT)	+= board-dt.o
- obj-$(CONFIG_MACH_CM_A510)	+= cm-a510.o
-diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
-index 5e269d7263ce..966e5c6b9944 100644
---- a/arch/arm/mach-mvebu/Kconfig
-+++ b/arch/arm/mach-mvebu/Kconfig
-@@ -46,6 +46,18 @@ config MACH_ARMADA_XP
- 	  Say 'Y' here if you want your kernel to support boards based
- 	  on the Marvell Armada XP SoC with device tree.
- 
-+config MACH_DOVE
-+	bool "Marvell Dove boards" if ARCH_MULTI_V7
-+	select CACHE_L2X0
-+	select CPU_PJ4
-+	select DOVE_CLK
-+	select ORION_IRQCHIP
-+	select ORION_TIMER
-+	select PINCTRL_DOVE
-+	help
-+	  Say 'Y' here if you want your kernel to support the
-+	  Marvell Dove using flattened device tree.
-+
- endmenu
- 
- endif
-diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
-index 878aebe98dcc..dd3e7188f75d 100644
---- a/arch/arm/mach-mvebu/Makefile
-+++ b/arch/arm/mach-mvebu/Makefile
-@@ -5,6 +5,7 @@ AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
- 
- obj-y				 += system-controller.o mvebu-soc-id.o
- obj-$(CONFIG_MACH_ARMADA_370_XP) += armada-370-xp.o
-+obj-$(CONFIG_MACH_DOVE)		 += dove.o
- obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
- obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
- obj-$(CONFIG_HOTPLUG_CPU)        += hotplug.o
-diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-mvebu/dove.c
-similarity index 61%
-rename from arch/arm/mach-dove/board-dt.c
-rename to arch/arm/mach-mvebu/dove.c
-index 49fa9abd09da..5e5a43624237 100644
---- a/arch/arm/mach-dove/board-dt.c
-+++ b/arch/arm/mach-mvebu/dove.c
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm/mach-dove/board-dt.c
-+ * arch/arm/mach-mvebu/dove.c
-  *
-  * Marvell Dove 88AP510 System On Chip FDT Board
-  *
-@@ -9,17 +9,14 @@
-  */
- 
- #include <linux/init.h>
--#include <linux/clk-provider.h>
-+#include <linux/mbus.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <asm/hardware/cache-tauros2.h>
- #include <asm/mach/arch.h>
--#include <mach/dove.h>
--#include <mach/pm.h>
--#include <plat/common.h>
- #include "common.h"
- 
--static void __init dove_dt_init(void)
-+static void __init dove_init(void)
- {
- 	pr_info("Dove 88AP510 SoC\n");
- 
-@@ -30,14 +27,13 @@ static void __init dove_dt_init(void)
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
--static const char * const dove_dt_board_compat[] = {
-+static const char * const dove_dt_compat[] = {
- 	"marvell,dove",
- 	NULL
- };
- 
--DT_MACHINE_START(DOVE_DT, "Marvell Dove (Flattened Device Tree)")
--	.map_io		= dove_map_io,
--	.init_machine	= dove_dt_init,
--	.restart	= dove_restart,
--	.dt_compat	= dove_dt_board_compat,
-+DT_MACHINE_START(DOVE_DT, "Marvell Dove")
-+	.init_machine	= dove_init,
-+	.restart	= mvebu_restart,
-+	.dt_compat	= dove_dt_compat,
- MACHINE_END
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index c7a551c2d5f1..ffd7f07adca3 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -24,7 +24,7 @@ config PHY_EXYNOS_MIPI_VIDEO
- 
- config PHY_MVEBU_SATA
- 	def_bool y
--	depends on ARCH_KIRKWOOD || ARCH_DOVE
-+	depends on ARCH_KIRKWOOD || MACH_DOVE
- 	depends on OF
- 	select GENERIC_PHY
- 
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index ee6982976d66..a1876b2ed4bd 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -10,6 +10,7 @@ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_MVEBU=y
+ CONFIG_MACH_ARMADA_370=y
+ CONFIG_MACH_ARMADA_XP=y
++CONFIG_MACH_DOVE=y
+ CONFIG_ARCH_BCM=y
+ CONFIG_ARCH_BCM_MOBILE=y
+ CONFIG_ARCH_BERLIN=y
+@@ -111,6 +112,7 @@ CONFIG_SATA_MV=y
+ CONFIG_NETDEVICES=y
+ CONFIG_SUN4I_EMAC=y
+ CONFIG_NET_CALXEDA_XGMAC=y
++CONFIG_MV643XX_ETH=y
+ CONFIG_MVNETA=y
+ CONFIG_KS8851=y
+ CONFIG_R8169=y
+@@ -187,6 +189,7 @@ CONFIG_POWER_RESET_AS3722=y
+ CONFIG_POWER_RESET_GPIO=y
+ CONFIG_SENSORS_LM90=y
+ CONFIG_THERMAL=y
++CONFIG_DOVE_THERMAL=y
+ CONFIG_ARMADA_THERMAL=y
+ CONFIG_MFD_AS3722=y
+ CONFIG_MFD_CROS_EC=y
+@@ -253,6 +256,7 @@ CONFIG_MMC_BLOCK_MINORS=16
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_ESDHC_IMX=y
++CONFIG_MMC_SDHCI_DOVE=y
+ CONFIG_MMC_SDHCI_TEGRA=y
+ CONFIG_MMC_SDHCI_SPEAR=y
+ CONFIG_MMC_SDHCI_BCM_KONA=y
 -- 
 1.8.5.3
 
