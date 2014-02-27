@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaB0SxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:53:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58474 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753052AbaB0SxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:53:24 -0500
-Message-ID: <530F898B.5090400@zytor.com>
-Date: Thu, 27 Feb 2014 10:52:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753873AbaB0Sxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:53:32 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62300 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753585AbaB0Sx3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 13:53:29 -0500
+Date: Thu, 27 Feb 2014 18:53:07 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
+Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
+ via atomic_long_*
+Message-ID: <20140227185306.GN30003@mudshark.cambridge.arm.com>
+References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
+ <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-CC: davem@davemloft.net, dborkman@redhat.com, ffusco@redhat.com,
-        tgraf@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] x86/hash: swap arguments passed to crc32_u32()
-References: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
-In-Reply-To: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 12:47 AM, Jan Beulich wrote:
-> ... to match the function's parameters. While reportedly commutative,
-> using the proper order allows for leveraging the instruction permitting
-> the source operand to be in memory.
+On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
+> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
+> > The asm-generic rwsem implementation directly acceses sem->cnt when
+> > performing a __down_read_trylock operation. Whilst this is probably safe
+> > on all architectures, we should stick to the atomic_long_* API and use
+> > atomic_long_read instead.
+> > 
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > ---
+> >  include/asm-generic/rwsem.h | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> > index bb1e2cdeb9bf..75af612f54f8 100644
+> > --- a/include/asm-generic/rwsem.h
+> > +++ b/include/asm-generic/rwsem.h
+> > @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
+> >  {
+> >  	long tmp;
+> >  
+> > -	while ((tmp = sem->count) >= 0) {
+> > +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
 > 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Acked-by: Daniel Borkmann <dborkman@redhat.com>
-> Cc: Francesco Fusco <ffusco@redhat.com>
-> Cc: Thomas Graf <tgraf@redhat.com>
-> Cc: David S. Miller <davem@davemloft.net>
+> That's pretty ugly, how about having infinite look and just do the tmp
+> assign separately from the conditional?
+> 
+> It also looks like a cpu_relax() could help here between iterations.
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+Sure, I can do these in a separate patch (this patch is just a simple fix).
 
+> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+
+Thanks,
+
+Will
