@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaB0Qnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:43:55 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:59023 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaB0Qnx convert rfc822-to-8bit (ORCPT
+	id S1753533AbaB0Qp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:45:28 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49719 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaB0Qp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:43:53 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 27 Feb 2014 08:43:36 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>, Tony Lu <zlu@tilera.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Alex Elder <alex.elder@linaro.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Andre Naujoks <nautsch2@gmail.com>, Jason Baron <jbaron@akamai.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@infradead.org>, Robin Holt <holt@sgi.com>,
-        Tony Luck <tony.luck@intel.com>, Alex Thorlton <athorlton@sgi.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Chen Gang <gang.chen@asianux.com>
-Subject: Re: [PATCH 02/46] kernel: Add prototype definition to
- include/linux/kernel.h
-Message-ID: <20140227164335.GB28589@thin>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
- <644cc80558c61ce1f498393a77df366ad0d7b960.1393493276.git.rashika.kheria@gmail.com>
- <20140227113230.3e726bc7@gandalf.local.home>
+	Thu, 27 Feb 2014 11:45:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] pci: Add support for creating a generic host_bridge from device tree
+Date: Thu, 27 Feb 2014 17:45:24 +0100
+Message-ID: <5679503.gWR3MVnuZs@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140227162003.GP1692@e106497-lin.cambridge.arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <5722634.VerP6OyMlP@wuerfel> <20140227162003.GP1692@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140227113230.3e726bc7@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:23QYYg3CWOqzz0+mIWexpR6CsKezEh5HJLkTfyrZ/Ou
+ /KgPC118pSTbsUsFchF5c4E+nGxXzsR27OIfCNoUCuzNSU3a3C
+ uOiqo0mGBH05rmY7hP0uk+tQEyFSQcCe4LBwf5iJ9L3WUXEEX1
+ QsKzLZrcu9Bf+leG/2w1U8yMaudlC1JLNHlgDjXex432+lqjTl
+ 5/Z4DwCnS/YaHJL9JDeS1etgB5wsiAkHxclSKDCfNYfc8UFpV0
+ 6UKmcG/tZ9TGj6Dr0MFMnW3lqhlGmiTar29//OEPup8wx6S1bs
+ UkCWuqE0NWmHVk/8rF092T3H+s+8J5k6q28GUcBeP2CqHGQd7q
+ 6Qmk8wPUOADZO6iREhWY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:32:30AM -0500, Steven Rostedt wrote:
-> On Thu, 27 Feb 2014 16:38:50 +0530
-> Rashika Kheria <rashika.kheria@gmail.com> wrote:
-> > Add prototype declaration to header file include/linux/kernel.h because
-> > it is used by more than one file.
+On Thursday 27 February 2014 16:20:03 Liviu Dudau wrote:
+> On Thu, Feb 27, 2014 at 03:58:41PM +0000, Arnd Bergmann wrote:
+> > On Thursday 27 February 2014 14:13:22 Liviu Dudau wrote:
+> > > 
+> > > It is useful for host bridge drivers as this is the only place where we store
+> > > the physical CPU address for the IO range. This is then needed when setting up the
+> > > translation registers. Also used when calling the pci_ioremap_io function that I'm
+> > > introducing in the AArch64 patches.
 > > 
-> > This also eliminates the following warning in kernel/panic.c:
-> > kernel/panic.c:55:13: warning: no previous prototype for ‘panic_smp_self_stop’ [-Wmissing-prototypes]
-> > 
-> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> >  arch/tile/kernel/smp.c |    1 +
-> >  include/linux/kernel.h |    2 ++
-> >  kernel/panic.c         |    1 +
-> >  3 files changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-> > index 01e8ab2..8b645fd 100644
-> > --- a/arch/tile/kernel/smp.c
-> > +++ b/arch/tile/kernel/smp.c
-> > @@ -19,6 +19,7 @@
-> >  #include <linux/io.h>
-> >  #include <linux/irq.h>
-> >  #include <linux/module.h>
-> > +#include <linux/kernel.h>
-> >  #include <asm/cacheflush.h>
-> >  #include <asm/homecache.h>
-> >  
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > index 196d1ea..c7cee7d 100644
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -154,6 +154,8 @@ struct completion;
-> >  struct pt_regs;
-> >  struct user;
-> >  
-> > +void __weak panic_smp_self_stop(void);
+> > I don't understand what translation windows you are talking about. Is this
+> > about how the PCI spaces are mapped into the CPU address space? If so, I
+> > would strongly recommend to have this handled by the boot loader before
+> > calling into the kernel. For ARM32, we have a lot of embedded systems
+> > that require the PCI host driver to set up those windows, but actually
+> > it would be much better to just have the firmware tell us what the setup
+> > is and that use that.
 > 
-> Is __weak required in a prototype? What about the override that is not
-> weak.
+> The AXI to PCI bridge that I'm using has a set of registers for doing address translation.
+> When it sees an AXI translation that matches the programmed translation window will
+> convert it into a PCI write using the PCI address base written in that translation window.
+> In other words you basically program the DT range into those address translation registers
+> and the bridge does the AXI to PCI conversion for you.
 
-That's a good question.  It's definitely not required, and should be
-dropped.  What I don't know is if it's broken to include it: does it
-make the non-weak definition weak?
+Right. That should definitely be done in the boot loader
+before Linux is started.
 
-- Josh Triplett
+
+	Arnd
