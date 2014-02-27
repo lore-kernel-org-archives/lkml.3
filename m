@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaB0Hez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:34:55 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51457 "EHLO
+	id S1752435AbaB0Hfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:35:48 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51401 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149AbaB0HeW (ORCPT
+	with ESMTP id S1752044AbaB0HeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:34:22 -0500
-Subject: [PATCH -tip v7 26/26] ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER
- for ftrace-kprobe
+	Thu, 27 Feb 2014 02:34:12 -0500
+Subject: [PATCH -tip v7 22/26] kprobes/x86: Use kprobe_blacklist for
+ .kprobes.text and .entry.text
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Feb 2014 16:34:18 +0900
-Message-ID: <20140227073418.20992.2720.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Feb 2014 16:34:09 +0900
+Message-ID: <20140227073409.20992.40223.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -29,89 +32,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the kprobes itself owns a hash table to get a kprobe
-data structure corresponding to the given ip address, there
-is no need to test ftrace hash in ftrace side.
-To achive better performance on ftrace-based kprobe,
-FTRACE_OPS_FL_SELF_FILTER flag to ftrace_ops which means
-that ftrace skips testing its own hash table.
-
-Without this patch, ftrace_lookup_ip() is biggest cycles
-consumer when 20,000 kprobes are enabled.
-  ----
-  Samples: 917  of event 'cycles', Event count (approx.): 427239250
-  +  22.21%  [k] ftrace_lookup_ip
-  +  10.22%  [k] kprobe_trace_func
-  +   3.77%  [k] get_kprobe_cached
-  ----
-
-With this patch, ftrace_lookup_ip() vanished from the
-cycles consumer list (of course, there is no caller on
-hotpath anymore :))
-  ----
-  Samples: 1K of event 'cycles', Event count (approx.): 337873938
-  +   7.88%  [k] kprobe_trace_func
-  +   7.32%  [k] kprobe_ftrace_handler
-  +   5.78%  [k] get_kprobe_cached
-  ----
+Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
+instead of arch_within_kprobe_blacklist. This also makes them visible
+via (debugfs)/kprobes/blacklist.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/ftrace.h |    3 +++
- kernel/kprobes.c       |    2 +-
- kernel/trace/ftrace.c  |    3 ++-
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   11 +------
+ include/linux/kprobes.h        |    1 +
+ kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
+ 3 files changed, 48 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f4233b1..1842334 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -92,6 +92,8 @@ typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
-  * STUB   - The ftrace_ops is just a place holder.
-  * INITIALIZED - The ftrace_ops has already been initialized (first use time
-  *            register_ftrace_function() is called, it will initialized the ops)
-+ * SELF_FILTER - The ftrace_ops function filters ip by itself. Do not need to
-+ *            check hash table on each hit.
-  */
- enum {
- 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
-@@ -103,6 +105,7 @@ enum {
- 	FTRACE_OPS_FL_RECURSION_SAFE		= 1 << 6,
- 	FTRACE_OPS_FL_STUB			= 1 << 7,
- 	FTRACE_OPS_FL_INITIALIZED		= 1 << 8,
-+	FTRACE_OPS_FL_SELF_FILTER		= 1 << 9,
- };
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index d00103a..4767fda 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1065,17 +1065,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ }
+ NOKPROBE_SYMBOL(longjmp_break_handler);
  
- struct ftrace_ops {
+-bool arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	return  (addr >= (unsigned long)__kprobes_text_start &&
+-		 addr < (unsigned long)__kprobes_text_end) ||
+-		(addr >= (unsigned long)__entry_text_start &&
+-		 addr < (unsigned long)__entry_text_end);
+-}
+-
+ int __init arch_init_kprobes(void)
+ {
+-	return 0;
++	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
++					  (unsigned long) __entry_text_end);
+ }
+ 
+ int arch_trampoline_kprobe(struct kprobe *p)
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e059507..e81bced 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
+ extern void show_registers(struct pt_regs *regs);
+ extern void kprobes_inc_nmissed_count(struct kprobe *p);
+ extern bool arch_within_kprobe_blacklist(unsigned long addr);
++extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
+ 
+ struct kprobe_insn_cache {
+ 	struct mutex mutex;
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 65b18f6..2f82117 100644
+index 8319048..abdede5 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -1019,7 +1019,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_SELF_FILTER,
- };
- static int kprobe_ftrace_enabled;
+@@ -1325,13 +1325,6 @@ out:
+ 	return ret;
+ }
  
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index cd7f76d..2734f20 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4502,7 +4502,8 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	 */
- 	preempt_disable_notrace();
- 	do_for_each_ftrace_op(op, ftrace_ops_list) {
--		if (ftrace_ops_test(op, ip, regs))
-+		if (op->flags & FTRACE_OPS_FL_SELF_FILTER ||
-+		    ftrace_ops_test(op, ip, regs))
- 			op->func(ip, parent_ip, op, regs);
- 	} while_for_each_ftrace_op(op);
- 	preempt_enable_notrace();
+-bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	/* The __kprobes marked functions and entry code must not be probed */
+-	return addr >= (unsigned long)__kprobes_text_start &&
+-	       addr < (unsigned long)__kprobes_text_end;
+-}
+-
+ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ {
+ 	struct kprobe_blacklist_entry *ent;
+@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ 
+ static bool within_kprobe_blacklist(unsigned long addr)
+ {
+-	if (arch_within_kprobe_blacklist(addr))
+-		return true;
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
+ 	 * fail any probe registration in the prohibited area
+@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
+ }
+ NOKPROBE_SYMBOL(dump_kprobe);
+ 
++static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
++{
++	struct kprobe_blacklist_entry *ent;
++
++	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
++	if (!ent)
++		return -ENOMEM;
++
++	ent->start_addr = start;
++	ent->end_addr = end;
++	INIT_LIST_HEAD(&ent->list);
++	list_add_tail(&ent->list, &kprobe_blacklist);
++	return 0;
++}
++
++int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
++{
++	unsigned long offset = 0, size = 0;
++	int err = 0;
++
++	mutex_lock(&kprobe_blacklist_mutex);
++	while (!err && start < end) {
++		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
++		    size == 0) {
++			err = -ENOENT;
++			break;
++		}
++		err = __kprobe_blacklist_add(start, start + size);
++		start += size;
++	}
++	mutex_unlock(&kprobe_blacklist_mutex);
++	return err;
++}
++
+ /*
+  * Lookup and populate the kprobe_blacklist.
+  *
+@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
+ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ {
+ 	unsigned long *iter;
+-	struct kprobe_blacklist_entry *ent;
+ 	unsigned long offset = 0, size = 0;
++	int ret;
+ 
+ 	mutex_lock(&kprobe_blacklist_mutex);
+ 	for (iter = start; iter < end; iter++) {
+@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+ 			continue;
+ 		}
+-
+-		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+-		if (!ent)
+-			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
+-		INIT_LIST_HEAD(&ent->list);
+-		list_add_tail(&ent->list, &kprobe_blacklist);
++		ret = __kprobe_blacklist_add(*iter, *iter + size);
+ 	}
+ 	mutex_unlock(&kprobe_blacklist_mutex);
+ 
+@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
+ 
+ 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
+ 					__stop_kprobe_blacklist);
+-	if (err) {
++
++	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
++		/* The __kprobes marked functions must not be probed */
++		err = kprobe_blacklist_add_range(
++					(unsigned long)__kprobes_text_start,
++					(unsigned long)__kprobes_text_end);
++	}
++
++	if (err < 0) {
+ 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
+ 		pr_err("Please take care of using kprobes.\n");
+ 	}
 
 
