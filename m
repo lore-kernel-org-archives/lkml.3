@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaB0Axr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:53:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51637 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288AbaB0Axp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:53:45 -0500
-Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
-From: Torvald Riegel <triegel@redhat.com>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Matz <matz@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	id S1754528AbaB0Azt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:55:49 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:65250 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288AbaB0Azs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 19:55:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrU+u3GMK-GaTk4gbAjyMbpQY15qNC4D9q9h2a26YfsLwA@mail.gmail.com>
+References: <1393443298.1917.5.camel@wall-e.seibold.net> <20140226204524.GA1598@kroah.com>
+ <CALCETrU+u3GMK-GaTk4gbAjyMbpQY15qNC4D9q9h2a26YfsLwA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 26 Feb 2014 16:55:27 -0800
+Message-ID: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+Subject: Re: Final: Add 32 bit VDSO time function support
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
-In-Reply-To: <Pine.LNX.4.64.1402261840540.11728@digraph.polyomino.org.uk>
-References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
-	 <20140220083032.GN4250@linux.vnet.ibm.com>
-	 <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
-	 <20140220181116.GT4250@linux.vnet.ibm.com>
-	 <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
-	 <20140220185608.GX4250@linux.vnet.ibm.com>
-	 <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
-	 <20140220221027.GC4250@linux.vnet.ibm.com>
-	 <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
-	 <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
-	 <20140221191318.GK4250@linux.vnet.ibm.com>
-	 <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
-	 <1393420157.28840.8691.camel@triegel.csb>
-	 <Pine.LNX.4.64.1402261840540.11728@digraph.polyomino.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Feb 2014 01:52:59 +0100
-Message-ID: <1393462379.28840.9411.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-26 at 18:43 +0000, Joseph S. Myers wrote:
-> On Wed, 26 Feb 2014, Torvald Riegel wrote:
-> 
-> > On Fri, 2014-02-21 at 22:10 +0000, Joseph S. Myers wrote:
-> > > On Fri, 21 Feb 2014, Paul E. McKenney wrote:
-> > > 
-> > > > This needs to be as follows:
-> > > > 
-> > > > [[carries_dependency]] int getzero(int i [[carries_dependency]])
-> > > > {
-> > > > 	return i - i;
-> > > > }
-> > > > 
-> > > > Otherwise dependencies won't get carried through it.
-> > > 
-> > > C11 doesn't have attributes at all (and no specification regarding calls 
-> > > and dependencies that I can see).  And the way I read the C++11 
-> > > specification of carries_dependency is that specifying carries_dependency 
-> > > is purely about increasing optimization of the caller: that if it isn't 
-> > > specified, then the caller doesn't know what dependencies might be 
-> > > carried.  "Note: The carries_dependency attribute does not change the 
-> > > meaning of the program, but may result in generation of more efficient 
-> > > code. - end note".
-> > 
-> > I think that this last sentence can be kind of misleading, especially
-> > when looking at it from an implementation point of view.  How
-> > dependencies are handled (ie, preserving the syntactic dependencies vs.
-> > emitting barriers) must be part of the ABI, or things like
-> > [[carries_dependency]] won't work as expected (or lead to inefficient
-> > code).  Thus, in practice, all compiler vendors on a platform would have
-> > to agree to a particular handling, which might end up in selecting the
-> > easy-but-conservative implementation option (ie, always emitting
-> > mo_acquire when the source uses mo_consume).
-> 
-> Regardless of the ABI, my point is that if a program is valid, it is also 
-> valid when all uses of [[carries_dependency]] are removed.  If a function 
-> doesn't use [[carries_dependency]], that means "dependencies may or may 
-> not be carried through this function".  If a function uses 
-> [[carries_dependency]], that means that certain dependencies *are* carried 
-> through the function (and the ABI should then specify what this means the 
-> caller can rely on, in terms of the architecture's memory model).  (This 
-> may or may not be useful, but it's how I understand C++11.)
+Um.  This code doesn't work.  I'll send a patch.  I can't speak
+towards how well it compiles in different configurations.
 
-I agree.  What I tried to point out is that it's not the case that an
-*implementation* can just ignore [[carries_dependency]].  So from an
-implementation perspective, the attribute does have semantics.
+I can't speak towards how well it compiles in different
+configurations.  Also, vdso_fallback_gettime needs .cfi annotations, I
+think.  I could probably dredge the required incantations from
+somewhere, but someone else may know how to do it.
 
+Once I patch it to work, your 32-bit code is considerably faster than
+the 64-bit case.  It's enough faster that I suspect a bug.  Dumping
+the in-memory shows some rather suspicious nops before the rdtsc
+instruction.  I suspect that you've forgotten to run the 32-bit vdso
+through the alternatives code.  The is a nasty bug: it will appear to
+work, but you'll see non-monotonic times on some SMP systems.
+
+In my configuration, with your patches, I get (64-bit):
+
+CLOCK_REALTIME:
+100000000 loops in 2.07105s = 20.71 nsec / loop
+100000000 loops in 2.06874s = 20.69 nsec / loop
+100000000 loops in 2.29415s = 22.94 nsec / loop
+CLOCK_MONOTONIC:
+100000000 loops in 2.06526s = 20.65 nsec / loop
+100000000 loops in 2.10134s = 21.01 nsec / loop
+100000000 loops in 2.10615s = 21.06 nsec / loop
+CLOCK_REALTIME_COARSE:
+100000000 loops in 0.37440s = 3.74 nsec / loop
+[  503.011756] perf samples too long (2550 > 2500), lowering
+kernel.perf_event_max_sample_rate to 50000
+100000000 loops in 0.37399s = 3.74 nsec / loop
+100000000 loops in 0.38445s = 3.84 nsec / loop
+CLOCK_MONOTONIC_COARSE:
+100000000 loops in 0.40238s = 4.02 nsec / loop
+100000000 loops in 0.40939s = 4.09 nsec / loop
+100000000 loops in 0.41152s = 4.12 nsec / loop
+
+Without the patches, I get:
+
+CLOCK_REALTIME:
+100000000 loops in 2.07348s = 20.73 nsec / loop
+100000000 loops in 2.07346s = 20.73 nsec / loop
+100000000 loops in 2.06922s = 20.69 nsec / loop
+CLOCK_MONOTONIC:
+100000000 loops in 1.98955s = 19.90 nsec / loop
+100000000 loops in 1.98895s = 19.89 nsec / loop
+100000000 loops in 1.98881s = 19.89 nsec / loop
+CLOCK_REALTIME_COARSE:
+100000000 loops in 0.37462s = 3.75 nsec / loop
+100000000 loops in 0.37460s = 3.75 nsec / loop
+100000000 loops in 0.37428s = 3.74 nsec / loop
+CLOCK_MONOTONIC_COARSE:
+100000000 loops in 0.40081s = 4.01 nsec / loop
+100000000 loops in 0.39834s = 3.98 nsec / loop
+[   36.706696] perf samples too long (2565 > 2500), lowering
+kernel.perf_event_max_sample_rate to 50000
+100000000 loops in 0.39949s = 3.99 nsec / loop
+
+This looks like a wash, except for CLOCK_MONOTONIC, which got a bit
+slower.  I'll send a followup patch once the bugs are fixed that
+improves the timings to:
+
+CLOCK_REALTIME:
+100000000 loops in 2.08621s = 20.86 nsec / loop
+100000000 loops in 2.07122s = 20.71 nsec / loop
+100000000 loops in 2.07089s = 20.71 nsec / loop
+CLOCK_MONOTONIC:
+100000000 loops in 2.06831s = 20.68 nsec / loop
+100000000 loops in 2.06862s = 20.69 nsec / loop
+100000000 loops in 2.06195s = 20.62 nsec / loop
+CLOCK_REALTIME_COARSE:
+100000000 loops in 0.37274s = 3.73 nsec / loop
+100000000 loops in 0.37247s = 3.72 nsec / loop
+100000000 loops in 0.37234s = 3.72 nsec / loop
+CLOCK_MONOTONIC_COARSE:
+100000000 loops in 0.39944s = 3.99 nsec / loop
+100000000 loops in 0.39940s = 3.99 nsec / loop
+100000000 loops in 0.40054s = 4.01 nsec / loop
+
+I'm not quite sure that causes the remaining loss.
+
+Test code is here:
+
+https://gitorious.org/linux-test-utils/linux-clock-tests
