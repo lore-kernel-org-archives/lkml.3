@@ -1,206 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaB0P0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:26:53 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58939 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751573AbaB0P0r (ORCPT
+	id S1753261AbaB0P1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:27:32 -0500
+Received: from sabertooth02.qualcomm.com ([65.197.215.38]:16484 "EHLO
+	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbaB0P12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:26:47 -0500
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@st.com>,
-        Pankaj Dev <pankaj.dev@st.com>
-Subject: [PATCH v0 05/15] drivers: clk: st: Support for ClockGenA9/DDR/GPU
-Date: Thu, 27 Feb 2014 16:24:18 +0100
-Message-Id: <1393514668-17440-6-git-send-email-gabriel.fernandez@st.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393514668-17440-1-git-send-email-gabriel.fernandez@st.com>
-References: <1393514668-17440-1-git-send-email-gabriel.fernandez@st.com>
+	Thu, 27 Feb 2014 10:27:28 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,7361"; a="59962339"
+X-IronPort-AV: E=Sophos;i="4.97,555,1389772800"; 
+   d="scan'208";a="600765514"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>
+Subject: Re: [PATCH 3/4] ath6kl: set NET_NAME_USER for P2P ifs
+References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
+	<1393512434-1325-4-git-send-email-dh.herrmann@gmail.com>
+Date: Thu, 27 Feb 2014 17:27:21 +0200
+In-Reply-To: <1393512434-1325-4-git-send-email-dh.herrmann@gmail.com> (David
+	Herrmann's message of "Thu, 27 Feb 2014 15:47:13 +0100")
+Message-ID: <87bnxsfuee.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch added support for DT registration of ClockGenA9/DDR/GPU
+David Herrmann <dh.herrmann@gmail.com> writes:
 
-ClockgenA9/DDR : It includes c32 type PLL (also in ClockgenA1x), hence
-only CLK_OF_DECLARE implementation is required.
+> P2P netdevs and other devices that are created via nl80211 from user-space
+> have a name provided by user-space. Therefore, set NET_NAME_USER so this
+> is correctly shown in sysfs.
+>
+> Cc: Kalle Valo <kvalo@qca.qualcomm.com>
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 
-ClockgenGPU : It includes c65 type PLL (also in ClockgenAx), hence
-only CLK_OF_DECLARE implementation is required.
+Looks good to me.
 
-Signed-off-by: Pankaj Dev <pankaj.dev@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
----
- drivers/clk/st/clkgen-pll.c | 139 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 139 insertions(+)
+Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
 
-diff --git a/drivers/clk/st/clkgen-pll.c b/drivers/clk/st/clkgen-pll.c
-index c6b38b0..bca0a0b 100644
---- a/drivers/clk/st/clkgen-pll.c
-+++ b/drivers/clk/st/clkgen-pll.c
-@@ -110,6 +110,76 @@ static struct clkgen_pll_data st_pll3200c32_a1x_1 = {
- 	.ops		= &stm_pll3200c32_ops,
- };
- 
-+/* 415 specific */
-+static struct clkgen_pll_data st_pll3200c32_a9_415 = {
-+	.pdn_status	= CLKGEN_FIELD(0x0,	0x1,			0),
-+	.locked_status	= CLKGEN_FIELD(0x6C,	0x1,			0),
-+	.ndiv		= CLKGEN_FIELD(0x0,	C32_NDIV_MASK,		9),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		22),
-+	.num_odfs = 1,
-+	.odf =		{ CLKGEN_FIELD(0x0,	C32_ODF_MASK,		3) },
-+	.odf_gate =	{ CLKGEN_FIELD(0x0,	0x1,			28) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
-+static struct clkgen_pll_data st_pll3200c32_ddr_415 = {
-+	.pdn_status	= CLKGEN_FIELD(0x0,	0x1,			0),
-+	.locked_status	= CLKGEN_FIELD(0x100,	0x1,			0),
-+	.ndiv		= CLKGEN_FIELD(0x8,	C32_NDIV_MASK,		0),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		25),
-+	.num_odfs = 2,
-+	.odf		= { CLKGEN_FIELD(0x8,	C32_ODF_MASK,		8),
-+			    CLKGEN_FIELD(0x8,	C32_ODF_MASK,		14) },
-+	.odf_gate	= { CLKGEN_FIELD(0x4,	0x1,			28),
-+			    CLKGEN_FIELD(0x4,	0x1,			29) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
-+static struct clkgen_pll_data st_pll1200c32_gpu_415 = {
-+	.pdn_status	= CLKGEN_FIELD(0x144,	0x1,			3),
-+	.locked_status	= CLKGEN_FIELD(0x168,	0x1,			0),
-+	.ldf		= CLKGEN_FIELD(0x0,	C32_LDF_MASK,		3),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		0),
-+	.num_odfs = 0,
-+	.odf		= { CLKGEN_FIELD(0x0,	C32_ODF_MASK,		10) },
-+	.ops		= &st_pll1200c32_ops,
-+};
-+
-+/* 416 specific */
-+static struct clkgen_pll_data st_pll3200c32_a9_416 = {
-+	.pdn_status	= CLKGEN_FIELD(0x0,	0x1,			0),
-+	.locked_status	= CLKGEN_FIELD(0x6C,	0x1,			0),
-+	.ndiv		= CLKGEN_FIELD(0x8,	C32_NDIV_MASK,		0),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		25),
-+	.num_odfs = 1,
-+	.odf		= { CLKGEN_FIELD(0x8,	C32_ODF_MASK,		8) },
-+	.odf_gate	= { CLKGEN_FIELD(0x4,	0x1,			28) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
-+static struct clkgen_pll_data st_pll3200c32_ddr_416 = {
-+	.pdn_status	= CLKGEN_FIELD(0x0,	0x1,			0),
-+	.locked_status	= CLKGEN_FIELD(0x10C,	0x1,			0),
-+	.ndiv		= CLKGEN_FIELD(0x8,	C32_NDIV_MASK,		0),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		25),
-+	.num_odfs = 2,
-+	.odf		= { CLKGEN_FIELD(0x8,	C32_ODF_MASK,		8),
-+			    CLKGEN_FIELD(0x8,	C32_ODF_MASK,		14) },
-+	.odf_gate	= { CLKGEN_FIELD(0x4,	0x1,			28),
-+			    CLKGEN_FIELD(0x4,	0x1,			29) },
-+	.ops		= &stm_pll3200c32_ops,
-+};
-+
-+static struct clkgen_pll_data st_pll1200c32_gpu_416 = {
-+	.pdn_status	= CLKGEN_FIELD(0x8E4,	0x1,			3),
-+	.locked_status	= CLKGEN_FIELD(0x90C,	0x1,			0),
-+	.ldf		= CLKGEN_FIELD(0x0,	C32_LDF_MASK,		3),
-+	.idf		= CLKGEN_FIELD(0x0,	C32_IDF_MASK,		0),
-+	.num_odfs = 0,
-+	.odf		= { CLKGEN_FIELD(0x0,	C32_ODF_MASK,		10) },
-+	.ops		= &st_pll1200c32_ops,
-+};
-+
- /**
-  * DOC: Clock Generated by PLL, rate set and enabled by bootloader
-  *
-@@ -484,6 +554,22 @@ static struct of_device_id c32_pll_of_match[] = {
- 		.compatible = "st,plls-c32-a1x-1",
- 		.data = &st_pll3200c32_a1x_1,
- 	},
-+	{
-+		.compatible = "st,stih415-plls-c32-a9",
-+		.data = &st_pll3200c32_a9_415,
-+	},
-+	{
-+		.compatible = "st,stih415-plls-c32-ddr",
-+		.data = &st_pll3200c32_ddr_415,
-+	},
-+	{
-+		.compatible = "st,stih416-plls-c32-a9",
-+		.data = &st_pll3200c32_a9_416,
-+	},
-+	{
-+		.compatible = "st,stih416-plls-c32-ddr",
-+		.data = &st_pll3200c32_ddr_416,
-+	},
- 	{}
- };
- 
-@@ -557,3 +643,56 @@ err:
- 	kfree(clk_data);
- }
- CLK_OF_DECLARE(clkgen_c32_pll, "st,clkgen-plls-c32", clkgen_c32_pll_setup);
-+
-+static struct of_device_id c32_gpu_pll_of_match[] = {
-+	{
-+		.compatible = "st,stih415-gpu-pll-c32",
-+		.data = &st_pll1200c32_gpu_415,
-+	},
-+	{
-+		.compatible = "st,stih416-gpu-pll-c32",
-+		.data = &st_pll1200c32_gpu_416,
-+	},
-+};
-+
-+static void __init clkgengpu_c32_pll_setup(struct device_node *np)
-+{
-+	const struct of_device_id *match;
-+	struct clk *clk;
-+	const char *parent_name;
-+	void __iomem *reg;
-+	const char *clk_name;
-+	struct clkgen_pll_data	*data;
-+
-+	match = of_match_node(c32_gpu_pll_of_match, np);
-+	if (!match) {
-+		pr_err("%s: No matching data\n", __func__);
-+		return;
-+	}
-+
-+	data = (struct clkgen_pll_data *)match->data;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	if (!parent_name)
-+		return;
-+
-+	reg = clkgen_get_register_base(np);
-+	if (!reg)
-+		return;
-+
-+	if (of_property_read_string_index(np, "clock-output-names",
-+					  0, &clk_name))
-+		return;
-+
-+	/*
-+	 * PLL 1200MHz output
-+	 */
-+	clk = clkgen_pll_register(parent_name, data, reg, clk_name);
-+
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+
-+	return;
-+}
-+CLK_OF_DECLARE(clkgengpu_c32_pll,
-+	       "st,clkgengpu-pll-c32", clkgengpu_c32_pll_setup);
+Can I take this to my ath.git tree?
+
 -- 
-1.9.0
-
+Kalle Valo
