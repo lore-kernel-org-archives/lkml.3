@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaB0IYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:24:31 -0500
-Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:35913 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750781AbaB0IYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:24:30 -0500
-Message-ID: <530EF467.5000504@overkiz.com>
-Date: Thu, 27 Feb 2014 09:16:39 +0100
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751638AbaB0IZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:25:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55966 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523AbaB0IZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 03:25:35 -0500
+Date: Thu, 27 Feb 2014 09:25:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
+        Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+Message-ID: <20140227082529.GA18210@pd.tnic>
+References: <530E6F76.1070605@zytor.com>
+ <1393462087.24588.50.camel@joe-AO722>
+ <530E8C2E.7080307@zytor.com>
+ <1393466619.24588.65.camel@joe-AO722>
+ <20140227022857.GC23659@thin>
+ <1393469594.24588.71.camel@joe-AO722>
+ <20140227025845.GA25145@thin>
+ <530EB103.5070406@zytor.com>
+ <1393472326.24588.82.camel@joe-AO722>
+ <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        nicolas.ferre@atmel.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jason@lakedaemon.net
-Subject: Re: [PATCH v2 2/4] clk: at91: propagate rate change on system clks
-References: <1391589458-28018-1-git-send-email-jjhiblot@traphandler.com> <1391589458-28018-3-git-send-email-jjhiblot@traphandler.com> <20140227004229.12081.25317@quantum>
-In-Reply-To: <20140227004229.12081.25317@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17651295790738667548
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-On 27/02/2014 01:42, Mike Turquette wrote:
-> Quoting Jean-Jacques Hiblot (2014-02-05 00:37:36)
->> From: Boris BREZILLON <b.brezillon@overkiz.com>
->>
->> System clks are just gates, and thus do not provide any rate operations.
->> Authorize clk rate change to be propagated to system clk parents.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   drivers/clk/at91/clk-system.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
->> index 8f7c043..a98557b 100644
->> --- a/drivers/clk/at91/clk-system.c
->> +++ b/drivers/clk/at91/clk-system.c
->> @@ -84,7 +84,8 @@ at91_clk_register_system(struct at91_pmc *pmc, const char *name,
->>           * (see drivers/memory) which would request and enable the ddrck clock.
->>           * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
->>           */
->> -       init.flags = CLK_IGNORE_UNUSED;
->> +       init.flags = CLK_SET_RATE_GATE | CLK_SET_RATE_PARENT |
-> Just wanted to do a quick sanity check here. Do you really need
-> CLK_SET_RATE_GATE?
-
-After taking a closer look, I'd say I don't need this flag, because it's
-already set on programmable clks, am I right ?
-
-Do you want me to send a new version removing this flag ?
-
-> Otherwise these patches look fine.
+On Wed, Feb 26, 2014 at 07:42:37PM -0800, H. Peter Anvin wrote:
+> sizeof(_Bool), like for many other types, is ABI-dependent, but that
+> doesn't mean it is illegitimate.
 >
-> Regards,
-> Mike
->
->> +                    CLK_IGNORE_UNUSED;
->>   
->>          sys->id = id;
->>          sys->hw.init = &init;
->> -- 
->> 1.8.5.2
->>
+> I don't think C99 says that it is invalid (which means C99 doesn't
+> permit is to be a packed bitmap.)
 
+Ok, but what can be said about the __pcpu_size_call() use case where we
+do sizeof(bool)? We have there accessors for sizes 1,2,4 and 8. Can we
+simply assume that the ABI will give us a size of bool which is one of
+those?
+
+What if sizeof(bool) is 3?
+
+Or, are we saying that sizeof(bool) will always be of some natural,
+native size like byte, short, int or long so we're good there?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
