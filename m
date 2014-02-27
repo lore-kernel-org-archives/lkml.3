@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaB0Qe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:34:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26637 "EHLO mx1.redhat.com"
+	id S1753456AbaB0QgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:36:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404AbaB0Qe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:34:56 -0500
-Date: Thu, 27 Feb 2014 17:34:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>, Peter Zijlstra <peterz@infradead.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, schwidefsky@de.ibm.com, rientjes@google.com,
-        riel@redhat.com, mingo@kernel.org, mgorman@suse.de,
-        kirill shutemov <kirill.shutemov@linux.intel.com>,
-        heiko carstens <heiko.carstens@de.ibm.com>, hannes@cmpxchg.org,
-        gerald schaefer <gerald.schaefer@de.ibm.com>, ebiederm@xmission.com,
-        aarcange@redhat.com
-Subject: Re: + mm-revert-thp-make-madv_hugepage-check-for-mm-def_flags.patch
-	added to -mm tree
-Message-ID: <20140227163405.GA909@redhat.com>
-References: <530d2ce9.eikv0ULecNwxF4I5%akpm@linux-foundation.org> <530D9F50.1080400@de.ibm.com> <20140226145025.GA12571@redhat.com> <530E0306.7020601@de.ibm.com> <20140226153144.GA15527@redhat.com> <20140226165759.GB22802@laptop.programming.kicks-ass.net> <20140226172253.GQ3041@sgi.com> <20140226180603.GA25644@redhat.com> <842178473.10219645.1393447292444.JavaMail.zimbra@redhat.com>
+	id S1752692AbaB0QgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:36:17 -0500
+Message-ID: <530F697B.1010802@redhat.com>
+Date: Thu, 27 Feb 2014 17:36:11 +0100
+From: Florian Weimer <fweimer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <842178473.10219645.1393447292444.JavaMail.zimbra@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6 00/22] Support ext4 on NV-DIMMs
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com> <530F451F.9020107@redhat.com> <20140227162923.GH5744@linux.intel.com>
+In-Reply-To: <20140227162923.GH5744@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26, Paolo Bonzini wrote:
+On 02/27/2014 05:29 PM, Matthew Wilcox wrote:
+
+>> Some distributions use udisks2 to grant permission to local console
+>> users to create new loop devices from files.  File systems on these
+>> block devices are then mounted.  This is a replacement for several
+>> file systems implemented in user space, and for the users, this is a
+>> good thing because the in-kernel implementations are generally of
+>> higher quality.
 >
-> > +#ifdef CONFIG_S390
-> > +		/*
-> > +		 * MADV_HUGEPAGE is broken after s390_enable_sie(), qemu
-> > +		 * blindly does madvise(MADV_HUGEPAGE) for for all kvm pages
-> > +		 * and expects it must fail on s390. Avoid a possible SIGSEGV
-> > +		 * until qemu is changed.
-> > +		 */
-> > +		if (mm_has_pgste(vma->vm_mm))
-> > +			return -EINVAL;
-> > +#endif
+> Just to be sure I understand; the user owns the file (so can change any
+> bit in it at will), and the loop device is used to present that file
+> to the filesystem as a block device to be mounted?
+
+Yes, that's a fair summary.
+
+ > Have we fuzz-tested
+> all the filesystems enough to be sure that's safe?  :-)
+
+It raised some eyebrows.  But I've looked at some of the userspace 
+alternatives, and I can see why we ended up with this.
+
+>> What happens if we have DAX support in the entire stack, and an
+>> enterprising user mounts a file system?  Will she be able to fuzz
+>> the file system or binfmt loaders concurrently, changing the bits
+>> while they are being read?
+>>
+>> Currently, it appears that the loop device duplicates pages in the
+>> page cache, so this does not seem to be possible, but DAX support
+>> might change this.
 >
-> The comment is not quite true.  QEMU doesn't expect that the madvise fails.
+> I haven't looked at adding DAX support to the loop device, although
+> that would make sense.  At the moment, neither ext2 nor ext4 (our only
+> DAX-supporting filesystems) use DAX for their metadata, only for user
+> data.  As far as fuzzing the binfmt loaders ... are these filesystems not
+> forced to be at least nosuid?
 
-Yes, sorry. I didn't mean "it expects -EINVAL".
+The kernel binfmt parser runs as root even without a SUID bit. :)
 
-> It simply expects that the madvise doesn't cause SIGSEGVs or later
-> malfunctioning, because (quoting tha man page) madvise "does not influence
-> the semantics of the application".
+ > I might go so far as to make them noexec.
 
-Yes, I understand. But currently this means "MADV_HUGEPAGE should not
-actually work", this is what I tried to say.
+Oh, that's an interesting idea.
 
-> There's nothing to fix in QEMU,
+> Thanks for thinking about this.  I didn't know allowing users to mount
+> files they owned was something distros actually did.  Have we considered
+> prohibiting the user from modifying the file while it's mounted, eg
+> forcing its permissions to 0 or pretending it's immutable?
 
-I was going to argue, but this is probably true too.
+Perhaps like "Text file busy" for executables?  How reliable is that in 
+practice?
 
-In short: I agree with any comment ;)
+Changing file permissions doesn't affected already open descriptors and 
+might not always be possible (the file system might be mounted 
+read-only, but still be modifiable beneath).
 
-Oleg.
-
+-- 
+Florian Weimer / Red Hat Product Security Team
