@@ -1,124 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaB0UWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:22:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.24]:50099 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaB0UWt (ORCPT
+	id S1751650AbaB0UWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:22:48 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:38410 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaB0UWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:22:49 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-arm-kernel@lists.infradead.org, Liviu Dudau <Liviu.Dudau@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Thu, 27 Feb 2014 21:22:12 +0100
-Message-ID: <11097076.0C13zaKdYD@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140227200729.GB7773@obsidianresearch.com>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <5379319.g8IPYmY2Zo@wuerfel> <20140227200729.GB7773@obsidianresearch.com>
+	Thu, 27 Feb 2014 15:22:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ynHs1eGRPqM5BSL8w6sf6EZUhVOsLIakU3Jx+E/Uo/d
- 1WgVdrxLIFiqRoLbvt0twoXQRxGlBvLgMnpLQmSHdebLrxgCVU
- vk2l41gGpUom8JLz+EYQ4GX2RkEQ3GBXKBLqdkKmpOBoMbvaPr
- eOP3JWclfiMNj90N2i8vdeLyT9kI3Lo8vE6+NXFGS3J1irx3Lt
- Tah0f/SXp6GrTucncSkzybj0clSOui9NHfvysK7H0QUIYY8vmA
- hhWxZDDdo7304c0dfK8021FpTkjhGg/IkftuXwgr6dYwQg6FoR
- shK+mi+ItVjFOK+6t+6ElRhEX8QEV7FxCrsmly/JJczcTQilXx
- ALlO4eIMZb77B47XpDVg=
+In-Reply-To: <530EBFC7.9030309@zytor.com>
+References: <1393462087.24588.50.camel@joe-AO722>
+	<530E8C2E.7080307@zytor.com>
+	<1393466619.24588.65.camel@joe-AO722>
+	<20140227022857.GC23659@thin>
+	<1393469594.24588.71.camel@joe-AO722>
+	<20140227025845.GA25145@thin>
+	<530EB103.5070406@zytor.com>
+	<1393472326.24588.82.camel@joe-AO722>
+	<20140227040050.GA8449@nicira.com>
+	<530EBCED.9020705@zytor.com>
+	<20140227042636.GA9592@nicira.com>
+	<530EBFC7.9030309@zytor.com>
+Date: Thu, 27 Feb 2014 12:22:45 -0800
+X-Google-Sender-Auth: iUfGy6i-lwxuhuLBy-meaUsDY8M
+Message-ID: <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Christopher Li <sparse@chrisli.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ben Pfaff <blp@nicira.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014 13:07:29 Jason Gunthorpe wrote:
-> On Thu, Feb 27, 2014 at 08:48:08PM +0100, Arnd Bergmann wrote:
-> > > It also looks correct for architectures that use the CPU MMIO address
-> > > as the IO address directly (where IO_SPACE_LIMIT would be 4G)
-> > 
-> > Are you aware of any that still do? I thought we had stopped doing
-> > that.
-> 
-> I thought ia64 used to, but it has been a long time since I've touched
-> one...
+On Wed, Feb 26, 2014 at 8:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Quite frankly, this is silly in my opinion, *and* it is not guaranteed
+> by C either (read about "trap representations").
+>>
+> Anything that moves data around in a generic fashion.  It can be as
+> simple as:
+>
+>         memcpy(foo, bar, sizeof *foo);
 
-They have a different way of doing it now, no idea how it looked in
-the past:
+OK. I get it nobody wants a sizeof(_Bool) warning.
 
-#define IO_SPACE_LIMIT          0xffffffffffffffffUL
+I am going to apply this patch.
 
-#define MAX_IO_SPACES_BITS              8
-#define MAX_IO_SPACES                   (1UL << MAX_IO_SPACES_BITS)
-#define IO_SPACE_BITS                   24
-#define IO_SPACE_SIZE                   (1UL << IO_SPACE_BITS)
+Should we change the default to off then?
 
-#define IO_SPACE_NR(port)               ((port) >> IO_SPACE_BITS)
-#define IO_SPACE_BASE(space)            ((space) << IO_SPACE_BITS)
-#define IO_SPACE_PORT(port)             ((port) & (IO_SPACE_SIZE - 1))
+Thanks.
 
-#define IO_SPACE_SPARSE_ENCODING(p)     ((((p) >> 2) << 12) | ((p) & 0xfff))
-
-So their port number is a logical token that contains the I/O space number
-and a 16MB offset.
-
-Apparently sparc64 uses physical memory addressing for I/O space, the
-same way they do for memory space, and they just set IO_SPACE_LIMIT to
-0xffffffffffffffffUL.
-
-> > > Architectures that use the virtual IO window technique will always
-> > > require a custom pci_address_to_pio implementation.
-> > 
-> > Hmm, at the moment we only call it from of_address_to_resource(),
-> > which in turn does not get called on PCI devices, and does not
-> > call pci_address_to_pio for 'simple' platform devices. The only
-> > case I can think of where it actually matters is when we have
-> > ISA devices in DT that use an I/O port address in the reg property,
-> > and that case hopefully won't happen on ARM32 or ARM64.
-> 
-> Sure, I ment, after Liviu's patch it will become required since he is
-> cleverly using it to figure out what the io mapping the bridge driver
-> setup before calling the helper.
-
-Ok. I was arguing more that we should add this dependency.
-
-> > > I think the legacy reasons for having all those layers of translation
-> > > are probably not applicable to ARM64, and it is much simpler without
-> > > the extra translation step....
-> > > 
-> > > Arnd, what do you think?
-> > 
-> > Either I don't like it or I misunderstand you ;-)
-> > 
-> > Most PCI drivers normally don't call ioport_map or pci_iomap, so
-> > we can't just do it there. If you are thinking of calling ioport_map
-> 
-> Okay, that was one of the 'legacy reasons'. Certainly lots of drivers
-> do call pci_iomap, but if you think legacy drivers that don't are
-> important to ARM64 then it makes sense to use the virtual IO window.
-
-I think all uses of I/O space are legacy, but I don't think that
-drivers doing inb/outb are more obsolete than those doing pci_iomap.
-It's got more to do with the subsystem requirements, e.g. libata
-requires the use of pci_iomap.
-
-> > for every PCI device that has an I/O BAR and storing the virtual
-> > address in the pci_dev resource, I don't see what that gains us
-> 
-> Mainly we get to drop the fancy dynamic allocation stuff for the fixed
-> virtual window, and it gives the option to have a 1:1 relationship
-> between CPU addresses and PCI BARs.
-
-I don't think the allocation is much of a problem, as long as we
-can localize it in one function that is shared by everyone.
-The problems I saw were all about explaining to people how it
-works, but they really shouldn't have to know.
-
-
-	Arnd
+Chris
