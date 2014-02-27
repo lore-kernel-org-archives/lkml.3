@@ -1,204 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaB0N4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:56:34 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:34836 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaB0N42 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:56:28 -0500
-Date: Thu, 27 Feb 2014 14:56:20 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Henrik Austad <henrik@austad.us>
-Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/6 v2] Expose do_timer CPU as RW to userspace
-Message-ID: <20140227135618.GB17608@localhost.localdomain>
-References: <1393331641-14016-1-git-send-email-henrik@austad.us>
- <20140225141906.GA22814@localhost.localdomain>
- <20140226081602.GA16591@austad.us>
- <20140226130234.GA3104@localhost.localdomain>
- <20140227083735.GA5129@austad.us>
+	id S1752477AbaB0N4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:56:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759AbaB0N43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 08:56:29 -0500
+Date: Thu, 27 Feb 2014 14:11:03 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, pbonzini@redhat.com
+Subject: Re: [PATCH 1/2] x86: kvm: rate-limit global clock updates
+Message-ID: <20140227131102.GA4688@hawk.usersys.redhat.com>
+References: <1393438512-21273-1-git-send-email-drjones@redhat.com>
+ <1393438512-21273-2-git-send-email-drjones@redhat.com>
+ <20140226202526.GA9218@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140227083735.GA5129@austad.us>
+In-Reply-To: <20140226202526.GA9218@amt.cnet>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 09:37:35AM +0100, Henrik Austad wrote:
-> On Wed, Feb 26, 2014 at 02:02:42PM +0100, Frederic Weisbecker wrote:
+On Wed, Feb 26, 2014 at 05:25:26PM -0300, Marcelo Tosatti wrote:
+> On Wed, Feb 26, 2014 at 07:15:11PM +0100, Andrew Jones wrote:
+> > When we update a vcpu's local clock it may pick up an NTP correction.
+> > We can't wait an indeterminate amount of time for other vcpus to pick
+> > up that correction, so commit 0061d53daf26f introduced a global clock
+> > update. However, we can't request a global clock update on every vcpu
+> > load either (which is what happens if the tsc is marked as unstable).
+> > The solution is to rate-limit the global clock updates. Marcelo
+> > calculated that we should delay the global clock updates no more
+> > than 0.1s as follows:
 > > 
-> > -1 could be an option but hmm...
+> > Assume an NTP correction c is applied to one vcpu, but not the other,
+> > then in n seconds the delta of the vcpu system_timestamps will be
+> > c * n. If we assume a correction of 500ppm (worst-case), then the two
+> > vcpus will diverge 100us in 0.1s, which is a considerable amount.
 > 
-> I don't really like -1, that indicates that it is disabled and could 
-> confuse people, letting them think that timekeeping is disabled at all 
-> cores.
-> 
-> > Wouldn't it be saner to use a cpumask of the timer affinity instead? This
-> > is the traditional way we affine something in /proc or /sys
-> 
-> Yes, that's what I'm starting to think as well, that would make a lot more 
-> sense when the timer is bounced around.
-> 
-> something like a 'current_cpu_mask' which would return a hex-mask 
-> of the cores where the timekeeping update _could_ run.
+> 100us -> 50us.
 
-Right, or timekeeper_cpumask.
+doh, will fix.
 
 > 
-> For periodic, that would be a single core (normally boot), and when forced, 
-> it would return a cpu-mask with only one cpu set. Then the result would be 
-> a lot more informative for NO_HZ_(IDLE|FULL) as well.
-
-I'd rather suggest that for periodic and NO_HZ_IDLE, this should be equal to cpu_online_mask
-by default. Because the timekeeping duty can be taken by any CPU.
-
-Then on subsequent writes on this cpumask, this reflects the reduced subset of CPUs that
-we allow to take the duty.
-
-In your usecase you're interested in a single CPU to take that duty but the cpumask
-allows more flexibility.
-
-Now NO_HZ_FULL is a bit different. For now only CPU 0 can take the duty. This will extend
-later to every CPUs outside the range of full dynticks.
-
-> 
-> Worth a shot? (completely disjoint from the write-discussion below)
-
-I can't judge alone if we really want this patchset. We need the input of timer
-maintainers for that.
-
-Assuming we want it then yeah, the cpumask affinity in sysfs/procfs looks like a sane
-approach to me. In term we should also plug it to rcu full system idle detection:
-https://lwn.net/Articles/558284/ so that we can shutdown the reduced set of timekeepers
-when there is no other CPU running. I have some patches for it that I can plug
-afterward. So no worry for you on that side.
-
-> 
-> > > > Now looking at the write part. What kind of usecase do you have in mind?
-> > > 
-> > > Forcing the timer to run on single core only, and a core of my choosing at 
-> > > that.
-> > > 
-> > > - Get timekeeping away from cores with bad interrupts (no, I cannot move 
-> > >   them).
-> > > - Avoid running timekeeping udpates on worker-cores.
+> > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > ---
+> >  arch/x86/include/asm/kvm_host.h |  1 +
+> >  arch/x86/kvm/x86.c              | 33 +++++++++++++++++++++++++++++----
+> >  2 files changed, 30 insertions(+), 4 deletions(-)
 > > 
-> > Ok but what you're moving away is not the tick but the timekeeping duty, which
-> > is only a part of the tick. A significant part but still just a part.
+> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > index e714f8c08ccf2..9aa09d330a4b5 100644
+> > --- a/arch/x86/include/asm/kvm_host.h
+> > +++ b/arch/x86/include/asm/kvm_host.h
+> > @@ -598,6 +598,7 @@ struct kvm_arch {
+> >  	bool use_master_clock;
+> >  	u64 master_kernel_ns;
+> >  	cycle_t master_cycle_now;
+> > +	struct delayed_work kvmclock_update_work;
+> >  
+> >  	struct kvm_xen_hvm_config xen_hvm_config;
+> >  
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index 4cca45853dfeb..a2d30de597b7d 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -1628,20 +1628,43 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+> >   * the others.
+> >   *
+> >   * So in those cases, request a kvmclock update for all vcpus.
+> > - * The worst case for a remote vcpu to update its kvmclock
+> > - * is then bounded by maximum nohz sleep latency.
+> > + * We need to rate-limit these requests though, as they can
+> > + * considerably slow guests that have a large number of vcpus.
+> > + * The time for a remote vcpu to update its kvmclock is bound
+> > + * by the delay we use to rate-limit the updates.
+> >   */
+> >  
+> > -static void kvm_gen_kvmclock_update(struct kvm_vcpu *v)
+> > +#define KVMCLOCK_UPDATE_DELAY msecs_to_jiffies(100)
+> > +
+> > +static void kvmclock_update_fn(struct work_struct *work)
+> >  {
+> >  	int i;
+> > -	struct kvm *kvm = v->kvm;
+> > +	struct delayed_work *dwork = to_delayed_work(work);
+> > +	struct kvm_arch *ka = container_of(dwork, struct kvm_arch,
+> > +					   kvmclock_update_work);
+> > +	struct kvm *kvm = container_of(ka, struct kvm, arch);
+> >  	struct kvm_vcpu *vcpu;
+> >  
+> >  	kvm_for_each_vcpu(i, vcpu, kvm) {
+> >  		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> >  		kvm_vcpu_kick(vcpu);
+> >  	}
+> > +	kvm_put_kvm(kvm);
+> > +}
 > 
-> That is certainly true, but that part happens to be of global influence, so 
-> if I have a core where a driver disables interrupts a lot (or drops into a 
-> hypervisor, or any other silly thing it really shouldn't be doing), then I 
-> would like to be able to move the timekeeping updates away from that core. 
-
-I don't understand how these things are linked together. If your driver disables
-interrupt and you don't want to be disturbed, moving the timekeeping duty doesn't
-move the tick itself.
-
-What happens to be disturbing for you in the timekeeping update that is not with
-the tick as a whole? Is the delta of cputime added by jiffies and gtod update
-alone a problem?
-
-This sounds surprising but possible. Still I want to be sure that's the exact
-problem you're encoutering.
-
+> Can cancel_work_sync on vm shutdown instead of get/put kvm ?
 > 
-> The same goes for cores running rt-tasks (>1), I really do not want -any- 
-> interference at all, and if I can remove the extra jitter from the 
-> timekeeping, I'm pretty happy to do so.
+> (somewhat annoying for vm to not go down immediatelly).
 
-Then again if you don't want interference at all, NO_HZ_FULL sounds like a better
-solution. NO_HZ_FULL implies that the timekeeping is handled by CPUs in the nohz_full
-boot paramater range. If NO_HZ_FULL_ALL then it's CPU 0.
-
-> 
-> > Does this all make sense outside the NO_HZ_FULL case?
-> 
-> In my view, it makes sense in the periodic case as well since all 
-> timekeeping updates then happens on the boot-cpu (unless it is hotunplugged 
-> that is).
-
-But if we get back to your requirements, you want no interference at all. HZ_PERIODIC
-doesn't look like what you want.
-
-> 
-> > > 
-> > > > It's also important to consider that, in the case of NO_HZ_IDLE, if you force
-> > > > the timekeeping duty to a specific CPU, it won't be able to enter in dynticks
-> > > > idle mode as long as any other CPU is running. 
-> > > 
-> > > Yes, it will in effect be a TICK_PERIODIC core where I can configure which 
-> > > core the timekeeping update will happen.
-> > 
-> > Ok, I missed that part. So when the timekeeping is affine to a specific CPU,
-> > this CPU is prevented to enter into dynticks idle mode?
-> 
-> That's what I aimed at, and I *think* I managed that. I added a 
-> forced_timer_can_stop_tick() and let can_stop_full_tick() and 
-> can_stop_idle_tick() call that. I think that is sufficient, at least I did 
-> not see that the timerduty was transferred to another core afterwards.
-
-Ok, I need to look at the details.
+OK
 
 > 
-> > > > Because those CPUs can make use of jiffies or gettimeofday() and must 
-> > > > have uptodate values. This involve quite some complication like using the 
-> > > > full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE) to avoid races 
-> > > > between timekeeper entering dynticks idle mode and other CPUs waking up 
-> > > > from idle. But the worst here is the powesaving issues resulting from the 
-> > > > timekeeper who can't sleep.
-> > > 
-> > > Personally, when I force the timer to be bound to a specific CPU, I'm 
-> > > pretty happy with the fact that it won't be allowed to turn ticks off. At 
-> > > that stage, powersave is the least of my concerns, throughput and/or jitter 
-> > > is.
-> > > 
-> > > I know that what I'm doing is in effect turning the kernel into a 
-> > > somewhat more configurable TICK_PERIODIC kernel (in the sense that I can 
-> > > set the timer to run on something other than the boot-cpu).
-> > 
-> > I see.
-> > 
-> > > 
-> > > > These issues are being dealt with in NO_HZ_FULL because we want the 
-> > > > timekeeping duty to be affine to the CPUs that are no full dynticks. But 
-> > > > in the case of NO_HZ_IDLE, I fear it's not going to be desirable.
-> > > 
-> > > Hum? I didn't get that one, what do you mean?
-> > 
-> > So in NO_HZ_FULL we do something that is very close to what're doing: the timekeeping
-> > is affine to the boot CPU and it stays periodic whatever happens.
-> > 
-> > But we start to worry about powersaving. When the whole system is idle, there is
-> > no point is preventing the CPU 0 to sleep. So we are dealing with that by using a
-> > full system idle detection that lets CPU 0 go to sleep when there is strictly nothing
-> > to do. Then when nohz full CPU wakes up from idle, CPU 0 is woken up as well to get back
-> > to its timekeeping duty.
-> 
-> Hmm, I had the impreesion that when a CPU with timekeeping-duty was sent to 
-> sleep, it would set tick_do_timer_cpu to TICK_DO_TIMER_NONE, and whenever 
-> another core would run do_timer() it would see if tick_do_timer_cpu was set 
-> to TICK_DO_TIMER_NONE and if so, grab it and run with it.
-
-Yep that's true for periodic and dynticks idle. Not for full dynticks.
-
-> 
-> I really don't see how this wakes up CPU0 (but then again, there's probably 
-> several layers of logic here that I'm missing :)
-
-By way of an IPI.
-
-Scenario is: CPU 0 handles timekeeping and CPU 1 is full dynticks. Both are running
-then CPU 1 goes to sleep. CPU 0 notices that CPU 1 went to sleep and thus nobody else
-needs the timekeeping to be uptodate. If CPU 0 is idle as well it can go to sleep. So
-does it. Then later if CPU 1 wakes up to do something, it sends an IPI to CPU 0 such that
-CPU 0 wakes up, notices that CPU 1 is alive and run the timekeeping update on its behalf.
-
-It's not yet upstream but that's the plan :)
+> > +static void kvm_schedule_kvmclock_update(struct kvm *kvm)
+> > +{
+> > +	kvm_get_kvm(kvm);
+> > +	schedule_delayed_work(&kvm->arch.kvmclock_update_work,
+> > +					KVMCLOCK_UPDATE_DELAY);
+> > +}
+> > +
+> > +static void kvm_gen_kvmclock_update(struct kvm_vcpu *v)
+> > +{
+> > +	struct kvm *kvm = v->kvm;
+> > +
+> > +	set_bit(KVM_REQ_CLOCK_UPDATE, &v->requests);
+> > +	kvm_schedule_kvmclock_update(kvm);
+> >  }
+> >  
+> >  static bool msr_mtrr_valid(unsigned msr)
+> > @@ -7019,6 +7042,8 @@ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
+> >  
+> >  	pvclock_update_vm_gtod_copy(kvm);
+> >  
+> > +	INIT_DELAYED_WORK(&kvm->arch.kvmclock_update_work, kvmclock_update_fn);
+> > +
+> >  	return 0;
+> >  }
+> >  
+> > -- 
+> > 1.8.1.4
