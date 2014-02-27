@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaB0VnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:43:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47277 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522AbaB0VnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:43:09 -0500
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Derek Basehore <dbasehore@chromium.org>,
-        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/2] bdi: Fix hung task on sync
-Date: Thu, 27 Feb 2014 22:43:01 +0100
-Message-Id: <1393537382-26255-2-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1393537382-26255-1-git-send-email-jack@suse.cz>
-References: <1393537382-26255-1-git-send-email-jack@suse.cz>
+	id S1752621AbaB0VoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:44:08 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:39491 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaB0VoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 16:44:05 -0500
+Message-ID: <530FB19F.3050209@gmail.com>
+Date: Thu, 27 Feb 2014 22:43:59 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] ARM: mvebu: move DT Dove to MVEBU
+References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com> <1393536486-3827-4-git-send-email-sebastian.hesselbarth@gmail.com> <20140227214039.GJ1872@titan.lakedaemon.net>
+In-Reply-To: <20140227214039.GJ1872@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Derek Basehore <dbasehore@chromium.org>
+On 02/27/2014 10:40 PM, Jason Cooper wrote:
+> On Thu, Feb 27, 2014 at 10:28:04PM +0100, Sebastian Hesselbarth wrote:
+>> With all the DT support preparation done, we are able to move Dove
+>> to MVEBU easily. Legacy non-DT mach-dove is left untouched to rot
+>> for a while before removal. Also, convert SATA PHY Kconfig entry,
+>> which is DT-only.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Pawel Moll <pawel.moll@arm.com>
+>> Cc: Mark Rutland <mark.rutland@arm.com>
+>> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+>> Cc: Kumar Gala <galak@codeaurora.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: Andrew Lunn <andrew@lunn.ch>
+>> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>> Cc: devicetree@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   arch/arm/boot/dts/Makefile                           | 12 ++++++------
+>>   arch/arm/mach-dove/Kconfig                           | 12 ------------
+>>   arch/arm/mach-dove/Makefile                          |  1 -
+>>   arch/arm/mach-mvebu/Kconfig                          | 12 ++++++++++++
+>>   arch/arm/mach-mvebu/Makefile                         |  1 +
+>>   arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} | 20 ++++++++------------
+>>   drivers/phy/Kconfig                                  |  2 +-
+>>   7 files changed, 28 insertions(+), 32 deletions(-)
+>>   rename arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} (61%)
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index 032030361bef..376a2573e500 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -55,11 +55,6 @@ dtb-$(CONFIG_ARCH_BERLIN) += \
+>>   	berlin2cd-google-chromecast.dtb
+>>   dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+>>   	da850-evm.dtb
+>> -dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
+>> -	dove-cubox.dtb \
+>> -	dove-d2plug.dtb \
+>> -	dove-d3plug.dtb \
+>> -	dove-dove-db.dtb
+>>   dtb-$(CONFIG_ARCH_EFM32) += efm32gg-dk3750.dtb
+>>   dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+>>   	exynos4210-smdkv310.dtb \
+>> @@ -132,7 +127,12 @@ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>>   	armada-xp-gp.dtb \
+>>   	armada-xp-netgear-rn2120.dtb \
+>>   	armada-xp-matrix.dtb \
+>> -	armada-xp-openblocks-ax3-4.dtb
+>> +	armada-xp-openblocks-ax3-4.dtb \
+>> +	dove-cm-a510.dtb \
+>> +	dove-cubox.dtb \
+>> +	dove-d2plug.dtb \
+>> +	dove-d3plug.dtb \
+>> +	dove-dove-db.dtb
+>
+> This is going to conflict badly with
+>
+>    a02dd0271d01 ARM: mvebu: select dtbs from MACH_ARMADA_*
+>
+> Perhaps you could mimic what Andrew did in his series:
+>
+> dove := dove-cm-a510.dtb \
+> 	dove-cubox.dtb \
+> 	dove-d2plug.dtb \
+> 	dove-d3plug.dtb \
+> 	dove-dove-db.dtb
+> dtb-$(CONFIG_ARCH_DOVE) += $(dove)
+> dtb-$(CONFIG_MACH_DOVE) += $(dove)
 
-bdi_wakeup_thread_delayed() used the mod_delayed_work() function to
-schedule work to writeback dirty inodes. The problem with this is that
-it can delay work that is scheduled for immediate execution, such as the
-work from sync_inodes_sb().  This can happen since mod_delayed_work()
-can now steal work from a work_queue.  This fixes the problem by using
-queue_delayed_work() instead. This is a regression caused by
-839a8e8660b6 "writeback: replace custom worker pool implementation with
-unbound workqueue".
+Ok, will do - except dtb-$(CONFIG_ARCH_DOVE) above.. there is no
+DT in ARCH_DOVE after this patch.
 
-The reason that this causes a problem is that laptop-mode will change
-the delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.
-In the case that bdi_wakeup_thread_delayed() races with
-sync_inodes_sb(), sync will be stopped for 10 minutes and trigger a hung
-task. Even if dirty_writeback_centisecs is not long enough to cause a
-hung task, we still don't want to delay sync for that long.
+> We plan on re-alphabetizing next window to prevent bad conflicts in this
+> window.
 
-We fix the problem by using queue_delayed_work() when we want to
-schedule writeback sometime in future. This function doesn't change the
-timer if it is already armed.
+Good!
 
-For the same reason, we also change bdi_writeback_workfn() to
-immediately queue the work again in the case that the work_list is not
-empty. The same problem can happen if the sync work is run on the rescue
-worker.
-
-Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-CC: stable@vger.kernel.org
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/fs-writeback.c | 8 ++++----
- mm/backing-dev.c  | 5 ++++-
- 2 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index e0259a163f98..8277b76be983 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1047,10 +1047,10 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		trace_writeback_pages_written(pages_written);
- 	}
- 
--	if (!list_empty(&bdi->work_list) ||
--	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
--		queue_delayed_work(bdi_wq, &wb->dwork,
--			msecs_to_jiffies(dirty_writeback_interval * 10));
-+	if (!list_empty(&bdi->work_list))
-+		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
-+		bdi_wakeup_thread_delayed(bdi);
- 
- 	current->flags &= ~PF_SWAPWRITE;
- }
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ce682f7a4f29..fab8401fc54e 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -288,13 +288,16 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
-  * Note, we wouldn't bother setting up the timer, but this function is on the
-  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
-  * by delaying the wake-up.
-+ *
-+ * We have to be careful not to postpone flush work if it is scheduled for
-+ * earlier. Thus we use queue_delayed_work().
-  */
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
- {
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
- }
- 
- /*
--- 
-1.8.1.4
-
+Sebastian
