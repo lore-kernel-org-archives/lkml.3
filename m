@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaB0DNi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 22:13:38 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:4361 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751929AbaB0DNh (ORCPT
+	id S1754697AbaB0DOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 22:14:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43254 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaB0DOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 22:13:37 -0500
-Date: Wed, 26 Feb 2014 22:13:35 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFA][PATCH 3/4] tracing/module: Remove include of tracepoint.h
- from module.h
-Message-ID: <20140226221335.3e30572a@gandalf.local.home>
-In-Reply-To: <20140226190644.730153889@goodmis.org>
-References: <20140226190140.590029589@goodmis.org>
-	<20140226190644.730153889@goodmis.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 26 Feb 2014 22:14:21 -0500
+Message-ID: <530EAD6E.6010600@oracle.com>
+Date: Wed, 26 Feb 2014 22:13:50 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL v3] liblockdep fixes for v3.14
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Feb 2014 14:01:43 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
 
-> [ Request for Ack ]
-> 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> There's nothing in the module.h header that requires tracepoint.h to be
-> included. Soon, tracepoint.h will require struct module, and will have to
-> include module.h. To avoid include hell, we need to remove the include of
-> tracepoint.h from module.h.
-> 
-> A stable patch will require this change, so include stable in the Cc.
-> 
-> Cc: stable@vger.kernel.org # 2.6.31+
+   Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
 
-Hi Rusty,
+are available in the git repository at:
 
-This patch doesn't need to be stable, and can wait till v3.15. But I
-have other patches that will break with this patch (headers that needed
-to include tracepoint.h and not depend on a header chain to include it).
+   https://github.com/sashalevin/liblockdep.git liblockdep-fixes
 
-Can you give me your Acked-by for this, and I'll just add it to my 3.15
-queue?
+for you to fetch changes up to 7b8853419d3344b06cff64b4dc926805698eeba5:
 
-Thanks,
+   tools/liblockdep: Use realpath for srctree and objtree (2014-02-26 21:22:01 -0500)
 
--- Steve
+----------------------------------------------------------------
+Ira W. Snyder (3):
+       tools/liblockdep: Fix initialization code path
+       tools/liblockdep: Fix include of asm/hash.h
+       tools/liblockdep: Add include directory to allow tests to compile
 
+Sasha Levin (2):
+       tools/liblockdep: Mark runtests.sh as executable
+       tools/liblockdep: Add a stub for new rcu_is_watching
 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/module.h | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index eaf60ff..6cc28d9 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -15,7 +15,6 @@
->  #include <linux/stringify.h>
->  #include <linux/kobject.h>
->  #include <linux/moduleparam.h>
-> -#include <linux/tracepoint.h>
->  #include <linux/export.h>
->  
->  #include <linux/percpu.h>
+Wang Nan (1):
+       tools/liblockdep: Use realpath for srctree and objtree
 
+  tools/lib/lockdep/Makefile             | 6 +++---
+  tools/lib/lockdep/preload.c            | 2 +-
+  tools/lib/lockdep/run_tests.sh         | 0
+  tools/lib/lockdep/uinclude/asm/hash.h  | 6 ++++++
+  tools/lib/lockdep/uinclude/linux/rcu.h | 5 +++++
+  5 files changed, 15 insertions(+), 4 deletions(-)
+  mode change 100644 => 100755 tools/lib/lockdep/run_tests.sh
+  create mode 100644 tools/lib/lockdep/uinclude/asm/hash.h
