@@ -1,210 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047AbaB0HdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:33:11 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:45232 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0HdK (ORCPT
+	id S1751344AbaB0HdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:33:25 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51077 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaB0HdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:33:10 -0500
-Date: Thu, 27 Feb 2014 15:32:58 +0800
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: linux-mm@kvack.org
-Cc: nasa4836@gmail.com, cl@linux-foundation.org, penberg@kernel.org,
-        mpm@selenic.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/slab.c: cleanup outdated comments and unify variables
- naming
-Message-ID: <20140227073258.GA11087@meta-silence.Home>
+	Thu, 27 Feb 2014 02:33:20 -0500
+Subject: [PATCH -tip v7 00/26] kprobes: introduce NOKPROBE_SYMBOL,
+ bugfixes and scalbility efforts
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Feb 2014 16:33:16 +0900
+Message-ID: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As time goes, the code changes a lot, and this leads to that
-some old-days comments scatter around , which instead of faciliating
-understanding, but make more confusion. So this patch cleans up them.
+Hi,
+Here is the version 7 of NOKPROBE_SYMBOL series. :)
 
-Also, this patch unifies some variables naming.
+This includes several scalability improvements against massive
+multiple probes (over 10k probes), which are useful for stress
+testing of kprobes (putting kprobes on every function entry).
+I also include bugfixes which I sent last week(*), because it is
+required to pass the stress test.
+ (*) https://lkml.org/lkml/2014/2/19/744
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Changes
+=======
+>From this series, I removed 2 patches;
+ - Prohibiting probing on memset/memcpy, this could
+   not be reproduced.
+ - Original instruction recovery code for emergency,
+   I had hit a problem with this.
+Add(include) previous 2 bugfixes;
+ - Fix page-fault handling logic on x86 kprobes.
+ - Allow to handle reentered kprobe on singlestepping.
+   both of them are needed for profiling kprobes
+   by perf.
+And adds 4 new patches;
+ - Call exception_enter after kprobes handled, since
+   excception_enter involves a large set of functions.
+ - Enlarge kprobes hash table size, since current
+   table size is just 64 entries, too small.
+ - Kprobe cache for frequently accessd kprobes to
+   solve cache-misses on the kprobe hash table.
+ - Skip Ftrace hlist check with ftrace-based kprobe,
+   since the ftrace-based kprobe already has its
+   own hlist. We don't need to search on hlist twice.
+
+Blacklist improvements
+======================
+Currently, kprobes uses __kprobes annotation and internal symbol-
+name based blacklist to prohibit probing on some functions, because
+to probe those functions may cause an infinit recursive loop by
+int3/debug exceptions.
+However, current mechanisms have some problems especially from the
+view point of maintaining code;
+ - __kprobes is easy to confuse the function is
+   used by kprobes, despite it just means "no kprobe
+   on it".
+ - __kprobes moves functions to different section
+   this will be not good for cache optimization.
+ - symbol-name based solution is not good at all,
+   since the symbol name easily be changed, and
+   we cannot notice it.
+ - it doesn't support functions in modules at all.
+
+Thus, I decided to introduce new NOKPROBE_SYMBOL macro for building
+an integrated kprobe blacklist.
+
+The new macro stores the address of the given symbols into
+_kprobe_blacklist section, and initialize the blacklist based on the
+address list at boottime.
+This is also applied for modules. When loading a module, kprobes
+finds the blacklist symbols in _kprobe_blacklist section in the
+module automatically.
+This series replaces all __kprobes on x86 and generic code with the
+NOKPROBE_SYMBOL() too.
+
+Although, the new blacklist still support old-style __kprobes by
+decoding .kprobes.text if exist, because it still be used on arch-
+dependent code except for x86.
+
+Scalability effort
+==================
+This series fixes not only the kernel crashable "qualitative" bugs
+but also "quantitative" issue with massive multiple kprobes. Thus
+we can now do a stress test, putting kprobes on all (non-blacklisted)
+kernel functions and enabling all of them.
+To set kprobes on all kernel functions, run the below script.
+  ----
+  #!/bin/sh
+  TRACE_DIR=/sys/kernel/debug/tracing/
+  echo > $TRACE_DIR/kprobe_events
+  grep -iw t /proc/kallsyms | tr -d . | \
+    awk 'BEGIN{i=0};{print("p:"$3"_"i, "0x"$1); i++}' | \
+    while read l; do echo $l >> $TRACE_DIR/kprobe_events ; done
+  ----
+Since it doesn't check the blacklist at all, you'll see many write
+errors, but no problem :).
+
+Note that a kind of performance issue is still in the kprobe-tracer
+if you trace all functions. Since a few ftrace functions are called
+inside the kprobe tracer even if we shut off the tracing (tracing_on
+= 0), enabling kprobe-events on the functions will cause a bad
+performance impact (it is safe, but you'll see the system slowdown
+and no event recorded because it is just ignored).
+To find those functions, you can use the third column of
+(debugfs)/tracing/kprobe_profile as below, which tells you the number
+of miss-hit(ignored) for each events. If you find that some events
+which have small number in 2nd column and large number in 3rd column,
+those may course the slowdown.
+  ----
+  # sort -rnk 3 (debugfs)/tracing/kprobe_profile | head
+  ftrace_cmp_recs_4907                               264950231     33648874543
+  ring_buffer_lock_reserve_5087                              0      4802719935
+  trace_buffer_lock_reserve_5199                             0      4385319303
+  trace_event_buffer_lock_reserve_5200                       0      4379968153
+  ftrace_location_range_4918                          18944015      2407616669
+  bsearch_17098                                       18979815      2407579741
+  ftrace_location_4972                                18927061      2406723128
+  ftrace_int3_handler_1211                            18926980      2406303531
+  poke_int3_handler_199                               18448012      1403516611
+  inat_get_opcode_attribute_16941                            0        12715314
+  ----
+
+I'd recommend you to enable events on such functions after all other
+events enabled. Then its performance impact becomes minimum.
+
+To enable kprobes on all kernel functions, run the below script.
+  ----
+  #!/bin/sh
+  TRACE_DIR=/sys/kernel/debug/tracing
+  echo "Disable tracing to remove tracing overhead"
+  echo 0 > $TRACE_DIR/tracing_on
+
+  BADS="ftrace_cmp_recs ring_buffer_lock_reserve trace_buffer_lock_reserve trace_event_buffer_lock_reserve ftrace_location_range bsearch ftrace_location ftrace_int3_handler poke_int3_handler inat_get_opcode_attribute"
+HIDES=
+  for i in $BADS; do HIDES=$HIDES" --hide=$i*"; done
+
+  SDATE=`date +%s`
+  echo "Enabling trace events: start at $SDATE"
+
+  cd $TRACE_DIR/events/kprobes/
+  for i in `ls $HIDES` ; do echo 1 > $i/enable; done
+  for j in $BADS; do for i in `ls -d $j*`;do echo 1 > $i/enable; done; done
+
+  EDATE=`date +%s`
+  TIME=`expr $EDATE - $SDATE`
+  echo "Elapsed time: $TIME"
+  ---- 
+
+Result
+======
+These were also enabled after all other events are enabled.
+And it took 1639 sec(without any intervals) for enabling 37222 probes.
+And at that point, the perf top showed below result:
+  ----
+  Samples: 5K of event 'cycles', Event count (approx.): 1156665957
+  +  19.91%  [kernel]                     [k] native_load_idt
+  +  13.66%  [kernel]                     [k] int3
+  -   7.50%  [kernel]                     [k] 0x00007fffa018e8e0
+     - 0xffffffffa018d8e0
+        - 100.00% trace_event_buffer_lock_reserve
+  ----
+0x00007fffa018e8e0 may be the trampoline buffer of an optimized
+probe on trace_event_buffer_lock_reserve. native_load_idt and int3
+are also called from normal kprobes.
+This means, at least my environment, kprobes now passed the
+stress test, and even if we put probes on all available functions
+it just slows down about 50%.
+
+Changes from v6:
+ - Updated patches on the latest -tip.
+ - [1/26] Add patch: Fix page-fault handling logic on x86 kprobes
+ - [2/26] Add patch: Allow to handle reentered kprobe on singlestepping
+ - [9/26] Add new patch: Call exception_enter after kprobes handled
+ - [12/26] Allow probing fetch functions in trace_uprobe.c.
+ - [24/26] Add new patch: Enlarge kprobes hash table size
+ - [25/26] Add new patch: Kprobe cache for frequently accessd kprobes
+ - [26/26] Add new patch: Skip Ftrace hlist check with ftrace-based kprobe
+
+Changes from v5:
+ - [2/22] Introduce nokprobe_inline macro
+ - [6/22] Prohibit probing on memset/memcpy
+ - [11/22] Allow probing on text_poke/hw_breakpoint
+ - [12/22] Use nokprobe_inline macro instead of __always_inline
+ - [14/22] Ditto.
+ - [21/22] Remove preempt disable/enable from kprobes/x86
+ - [22/22] Add emergency int3 recovery code
+
+Thank you,
+
 ---
- mm/slab.c | 66 +++++++++++++++++++++++++++++++--------------------------------
- 1 file changed, 32 insertions(+), 34 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index b264214..5678673 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -277,8 +277,8 @@ static void kmem_cache_node_init(struct kmem_cache_node *parent)
-  * OTOH the cpuarrays can contain lots of objects,
-  * which could lock up otherwise freeable slabs.
-  */
--#define REAPTIMEOUT_CPUC	(2*HZ)
--#define REAPTIMEOUT_LIST3	(4*HZ)
-+#define REAPTIMEOUT_AC		(2*HZ)
-+#define REAPTIMEOUT_NODE	(4*HZ)
- 
- #if STATS
- #define	STATS_INC_ACTIVE(x)	((x)->num_active++)
-@@ -1067,7 +1067,7 @@ static int init_cache_node_node(int node)
- 
- 	list_for_each_entry(cachep, &slab_caches, list) {
- 		/*
--		 * Set up the size64 kmemlist for cpu before we can
-+		 * Set up the kmem_cache_node for cpu before we can
- 		 * begin anything. Make sure some other cpu on this
- 		 * node has not already allocated this
- 		 */
-@@ -1076,12 +1076,12 @@ static int init_cache_node_node(int node)
- 			if (!n)
- 				return -ENOMEM;
- 			kmem_cache_node_init(n);
--			n->next_reap = jiffies + REAPTIMEOUT_LIST3 +
--			    ((unsigned long)cachep) % REAPTIMEOUT_LIST3;
-+			n->next_reap = jiffies + REAPTIMEOUT_NODE +
-+			    ((unsigned long)cachep) % REAPTIMEOUT_NODE;
- 
- 			/*
--			 * The l3s don't come and go as CPUs come and
--			 * go.  slab_mutex is sufficient
-+			 * The kmem_cache_nodes don't come and go as CPUs
-+			 * come and go.  slab_mutex is sufficient
- 			 * protection here.
- 			 */
- 			cachep->node[node] = n;
-@@ -1406,8 +1406,8 @@ static void __init set_up_node(struct kmem_cache *cachep, int index)
- 	for_each_online_node(node) {
- 		cachep->node[node] = &init_kmem_cache_node[index + node];
- 		cachep->node[node]->next_reap = jiffies +
--		    REAPTIMEOUT_LIST3 +
--		    ((unsigned long)cachep) % REAPTIMEOUT_LIST3;
-+		    REAPTIMEOUT_NODE +
-+		    ((unsigned long)cachep) % REAPTIMEOUT_NODE;
- 	}
- }
- 
-@@ -2103,8 +2103,8 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
- 		}
- 	}
- 	cachep->node[numa_mem_id()]->next_reap =
--			jiffies + REAPTIMEOUT_LIST3 +
--			((unsigned long)cachep) % REAPTIMEOUT_LIST3;
-+			jiffies + REAPTIMEOUT_NODE +
-+			((unsigned long)cachep) % REAPTIMEOUT_NODE;
- 
- 	cpu_cache_get(cachep)->avail = 0;
- 	cpu_cache_get(cachep)->limit = BOOT_CPUCACHE_ENTRIES;
-@@ -2300,10 +2300,10 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (flags & CFLGS_OFF_SLAB) {
- 		cachep->freelist_cache = kmalloc_slab(freelist_size, 0u);
- 		/*
--		 * This is a possibility for one of the malloc_sizes caches.
-+		 * This is a possibility for one of the kmalloc_{dma,}_caches.
- 		 * But since we go off slab only for object size greater than
--		 * PAGE_SIZE/8, and malloc_sizes gets created in ascending order,
--		 * this should not happen at all.
-+		 * PAGE_SIZE/8, and kmalloc_{dma,}_caches get created
-+		 * in ascending order,this should not happen at all.
- 		 * But leave a BUG_ON for some lucky dude.
- 		 */
- 		BUG_ON(ZERO_OR_NULL_PTR(cachep->freelist_cache));
-@@ -2511,14 +2511,17 @@ int __kmem_cache_shutdown(struct kmem_cache *cachep)
- 
- /*
-  * Get the memory for a slab management obj.
-- * For a slab cache when the slab descriptor is off-slab, slab descriptors
-- * always come from malloc_sizes caches.  The slab descriptor cannot
-- * come from the same cache which is getting created because,
-- * when we are searching for an appropriate cache for these
-- * descriptors in kmem_cache_create, we search through the malloc_sizes array.
-- * If we are creating a malloc_sizes cache here it would not be visible to
-- * kmem_find_general_cachep till the initialization is complete.
-- * Hence we cannot have freelist_cache same as the original cache.
-+ *
-+ * For a slab cache when the slab descriptor is off-slab, the
-+ * slab descriptor can't come from the same cache which is being created,
-+ * Because if it is the case, that means we defer the creation of
-+ * the kmalloc_{dma,}_cache of size sizeof(slab descriptor) to this point.
-+ * And we eventually call down to __kmem_cache_create(), which
-+ * in turn looks up in the kmalloc_{dma,}_caches for the disired-size one.
-+ * This is a "chicken-and-egg" problem.
-+ *
-+ * So the off-slab slab descriptor shall come from the kmalloc_{dma,}_caches,
-+ * which are all initialized during kmem_cache_init().
-  */
- static void *alloc_slabmgmt(struct kmem_cache *cachep,
- 				   struct page *page, int colour_off,
-@@ -3320,7 +3323,7 @@ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
- }
- 
- /*
-- * Caller needs to acquire correct kmem_list's list_lock
-+ * Caller needs to acquire correct kmem_cache_node's list_lock
-  */
- static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
- 		       int node)
-@@ -3574,11 +3577,6 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
- 	struct kmem_cache *cachep;
- 	void *ret;
- 
--	/* If you want to save a few bytes .text space: replace
--	 * __ with kmem_.
--	 * Then kmalloc uses the uninlined functions instead of the inline
--	 * functions.
--	 */
- 	cachep = kmalloc_slab(size, flags);
- 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
- 		return cachep;
-@@ -3670,7 +3668,7 @@ EXPORT_SYMBOL(kfree);
- /*
-  * This initializes kmem_cache_node or resizes various caches for all nodes.
-  */
--static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
-+static int alloc_kmem_cache_node(struct kmem_cache *cachep, gfp_t gfp)
- {
- 	int node;
- 	struct kmem_cache_node *n;
-@@ -3726,8 +3724,8 @@ static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
- 		}
- 
- 		kmem_cache_node_init(n);
--		n->next_reap = jiffies + REAPTIMEOUT_LIST3 +
--				((unsigned long)cachep) % REAPTIMEOUT_LIST3;
-+		n->next_reap = jiffies + REAPTIMEOUT_NODE +
-+				((unsigned long)cachep) % REAPTIMEOUT_NODE;
- 		n->shared = new_shared;
- 		n->alien = new_alien;
- 		n->free_limit = (1 + nr_cpus_node(node)) *
-@@ -3813,7 +3811,7 @@ static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
- 		kfree(ccold);
- 	}
- 	kfree(new);
--	return alloc_kmemlist(cachep, gfp);
-+	return alloc_kmem_cache_node(cachep, gfp);
- }
- 
- static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-@@ -3982,7 +3980,7 @@ static void cache_reap(struct work_struct *w)
- 		if (time_after(n->next_reap, jiffies))
- 			goto next;
- 
--		n->next_reap = jiffies + REAPTIMEOUT_LIST3;
-+		n->next_reap = jiffies + REAPTIMEOUT_NODE;
- 
- 		drain_array(searchp, n, n->shared, 0, node);
- 
-@@ -4003,7 +4001,7 @@ next:
- 	next_reap_node();
- out:
- 	/* Set up the next iteration */
--	schedule_delayed_work(work, round_jiffies_relative(REAPTIMEOUT_CPUC));
-+	schedule_delayed_work(work, round_jiffies_relative(REAPTIMEOUT_AC));
- }
- 
- #ifdef CONFIG_SLABINFO
--- 
-1.8.5.3
+Masami Hiramatsu (26):
+      [BUGFIX]kprobes/x86: Fix page-fault handling logic
+      kprobes/x86: Allow to handle reentered kprobe on singlestepping
+      kprobes: Prohibit probing on .entry.text code
+      kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
+      [BUGFIX] kprobes/x86: Prohibit probing on debug_stack_*
+      [BUGFIX] x86: Prohibit probing on native_set_debugreg/load_idt
+      [BUGFIX] x86: Prohibit probing on thunk functions and restore
+      kprobes/x86: Call exception handlers directly from do_int3/do_debug
+      x86: Call exception_enter after kprobes handled
+      kprobes/x86: Allow probe on some kprobe preparation functions
+      kprobes: Allow probe on some kprobe functions
+      ftrace/*probes: Allow probing on some functions
+      x86: Allow kprobes on text_poke/hw_breakpoint
+      x86: Use NOKPROBE_SYMBOL() instead of __kprobes annotation
+      kprobes: Use NOKPROBE_SYMBOL macro instead of __kprobes
+      ftrace/kprobes: Use NOKPROBE_SYMBOL macro in ftrace
+      notifier: Use NOKPROBE_SYMBOL macro in notifier
+      sched: Use NOKPROBE_SYMBOL macro in sched
+      kprobes: Show blacklist entries via debugfs
+      kprobes: Support blacklist functions in module
+      kprobes: Use NOKPROBE_SYMBOL() in sample modules
+      kprobes/x86: Use kprobe_blacklist for .kprobes.text and .entry.text
+      kprobes/x86: Remove unneeded preempt_disable/enable in interrupt handlers
+      kprobes: Enlarge hash table to 4096 entries
+      kprobes: Introduce kprobe cache to reduce cache misshits
+      ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
+
+
+ Documentation/kprobes.txt                |   24 +
+ arch/Kconfig                             |   10 +
+ arch/x86/include/asm/asm.h               |    7 
+ arch/x86/include/asm/kprobes.h           |    2 
+ arch/x86/include/asm/traps.h             |    2 
+ arch/x86/kernel/alternative.c            |    3 
+ arch/x86/kernel/apic/hw_nmi.c            |    3 
+ arch/x86/kernel/cpu/common.c             |    4 
+ arch/x86/kernel/cpu/perf_event.c         |    3 
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |    3 
+ arch/x86/kernel/dumpstack.c              |    9 
+ arch/x86/kernel/entry_32.S               |   33 --
+ arch/x86/kernel/entry_64.S               |   20 -
+ arch/x86/kernel/hw_breakpoint.c          |    5 
+ arch/x86/kernel/kprobes/core.c           |  162 ++++----
+ arch/x86/kernel/kprobes/ftrace.c         |   19 +
+ arch/x86/kernel/kprobes/opt.c            |   32 +-
+ arch/x86/kernel/kvm.c                    |    4 
+ arch/x86/kernel/nmi.c                    |   18 +
+ arch/x86/kernel/paravirt.c               |    6 
+ arch/x86/kernel/traps.c                  |   35 +-
+ arch/x86/lib/thunk_32.S                  |    3 
+ arch/x86/lib/thunk_64.S                  |    3 
+ arch/x86/mm/fault.c                      |   28 +
+ include/asm-generic/vmlinux.lds.h        |    9 
+ include/linux/compiler.h                 |    2 
+ include/linux/ftrace.h                   |    3 
+ include/linux/kprobes.h                  |   23 +
+ include/linux/module.h                   |    5 
+ kernel/kprobes.c                         |  586 +++++++++++++++++++++---------
+ kernel/module.c                          |    6 
+ kernel/notifier.c                        |   22 +
+ kernel/sched/core.c                      |    7 
+ kernel/trace/ftrace.c                    |    3 
+ kernel/trace/trace_event_perf.c          |    5 
+ kernel/trace/trace_kprobe.c              |   66 ++-
+ kernel/trace/trace_probe.c               |   65 ++-
+ kernel/trace/trace_probe.h               |   15 -
+ kernel/trace/trace_uprobe.c              |   20 +
+ samples/kprobes/jprobe_example.c         |    1 
+ samples/kprobes/kprobe_example.c         |    3 
+ samples/kprobes/kretprobe_example.c      |    2 
+ 42 files changed, 812 insertions(+), 469 deletions(-)
+
+--
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
