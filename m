@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaB0ED4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 23:03:56 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:50011 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262AbaB0EDy (ORCPT
+	id S1754669AbaB0EIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 23:08:51 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:48611 "HELO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752908AbaB0EIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 23:03:54 -0500
+	Wed, 26 Feb 2014 23:08:50 -0500
+Date: Wed, 26 Feb 2014 20:00:50 -0800
+From: Ben Pfaff <blp@nicira.com>
+To: Joe Perches <joe@perches.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christopher Li <sparse@chrisli.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+Message-ID: <20140227040050.GA8449@nicira.com>
+References: <530E6F76.1070605@zytor.com>
+ <1393462087.24588.50.camel@joe-AO722>
+ <530E8C2E.7080307@zytor.com>
+ <1393466619.24588.65.camel@joe-AO722>
+ <20140227022857.GC23659@thin>
+ <1393469594.24588.71.camel@joe-AO722>
+ <20140227025845.GA25145@thin>
+ <530EB103.5070406@zytor.com>
+ <1393472326.24588.82.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <20140226164827.GB11452@thunk.org>
-References: <1392908861-3563-1-git-send-email-linkinjeon@gmail.com>
-	<20140222170930.GE26637@thunk.org>
-	<CAKYAXd9vTbjTnJOQ1Y=pi4QJSYj41fWsQgRD3Fkufskez2W-YA@mail.gmail.com>
-	<20140226164827.GB11452@thunk.org>
-Date: Thu, 27 Feb 2014 13:03:53 +0900
-Message-ID: <CAKYAXd_4-BUiRMLfZ97vToSb4xuRj0zz=uvUc-w3cjcs3wM85g@mail.gmail.com>
-Subject: Re: [PATCH v6] ext4: Add support FALLOC_FL_COLLAPSE_RANGE for fallocate
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, bpm@sgi.com, adilger.kernel@dilger.ca,
-        jack@suse.cz, mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393472326.24588.82.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-27 1:48 GMT+09:00, Theodore Ts'o <tytso@mit.edu>:
-> On Mon, Feb 24, 2014 at 10:22:10AM +0900, Namjae Jeon wrote:
->> >> +	ret = ext4_es_remove_extent(inode, punch_start,
->> >> +				    EXT_MAX_BLOCKS - punch_start - 1);
->> >> +	if (ret) {
->> >> +		up_write(&EXT4_I(inode)->i_data_sem);
->> >> +		goto out_stop;
->> >> +	}
->> >
->> > Doing this at first is probably a bad idea; you should do this at the
->> > end, and then completely invalidate the es cache for that inode.  That
->> > way, the right thing happens if you get an error in the middle
->> > releasing the boxes and shifting the extents:
->> Okay, I see.
->
-> Actually, thinking about this some more, we do want to do this first,
-> since if we error out, we do need to make sure the extent cache is
-> flushed.
-Okay.
+On Wed, Feb 26, 2014 at 07:38:46PM -0800, Joe Perches wrote:
+> (adding Ben Pfaff and Christopher Li)
+> 
+> On Wed, 2014-02-26 at 19:29 -0800, H. Peter Anvin wrote:
+> > On 02/26/2014 06:58 PM, Josh Triplett wrote:
+> > > On Wed, Feb 26, 2014 at 06:53:14PM -0800, Joe Perches wrote:
+> > >> Allow an override to emit or not the sizeof(bool) warning
+> > >> Add a description to the manpage.
+> > >>
+> > >> Signed-off-by: Joe Perches <joe@perches.com>
+> > > 
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > 
+> > 
+> > I have to admit that this particular warning is a bit odd to me.  I'm
+> > wondering what kind of bugs it was intended to catch.
+> > 
+> > In particular, things that incorrectly assumes the size of bool to be
+> > anything in particular would seem unlikely to actually use sizeof().
+> 
+> Dunno, the commit log for the commit that added it doesn't quite
+> match the code and is seemingly unaware that the c99 spec doesn't
+> specify sizeof(bool).
 
->
->> If there is error in the middle of extent shifting, the hole will
->> present between the last shifted extent and the extent at which error
->> happen so this will be consistent state.
->> IMHO even if there is error in between the shift, filesystem will be
->> in consistent state.
->> Am I missing something?
->
-> No, I was wrong about that; you're right.  The file will be in an
-> inconsistent statement, which will probably be highly confusing for
-> the application, but the file system will be fine.
->
-> So I withdraw my complaints.  I'll do a bit more testing, but so far
-> the patch looks fine to me.  Thanks for your reply and your work!
-Thanks for your review! I will fix these include Hugh's review points.
->
-> 					- Ted
->
+The commit *relaxed* sparse behavior: because previously sizeof(bool)
+was an error.  I'm not in favor of any diagnostic at all for
+sizeof(bool), but my recollection is that a sparse maintainer wanted it
+to yield one.
+
+I don't care about the particular result for sizeof(bool) as long as it
+matches the ABI.
