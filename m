@@ -1,108 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaB0BhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:37:06 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:45996 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288AbaB0BhE convert rfc822-to-8bit (ORCPT
+	id S1754500AbaB0Bit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:38:49 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:65367 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115AbaB0Bis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:37:04 -0500
+	Wed, 26 Feb 2014 20:38:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1402241227400.21251@ionos.tec.linutronix.de>
-References: <20140223212703.511977310@linutronix.de>
-	<20140223212737.214342433@linutronix.de>
-	<20140223231755.GA27579@pengutronix.de>
-	<CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-	<CAN1soZy_TfzNigfn4y6kF2qe4K+AQsagd-1KWYrz1VEavMO4bA@mail.gmail.com>
-	<alpine.DEB.2.02.1402241227400.21251@ionos.tec.linutronix.de>
-Date: Thu, 27 Feb 2014 09:37:03 +0800
-Message-ID: <CADApbeiJ2ESEuBxGNXLe+sbKEox02Vr0hhO-rW7dosc_4A+TEQ@mail.gmail.com>
-Subject: Re: [patch 09/26] arm: mmp: Remove pointless fiddling with irq internals
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        arm <linux-arm-kernel@lists.infradead.org>, fwu@marvell.com
+In-Reply-To: <874n3n8u6u.fsf@intel.com>
+References: <CA+5PVA4zC1+TPWWdANnm7RuBDduwNetdTknfzSkVTpFcPSGZww@mail.gmail.com>
+	<CA+5PVA6Td43Zzd8L59_mE7E5hFuVSxhAwd+tczs_BSHXNOx5yw@mail.gmail.com>
+	<20140223155059.GA11167@zod>
+	<874n3n8u6u.fsf@intel.com>
+Date: Wed, 26 Feb 2014 20:38:48 -0500
+X-Google-Sender-Auth: 3lm-2OYwhzKkHZTxSxvq9GN51-0
+Message-ID: <CA+5PVA5RPHPVhpjAdhVaow-2qDQMxiUEDMM5mtAkckAMxRZ=Kg@mail.gmail.com>
+Subject: Re: 3.13 i915 brightness settings broken when going from docked -> undocked
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Jani Nikula <jani.nikula@intel.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 24, 2014 at 7:31 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 24 Feb 2014, Haojian Zhuang wrote:
+On Tue, Feb 25, 2014 at 3:36 AM, Jani Nikula <jani.nikula@intel.com> wrote:
+> On Sun, 23 Feb 2014, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> Backport of upstream commit c91c9f328
+>>
+>> ---
+>>  drivers/gpu/drm/i915/i915_drv.h       |  1 +
+>>  drivers/gpu/drm/i915/intel_opregion.c | 31 ++++++-------------------------
+>>  drivers/gpu/drm/i915/intel_panel.c    |  4 ++++
+>>  3 files changed, 11 insertions(+), 25 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+>> index 221ac62..d6d4349 100644
+>> --- a/drivers/gpu/drm/i915/i915_drv.h
+>> +++ b/drivers/gpu/drm/i915/i915_drv.h
+>> @@ -1371,6 +1371,7 @@ typedef struct drm_i915_private {
+>>
+>>       /* backlight */
+>>       struct {
+>> +             bool present;
+>>               int level;
+>>               bool enabled;
+>>               spinlock_t lock; /* bl registers and the above bl fields */
+>> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+>> index 6d69a9b..b2a51ae 100644
+>> --- a/drivers/gpu/drm/i915/intel_opregion.c
+>> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+>> @@ -414,38 +414,19 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>>               return ASLC_BACKLIGHT_FAILED;
+>>
+>>       mutex_lock(&dev->mode_config.mutex);
+>> -     /*
+>> -      * Could match the OpRegion connector here instead, but we'd also need
+>> -      * to verify the connector could handle a backlight call.
+>> -      */
+>> -     list_for_each_entry(encoder, &dev->mode_config.encoder_list, head)
+>> -             if (encoder->crtc == crtc) {
+>> -                     found = true;
+>> -                     break;
+>> -             }
+>> -
+>> -     if (!found) {
+>> -             ret = ASLC_BACKLIGHT_FAILED;
+>> -             goto out;
+>> -     }
+>>
+>> -     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+>> -             if (connector->encoder == encoder)
+>> -                     intel_connector = to_intel_connector(connector);
+>> -
+>> -     if (!intel_connector) {
+>> -             ret = ASLC_BACKLIGHT_FAILED;
+>> -             goto out;
+>> +     DRM_DEBUG_KMS("updating opregion backlight %d/255\n", bclp);
+>> +     list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+>> +             intel_connector = to_intel_connector(connector);
+>> +             if (dev_priv->backlight.present)
+>> +                     intel_panel_set_backlight(intel_connector, bclp, 255);
+>>       }
 >
->> On Mon, Feb 24, 2014 at 2:07 PM, Chao Xie <xiechao.mail@gmail.com> wrote:
->> > On Mon, Feb 24, 2014 at 7:17 AM, Uwe Kleine-König
->> > <u.kleine-koenig@pengutronix.de> wrote:
->> >> Hi Thomas,
->> >>
->> >> On Sun, Feb 23, 2014 at 09:40:13PM -0000, Thomas Gleixner wrote:
->> >>> The pm-mmp2 and pm-pxa910 power management related irq_set_wake
->> >>> callbacks fiddle pointlessly with the irq actions for no reason except
->> >>> for lack of understanding how the wakeup mechanism works.
->> >>>
->> >>> On supsend the core disables all interrupts lazily, i.e. it does not
->> >>> mask them at the irq controller level. So any interrupt which is
->> >>> firing during supsend will mark the corresponding interrupt line as
->> >> s/supsend/suspend/ twice
->> >>> pending. Just before the core powers down it checks whether there are
->> >>> interrupts pending from interrupt lines which are marked as wakeup
->> >>> sources and if so it aborts the resume and resends the interrupts.
->> >> It's the suspend that is aborted, not the resume.
->> >>
->> >> Other than that your change looks fine.
->> >>
->> > For pxa910 and MMP2, wake up source only wake up the AP subsystem.
->> > The AP subsystem includes the APMU(AP Power Mangament Unit) and cores.
->> > Now the core is still powered down. APMU will check the interrupt
->> > lines, and find
->> > that there are interrupt pending, it will power on the cores.
->> > So if the irq is disabled, even wake up source can wake up AP subsystem, but the
->> > core is still powered down. It will not be powered up by APMU.
->> >
->>
->> Yes, suspend/resume can't work if the above code is removed.
->>
->> Interrupt source (logic AND with interrupt mask register) is connected
->> to MPMU as
->> wakeup source. If the interrupt is disabled, there's no wakeup source event.
->>
->> And APMU is waken up by MPMU.
->>
->> So please don't remove the above code. We must keep these interrupt lines active
->> to wake up the whole system.
->
-> They are kept active at the interrupt controller level. You just
-> refuse to understand how the internals of the interrupt subsystem
-> work.
->
-If no irq_disable callback is hooked, when do irq_disable, it will not
-actually disable
-the interrupt, it will depend on next time when the irq happens, the
-handler will first mask
-the interrupt as this interrupt never happens.
-So after system suspended, the interrupt happens, but the device
-driver will not recieve this interrupt
-because it is masked.
-It results in that the device driver miss a important interrupt which
-related to something need to be
-handled. If user application for example android has power managment
-daemon. It will find that nothing
-to handle, it will make the system enter suspend again.
+> This is not correct because in v3.13 dev_priv->backlight is still driver
+> global, not per connector. This means that if you have at least one
+> connector with backlight control, the backlight is attempted to change
+> on all connectors. In your case, I'm not sure if it leads to anything
+> more than extra adjusting of the same backlight.
 
-> And even if you would need this flag, then fiddling with the irq desc
-> internals is a big NONO. There is a proper way to hand that in.
->
+Well, empirically it leads to the backlight actually changing after
+undocking my machine whereas without it, it doesn't.  So maybe by
+changing it globally, it is hitting the connector that does have
+backlight control.
 
-So can you suggest the proper way to handle it? Thanks.
+Anyway, I'm not arguing my patch is correct.  Just that it does do
+_something_ to make the backlight work :).
 
-> Thanks,
->
->         tglx
->
+> If you move the 'bool present' field to intel_connector or intel_panel,
+> I think this is all right.
+
+That sounds like more of an invasive change.  I could poke at it, but
+I'm not sure it would be suitable for e.g. 3.13.y stable.  Thoughts on
+that?  Admittedly it is a somewhat minor problem, so if it's not
+easily stable material, I don't think anyone is going to lose sleep
+over it.
+
+josh
