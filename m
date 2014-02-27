@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaB0NHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:07:17 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52781 "EHLO
+	id S1752900AbaB0NH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:07:27 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52914 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751026AbaB0NHN (ORCPT
+	by vger.kernel.org with ESMTP id S1751026AbaB0NHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:07:13 -0500
+	Thu, 27 Feb 2014 08:07:18 -0500
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -15,110 +15,124 @@ To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 2/4] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-Date: Thu, 27 Feb 2014 13:06:40 +0000
-Message-Id: <1393506402-11474-3-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v2 0/4] [RFC] Support for creating generic host_bridge from device tree
+Date: Thu, 27 Feb 2014 13:06:38 +0000
+Message-Id: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
-As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
-the creation order has been changed for no good reason. Revert the order of
-creation as we are going to depend on the pci_host_bridge structure to retrieve the
-domain number of the root bus.
+This is v2 of my attempt to add support for a generic pci_host_bridge controller created
+from a description passed in the device tree.
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Changes from v1:
+  - Add patch to fix conversion of IO ranges into IO resources.
+  - Added a domain_nr member to pci_host_bridge structure, and a new function
+    to create a root bus in a given domain number. In order to facilitate that
+    I propose changing the order of initialisation between pci_host_bridge and
+    it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
+    This is done in patch 1/4 and 2/4.
+  - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
+    code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
+    and if that fails assign the next unallocated domain id.
+  - Changed the name of the function that creates the generic host bridge from
+    pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 6e34498..78ccba0 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
- 	kfree(bridge);
- }
- 
--static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-+static struct pci_host_bridge *pci_alloc_host_bridge(void)
- {
- 	struct pci_host_bridge *bridge;
- 
-@@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
- 		return NULL;
- 
- 	INIT_LIST_HEAD(&bridge->windows);
--	bridge->bus = b;
- 	return bridge;
- }
- 
-@@ -1727,9 +1726,21 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	char bus_addr[64];
- 	char *fmt;
- 
-+	bridge = pci_alloc_host_bridge();
-+	if (!bridge)
-+		return NULL;
-+
-+	bridge->dev.parent = parent;
-+	bridge->dev.release = pci_release_host_bridge_dev;
-+	error = pcibios_root_bridge_prepare(bridge);
-+	if (error) {
-+		kfree(bridge);
-+		return NULL;
-+	}
-+
- 	b = pci_alloc_bus();
- 	if (!b)
--		return NULL;
-+		goto err_out;
- 
- 	b->sysdata = sysdata;
- 	b->ops = ops;
-@@ -1738,26 +1749,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (b2) {
- 		/* If we already got to this bus through a different bridge, ignore it */
- 		dev_dbg(&b2->dev, "bus already known\n");
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 
--	bridge = pci_alloc_host_bridge(b);
--	if (!bridge)
--		goto err_out;
--
--	bridge->dev.parent = parent;
--	bridge->dev.release = pci_release_host_bridge_dev;
-+	bridge->bus = b;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
--	error = pcibios_root_bridge_prepare(bridge);
--	if (error) {
--		kfree(bridge);
--		goto err_out;
--	}
--
- 	error = device_register(&bridge->dev);
- 	if (error) {
- 		put_device(&bridge->dev);
--		goto err_out;
-+		goto err_bus_out;
- 	}
- 	b->bridge = get_device(&bridge->dev);
- 	device_enable_async_suspend(b->bridge);
-@@ -1814,8 +1814,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- class_dev_reg_err:
- 	put_device(&bridge->dev);
- 	device_unregister(&bridge->dev);
--err_out:
-+err_bus_out:
- 	kfree(b);
-+err_out:
-+	kfree(bridge);
- 	return NULL;
- }
- 
+v1 thread here: https://lkml.org/lkml/2014/2/3/380
+
+The following is an edit of the original blurb:
+
+Following the discussion started here [1], I now have a proposal for tackling
+generic support for host bridges described via device tree. It is an initial
+stab at it, to try to get feedback and suggestions, but it is functional enough
+that I have PCI Express for arm64 working on an FPGA using the patch that I am
+also publishing that adds support for PCI for that platform.
+
+Looking at the existing architectures that fit the requirements (use of device
+tree and PCI) yields the powerpc and microblaze as generic enough to make them
+candidates for conversion. I have a tentative patch for microblaze that I can
+only compile test it, unfortunately using qemu-microblaze leads to an early
+crash in the kernel.
+
+As Bjorn has mentioned in the previous discussion, the idea is to add to
+struct pci_host_bridge enough data to be able to reduce the size or remove the
+architecture specific pci_controller structure. arm64 support actually manages
+to get rid of all the architecture static data and has no pci_controller structure
+defined. For host bridge drivers that means a change of API unless architectures
+decide to provide a compatibility layer (comments here please).
+
+In order to initialise a host bridge with the new API, the following example
+code is sufficient for a _probe() function:
+
+static int myhostbridge_probe(struct platform_device *pdev)
+{
+	int err;
+	struct device_node *dev;
+	struct pci_host_bridge *bridge;
+	struct myhostbridge_port *pp;
+	resource_size_t lastbus;
+
+	dev = pdev->dev.of_node;
+
+	if (!of_device_is_available(dev)) {
+		pr_warn("%s: disabled\n", dev->full_name);
+		return -ENODEV;
+	}
+
+	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
+	if (!pp)
+		return -ENOMEM;
+
+	bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
+	if (!bridge) {
+		err = -EINVAL;
+		goto bridge_init_fail;
+	}
+
+	err = myhostbridge_setup(bridge->bus);
+	if (err)
+		goto bridge_init_fail;
+
+	/* We always enable PCI domains and we keep domain 0 backward
+	 * compatible in /proc for video cards
+	 */
+	pci_add_flags(PCI_ENABLE_PROC_DOMAINS | PCI_COMPAT_DOMAIN_0);
+	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
+
+	lastbus = pci_scan_child_bus(bridge->bus);
+	pci_bus_update_busn_res_end(bridge->bus, lastbus);
+
+	pci_assign_unassigned_bus_resources(bridge->bus);
+
+	pci_bus_add_devices(bridge->bus);
+
+	return 0;
+
+bridge_init_fail:
+	kfree(pp);
+	return err;
+}
+
+[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
+
+Best regards,
+Liviu
+
+
+Liviu Dudau (4):
+  pci: OF: Fix the conversion of IO ranges into IO resources.
+  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+  pci: Introduce a domain number for pci_host_bridge.
+  pci: Add support for creating a generic host_bridge from device tree
+
+ drivers/of/address.c       |  31 +++++++++++
+ drivers/pci/host-bridge.c  | 134 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/probe.c        |  66 ++++++++++++++--------
+ include/linux/of_address.h |  13 +----
+ include/linux/pci.h        |  17 ++++++
+ 5 files changed, 227 insertions(+), 34 deletions(-)
+
 -- 
 1.9.0
 
