@@ -1,56 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaB0Iv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:51:27 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:64180 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaB0IvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:51:25 -0500
-Message-ID: <530EFC89.2010409@suse.cz>
-Date: Thu, 27 Feb 2014 09:51:21 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751730AbaB0IyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:54:21 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58971 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750965AbaB0IyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 03:54:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,553,1389772800"; 
+   d="scan'208";a="489104836"
+Date: Thu, 27 Feb 2014 11:01:52 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chew Kean Ho <kean.ho.chew@intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: Re: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
+Message-ID: <20140227090152.GH5018@intel.com>
+References: <1390240808-18582-1-git-send-email-chiau.ee.chew@intel.com>
+ <20140226143822.GG29779@ulmo.nvidia.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        jwboyer@fedoraproject.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Subject: Re: 3.12-stable kernel tree being taken over by Jiri Slaby
-References: <20140226231910.GA8789@kroah.com> <20140226.183927.1607497823277720839.davem@davemloft.net> <530EFA78.1020802@suse.cz>
-In-Reply-To: <530EFA78.1020802@suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226143822.GG29779@ulmo.nvidia.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 09:42 AM, Jiri Slaby wrote:
-> On 02/27/2014 12:39 AM, David Miller wrote:
->> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Date: Wed, 26 Feb 2014 15:19:10 -0800
->>
->>> David, I don't know if you want to keep doing 3.12-networking patches or
->>> not, I'll let you work that out with Jiri directly.
->>
->> 3.12 and 3.13 are very similar, so the work is minimal, therefore I'm
->> likely to keep doing it.
+On Wed, Feb 26, 2014 at 03:38:23PM +0100, Thierry Reding wrote:
+> On Tue, Jan 21, 2014 at 02:00:08AM +0800, Chew Chiau Ee wrote:
+> [...]
+> > diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+> [...]
+> > +/*
+> > + * Intel Low Power Subsystem PWM controller driver
+> > + *
+> > + * Copyright (C) 2014, Intel Corporation
+> > + * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > + * Author: Chew Kean Ho <kean.ho.chew@intel.com>
+> > + * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> > + * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#include <linux/acpi.h>
+> > +#include <linux/clk.h>
+> > +#include <linux/device.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/pwm.h>
+> > +#include <linux/platform_device.h>
+> > +
+> > +#define PWM				0x00000000
+> > +#define PWM_ENABLE			BIT(31)
+> > +#define PWM_SW_UPDATE			BIT(30)
+> > +#define PWM_BASE_UNIT_SHIFT		8
+> > +#define PWM_BASE_UNIT_MASK		0x00ffff00
+> > +#define PWM_ON_TIME_DIV_MASK		0x000000ff
 > 
-> Hi, do you have any plans including:
-> commit 18fc25c94eadc52a42c025125af24657a93638c0
-> Author: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-> Date:   Mon Dec 2 15:41:39 2013 -0800
+> Does the documentation really call this "on time"? I've always only seen
+> this called duty-cycle.
+
+Yes, it's called like that in the documentation.
+
 > 
->     rds: prevent BUG_ON triggered on congestion update to loopback
+> > +#define PWM_DIVISION_CORRECTION		0x2
+> > +#define PWM_LIMIT			(0x8000 + PWM_DIVISION_CORRECTION)
+> > +
+> > +
+> > +struct pwm_lpss_chip {
+> > +	struct pwm_chip chip;
+> > +	void __iomem *regs;
+> > +	struct clk *clk;
+> > +};
+> > +
+> > +static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
+> > +{
+> > +	return container_of(chip, struct pwm_lpss_chip, chip);
+> > +}
+> > +
+> > +static void pwm_lpss_set_state(struct pwm_lpss_chip *lpwm, bool enable)
+> > +{
+> > +	u32 ctrl;
+> > +
+> > +	ctrl = readl(lpwm->regs + PWM);
+> > +	if (enable)
+> > +		ctrl |= PWM_ENABLE;
+> > +	else
+> > +		ctrl &= ~PWM_ENABLE;
+> > +	writel(ctrl, lpwm->regs + PWM);
 > 
-> which is not needed for 3.13, but is needed for 3.12 to fix CVE-2012-2372?
+> Nit: could use more blank lines around readl() and writel(), but I'm
+> told that not everybody likes it that way, so if you absolutely must
+> keep it this way, that's fine, too. =)
+> 
+> Also, is it really necessary to turn this into a function? It's only
+> called in three places, where each call site would only require three
+> lines. This function takes up 12 lines in total, so there's no real
+> gain.
 
-Nevermind, cherry-pick taught me, that it is already in 3.12.8. We just
-have a different fix in the suse tree which should be dropped now.
+Good point.
 
-Sorry for the noise.
+> 
+> > +static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
+> > +	int duty_ns, int period_ns)
+> 
+> Align arguments on subsequent lines with those of the first line,
+> please.
 
--- 
-js
-suse labs
+OK
+
+> 
+> > +{
+> > +	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
+> > +	u8 on_time_div;
+> > +	unsigned long c = clk_get_rate(lpwm->clk);
+> > +	unsigned long long base_unit, hz = 1000000000UL;
+> 
+> "hz" -> "freq"? "1000000000UL" -> "NSECS_PER_SEC"?
+
+OK
+
+> 
+> > +static int pwm_lpss_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> > +{
+> > +	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
+> > +
+> > +	clk_prepare_enable(lpwm->clk);
+> 
+> You need to check the return value of clk_prepare_enable().
+
+Indeed. Will fix.
+
+> 
+> > +#ifdef CONFIG_ACPI
+> > +struct pwm_lpss_chip *pwm_lpss_acpi_get_pdata(struct platform_device *pdev)
+> > +{
+> > +	struct pwm_lpss_chip *lpwm;
+> > +	struct resource *r;
+> > +
+> > +	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
+> > +	if (!lpwm) {
+> > +		dev_err(&pdev->dev, "failed to allocate memory for platform data\n");
+> 
+> No need to print this message. You should get one from the allocator
+> itself.
+
+OK
+
+> 
+> > +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	if (!r) {
+> > +		dev_err(&pdev->dev, "failed to get mmio base\n");
+> > +		return NULL;
+> > +	}
+> > +
+> > +	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
+> > +	if (IS_ERR(lpwm->clk)) {
+> > +		dev_err(&pdev->dev, "failed to get pwm clk\n");
+> > +		return NULL;
+> > +	}
+> 
+> "pwm" -> "PWM", "clk" -> "clock", please.
+
+OK
+
+> 
+> > +
+> > +	lpwm->chip.base = -1;
+> > +
+> > +	lpwm->regs = devm_request_and_ioremap(&pdev->dev, r);
+> > +	if (!lpwm->regs)
+> 
+> devm_ioremap_resource()? If so, it returns an ERR_PTR() encoded error
+> code on failure, so make sure to check with IS_ERR(lpwm->regs) instead.
+> Also you can get rid of the extra error checking after the call to
+> platform_get_resource() because devm_ioremap_resource() checks for it
+> already.
+> 
+> Furthermore the ordering of calls is somewhat unusual here. I'd prefer
+> platform_get_resource() followed by devm_ioremap_resource() directly.
+
+Yup, we will change that.
+
+> 
+> > +		return NULL;
+> > +
+> > +	return lpwm;
+> > +}
+> > +
+> > +static const struct acpi_device_id pwm_lpss_acpi_match[] = {
+> > +	{ "80860F08", 0 },
+> > +	{ "80860F09", 0 },
+> > +	{ },
+> > +};
+> > +MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
+> > +#else
+> > +struct pwm_lpss_chip *pwm_lpss_acpi_get_pdata(struct platform_device *pdev)
+> > +{
+> > +	return NULL;
+> > +}
+> > +#endif
+> 
+> I think that #else is completely dead code since the driver depends on
+> ACPI and therefore CONFIG_ACPI will always be enabled when building this
+> driver.
+
+We are getting PCI enumeration for this device as well but for now we can
+drop the code and add it back later if needed.
+
+> 
+> > +static int pwm_lpss_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct pwm_lpss_chip *lpwm;
+> > +	int ret;
+> > +
+> > +	lpwm = dev_get_platdata(dev);
+> 
+> struct pwm_lpss_chip is defined in this source file, how can anybody
+> else know what to fill platform_data with?
+
+Good point. Chiau Ee, do you recall why that thing is there in the first
+place?
+
+> > +	if (!lpwm) {
+> > +		lpwm = pwm_lpss_acpi_get_pdata(pdev);
+> > +		if (!lpwm)
+> > +			return -ENODEV;
+> > +	}
+> [...]
+> > +static struct platform_driver pwm_lpss_driver = {
+> > +	.driver = {
+> > +		.name = "pwm-lpss",
+> > +		.acpi_match_table = ACPI_PTR(pwm_lpss_acpi_match),
+> 
+> ACPI_PTR not needed since the table will always be there.
+
+OK.
+
+> 
+> > +	},
+> > +	.probe = pwm_lpss_probe,
+> > +	.remove = pwm_lpss_remove,
+> > +};
+> > +module_platform_driver(pwm_lpss_driver);
+> > +
+> > +MODULE_DESCRIPTION("PWM driver for Intel LPSS");
+> > +MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
+> > +MODULE_LICENSE("GPL");
+> 
+> The file header says GPL v2, but "GPL" here means "GPL v2 or later".
+
+OK, we will change that to GPLv2.
+
+Thanks a lot for your review! We will do the changes and submit v2.
