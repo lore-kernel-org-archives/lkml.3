@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532AbaB0FZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:25:21 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:39419 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0FZS (ORCPT
+	id S1751857AbaB0F22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:28:28 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:32175 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaB0F21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:25:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140226170847.GA18427@thin>
-References: <1393432706-25708-1-git-send-email-rashika.kheria@gmail.com>
-	<20140226164142.GA18079@thin>
-	<CAMpEsFFjR2e_kDn9-QuKcS3RjsSmru9XGjXqXXdO7sYeWdh9dw@mail.gmail.com>
-	<20140226170847.GA18427@thin>
-Date: Thu, 27 Feb 2014 10:55:18 +0530
-Message-ID: <CAKohpomqu22Pt5_wYV3u2uC36AgfmrkvxLtJCGakdodEQFE-jQ@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers: cpufreq: Mark function as static in cpufreq.c
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: josh@joshtriplett.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Feb 2014 00:28:27 -0500
+Message-ID: <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only
+ accessed via atomic_long_*
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, rkuo@codeaurora.org, arnd@arndb.de,
+        paulus@samba.org
+Date: Wed, 26 Feb 2014 21:28:24 -0800
+In-Reply-To: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
+References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rashika,
-
-On 26 February 2014 22:08, Rashika Kheria <rashika.kheria@gmail.com> wrote:
-> Mark function as static in cpufreq.c because it is not
-> used outside this file.
->
-> This eliminates the following warning in cpufreq.c:
-> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for 'show_boost' [-Wmissing-prototypes]
-
-Can you please elaborate how this warning is related to
-the non-static definition of this function?
-
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
+> The asm-generic rwsem implementation directly acceses sem->cnt when
+> performing a __down_read_trylock operation. Whilst this is probably safe
+> on all architectures, we should stick to the atomic_long_* API and use
+> atomic_long_read instead.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 > ---
->  drivers/cpufreq/cpufreq.c |    2 +-
+>  include/asm-generic/rwsem.h | 2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 08ca8c9..54fd670 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
->  /*********************************************************************
->   *                          SYSFS INTERFACE                          *
->   *********************************************************************/
-> -ssize_t show_boost(struct kobject *kobj,
-> +static ssize_t show_boost(struct kobject *kobj,
->                                  struct attribute *attr, char *buf)
+> 
+> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> index bb1e2cdeb9bf..75af612f54f8 100644
+> --- a/include/asm-generic/rwsem.h
+> +++ b/include/asm-generic/rwsem.h
+> @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
 >  {
->         return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
-> --
-> 1.7.9.5
->
+>  	long tmp;
+>  
+> -	while ((tmp = sem->count) >= 0) {
+> +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
+
+That's pretty ugly, how about having infinite look and just do the tmp
+assign separately from the conditional?
+
+It also looks like a cpu_relax() could help here between iterations.
+Other than that:
+
+Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+
