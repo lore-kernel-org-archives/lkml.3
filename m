@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaB0IeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:34:16 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44940 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361AbaB0IeN (ORCPT
+	id S1751666AbaB0Iep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:34:45 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:54931 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaB0Ien (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:34:13 -0500
-Date: Thu, 27 Feb 2014 08:34:08 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 2/8] mfd: pm8921: Update for genirq changes
-Message-ID: <20140227083408.GV9195@lee--X1>
-References: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
- <1393441166-32692-3-git-send-email-sboyd@codeaurora.org>
+	Thu, 27 Feb 2014 03:34:43 -0500
+From: Peter Korsgaard <peter@korsgaard.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Herbert Xu'" <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
+        "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
+        "'Peter Korsgaard'" <jacmet@sunsite.dk>
+Subject: Re: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
+References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
+Date: Thu, 27 Feb 2014 09:34:35 +0100
+In-Reply-To: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com> (Jingoo Han's
+	message of "Thu, 27 Feb 2014 14:00:09 +0900")
+Message-ID: <8738j5ar8k.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393441166-32692-3-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Since this code has been marked broken for some time a few genirq
-> tree wide changes weren't made. set_irq_wake() was renamed to
-> irq_set_irq_wake() in commit a0cd9ca2b (genirq: Namespace
-> cleanup, 2011-02-10) and commit 10a8c383 (irq: introduce entry
-> and exit functions for chained handlers) introduced the chained
-> irq functions but this driver wasn't updated to use them. Fix
-> these problems and remove the BROKEN marking on this driver.
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/mfd/Kconfig       | 1 -
->  drivers/mfd/pm8921-core.c | 7 +++++--
->  2 files changed, 5 insertions(+), 3 deletions(-)
+>>>>> "Jingoo" == Jingoo Han <jg1.han@samsung.com> writes:
 
-Applied, thanks.
+ > Use devm_clk_get() to make cleanup paths simpler.
+ > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+
+Acked-by: Peter Korsgaard <peter@korsgaard.com>
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Bye, Peter Korsgaard
