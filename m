@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaB0ALk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:11:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47500 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685AbaB0ALi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:11:38 -0500
-Message-ID: <530E82B2.3040305@zytor.com>
-Date: Wed, 26 Feb 2014 16:11:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754105AbaB0AMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:12:00 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53090 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaB0AL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 19:11:58 -0500
+Date: Wed, 26 Feb 2014 18:09:19 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/9] Input: pmic8xxx-keypad - Migrate to devm_* APIs
+Message-ID: <20140227000919.GE18563@joshc.qualcomm.com>
+References: <1393441562-685-1-git-send-email-sboyd@codeaurora.org>
+ <1393441562-685-3-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: The sheer number of sparse warnings in the kernel
-References: <530E6F76.1070605@zytor.com> <20140226232859.GA9213@kroah.com>
-In-Reply-To: <20140226232859.GA9213@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393441562-685-3-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 03:28 PM, Greg KH wrote:
->>
->> What do we need to do to actually make our tools be able to do work for
->> us?  Newbie projects to clean up?  Trying to get the larger Linux
->> companies to put resources on it?
+On Wed, Feb 26, 2014 at 11:05:55AM -0800, Stephen Boyd wrote:
+> Simplify the error paths and reduce the lines of code in this
+> driver by using the devm_* APIs.
 > 
-> It's not the easiest "newbie" project as usually the first reflex to
-> "just cast it away" is wrong for a lot of sparse warnings.  I know this
-> from people trying to fix up the sparse warnings in drivers/staging/
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/input/keyboard/pmic8xxx-keypad.c | 62 +++++++++-----------------------
+>  1 file changed, 17 insertions(+), 45 deletions(-)
 > 
+> diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+> index 2c9f19ac35ea..4e6bfbf94ae4 100644
+> --- a/drivers/input/keyboard/pmic8xxx-keypad.c
+> +++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+[..]
+> @@ -634,7 +629,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>  					kp->keycodes, kp->input);
+>  	if (rc) {
+>  		dev_err(&pdev->dev, "failed to build keymap\n");
+> -		goto err_get_irq;
+> +		return rc;
+>  	}
+>  
+>  	if (pdata->rep)
+> @@ -650,7 +645,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>  	rc = pmic8xxx_kpd_init(kp);
+>  	if (rc < 0) {
+>  		dev_err(&pdev->dev, "unable to initialize keypad controller\n");
+> -		goto err_get_irq;
+> +		return rc;
+>  	}
+>  
+>  	rc = pmic8xxx_kp_config_gpio(pdata->cols_gpio_start,
+> @@ -667,24 +662,26 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>  		goto err_gpio_config;
 
-I have seen this phenomenon, too.  I also see a bunch of sparse warnings
-which are clearly bogus, for example complaining about sizeof(bool) when
-in bits like:
+See below.
 
-		__this_cpu_write(swallow_nmi, false);
+>  	}
+>  
+> -	rc = request_any_context_irq(kp->key_sense_irq, pmic8xxx_kp_irq,
+> -				 IRQF_TRIGGER_RISING, "pmic-keypad", kp);
+> +	rc = devm_request_any_context_irq(&pdev->dev, kp->key_sense_irq,
+> +			pmic8xxx_kp_irq, IRQF_TRIGGER_RISING, "pmic-keypad",
+> +			kp);
+>  	if (rc < 0) {
+>  		dev_err(&pdev->dev, "failed to request keypad sense irq\n");
+> -		goto err_get_irq;
+> +		return rc;
+>  	}
+>  
+> -	rc = request_any_context_irq(kp->key_stuck_irq, pmic8xxx_kp_stuck_irq,
+> -				 IRQF_TRIGGER_RISING, "pmic-keypad-stuck", kp);
+> +	rc = devm_request_any_context_irq(&pdev->dev, kp->key_stuck_irq,
+> +			pmic8xxx_kp_stuck_irq, IRQF_TRIGGER_RISING,
+> +			"pmic-keypad-stuck", kp);
+>  	if (rc < 0) {
+>  		dev_err(&pdev->dev, "failed to request keypad stuck irq\n");
+> -		goto err_req_stuck_irq;
+> +		return rc;
+>  	}
+>  
+>  	rc = pmic8xxx_kp_read_u8(kp, &ctrl_val, KEYP_CTRL);
+>  	if (rc < 0) {
+>  		dev_err(&pdev->dev, "failed to read KEYP_CTRL register\n");
+> -		goto err_pmic_reg_read;
+> +		return rc;
+>  	}
+>  
+>  	kp->ctrl_reg = ctrl_val;
+> @@ -692,36 +689,12 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>  	rc = input_register_device(kp->input);
+>  	if (rc < 0) {
+>  		dev_err(&pdev->dev, "unable to register keypad input device\n");
+> -		goto err_pmic_reg_read;
+> +		return rc;
+>  	}
+>  
+>  	device_init_wakeup(&pdev->dev, pdata->wakeup);
+>  
+>  	return 0;
+> -
+> -err_pmic_reg_read:
+> -	free_irq(kp->key_stuck_irq, kp);
+> -err_req_stuck_irq:
+> -	free_irq(kp->key_sense_irq, kp);
+> -err_gpio_config:
 
-So getting this to the point where it is genuinely useful and can be
-made a ubiquitous part of the Linux development process is going to take
-more work and probably involve improvements to sparse so we can indicate
-in the kernel sources when something is okay or removing completely
-bogus warnings, and so on.
+You're removing this label, even though it's still used above. :(
 
-The bigger question, again, is what do we need to do to make this
-happen, assuming it is worth doing?  We certainly have had bugs,
-including security holes, which sparse would have caught.  At the same
-time, this kind of work tends to not be the kind that attract the top
-hackers, unfortunately, as it is not "fun".
-
-	-hpa
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
