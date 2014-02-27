@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaB0Uwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:52:40 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60090 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375AbaB0Uwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:52:38 -0500
-Date: Thu, 27 Feb 2014 14:50:39 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Loc Ho <lho@apm.com>
-CC: <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Tejun Heo <tj@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
-        "patches@apm.com" <patches@apm.com>
-Subject: Re: [PATCH v12 1/4] PHY: Add function set_speed to generic PHY
- framework
-Message-ID: <20140227205039.GE5375@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
- <1393524848-8207-2-git-send-email-lho@apm.com>
- <20140227190102.GB4862@saruman.home>
- <CAPw-ZT=F07=T0=z=iT=hxJ0+609RBDYRL=MXF5dQoEowLjsRjQ@mail.gmail.com>
+	id S1752143AbaB0UxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:53:18 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35400 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaB0UxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 15:53:17 -0500
+Date: Thu, 27 Feb 2014 12:53:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+Message-ID: <20140227205312.GX8264@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+ <CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+ <20140224172110.GO8264@linux.vnet.ibm.com>
+ <CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+ <20140224185341.GU8264@linux.vnet.ibm.com>
+ <CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+ <1393515453.28840.9961.camel@triegel.csb>
+ <CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+ <20140227190611.GU8264@linux.vnet.ibm.com>
+ <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lteA1dqeVaWQ9QQl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPw-ZT=F07=T0=z=iT=hxJ0+609RBDYRL=MXF5dQoEowLjsRjQ@mail.gmail.com>
+In-Reply-To: <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022720-9332-0000-0000-0000033F2DFA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---lteA1dqeVaWQ9QQl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Thu, Feb 27, 2014 at 11:57:44AM -0800, Loc Ho wrote:
-> > On Thu, Feb 27, 2014 at 11:14:05AM -0700, Loc Ho wrote:
-> >> This patch adds function set_speed to the generic PHY framework operat=
-ion
-> >> structure. This function can be called to instruct the PHY underlying =
-layer
-> >> at specified lane to configure for specified speed in hertz.
+On Thu, Feb 27, 2014 at 11:47:08AM -0800, Linus Torvalds wrote:
+> On Thu, Feb 27, 2014 at 11:06 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
 > >
-> > why ? looks like clk_set_rate() is your friend here. Can you be more
-> > descriptive of the use case ? When will this be used ?
+> > 3.      The comparison was against another RCU-protected pointer,
+> >         where that other pointer was properly fetched using one
+> >         of the RCU primitives.  Here it doesn't matter which pointer
+> >         you use.  At least as long as the rcu_assign_pointer() for
+> >         that other pointer happened after the last update to the
+> >         pointed-to structure.
 > >
->=20
-> The phy_set_speed is used to configure the operation speed of the PHY
-> at run-time. The clock interface in general is used to configure the
-> clock input to the IP. I don't believe they are the same thing. Maybe
-> it will be clear in my response to your second email
+> > I am a bit nervous about #3.  Any thoughts on it?
+> 
+> I think that it might be worth pointing out as an example, and saying
+> that code like
+> 
+>    p = atomic_read(consume);
+>    X;
+>    q = atomic_read(consume);
+>    Y;
+>    if (p == q)
+>         data = p->val;
+> 
+> then the access of "p->val" is constrained to be data-dependent on
+> *either* p or q, but you can't really tell which, since the compiler
+> can decide that the values are interchangeable.
+> 
+> I cannot for the life of me come up with a situation where this would
+> matter, though. If "X" contains a fence, then that fence will be a
+> stronger ordering than anything the consume through "p" would
+> guarantee anyway. And if "X" does *not* contain a fence, then the
+> atomic reads of p and q are unordered *anyway*, so then whether the
+> ordering to the access through "p" is through p or q is kind of
+> irrelevant. No?
 
-The problem with this is that you end up adding SATA-specific details to
-something which is supposed to be generic. After negoatiation, don't you
-get any interrupt from your PHY indicating that link speed negotiation
-is done ? Or is that IRQ only on AHCI IP ?
+I can make a contrived litmus test for it, but you are right, the only
+time you can see it happen is when X has no barriers, in which case
+you don't have any ordering anyway -- both the compiler and the CPU can
+reorder the loads into p and q, and the read from p->val can, as you say,
+come from either pointer.
 
+For whatever it is worth, hear is the litmus test:
 
-cheers
+T1:	p = kmalloc(...);
+	if (p == NULL)
+		deal_with_it();
+	p->a = 42;  /* Each field in its own cache line. */
+	p->b = 43;
+	p->c = 44;
+	atomic_store_explicit(&gp1, p, memory_order_release);
+	p->b = 143;
+	p->c = 144;
+	atomic_store_explicit(&gp2, p, memory_order_release);
 
---=20
-balbi
+T2:	p = atomic_load_explicit(&gp2, memory_order_consume);
+	r1 = p->b;  /* Guaranteed to get 143. */
+	q = atomic_load_explicit(&gp1, memory_order_consume);
+	if (p == q) {
+		/* The compiler decides that q->c is same as p->c. */
+		r2 = p->c; /* Could get 44 on weakly order system. */
+	}
 
---lteA1dqeVaWQ9QQl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The loads from gp1 and gp2 are, as you say, unordered, so you get what
+you get.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+And publishing a structure via one RCU-protected pointer, updating it,
+then publishing it via another pointer seems to me to be asking for
+trouble anyway.  If you really want to do something like that and still
+see consistency across all the fields in the structure, please put a lock
+in the structure and use it to guard updates and accesses to those fields.
 
-iQIcBAEBAgAGBQJTD6UfAAoJEIaOsuA1yqRERr8P/iDeKDJi1ZMvKmvSImZ0pI/Q
-lrufRgik17xRfpmkp/qfyWJZxVsBy8I995h13ZapXWaW/HpyrBsEASsXFEC1d+r7
-aZpmcVJgGcSIqzUZiSS2nZEqRjch2P+NVLy7IO4aJAYcQoX1GqTHXXDq3an7iY0G
-2BX7ycz1ApTaiOaMxYSNdr9t6j5KytDCFXvKdwzC9Q0AjAeWAZUefA6nIuoRzA3t
-qc7Yi6U9IW2RYkzuY3RkkHko1DoQReAKajQ6hpmxMX5tG8oqjkP67ZUt0HYDuwJt
-K3DfduE1MeQPygnyrX+IfGt7lEkgpqHxcC+9i5FmsqA738kPWMa5yY0olNxtgjkE
-wDDpmKcXDQX8tGF7ku6z5hhaOuLMHpiwh4eMLf0nbbSejWmrYu4AcwYj3zlayFvx
-djzJxXTDVYauiYNv4HLENb/ZpqKVfdi9fx+pJtYB1yiIWrtCNl/5ikumUSoIPdj+
-6z0XnY6hCah7rZDsFCTclNFP48zNy3znUR701lyf1ApraDKfH4qmAtY0ifwB474v
-+2vXwOD598uPRF4urjF6bj3AgOQAlZ6ThAIsrbo46MBjTWbWYJstO+RzA3T3FDa6
-7ghCqLbHi0fDeUEOZ/o6ScPD5bXvpMwvQoCQ1OXbeoLzKja6BPljaUUKlxCuYlRP
-PeQ5ZAkBoaIVwd+jDb46
-=qKot
------END PGP SIGNATURE-----
+							Thanx, Paul
 
---lteA1dqeVaWQ9QQl--
