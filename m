@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaB0Ukz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:40:55 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:45749 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaB0Ukx (ORCPT
+	id S1751510AbaB0Uom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:44:42 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:35036 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaB0Uok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:40:53 -0500
+	Thu, 27 Feb 2014 15:44:40 -0500
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 27 Feb 2014 12:40:32 -0800
-Message-ID: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-Subject: Making a universal list of syscalls?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net
+In-Reply-To: <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
+References: <1393462087.24588.50.camel@joe-AO722>
+	<530E8C2E.7080307@zytor.com>
+	<1393466619.24588.65.camel@joe-AO722>
+	<20140227022857.GC23659@thin>
+	<1393469594.24588.71.camel@joe-AO722>
+	<20140227025845.GA25145@thin>
+	<530EB103.5070406@zytor.com>
+	<1393472326.24588.82.camel@joe-AO722>
+	<20140227040050.GA8449@nicira.com>
+	<530EBCED.9020705@zytor.com>
+	<20140227042636.GA9592@nicira.com>
+	<530EBFC7.9030309@zytor.com>
+	<CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
+	<faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
+Date: Thu, 27 Feb 2014 12:44:37 -0800
+X-Google-Sender-Auth: vLjWaYTx-93bZiuYkK-Uj7U_nsI
+Message-ID: <CANeU7QnB1Yfd6SjLeUmB1Q-a+U6G221J8es7ckfjB-U45sAVMA@mail.gmail.com>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Christopher Li <sparse@chrisli.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ben Pfaff <blp@nicira.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, dealing with Linux syscalls in an architecture-independent
-way is a mess.  Here are some issues:
+On Thu, Feb 27, 2014 at 12:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> I would.
+>
 
- 1. There's no clean way to map between syscall names and numbers on
-different architectures.  The kernel contains a number of tables (that
-work differently for different architectures).  strace has some arcane
-mechanism.  libseccomp has another.
+Joe, I assume you are OK with this patch, the default is now off.
 
- 2. There's no clean way to map between syscall argument registers and
-logical syscall arguments.  Each architecture knows how to do it, as
-do strace and glibc, but I suspect that *everyone* else gets it wrong.
- Especially on ARM.
+Chris
 
- 3. Determining which architectures have which syscalls is a mess.
-Recent kernel builds love to warn me that finit_module is missing on
-x86_64.  This is simply not true.  I have no idea why.
+Allow an override to emit or not the sizeof(bool) warning.
+Add a "-Wsizeof-bool" description to the manpage.
 
- 4. Actually issuing a nontrivial syscall is annoying.  syscall(2) can
-do it for the native architecture (only).
+Signed-off-by: Joe Perches <joe@perches.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Christopher Li <sparse@chrisli.org>
+---
+ evaluate.c | 3 ++-
+ lib.c      | 2 ++
+ lib.h      | 1 +
+ sparse.1   | 8 ++++++++
+ 4 files changed, 13 insertions(+), 1 deletion(-)
 
- 5. Decoding ucontext from SIGSYS is a mess.  I have prototype code
-for libseccomp that can do it, but it gets the arguments wrong due to
-ABI issues.  See (2).
+diff --git a/evaluate.c b/evaluate.c
+index 6655615..a45f59b 100644
+--- a/evaluate.c
++++ b/evaluate.c
+@@ -2057,7 +2057,8 @@ static struct symbol *evaluate_sizeof(struct
+expression *expr)
+     }
 
-I'd like to see a master list in the kernel that lists, for every
-syscall, the name, the number for each architecture that implements it
-(using the AUDIT_ARCH semantics, probably), and the signature.  The
-build process could parse this table to replace the current per-arch
-mess.
+     if (size == 1 && is_bool_type(type)) {
+-        warning(expr->pos, "expression using sizeof bool");
++        if (Wsizeof_bool)
++            warning(expr->pos, "expression using sizeof bool");
+         size = bits_in_char;
+     }
 
-Issues here: some syscalls have different signatures on different
-architectures.  Maybe we could require that a canonical syscall name
-would have the same signature everywhere, but architectures could
-specify alternate names.  So, for things like clone (?), there could
-actually be a few syscalls that all have alternate names of "clone".
-
-More importantly, we could add a library in tools that exposes this
-information to userspace.  Useful operations:
-
- - For a given (arch, nr), indicate, for each logical argument, which
-physical argument slot is used or, if the argument is split into a
-high and low part, which pair of slots is used.
-
- - For a given (nr, logical args), issue the syscall for the
-architecture that build the library.
-
- - For a given (arch, nr, logical args), issue the syscall if
-possible.  An x86_32 build could issue x86_64 syscalls with some
-effort, and an x86_64 build could easily issue 32-bit syscalls.
-
- - For a given arch, map between name and nr, and give access to the signature.
-
-If this happened, presumably all architectures that supported it would
-have to have valid AUDIT_ARCH support.  That means that someone would
-have to fix ARM OABI (sigh).
-
-Thoughts?
-
-
---Andy
+diff --git a/lib.c b/lib.c
+index 51b97fd..844797d 100644
+--- a/lib.c
++++ b/lib.c
+@@ -226,6 +226,7 @@ int Wparen_string = 0;
+ int Wptr_subtraction_blows = 0;
+ int Wreturn_void = 0;
+ int Wshadow = 0;
++int Wsizeof_bool = 0;
+ int Wtransparent_union = 0;
+ int Wtypesign = 0;
+ int Wundef = 0;
+@@ -438,6 +439,7 @@ static const struct warning {
+     { "ptr-subtraction-blows", &Wptr_subtraction_blows },
+     { "return-void", &Wreturn_void },
+     { "shadow", &Wshadow },
++    { "sizeof-bool", &Wsizeof_bool },
+     { "transparent-union", &Wtransparent_union },
+     { "typesign", &Wtypesign },
+     { "undef", &Wundef },
+diff --git a/lib.h b/lib.h
+index f09b338..f6cd9b4 100644
+--- a/lib.h
++++ b/lib.h
+@@ -120,6 +120,7 @@ extern int Wparen_string;
+ extern int Wptr_subtraction_blows;
+ extern int Wreturn_void;
+ extern int Wshadow;
++extern int Wsizeof_bool;
+ extern int Wtransparent_union;
+ extern int Wtypesign;
+ extern int Wundef;
+diff --git a/sparse.1 b/sparse.1
+index cd6be26..54da09b 100644
+--- a/sparse.1
++++ b/sparse.1
+@@ -297,6 +297,14 @@ Such declarations can lead to error-prone code.
+ Sparse does not issue these warnings by default.
+ .
+ .TP
++.B \-Wsizeof-bool
++Warn when checking the sizeof a _Bool.
++
++C99 does not specify the sizeof a _Bool.  gcc uses 1.
++
++Sparse does not issue these warnings by default.
++.
++.TP
+ .B \-Wtransparent\-union
+ Warn about any declaration using the GCC extension
+ \fB__attribute__((transparent_union))\fR.
+-- 
+1.8.5.3
