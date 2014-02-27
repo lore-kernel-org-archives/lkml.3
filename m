@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaB0N5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:57:08 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54434 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812AbaB0N5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:57:03 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with regmap patch
-Date: Thu, 27 Feb 2014 15:56:48 +0200
-Message-ID: <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1753140AbaB0N6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:58:46 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:65242 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106AbaB0N6n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 08:58:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Murray <amurray@embedded-bits.co.uk>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Thu, 27 Feb 2014 14:58:34 +0100
+Message-ID: <23116993.AhiSYlcnvx@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAPcvp5EqcKEWoH_--azp+sMykmEWtY5whHG=c9t3sZVXZyAPUg@mail.gmail.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <1393506402-11474-2-git-send-email-Liviu.Dudau@arm.com> <CAPcvp5EqcKEWoH_--azp+sMykmEWtY5whHG=c9t3sZVXZyAPUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:z2j4Z9lOBLdGjXRzi5ry/4a9DDoD2Gx2uqIY6zP8JBw
+ 20N4pOJP1naiwLs6dCwOP1uUbLKyGeQyiK6IURQlrj/5ZnADEg
+ g2T6BTlmHT1YkZNprgbkuZPXzy/6B/tX7V02DiR7ci+e+Wfly7
+ 8fHg1aFgN6AcYVBeM8qhIT6TODZO1HPGhHwm6FXYtI8PyJmTVF
+ tNdVGff8p0FgvHvP2CtV562rA/budObxQlE+AMhsVBdckVxP52
+ x3PWmHfBktTCNMVGUx62lws7IQHG5F/NnE53eOTU9wQrwdFCEe
+ 1OySX2YRkw7pUIGbQFtIQ3BmWTjNM8gjj2bhf2LlFEE6weRjrR
+ 5H+qdiJEIjKJ1buueXlU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All boards using twl6040 configures the i2c bus to 400KHz. While twl6040's
-defaults to normal mode (100KHz). So far twl6040 has no problem with i2c
-communication in this configuration it is safer to select fast i2c mode.
+On Thursday 27 February 2014 13:22:19 Andrew Murray wrote:
+> On 27 February 2014 13:06, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> >
+> > The ranges property for a host bridge controller in DT describes
+> > the mapping between the PCI bus address and the CPU physical address.
+> > The resources framework however expects that the IO resources start
+> > at a pseudo "port" address 0 (zero) and have a maximum size of 64kb.
+> 
+> Is this just in the case of ARM? (I've tried to keep up with the
+> conversation, but apologies if I've misunderstood).
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/mfd/twl6040.c       | 9 +++++++--
- include/linux/mfd/twl6040.h | 1 +
- 2 files changed, 8 insertions(+), 2 deletions(-)
+We are a bit inconsistent on Linux. The limitation cited above is
+indeed something we came up with on ARM to simplify the possible
+cases we have to worry about.
 
-diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-index 6e88f25832fb..2c308750f40f 100644
---- a/drivers/mfd/twl6040.c
-+++ b/drivers/mfd/twl6040.c
-@@ -87,8 +87,13 @@ static struct reg_default twl6040_defaults[] = {
- };
- 
- static struct reg_default twl6040_patch[] = {
--	/* Select I2C bus access to dual access registers */
--	{ TWL6040_REG_ACCCTL, 0x09 },
-+	/*
-+	 * Select I2C bus access to dual access registers
-+	 * Interrupt register is cleared on read
-+	 * Select fast mode for i2c (400KHz)
-+	 */
-+	{ TWL6040_REG_ACCCTL,
-+		TWL6040_I2CSEL | TWL6040_INTCLRMODE | TWL6040_I2CMODE(1) },
- };
- 
- 
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index 81f639bc1ae6..a69d16b30c18 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -157,6 +157,7 @@
- #define TWL6040_I2CSEL			0x01
- #define TWL6040_RESETSPLIT		0x04
- #define TWL6040_INTCLRMODE		0x08
-+#define TWL6040_I2CMODE(x)		((x & 0x3) << 4)
- 
- /* STATUS (0x2E) fields */
- 
--- 
-1.9.0
+In theory, each PCI host can have its own 4GB I/O space, but in practice
+limiting to 64KB is the most reasonable way to use it, and that
+still provides plenty of room for I/O registers since most devices
+don't use any, and at most a few bytes of address space.
 
+The limit we enforce on Linux is IO_SPACE_LIMIT, which is sometimes set
+to 0xffffffff, but I think most if not all of those cases are done so
+in error.
+
+> > + * of_pci_range_to_resource - Create a resource from an of_pci_range
+> > + * @range:     the PCI range that describes the resource
+> > + * @np:                device node where the range belongs to
+> > + * @res:       pointer to a valid resource that will be updated to
+> > + *              reflect the values contained in the range.
+> > + * Note that if the range is an IO range, the resource will be converted
+> > + * using pci_address_to_pio() which can fail if it is called to early or
+> > + * if the range cannot be matched to any host bridge IO space.
+> > + */
+> > +void of_pci_range_to_resource(struct of_pci_range *range,
+> > +       struct device_node *np, struct resource *res)
+> > +{
+> > +       res->flags = range->flags;
+> > +       if (res->flags & IORESOURCE_IO) {
+> > +               unsigned long port;
+> > +               port = pci_address_to_pio(range->pci_addr);
+> 
+> Is this likely to break existing users of of_pci_range_to_resource?
+> 
+> For example arch/mips: IO_SPACE_LIMIT defaults to 0xffff and there is
+> no overridden implementation for pci_address_to_pio, therefore this
+> will set res->start to OF_BAD_ADDR whereas previously it would have
+> been the CPU address for I/O (assuming the cpu_addr was previously >
+> 64K).
+
+The function is used on MIPS, Microblaze and ARM at the moment.
+MIPS currently gets it wrong, by calling pci_add_resource_offset
+on the CPU address for IORESOURCE_IO, which is the wrong space.
+Limiting to IO_SPACE_LIMIT will fix it for the first host bridge
+on MIPS, and the second one will still not work, until
+IO_SPACE_LIMIT is fixed.
+
+On ARM, I believe we have a couple of drivers that make the
+same mistake, and others that at the moment override the
+address with range->pci_addr, so they won't change.
+
+Microblaze does 'range.cpu_addr = range.pci_addr;' for the I/O
+space window to fix it up. We should probably take a closer look there.
+
+	Arnd
