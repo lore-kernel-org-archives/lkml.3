@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaB0Hrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:47:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52635 "EHLO
+	id S1752028AbaB0Hrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:47:45 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52637 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaB0Hql (ORCPT
+	with ESMTP id S1751177AbaB0Hql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 02:46:41 -0500
-Date: Thu, 27 Feb 2014 13:47:02 +0900
+Date: Thu, 27 Feb 2014 13:51:39 +0900
 From: Mark Brown <broonie@kernel.org>
 To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-spi@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140227044702.GM9383@sirena.org.uk>
-References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140227045139.GO9383@sirena.org.uk>
+References: <1393324819-3810-1-git-send-email-geert@linux-m68k.org>
+ <1393324819-3810-2-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LJm8egi4vkexsie5"
+	protocol="application/pgp-signature"; boundary="rZHzn+A9B7nBTGyj"
 Content-Disposition: inline
-In-Reply-To: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1393324819-3810-2-git-send-email-geert@linux-m68k.org>
 X-Cookie: Q:	Are we not men?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 175.126.181.133
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 0/6] spi: sh-msiof: Add support for R-Car H2 and M2
+Subject: Re: [PATCH v2 2/4] spi: spidev: Add support for Dual/Quad SPI
+ Transfers
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,41 +33,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---LJm8egi4vkexsie5
+--rZHzn+A9B7nBTGyj
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Feb 25, 2014 at 11:21:07AM +0100, Geert Uytterhoeven wrote:
->         Hi Mark,
+On Tue, Feb 25, 2014 at 11:40:17AM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 >=20
-> This patch series refactors the sh-msiof SPI driver and adds support for
-> the MSIOF variant in the Renesas R-Car H2 (r8a7790) and M2 (r8a7791) SoCs.
+> Add support for Dual/Quad SPI Transfers to the spidev API.
+> As this uses SPI mode bits that don't fit in a single byte, two new
+> ioctls (SPI_IOC_RD_MODE32 and SPI_IOC_WR_MODE32) are introduced.
 
-I applied all these, thanks.  Laurent does make a valid point about the
-fallback, though - can you please send a followup patch which addresses
-that?
+Applied, thanks.
 
---LJm8egi4vkexsie5
+--rZHzn+A9B7nBTGyj
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTDsNCAAoJELSic+t+oim9hBgP/iHXacMumX0+5zM6aT+wF+x0
-jZEEdqxDa1elCmYkhu5s0bFW52qy70qOJ4I+lO43mc5lRx0DpE6F8pbaL3EaH4P9
-h4Zkckzy7KczFaKZsp8pU3kLwKVc8uIZp4TAZV6ol/tShP5a7zpoiID6uNp5Mz3+
-Zyhll4n9MsXXq9Ja9oM0uOkxiWNq8xtffHj+RXx3I7fcgO+5Z2xQd/ij8LuCjRzT
-OiGjA03pP0Tiv4/d8pwA/h8b+VuqJti3paSX/YtJfJTPr4gsmCp2NoHRH1FiS2zL
-5+xD/4vLtkR6IFqKudc3psoG/MhEpz2l29Kk1lhdj5+QSyNB057INTGtl3igOcT0
-CWdTpdZ6cC4oZ15rlOLe3GJnP2Zfv+17yqWhJw9mPeBZ8L8pLttxLWM/4pdTT5GZ
-x+tMB06x87cz735mRxIwMqMTzqy2nJUfWE/FanWfEV2l4GkiN7uqa4XLHuN0M6wp
-SoAFkIX5sEfYQptgETkjljZdrho22SW34nlKG+4P0Z57D+F2+ljOmgVt//x7Hn2l
-dgSgLqphEDmNOZisW62ooGqNLAHk7Y73Y4QEYsA48kFkLhxDHEXvRUMStdG4m1R9
-eHDYxWOW/id5EkjcC+JUWGq40yfnmp5R6gUgii2qOSmvFxWbEh8dmwkYK0XDbCYp
-HAEIgPJ7YGKBYCJvBBtx
-=mBmY
+iQIcBAEBAgAGBQJTDsRYAAoJELSic+t+oim9BhoP+QFeX1y99Xch4cdfMNyekLJu
+4+awJvLm/HN7mg3Ulqk6KvUmWpBKXiZKjvY27qSex5e2RWII+Re6Gbf9RurQ4Co+
+VODVmmZ4Mohz7N834ff5J/sMAfijIDhr/JDtf0YgdKxmFBF/vAh1QNonJ5htaFMf
+TIxzgfRHImiaAOM7hI7k2nycnEt26Eok1WCUMZ+Dmv9k7s/SpfB+vwo/erc2No9+
+9m0tI6DP1s6Oc9C2Fe6653hw9SsYQO+2fDJ+1OcJSY4KM64PVKXSQpE+GHZHcRes
+0Uhpg354xMzJQ1Aa8bwbaD/S6zEezR4Njs0YM9WqiaqR8ufadwdhB07rxxrXnvyJ
+Nq78tq2inrOnQ9P8vLvPaLl47TFCJwedYpk4iGZ4uyxXnc2G5kmZ3nC5Yu17WTkQ
+CoIMVAwC3hZ43ZFg6k5QhVGAg6gWGoyaY6KPcBXVBwb+Qclz//yFuGj1h2e0RlTq
++ZwJKUmmK+xzAqB/F0I6t1M+mPBk80oo652OXELaiFIsZl/g0EbGXHbhpMgMYEnO
+ACNJbNWgbM2Uips0TwptUAVkihzDYrm54qJJaCCpAauzGEt3B8JtB/S9edOWqeXc
+H2vsk9y8IJbd50N5H/1+xciv2Q0E3YcM54VZ9c2Ym0NZUXxv7QkhI98GgGQRbmT2
+USfjRQiKEPGE8Jq2I3tJ
+=1Ds5
 -----END PGP SIGNATURE-----
 
---LJm8egi4vkexsie5--
+--rZHzn+A9B7nBTGyj--
