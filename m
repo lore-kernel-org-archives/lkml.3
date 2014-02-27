@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036AbaB0L6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:58:13 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37090 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbaB0L6J (ORCPT
+	id S1752714AbaB0L6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:58:11 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48566 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaB0L6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 06:58:09 -0500
-Date: Thu, 27 Feb 2014 17:25:54 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+Date: Thu, 27 Feb 2014 12:58:05 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
         josh@joshtriplett.org
-Subject: [PATCH 22/46] kernel: Include appropriate header file in
- time/timekeeping_debug.c
-Message-ID: <294021ae4578d627ac56704dab7caee5bca2db86.1393493277.git.rashika.kheria@gmail.com>
+Subject: Re: [PATCH 18/46] kernel: Mark functions as static in sched/fair.c
+Message-ID: <20140227115805.GE9987@twins.programming.kicks-ass.net>
 References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+ <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include appropriate header file kernel/time/timekeeping_internal.h in
-kernel/time/timekeeping_debug.c because it has prototype declaration of
-function defined in kernel/time/timekeeping_debug.c.
+On Thu, Feb 27, 2014 at 05:20:19PM +0530, Rashika Kheria wrote:
+> @@ -5266,7 +5266,7 @@ static unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu)
+>  	return smt_gain;
+>  }
+>  
+> -unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
+> +static unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
+>  {
+>  	return default_scale_smt_power(sd, cpu);
+>  }
 
-This eliminates the following warning in
-kernel/time/timekeeping_debug.c:
-kernel/time/timekeeping_debug.c:68:6: warning: no previous prototype for ‘tk_debug_account_sleep_time’ [-Wmissing-prototypes]
+Fuck no; please think before sending.
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/time/timekeeping_debug.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/time/timekeeping_debug.c b/kernel/time/timekeeping_debug.c
-index 802433a..4d54f97 100644
---- a/kernel/time/timekeeping_debug.c
-+++ b/kernel/time/timekeeping_debug.c
-@@ -21,6 +21,8 @@
- #include <linux/seq_file.h>
- #include <linux/time.h>
- 
-+#include "timekeeping_internal.h"
-+
- static unsigned int sleep_time_bin[32] = {0};
- 
- static int tk_debug_show_sleep_time(struct seq_file *s, void *data)
--- 
-1.7.9.5
-
+I'm going to ignore all patches from you henceforth.
