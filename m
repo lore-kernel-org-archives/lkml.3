@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaB0TK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:10:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37322 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaB0TK1 (ORCPT
+	id S1753653AbaB0TLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:11:09 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:35501 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaB0TLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:10:27 -0500
-Date: Thu, 27 Feb 2014 11:12:04 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [RFC][PATCH] staging: Fix build issues with new binder API
-Message-ID: <20140227191204.GA4967@kroah.com>
-References: <1393453747-12513-1-git-send-email-john.stultz@linaro.org>
- <20140227033400.GA31199@kroah.com>
- <530F8C21.9070602@linaro.org>
+	Thu, 27 Feb 2014 14:11:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530F8C21.9070602@linaro.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140227190710.GA4755@kroah.com>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<20140227190710.GA4755@kroah.com>
+Date: Thu, 27 Feb 2014 14:11:07 -0500
+X-Google-Sender-Auth: xD46IXPiUIkI3qwcBK4qa14S4Jg
+Message-ID: <CA+5PVA4GNWFx5bDM912TYmDbMHmZpb2X=Tzo85mGEGATvbW70A@mail.gmail.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:04:01AM -0800, John Stultz wrote:
-> On 02/26/2014 07:34 PM, Greg KH wrote:
-> > On Wed, Feb 26, 2014 at 02:29:07PM -0800, John Stultz wrote:
-> >> The new 64bit binder API causes build issues on 32bit ARM
-> >> due to the lack of 64bit __get_user_asm_* implementation.
-> > So no one ever tested this out on ARM?  Really, that seems odd...
-> 
-> Its my bad, I was focused on the 32bit legacy compatibility code in my
-> testing because the userspace I have only works with that.
-> 
-> Arve actually warned about this in one of his mails, but I mistakenly
-> thought it was an issue w/ 3.10 and earlier kernels and had since been
-> addressed.
-> 
-> 
-> > Anyway, if you want this to always be on, that's fine with me, your
-> > choice :)
-> 
-> I think its the best option for now, but wanted to send it out for
-> comment to see if anyone objected.
-> 
-> I'm about to head for a conference so I'll be offline until around
-> Monday. While at the conference I'm going to be working with folks to
-> see if we can't get the real solution (a __get_user_asm_64
-> implementation) sorted.  But if there are no objections, it might be
-> best to queue this for staging-next so folks don't hit the issue in the
-> meantime.
+On Thu, Feb 27, 2014 at 2:07 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Feb 27, 2014 at 01:04:34PM -0500, Josh Boyer wrote:
+>> On Wed, Feb 26, 2014 at 3:11 PM, Matthew Garrett
+>> <matthew.garrett@nebula.com> wrote:
+>> > The conclusion we came to at Plumbers was that this patchset was basically
+>> > fine but that Linus hated the name "securelevel" more than I hate pickled
+>> > herring, so after thinking about this for a few months I've come up with
+>> > "Trusted Kernel". This flag indicates that the kernel is, via some
+>> > external mechanism, trusted and should behave that way. If firmware has
+>> > some way to verify the kernel, it can pass that information on. If userspace
+>> > has some way to verify the kernel, it can set the flag itself. However,
+>> > userspace should not attempt to use the flag as a means to verify that the
+>> > kernel was trusted - untrusted userspace could have set it on an untrusted
+>> > kernel, but by the same metric an untrusted kernel could just set it itself.
+>>
+>> FWIW, I've been running a kernel using this patchset in place of the
+>> patchset Fedora typically carries for this purpose for a bit.  Things
+>> appear to be working as expected and the protections remain the same.
+>>
+>> It would be really nice to get this set of patches in so some of the
+>> other patches that depend on them can start being pushed as well.
+>
+> What other patches depend on this series?  Why aren't they also in this
+> series?
 
-Yes, the "real" solution would be best, but I'll queue this up for now,
-thanks.
+The patches we have to import certificates from the UEFI db and dbx
+vars, and MokListRT and apply them to signed module verification.
+Looking at them closely, there are pieces that could be sent now as
+they are slightly orthogonal to what this patchset is doing, which is
+probably why they aren't in this patchset to begin with.  I'll have to
+figure out which of those actually depend on anything in Matthew's
+series.
 
-greg k-h
+josh
