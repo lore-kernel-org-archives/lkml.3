@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaB0TFF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:05:05 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52093 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaB0TFC (ORCPT
+	id S1753882AbaB0TFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:05:15 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:47237 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651AbaB0TFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:05:02 -0500
-Date: Thu, 27 Feb 2014 13:02:59 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Loc Ho <lho@apm.com>
-CC: <kishon@ti.com>, <tj@kernel.org>, <olof@lixom.net>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <ddutile@redhat.com>,
-        <jcm@redhat.com>, <patches@apm.com>, Tuan Phan <tphan@apm.com>,
-        Suman Tripathi <stripathi@apm.com>
-Subject: Re: [PATCH v12 3/4] PHY: add APM X-Gene SoC 15Gbps Multi-purpose PHY
- driver
-Message-ID: <20140227190259.GC4862@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
- <1393524848-8207-2-git-send-email-lho@apm.com>
- <1393524848-8207-3-git-send-email-lho@apm.com>
- <1393524848-8207-4-git-send-email-lho@apm.com>
+	Thu, 27 Feb 2014 14:05:10 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LwW0XdcUbUexiWVK"
-Content-Disposition: inline
-In-Reply-To: <1393524848-8207-4-git-send-email-lho@apm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 27 Feb 2014 21:05:09 +0200
+Message-ID: <CA+ydwtqyfZE0Fe0LkpkyJeFFBHhyXm1kUUGJtPkwuBLJ-LS4fw@mail.gmail.com>
+Subject: kernel BUG at security/keys/keyring.c:1003!
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---LwW0XdcUbUexiWVK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+Hit the following BUG while fuzzing 3.14.0-rc3 with trinity.
 
-On Thu, Feb 27, 2014 at 11:14:07AM -0700, Loc Ho wrote:
-> +/*
-> + * This function is used to configure the PHY to operation as either SAT=
-A Gen1
-> + * or Gen2 speed.
-> + */
-> +static void xgene_phy_sata_force_gen(struct xgene_phy_ctx *ctx,
-> +				     int lane, int gen)
+Tommi
 
-why do you need to *force* the generation ? Is this because of some
-silicon errata ? It almost seems like this should be done through link
-negotiation between both link partners.
-
---=20
-balbi
-
---LwW0XdcUbUexiWVK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTD4vjAAoJEIaOsuA1yqREcU8P/3ZS9KNms08cXSMj1uAFPNFh
-3CPHf7MFJI0kwNaeSIvsvsMf9FelziGBtxsXKTTBKgKv0LmyaNcz6XHj8F/GtAdE
-hX6vjyB4ktxBFyU8VbeOkJqqddtVudEC/ZFl6iXxcVL6Jg3N1gEH/j8W4hosqyJU
-STMaV0Hj7hp1pOrYeMCjvRgHEkkAY3q9xqnJp1+4/9Js7wXpvt/YSPKjRJ303k0N
-dlCLy0vPNZiAaWZogdx+MvrJtpY3aOxKBHqSKTHmClaSrNlJVDUyHE6IT7ViigLM
-Nck5qYS3T2OLuZbirGGHmMtk/cLWIDCoGaRRkp8XrNX9/6oJBhjPdqvEbJDRzbko
-MqavfzzvhNXElWdxaVaWW0Hj51Fb+5k+kYuYoPOMNufDovpvjaFlzs7TJLcTkHy2
-qUHjz6qjQQ7rWKb0ITw4oZU+3vSfFsDKHAe+XXzuG+gF+0Rs+4C0ZxcDiHPgJXgE
-qLXt0vyX32Nd3h8ghb3UdstwWH7IYLjMna4vZ6rGy05SyOAPNHjZpPAL3QVHCTOB
-sGV0JGBx7cE+uFqr1xmpCVyYAa9RDFOT3n2ZyFUWI5HIcWkehjEzDwcwgaYn+Vl1
-xlr4IYmq4SMhSpREsaYalyxUximCSP9k8bUqFT1Oo/DxXqVOihcIX8ji8+0FM/M7
-DHMC4kpgLzarods/i/RK
-=cHF/
------END PGP SIGNATURE-----
-
---LwW0XdcUbUexiWVK--
+[708836.755392] ------------[ cut here ]------------
+[708836.756044] kernel BUG at /build/linux/security/keys/keyring.c:1003!
+[708836.756044] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+[708836.756044] CPU: 0 PID: 5594 Comm: trinity-c26 Not tainted 3.14.0-rc3 #1
+[708836.756044] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[708836.756044] task: ffff880036a3ca40 ti: ffff880003e6e000 task.ti:
+ffff880003e6e000
+[708836.756044] RIP: 0010:[<ffffffff814ac7be>]  [<ffffffff814ac7be>]
+keyring_detect_cycle_iterator+0xe/0x20
+[708836.756044] RSP: 0000:ffff880003e6fdb0  EFLAGS: 00010206
+[708836.756044] RAX: ffff880056025b82 RBX: 000000000000003a RCX:
+0000000000000003
+[708836.756044] RDX: 0000000000000003 RSI: ffff880003e6fe98 RDI:
+ffff880056025b80
+[708836.756044] RBP: ffff880003e6fdb0 R08: 0000000000000064 R09:
+0000000000000000
+[708836.756044] R10: ffff880036a3ca40 R11: 0000000000000000 R12:
+ffff880003e6fe98
+[708836.756044] R13: 0000000000000000 R14: ffff880003e6fe98 R15:
+ffff88006c950780
+[708836.756044] FS:  00007f88ae6bd700(0000) GS:ffff8800bf600000(0000)
+knlGS:0000000000000000
+[708836.756044] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[708836.756044] CR2: 0000000000000004 CR3: 000000003ba4d000 CR4:
+00000000000006f0
+[708836.756044] DR0: 0000000000899000 DR1: 000000000115a000 DR2:
+0000000001b66000
+[708836.756044] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000600
+[708836.756044] Stack:
+[708836.756044]  ffff880003e6fe80 ffffffff814ac9e2 ffffffff81078869
+ffff880003e6fdf0
+[708836.756044]  ffffffff81179f4d ffff8800bf7d5a40 00000000001d5a40
+0000000000000000
+[708836.756044]  ffff88006c950780 0000000000000000 0000000000000002
+0000000000000001
+[708836.756044] Call Trace:
+[708836.756044]  [<ffffffff814ac9e2>] search_nested_keyrings+0xf2/0x340
+[708836.756044]  [<ffffffff81078869>] ? sched_clock+0x9/0x10
+[708836.756044]  [<ffffffff81179f4d>] ? sched_clock_local+0x1d/0x90
+[708836.756044]  [<ffffffff814ad246>] ? __key_link_check_live_key+0x26/0x160
+[708836.756044]  [<ffffffff814ad303>] __key_link_check_live_key+0xe3/0x160
+[708836.756044]  [<ffffffff814ad246>] ? __key_link_check_live_key+0x26/0x160
+[708836.756044]  [<ffffffff814ac7b0>] ? keyring_instantiate+0xf0/0xf0
+[708836.756044]  [<ffffffff814ad4ac>] key_link+0x5c/0xb0
+[708836.756044]  [<ffffffff814adfee>] keyctl_keyring_link+0x7e/0xb0
+[708836.756044]  [<ffffffff814af508>] SyS_keyctl+0x98/0x1a0
+[708836.756044]  [<ffffffff82381209>] ia32_do_call+0x13/0x13
+[708836.756044] Code: c0 eb 12 66 2e 0f 1f 84 00 00 00 00 00 31 c0 66
+0f 1f 44 00 00 5b 41 5c 5d f3 c3 66 90 48 83 e7 fc 48 39 7e 28 55 48
+89 e5 74 02 <0f> 0b b8 01 00 00 00 48 c7 46 48 dd ff ff ff 5d c3 90 55
+48 89
+[708836.756044] RIP  [<ffffffff814ac7be>] keyring_detect_cycle_iterator+0xe/0x20
+[708836.756044]  RSP <ffff880003e6fdb0>
+[708836.855231] ---[ end trace e2b699c76aca5cff ]---
