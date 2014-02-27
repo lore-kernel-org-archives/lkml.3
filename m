@@ -1,91 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaB0TsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:48:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.131]:59996 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaB0TsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:48:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Thu, 27 Feb 2014 20:48:08 +0100
-Message-ID: <5379319.g8IPYmY2Zo@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140227193627.GA7773@obsidianresearch.com>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <20140227191259.GA31753@bart.dudau.co.uk> <20140227193627.GA7773@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:x9pvmFmbA72JIofL4MHv4SFRvND3QAuFiDdTrwo07FG
- DqZO/L7cIt46qarhxb/lrUpPfmAixvYBKHJ0umJlXg4CDFT8zc
- jhLb1HeaggTUxnyFvfmluaVM5KKuU7Rv9xdd5xmCYW+mBFDwyZ
- gb7Xkp0/BBsG2AaAMPOng2pWgKvNtIAjm3KsO2TgcPFxGbVurX
- KHm65qqpKdMDmofZTXJnx7tEk5SiosXwQqDmIQEYg4kjPbvIu6
- x2zrvH1gU1H0MzAgv0xN9oj3/L+4SomHjESEG0M34SjbmlNy9d
- TWgEXhqqrySSiNItvVeNle9bFASm2nCbBv2qHzaqsUm4kcr77C
- aTaBYasyL/iSDKDwtDIc=
+	id S1751765AbaB0Txz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:53:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21588 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107AbaB0Txy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 14:53:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,556,1389772800"; 
+   d="scan'208";a="463644397"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
+Date: Thu, 27 Feb 2014 21:53:46 +0200
+Message-Id: <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014 12:36:27 Jason Gunthorpe wrote:
-> On Thu, Feb 27, 2014 at 07:12:59PM +0000, Liviu Dudau wrote:
-> > The outstanding issue is how to fix pci_address_to_pio() as it will not
-> > for for range->cpu_addr > IO_SPACE_LIMIT (16MB in my case).
-> 
-> The default actually looks fine to me, it is the correct behavior for
-> systems that actually have a dedicated IO space (like x86) where the
-> 'CPU' value for IO is the exact value used in the IO accessor
-> instructions. In this case the IO_SPACE_LIMIT test is appropriate.
+The patch introduces new vm_ops callback ->map_pages() and uses it for
+mapping easy accessible pages around fault address.
 
-Right.
+On read page fault, if filesystem provides ->map_pages(), we try to map
+up to FAULT_AROUND_PAGES pages around page fault address in hope to
+reduce number of minor page faults.
 
-> It also looks correct for architectures that use the CPU MMIO address
-> as the IO address directly (where IO_SPACE_LIMIT would be 4G)
+We call ->map_pages first and use ->fault() as fallback if page by the
+offset is not ready to be mapped (cold page cache or something).
 
-Are you aware of any that still do? I thought we had stopped doing
-that.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/filesystems/Locking | 10 ++++++
+ include/linux/mm.h                |  8 +++++
+ mm/memory.c                       | 67 +++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 82 insertions(+), 3 deletions(-)
 
-> Architectures that use the virtual IO window technique will always
-> require a custom pci_address_to_pio implementation.
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index 5b0c083d7c0e..767930f04a12 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -525,6 +525,7 @@ locking rules:
+ open:		yes
+ close:		yes
+ fault:		yes		can return with page locked
++map_pages:	yes
+ page_mkwrite:	yes		can return with page locked
+ access:		yes
+ 
+@@ -536,6 +537,15 @@ the page, then ensure it is not already truncated (the page lock will block
+ subsequent truncate), and then return with VM_FAULT_LOCKED, and the page
+ locked. The VM will unlock the page.
+ 
++	->map_pages() is called when VM asks to map easy accessible pages.
++Filesystem should find and map pages associated with offsets from "pgoff"
++till "max_pgoff". ->map_pages() is called with page table locked and must
++not block.  If it's not possible to reach a page without blocking,
++filesystem should skip it. Filesystem should use do_set_pte() to setup
++page table entry. Pointer to entry associated with offset "pgoff" is
++passed in "pte" field in vm_fault structure. Pointers to entries for other
++offsets should be calculated relative to "pte".
++
+ 	->page_mkwrite() is called when a previously read-only pte is
+ about to become writeable. The filesystem again must ensure that there are
+ no truncate/invalidate races, and then return with the page locked. If
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46eade6a..aed92cb17127 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -210,6 +210,10 @@ struct vm_fault {
+ 					 * is set (which is also implied by
+ 					 * VM_FAULT_ERROR).
+ 					 */
++	/* for ->map_pages() only */
++	pgoff_t max_pgoff;		/* map pages for offset from pgoff till
++					 * max_pgoff inclusive */
++	pte_t *pte;			/* pte entry associated with ->pgoff */
+ };
+ 
+ /*
+@@ -221,6 +225,7 @@ struct vm_operations_struct {
+ 	void (*open)(struct vm_area_struct * area);
+ 	void (*close)(struct vm_area_struct * area);
+ 	int (*fault)(struct vm_area_struct *vma, struct vm_fault *vmf);
++	void (*map_pages)(struct vm_area_struct *vma, struct vm_fault *vmf);
+ 
+ 	/* notification that a previously read-only page is about to become
+ 	 * writable, if an error is returned it will cause a SIGBUS */
+@@ -571,6 +576,9 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+ 		pte = pte_mkwrite(pte);
+ 	return pte;
+ }
++
++void do_set_pte(struct vm_area_struct *vma, unsigned long address,
++		struct page *page, pte_t *pte, bool write, bool anon);
+ #endif
+ 
+ /*
+diff --git a/mm/memory.c b/mm/memory.c
+index 7f52c46ef1e1..3f17a60e817f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3318,7 +3318,8 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
+ 	return ret;
+ }
+ 
+-static void do_set_pte(struct vm_area_struct *vma, unsigned long address,
++
++void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+ 		struct page *page, pte_t *pte, bool write, bool anon)
+ {
+ 	pte_t entry;
+@@ -3342,6 +3343,52 @@ static void do_set_pte(struct vm_area_struct *vma, unsigned long address,
+ 	update_mmu_cache(vma, address, pte);
+ }
+ 
++#define FAULT_AROUND_ORDER 4
++#define FAULT_AROUND_PAGES (1UL << FAULT_AROUND_ORDER)
++#define FAULT_AROUND_MASK ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1)
++
++static void do_fault_around(struct vm_area_struct *vma, unsigned long address,
++		pte_t *pte, pgoff_t pgoff, unsigned int flags)
++{
++	unsigned long start_addr;
++	pgoff_t max_pgoff;
++	struct vm_fault vmf;
++	int off;
++
++	BUILD_BUG_ON(FAULT_AROUND_PAGES > PTRS_PER_PTE);
++
++	start_addr = max(address & FAULT_AROUND_MASK, vma->vm_start);
++	off = ((address - start_addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1);
++	pte -= off;
++	pgoff -= off;
++
++	/*
++	 *  max_pgoff is either end of page table or end of vma
++	 *  or FAULT_AROUND_PAGES from pgoff, depending what is neast.
++	 */
++	max_pgoff = pgoff - ((start_addr >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)) +
++		PTRS_PER_PTE - 1;
++	max_pgoff = min3(max_pgoff, vma_pages(vma) + vma->vm_pgoff - 1,
++			pgoff + FAULT_AROUND_PAGES - 1);
++
++	/* Check if it makes any sense to call ->map_pages */
++	while (!pte_none(*pte)) {
++		if (++pgoff > max_pgoff)
++			return;
++		start_addr += PAGE_SIZE;
++		if (start_addr >= vma->vm_end)
++			return;
++		pte++;
++	}
++
++	vmf.virtual_address = (void __user *) start_addr;
++	vmf.pte = pte;
++	vmf.pgoff = pgoff;
++	vmf.max_pgoff = max_pgoff;
++	vmf.flags = flags;
++	vma->vm_ops->map_pages(vma, &vmf);
++}
++
+ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		unsigned long address, pmd_t *pmd,
+ 		pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
+@@ -3349,7 +3396,20 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct page *fault_page;
+ 	spinlock_t *ptl;
+ 	pte_t *pte;
+-	int ret;
++	int ret = 0;
++
++	/*
++	 * Let's call ->map_pages() first and use ->fault() as fallback
++	 * if page by the offset is not ready to be mapped (cold cache or
++	 * something).
++	 */
++	if (vma->vm_ops->map_pages) {
++		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
++		do_fault_around(vma, address, pte, pgoff, flags);
++		if (!pte_same(*pte, orig_pte))
++			goto unlock_out;
++		pte_unmap_unlock(pte, ptl);
++	}
+ 
+ 	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
+ 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
+@@ -3363,8 +3423,9 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return ret;
+ 	}
+ 	do_set_pte(vma, address, fault_page, pte, false, false);
+-	pte_unmap_unlock(pte, ptl);
+ 	unlock_page(fault_page);
++unlock_out:
++	pte_unmap_unlock(pte, ptl);
+ 	return ret;
+ }
+ 
+-- 
+1.9.0
 
-Hmm, at the moment we only call it from of_address_to_resource(),
-which in turn does not get called on PCI devices, and does not
-call pci_address_to_pio for 'simple' platform devices. The only
-case I can think of where it actually matters is when we have
-ISA devices in DT that use an I/O port address in the reg property,
-and that case hopefully won't happen on ARM32 or ARM64.
-
-> BTW, something that occured to me after reading the patches:
-> 
-> For ARM64 you might want to think about doing away with the fixed
-> virtual IO window like we see in ARM32. Just use the CPU MMIO address
-> directly within the kernel, and implement a ioport_map to setup the MM
-> on demand.
-> 
-> I think the legacy reasons for having all those layers of translation
-> are probably not applicable to ARM64, and it is much simpler without
-> the extra translation step....
-> 
-> Arnd, what do you think?
-
-Either I don't like it or I misunderstand you ;-)
-
-Most PCI drivers normally don't call ioport_map or pci_iomap, so
-we can't just do it there. If you are thinking of calling ioport_map
-for every PCI device that has an I/O BAR and storing the virtual
-address in the pci_dev resource, I don't see what that gains us
-in terms of complexity, and it will also break /dev/port.
-
-	Arnd
