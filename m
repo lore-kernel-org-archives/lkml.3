@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418AbaB0Awu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:52:50 -0500
-Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:35785
-	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
+	id S1754524AbaB0Axr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:53:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753978AbaB0Aws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:52:48 -0500
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=Rs1LLUWK c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=M1kyBYkWWGkA:10 a=K7lZiu8yKIQA:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=WW6t-I_HNHoA:10
- a=4eSmEAdxL-nunK3z7pAA:9 a=QEXdDO2ut3YA:10
-Date: Thu, 27 Feb 2014 00:52:46 +0000
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: linux-kernel@vger.kernel.org
-Subject: 3.13.5 : rm -rf running forever, one cpu at approx 100%
-Message-ID: <20140227005246.GB10367@milliways>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753288AbaB0Axp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 19:53:45 -0500
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Torvald Riegel <triegel@redhat.com>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michael Matz <matz@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+In-Reply-To: <Pine.LNX.4.64.1402261840540.11728@digraph.polyomino.org.uk>
+References: <CA+55aFwwscSzwTr+xRdirtTx7HzugmMY9HrDe0GBqNhn=AuNVA@mail.gmail.com>
+	 <20140220083032.GN4250@linux.vnet.ibm.com>
+	 <CA+55aFwfx==u7o1NZ66aPbkOgsvGqW3UscGqrQkGuzOkjSpm6Q@mail.gmail.com>
+	 <20140220181116.GT4250@linux.vnet.ibm.com>
+	 <CA+55aFwn9gXWVq_GL=tPPP63vsqs-9QB4ii4s06xqG4UscCV5w@mail.gmail.com>
+	 <20140220185608.GX4250@linux.vnet.ibm.com>
+	 <CA+55aFw4inow5B-JAg-NtZigJ90yDbksddr00RoMKytzDAEa8A@mail.gmail.com>
+	 <20140220221027.GC4250@linux.vnet.ibm.com>
+	 <CA+55aFxp7U67R0PARaUfj94y5dJ8q6_HQ2pnbQ6=JD=XR-bTOw@mail.gmail.com>
+	 <alpine.LNX.2.00.1402211847290.7694@wotan.suse.de>
+	 <20140221191318.GK4250@linux.vnet.ibm.com>
+	 <Pine.LNX.4.64.1402212206040.16563@digraph.polyomino.org.uk>
+	 <1393420157.28840.8691.camel@triegel.csb>
+	 <Pine.LNX.4.64.1402261840540.11728@digraph.polyomino.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Feb 2014 01:52:59 +0100
+Message-ID: <1393462379.28840.9411.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2014-02-26 at 18:43 +0000, Joseph S. Myers wrote:
+> On Wed, 26 Feb 2014, Torvald Riegel wrote:
+> 
+> > On Fri, 2014-02-21 at 22:10 +0000, Joseph S. Myers wrote:
+> > > On Fri, 21 Feb 2014, Paul E. McKenney wrote:
+> > > 
+> > > > This needs to be as follows:
+> > > > 
+> > > > [[carries_dependency]] int getzero(int i [[carries_dependency]])
+> > > > {
+> > > > 	return i - i;
+> > > > }
+> > > > 
+> > > > Otherwise dependencies won't get carried through it.
+> > > 
+> > > C11 doesn't have attributes at all (and no specification regarding calls 
+> > > and dependencies that I can see).  And the way I read the C++11 
+> > > specification of carries_dependency is that specifying carries_dependency 
+> > > is purely about increasing optimization of the caller: that if it isn't 
+> > > specified, then the caller doesn't know what dependencies might be 
+> > > carried.  "Note: The carries_dependency attribute does not change the 
+> > > meaning of the program, but may result in generation of more efficient 
+> > > code. - end note".
+> > 
+> > I think that this last sentence can be kind of misleading, especially
+> > when looking at it from an implementation point of view.  How
+> > dependencies are handled (ie, preserving the syntactic dependencies vs.
+> > emitting barriers) must be part of the ABI, or things like
+> > [[carries_dependency]] won't work as expected (or lead to inefficient
+> > code).  Thus, in practice, all compiler vendors on a platform would have
+> > to agree to a particular handling, which might end up in selecting the
+> > easy-but-conservative implementation option (ie, always emitting
+> > mo_acquire when the source uses mo_consume).
+> 
+> Regardless of the ABI, my point is that if a program is valid, it is also 
+> valid when all uses of [[carries_dependency]] are removed.  If a function 
+> doesn't use [[carries_dependency]], that means "dependencies may or may 
+> not be carried through this function".  If a function uses 
+> [[carries_dependency]], that means that certain dependencies *are* carried 
+> through the function (and the ABI should then specify what this means the 
+> caller can rely on, in terms of the architecture's memory model).  (This 
+> may or may not be useful, but it's how I understand C++11.)
 
- Short summary : on 3.13.5, rm -rf of an application source
-directory on an ext4 filesystem sometimes takes forever (probably
-isn't going anywhere), with one CPU pegged at all-but 100% utilization.
+I agree.  What I tried to point out is that it's not the case that an
+*implementation* can just ignore [[carries_dependency]].  So from an
+implementation perspective, the attribute does have semantics.
 
- I've nearly finished building a new system from source, to check
-various desktop packages in linuxfromscratch.  On this build, much of
-it is things I don't normally use and I needed to upgrade my
-buildscripts, so most of it was built in chroot using 3.10.32.  But
-late last night I booted the new system using 3.13.5 to finish the
-build.  This morning I discovered that rm -rf for the icedtea source
-directory was still running, and had taken over 5 hours of CPU time
-(one CPU seemd to be running at close to 100%, the others had dropped
-to their slowest frequency).  That script was running as root (yeah,
-but it's a new system) and it looks as if /etc/passwd~ had got
-trashed, because I could no longer su or login.  Not sure if that is
-related, at this stage it might just be a side-effect of my scripts.
-
- Booted another system, chrooted, fixed up passwords.  Started
-again after commenting out icedtea - I hadn't intended to build
-what was an old version, I'd just forgotten it was in this script -
-that's why I do things in userspace, not the kernel :-(
-
- Continued with remaining packages, but a couple of hours later I
-saw a similar "one CPU at 100%, rm -rf GConf source taking forever"
-problem.  Dumped all the processes with Alt-SysRQ-T [ huge log ] but
-at that point 'rm' was merely 'ready' so I doubt there is anything
-useful to see in the log.
-
- Built 3.13.4, booted to that.  So far, everything looks good - but
-I'm now building the _current_ version of icedtea, so if this isn't
-a new 3.13.5 problem I guess I'm fairly likely to see it tomorrow.
-
- Meanwhile, any suggestions about how I can debug this if I hit it
-again, please ?
-
-ĸen
--- 
-das eine Mal als Tragödie, dieses Mal als Farce
