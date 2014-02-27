@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaB0IZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:25:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55966 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523AbaB0IZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:25:35 -0500
-Date: Thu, 27 Feb 2014 09:25:29 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Joe Perches <joe@perches.com>, Ben Pfaff <blp@nicira.com>,
-        Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-Message-ID: <20140227082529.GA18210@pd.tnic>
-References: <530E6F76.1070605@zytor.com>
- <1393462087.24588.50.camel@joe-AO722>
- <530E8C2E.7080307@zytor.com>
- <1393466619.24588.65.camel@joe-AO722>
- <20140227022857.GC23659@thin>
- <1393469594.24588.71.camel@joe-AO722>
- <20140227025845.GA25145@thin>
- <530EB103.5070406@zytor.com>
- <1393472326.24588.82.camel@joe-AO722>
- <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
+	id S1751700AbaB0I1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:27:53 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750907AbaB0I1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 03:27:52 -0500
+Message-ID: <530EF704.7070409@nod.at>
+Date: Thu, 27 Feb 2014 09:27:48 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: The sheer number of sparse warnings in the kernel
+References: <530E6F76.1070605@zytor.com> <20140226232520.GD22690@pd.tnic>
+In-Reply-To: <20140226232520.GD22690@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 07:42:37PM -0800, H. Peter Anvin wrote:
-> sizeof(_Bool), like for many other types, is ABI-dependent, but that
-> doesn't mean it is illegitimate.
->
-> I don't think C99 says that it is invalid (which means C99 doesn't
-> permit is to be a packed bitmap.)
+Am 27.02.2014 00:25, schrieb Borislav Petkov:
+> On Wed, Feb 26, 2014 at 02:49:26PM -0800, H. Peter Anvin wrote:
+>> What do we need to do to actually make our tools be able to do work
+>> for us? Newbie projects to clean up?
+> 
+> It certainly would be a much better way for newbies to get involved than
+> all the useless OCD-jerking off that floats back and forth nowadays. And
+> who knows, newbies might *actually* even learn something while doing
+> that.
+> 
+> Btw, rw could help with the newbie project, I think.
 
-Ok, but what can be said about the __pcpu_size_call() use case where we
-do sizeof(bool)? We have there accessors for sizes 1,2,4 and 8. Can we
-simply assume that the ABI will give us a size of bool which is one of
-those?
+Yeah, on #kernelnewbies newbies often ask how they can help.
+Maybe a short info on http://kernelnewbies.org/ how to deal with sparse
+would help too.
 
-What if sizeof(bool) is 3?
-
-Or, are we saying that sizeof(bool) will always be of some natural,
-native size like byte, short, int or long so we're good there?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+//richard
