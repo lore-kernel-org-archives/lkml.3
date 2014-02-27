@@ -1,182 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaB0Nef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:34:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55064 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaB0Ne3 (ORCPT
+	id S1753094AbaB0NfU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:35:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32664 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaB0NfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:34:29 -0500
-Date: Thu, 27 Feb 2014 05:33:50 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-he3819318c245j7t5e1e22tr@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, peterz@infradead.org, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add a few more comments
-Git-Commit-ID: c347a2f1793e285b0812343e715bb7e953dbdf68
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Feb 2014 08:35:15 -0500
+Message-ID: <530F3F0A.5040304@oracle.com>
+Date: Thu, 27 Feb 2014 08:35:06 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: mm: kernel BUG at mm/huge_memory.c:2785!
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c347a2f1793e285b0812343e715bb7e953dbdf68
-Gitweb:     http://git.kernel.org/tip/c347a2f1793e285b0812343e715bb7e953dbdf68
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 24 Feb 2014 12:26:21 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 27 Feb 2014 12:43:25 +0100
+Hi all,
 
-perf/x86: Add a few more comments
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the 
+following spew:
 
-Add a few comments on the ->add(), ->del() and ->*_txn()
-implementation.
+[ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
+[ 1428.147100] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1428.148512] Dumping ftrace buffer:
+[ 1428.149497]    (ftrace buffer empty)
+[ 1428.150248] Modules linked in:
+[ 1428.151164] CPU: 106 PID: 29430 Comm: trinity-c106 Tainted: G        W 
+3.14.0-rc4-next-20140226-sasha-00013-g082bdac-dirty #4
+[ 1428.153515] task: ffff8808906c8000 ti: ffff880890aa6000 task.ti: ffff880890aa6000
+[ 1428.154274] RIP: 0010:[<mm/huge_memory.c:2785>]  [<mm/huge_memory.c:2785>] 
+__split_huge_page_pmd+0x3f/0x2e0
+[ 1428.154274] RSP: 0018:ffff880890aa7c98  EFLAGS: 00010287
+[ 1428.154274] RAX: ffff880890f34000 RBX: ffff880b3c6791a0 RCX: 00003ffffffff000
+[ 1428.154274] RDX: ffff880b3c6791a0 RSI: 00007f29869b4000 RDI: ffff8803dcbd6400
+[ 1428.154274] RBP: ffff880890aa7ce8 R08: 00007f29869b5000 R09: 0000000000000000
+[ 1428.154274] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880b3c6791a0
+[ 1428.154274] R13: 00007f2986800000 R14: ffff8803dcbd6400 R15: 00007f29869b4fff
+[ 1428.154274] FS:  00007f298bb67700(0000) GS:ffff8803de800000(0000) knlGS:0000000000000000
+[ 1428.154274] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1428.154274] CR2: 00007f298b978608 CR3: 00000008907c3000 CR4: 00000000000006e0
+[ 1428.154274] DR0: 8200000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1428.154274] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 1428.154274] Stack:
+[ 1428.154274]  00000000001d8400 0000000000000001 ffff880890aa7cc8 ffff880890f34000
+[ 1428.154274]  ffffffff876bcfe0 ffff880b3c6791a0 00007f29869b4000 00007f29869b5000
+[ 1428.154274]  ffff880890aa7e18 00007f29869b4fff ffff880890aa7d78 ffffffff8127ff06
+[ 1428.154274] Call Trace:
+[ 1428.154274]  [<mm/memory.c:1230 mm/memory.c:1265 mm/memory.c:1290>] unmap_page_range+0x2a6/0x410
+[ 1428.154274]  [<mm/memory.c:1338>] unmap_single_vma+0xf1/0x110
+[ 1428.154274]  [<mm/memory.c:1365>] unmap_vmas+0x61/0xa0
+[ 1428.154274]  [<mm/mmap.c:2361>] unmap_region+0xbc/0x120
+[ 1428.154274]  [<include/linux/mm.h:1315 mm/mmap.c:2332 mm/mmap.c:2557>] do_munmap+0x27a/0x350
+[ 1428.154274]  [<mm/mmap.c:2568>] ? vm_munmap+0x41/0x80
+[ 1428.154274]  [<mm/mmap.c:2569>] vm_munmap+0x4f/0x80
+[ 1428.154274]  [<mm/mmap.c:2574>] SyS_munmap+0x27/0x40
+[ 1428.154274]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
+[ 1428.154274] Code: e5 00 00 e0 ff 53 49 89 d4 48 83 ec 28 48 8b 47 40 48 89 45 c8 4c 3b 2f 72 11 
+49 8d 95 00 00 20 00 48 89 55 c0 48 39 57 08 73 11 <0f> 0b 0f 1f 80 00 00 00 00 eb fe 66 0f 1f 44 00 
+00 4c 89 e3 49
+[ 1428.154274] RIP  [<mm/huge_memory.c:2785>] __split_huge_page_pmd+0x3f/0x2e0
+[ 1428.154274]  RSP <ffff880890aa7c98>
 
-Requested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-he3819318c245j7t5e1e22tr@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.c | 47 ++++++++++++++++++++++++++++------------
- arch/x86/kernel/cpu/perf_event.h |  8 ++++---
- 2 files changed, 38 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 79f9f84..ae407f7 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -892,7 +892,6 @@ static void x86_pmu_enable(struct pmu *pmu)
- 		 * hw_perf_group_sched_in() or x86_pmu_enable()
- 		 *
- 		 * step1: save events moving to new counters
--		 * step2: reprogram moved events into new counters
- 		 */
- 		for (i = 0; i < n_running; i++) {
- 			event = cpuc->event_list[i];
-@@ -918,6 +917,9 @@ static void x86_pmu_enable(struct pmu *pmu)
- 			x86_pmu_stop(event, PERF_EF_UPDATE);
- 		}
- 
-+		/*
-+		 * step2: reprogram moved events into new counters
-+		 */
- 		for (i = 0; i < cpuc->n_events; i++) {
- 			event = cpuc->event_list[i];
- 			hwc = &event->hw;
-@@ -1043,7 +1045,7 @@ static int x86_pmu_add(struct perf_event *event, int flags)
- 	/*
- 	 * If group events scheduling transaction was started,
- 	 * skip the schedulability test here, it will be performed
--	 * at commit time (->commit_txn) as a whole
-+	 * at commit time (->commit_txn) as a whole.
- 	 */
- 	if (cpuc->group_flag & PERF_EVENT_TXN)
- 		goto done_collect;
-@@ -1058,6 +1060,10 @@ static int x86_pmu_add(struct perf_event *event, int flags)
- 	memcpy(cpuc->assign, assign, n*sizeof(int));
- 
- done_collect:
-+	/*
-+	 * Commit the collect_events() state. See x86_pmu_del() and
-+	 * x86_pmu_*_txn().
-+	 */
- 	cpuc->n_events = n;
- 	cpuc->n_added += n - n0;
- 	cpuc->n_txn += n - n0;
-@@ -1183,28 +1189,38 @@ static void x86_pmu_del(struct perf_event *event, int flags)
- 	 * If we're called during a txn, we don't need to do anything.
- 	 * The events never got scheduled and ->cancel_txn will truncate
- 	 * the event_list.
-+	 *
-+	 * XXX assumes any ->del() called during a TXN will only be on
-+	 * an event added during that same TXN.
- 	 */
- 	if (cpuc->group_flag & PERF_EVENT_TXN)
- 		return;
- 
-+	/*
-+	 * Not a TXN, therefore cleanup properly.
-+	 */
- 	x86_pmu_stop(event, PERF_EF_UPDATE);
- 
- 	for (i = 0; i < cpuc->n_events; i++) {
--		if (event == cpuc->event_list[i]) {
-+		if (event == cpuc->event_list[i])
-+			break;
-+	}
- 
--			if (i >= cpuc->n_events - cpuc->n_added)
--				--cpuc->n_added;
-+	if (WARN_ON_ONCE(i == cpuc->n_events)) /* called ->del() without ->add() ? */
-+		return;
- 
--			if (x86_pmu.put_event_constraints)
--				x86_pmu.put_event_constraints(cpuc, event);
-+	/* If we have a newly added event; make sure to decrease n_added. */
-+	if (i >= cpuc->n_events - cpuc->n_added)
-+		--cpuc->n_added;
- 
--			while (++i < cpuc->n_events)
--				cpuc->event_list[i-1] = cpuc->event_list[i];
-+	if (x86_pmu.put_event_constraints)
-+		x86_pmu.put_event_constraints(cpuc, event);
-+
-+	/* Delete the array entry. */
-+	while (++i < cpuc->n_events)
-+		cpuc->event_list[i-1] = cpuc->event_list[i];
-+	--cpuc->n_events;
- 
--			--cpuc->n_events;
--			break;
--		}
--	}
- 	perf_event_update_userpage(event);
- }
- 
-@@ -1598,7 +1614,8 @@ static void x86_pmu_cancel_txn(struct pmu *pmu)
- {
- 	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
- 	/*
--	 * Truncate the collected events.
-+	 * Truncate collected array by the number of events added in this
-+	 * transaction. See x86_pmu_add() and x86_pmu_*_txn().
- 	 */
- 	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
- 	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
-@@ -1609,6 +1626,8 @@ static void x86_pmu_cancel_txn(struct pmu *pmu)
-  * Commit group events scheduling transaction
-  * Perform the group schedulability test as a whole
-  * Return 0 if success
-+ *
-+ * Does not cancel the transaction on failure; expects the caller to do this.
-  */
- static int x86_pmu_commit_txn(struct pmu *pmu)
- {
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 4972c24..3b2f9bd 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -130,9 +130,11 @@ struct cpu_hw_events {
- 	unsigned long		running[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	int			enabled;
- 
--	int			n_events;
--	int			n_added;
--	int			n_txn;
-+	int			n_events; /* the # of events in the below arrays */
-+	int			n_added;  /* the # last events in the below arrays;
-+					     they've never been enabled yet */
-+	int			n_txn;    /* the # last events in the below arrays;
-+					     added in the current transaction */
- 	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
- 	u64			tags[X86_PMC_IDX_MAX];
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+Thanks,
+Sasha
