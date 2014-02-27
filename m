@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaB0UdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:33:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44423 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904AbaB0UdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:33:24 -0500
-Message-ID: <530FA0FF.9010202@ti.com>
-Date: Thu, 27 Feb 2014 15:33:03 -0500
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Josh Triplett <josh@joshtriplett.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] checkpatch.pl: Add warning for new __packed additions
-References: <1393274296-26179-1-git-send-email-trini@ti.com>  <1393275606.11020.59.camel@joe-AO722> <530BB571.8080509@ti.com>  <1393277304.11020.64.camel@joe-AO722> <530BBF10.6050601@ti.com>  <1393279377.11020.66.camel@joe-AO722> <530BC209.2000708@ti.com>  <1393279691.11020.69.camel@joe-AO722> <530BC5A4.4060803@ti.com>  <1393281098.11020.82.camel@joe-AO722> <530BCB27.5040808@ti.com>  <1393305803.11020.119.camel@joe-AO722> <530C8D00.8070606@ti.com> <1393452256.24588.5.camel@joe-AO722>
-In-Reply-To: <1393452256.24588.5.camel@joe-AO722>
-X-Enigmail-Version: 1.6
+	id S1751568AbaB0Uj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:39:28 -0500
+Received: from smtprelay0097.hostedemail.com ([216.40.44.97]:54656 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751202AbaB0Uj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 15:39:26 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:7652:8603:9121:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: talk84_522441b30a50e
+X-Filterd-Recvd-Size: 2479
+Message-ID: <1393533563.24588.127.camel@joe-AO722>
+Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Christopher Li <sparse@chrisli.org>, Ben Pfaff <blp@nicira.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Feb 2014 12:39:23 -0800
+In-Reply-To: <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
+References: <1393462087.24588.50.camel@joe-AO722>
+	 <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722>
+	 <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722>
+	 <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com>
+	 <1393472326.24588.82.camel@joe-AO722> <20140227040050.GA8449@nicira.com>
+	 <530EBCED.9020705@zytor.com> <20140227042636.GA9592@nicira.com>
+	 <530EBFC7.9030309@zytor.com>
+	 <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
+	 <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2014 05:04 PM, Joe Perches wrote:
-> On Tue, 2014-02-25 at 07:30 -0500, Tom Rini wrote:
->> The only intentional differences we have today are adding debug/printf
->> to the list of log functions
-> 
-> That seems fine and trivial to keep current.
+On Thu, 2014-02-27 at 12:26 -0800, H. Peter Anvin wrote:
+> On February 27, 2014 12:22:45 PM PST, Christopher Li <sparse@chrisli.org> wrote:
+> >OK. I get it nobody wants a sizeof(_Bool) warning.
+> >I am going to apply this patch.
 
-Agreed,
+Please use V3 as I stuffed up the alphabetic order
+of sizeof and shadow.
 
->> and pointing people at boards.cfg not
->> CHECKPATCH in MAINTAINERS,
-> 
-> That seems wrong.
-> 
-> The idea of that message is to fix defects in checkpatch,
-> not any other code.
-> 
-> Maybe that could be reworded to
-> "See the CHECKPATCH entry in the MAINTAINERS file of linux git"
-> or some such.
+> >Should we change the default to off then?
+> I would.
 
-I've dropped that change now in a re-sync to current checkpatch.pl.
-Happy to pull in a re-wording of this part from a near-future resync
-with the kernel :)
+I'm not sure it matters much, but the linux-kernel
+Makefile wouldn't need to be changed if Wsizeof_bool
+is default 0.
 
--- 
-Tom
+Here's a couple of other nits:
+
+Maybe the evaluate.c "size = bits_in_char;" assignment
+
+        if (size == 1 && is_bool_type(type)) {
+-               warning(expr->pos, "expression using sizeof bool");
++               if (Wsizeof_bool)
++                       warning(expr->pos, "expression using sizeof bool");
+                size = bits_in_char;
+        }
+
+should be
+
+	size = sizeof(_Bool) * 8;
+
+And also, in sparse.1, Josh Triplett is shown as
+the maintainer.  Maybe that should be changed to
+Christopher Li
+
+
