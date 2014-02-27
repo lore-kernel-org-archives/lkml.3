@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaB0ILt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:11:49 -0500
-Received: from arlo.cworth.org ([50.126.95.6]:32959 "EHLO arlo.cworth.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaB0ILs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:11:48 -0500
-From: Carl Worth <cworth@cworth.org>
-To: intel-gfx@lists.freedesktop.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Carl Worth <cworth@cworth.org>
-Subject: [PATCH] drm/i915/dp: Allow for 5.4Gbps for Haswell.
-Date: Thu, 27 Feb 2014 00:11:39 -0800
-Message-Id: <1393488699-6265-1-git-send-email-cworth@cworth.org>
-X-Mailer: git-send-email 1.9.0
+	id S1751904AbaB0IME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:12:04 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:57362 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaB0IMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 03:12:01 -0500
+Date: Thu, 27 Feb 2014 11:08:23 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv8 0/6] add compressing abstraction and multi stream
+ support
+Message-ID: <20140227080823.GA2210@swordfish.minsk.epam.com>
+References: <1393417679-13657-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140227021627.GC31407@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227021627.GC31407@bbox>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With Haswell, 5.4Gbps is supported. And almost all of the code was
-already in place already. All that was missing was this tiny bit of
-additional wiring.
+Hello Minchan,
 
-Signed-off-by: Carl Worth <cworth@cworth.org>
-Reviewed-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_dp.c | 24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
+On (02/27/14 11:16), Minchan Kim wrote:
+> Hello Sergey,
+> 
+> Code looks good to me and I will queue it into ARM and x86 test tomorrow
+> and give the result to you with Acked-by.
+> 
+> Thanks for your all works!
+> 
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 57552eb..ce9739e 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -101,7 +101,11 @@ intel_dp_max_link_bw(struct intel_dp *intel_dp)
- 	case DP_LINK_BW_1_62:
- 	case DP_LINK_BW_2_7:
- 		break;
--	case DP_LINK_BW_5_4: /* 1.2 capable displays may advertise higher bw */
-+	case DP_LINK_BW_5_4:
-+		/* XXX: But not HASWELL ULX. */
-+		if (IS_HASWELL(intel_dp_to_dev(intel_dp)))
-+			break;
-+		/* Prior to HASWELL, maximum support is for 2.7 Gbps */
- 		max_link_bw = DP_LINK_BW_2_7;
- 		break;
- 	default:
-@@ -810,12 +814,24 @@ intel_dp_compute_config(struct intel_encoder *encoder,
- 	enum port port = dp_to_dig_port(intel_dp)->port;
- 	struct intel_crtc *intel_crtc = encoder->new_crtc;
- 	struct intel_connector *intel_connector = intel_dp->attached_connector;
--	int lane_count, clock;
-+	int lane_count;
- 	int max_lane_count = drm_dp_max_lane_count(intel_dp->dpcd);
--	int max_clock = intel_dp_max_link_bw(intel_dp) == DP_LINK_BW_2_7 ? 1 : 0;
- 	int bpp, mode_rate;
--	static int bws[2] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7 };
- 	int link_avail, link_clock;
-+	int max_link_bw;
-+	/* The clock and max_clock values are an index into bws. */
-+	int clock, max_clock = 0;
-+	static int bws[3] = { DP_LINK_BW_1_62, DP_LINK_BW_2_7, DP_LINK_BW_5_4};
-+
-+	max_link_bw = intel_dp_max_link_bw(intel_dp);
-+
-+	for (clock = 0; clock < ARRAY_SIZE(bws); clock++) {
-+		if (bws[clock] == max_link_bw) {
-+			max_clock = clock;
-+			break;
-+		}
-+	}
-+
- 
- 	if (HAS_PCH_SPLIT(dev) && !HAS_DDI(dev) && port != PORT_A)
- 		pipe_config->has_pch_encoder = true;
--- 
-1.9.0
+thanks a lot!
 
+	-ss
+
+> On Wed, Feb 26, 2014 at 03:27:53PM +0300, Sergey Senozhatsky wrote:
+> > This patchset introduces zcomp compression backend abstraction
+> > adding ability to support compression algorithms other than LZO;
+> > support for multi compression streams, making parallel compressions
+> > possible.
+> > 
+> > v7->v8 (reviewed by Minchan Kim):
+> > -- merge patches 'add multi stream functionality' and 'enable multi
+> >    stream compression support in zram'
+> > -- return status code from set_max_streams knob and print message on
+> >    error
+> > -- do not use atomic type for ->avail_strm
+> > -- return back: allocate by default only one stream for multi stream backend
+> > -- wake sleeping write in zcomp_strm_multi_put() only if we put stream
+> >    to idle list
+> > -- minor code `nitpicks'
+> > 
+> > v6->v7 (reviewed by Minchan Kim):
+> > -- enable multi and single stream support out of the box (drop
+> >    ZRAM_MULTI_STREAM config option)
+> > -- add set_max_stream knob, so we can adjust max number of compression
+> >    streams in runtime (for multi stream backend at the moment)
+> > -- minor code `nitpicks'
+> > 
+> > v5->v6 (reviewed by Minchan Kim):
+> > -- handle single compression stream case separately, using mutex locking,
+> >    to address perfomance regression
+> > -- handle multi compression stream using spin lock and wait_event()/wake_up()
+> > -- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+> >    config option)
+> > 
+> > v4->v5 (reviewed by Minchan Kim):
+> > -- renamed zcomp buffer_lock; removed src len and dst len from
+> >    compress() and decompress(); not using term `buffer' and
+> >    `workmem' in code and documentation; define compress() and
+> >    decompress() functions for LZO backend; not using goto's;
+> >    do not put idle zcomp_strm to idle list tail.
+> > 
+> > v3->v4 (reviewed by Minchan Kim):
+> > -- renamed compression backend and working memory structs as requested
+> >    by Minchan Kim; fixed several issues noted by Minchan Kim.
+> > 
+> > Sergey Senozhatsky (6):
+> >   zram: introduce compressing backend abstraction
+> >   zram: use zcomp compressing backends
+> >   zram: factor out single stream compression
+> >   zram: add multi stream functionality
+> >   zram: add set_max_streams knob
+> >   zram: document max_comp_streams
+> > 
+> >  Documentation/ABI/testing/sysfs-block-zram |   9 +-
+> >  Documentation/blockdev/zram.txt            |  31 ++-
+> >  drivers/block/zram/Makefile                |   2 +-
+> >  drivers/block/zram/zcomp.c                 | 318 +++++++++++++++++++++++++++++
+> >  drivers/block/zram/zcomp.h                 |  59 ++++++
+> >  drivers/block/zram/zcomp_lzo.c             |  48 +++++
+> >  drivers/block/zram/zram_drv.c              |  98 +++++----
+> >  drivers/block/zram/zram_drv.h              |  10 +-
+> >  8 files changed, 528 insertions(+), 47 deletions(-)
+> >  create mode 100644 drivers/block/zram/zcomp.c
+> >  create mode 100644 drivers/block/zram/zcomp.h
+> >  create mode 100644 drivers/block/zram/zcomp_lzo.c
+> > 
+> > -- 
+> > 1.9.0.291.g027825b
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
