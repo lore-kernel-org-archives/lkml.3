@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaB0NH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:07:27 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52914 "EHLO
+	id S1752808AbaB0NHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:07:24 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52926 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751026AbaB0NHS (ORCPT
+	by vger.kernel.org with ESMTP id S1751613AbaB0NHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:07:18 -0500
+	Thu, 27 Feb 2014 08:07:19 -0500
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -15,124 +15,91 @@ To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 0/4] [RFC] Support for creating generic host_bridge from device tree
-Date: Thu, 27 Feb 2014 13:06:38 +0000
-Message-Id: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Thu, 27 Feb 2014 13:06:39 +0000
+Message-Id: <1393506402-11474-2-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v2 of my attempt to add support for a generic pci_host_bridge controller created
-from a description passed in the device tree.
+The ranges property for a host bridge controller in DT describes
+the mapping between the PCI bus address and the CPU physical address.
+The resources framework however expects that the IO resources start
+at a pseudo "port" address 0 (zero) and have a maximum size of 64kb.
+The conversion from pci ranges to resources failed to take that into
+account.
 
-Changes from v1:
-  - Add patch to fix conversion of IO ranges into IO resources.
-  - Added a domain_nr member to pci_host_bridge structure, and a new function
-    to create a root bus in a given domain number. In order to facilitate that
-    I propose changing the order of initialisation between pci_host_bridge and
-    it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
-    This is done in patch 1/4 and 2/4.
-  - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
-    code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
-    and if that fails assign the next unallocated domain id.
-  - Changed the name of the function that creates the generic host bridge from
-    pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
+In the process move the function into drivers/of/address.c as it
+now depends on pci_address_to_pio() code.
 
-v1 thread here: https://lkml.org/lkml/2014/2/3/380
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-The following is an edit of the original blurb:
-
-Following the discussion started here [1], I now have a proposal for tackling
-generic support for host bridges described via device tree. It is an initial
-stab at it, to try to get feedback and suggestions, but it is functional enough
-that I have PCI Express for arm64 working on an FPGA using the patch that I am
-also publishing that adds support for PCI for that platform.
-
-Looking at the existing architectures that fit the requirements (use of device
-tree and PCI) yields the powerpc and microblaze as generic enough to make them
-candidates for conversion. I have a tentative patch for microblaze that I can
-only compile test it, unfortunately using qemu-microblaze leads to an early
-crash in the kernel.
-
-As Bjorn has mentioned in the previous discussion, the idea is to add to
-struct pci_host_bridge enough data to be able to reduce the size or remove the
-architecture specific pci_controller structure. arm64 support actually manages
-to get rid of all the architecture static data and has no pci_controller structure
-defined. For host bridge drivers that means a change of API unless architectures
-decide to provide a compatibility layer (comments here please).
-
-In order to initialise a host bridge with the new API, the following example
-code is sufficient for a _probe() function:
-
-static int myhostbridge_probe(struct platform_device *pdev)
-{
-	int err;
-	struct device_node *dev;
-	struct pci_host_bridge *bridge;
-	struct myhostbridge_port *pp;
-	resource_size_t lastbus;
-
-	dev = pdev->dev.of_node;
-
-	if (!of_device_is_available(dev)) {
-		pr_warn("%s: disabled\n", dev->full_name);
-		return -ENODEV;
-	}
-
-	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
-	if (!pp)
-		return -ENOMEM;
-
-	bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
-	if (!bridge) {
-		err = -EINVAL;
-		goto bridge_init_fail;
-	}
-
-	err = myhostbridge_setup(bridge->bus);
-	if (err)
-		goto bridge_init_fail;
-
-	/* We always enable PCI domains and we keep domain 0 backward
-	 * compatible in /proc for video cards
-	 */
-	pci_add_flags(PCI_ENABLE_PROC_DOMAINS | PCI_COMPAT_DOMAIN_0);
-	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
-
-	lastbus = pci_scan_child_bus(bridge->bus);
-	pci_bus_update_busn_res_end(bridge->bus, lastbus);
-
-	pci_assign_unassigned_bus_resources(bridge->bus);
-
-	pci_bus_add_devices(bridge->bus);
-
-	return 0;
-
-bridge_init_fail:
-	kfree(pp);
-	return err;
-}
-
-[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
-
-Best regards,
-Liviu
-
-
-Liviu Dudau (4):
-  pci: OF: Fix the conversion of IO ranges into IO resources.
-  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-  pci: Introduce a domain number for pci_host_bridge.
-  pci: Add support for creating a generic host_bridge from device tree
-
- drivers/of/address.c       |  31 +++++++++++
- drivers/pci/host-bridge.c  | 134 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/probe.c        |  66 ++++++++++++++--------
- include/linux/of_address.h |  13 +----
- include/linux/pci.h        |  17 ++++++
- 5 files changed, 227 insertions(+), 34 deletions(-)
-
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 1a54f1f..7cf2b16 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -719,3 +719,34 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ 	return ioremap(res.start, resource_size(&res));
+ }
+ EXPORT_SYMBOL(of_iomap);
++
++/**
++ * of_pci_range_to_resource - Create a resource from an of_pci_range
++ * @range:	the PCI range that describes the resource
++ * @np:		device node where the range belongs to
++ * @res:	pointer to a valid resource that will be updated to
++ *              reflect the values contained in the range.
++ * Note that if the range is an IO range, the resource will be converted
++ * using pci_address_to_pio() which can fail if it is called to early or
++ * if the range cannot be matched to any host bridge IO space.
++ */
++void of_pci_range_to_resource(struct of_pci_range *range,
++	struct device_node *np, struct resource *res)
++{
++	res->flags = range->flags;
++	if (res->flags & IORESOURCE_IO) {
++		unsigned long port;
++		port = pci_address_to_pio(range->pci_addr);
++		if (port == (unsigned long)-1) {
++			res->start = (resource_size_t)OF_BAD_ADDR;
++			res->end = (resource_size_t)OF_BAD_ADDR;
++			return;
++		}
++		res->start = port;
++	} else {
++		res->start = range->cpu_addr;
++	}
++	res->end = res->start + range->size - 1;
++	res->parent = res->child = res->sibling = NULL;
++	res->name = np->full_name;
++}
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 5f6ed6b..a667762 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -23,17 +23,8 @@ struct of_pci_range {
+ #define for_each_of_pci_range(parser, range) \
+ 	for (; of_pci_range_parser_one(parser, range);)
+ 
+-static inline void of_pci_range_to_resource(struct of_pci_range *range,
+-					    struct device_node *np,
+-					    struct resource *res)
+-{
+-	res->flags = range->flags;
+-	res->start = range->cpu_addr;
+-	res->end = range->cpu_addr + range->size - 1;
+-	res->parent = res->child = res->sibling = NULL;
+-	res->name = np->full_name;
+-}
+-
++extern void of_pci_range_to_resource(struct of_pci_range *range,
++		struct device_node *np, struct resource *res);
+ /* Translate a DMA address from device space to CPU space */
+ extern u64 of_translate_dma_address(struct device_node *dev,
+ 				    const __be32 *in_addr);
 -- 
 1.9.0
 
