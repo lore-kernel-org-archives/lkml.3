@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaB0VDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:03:25 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:44378 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155AbaB0VDY (ORCPT
+	id S1751998AbaB0VKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:10:03 -0500
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:56847 "HELO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751829AbaB0VJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:03:24 -0500
+	Thu, 27 Feb 2014 16:09:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1393534841.24588.131.camel@joe-AO722>
-References: <1393462087.24588.50.camel@joe-AO722>
-	<530E8C2E.7080307@zytor.com>
-	<1393466619.24588.65.camel@joe-AO722>
-	<20140227022857.GC23659@thin>
-	<1393469594.24588.71.camel@joe-AO722>
-	<20140227025845.GA25145@thin>
-	<530EB103.5070406@zytor.com>
-	<1393472326.24588.82.camel@joe-AO722>
-	<20140227040050.GA8449@nicira.com>
-	<530EBCED.9020705@zytor.com>
-	<20140227042636.GA9592@nicira.com>
-	<530EBFC7.9030309@zytor.com>
-	<CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-	<faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-	<CANeU7QnB1Yfd6SjLeUmB1Q-a+U6G221J8es7ckfjB-U45sAVMA@mail.gmail.com>
-	<1393534841.24588.131.camel@joe-AO722>
-Date: Thu, 27 Feb 2014 13:03:23 -0800
-X-Google-Sender-Auth: PDDm6UD3R339B8neue_Ock_knT4
-Message-ID: <CANeU7QnjzVTFJVxvkw_EAay_rX-fvJQc+LY=7r7cG95ApjiOWg@mail.gmail.com>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Christopher Li <sparse@chrisli.org>
-To: Joe Perches <joe@perches.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140227205039.GE5375@saruman.home>
+References: <1393524848-8207-1-git-send-email-lho@apm.com>
+	<1393524848-8207-2-git-send-email-lho@apm.com>
+	<20140227190102.GB4862@saruman.home>
+	<CAPw-ZT=F07=T0=z=iT=hxJ0+609RBDYRL=MXF5dQoEowLjsRjQ@mail.gmail.com>
+	<20140227205039.GE5375@saruman.home>
+Date: Thu, 27 Feb 2014 13:09:57 -0800
+Message-ID: <CAPw-ZT=7cu1NoxrBL48RUJV04ofrnNkF=p=23VFfu8ZZWmkQWQ@mail.gmail.com>
+Subject: Re: [PATCH v12 1/4] PHY: Add function set_speed to generic PHY framework
+From: Loc Ho <lho@apm.com>
+To: balbi@ti.com
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, Tejun Heo <tj@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
+        "patches@apm.com" <patches@apm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 1:00 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2014-02-27 at 12:44 -0800, Christopher Li wrote:
->> On Thu, Feb 27, 2014 at 12:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > I would.
->> Joe, I assume you are OK with this patch, the default is now off.
+Hi,
+
+>> >> This patch adds function set_speed to the generic PHY framework operation
+>> >> structure. This function can be called to instruct the PHY underlying layer
+>> >> at specified lane to configure for specified speed in hertz.
+>> >
+>> > why ? looks like clk_set_rate() is your friend here. Can you be more
+>> > descriptive of the use case ? When will this be used ?
+>> >
+>>
+>> The phy_set_speed is used to configure the operation speed of the PHY
+>> at run-time. The clock interface in general is used to configure the
+>> clock input to the IP. I don't believe they are the same thing. Maybe
+>> it will be clear in my response to your second email
 >
-> Of course
+> The problem with this is that you end up adding SATA-specific details to
+> something which is supposed to be generic.
 
-Let me know if you are going to have a V3 or not.
+Setting the operation speed is pretty generic from an interface point
+of view. An generic multi-purpose PHY can support multiple speed. If
+the upper layer wish to operate at an specified speed (say for testing
+purpose and etc), it can be allowed.
 
-Thanks
+> After negoatiation, don't you
+> get any interrupt from your PHY indicating that link speed negotiation
+> is done ? Or is that IRQ only on AHCI IP ?
 
-Chris
+There is NO interrupt from the PHY. The IRQ is assoicated with the
+AHCI IP. With SATA host flow, it starts off with an COMRESET to start
+the link negotiation. At that point, it will poll for completion.
+
+Any other concerns?
+
+-Loc
