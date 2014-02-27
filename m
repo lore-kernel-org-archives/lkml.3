@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116AbaB0P6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:58:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40574 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613AbaB0P6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:58:14 -0500
-Date: Thu, 27 Feb 2014 16:58:12 +0100
-From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
-Subject: Re: [RFA][PATCH 1/5] ftrace/x86: Run a sync after fixup on failure
-Message-ID: <20140227155811.GE22707@pathway.suse.cz>
-References: <20140227154616.703252665@goodmis.org>
- <20140227154922.957070805@goodmis.org>
+	id S1753228AbaB0P6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:58:55 -0500
+Received: from moutng.kundenserver.de ([212.227.126.130]:56929 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaB0P6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 10:58:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] pci: Add support for creating a generic host_bridge from device tree
+Date: Thu, 27 Feb 2014 16:58:41 +0100
+Message-ID: <5722634.VerP6OyMlP@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140227141322.GL1692@e106497-lin.cambridge.arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <18746655.qWHLpMg2Yy@wuerfel> <20140227141322.GL1692@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227154922.957070805@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QWPfd4TXbWeKxThBQCAvlx9k/FYEuj/bbaCD2NTevOn
+ k71JIPs5qQV2Esrt0tc3No0TbCKmeE5JpiD24lPN+C5QkZoKuL
+ 3SoS8l067h7uF/6H0s6OYd7HmL6TAHRxXTCGk7NIxGLIs97ZlD
+ rEX/mVZ62tvo9fzKrAJZf/RH7P60lD0JxFj1wO6BQQ48eUWku/
+ SNAAuEv+Kq1khJVsKTx14VGYOV5QCPrAOx/goG8Sp0infnJ/Jw
+ UQuTNYCxn835fc4t6GghGTrsEDnNZ/F6q3IBqVqJ4MdPB4bnEt
+ YUFWLc9S5IP3XrV9SuYU3kPyzdOYuL+YkF9+EBrFQRpyO3eScv
+ g7yjavtI4PkRbfjFNzt0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-02-14 10:46:17, Steven Rostedt wrote:
-> [Request for Ack]
+On Thursday 27 February 2014 14:13:22 Liviu Dudau wrote:
 > 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> If a failure occurs while enabling a trace, it bails out and will remove
-> the tracepoints to be back to what the code originally was. But the fix
-> up had some bugs in it. By injecting a failure in the code, the fix up
-> ran to completion, but shortly afterward the system rebooted.
-> 
-> There was two bugs here.
-> 
-> The first was that there was no final sync run across the CPUs after the
-> fix up was done, and before the ftrace int3 handler flag was reset. That
-> means that other CPUs could still see the breakpoint and trigger on it
-> long after the flag was cleared, and the int3 handler would think it was
-> a spurious interrupt. Worse yet, the int3 handler could hit other breakpoints
-> because the ftrace int3 handler flag would have prevented the int3 handler
-> from going further.
-> 
-> The second bug was that the removal of the breakpoints required the
-> "within()" logic updates instead of accessing the ip address directly.
-> 
-> Link: http://lkml.kernel.org/r/1392650573-3390-1-git-send-email-pmladek@suse.cz
-> 
-> Reported-by: Petr Mladek <pmladek@suse.cz>
+> It is useful for host bridge drivers as this is the only place where we store
+> the physical CPU address for the IO range. This is then needed when setting up the
+> translation registers. Also used when calling the pci_ioremap_io function that I'm
+> introducing in the AArch64 patches.
 
-Tested-by: Petr Mladek <pmladek@suse.cz>
+I don't understand what translation windows you are talking about. Is this
+about how the PCI spaces are mapped into the CPU address space? If so, I
+would strongly recommend to have this handled by the boot loader before
+calling into the kernel. For ARM32, we have a lot of embedded systems
+that require the PCI host driver to set up those windows, but actually
+it would be much better to just have the firmware tell us what the setup
+is and that use that.
 
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: stable@vger.kernel.org # 3.5+
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/ftrace.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> Whole patch is still under legal review, but the fragment for setting up the ATR looks
+> like this:
 > 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index e625319..6b566c8 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -455,7 +455,7 @@ static int remove_breakpoint(struct dyn_ftrace *rec)
->  	}
->  
->   update:
-> -	return probe_kernel_write((void *)ip, &nop[0], 1);
-> +	return ftrace_write(ip, nop, 1);
->  }
->  
->  static int add_update_code(unsigned long ip, unsigned const char *new)
-> @@ -634,6 +634,7 @@ void ftrace_replace_code(int enable)
->  		rec = ftrace_rec_iter_record(iter);
->  		remove_breakpoint(rec);
->  	}
-> +	run_sync();
->  }
->  
->  static int
-> @@ -664,7 +665,7 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
->  	return ret;
->  
->   fail_update:
-> -	probe_kernel_write((void *)ip, &old_code[0], 1);
-> +	ftrace_write(ip, old_code, 1);
->  	goto out;
->  }
->  
-> -- 
-> 1.8.5.3
+>         list_for_each_entry(window, &bridge->windows, list) {
+>                 res = window->res;
+>                 offset = window->offset;
+>                 wsize = ilog2(resource_size(res)) - 1;
 > 
-> 
+>                 if (resource_type(res) == IORESOURCE_MEM)
+>                         update_atr_entry(pp->base + ATR_REG_whatever,
+>                                 res->start,                             /* CPU address */
+>                                 res->start - offset,                    /* PCI address */
+>                                 0, wsize);
+>                 else if (resource_type(res) == IORESOURCE_IO) {
+>                         io_offset = pci_ioremap_io(res, bridge->io_base + offset);
+>                         update_atr_entry(pp->base + ATR_REG_whatever,
+>                                 bridge->io_base + res->start + offset,  /* CPU address */
+>                                 res->start,                             /* PCI address */
+>                                 0x20000, wsize);
+>                 }
+>         }
+
+Hmm, I again don't see how 'bridge->io_base + res->start + offset' is
+the correct address here. What is it you are trying to pass into
+update_atr_entry()?
+
+	Arnd
