@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaB0V4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:56:36 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:32841 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaB0V4e (ORCPT
+	id S1752434AbaB0V4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:56:48 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:26243 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaB0V4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:56:34 -0500
+	Thu, 27 Feb 2014 16:56:45 -0500
 X-IronPort-AV: E=Sophos;i="4.97,557,1389772800"; 
-   d="scan'208";a="16754901"
+   d="scan'208";a="17176950"
 From: Markus Mayer <markus.mayer@linaro.org>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <matt.porter@linaro.org>
 CC: Device Tree List <devicetree@vger.kernel.org>,
@@ -16,9 +16,9 @@ CC: Device Tree List <devicetree@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Broadcom Kernel Feedback 
 	<bcm-kernel-feedback-list@broadcom.com>
-Subject: [PATCH 2/3] ARM: bcm21664: Add board support.
-Date: Thu, 27 Feb 2014 13:56:05 -0800
-Message-ID: <1393538166-22868-3-git-send-email-markus.mayer@linaro.org>
+Subject: [PATCH 3/3] ARM: dts: bcm21664: Add device tree files.
+Date: Thu, 27 Feb 2014 13:56:06 -0800
+Message-ID: <1393538166-22868-4-git-send-email-markus.mayer@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393538166-22868-1-git-send-email-markus.mayer@linaro.org>
 References: <1393538166-22868-1-git-send-email-markus.mayer@linaro.org>
@@ -28,44 +28,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Broadcom BCM21664 mobile SoC. It has two Cortex-A9
-cores like the BCM281xx family of chips. BCM21664 and BCM281xx share
-many IP blocks in addition to the ARM cores.
+Add device tree files for the Broadcom BCM21664 SoC.
 
 Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- arch/arm/mach-bcm/Makefile         |    6 ++-
- arch/arm/mach-bcm/board_bcm21664.c |   78 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-bcm/board_bcm21664.c
+ arch/arm/boot/dts/Makefile            |    3 +-
+ arch/arm/boot/dts/bcm21664-garnet.dts |   56 +++++++
+ arch/arm/boot/dts/bcm21664.dtsi       |  292 +++++++++++++++++++++++++++++++++
+ 3 files changed, 350 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/bcm21664-garnet.dts
+ create mode 100644 arch/arm/boot/dts/bcm21664.dtsi
 
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index c2ccd5a..0e2e52e 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -1,5 +1,5 @@
- #
--# Copyright (C) 2012-2013 Broadcom Corporation
-+# Copyright (C) 2012-2014 Broadcom Corporation
- #
- # This program is free software; you can redistribute it and/or
- # modify it under the terms of the GNU General Public License as
-@@ -10,6 +10,8 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
--obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
-+obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o board_bcm21664.o \
-+				bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
-+
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
-diff --git a/arch/arm/mach-bcm/board_bcm21664.c b/arch/arm/mach-bcm/board_bcm21664.c
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 0320303..0c1853a 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -48,7 +48,8 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d36ek.dtb
+ dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+ dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm11351-brt.dtb \
+-	bcm28155-ap.dtb
++	bcm28155-ap.dtb \
++	bcm21664-garnet.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
+ dtb-$(CONFIG_ARCH_BERLIN) += \
+ 	berlin2-sony-nsz-gs7.dtb	\
+diff --git a/arch/arm/boot/dts/bcm21664-garnet.dts b/arch/arm/boot/dts/bcm21664-garnet.dts
 new file mode 100644
-index 0000000..d3ef7e5
+index 0000000..e87cb26
 --- /dev/null
-+++ b/arch/arm/mach-bcm/board_bcm21664.c
-@@ -0,0 +1,78 @@
++++ b/arch/arm/boot/dts/bcm21664-garnet.dts
+@@ -0,0 +1,56 @@
 +/*
 + * Copyright (C) 2014 Broadcom Corporation
 + *
@@ -79,71 +72,347 @@ index 0000000..d3ef7e5
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/clocksource.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
++/dts-v1/;
 +
-+#include <asm/mach/arch.h>
++#include <dt-bindings/gpio/gpio.h>
 +
-+#include "bcm_kona_smc.h"
-+#include "kona.h"
++#include "bcm21664.dtsi"
 +
-+#define RSTMGR_DT_STRING		"brcm,bcm21664-resetmgr"
++/ {
++	model = "BCM21664 Garnet board";
++	compatible = "brcm,bcm21664-garnet", "brcm,bcm21664";
 +
-+#define RSTMGR_REG_WR_ACCESS_OFFSET	0
-+#define RSTMGR_REG_CHIP_SOFT_RST_OFFSET	4
++	memory {
++		reg = <0x80000000 0x40000000>; /* 1 GB */
++	};
 +
-+#define RSTMGR_WR_PASSWORD		0xa5a5
-+#define RSTMGR_WR_PASSWORD_SHIFT	8
-+#define RSTMGR_WR_ACCESS_ENABLE		1
++	uart@3e000000 {
++		status = "okay";
++	};
 +
-+static void bcm21644_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	void __iomem *base;
-+	struct device_node *resetmgr;
++	sdio1: sdio@3f180000 {
++		max-frequency = <48000000>;
++		status = "okay";
++	};
 +
-+	resetmgr = of_find_compatible_node(NULL, NULL, RSTMGR_DT_STRING);
-+	if (!resetmgr) {
-+		pr_emerg("Couldn't find " RSTMGR_DT_STRING "\n");
-+		return;
-+	}
-+	base = of_iomap(resetmgr, 0);
-+	if (!base) {
-+		pr_emerg("Couldn't map " RSTMGR_DT_STRING "\n");
-+		return;
-+	}
++	sdio2: sdio@3f190000 {
++		non-removable;
++		max-frequency = <48000000>;
++		status = "okay";
++	};
 +
-+	/*
-+	 * A soft reset is triggered by writing a 0 to bit 0 of the soft reset
-+	 * register. To write to that register we must first write the password
-+	 * and the enable bit in the write access enable register.
-+	 */
-+	writel((RSTMGR_WR_PASSWORD << RSTMGR_WR_PASSWORD_SHIFT) |
-+		RSTMGR_WR_ACCESS_ENABLE,
-+		base + RSTMGR_REG_WR_ACCESS_OFFSET);
-+	writel(0, base + RSTMGR_REG_CHIP_SOFT_RST_OFFSET);
++	sdio4: sdio@3f1b0000 {
++		max-frequency = <48000000>;
++		cd-gpios = <&gpio 91 GPIO_ACTIVE_LOW>;
++		status = "okay";
++	};
 +
-+	/* Wait for reset */
-+	while (1);
-+}
++	usbotg: usb@3f120000 {
++		status = "okay";
++	};
 +
-+static void __init bcm21644_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL,
-+		&platform_bus);
-+	kona_l2_cache_init();
-+}
-+
-+static const char * const bcm21664_dt_compat[] = {
-+	"brcm,bcm21664",
-+	NULL,
++	usbphy: usb-phy@3f130000 {
++		status = "okay";
++	};
 +};
+diff --git a/arch/arm/boot/dts/bcm21664.dtsi b/arch/arm/boot/dts/bcm21664.dtsi
+new file mode 100644
+index 0000000..08a44d4
+--- /dev/null
++++ b/arch/arm/boot/dts/bcm21664.dtsi
+@@ -0,0 +1,292 @@
++/*
++ * Copyright (C) 2014 Broadcom Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+DT_MACHINE_START(BCM21664_DT, "BCM21664 Broadcom Application Processor")
-+	.init_machine = bcm21644_init,
-+	.restart = bcm21644_restart,
-+	.dt_compat = bcm21664_dt_compat,
-+MACHINE_END
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++#include "skeleton.dtsi"
++
++/ {
++	model = "BCM21664 SoC";
++	compatible = "brcm,bcm21664";
++	interrupt-parent = <&gic>;
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8";
++	};
++
++	gic: interrupt-controller@3ff00100 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <0>;
++		interrupt-controller;
++		reg = <0x3ff01000 0x1000>,
++		      <0x3ff00100 0x100>;
++	};
++
++	smc@0x3404e000 {
++		compatible = "brcm,bcm21664-smc", "brcm,kona-smc";
++		reg = <0x3404e000 0x400>; /* 1 KiB in SRAM */
++	};
++
++	uart@3e000000 {
++		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
++		status = "disabled";
++		reg = <0x3e000000 0x118>;
++		clocks = <&uartb_clk>;
++		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
++
++	uart@3e001000 {
++		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
++		status = "disabled";
++		reg = <0x3e001000 0x118>;
++		clocks = <&uartb2_clk>;
++		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
++
++	uart@3e002000 {
++		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
++		status = "disabled";
++		reg = <0x3e002000 0x118>;
++		clocks = <&uartb3_clk>;
++		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
++
++	L2: l2-cache {
++		compatible = "arm,pl310-cache";
++		reg = <0x3ff20000 0x1000>;
++		cache-unified;
++		cache-level = <2>;
++	};
++
++	brcm,resetmgr@35001f00 {
++		compatible = "brcm,bcm21664-resetmgr";
++		reg = <0x35001f00 0x24>;
++	};
++
++	timer@35006000 {
++		compatible = "brcm,kona-timer";
++		reg = <0x35006000 0x1c>;
++		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&hub_timer_clk>;
++	};
++
++	gpio: gpio@35003000 {
++		compatible = "brcm,bcm21664-gpio", "brcm,kona-gpio";
++		reg = <0x35003000 0x524>;
++		interrupts =
++		       <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH
++			GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH
++			GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH
++			GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
++		#gpio-cells = <2>;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		interrupt-controller;
++	};
++
++	sdio1: sdio@3f180000 {
++		compatible = "brcm,kona-sdhci";
++		reg = <0x3f180000 0x801c>;
++		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&sdio1_clk>;
++		status = "disabled";
++	};
++
++	sdio2: sdio@3f190000 {
++		compatible = "brcm,kona-sdhci";
++		reg = <0x3f190000 0x801c>;
++		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&sdio2_clk>;
++		status = "disabled";
++	};
++
++	sdio3: sdio@3f1a0000 {
++		compatible = "brcm,kona-sdhci";
++		reg = <0x3f1a0000 0x801c>;
++		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&sdio3_clk>;
++		status = "disabled";
++	};
++
++	sdio4: sdio@3f1b0000 {
++		compatible = "brcm,kona-sdhci";
++		reg = <0x3f1b0000 0x801c>;
++		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&sdio4_clk>;
++		status = "disabled";
++	};
++
++	i2c@3e016000 {
++		compatible = "brcm,bcm21664-i2c", "brcm,kona-i2c";
++		reg = <0x3e016000 0x70>;
++		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&bsc1_clk>;
++		status = "disabled";
++	};
++
++	i2c@3e017000 {
++		compatible = "brcm,bcm21664-i2c", "brcm,kona-i2c";
++		reg = <0x3e017000 0x70>;
++		interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&bsc2_clk>;
++		status = "disabled";
++	};
++
++	i2c@3e018000 {
++		compatible = "brcm,bcm21664-i2c", "brcm,kona-i2c";
++		reg = <0x3e018000 0x70>;
++		interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&bsc3_clk>;
++		status = "disabled";
++	};
++
++	i2c@3e01c000 {
++		compatible = "brcm,bcm21664-i2c", "brcm,kona-i2c";
++		reg = <0x3e01c000 0x70>;
++		interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&bsc4_clk>;
++		status = "disabled";
++	};
++
++	clocks {
++		bsc1_clk: bsc1 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		bsc2_clk: bsc2 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		bsc3_clk: bsc3 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		bsc4_clk: bsc4 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		pmu_bsc_clk: pmu_bsc {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		hub_timer_clk: hub_timer {
++			compatible = "fixed-clock";
++			clock-frequency = <32768>;
++			#clock-cells = <0>;
++		};
++
++		pwm_clk: pwm {
++			compatible = "fixed-clock";
++			clock-frequency = <26000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio1_clk: sdio1 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio2_clk: sdio2 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio3_clk: sdio3 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		sdio4_clk: sdio4 {
++			compatible = "fixed-clock";
++			clock-frequency = <48000000>;
++			#clock-cells = <0>;
++		};
++
++		tmon_1m_clk: tmon_1m {
++			compatible = "fixed-clock";
++			clock-frequency = <1000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb_clk: uartb {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb2_clk: uartb2 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		uartb3_clk: uartb3 {
++			compatible = "fixed-clock";
++			clock-frequency = <13000000>;
++			#clock-cells = <0>;
++		};
++
++		usb_otg_ahb_clk: usb_otg_ahb {
++			compatible = "fixed-clock";
++			clock-frequency = <52000000>;
++			#clock-cells = <0>;
++		};
++	};
++
++	usbotg: usb@3f120000 {
++		compatible = "snps,dwc2";
++		reg = <0x3f120000 0x10000>;
++		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&usb_otg_ahb_clk>;
++		clock-names = "otg";
++		phys = <&usbphy>;
++		phy-names = "usb2-phy";
++		status = "disabled";
++	};
++
++	usbphy: usb-phy@3f130000 {
++		compatible = "brcm,kona-usb2-phy";
++		reg = <0x3f130000 0x28>;
++		#phy-cells = <0>;
++		status = "disabled";
++	};
++};
 -- 
 1.7.9.5
 
