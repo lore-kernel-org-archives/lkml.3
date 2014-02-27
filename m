@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaB0LW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:22:57 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44182 "EHLO
+	id S1752616AbaB0LWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:22:55 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44191 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752415AbaB0LWw (ORCPT
+	with ESMTP id S1752534AbaB0LWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 06:22:52 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Gregory Clement <gregory.clement@free-electrons.com>,
         b.brezillon@overkiz.com,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv4 9/9] ARM: at91: switch sam9rl to common clock framework
-Date: Thu, 27 Feb 2014 12:22:15 +0100
-Message-Id: <1393500135-29636-10-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv4 8/9] ARM: at91/dt: define main clk frequency of at91sam9rlek
+Date: Thu, 27 Feb 2014 12:22:14 +0100
+Message-Id: <1393500135-29636-9-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393500135-29636-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1393500135-29636-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -25,23 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Define the main clock frequency for the new main clock node in
+at91sam9rlek.dts
+
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/boot/dts/at91sam9rlek.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 4f0e800e7e71..7013b7b66a1e 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -137,7 +137,6 @@ config SOC_AT91SAM9RL
- 	select HAVE_AT91_DBGU0
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_UTMI
+diff --git a/arch/arm/boot/dts/at91sam9rlek.dts b/arch/arm/boot/dts/at91sam9rlek.dts
+index c3cec5d07648..cddb37825fad 100644
+--- a/arch/arm/boot/dts/at91sam9rlek.dts
++++ b/arch/arm/boot/dts/at91sam9rlek.dts
+@@ -105,6 +105,12 @@
+ 				};
+ 			};
  
- config SOC_AT91SAM9G45
++			pmc: pmc@fffffc00 {
++				main: mainck {
++					clock-frequency = <12000000>;
++				};
++			};
++
+ 			watchdog@fffffd40 {
+ 				status = "okay";
+ 			};
 -- 
 1.8.3.2
 
