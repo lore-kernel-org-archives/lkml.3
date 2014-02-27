@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaB0V3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:29:38 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:58820 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaB0V2T (ORCPT
+	id S1752408AbaB0V3g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:29:36 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15815 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752333AbaB0V3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:28:19 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Chris Ball <chris@printf.net>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        alsa-devel@alsa-project.org, linux-watchdog@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] ARM: dove: prepare new Dove DT Kconfig variable
-Date: Thu, 27 Feb 2014 22:28:03 +0100
-Message-Id: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 27 Feb 2014 16:29:34 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Feng Kan <fkan@apm.com>
+Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
+        "patches\@apm.com" <patches@apm.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinayak Kale <vkale@apm.com>
+Subject: Re: [PATCH V2] irqchip:gic: change access of gicc_ctrl register to read modify write.
+In-Reply-To: <CAL85gmDk0hxaVbSbqTaVeVFsY4Xt1aKrBx=Pm57g0m0d_Qw-KQ@mail.gmail.com>
+	(Feng Kan's message of "Thu, 27 Feb 2014 21:00:07 +0000")
+Organization: ARM Ltd
+References: <1393526095-31479-1-git-send-email-fkan@apm.com>
+	<87zjlc2xpb.fsf@sofa.wild-wind.fr.eu.org>
+	<CAL85gmDk0hxaVbSbqTaVeVFsY4Xt1aKrBx=Pm57g0m0d_Qw-KQ@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Thu, 27 Feb 2014 21:29:30 +0000
+Message-ID: <87wqggmeh1.fsf@sofa.wild-wind.fr.eu.org>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT-enabled Dove will move over from ARCH_DOVE in mach-dove to MACH_DOVE in
-mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
-DT-only MACH_DOVE to mmc, thermal, wdt, and asoc Kconfigs.
+On Thu, Feb 27 2014 at  9:00:07 pm GMT, Feng Kan <fkan@apm.com> wrote:
+> On Thu, Feb 27, 2014 at 10:54 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> On Thu, Feb 27 2014 at  6:34:55 pm GMT, Feng Kan <fkan@apm.com> wrote:
+>>> This change is made to preserve the GIC v2 releated bits in the
+>>> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+>>> The original code only set the enable/disable group bit in this register.
+>>> This code will preserve the bypass bits configured by the bootload except
+>>> the enable/disable bit. The main reason for this change is to allow the
+>>> bypass bits specified in the v2 spec to remain untouched by the current
+>>> GIC code. In the X-Gene platform, the bypass functionality is not used
+>>> and bypass must be disabled at all time.
+>>>
+>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>>> Acked-by: Anup Patel <apatel@apm.com>
+>>> Signed-off-by: Feng Kan <fkan@apm.com>
+>>> ---
+>>> V2 Changes:
+>>>       - only mask off v2 bypass bits
+>>>
+>>>  drivers/irqchip/irq-gic.c |   22 +++++++++++++++++++---
+>>>  1 files changed, 19 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>> index 341c601..757581b 100644
+>>> --- a/drivers/irqchip/irq-gic.c
+>>> +++ b/drivers/irqchip/irq-gic.c
+>>> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>       void __iomem *dist_base = gic_data_dist_base(gic);
+>>>       void __iomem *base = gic_data_cpu_base(gic);
+>>>       unsigned int cpu_mask, cpu = smp_processor_id();
+>>> +     unsigned int ctrl_mask;
+>>>       int i;
+>>>
+>>>       /*
+>>> @@ -449,13 +450,24 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>>>               writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>>>
+>>>       writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+>>> -     writel_relaxed(1, base + GIC_CPU_CTRL);
+>>> +
+>>> +     ctrl_mask = readl(base + GIC_CPU_CTRL);
+>>> +     ctrl_mask |= 0x1;
+>>> +     writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+>>
+>> I think I'm quickly loosing the will to live, or at least to review this
+>> patch any further.
+> Hang in there Marc, though I had nothing to do with the flood in England. Maybe
+> I can instill a bit more will for you to live.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Chris Ball <chris@printf.net>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: alsa-devel@alsa-project.org
-Cc: linux-watchdog@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/mmc/host/Kconfig   | 2 +-
- drivers/thermal/Kconfig    | 2 +-
- drivers/watchdog/Kconfig   | 2 +-
- sound/soc/kirkwood/Kconfig | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+I'll probably survive without your help. In the meantime, if you want
+that patch to make it in the tree, you'd better fix it.
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 1384f67abe21..a69e48b582e5 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -168,7 +168,7 @@ config MMC_SDHCI_ESDHC_IMX
- 
- config MMC_SDHCI_DOVE
- 	tristate "SDHCI support on Marvell's Dove SoC"
--	depends on ARCH_DOVE
-+	depends on ARCH_DOVE || MACH_DOVE
- 	depends on MMC_SDHCI_PLTFM
- 	select MMC_SDHCI_IO_ACCESSORS
- 	help
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 35c066489a19..07b5e56e9a97 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -150,7 +150,7 @@ config KIRKWOOD_THERMAL
- 
- config DOVE_THERMAL
- 	tristate "Temperature sensor on Marvell Dove SoCs"
--	depends on ARCH_DOVE
-+	depends on ARCH_DOVE || MACH_DOVE
- 	depends on OF
- 	help
- 	  Support for the Dove thermal sensor driver in the Linux thermal
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 79d25894343a..5659c62a175c 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -292,7 +292,7 @@ config DAVINCI_WATCHDOG
- 
- config ORION_WATCHDOG
- 	tristate "Orion watchdog"
--	depends on ARCH_ORION5X || ARCH_KIRKWOOD || ARCH_DOVE
-+	depends on ARCH_ORION5X || ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE
- 	select WATCHDOG_CORE
- 	help
- 	  Say Y here if to include support for the watchdog timer
-diff --git a/sound/soc/kirkwood/Kconfig b/sound/soc/kirkwood/Kconfig
-index 78ed4a42ad21..a1506d57e646 100644
---- a/sound/soc/kirkwood/Kconfig
-+++ b/sound/soc/kirkwood/Kconfig
-@@ -1,6 +1,6 @@
- config SND_KIRKWOOD_SOC
- 	tristate "SoC Audio for the Marvell Kirkwood and Dove chips"
--	depends on ARCH_KIRKWOOD || ARCH_DOVE || COMPILE_TEST
-+	depends on ARCH_KIRKWOOD || ARCH_DOVE || MACH_DOVE || COMPILE_TEST
- 	help
- 	  Say Y or M if you want to add support for codecs attached to
- 	  the Kirkwood I2S interface. You will also need to select the
+	M.
 -- 
-1.8.5.3
-
+AAAFNRAA
