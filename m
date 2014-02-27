@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaB0Hdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:33:43 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51202 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaB0Hdk (ORCPT
+	id S1751900AbaB0Hdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:33:53 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36126 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaB0Hdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:33:40 -0500
-Subject: [PATCH -tip v7 09/26] x86: Call exception_enter after kprobes
- handled
+	Thu, 27 Feb 2014 02:33:50 -0500
+Subject: [PATCH -tip v7 13/26] x86: Allow kprobes on text_poke/hw_breakpoint
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -17,8 +16,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Feb 2014 16:33:38 +0900
-Message-ID: <20140227073338.20992.22774.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Date: Thu, 27 Feb 2014 16:33:47 +0900
+Message-ID: <20140227073347.20992.76162.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -29,53 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move exception_enter() call after kprobes handler
-is done. Since the exception_enter() involves
-many other functions (like printk), it can cause
-recursive int3/break loop when kprobes probe such
-functions.
+Allow kprobes on text_poke/hw_breakpoint because
+those are not related to the critical int3-debug
+recursive path of kprobes at this moment.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- arch/x86/kernel/traps.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/alternative.c   |    3 +--
+ arch/x86/kernel/hw_breakpoint.c |    5 ++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index e5d4a70..ba9abe9 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -327,7 +327,6 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	if (poke_int3_handler(regs))
- 		return;
- 
--	prev_state = exception_enter();
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -338,6 +337,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	if (kprobe_int3_handler(regs))
- 		return;
- #endif
-+	prev_state = exception_enter();
- 
- 	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 			SIGTRAP) == NOTIFY_STOP)
-@@ -415,8 +415,6 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
- 
--	prev_state = exception_enter();
--
- 	get_debugreg(dr6, 6);
- 
- 	/* Filter out all the reserved bits which are preset to 1 */
-@@ -449,6 +447,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	if (kprobe_debug_handler(regs))
- 		goto exit;
- #endif
-+	prev_state = exception_enter();
- 
- 	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
- 							SIGTRAP) == NOTIFY_STOP)
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index df94598..703130f 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -5,7 +5,6 @@
+ #include <linux/mutex.h>
+ #include <linux/list.h>
+ #include <linux/stringify.h>
+-#include <linux/kprobes.h>
+ #include <linux/mm.h>
+ #include <linux/vmalloc.h>
+ #include <linux/memory.h>
+@@ -551,7 +550,7 @@ void *__init_or_module text_poke_early(void *addr, const void *opcode,
+  *
+  * Note: Must be called under text_mutex.
+  */
+-void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
++void *text_poke(void *addr, const void *opcode, size_t len)
+ {
+ 	unsigned long flags;
+ 	char *vaddr;
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index a67b47c..5f9cf20 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -32,7 +32,6 @@
+ #include <linux/irqflags.h>
+ #include <linux/notifier.h>
+ #include <linux/kallsyms.h>
+-#include <linux/kprobes.h>
+ #include <linux/percpu.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+@@ -424,7 +423,7 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+  * NOTIFY_STOP returned for all other cases
+  *
+  */
+-static int __kprobes hw_breakpoint_handler(struct die_args *args)
++static int hw_breakpoint_handler(struct die_args *args)
+ {
+ 	int i, cpu, rc = NOTIFY_STOP;
+ 	struct perf_event *bp;
+@@ -511,7 +510,7 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+ /*
+  * Handle debug exception notifications.
+  */
+-int __kprobes hw_breakpoint_exceptions_notify(
++int hw_breakpoint_exceptions_notify(
+ 		struct notifier_block *unused, unsigned long val, void *data)
+ {
+ 	if (val != DIE_DEBUG)
 
 
