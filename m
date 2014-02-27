@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaB0PDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:03:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14106 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaB0PDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:03:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,555,1389772800"; 
-   d="scan'208";a="463473910"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-In-Reply-To: <530F3F0A.5040304@oracle.com>
-References: <530F3F0A.5040304@oracle.com>
-Subject: RE: mm: kernel BUG at mm/huge_memory.c:2785!
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140227150313.3BA27E0098@blue.fi.intel.com>
-Date: Thu, 27 Feb 2014 17:03:13 +0200 (EET)
+	id S1751976AbaB0PIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:08:52 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:34761 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaB0PIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 10:08:50 -0500
+Date: Thu, 27 Feb 2014 16:08:46 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Tejun Heo <tj@kernel.org>, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+Message-ID: <20140227150843.GB19580@localhost.localdomain>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+ <52F8A51F.4090909@cn.fujitsu.com>
+ <20140210184729.GL4250@linux.vnet.ibm.com>
+ <20140212182336.GD5496@localhost.localdomain>
+ <20140212190241.GD4250@linux.vnet.ibm.com>
+ <20140212192354.GC26809@htj.dyndns.org>
+ <7hk3cx46rw.fsf@paris.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7hk3cx46rw.fsf@paris.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
-> Hi all,
+On Fri, Feb 14, 2014 at 03:24:35PM -0800, Kevin Hilman wrote:
+> Tejun Heo <tj@kernel.org> writes:
 > 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the 
-> following spew:
+> > Hello,
+> >
+> > On Wed, Feb 12, 2014 at 11:02:41AM -0800, Paul E. McKenney wrote:
+> >> +2.	Use the /sys/devices/virtual/workqueue/*/cpumask sysfs files
+> >> +	to force the WQ_SYSFS workqueues to run on the specified set
+> >> +	of CPUs.  The set of WQ_SYSFS workqueues can be displayed using
+> >> +	"ls sys/devices/virtual/workqueue".
+> >
+> > One thing to be careful about is that once published, it becomes part
+> > of userland visible interface.  Maybe adding some words warning
+> > against sprinkling WQ_SYSFS willy-nilly is a good idea?
 > 
-> [ 1428.146261] kernel BUG at mm/huge_memory.c:2785!
-
-Hm, interesting.
-
-It seems we either failed to split huge page on vma split or it
-materialized from under us. I don't see how it can happen:
-
-  - it seems we do the right thing with vma_adjust_trans_huge() in
-    __split_vma();
-  - we hold ->mmap_sem all the way from vm_munmap(). At least I don't see
-    a place where we could drop it;
-
-Andrea, any ideas?
-
-> [ 1428.147100] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 1428.148512] Dumping ftrace buffer:
-> [ 1428.149497]    (ftrace buffer empty)
-> [ 1428.150248] Modules linked in:
-> [ 1428.151164] CPU: 106 PID: 29430 Comm: trinity-c106 Tainted: G        W 
-> 3.14.0-rc4-next-20140226-sasha-00013-g082bdac-dirty #4
-> [ 1428.153515] task: ffff8808906c8000 ti: ffff880890aa6000 task.ti: ffff880890aa6000
-> [ 1428.154274] RIP: 0010:[<mm/huge_memory.c:2785>]  [<mm/huge_memory.c:2785>] 
-> __split_huge_page_pmd+0x3f/0x2e0
-> [ 1428.154274] RSP: 0018:ffff880890aa7c98  EFLAGS: 00010287
-> [ 1428.154274] RAX: ffff880890f34000 RBX: ffff880b3c6791a0 RCX: 00003ffffffff000
-> [ 1428.154274] RDX: ffff880b3c6791a0 RSI: 00007f29869b4000 RDI: ffff8803dcbd6400
-> [ 1428.154274] RBP: ffff880890aa7ce8 R08: 00007f29869b5000 R09: 0000000000000000
-> [ 1428.154274] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880b3c6791a0
-> [ 1428.154274] R13: 00007f2986800000 R14: ffff8803dcbd6400 R15: 00007f29869b4fff
-> [ 1428.154274] FS:  00007f298bb67700(0000) GS:ffff8803de800000(0000) knlGS:0000000000000000
-> [ 1428.154274] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 1428.154274] CR2: 00007f298b978608 CR3: 00000008907c3000 CR4: 00000000000006e0
-> [ 1428.154274] DR0: 8200000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 1428.154274] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 1428.154274] Stack:
-> [ 1428.154274]  00000000001d8400 0000000000000001 ffff880890aa7cc8 ffff880890f34000
-> [ 1428.154274]  ffffffff876bcfe0 ffff880b3c6791a0 00007f29869b4000 00007f29869b5000
-> [ 1428.154274]  ffff880890aa7e18 00007f29869b4fff ffff880890aa7d78 ffffffff8127ff06
-> [ 1428.154274] Call Trace:
-> [ 1428.154274]  [<mm/memory.c:1230 mm/memory.c:1265 mm/memory.c:1290>] unmap_page_range+0x2a6/0x410
-> [ 1428.154274]  [<mm/memory.c:1338>] unmap_single_vma+0xf1/0x110
-> [ 1428.154274]  [<mm/memory.c:1365>] unmap_vmas+0x61/0xa0
-> [ 1428.154274]  [<mm/mmap.c:2361>] unmap_region+0xbc/0x120
-> [ 1428.154274]  [<include/linux/mm.h:1315 mm/mmap.c:2332 mm/mmap.c:2557>] do_munmap+0x27a/0x350
-> [ 1428.154274]  [<mm/mmap.c:2568>] ? vm_munmap+0x41/0x80
-> [ 1428.154274]  [<mm/mmap.c:2569>] vm_munmap+0x4f/0x80
-> [ 1428.154274]  [<mm/mmap.c:2574>] SyS_munmap+0x27/0x40
-> [ 1428.154274]  [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-> [ 1428.154274] Code: e5 00 00 e0 ff 53 49 89 d4 48 83 ec 28 48 8b 47 40 48 89 45 c8 4c 3b 2f 72 11 
-> 49 8d 95 00 00 20 00 48 89 55 c0 48 39 57 08 73 11 <0f> 0b 0f 1f 80 00 00 00 00 eb fe 66 0f 1f 44 00 
-> 00 4c 89 e3 49
-> [ 1428.154274] RIP  [<mm/huge_memory.c:2785>] __split_huge_page_pmd+0x3f/0x2e0
-> [ 1428.154274]  RSP <ffff880890aa7c98>
+> In the NO_HZ_FULL case, it seems to me we'd always want all unbound
+> workqueues to have their affinity set to the housekeeping CPUs.
 > 
-> 
-> Thanks,
-> Sasha
+> Is there any reason not to enable WQ_SYSFS whenever WQ_UNBOUND is set so
+> the affinity can be controlled?  I guess the main reason would be that 
+> all of these workqueue names would become permanent ABI.
 
--- 
- Kirill A. Shutemov
+Right. It's a legitimate worry but couldn't we consider workqueue names
+just like kernel threads names? Ie: something that can be renamed or
+disappear anytime from a kernel version to another?
+
+Or sysfs has real strict rules about that and I'm just daydreaming?
+
+I've been thinking we could also have a pseudo-workqueue directory in
+/sys/devices/virtual/workqueue/unbounds with only cpumask as a file.
+
+Writing to it would set all unbound workqueue affinity, at least those
+that don't have WQ_SYSFS.
+
+This would solve the ABI issue and keep a single consistent interface
+for workqueue affinity.
+
+> 
+> At least for NO_HZ_FULL, maybe this should be automatic.  The cpumask of
+> unbound workqueues should default to !tick_nohz_full_mask?  Any WQ_SYSFS
+> workqueues could still be overridden from userspace, but at least the
+> default would be sane, and help keep full dyntics CPUs isolated.
+> 
+> Example patch below, only boot tested on 4-CPU ARM system with
+> CONFIG_NO_HZ_FULL_ALL=y and verified that 'cat
+> /sys/devices/virtual/workqueue/writeback/cpumask' looked sane.  If this
+> looks OK, I can maybe clean it up a bit and make it runtime check
+> instead of a compile time check.
+
+It can work too yeah. Maybe I prefer the idea of keeping a sysfs interface
+for all workqueues (whether we use a pseudo "unbounds" dir or not) because then
+the workqueue core stays unaware of dynticks details and it doesn't end up
+fiddling with timers core internals like the full dynticks cpumask. The result
+is more interdependency and possible headaches between timers and workqueue init
+ordering.
+
+And moreover people may forget to change WQ_SYSFS workqueues if all other UNBOUND
+workqueues are known to be automatically handled. Or we handle WQ_SYSFS as well
+along the way? But still WQ_SYSFS cpumask may be modified by other user programms
+so it's still a round of set that must be done before doing any isolation work.
+
+So I have mixed feelings between code complexity, simplicity for users, etc...
+
+What do you guys think?
