@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaB0TDB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:03:01 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51966 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaB0TC7 (ORCPT
+	id S1753947AbaB0TDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:03:14 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:36209 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753375AbaB0TDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:02:59 -0500
-Date: Thu, 27 Feb 2014 13:01:02 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Loc Ho <lho@apm.com>
-CC: <kishon@ti.com>, <tj@kernel.org>, <olof@lixom.net>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <ddutile@redhat.com>,
-        <jcm@redhat.com>, <patches@apm.com>
-Subject: Re: [PATCH v12 1/4] PHY: Add function set_speed to generic PHY
- framework
-Message-ID: <20140227190102.GB4862@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1393524848-8207-1-git-send-email-lho@apm.com>
- <1393524848-8207-2-git-send-email-lho@apm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
-Content-Disposition: inline
-In-Reply-To: <1393524848-8207-2-git-send-email-lho@apm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Feb 2014 14:03:11 -0500
+X-Greylist: delayed 1648 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 14:03:11 EST
+From: Feng Kan <fkan@apm.com>
+To: tglx@linutronix.de, patches@apm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com
+Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
+Subject: [PATCH V2] irqchip:gic: change access of gicc_ctrl register to read modify write.
+Date: Thu, 27 Feb 2014 11:34:55 -0700
+Message-Id: <1393526095-31479-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TRYliJ5NKNqkz5bu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This change is made to preserve the GIC v2 releated bits in the
+GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+The original code only set the enable/disable group bit in this register.
+This code will preserve the bypass bits configured by the bootload except
+the enable/disable bit. The main reason for this change is to allow the
+bypass bits specified in the v2 spec to remain untouched by the current
+GIC code. In the X-Gene platform, the bypass functionality is not used
+and bypass must be disabled at all time.
 
-Hi,
+Signed-off-by: Vinayak Kale <vkale@apm.com>
+Acked-by: Anup Patel <apatel@apm.com>
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+V2 Changes:
+	- only mask off v2 bypass bits
 
-On Thu, Feb 27, 2014 at 11:14:05AM -0700, Loc Ho wrote:
-> This patch adds function set_speed to the generic PHY framework operation
-> structure. This function can be called to instruct the PHY underlying lay=
-er
-> at specified lane to configure for specified speed in hertz.
+ drivers/irqchip/irq-gic.c |   22 +++++++++++++++++++---
+ 1 files changed, 19 insertions(+), 3 deletions(-)
 
-why ? looks like clk_set_rate() is your friend here. Can you be more
-descriptive of the use case ? When will this be used ?
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 341c601..757581b 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 	void __iomem *dist_base = gic_data_dist_base(gic);
+ 	void __iomem *base = gic_data_cpu_base(gic);
+ 	unsigned int cpu_mask, cpu = smp_processor_id();
++	unsigned int ctrl_mask;
+ 	int i;
+ 
+ 	/*
+@@ -449,13 +450,24 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+ 
+ 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(base + GIC_CPU_CTRL);
++	ctrl_mask |= 0x1;
++	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
+ }
+ 
+ void gic_cpu_if_down(void)
+ {
++	unsigned int ctrl_mask;
+ 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
++	/*
++	 * Disable grp enable bits, leave the bypass bits alone as they
++	 * may impact correct operation
++	 */
++	ctrl_mask &= 0x1e0;
++	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ #ifdef CONFIG_CPU_PM
+@@ -566,6 +578,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ {
+ 	int i;
+ 	u32 *ptr;
++	unsigned int ctrl_mask;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
+ 
+@@ -590,7 +603,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++
++	ctrl_mask = readl(cpu_base + GIC_CPU_CTRL);
++	ctrl_mask |= 0x1;
++	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+-- 
+1.7.1
 
---=20
-balbi
-
---TRYliJ5NKNqkz5bu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTD4tuAAoJEIaOsuA1yqREAfUQAJcil86TUuxjq1TzHSeVz1wu
-Q+SzrpfZ/A2I1VsAyOMsAclX1heGZ5hIbDMIQkkC/YDqEHJLa8cfkw9wYADES/e+
-cTWysat7CROiWOgS4P7lCOz1OFEteI8kKFMe+eStwPtTH4nTSZKK6vT79p+p0oms
-fruJJr9Cir4TzxACcvjPNYMRl34p71GelYYSzOOFXydv4EOpnPKdwCZk08hIPM3l
-9UwlfHhT+HNO5yOsiOMUqf80yy0s6LPvVhBbak0Jlk1Dw11BPmOdHHseyeRmbNfZ
-C/N1d9XsBYcvDCCoX06pxYx0U152K9yTA9QWZ9EUrZEwFsGcJgrPg0SvpD9VpYMi
-0E5Ecbb/nPqEWeyjvEjFxfieyO35NJWp8mD6SWnhk0nz4YiiWNQxi5tZcfPbdr0J
-//xgQo3F19Ft2nWeRPo6AVhEJJdM9e8ysGrR6WTd3lOSQNS6kxhJUfwFtbKLvXQa
-PuYQJR1GM4ryv4vCrzAx5hFrs4sA+/J6l/eISK/A8wTFDn91/v55fsPBc9cRCW0Y
-v34bMfgMG6QNGMX6bJRAkUlB9UkYXp4N05TfJubZTodC3PEPFlU/VjCvYMVdijTi
-qpsflCF/tyY9LtBBqIGVyWm82XY5/iFXOECHUqyH5nVWe47MKMm5uJA/9iy9SnNg
-q65W1BiddizQNtonWPJD
-=/V1M
------END PGP SIGNATURE-----
-
---TRYliJ5NKNqkz5bu--
