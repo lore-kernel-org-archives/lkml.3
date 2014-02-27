@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaB0PCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:02:11 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42639 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751966AbaB0PCI (ORCPT
+	id S1753106AbaB0PDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:03:30 -0500
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:44303 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150AbaB0PD2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:02:08 -0500
-Date: Thu, 27 Feb 2014 10:02:05 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / sleep: New flag to speed up suspend-resume of
- suspended devices
-In-Reply-To: <4633671.dBN1DXCk1F@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1402271001190.1150-100000@iolanthe.rowland.org>
+	Thu, 27 Feb 2014 10:03:28 -0500
+Date: Thu, 27 Feb 2014 07:03:24 -0800
+From: Jeff Layton <jlayton@samba.org>
+To: "Lorenz Bucher" <Lorenz.Bucher@gmx.de>
+Cc: sfrench@samba.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cifs: connect: added option krb5mi which may allow
+ package signing
+Message-ID: <20140227070324.0861fb3a@corrin.poochiereds.net>
+In-Reply-To: <trinity-0877060f-29cb-4f1f-885e-f0d1c09a0a31-1393492393926@3capp-gmx-bs47>
+References: <trinity-7e911dab-5097-463a-ba4a-09935acbdc69-1393422407694@3capp-gmx-bs33>
+	<20140226122634.1190167e@corrin.poochiereds.net>
+	<trinity-0877060f-29cb-4f1f-885e-f0d1c09a0a31-1393492393926@3capp-gmx-bs47>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Rafael J. Wysocki wrote:
+On Thu, 27 Feb 2014 10:13:14 +0100
+"Lorenz Bucher" <Lorenz.Bucher@gmx.de> wrote:
 
-> > If the child knows about the problem beforehand, it can runtime-resume 
-> > the parent during its ->suspend.
 > 
-> Well, it even should do that in those cases.  We may need to deal with children
-> that don't do that, though.
+>  
+>  
 > 
-> > > Well, if power.fast_suspend set guarantees that ->suspend_late, ->suspend_noirq,
-> > > ->resume_noirq, and ->resume_early will be skipped for a device, then we may
-> > > restrict setting it for devices whose children have it set (or that have no
-> > > children).  Initially, that will be equivalent to setting it for leaf devices
-> > > only, but it might be extended over time in a natural way.
-> > 
-> > Initially, maybe.
+> Gesendet: Mittwoch, 26. Februar 2014 um 21:26 Uhr
+> Von: "Jeff Layton" <jlayton@samba.org>
+> An: "Lorenz Bucher" <Lorenz.Bucher@gmx.de>
+> Cc: sfrench@samba.org, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+> Betreff: Re: [PATCH] cifs: connect: added option krb5mi which may allow package signing
+> On Wed, 26 Feb 2014 14:46:47 +0100
+> "Lorenz Bucher" <Lorenz.Bucher@gmx.de> wrote:
 > 
-> Of course initially.
+> > Solves an issue with dfs where servers using package signing are
+> > mixed with servers which don't use package signing.
+> >
+> > Signed-off-by: Lorenz Bucher <lorenz.bucher@gmx.de>
+> > ---
+> > fs/cifs/connect.c | 3 +++
+> > 1 file changed, 3 insertions(+)
+> >
+> > diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+> > index 56c152d..9d06dd8 100644
+> > --- a/fs/cifs/connect.c
+> > +++ b/fs/cifs/connect.c
+> > @@ -1104,6 +1104,9 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+> > if (!value || !*value) {
+> > cERROR(1, "no security value specified");
+> > continue;
+> > + } else if (strnicmp(value, "krb5mi", 6) == 0) {
+> > + vol->secFlg |= CIFSSEC_MAY_KRB5 |
+> > + CIFSSEC_MAY_SIGN;
+> > } else if (strnicmp(value, "krb5i", 5) == 0) {
+> > vol->secFlg |= CIFSSEC_MAY_KRB5 |
+> > CIFSSEC_MUST_SIGN;
 > 
-> > But it's the wrong approach in general.
+> This looks like it applies to a really old kernel. I think that problem
+> was what commit 0b7bc84000d71f3647ca33ab1bf5bd928535c846 was intended
+> to fix.
 > 
-> In the long run - I agree.
+> --
+> Jeff Layton <jlayton@samba.org>
 > 
-> > The right approach is to restrict setting fast_suspend for devices whose
-> > children don't mind their parent being suspended when their resume callbacks 
-> > run -- not for devices whose children also have fast_suspend set.
+> Its the current kernel from LTS Ubuntu 12.04
+> 3.2.0-59-generic #90-Ubuntu SMP Tue Jan 7 22:43:51 UTC 2014
 > 
-> I agree, but we need to know which children are OK with the parent being
-> suspended.  Having fast_suspend set is a good indication of that. :-)
-> 
-> Of course, we may introduce a separate flag for that just fine if you prefer.
-> 
-> > That's the point I've been trying to express all along.
-> 
-> I see.
 
-Okay.  I'll wait to see the next version.
+Yep, that kernel is pretty old.
 
-Alan Stern
+You're probably best off asking the ubuntu kernel maintainers to take
+that patch (or asking them to backport 0b7bc84000d). It should
+be reasonably safe but they'll have to make that call.
 
+-- 
+Jeff Layton <jlayton@samba.org>
