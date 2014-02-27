@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaB0PsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:48:17 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:51171 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaB0PsO (ORCPT
+	id S1753190AbaB0Ps4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:48:56 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49797 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaB0Psy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:48:14 -0500
+	Thu, 27 Feb 2014 10:48:54 -0500
 MIME-Version: 1.0
-X-Originating-IP: [84.208.70.35]
-In-Reply-To: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
-References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 27 Feb 2014 16:47:51 +0100
-Message-ID: <CAG-2HqWahCVvDLPwoMo7O4kam+W0o7BQGm4cRBvc9=X_p0fF7Q@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Provide netdev naming-policy via sysfs
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Johannes berg <johannes@sipsolutions.net>,
+In-Reply-To: <CAGXu5jLVfekwi_fgjLDp9zVAenxEUwADM-6Kb=NzP7aJV6n+kw@mail.gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+	<76266614ae965cacc59033bd20385fbcf6393770.1393493277.git.rashika.kheria@gmail.com>
+	<CAGXu5jLVfekwi_fgjLDp9zVAenxEUwADM-6Kb=NzP7aJV6n+kw@mail.gmail.com>
+Date: Thu, 27 Feb 2014 09:48:54 -0600
+Message-ID: <CABqD9haxuQv9FG1a+r79UYuhs9xhJVeeAB3rm7xzqTqM7FcwtA@mail.gmail.com>
+Subject: Re: [PATCH 35/46] kernel: Mark function as static in kernel/seccomp.c
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Nicolas Schichan <nschichan@freebox.fr>,
+        James Morris <james.l.morris@oracle.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 3:47 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> This series implements a new sysfs attribute for netdevs called
-> "name_assign_type". It provides an integer that describes where an interface
-> name comes from. See Patch #1 for a description of this attribute. It is
-> modelled after the existing "addr_assign_type" attribute.
+On Thu, Feb 27, 2014 at 9:33 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Thu, Feb 27, 2014 at 4:20 AM, Rashika Kheria
+> <rashika.kheria@gmail.com> wrote:
+>> Mark function as static in kernel/seccomp.c because it is not used
+>> outside this file.
+>>
+>> This eliminates the following warning in kernel/seccomp.c:
+>> kernel/seccomp.c:296:6: warning: no previous prototype for 'seccomp_attach_user_filter' [-Wmissing-prototypes]
+>>
+>> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 >
-> The main use-case is to allow udev to skip applying reliable ifnames to virtual
-> devices. For instance, if wifi-P2P devices are created, wpas already provides a
-> suitable naming-policy and udev shouldn't touch these devices. Same is true for
-> other virtual devices.
-> The idea is that if a device-name was provided by user-space, we should always
-> prefer fixing this naming-policy instead of making udev rename the device. For
-> kernel provided names that's hardly possible, though. Providing the
-> naming-policy source via sysfs is thus a simple way to see whether renames are
-> needed.
->
-> Additionally, this field allows to detect whether a netdev has been manually
-> renamed, which is quite useful for debugging and during crash-recovery.
+> Acked-by: Kees Cook <keescook@chromium.org>
 
-Moreover, it would be useful for udev to reliably know if some other
-userspace process already renamed a device, so we know not to touch
-it. This can easily happen for instance if some renaming happens in
-the initrd or from script called from udev rules.
+Acked-by: Will Drewry <wad@chromium.org>
 
-Acked-by: Tom Gundersen <teg@jklm.no>
+It amazing what things slip through.  Thanks!
 
-> David Herrmann (4):
->   net: add name_assign_type netdev attribute
->   mac80211: set NET_NAME_USER for user-space created ifs
->   ath6kl: set NET_NAME_USER for P2P ifs
->   brcmfmac: set NET_NAME_USER for P2P ifs
->
->  drivers/net/wireless/ath/ath6kl/cfg80211.c    | 5 ++++-
->  drivers/net/wireless/ath/ath6kl/cfg80211.h    | 1 +
->  drivers/net/wireless/ath/ath6kl/core.c        | 4 ++--
->  drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
->  include/linux/netdevice.h                     | 6 ++++++
->  net/core/dev.c                                | 7 +++++++
->  net/core/net-sysfs.c                          | 2 ++
->  net/core/rtnetlink.c                          | 2 ++
->  net/mac80211/iface.c                          | 1 +
->  9 files changed, 26 insertions(+), 3 deletions(-)
->
-> --
-> 1.9.0
->
+>> ---
+>>  kernel/seccomp.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index b7a1004..0e004a7 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -293,7 +293,7 @@ fail:
+>>   *
+>>   * Returns 0 on success and non-zero otherwise.
+>>   */
+>> -long seccomp_attach_user_filter(char __user *user_filter)
+>> +static long seccomp_attach_user_filter(char __user *user_filter)
+>>  {
+>>         struct sock_fprog fprog;
+>>         long ret = -EFAULT;
+>> --
+>> 1.7.9.5
+>>
