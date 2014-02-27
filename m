@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaB0XaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 18:30:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:6150 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751881AbaB0XaL (ORCPT
+	id S1752671AbaB0Xcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 18:32:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40495 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaB0Xco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 18:30:11 -0500
-Date: Thu, 27 Feb 2014 18:30:08 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140227183008.6be081b7@gandalf.local.home>
-In-Reply-To: <530FC1C6.5040209@zytor.com>
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu>
-	<530B841F.5050803@zytor.com>
-	<alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
-	<530B90A5.3090302@zytor.com>
-	<20140224141329.1cd3bb52@gandalf.local.home>
-	<20140224193043.GP6835@laptop.programming.kicks-ass.net>
-	<530C12CA.6070308@zytor.com>
-	<alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
-	<dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
-	<20140225094352.73e0e28c@gandalf.local.home>
-	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
-	<20140227173150.4e5ed747@gandalf.local.home>
-	<530FC1C6.5040209@zytor.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Thu, 27 Feb 2014 18:32:44 -0500
+Date: Thu, 27 Feb 2014 15:32:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux RAID <linux-raid@vger.kernel.org>,
+        "majianpeng" <majianpeng@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] md / procfs: avoid Oops if md-mod removed while
+ /proc/mdstat is being polled.
+Message-Id: <20140227153242.42cb9b9ef83dacc895017d44@linux-foundation.org>
+In-Reply-To: <20140228100757.7dbd3dae@notabene.brown>
+References: <20140227172445.13644477@notabene.brown>
+	<20140227125807.d034c50c7fe2e1a9f3c38ec1@linux-foundation.org>
+	<20140228083443.64c92382@notabene.brown>
+	<20140227135125.92a56ff656b3ca8d0b5d9029@linux-foundation.org>
+	<20140228100757.7dbd3dae@notabene.brown>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014 14:52:54 -0800
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+On Fri, 28 Feb 2014 10:07:57 +1100 NeilBrown <neilb@suse.de> wrote:
 
-> On 02/27/2014 02:31 PM, Steven Rostedt wrote:
+> On Thu, 27 Feb 2014 13:51:25 -0800 Andrew Morton <akpm@linux-foundation.org>
+> wrote:
+> 
+> > On Fri, 28 Feb 2014 08:34:43 +1100 NeilBrown <neilb@suse.de> wrote:
 > > 
-> > Yeah, something is getting mesed up.
+> > > On Thu, 27 Feb 2014 12:58:07 -0800 Andrew Morton <akpm@linux-foundation.org>
+> > > wrote:
+> > > 
+> > > > On Thu, 27 Feb 2014 17:24:45 +1100 NeilBrown <neilb@suse.de> wrote:
+> > > > 
+> > > > > If poll or select is waiting on /proc/mdstat when md-mod is unloaded
+> > > > > an oops will ensure when the poll/select completes.
+> > > > > 
+> > > > > This is because the wait_queue_head which is registered with poll_wait()
+> > > > > is local to the module and no longer exists when the poll completes and
+> > > > > detaches that wait_queue_head (in poll_free_wait -> remove_wait_queue).
+> > > > > 
+> > > > > To fix this we need the wait_queue_head to have (at least) the same life
+> > > > > time as the proc_dir_entry.  So this patch places it in that structure.
+> > > > > 
+> > > > > We:
+> > > > >   - add pde_poll_wait to struct proc_dir_entry
+> > > > >   - call poll_wait() passing this when poll() is called on the proc file
+> > > > >   - export a function proc_wake_up which will call wake_up() on pde_poll_wait
+> > > > > 
+> > > > > and make use of all that in md.c
+> > > > 
+> > > > This sounds wrong.  If a userspace process is waiting on
+> > > > md_event_waiters then the md module is "busy" and the rmmod attempt
+> > > > should fail?
+> > > 
+> > > Al Viro says "no" quite firmly.
+> > > 
+> > > I think the core argument is that
+> > > 
+> > >   rmmod md-mod < /proc/mdstat
+> > > 
+> > > would deadlock.
 > > 
-> 
-> What it *looks* like to me is that we try to nest the cr2 save/restore,
-> which doesn't nest because it is a percpu variable.
-> 
-> ... except in the x86-64 case, we *ALSO* save/restore cr2 inside
-> entry_64.S, which makes the stuff in do_nmi completely redundant and
-> there for no good reason.
+> > Well, only if the rmmod hangs around waiting for the module to go idle.
+> > I'm thinking rmmod should fail.  EBUSY.
 
-Peter, look at the code. That percpu cr2 is in a #ifdef CONFIG_X86_32
-section. That is, it isn't even executed. That's i386 code. The only
-place the cr2 is saved for x86_64 is in entry_64.S.
+This?  What happens if we just fail the rmmod when the module is busy
+(which it is).
 
--- Steve
-
-> 
-> I would actually suggest we do the equivalent on i386 as well.
-> 
-> Vince, could you try this patch as an experiment?
-> 
-> 
 
