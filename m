@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaB0HeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:34:09 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51346 "EHLO
+	id S1752140AbaB0HeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:34:17 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51421 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaB0HeF (ORCPT
+	with ESMTP id S1751874AbaB0HeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:34:05 -0500
-Subject: [PATCH -tip v7 19/26] kprobes: Show blacklist entries via debugfs
+	Thu, 27 Feb 2014 02:34:15 -0500
+Subject: [PATCH -tip v7 23/26] kprobes/x86: Remove unneeded
+ preempt_disable/enable in interrupt handlers
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -15,10 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 27 Feb 2014 16:34:02 +0900
-Message-ID: <20140227073402.20992.14455.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 27 Feb 2014 16:34:11 +0900
+Message-ID: <20140227073411.20992.77750.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140227073315.20992.6174.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -29,99 +29,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show blacklist entries (function names with the address
-range) via /sys/kernel/debug/kprobes/blacklist.
+Since the int3 itself disables the local_irq and kprobes
+keeps it disabled while the single step has done, the
+kernel preemption never happen while processing a kprobe.
+This means that we don't need to disable/enable preemption.
+Also, this changes kprobe_int3_handler to use goto-out style.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- kernel/kprobes.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 53 insertions(+), 8 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index a21b4e6..3214289 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -2249,6 +2249,46 @@ static const struct file_operations debugfs_kprobes_operations = {
- 	.release        = seq_release,
- };
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 4767fda..8ef676f 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
+ 		 * stepping.
+ 		 */
+ 		regs->ip = (unsigned long)p->ainsn.insn;
+-		preempt_enable_no_resched();
+ 		return;
+ 	}
+ #endif
+@@ -575,13 +574,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb;
  
-+/* kprobes/blacklist -- shows which functions can not be probed */
-+static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
-+{
-+	return seq_list_start(&kprobe_blacklist, *pos);
-+}
-+
-+static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	return seq_list_next(v, &kprobe_blacklist, pos);
-+}
-+
-+static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
-+{
-+	struct kprobe_blacklist_entry *ent =
-+		list_entry(v, struct kprobe_blacklist_entry, list);
-+
-+	seq_printf(m, "0x%p-0x%p\t%ps\n", (void *)ent->start_addr,
-+		   (void *)ent->end_addr, (void *)ent->start_addr);
-+	return 0;
-+}
-+
-+static const struct seq_operations kprobe_blacklist_seq_ops = {
-+	.start = kprobe_blacklist_seq_start,
-+	.next  = kprobe_blacklist_seq_next,
-+	.stop  = kprobe_seq_stop,	/* Reuse void function */
-+	.show  = kprobe_blacklist_seq_show,
-+};
-+
-+static int kprobe_blacklist_open(struct inode *inode, struct file *filp)
-+{
-+	return seq_open(filp, &kprobe_blacklist_seq_ops);
-+}
-+
-+static const struct file_operations debugfs_kprobe_blacklist_ops = {
-+	.open           = kprobe_blacklist_open,
-+	.read           = seq_read,
-+	.llseek         = seq_lseek,
-+	.release        = seq_release,
-+};
-+
- static void arm_all_kprobes(void)
- {
- 	struct hlist_head *head;
-@@ -2372,19 +2412,24 @@ static int __init debugfs_kprobe_init(void)
+ 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
+-	/*
+-	 * We don't want to be preempted for the entire
+-	 * duration of kprobe processing. We conditionally
+-	 * re-enable preemption at the end of this function,
+-	 * and also in reenter_kprobe() and setup_singlestep().
+-	 */
+-	preempt_disable();
  
- 	file = debugfs_create_file("list", 0444, dir, NULL,
- 				&debugfs_kprobes_operations);
--	if (!file) {
--		debugfs_remove(dir);
--		return -ENOMEM;
--	}
-+	if (!file)
-+		goto error;
+ 	kcb = get_kprobe_ctlblk();
+ 	p = get_kprobe(addr);
+@@ -589,7 +581,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 	if (p) {
+ 		if (kprobe_running()) {
+ 			if (reenter_kprobe(p, regs, kcb))
+-				return 1;
++				goto handled;
+ 		} else {
+ 			set_current_kprobe(p, regs, kcb);
+ 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+@@ -604,7 +596,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 			 */
+ 			if (!p->pre_handler || !p->pre_handler(p, regs))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
+ 		/*
+@@ -617,19 +609,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
+ 		 * the original instruction.
+ 		 */
+ 		regs->ip = (unsigned long)addr;
+-		preempt_enable_no_resched();
+-		return 1;
++		goto handled;
+ 	} else if (kprobe_running()) {
+ 		p = __this_cpu_read(current_kprobe);
+ 		if (p->break_handler && p->break_handler(p, regs)) {
+ 			if (!skip_singlestep(p, regs, kcb))
+ 				setup_singlestep(p, regs, kcb, 0);
+-			return 1;
++			goto handled;
+ 		}
+ 	} /* else: not a kprobe fault; let the kernel handle it */
  
- 	file = debugfs_create_file("enabled", 0600, dir,
- 					&value, &fops_kp);
--	if (!file) {
--		debugfs_remove(dir);
--		return -ENOMEM;
--	}
-+	if (!file)
-+		goto error;
-+
-+	file = debugfs_create_file("blacklist", 0444, dir, NULL,
-+				&debugfs_kprobe_blacklist_ops);
-+	if (!file)
-+		goto error;
- 
+-	preempt_enable_no_resched();
  	return 0;
 +
-+error:
-+	debugfs_remove(dir);
-+	return -ENOMEM;
++handled:
++	return 1;
  }
+ NOKPROBE_SYMBOL(kprobe_int3_handler);
  
- late_initcall(debugfs_kprobe_init);
+@@ -894,7 +887,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
+ 	}
+ 	reset_current_kprobe();
+ out:
+-	preempt_enable_no_resched();
+ 
+ 	/*
+ 	 * if somebody else is singlestepping across a probe point, flags
+@@ -927,7 +919,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 			restore_previous_kprobe(kcb);
+ 		else
+ 			reset_current_kprobe();
+-		preempt_enable_no_resched();
+ 	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
+ 		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
+ 		/*
+@@ -1058,7 +1049,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+ 		       kcb->jprobes_stack,
+ 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
+-		preempt_enable_no_resched();
+ 		return 1;
+ 	}
+ 	return 0;
 
 
