@@ -1,91 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaB0NGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:06:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64895 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaB0NGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:06:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,554,1389772800"; 
-   d="scan'208";a="490877618"
-Date: Thu, 27 Feb 2014 15:13:37 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chew, Kean Ho" <kean.ho.chew@intel.com>,
-        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-Subject: Re: [PATCH] pwm: add support for Intel Low Power Subsystem PWM
-Message-ID: <20140227131337.GN5018@intel.com>
-References: <1390240808-18582-1-git-send-email-chiau.ee.chew@intel.com>
- <20140226143822.GG29779@ulmo.nvidia.com>
- <20140227090152.GH5018@intel.com>
- <604BF5F4C5D71041942BC7E84ED659EA0155B2E7@PGSMSX103.gar.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <604BF5F4C5D71041942BC7E84ED659EA0155B2E7@PGSMSX103.gar.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752485AbaB0NHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:07:17 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52781 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751026AbaB0NHN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 08:07:13 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 2/4] pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+Date: Thu, 27 Feb 2014 13:06:40 +0000
+Message-Id: <1393506402-11474-3-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 09:03:41AM +0000, Chew, Chiau Ee wrote:
-> > > > +static int pwm_lpss_probe(struct platform_device *pdev) {
-> > > > +	struct device *dev = &pdev->dev;
-> > > > +	struct pwm_lpss_chip *lpwm;
-> > > > +	int ret;
-> > > > +
-> > > > +	lpwm = dev_get_platdata(dev);
-> > >
-> > > struct pwm_lpss_chip is defined in this source file, how can anybody
-> > > else know what to fill platform_data with?
-> > 
-> > Good point. Chiau Ee, do you recall why that thing is there in the first place?
-> 
-> This is added because we would eventually want to have PCI enumeration support
-> added. I think we shall find a way to better enable both the ACPI enumeration and
-> PCI enumeration support.
+Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+the creation order has been changed for no good reason. Revert the order of
+creation as we are going to depend on the pci_host_bridge structure to retrieve the
+domain number of the root bus.
 
-Agreed. For now, can you please drop the platform data thing from the
-driver? Thanks.
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-> > > > +	if (!lpwm) {
-> > > > +		lpwm = pwm_lpss_acpi_get_pdata(pdev);
-> > > > +		if (!lpwm)
-> > > > +			return -ENODEV;
-> > > > +	}
-> > > [...]
-> > > > +static struct platform_driver pwm_lpss_driver = {
-> > > > +	.driver = {
-> > > > +		.name = "pwm-lpss",
-> > > > +		.acpi_match_table = ACPI_PTR(pwm_lpss_acpi_match),
-> > >
-> > > ACPI_PTR not needed since the table will always be there.
-> > 
-> > OK.
-> > 
-> > >
-> > > > +	},
-> > > > +	.probe = pwm_lpss_probe,
-> > > > +	.remove = pwm_lpss_remove,
-> > > > +};
-> > > > +module_platform_driver(pwm_lpss_driver);
-> > > > +
-> > > > +MODULE_DESCRIPTION("PWM driver for Intel LPSS");
-> > > > +MODULE_AUTHOR("Mika Westerberg
-> > <mika.westerberg@linux.intel.com>");
-> > > > +MODULE_LICENSE("GPL");
-> > >
-> > > The file header says GPL v2, but "GPL" here means "GPL v2 or later".
-> > 
-> > OK, we will change that to GPLv2.
-> > 
-> > Thanks a lot for your review! We will do the changes and submit v2.
-> 
-> Ok. I will make the changes accordingly.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6e34498..78ccba0 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -505,7 +505,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+ 	kfree(bridge);
+ }
+ 
+-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
++static struct pci_host_bridge *pci_alloc_host_bridge(void)
+ {
+ 	struct pci_host_bridge *bridge;
+ 
+@@ -514,7 +514,6 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&bridge->windows);
+-	bridge->bus = b;
+ 	return bridge;
+ }
+ 
+@@ -1727,9 +1726,21 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
++	bridge = pci_alloc_host_bridge();
++	if (!bridge)
++		return NULL;
++
++	bridge->dev.parent = parent;
++	bridge->dev.release = pci_release_host_bridge_dev;
++	error = pcibios_root_bridge_prepare(bridge);
++	if (error) {
++		kfree(bridge);
++		return NULL;
++	}
++
+ 	b = pci_alloc_bus();
+ 	if (!b)
+-		return NULL;
++		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+@@ -1738,26 +1749,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 
+-	bridge = pci_alloc_host_bridge(b);
+-	if (!bridge)
+-		goto err_out;
+-
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->bus = b;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+-	error = pcibios_root_bridge_prepare(bridge);
+-	if (error) {
+-		kfree(bridge);
+-		goto err_out;
+-	}
+-
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+@@ -1814,8 +1814,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-err_out:
++err_bus_out:
+ 	kfree(b);
++err_out:
++	kfree(bridge);
+ 	return NULL;
+ }
+ 
+-- 
+1.9.0
 
-Thanks.
