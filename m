@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaB0QDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:03:34 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42990 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaB0QDd (ORCPT
+	id S1752914AbaB0QFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:05:42 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:31362 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751063AbaB0QFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:03:33 -0500
-X-Originating-IP: 50.43.14.201
-Date: Thu, 27 Feb 2014 08:03:22 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 18/46] kernel: Mark functions as static in sched/fair.c
-Message-ID: <20140227160322.GC26756@thin>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
- <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
- <20140227115805.GE9987@twins.programming.kicks-ass.net>
+	Thu, 27 Feb 2014 11:05:40 -0500
+Date: Thu, 27 Feb 2014 11:05:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        <stable@vger.kernel.org>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFA][PATCH 2/5] ftrace/x86: One more missing sync after fixup
+ of function modification failure
+Message-ID: <20140227110538.2b62c197@gandalf.local.home>
+In-Reply-To: <20140227154923.103932155@goodmis.org>
+References: <20140227154616.703252665@goodmis.org>
+	<20140227154923.103932155@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227115805.GE9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 12:58:05PM +0100, Peter Zijlstra wrote:
-> On Thu, Feb 27, 2014 at 05:20:19PM +0530, Rashika Kheria wrote:
-> > @@ -5266,7 +5266,7 @@ static unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu)
-> >  	return smt_gain;
-> >  }
-> >  
-> > -unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
-> > +static unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
-> >  {
-> >  	return default_scale_smt_power(sd, cpu);
-> >  }
+H. Peter, I forgot to Cc you on this one. As you are the one I'm
+looking for an Ack from.
+
+-- Steve
+
+
+On Thu, 27 Feb 2014 10:46:18 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> [Request for Ack]
 > 
-> Fuck no; please think before sending.
+> From: Petr Mladek <pmladek@suse.cz>
 > 
-> I'm going to ignore all patches from you henceforth.
+> If a failure occurs while modifying ftrace function, it bails out and will
+> remove the tracepoints to be back to what the code originally was.
+> 
+> There is missing the final sync run across the CPUs after the fix up is done
+> and before the ftrace int3 handler flag is reset.
+> 
+> Link: http://lkml.kernel.org/r/1393258342-29978-2-git-send-email-pmladek@suse.cz
+> 
+> Fixes: 8a4d0a687a5 "ftrace: Use breakpoint method to update ftrace caller"
+> Cc: stable@vger.kernel.org # 3.5+
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/kernel/ftrace.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+> index 6b566c8..69885e2 100644
+> --- a/arch/x86/kernel/ftrace.c
+> +++ b/arch/x86/kernel/ftrace.c
+> @@ -660,8 +660,8 @@ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+>  		ret = -EPERM;
+>  		goto out;
+>  	}
+> -	run_sync();
+>   out:
+> +	run_sync();
+>  	return ret;
+>  
+>   fail_update:
 
-Did you perhaps check, and notice that there are *zero* uses of this
-function in the kernel?  Nothing overrides this weak symbol; it is no
-longer needed.  You removed the one and only user in your commit:
-
-commit ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Wed Jun 13 15:24:45 2012 +0200
-
-    sched/x86: Remove broken power estimation
-
-    The x86 sched power implementation has been broken forever and gets in
-    the way of other stuff, remove it.
-
-When I reviewed Rashika's patch and provided a Reviewed-by, I provided
-the following feedback:
-
-Josh Triplett wrote:
-> I'd suggest waiting to see how the scheduler folks respond to this patch
-> series, and then if they accept the changes marking unused __weak
-> functions as static, you could follow up with a patch that folds them
-> into their callers and gets rid of them entirely.
-
-(That feedback was based on the assumption that the simplest possible
-mark-it-static patch would be a good starting point.)
-
-Now, given all of the above, perhaps you could provide some useful
-feedback on what you find so objectionable about this patch?
-
-- Josh Triplett
