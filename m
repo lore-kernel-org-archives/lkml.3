@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235AbaB0TOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:14:16 -0500
-Received: from dliviu.plus.com ([80.229.23.120]:60541 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941AbaB0TOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:14:14 -0500
-Date: Thu, 27 Feb 2014 19:12:59 +0000
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO
- resources.
-Message-ID: <20140227191259.GA31753@bart.dudau.co.uk>
-Mail-Followup-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-	Liviu Dudau <Liviu.Dudau@arm.com>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
- <1393506402-11474-2-git-send-email-Liviu.Dudau@arm.com>
- <20140227181951.GC24656@obsidianresearch.com>
+	id S1752814AbaB0TPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:15:35 -0500
+Received: from moutng.kundenserver.de ([212.227.17.24]:57034 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaB0TPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 14:15:34 -0500
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: John Stultz <john.stultz@linaro.org>
+Subject: Re: Fwd: [RFC][PATCH] staging: Fix build issues with new binder API
+Date: Thu, 27 Feb 2014 20:15:23 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <1393453747-12513-1-git-send-email-john.stultz@linaro.org> <530E6B56.8060405@linaro.org>
+In-Reply-To: <530E6B56.8060405@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140227181951.GC24656@obsidianresearch.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Feb 27 19:14:12 2014
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 530f8e843197119664735
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402272015.24077.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:a7r5iScCg33ANh6LC9pd/psz0vj2KJ4retaoQSeW/l9
+ /WBU0XgMvHhg6GQkO/nHt04AZZPoeLo7RrMN4O2OyY+cajIXq5
+ BITsntNhTSEX862N2cSZra6qRoOSja+cv2YPYhNx8ZDZg90GgT
+ Zf2cIQ1ljk7kkkjKq1kipyhbVP3PJBfPmnK9EAabjIHpku7IZB
+ t1WYGutG6KZe7rjnNizyR+FzIzaaEXYblemEFlmWzqO1K3Iwav
+ MyiOzoQAnv7jiAS96TGxM5rpyHqMJ4YmUlvHhn1Y1bkr0gweXS
+ lPEyhlxSaUkZ/4ut69NnrTfGjs4o4mOCcCjqg+H/6KIVDzAGBH
+ c/ZRStEvi3KozA+bK0bPVifR90Oq0juIb/BX2Krpa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:19:51AM -0700, Jason Gunthorpe wrote:
-> On Thu, Feb 27, 2014 at 01:06:39PM +0000, Liviu Dudau wrote:
-> > +	if (res->flags & IORESOURCE_IO) {
-> > +		unsigned long port;
-> > +		port = pci_address_to_pio(range->pci_addr);
+On Wednesday 26 February 2014, John Stultz wrote:
+> The new 64bit binder API causes build issues on 32bit ARM
+> due to the lack of 64bit __get_user_asm_* implementation.
+
+It is impossible to implement this. Many have tried before.
+
+> Until that implementation is done, remove the choice for
+> 32bit ARM, automatically enabling the old 32bit binder
+> protocol.
 > 
-> This looks very suspicious, pci_addr is not unique across all domains,
-> so there is no way to convert from a pci_addr to the virtual IO
-> address without knowing the domain number as well.
-> 
-> I would like to see it be:
->   port = pci_address_to_pio(range->cpu_addr);
-> 
-> cpu_addr is unique across all domains.
+> This can be reverted once a 64bit __get_user_asm_*
+> implementation is merged.
 
-Jason,
+I think the best solution is to use __copy_from_user for
+the 64-bit access. You can wrap it in a helper function
+if you want to speed up the native-word-size case.
 
-First thanks for reviewing the updated series.
-
-We have agreed early on that indeed using range->cpu_addr is the correct aproach
-and me taking the lazy shortcut of using range->pci_addr because of the broken
-default implementation of pci_address_to_pio is wrong. I will fix this for v3.
-
-The outstanding issue is how to fix pci_address_to_pio() as it will not
-for for range->cpu_addr > IO_SPACE_LIMIT (16MB in my case).
-
-Best regards,
-Liviu
-
-> 
-> Looking at the microblaze and PPC versions I think the above version
-> is actually correct (assuming io_base_phys is the CPU address of the
-> IO window)
-> 
-> Jason
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+	Arnd
