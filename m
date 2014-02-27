@@ -1,123 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaB0GyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 01:54:09 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:37483 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaB0GyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 01:54:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393459641.25123.21.camel@buesod1.americas.hpqcorp.net>
-References: <1393459641.25123.21.camel@buesod1.americas.hpqcorp.net>
-Date: Wed, 26 Feb 2014 22:47:10 -0800
-Message-ID: <CANN689FmKv1wy-sM--VOnEc=+r9=xesfT4frq=3TEH-uMHhjjA@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: per-thread vma caching
-From: Michel Lespinasse <walken@google.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        scott.norton@hp.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751063AbaB0G6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:58:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60648 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742AbaB0G6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 01:58:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,552,1389772800"; 
+   d="scan'208";a="463243647"
+Message-ID: <1393484282.2637.17.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 2/2] thermal,rcar_thermal: Add dependency on HAS_IOMEM
+From: Zhang Rui <rui.zhang@intel.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, horms@verge.net.au,
+        laurent.pinchart+renesas@ideasonboard.com,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Date: Thu, 27 Feb 2014 14:58:02 +0800
+In-Reply-To: <1390688954-4940-1-git-send-email-richard@nod.at>
+References: <1390688954-4940-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agree with Linus; this is starting to look pretty good.
+On Sat, 2014-01-25 at 23:29 +0100, Richard Weinberger wrote:
+> Commit beeb5a1e (thermal: rcar-thermal: Enable driver compilation with COMPILE_TEST)
+> broke build on archs wihout io memory.
+> 
+> On archs like S390 or um this driver cannot build nor work.
+> Make it depend on HAS_IOMEM to bypass build failures.
+> 
+> drivers/thermal/rcar_thermal.c:404: undefined reference to `devm_ioremap_resource'
+> drivers/thermal/rcar_thermal.c:426: undefined reference to `devm_ioremap_resource'
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-I still have nits though :)
+Kuninori,
 
-On Wed, Feb 26, 2014 at 4:07 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> @@ -0,0 +1,45 @@
-> +#ifndef __LINUX_VMACACHE_H
-> +#define __LINUX_VMACACHE_H
-> +
-> +#include <linux/mm.h>
-> +
-> +#ifdef CONFIG_MMU
-> +#define VMACACHE_BITS 2
-> +#else
-> +#define VMACACHE_BITS 0
-> +#endif
+are you okay with this patch?
 
-I wouldn't even both with the #ifdef here - why not just always use 2 bits ?
+thanks,
+rui
 
-> +#define vmacache_flush(tsk)                                     \
-> +       do {                                                     \
-> +               memset(tsk->vmacache, 0, sizeof(tsk->vmacache)); \
-> +       } while (0)
+> ---
+>  drivers/thermal/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 35c0664..88efa8f 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -136,6 +136,7 @@ config SPEAR_THERMAL
+>  config RCAR_THERMAL
+>  	tristate "Renesas R-Car thermal driver"
+>  	depends on ARCH_SHMOBILE || COMPILE_TEST
+> +	depends on HAS_IO_MEM
+>  	help
+>  	  Enable this to plug the R-Car thermal sensor driver into the Linux
+>  	  thermal framework.
 
-I think inline functions are preferred
 
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index 8740213..9a5347b 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -768,16 +768,19 @@ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
->   */
->  static void delete_vma_from_mm(struct vm_area_struct *vma)
->  {
-> +       int i;
->         struct address_space *mapping;
->         struct mm_struct *mm = vma->vm_mm;
-> +       struct task_struct *curr = current;
->
->         kenter("%p", vma);
->
->         protect_vma(vma, 0);
->
->         mm->map_count--;
-> -       if (mm->mmap_cache == vma)
-> -               mm->mmap_cache = NULL;
-> +       for (i = 0; i < VMACACHE_SIZE; i++)
-> +               if (curr->vmacache[i] == vma)
-> +                       curr->vmacache[i] = NULL;
-
-Why is the invalidation done differently here ? shouldn't it be done
-by bumping the mm's sequence number so that invalidation works accross
-all threads sharing that mm ?
-
-> +#ifndef CONFIG_MMU
-> +struct vm_area_struct *vmacache_find_exact(struct mm_struct *mm,
-> +                                          unsigned long start,
-> +                                          unsigned long end)
-> +{
-> +       int i;
-> +
-> +       if (!vmacache_valid(mm))
-> +               return NULL;
-> +
-> +       for (i = 0; i < VMACACHE_SIZE; i++) {
-> +               struct vm_area_struct *vma = current->vmacache[i];
-> +
-> +               if (vma && vma->vm_start == start && vma->vm_end == end)
-> +                       return vma;
-> +       }
-> +
-> +       return NULL;
-> +
-> +}
-> +#endif
-
-I think the caller could do instead
-vma = vmacache_find(mm, start)
-if (vma && vma->vm_start == start && vma->vm_end == end) {
-}
-
-I.e. better deal with it at the call site than add a new vmacache
-function for it.
-
-These are nits, the code looks good already.
-
-I would like to propose an LRU eviction scheme to replace your
-VMACACHE_HASH mechanism; I will probably do that as a follow-up once
-you have the code in andrew's tree.
-
-Reviewed-by: Michel Lespinasse <walken@google.com>
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
