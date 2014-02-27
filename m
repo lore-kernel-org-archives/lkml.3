@@ -1,75 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaB0Uj2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:39:28 -0500
-Received: from smtprelay0097.hostedemail.com ([216.40.44.97]:54656 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751202AbaB0Uj0 (ORCPT
+	id S1751823AbaB0Ujy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:39:54 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:33203 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaB0Ujx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:39:26 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2553:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:7652:8603:9121:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12663:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: talk84_522441b30a50e
-X-Filterd-Recvd-Size: 2479
-Message-ID: <1393533563.24588.127.camel@joe-AO722>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Christopher Li <sparse@chrisli.org>, Ben Pfaff <blp@nicira.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Feb 2014 12:39:23 -0800
-In-Reply-To: <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-References: <1393462087.24588.50.camel@joe-AO722>
-	 <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722>
-	 <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722>
-	 <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com>
-	 <1393472326.24588.82.camel@joe-AO722> <20140227040050.GA8449@nicira.com>
-	 <530EBCED.9020705@zytor.com> <20140227042636.GA9592@nicira.com>
-	 <530EBFC7.9030309@zytor.com>
-	 <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-	 <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 27 Feb 2014 15:39:53 -0500
+X-Auth-Info: GIaPffbUqYg9Hskkn9cJCUch2/y8WMkgXPG9yY/n9kE=
+From: Marek Vasut <marex@denx.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+Date: Thu, 27 Feb 2014 21:39:35 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: Yuan Yao <yao.yuan@freescale.com>, wsa@the-dreams.de, mark.rutland@arm.com,
+        shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com> <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
+In-Reply-To: <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201402272139.36076.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 12:26 -0800, H. Peter Anvin wrote:
-> On February 27, 2014 12:22:45 PM PST, Christopher Li <sparse@chrisli.org> wrote:
-> >OK. I get it nobody wants a sizeof(_Bool) warning.
-> >I am going to apply this patch.
+On Thursday, February 27, 2014 at 07:05:14 AM, Yuan Yao wrote:
 
-Please use V3 as I stuffed up the alphabetic order
-of sizeof and shadow.
+[...]
 
-> >Should we change the default to off then?
-> I would.
+> *****/ @@ -63,6 +68,9 @@
+>  /* Default value */
+>  #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
+> 
+> +/* enable DMA if transfer size is bigger than this threshold */
+> +#define IMX_I2C_DMA_THRESHOLD	16
 
-I'm not sure it matters much, but the linux-kernel
-Makefile wouldn't need to be changed if Wsizeof_bool
-is default 0.
+So what's the unit here , potatoes or beers or what ? I suppose it's bytes , but 
+please make it explicit in the comment ...
 
-Here's a couple of other nits:
+[...]
 
-Maybe the evaluate.c "size = bits_in_char;" assignment
+>  static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
+> @@ -193,6 +216,7 @@ static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
+>  	.ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
+>  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
+>  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
+> +	.has_dma_support	= false,
+> 
+>  };
+> 
+> @@ -203,6 +227,7 @@ static const struct imx_i2c_hwdata imx21_i2c_hwdata  =
+> { .ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
+>  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
+>  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
+> +	.has_dma_support	= false,
+> 
+>  };
+> 
+> @@ -213,6 +238,7 @@ static struct imx_i2c_hwdata vf610_i2c_hwdata = {
+>  	.ndivs			= ARRAY_SIZE(vf610_i2c_clk_div),
+>  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W1C,
+>  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_0,
+> +	.has_dma_support	= true,
 
-        if (size == 1 && is_bool_type(type)) {
--               warning(expr->pos, "expression using sizeof bool");
-+               if (Wsizeof_bool)
-+                       warning(expr->pos, "expression using sizeof bool");
-                size = bits_in_char;
-        }
+So why exactly don't we have a DT prop for determining whether the controller 
+has DMA support ?
 
-should be
+What about the other controllers, do they not support DMA for some specific 
+reason? Please elaborate on that, thank you !
+[...]
 
-	size = sizeof(_Bool) * 8;
+> +static void i2c_imx_dma_tx_callback(void *arg)
+[...]
+> +static int i2c_imx_dma_tx(struct imx_i2c_struct *i2c_imx, struct i2c_msg
+> *msgs) +{
+[...]
+> +static void i2c_imx_dma_rx_callback(void *arg)
+[...]
+> +static int i2c_imx_dma_rx(struct imx_i2c_struct *i2c_imx, struct i2c_msg
+> *msgs) +{
+[...]
 
-And also, in sparse.1, Josh Triplett is shown as
-the maintainer.  Maybe that should be changed to
-Christopher Li
+Looks like there's quite a bit of code duplication in the four functions above, 
+can you not unify them ?
 
+Also, can the DMA not do full-duplex operation ? What I see here is just half-
+duplex operations , one for RX and the other one for TX .
 
+> +static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx)
+> +{
+> +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> +	struct dma_chan *dma_chan;
+> +
+> +	dma_chan = dma->chan_tx;
+> +	dma->chan_tx = NULL;
+> +	dma->buf_tx = 0;
+> +	dma->len_tx = 0;
+> +	dma_release_channel(dma_chan);
+> +
+> +	dma_chan = dma->chan_rx;
+> +	dma->chan_tx = NULL;
+> +	dma->buf_rx = 0;
+> +	dma->len_rx = 0;
+> +	dma_release_channel(dma_chan);
+
+You must make _DEAD_ _SURE_ this function is not ever called while the DMA is 
+still active. In your case, I have a feeling that's not handled.
+
+> +}
+>  /** Functions for IMX I2C adapter driver
+> ***************************************
+> **************************************************************************
+> *****/
+> 
+> @@ -425,7 +600,8 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
+>  	return IRQ_NONE;
+>  }
+> 
+> -static int i2c_imx_write(struct imx_i2c_struct *i2c_imx, struct i2c_msg
+> *msgs) +static int i2c_imx_pio_write(struct imx_i2c_struct *i2c_imx,
+> +							struct i2c_msg *msgs)
+>  {
+>  	int i, result;
+> 
+> @@ -458,7 +634,56 @@ static int i2c_imx_write(struct imx_i2c_struct
+> *i2c_imx, struct i2c_msg *msgs) return 0;
+>  }
+> 
+> -static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg
+> *msgs) +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
+> +							struct i2c_msg *msgs)
+> +{
+> +	int result, timeout=1000;
+> +	unsigned int temp = 0;
+> +
+> +	reinit_completion(&i2c_imx->dma->cmd_complete);
+> +	result = i2c_imx_dma_tx(i2c_imx, msgs);
+> +	if(result)
+> +		return result;
+> +
+> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> +	temp |= I2CR_DMAEN;
+> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> +
+> +	/* write slave address */
+> +	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
+> +	result = wait_for_completion_interruptible_timeout(
+> +						&i2c_imx->dma->cmd_complete,
+> +						msecs_to_jiffies(1000));
+
+Pull the magic constant of 1000 out and #define it as some I2C_IMX_DMA_TIMEOUT 
+please .
+
+> +	if (result == 0)
+> +		return  -ETIMEDOUT;
+> +
+> +	/* waiting for Transfer complete. */
+> +	while(timeout--) {
+> +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
+> +		if (temp & 0x80)
+> +			break;
+> +		udelay(10);
+> +	}
+> +
+> +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> +	temp &= ~I2CR_DMAEN;
+> +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> +
+> +	/* write the last byte */
+> +	imx_i2c_write_reg(msgs->buf[msgs->len-1], i2c_imx, IMX_I2C_I2DR);
+> +	result = i2c_imx_trx_complete(i2c_imx);
+> +	if (result)
+> +		return result;
+> +
+> +	result = i2c_imx_acked(i2c_imx);
+> +	if (result)
+> +		return result;
+> +
+> +	return 0;
+> +}
+> +
+> +static int i2c_imx_pio_read(struct imx_i2c_struct *i2c_imx,
+> +							struct i2c_msg *msgs)
+>  {
+>  	int i, result;
+>  	unsigned int temp;
+> @@ -518,6 +743,80 @@ static int i2c_imx_read(struct imx_i2c_struct
+> *i2c_imx, struct i2c_msg *msgs) return 0;
+>  }
+> 
+> +static int i2c_imx_dma_read(struct imx_i2c_struct *i2c_imx,
+> +							struct i2c_msg *msgs)
+> +{
+
+Looks like almost an duplication as well...
+
+Besides, full-duplex DMA operation is missing, please explain why.
+
+THanks!
