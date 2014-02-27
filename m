@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaB0VtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:49:12 -0500
-Received: from smtprelay0143.hostedemail.com ([216.40.44.143]:35919 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750942AbaB0VtK (ORCPT
+	id S1751950AbaB0Vv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:51:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39570 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaB0Vv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:49:10 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7652:7903:8603:10004:10400:10848:11026:11232:11658:11914:12438:12517:12519:12740:13069:13161:13229:13311:13357:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shelf66_6cd0ff581362a
-X-Filterd-Recvd-Size: 3322
-Message-ID: <1393537746.24588.143.camel@joe-AO722>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Joe Perches <joe@perches.com>
-To: Christopher Li <sparse@chrisli.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Feb 2014 13:49:06 -0800
-In-Reply-To: <CANeU7QnZika4XsdS_=UwPc5uZgv2-m5vMdmZLyCynKK2YNKLvQ@mail.gmail.com>
-References: <1393462087.24588.50.camel@joe-AO722>
-	 <530E8C2E.7080307@zytor.com> <1393466619.24588.65.camel@joe-AO722>
-	 <20140227022857.GC23659@thin> <1393469594.24588.71.camel@joe-AO722>
-	 <20140227025845.GA25145@thin> <530EB103.5070406@zytor.com>
-	 <1393472326.24588.82.camel@joe-AO722> <20140227040050.GA8449@nicira.com>
-	 <530EBCED.9020705@zytor.com> <20140227042636.GA9592@nicira.com>
-	 <530EBFC7.9030309@zytor.com>
-	 <CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-	 <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-	 <1393533563.24588.127.camel@joe-AO722>
-	 <CANeU7QnZika4XsdS_=UwPc5uZgv2-m5vMdmZLyCynKK2YNKLvQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Thu, 27 Feb 2014 16:51:26 -0500
+Date: Thu, 27 Feb 2014 13:51:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux RAID <linux-raid@vger.kernel.org>,
+        "majianpeng" <majianpeng@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] md / procfs: avoid Oops if md-mod removed while
+ /proc/mdstat is being polled.
+Message-Id: <20140227135125.92a56ff656b3ca8d0b5d9029@linux-foundation.org>
+In-Reply-To: <20140228083443.64c92382@notabene.brown>
+References: <20140227172445.13644477@notabene.brown>
+	<20140227125807.d034c50c7fe2e1a9f3c38ec1@linux-foundation.org>
+	<20140228083443.64c92382@notabene.brown>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 12:55 -0800, Christopher Li wrote:
-> On Thu, Feb 27, 2014 at 12:39 PM, Joe Perches <joe@perches.com> wrote:
+On Fri, 28 Feb 2014 08:34:43 +1100 NeilBrown <neilb@suse.de> wrote:
 
-> > Maybe the evaluate.c "size = bits_in_char;" assignment
-> >
-> >         if (size == 1 && is_bool_type(type)) {
-> > -               warning(expr->pos, "expression using sizeof bool");
-> > +               if (Wsizeof_bool)
-> > +                       warning(expr->pos, "expression using sizeof bool");
-> >                 size = bits_in_char;
-> >         }
-> >
-> > should be
-> >
-> >         size = sizeof(_Bool) * 8;
+> On Thu, 27 Feb 2014 12:58:07 -0800 Andrew Morton <akpm@linux-foundation.org>
+> wrote:
 > 
-> The reason to use bits_in_xxxx is to allow sparse application to over write
-> the size of int etc. If you don't like the bits_in_char here. You can introduce
-> bits_in_bool and set that to sizeof(Bool)*8 by default. That way you don't
-> hard code it.
-
-There already is a bits_in_bool and it's default 1.
-
-$ git grep -E "\bbits_in_\w+\s*=[^=]"
-lib.c:          bits_in_long = 64;
-lib.c:          bits_in_pointer = 64;
-target.c:int bits_in_bool = 1;
-target.c:int bits_in_char = 8;
-target.c:int bits_in_short = 16;
-target.c:int bits_in_int = 32;
-target.c:int bits_in_long = 32;
-target.c:int bits_in_longlong = 64;
-target.c:int bits_in_longlonglong = 128;
-target.c:int bits_in_float = 32;
-target.c:int bits_in_double = 64;
-target.c:int bits_in_longdouble = 80;
-target.c:int bits_in_pointer = 32;
-target.c:int bits_in_enum = 32;
-
-> > And also, in sparse.1, Josh Triplett is shown as
-> > the maintainer.  Maybe that should be changed to
-> > Christopher Li
+> > On Thu, 27 Feb 2014 17:24:45 +1100 NeilBrown <neilb@suse.de> wrote:
+> > 
+> > > If poll or select is waiting on /proc/mdstat when md-mod is unloaded
+> > > an oops will ensure when the poll/select completes.
+> > > 
+> > > This is because the wait_queue_head which is registered with poll_wait()
+> > > is local to the module and no longer exists when the poll completes and
+> > > detaches that wait_queue_head (in poll_free_wait -> remove_wait_queue).
+> > > 
+> > > To fix this we need the wait_queue_head to have (at least) the same life
+> > > time as the proc_dir_entry.  So this patch places it in that structure.
+> > > 
+> > > We:
+> > >   - add pde_poll_wait to struct proc_dir_entry
+> > >   - call poll_wait() passing this when poll() is called on the proc file
+> > >   - export a function proc_wake_up which will call wake_up() on pde_poll_wait
+> > > 
+> > > and make use of all that in md.c
+> > 
+> > This sounds wrong.  If a userspace process is waiting on
+> > md_event_waiters then the md module is "busy" and the rmmod attempt
+> > should fail?
 > 
-> Maybe a separate patch.
+> Al Viro says "no" quite firmly.
+> 
+> I think the core argument is that
+> 
+>   rmmod md-mod < /proc/mdstat
+> 
+> would deadlock.
 
-That's fine with me too.  If you're the maintainer,
-I think you should do that patch.  I don't see a need
-for me to send any more right now though.
+Well, only if the rmmod hangs around waiting for the module to go idle.
+I'm thinking rmmod should fail.  EBUSY.
 
-cheers, Joe
+> http://marc.info/?l=linux-fsdevel&m=133024267507384
+
+Why don't a billion blocking-procfs-read sites have this problem?
+
 
