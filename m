@@ -1,153 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaB0KDH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:03:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38404 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaB0KDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:03:03 -0500
-Message-ID: <1393498356.4507.32.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH v4 3/3] Documentation: of: Document graph bindings
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Date: Thu, 27 Feb 2014 11:52:36 +0100
-In-Reply-To: <530EF294.7070801@ti.com>
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de>
-			 <1393340304-19005-4-git-send-email-p.zabel@pengutronix.de>
-			 <530DE8A9.9050809@ti.com>
-		 <1393426623.3248.70.camel@paszta.hi.pengutronix.de>
-		 <530DFF4C.8080807@ti.com>
-	 <1393429676.3248.110.camel@paszta.hi.pengutronix.de>
-	 <530EF294.7070801@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
+	id S1752005AbaB0KDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:03:32 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:53673 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193AbaB0KD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:03:28 -0500
+Date: Thu, 27 Feb 2014 05:03:27 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: viro@zeniv.linux.org.uk, jmoyer@redhat.com, kosaki.motohiro@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] aio, memory-hotplug: Fix confliction when migrating and accessing ring pages.
+Message-ID: <20140227100327.GA26444@kvack.org>
+References: <1393403919-1178-1-git-send-email-tangchen@cn.fujitsu.com> <530E8628.3060105@cn.fujitsu.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530E8628.3060105@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
-
-Am Donnerstag, den 27.02.2014, 10:08 +0200 schrieb Tomi Valkeinen:
-> On 26/02/14 17:47, Philipp Zabel wrote:
-> > Please let's not make it mandatory for a port node to contain an
-> > endpoint. For any device with multiple ports we can't use the simplified
-> > form above, and only adding the (correctly numbered) port in all the
-> > board device trees would be a pain.
+On Thu, Feb 27, 2014 at 08:26:16AM +0800, Tang Chen wrote:
+> Forgot to mention that the above patch was merged when Linux 3.12 was 
+> released.
+> So I think this problem exists in 3.12 stable tree.
 > 
-> That's true. I went with having the ports in the board file, for example
-> on omap3 the dss has two ports, and N900 board uses the second one:
+> If the following solution is acceptable, we need to merge it to 3.12 
+> stable tree, too.
 > 
-> &dss {
-> 	status = "ok";
+> Please reply ASAP.
+
+I'm travelling right now and won't be testing this patch until I get back 
+home in about a week, so, for now, I'll apply the patch to my aio-next tree 
+so that it gets some exposure to the various trinty runs and other tools 
+people run against the -next tree.  I'll then push it out to Linus once I've 
+run my own sanity tests next week.  Regards,
+
+		-ben
+
+> Thanks.
 > 
-> 	pinctrl-names = "default";
-> 	pinctrl-0 = <&dss_sdi_pins>;
-> 
-> 	vdds_sdi-supply = <&vaux1>;
-> 
-> 	ports {
-> 		#address-cells = <1>;
-> 		#size-cells = <0>;
-> 
-> 		port@1 {
-> 			reg = <1>;
-> 
-> 			sdi_out: endpoint {
-> 				remote-endpoint = <&lcd_in>;
-> 				datapairs = <2>;
-> 			};
-> 		};
-> 	};
-> };
+> >
+> >In this patch, ctx->completion_lock is used to prevent other processes
+> >from accessing the ring page being migrated.
+> >
+> >But in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring(),
+> >when writing to the ring page, they didn't take ctx->completion_lock.
+> >
+> >As a result, for example, we have the following problem:
+> >
+> >             thread 1                      |              thread 2
+> >                                           |
+> >aio_migratepage()                         |
+> >  |->  take ctx->completion_lock            |
+> >  |->  migrate_page_copy(new, old)          |
+> >  |   *NOW*, ctx->ring_pages[idx] == old   |
+> >                                           |
+> >                                           |    *NOW*, 
+> >                                           ctx->ring_pages[idx] == old
+> >                                           |    aio_read_events_ring()
+> >                                           |     |->  ring = 
+> >                                           kmap_atomic(ctx->ring_pages[0])
+> >                                           |     |->  ring->head = head;   
+> >                                           *HERE, write to the old ring 
+> >                                           page*
+> >                                           |     |->  kunmap_atomic(ring);
+> >                                           |
+> >  |->  ctx->ring_pages[idx] = new           |
+> >  |   *BUT NOW*, the content of            |
+> >  |    ring_pages[idx] is old.             |
+> >  |->  release ctx->completion_lock         |
+> >
+> >As above, the new ring page will not be updated.
+> >
+> >The solution is taking ctx->completion_lock in thread 2, which means,
+> >in aio_setup_ring(), ioctx_add_table() and aio_read_events_ring() when
+> >writing to ring pages.
+> >
+> >
+> >Reported-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> >Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> >---
+> >  fs/aio.c | 33 +++++++++++++++++++++++++++++++++
+> >  1 file changed, 33 insertions(+)
+> >
+> >diff --git a/fs/aio.c b/fs/aio.c
+> >index 062a5f6..50c089c 100644
+> >--- a/fs/aio.c
+> >+++ b/fs/aio.c
+> >@@ -366,6 +366,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+> >  	int nr_pages;
+> >  	int i;
+> >  	struct file *file;
+> >+	unsigned long flags;
+> >
+> >  	/* Compensate for the ring buffer's head/tail overlap entry */
+> >  	nr_events += 2;	/* 1 is required, 2 for good luck */
+> >@@ -437,6 +438,14 @@ static int aio_setup_ring(struct kioctx *ctx)
+> >  	ctx->user_id = ctx->mmap_base;
+> >  	ctx->nr_events = nr_events; /* trusted copy */
+> >
+> >+	/*
+> >+	 * The aio ring pages are user space pages, so they can be migrated.
+> >+	 * When writing to an aio ring page, we should ensure the page is not
+> >+	 * being migrated. Aio page migration procedure is protected by
+> >+	 * ctx->completion_lock, so we add this lock here.
+> >+	 */
+> >+	spin_lock_irqsave(&ctx->completion_lock, flags);
+> >+
+> >  	ring = kmap_atomic(ctx->ring_pages[0]);
+> >  	ring->nr = nr_events;	/* user copy */
+> >  	ring->id = ~0U;
+> >@@ -448,6 +457,8 @@ static int aio_setup_ring(struct kioctx *ctx)
+> >  	kunmap_atomic(ring);
+> >  	flush_dcache_page(ctx->ring_pages[0]);
+> >
+> >+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+> >+
+> >  	return 0;
+> >  }
+> >
+> >@@ -542,6 +553,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct 
+> >mm_struct *mm)
+> >  	unsigned i, new_nr;
+> >  	struct kioctx_table *table, *old;
+> >  	struct aio_ring *ring;
+> >+	unsigned long flags;
+> >
+> >  	spin_lock(&mm->ioctx_lock);
+> >  	rcu_read_lock();
+> >@@ -556,9 +568,19 @@ static int ioctx_add_table(struct kioctx *ctx, struct 
+> >mm_struct *mm)
+> >  					rcu_read_unlock();
+> >  					spin_unlock(&mm->ioctx_lock);
+> >
+> >+					/*
+> >+					 * Accessing ring pages must be done
+> >+					 * holding ctx->completion_lock to
+> >+					 * prevent aio ring page migration
+> >+					 * procedure from migrating ring 
+> >pages.
+> >+					 */
+> >+				 spin_lock_irqsave(&ctx->completion_lock,
+> >+							  flags);
+> >  					ring = 
+> >  					kmap_atomic(ctx->ring_pages[0]);
+> >  					ring->id = ctx->id;
+> >  					kunmap_atomic(ring);
+> >+					spin_unlock_irqrestore(
+> >+						&ctx->completion_lock, 
+> >flags);
+> >  					return 0;
+> >  				}
+> >
+> >@@ -1021,6 +1043,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+> >  	unsigned head, tail, pos;
+> >  	long ret = 0;
+> >  	int copy_ret;
+> >+	unsigned long flags;
+> >
+> >  	mutex_lock(&ctx->ring_lock);
+> >
+> >@@ -1066,11 +1089,21 @@ static long aio_read_events_ring(struct kioctx 
+> >*ctx,
+> >  		head %= ctx->nr_events;
+> >  	}
+> >
+> >+	/*
+> >+	 * The aio ring pages are user space pages, so they can be migrated.
+> >+	 * When writing to an aio ring page, we should ensure the page is not
+> >+	 * being migrated. Aio page migration procedure is protected by
+> >+	 * ctx->completion_lock, so we add this lock here.
+> >+	 */
+> >+	spin_lock_irqsave(&ctx->completion_lock, flags);
+> >+
+> >  	ring = kmap_atomic(ctx->ring_pages[0]);
+> >  	ring->head = head;
+> >  	kunmap_atomic(ring);
+> >  	flush_dcache_page(ctx->ring_pages[0]);
+> >
+> >+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+> >+
+> >  	pr_debug("%li  h%u t%u\n", ret, head, tail);
+> >
+> >  	put_reqs_available(ctx, ret);
 
-This is a bit verbose, and if your output port is on an encoder device
-with multiple inputs, the correct port number would become a bit
-unintuitive. For example, we'd have to use port@4 as the output encoder
-units that have a 4-port input multiplexer and port@1 for those that
-don't.
-
-> Here I guess I could have:
-> 
-> &dss {
-> 	status = "ok";
-> 
-> 	pinctrl-names = "default";
-> 	pinctrl-0 = <&dss_sdi_pins>;
-> 
-> 	vdds_sdi-supply = <&vaux1>;
-> };
-
-What is supplied by this regulator. Is it the PHY?
-
-> &dss_sdi_port {
-> 	sdi_out: endpoint {
-> 		remote-endpoint = <&lcd_in>;
-> 		datapairs = <2>;
-> 	};
-> };
-> 
-> But I didn't like that as it splits the pincontrol and regulator supply
-> from the port/endpoint, which are functionally linked together.
->
-> Actually, somewhat aside the subject, I'd like to have the pinctrl and
-> maybe regulator supply also per endpoint, but I didn't see how that
-> would be possible with the current framework. If a board would need to
-> endpoints for the same port, most likely it would also need to different
-> sets of pinctrls.
-
-I have a usecase for this the other way around. The i.MX6 DISP0 parallel
-display pads can be connected to two different display controllers via
-multiplexers in the pin control block.
-
-parallel-display {
-	compatible = "fsl,imx-parallel-display";
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	port@0 {
-		endpoint {
-			remote-endpoint = <&ipu1_di0>;
-		};
-	};
-
-	port@1 {
-		endpoint {
-			remote-endpoint = <&ipu2_di0>;
-		};
-	};
-
-	disp0: port@2 {
-		endpoint {
-			pinctrl-names = "0", "1";
-			pinctrl-0 = <&pinctrl_disp0_ipu1>;
-			pinctrl-1 = <&pinctrl_disp0_ipu2>;
-			remote-endpoint = <&lcd_in>;
-		};
-	}
-};
-
-Here, depending on the active input port, the corresponding pin control
-on the output port could be set. This is probably quite driver specific,
-so I don't see yet how the framework should help with this. In any case,
-maybe this is a bit out of scope for the generic graph bindings.
-
-regards
-Philipp
-
+-- 
+"Thought is the essence of where you are now."
