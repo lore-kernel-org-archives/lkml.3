@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaB0PWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 10:22:42 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44537 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaB0PWl (ORCPT
+	id S1752330AbaB0PYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 10:24:07 -0500
+Received: from moutng.kundenserver.de ([212.227.126.131]:57158 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaB0PYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 10:22:41 -0500
-Date: Thu, 27 Feb 2014 15:22:29 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis Carikli <denis@eukrea.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv12] video: backlight: gpio-backlight: Add DT support.
-Message-ID: <20140227152229.GB24910@lee--X1>
-References: <1393511313-18756-1-git-send-email-denis@eukrea.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393511313-18756-1-git-send-email-denis@eukrea.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Feb 2014 10:24:05 -0500
+Message-ID: <1393514533.28343.19.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient
+ workqueue
+From: Mike Galbraith <bitbucket@online.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kevin Hilman <khilman@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Date: Thu, 27 Feb 2014 16:22:13 +0100
+In-Reply-To: <20140227144331.GA19580@localhost.localdomain>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+	 <52F8A51F.4090909@cn.fujitsu.com>
+	 <20140210184729.GL4250@linux.vnet.ibm.com>
+	 <20140212182336.GD5496@localhost.localdomain>
+	 <1392614801.5565.92.camel@marge.simpson.net>
+	 <20140227144331.GA19580@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:1R1R0ffJUN2Xc944U8U4hJOJqGxSauoCnlYm00Webu/
+ j8Zz1pIRjN4Omgpc/PaoU9DhQoLHLe+9wRl+p09o8zzraMtuhP
+ VGQeD7aixxplo+e83cqnlXO7+LdLnDD4+uwJczHd1CrsR6Ng6K
+ pXkb8Rv8VDl86rMCVL0a1YKTymlCSOQKlArT4qqnfqGUlOWPXq
+ Vmy3gO0HAu0PRCu/FjN9J6uAXPuaB51k3ZsuxW5AalLWLLytun
+ qG1Y7RdKLZp0wwkVLHKy+Wz4uB6IwSndLhXbN3m6eceez6CGEI
+ PYyYuNA/xj1spkzozM5aJT1afLzpFkReYGFauPCs/b46cck1Ot
+ DBiMltEy/Us8RBMwb0wgee55DO3/iYHCsLboTxdUP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Denis Carikli wrote:
+On Thu, 2014-02-27 at 15:43 +0100, Frederic Weisbecker wrote: 
+> On Mon, Feb 17, 2014 at 06:26:41AM +0100, Mike Galbraith wrote:
+> > On Wed, 2014-02-12 at 19:23 +0100, Frederic Weisbecker wrote: 
+> > > On Mon, Feb 10, 2014 at 10:47:29AM -0800, Paul E. McKenney wrote:
+> > > > On Mon, Feb 10, 2014 at 06:08:31PM +0800, Lai Jiangshan wrote:
+> > > > > Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > > 
+> > > > Thank you all, queued for 3.15.
+> > > > 
+> > > > We should also have some facility for moving the SRCU workqueues to
+> > > > housekeeping/timekeeping kthreads in the NO_HZ_FULL case.  Or does
+> > > > this patch already have that effect?
+> > > 
+> > > Kevin Hilman and me plan to try to bring a new Kconfig option that could let
+> > > us control the unbound workqueues affinity through sysfs.
+> > 
+> > Handing control to the user seemed like a fine thing, so I started
+> > making a boot option to enable it.  Forcing WQ_SYSFS on at sysfs
+> > decision spot doesn't go well, init order matters :)  Post init frobbing
+> > required if you want to see/frob all unbound.
+> 
+> I'm curious about the details. Is that because some workqueues are registered
+> before sysfs is even initialized?
 
-> Signed-off-by: Denis Carikli <denis@eukrea.com>
-> ---
-> ChangeLog v11-resend->v12:
-> - Moved the Cc from the commit message to the "email patch".
-> - The documentation is now more clear.
-> - The unnecessary default_on variable was removed.
-> - gbl->fbdev was already NULL and didn't need to be re-assigned,
->   so the re-assignement was removed.
-> - The of_device_id struct and .of_match_table are now guarded
->   against the driver beeing compiled without CONFIG_OF.
-> 
-> ChangeLog v11->v11-resend:
-> - Removed the Cc list because it's only one patch.
-> 
-> ChangeLog v10->v11:
-> - Shrinked the Cc list.
-> - Fixed the of_match_table warning.
-> 
-> ChangeLog v9->v10:
-> - Only the respective maintainers, or people who responded to the patch
->   were kept in the Cc.
-> - The unnecessary of_match_ptr in of_match_table was removed.
-> 
-> ChangeLog v8->v9:
-> - Added Shawn Guo in the Cc list.
-> - The default-brightness-level is now a boolean default-on property,
->   the gpio is only touched if the gpio-backlight driver instance probes.
-> - The code and documentation was updated accordingly.
-> 
-> ChangeLog v7->v8:
-> - The default-state was renamed to default-brightness-level.
-> - default-brightness-level is now mandatory, like for backlight-pwm,
->   That way we avoid having to handle the case where it's not set,
->   which means that we would need not to set the gpio, but still
->   report a brightness value for sysfs, when not all gpio controllers are
->   able to read the gpio value.
-> - switched the default-brightness-level to boolean values (0 or 1) instead
->   of using strings ("on", "off", "keep").
-> - The documentation was updated accordingly.
-> - The example in the documentation now uses the dts gpio defines.
-> - The "backlight: gpio_backlight: Use a default state enum." patch was then
->   dropped, becuase it is not necessary anymore.
-> 
-> ChangeLog v6->v7:
-> - removed a compilation warning with the removal of the useless ret declaration.
-> 
-> ChangeLog v5->v6:
-> - The default state handling was reworked:
->   - it's now called default-state, and looks like the gpio-leds default-state.
->   - it now has a "keep" option, like for the gpio-leds.
->   - that "keep" option is the default when the default-state property is not set.
-> - The documentation was updated accordingly.
-> 
-> ChangeLog v4->v5:
-> - The default-brightness property now defaults to 0 in the driver.
-> - def_value int becomes a bool.
-> - The check for the gpio validity has been reworked.
-> ---
->  .../bindings/video/backlight/gpio-backlight.txt    |   16 ++++++
->  drivers/video/backlight/gpio_backlight.c           |   58 +++++++++++++++++---
->  2 files changed, 67 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/video/backlight/gpio-backlight.txt
+Yeah.  I put in a test, and told it if not ready, go get ready and flag
+yourself as having BTDT (one registration being plenty), but that only
+made a different explosion.  Post-init rescan is definitely a better
+plan, it can't be worse :)
 
-Patch looks good to me now, I just want to see if Jingoo and/or Bryan
-with to add anything. If they don't respond within the next couple of
-days I'll apply the patch.
+-Mike
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
