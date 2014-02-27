@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaB0Sxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 13:53:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62300 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753585AbaB0Sx3 (ORCPT
+	id S1753980AbaB0Sya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:54:30 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11441 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752435AbaB0Sy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 13:53:29 -0500
-Date: Thu, 27 Feb 2014 18:53:07 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
-Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
- via atomic_long_*
-Message-ID: <20140227185306.GN30003@mudshark.cambridge.arm.com>
-References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
- <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
+	Thu, 27 Feb 2014 13:54:29 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Feng Kan <fkan@apm.com>
+Cc: "tglx\@linutronix.de" <tglx@linutronix.de>,
+        "patches\@apm.com" <patches@apm.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vinayak Kale <vkale@apm.com>
+Subject: Re: [PATCH V2] irqchip:gic: change access of gicc_ctrl register to read modify write.
+In-Reply-To: <1393526095-31479-1-git-send-email-fkan@apm.com> (Feng Kan's
+	message of "Thu, 27 Feb 2014 18:34:55 +0000")
+Organization: ARM Ltd
+References: <1393526095-31479-1-git-send-email-fkan@apm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Thu, 27 Feb 2014 18:54:24 +0000
+Message-ID: <87zjlc2xpb.fsf@sofa.wild-wind.fr.eu.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
-> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
-> > The asm-generic rwsem implementation directly acceses sem->cnt when
-> > performing a __down_read_trylock operation. Whilst this is probably safe
-> > on all architectures, we should stick to the atomic_long_* API and use
-> > atomic_long_read instead.
-> > 
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  include/asm-generic/rwsem.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-> > index bb1e2cdeb9bf..75af612f54f8 100644
-> > --- a/include/asm-generic/rwsem.h
-> > +++ b/include/asm-generic/rwsem.h
-> > @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
-> >  {
-> >  	long tmp;
-> >  
-> > -	while ((tmp = sem->count) >= 0) {
-> > +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
-> 
-> That's pretty ugly, how about having infinite look and just do the tmp
-> assign separately from the conditional?
-> 
-> It also looks like a cpu_relax() could help here between iterations.
+On Thu, Feb 27 2014 at  6:34:55 pm GMT, Feng Kan <fkan@apm.com> wrote:
+> This change is made to preserve the GIC v2 releated bits in the
+> GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
+> The original code only set the enable/disable group bit in this register.
+> This code will preserve the bypass bits configured by the bootload except
+> the enable/disable bit. The main reason for this change is to allow the
+> bypass bits specified in the v2 spec to remain untouched by the current
+> GIC code. In the X-Gene platform, the bypass functionality is not used
+> and bypass must be disabled at all time.
+>
+> Signed-off-by: Vinayak Kale <vkale@apm.com>
+> Acked-by: Anup Patel <apatel@apm.com>
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> ---
+> V2 Changes:
+> 	- only mask off v2 bypass bits
+>
+>  drivers/irqchip/irq-gic.c |   22 +++++++++++++++++++---
+>  1 files changed, 19 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 341c601..757581b 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -418,6 +418,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  	void __iomem *dist_base = gic_data_dist_base(gic);
+>  	void __iomem *base = gic_data_cpu_base(gic);
+>  	unsigned int cpu_mask, cpu = smp_processor_id();
+> +	unsigned int ctrl_mask;
+>  	int i;
+>  
+>  	/*
+> @@ -449,13 +450,24 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+>  
+>  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, base + GIC_CPU_CTRL);
+> +
+> +	ctrl_mask = readl(base + GIC_CPU_CTRL);
+> +	ctrl_mask |= 0x1;
+> +	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
 
-Sure, I can do these in a separate patch (this patch is just a simple fix).
+I think I'm quickly loosing the will to live, or at least to review this
+patch any further.
 
-> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
-
-Thanks,
-
-Will
+	M.
+-- 
+AAAFNRAA
