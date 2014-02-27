@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaB0Brr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:47:47 -0500
-Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:55702
-	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700AbaB0Brq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:47:46 -0500
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=Rs1LLUWK c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=M1kyBYkWWGkA:10 a=IVxCAUdSCW8A:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=S4CjxF9jpiAA:10
- a=ogruEA3K7mPRLwxbs18A:9 a=QEXdDO2ut3YA:10
-Date: Thu, 27 Feb 2014 01:47:44 +0000
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.13.5 : rm -rf running forever, one cpu at approx 100%
-Message-ID: <20140227014744.GA12070@milliways>
-References: <20140227005246.GB10367@milliways>
- <201402262028.29352.gheskett@wdtv.com>
+	id S1754266AbaB0Bvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:51:36 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11595 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752649AbaB0Bve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 20:51:34 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <lgirdwood@gmail.com>, <timur@tabi.org>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: fsl-sai: Add SND_SOC_DAIFMT_DSP_A/B support.
+Date: Thu, 27 Feb 2014 08:45:01 +0800
+Message-ID: <1393461901-23844-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201402262028.29352.gheskett@wdtv.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 08:28:29PM -0500, Gene Heskett wrote:
-> On Wednesday 26 February 2014, Ken Moffat wrote:
-> 
-> I don't have any help to offer Ken, but this walks and quacks much like a 
-> duck I'm encountering in 3.13.5, with the backup program amanda, which uses 
-> gnu tar.  To facilitate intelligent guesses as to the size of the various 
-> levels of backup, amanda does a dummy collection using tar, sent to 
-> /dev/null, using only the size it reports on the first pass.  Version 1.22, 
-> quite old, works on 3.12.9, but not on 3.13.5.  I have now pulled in, built 
-> and installed tar-1.27, and rebuilt amanda to let it know that the tar its 
-> using is not in /usr/bin, but in /usr/local/bin.  Next run at 1:30AM
-> 
-> This freeze, using 100% of a core, but causing no visible disk activity has 
-> killed my backups 3 nights running.  At this point I've no clue as to the 
-> cause, but I will be watching this thread closely, it has a similar 
-> description.
-> 
-> Cheers, Gene
+o Add SND_SOC_DAIFMT_DSP_A support.
+o Add SND_SOC_DAIFMT_DSP_B support.
 
- My box where I see this is a phenom (my intel is still on 3.13.4),
-and from past threads I suspect yours is as well ?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/fsl/fsl_sai.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
+ sound/soc/fsl/fsl_sai.h |  1 +
+ 2 files changed, 43 insertions(+), 3 deletions(-)
 
-ĸen
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index 26d9f5e..c4a4231 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -108,15 +108,44 @@ static int fsl_sai_set_dai_fmt_tr(struct snd_soc_dai *cpu_dai,
+ 	/* DAI mode */
+ 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+ 	case SND_SOC_DAIFMT_I2S:
+-		/* Data on rising edge of bclk, frame low, 1clk before data */
++		/*
++		 * Frame low, 1clk before data, one word length for frame sync,
++		 * frame sync starts one serial clock cycle earlier,
++		 * that is, together with the last bit of the previous
++		 * data word.
++		 */
+ 		val_cr2 &= ~FSL_SAI_CR2_BCP;
+ 		val_cr4 |= FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP;
+ 		break;
+ 	case SND_SOC_DAIFMT_LEFT_J:
+-		/* Data on rising edge of bclk, frame high, 0clk before data */
++		/*
++		 * Frame high, one word length for frame sync,
++		 * frame sync asserts with the first bit of the frame.
++		 */
+ 		val_cr2 &= ~FSL_SAI_CR2_BCP;
+ 		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
+ 		break;
++	case SND_SOC_DAIFMT_DSP_A:
++		/*
++		 * Frame high, 1clk before data, one bit for frame sync,
++		 * frame sync starts one serial clock cycle earlier,
++		 * that is, together with the last bit of the previous
++		 * data word.
++		 */
++		val_cr2 &= ~FSL_SAI_CR2_BCP;
++		val_cr4 &= ~FSL_SAI_CR4_FSP;
++		val_cr4 |= FSL_SAI_CR4_FSE;
++		sai->is_dsp_mode = true;
++		break;
++	case SND_SOC_DAIFMT_DSP_B:
++		/*
++		 * Frame high, one bit for frame sync,
++		 * frame sync asserts with the first bit of the frame.
++		 */
++		val_cr2 &= ~FSL_SAI_CR2_BCP;
++		val_cr4 &= ~(FSL_SAI_CR4_FSE | FSL_SAI_CR4_FSP);
++		sai->is_dsp_mode = true;
++		break;
+ 	case SND_SOC_DAIFMT_RIGHT_J:
+ 		/* To be done */
+ 	default:
+@@ -219,7 +248,9 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
+ 	val_cr5 &= ~FSL_SAI_CR5_W0W_MASK;
+ 	val_cr5 &= ~FSL_SAI_CR5_FBT_MASK;
+ 
+-	val_cr4 |= FSL_SAI_CR4_SYWD(word_width);
++	if (!sai->is_dsp_mode)
++		val_cr4 |= FSL_SAI_CR4_SYWD(word_width);
++
+ 	val_cr5 |= FSL_SAI_CR5_WNW(word_width);
+ 	val_cr5 |= FSL_SAI_CR5_W0W(word_width);
+ 
+@@ -245,6 +276,10 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
+ 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
+ 	u32 tcsr, rcsr;
+ 
++	/*
++	 * The transmitter bit clock and frame sync are to be
++	 * used by both the transmitter and receiver.
++	 */
+ 	regmap_update_bits(sai->regmap, FSL_SAI_TCR2, FSL_SAI_CR2_SYNC,
+ 			   ~FSL_SAI_CR2_SYNC);
+ 	regmap_update_bits(sai->regmap, FSL_SAI_RCR2, FSL_SAI_CR2_SYNC,
+@@ -261,6 +296,10 @@ static int fsl_sai_trigger(struct snd_pcm_substream *substream, int cmd,
+ 		tcsr &= ~FSL_SAI_CSR_FRDE;
+ 	}
+ 
++	/*
++	 * It is recommended that the transmitter is the last enabled
++	 * and the first disabled.
++	 */
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
+index 1571459..e432260 100644
+--- a/sound/soc/fsl/fsl_sai.h
++++ b/sound/soc/fsl/fsl_sai.h
+@@ -103,6 +103,7 @@ struct fsl_sai {
+ 
+ 	bool big_endian_regs;
+ 	bool big_endian_data;
++	bool is_dsp_mode;
+ 
+ 	struct snd_dmaengine_dai_dma_data dma_params_rx;
+ 	struct snd_dmaengine_dai_dma_data dma_params_tx;
 -- 
-das eine Mal als Tragödie, dieses Mal als Farce
+1.8.4
+
+
