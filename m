@@ -1,111 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaB0KKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:10:53 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:21510 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaB0KKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:10:49 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-d8-530f0f26f492
-Message-id: <530F0F24.2080903@samsung.com>
-Date: Thu, 27 Feb 2014 11:10:44 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH v5 06/11] drivers: of: initialize and assign reserved
- memory to newly created devices
-References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
- <1392985527-6260-7-git-send-email-m.szyprowski@samsung.com>
- <20140226121445.54D2DC40A89@trevor.secretlab.ca>
-In-reply-to: <20140226121445.54D2DC40A89@trevor.secretlab.ca>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02SWyxbcRzH8+85PedodI4q+8+DbZXdZDPG+Gcz7GkniywW2fWFoqFZW9aO
-	jWSbCQ0NdVvCGkzjspGu3crQGplqykjMpeHBZTEicd2GiFjJVn3x9vkmn+/v+/KjMN4Y7kuJ
-	ZU9EcplQIiA4+NB+v/3CaQ+PuKDVoXNor9xGot+5+Rj61VQE0FvrMBuVrGrZ6KujE6DV4gIc
-	mfTrAHUUVpFoyz7HQsb5CTbSKhtwNG6uJtDHpV4WapwcZaG6/jw2clT6ocHJTQLprPUkKq38
-	gKP8biuJ9jqMOFruVeLIULWCoxazA6ClPwN4tC+jq9UB5u9uOWBWKkoBM64uZjEmzQzJFK3m
-	sRljSyHBTE98IZjWhpfM1P48xtgHctmM3rHMYkr2gpgasxow6rYWwGwa/WI9H3IikkUScaZI
-	fjEygZOqnWom01X8Z80ji3gOqKdVwI2CdCjsmTGwXOwDR2YNhApwKB7dCGDfq122K2wAaFp4
-	f2Bx6QA4t/IGdzJOn4LvzK+Bkwk6GKrWVP/bFOVN34G1NYEu3RPuVMzizjt8+huA+91q0hkw
-	WknAnFI94bS86Eew7XMV5mQe3QlgqzXByW70Ndg+33cwjNFh8GeeHnPxcdiqW8NKAa05NKI5
-	pGkOaXUAawHeooykdEViijQ4UCGUKjJkKYFJaVIjcP3BVieot12xAJoCAnfuSeJIHI8tzFRk
-	SS0AUpiAzzWwPOJ43GRhVrZInhYvz5CIFBbAotx8c4DaftZyu7ldElJmimkS353e6LyUzjvj
-	ldife8N9w2cde9q17VgIX4/h5A/dvBUVEl+22BTNCbXpc3r4UCb/1BjZOCq+H7H442hvx7Hy
-	qzD2+XbIzoi/tvp8rHiQJPlZ96T88OnprsfdxOWCE2EJxMD3ses2/6jhB9lR+hdVyh4BrkgV
-	BgdgcoXwH1Q3g5DlAgAA
+	id S1751887AbaB0KLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:11:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaB0KLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:11:45 -0500
+Date: Thu, 27 Feb 2014 12:17:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Qin Chuanyu <qinchuanyu@huawei.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtio-dev@lists.oasis-open.org, kvm@vger.kernel.org
+Subject: Re: [PATCH net] vhost: net: switch to use data copy if pending DMAs
+ exceed the limit
+Message-ID: <20140227101705.GI16484@redhat.com>
+References: <1393311238-7750-1-git-send-email-jasowang@redhat.com>
+ <20140225135738.GA15274@redhat.com>
+ <530D814E.2080708@redhat.com>
+ <530D8A91.6080206@huawei.com>
+ <530D9399.4050306@redhat.com>
+ <20140226092340.GB5236@redhat.com>
+ <530EACCB.9030902@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530EACCB.9030902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 2014-02-26 13:14, Grant Likely wrote:
-> On Fri, 21 Feb 2014 13:25:22 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> > Use recently introduced of_reserved_mem_device_init() function to
-> > automatically assign respective reserved memory region to the newly created
-> > platform and amba device.
+On Thu, Feb 27, 2014 at 11:11:07AM +0800, Jason Wang wrote:
+> On 02/26/2014 05:23 PM, Michael S. Tsirkin wrote:
+> > On Wed, Feb 26, 2014 at 03:11:21PM +0800, Jason Wang wrote:
+> >> > On 02/26/2014 02:32 PM, Qin Chuanyu wrote:
+> >>> > >On 2014/2/26 13:53, Jason Wang wrote:
+> >>>> > >>On 02/25/2014 09:57 PM, Michael S. Tsirkin wrote:
+> >>>>> > >>>On Tue, Feb 25, 2014 at 02:53:58PM +0800, Jason Wang wrote:
+> >>>>>> > >>>>We used to stop the handling of tx when the number of pending DMAs
+> >>>>>> > >>>>exceeds VHOST_MAX_PEND. This is used to reduce the memory occupation
+> >>>>>> > >>>>of both host and guest. But it was too aggressive in some cases, since
+> >>>>>> > >>>>any delay or blocking of a single packet may delay or block the guest
+> >>>>>> > >>>>transmission. Consider the following setup:
+> >>>>>> > >>>>
+> >>>>>> > >>>>     +-----+        +-----+
+> >>>>>> > >>>>     | VM1 |        | VM2 |
+> >>>>>> > >>>>     +--+--+        +--+--+
+> >>>>>> > >>>>        |              |
+> >>>>>> > >>>>     +--+--+        +--+--+
+> >>>>>> > >>>>     | tap0|        | tap1|
+> >>>>>> > >>>>     +--+--+        +--+--+
+> >>>>>> > >>>>        |              |
+> >>>>>> > >>>>     pfifo_fast   htb(10Mbit/s)
+> >>>>>> > >>>>        |              |
+> >>>>>> > >>>>     +--+--------------+---+
+> >>>>>> > >>>>     |     bridge          |
+> >>>>>> > >>>>     +--+------------------+
+> >>>>>> > >>>>        |
+> >>>>>> > >>>>     pfifo_fast
+> >>>>>> > >>>>        |
+> >>>>>> > >>>>     +-----+
+> >>>>>> > >>>>     | eth0|(100Mbit/s)
+> >>>>>> > >>>>     +-----+
+> >>>>>> > >>>>
+> >>>>>> > >>>>- start two VMs and connect them to a bridge
+> >>>>>> > >>>>- add an physical card (100Mbit/s) to that bridge
+> >>>>>> > >>>>- setup htb on tap1 and limit its throughput to 10Mbit/s
+> >>>>>> > >>>>- run two netperfs in the same time, one is from VM1 to VM2.
+> >>>>>> > >>>>Another is
+> >>>>>> > >>>>   from VM1 to an external host through eth0.
+> >>>>>> > >>>>- result shows that not only the VM1 to VM2 traffic were throttled but
+> >>>>>> > >>>>   also the VM1 to external host through eth0 is also
+> >>>>>> > >>>>throttled somehow.
+> >>>>>> > >>>>
+> >>>>>> > >>>>This is because the delay added by htb may lead the delay the finish
+> >>>>>> > >>>>of DMAs and cause the pending DMAs for tap0 exceeds the limit
+> >>>>>> > >>>>(VHOST_MAX_PEND). In this case vhost stop handling tx request until
+> >>>>>> > >>>>htb send some packets. The problem here is all of the packets
+> >>>>>> > >>>>transmission were blocked even if it does not go to VM2.
+> >>>>>> > >>>>
+> >>>>>> > >>>>We can solve this issue by relaxing it a little bit: switching to use
+> >>>>>> > >>>>data copy instead of stopping tx when the number of pending DMAs
+> >>>>>> > >>>>exceed the VHOST_MAX_PEND. This is safe because:
+> >>>>>> > >>>>
+> >>>>>> > >>>>- The number of pending DMAs were still limited by VHOST_MAX_PEND
+> >>>>>> > >>>>- The out of order completion during mode switch can make sure that
+> >>>>>> > >>>>   most of the tx buffers were freed in time in guest.
+> >>>>>> > >>>>
+> >>>>>> > >>>>So even if about 50% packets were delayed in zero-copy case, vhost
+> >>>>>> > >>>>could continue to do the transmission through data copy in this case.
+> >>>>>> > >>>>
+> >>>>>> > >>>>Test result:
+> >>>>>> > >>>>
+> >>>>>> > >>>>Before this patch:
+> >>>>>> > >>>>VM1 to VM2 throughput is 9.3Mbit/s
+> >>>>>> > >>>>VM1 to External throughput is 40Mbit/s
+> >>>>>> > >>>>
+> >>>>>> > >>>>After this patch:
+> >>>>>> > >>>>VM1 to VM2 throughput is 9.3Mbit/s
+> >>>>>> > >>>>Vm1 to External throughput is 93Mbit/s
+> >>>>> > >>>Would like to see CPU utilization #s as well.
+> >>>>> > >>>
+> >>>> > >>
+> >>>> > >>Will measure this.
+> >>>>>> > >>>>Simple performance test on 40gbe shows no obvious changes in
+> >>>>>> > >>>>throughput after this patch.
+> >>>>>> > >>>>
+> >>>>>> > >>>>The patch only solve this issue when unlimited sndbuf. We still need a
+> >>>>>> > >>>>solution for limited sndbuf.
+> >>>>>> > >>>>
+> >>>>>> > >>>>Cc: Michael S. Tsirkin<mst@redhat.com>
+> >>>>>> > >>>>Cc: Qin Chuanyu<qinchuanyu@huawei.com>
+> >>>>>> > >>>>Signed-off-by: Jason Wang<jasowang@redhat.com>
+> >>>>> > >>>I think this needs some thought.
+> >>>>> > >>>
+> >>>>> > >>>In particular I think this works because VHOST_MAX_PEND
+> >>>>> > >>>is much smaller than the ring size.
+> >>>>> > >>>Shouldn't max_pend then be tied to the ring size if it's small?
+> >>>>> > >>>
+> >>>> > >>
+> >>>> > >>Yes it should. I just reuse the VHOST_MAX_PEND since it was there for a
+> >>>> > >>long time.
+> >>>>> > >>>Another question is about stopping vhost:
+> >>>>> > >>>ATM it's waiting for skbs to complete.
+> >>>>> > >>>Should we maybe hunt down skbs queued and destroy them
+> >>>>> > >>>instead?
+> >>>>> > >>>I think this happens when a device is removed.
+> >>>>> > >>>
+> >>>>> > >>>Thoughts?
+> >>>>> > >>>
+> >>>> > >>
+> >>>> > >>Agree, vhost net removal should not be blocked by a skb. But since the
+> >>>> > >>skbs could be queued may places, just destroy them may need extra locks.
+> >>>> > >>
+> >>>> > >>Haven't thought this deeply, but another possible sloution is to rcuify
+> >>>> > >>destructor_arg and assign it to NULL during vhost_net removing.
+> >>> > >
+> >>> > >Xen treat it by a timer, for those skbs which has been delivered for a
+> >>> > >while, netback would exchange page of zero_copy's skb with dom0's page.
+> >>> > >
+> >>> > >but there is still a race between host's another process handle the skb
+> >>> > >and netback exchange its page. (This problem has been proved by testing)
+> >>> > >
+> >>> > >and Xen hasn't solved this problem yet, because if anyone want to solve
+> >>> > >this problem completely, a page lock is necessary, but it would be
+> >>> > >complex and expensive.
+> >>> > >
+> >>> > >rcuify destructor arg and assign it to NULL couldn't solve the problem
+> >>> > >of page release that has been reserved by host's another process.
+> >>> > >
+> >> > 
+> >> > There're two issues:
+> >> > 
+> >> > 1) if a zerocopy skb won't be freed or frags orphaned in time,
+> >> > vhost_net removal will be blocked since it was waiting for the
+> >> > refcnt of ubuf to zero.
+> >> > 2) whether or not we should free all pending skbs during vhost_net removing.
+> > all pending *zero copy* skbs.
 > >
-> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->
-> I'm wary on this patch. It hides the assignment of regions into the core
-> code and I worry that it is the wrong level of abstraction. I would
-> think that drivers should know that they need a reserved memory region
-> and should be calling the API to obtain the region directly rather than
-> doing it for them. The reason being is that there may be some situations
-> where the common code isn't quite right and the driver needs to override
-> the behaviour. If it is called automatically then the driver cannot do
-> that.
->
-> Is it really a big burden to have the driver call the reserved memory
-> init function?
+> >> > My proposal is for issue 1. Another idea is not wait for the refcnt
+> >> > to be zero and then we can defer the freeing of vhost_net during the
+> >> > release method of kref_put().
+> > It's not freeing that's at issue. We must not access guest memory
+> > after vhost stop, too.
+> >
+> >> > For issue 2, I'm still not sure we should do this or not. Looks like
+> >> > there's a similar issue for the packets sent by tcp_sendpage() was
+> >> > blocked or delayed.
+> > What's the issue exactly? How would you trigger it?
+> 
+> I mean it looks similar to the issue that if we use vmsplice() to splice
+> user pages to TCP socket, and then the packet were blocked or delayed by
+> qdics or other. Did we wait for all pending packets in this case before
+> terminating the process?
 
-If a device requires very special handling of the reserved memory region,
-it may simply provide its own reserved memory region driver which will do
-the required early initialization.
-
-If we assume that driver needs to initialize reserved region manually, then
-why do we ever bother with adding support for custom reserved memory drivers
-and assigning regions to a device node? We can simply stick with just a set
-of reserved regions and tell drivers to use them.
-
-In my opinion for most typical use cases a board designer will assign
-'dma-shared-pool' driver to the given set of devices, which in turn ensures
-that all memory allocations for dma purposes for those device will be
-served from that region. It is really not a driver role to initialize it
-in such case. Driver should focus on controlling hw operations, regardless
-the way the hardware module has been integrated to the system.
-
-I can perfectly imagine a generic driver which operates the same way in any
-of the following cases (depends mainly on the hw version): 1) restricted
-dma window, 2) iommu for all dma for the given device, 3) fully featured
-memory master for dma for the given device (no restrictions), if the
-respective kernel subsystems did the correct initialization and provide
-their own methods for managing DMA operation. I already have a working
-platform glue code for the above cases tested with Samsung multimedia
-drivers. No changes to the drivers were required.
-
-Best regards
+IIUC the socket object will hang around a while
+but this won't block close().
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
-
+MST
