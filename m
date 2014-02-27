@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaB0Rzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:55:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:48291 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaB0Rzn (ORCPT
+	id S1753004AbaB0SEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 13:04:39 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:42576 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaB0SEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:55:43 -0500
-Date: Thu, 27 Feb 2014 12:55:38 -0500 (EST)
-Message-Id: <20140227.125538.644682810852332446.davem@davemloft.net>
-To: jslaby@suse.cz
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, jwboyer@fedoraproject.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: 3.12-stable kernel tree being taken over by Jiri Slaby
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <530EFA78.1020802@suse.cz>
-References: <20140226231910.GA8789@kroah.com>
-	<20140226.183927.1607497823277720839.davem@davemloft.net>
-	<530EFA78.1020802@suse.cz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 27 Feb 2014 09:55:43 -0800 (PST)
+	Thu, 27 Feb 2014 13:04:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+Date: Thu, 27 Feb 2014 13:04:34 -0500
+X-Google-Sender-Auth: 4eUeYUOb16AMQUc_NxLNIxYxumw
+Message-ID: <CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Thu, 27 Feb 2014 09:42:32 +0100
+On Wed, Feb 26, 2014 at 3:11 PM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> The conclusion we came to at Plumbers was that this patchset was basically
+> fine but that Linus hated the name "securelevel" more than I hate pickled
+> herring, so after thinking about this for a few months I've come up with
+> "Trusted Kernel". This flag indicates that the kernel is, via some
+> external mechanism, trusted and should behave that way. If firmware has
+> some way to verify the kernel, it can pass that information on. If userspace
+> has some way to verify the kernel, it can set the flag itself. However,
+> userspace should not attempt to use the flag as a means to verify that the
+> kernel was trusted - untrusted userspace could have set it on an untrusted
+> kernel, but by the same metric an untrusted kernel could just set it itself.
 
-> On 02/27/2014 12:39 AM, David Miller wrote:
->> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Date: Wed, 26 Feb 2014 15:19:10 -0800
->> 
->>> David, I don't know if you want to keep doing 3.12-networking patches or
->>> not, I'll let you work that out with Jiri directly.
->> 
->> 3.12 and 3.13 are very similar, so the work is minimal, therefore I'm
->> likely to keep doing it.
-> 
-> Hi, do you have any plans including:
-> commit 18fc25c94eadc52a42c025125af24657a93638c0
-> Author: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-> Date:   Mon Dec 2 15:41:39 2013 -0800
-> 
->     rds: prevent BUG_ON triggered on congestion update to loopback
-> 
-> which is not needed for 3.13, but is needed for 3.12 to fix CVE-2012-2372?
+FWIW, I've been running a kernel using this patchset in place of the
+patchset Fedora typically carries for this purpose for a bit.  Things
+appear to be working as expected and the protections remain the same.
 
-Feel free to integrate this directly into your -stable tree.
+It would be really nice to get this set of patches in so some of the
+other patches that depend on them can start being pushed as well.
 
-Thanks.
+josh
