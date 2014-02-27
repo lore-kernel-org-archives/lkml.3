@@ -1,131 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaB0Ost (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 09:48:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46357 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248AbaB0Osp (ORCPT
+	id S1753225AbaB0Osm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 09:48:42 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:62196 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083AbaB0Orb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 09:48:45 -0500
-Message-ID: <530F5045.1010604@oracle.com>
-Date: Thu, 27 Feb 2014 09:48:37 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>, ngupta@vflare.org
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: zram: lockdep spew for zram->init_lock
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 27 Feb 2014 09:47:31 -0500
+From: David Herrmann <dh.herrmann@gmail.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Kalle Valo <kvalo@qca.qualcomm.com>
+Subject: [PATCH 3/4] ath6kl: set NET_NAME_USER for P2P ifs
+Date: Thu, 27 Feb 2014 15:47:13 +0100
+Message-Id: <1393512434-1325-4-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
+References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+P2P netdevs and other devices that are created via nl80211 from user-space
+have a name provided by user-space. Therefore, set NET_NAME_USER so this
+is correctly shown in sysfs.
 
-I've stumbled on the following spew while fuzzing with trinity inside a KVM tools guest running 
-latest -next. It looks like a false positive (we only set size for uninitialized devices, so we 
-can't deadlock on them being in-use) but I'd really like someone to confirm it before I write it 
-down as such.
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+---
+ drivers/net/wireless/ath/ath6kl/cfg80211.c | 5 ++++-
+ drivers/net/wireless/ath/ath6kl/cfg80211.h | 1 +
+ drivers/net/wireless/ath/ath6kl/core.c     | 4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-[ 2655.365684] =================================
-[ 2655.368278] [ INFO: inconsistent lock state ]
-[ 2655.370163] 3.14.0-rc4-next-20140226-sasha-00013-g082bdac-dirty #4 Tainted: G        W
-[ 2655.371972] ---------------------------------
-[ 2655.371972] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
-[ 2655.371972] kswapd30/5352 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[ 2655.371972]  (&zram->init_lock){+++++-}, at: [<drivers/block/zram/zram_drv.c:663>] 
-zram_make_request+0x2a/0xc0
-[ 2655.371972] {RECLAIM_FS-ON-W} state was registered at:
-[ 2655.371972]   [<kernel/locking/lockdep.c:2523>] mark_held_locks+0x6c/0x90
-[ 2655.371972]   [<kernel/locking/lockdep.c:2745 kernel/locking/lockdep.c:2760>] 
-lockdep_trace_alloc+0xfd/0x140
-[ 2655.371972]   [<mm/slub.c:965 mm/slub.c:2402 mm/slub.c:2475 mm/slub.c:2492>] 
-kmem_cache_alloc_trace+0x32/0x2e0
-[ 2655.371972]   [<include/linux/slab.h:453 drivers/block/zram/zram_drv.c:172>] 
-zram_meta_alloc+0x20/0x150
-[ 2655.371972]   [<drivers/block/zram/zram_drv.c:554>] disksize_store+0x8e/0xf0
-[ 2655.371972]   [<drivers/base/core.c:139>] dev_attr_store+0x1b/0x20
-[ 2655.371972]   [<fs/sysfs/file.c:114>] sysfs_kf_write+0x4a/0x60
-[ 2655.371972]   [<fs/kernfs/file.c:299>] kernfs_fop_write+0x110/0x190
-[ 2655.371972]   [<fs/read_write.c:473>] vfs_write+0xe3/0x1d0
-[ 2655.371972]   [<fs/read_write.c:523 fs/read_write.c:515>] SyS_write+0x5d/0xa0
-[ 2655.371972]   [<arch/x86/kernel/entry_64.S:749>] tracesys+0xdd/0xe2
-[ 2655.371972] irq event stamp: 10207
-[ 2655.371972] hardirqs last  enabled at (10207): [<arch/x86/include/asm/paravirt.h:809 
-block/blk-throttle.c:982>] throtl_update_dispatch_stats+0x15d/0x1a0
-[ 2655.371972] hardirqs last disabled at (10206): [<block/blk-throttle.c:977>] 
-throtl_update_dispatch_stats+0xa4/0x1a0
-[ 2655.371972] softirqs last  enabled at (10172): [<arch/x86/include/asm/preempt.h:22 
-kernel/softirq.c:297>] __do_softirq+0x447/0x4f0
-[ 2655.371972] softirqs last disabled at (10165): [<kernel/softirq.c:347 kernel/softirq.c:388>] 
-irq_exit+0x83/0x160
-[ 2655.371972]
-[ 2655.371972] other info that might help us debug this:
-[ 2655.371972]  Possible unsafe locking scenario:
-[ 2655.371972]
-[ 2655.371972]        CPU0
-[ 2655.371972]        ----
-[ 2655.371972]   lock(&zram->init_lock);
-[ 2655.371972]   <Interrupt>
-[ 2655.371972]     lock(&zram->init_lock);
-[ 2655.371972]
-[ 2655.371972]  *** DEADLOCK ***
-[ 2655.371972]
-[ 2655.371972] no locks held by kswapd30/5352.
-[ 2655.371972]
-[ 2655.371972] stack backtrace:
-[ 2655.371972] CPU: 78 PID: 5352 Comm: kswapd30 Tainted: G        W 
-3.14.0-rc4-next-20140226-sasha-00013-g082bdac-dirty #4
-[ 2655.371972]  ffff880636f98cc0 ffff880636f8d3f8 ffffffff843882e5 0000000000000000
-[ 2655.371972]  ffff880636f98000 ffff880636f8d458 ffffffff811a09f7 0000000000000000
-[ 2655.371972]  0000000000000001 ffff880600000001 ffffffff876c2060 0000000000000009
-[ 2655.371972] Call Trace:
-[ 2655.371972]  [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
-[ 2655.371972]  [<kernel/locking/lockdep.c:2254>] print_usage_bug+0x1a7/0x1e0
-[ 2655.371972]  [<kernel/locking/lockdep.c:2347>] ? print_usage_bug+0x1e0/0x1e0
-[ 2655.371972]  [<kernel/locking/lockdep.c:2465>] mark_lock_irq+0xd9/0x2a0
-[ 2655.371972]  [<kernel/locking/lockdep.c:2920>] mark_lock+0x128/0x210
-[ 2655.371972]  [<kernel/locking/lockdep.c:2821>] mark_irqflags+0x144/0x170
-[ 2655.371972]  [<kernel/locking/lockdep.c:3138>] __lock_acquire+0x2de/0x5a0
-[ 2655.371972]  [<arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602>] 
-lock_acquire+0x182/0x1d0
-[ 2655.371972]  [<drivers/block/zram/zram_drv.c:663>] ? zram_make_request+0x2a/0xc0
-[ 2655.371972]  [<arch/x86/include/asm/rwsem.h:83 kernel/locking/rwsem.c:23>] down_read+0x47/0xa0
-[ 2655.371972]  [<drivers/block/zram/zram_drv.c:663>] ? zram_make_request+0x2a/0xc0
-[ 2655.371972]  [<arch/x86/include/asm/current.h:14 kernel/sched/core.c:2508>] ? 
-preempt_count_add+0x96/0xc0
-[ 2655.371972]  [<drivers/block/zram/zram_drv.c:663>] zram_make_request+0x2a/0xc0
-[ 2655.371972]  [<block/blk-core.c:1862>] generic_make_request+0xb6/0x110
-[ 2655.371972]  [<block/blk-core.c:1913>] submit_bio+0x148/0x170
-[ 2655.371972]  [<include/linux/rcupdate.h:800 include/linux/memcontrol.h:180 
-mm/page-writeback.c:2408>] ? test_set_page_writeback+0x24e/0x2a0
-[ 2655.371972]  [<mm/page_io.c:315>] __swap_writepage+0x1fc/0x220
-[ 2655.371972]  [<arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 
-kernel/locking/spinlock.c:183>] ? _raw_spin_unlock+0x30/0x50
-[ 2655.371972]  [<mm/swapfile.c:898>] ? page_swapcount+0x4e/0x60
-[ 2655.371972]  [<mm/page_io.c:249>] swap_writepage+0x72/0x80
-[ 2655.371972]  [<mm/vmscan.c:502>] pageout+0x167/0x2e0
-[ 2655.371972]  [<mm/vmscan.c:1015>] shrink_page_list+0x4f4/0x7c0
-[ 2655.371972]  [<include/linux/spinlock.h:328 mm/vmscan.c:1503>] shrink_inactive_list+0x31c/0x570
-[ 2655.371972]  [<mm/vmscan.c:1744>] ? shrink_active_list+0x30b/0x320
-[ 2655.371972]  [<mm/vmscan.c:1830 mm/vmscan.c:2054>] shrink_lruvec+0x124/0x300
-[ 2655.371972]  [<arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305>] ? 
-sched_clock+0x1d/0x30
-[ 2655.371972]  [<mm/vmscan.c:2235>] shrink_zone+0x8e/0x1d0
-[ 2655.371972]  [<include/linux/bitmap.h:165 include/linux/nodemask.h:131 mm/vmscan.c:2904>] 
-kswapd_shrink_zone+0xf1/0x1b0
-[ 2655.371972]  [<mm/vmscan.c:3088>] balance_pgdat+0x363/0x540
-[ 2655.371972]  [<kernel/sched/wait.c:254>] ? finish_wait+0x70/0x90
-[ 2655.371972]  [<mm/vmscan.c:3296>] kswapd+0x2eb/0x350
-[ 2655.371972]  [<mm/vmscan.c:3213>] ? ftrace_raw_event_mm_vmscan_writepage+0x180/0x180
-[ 2655.371972]  [<kernel/kthread.c:216>] kthread+0x105/0x110
-[ 2655.371972]  [<kernel/locking/lockdep.c:3506>] ? __lock_release+0x1e2/0x200
-[ 2655.371972]  [<kernel/kthread.c:185>] ? set_kthreadd_affinity+0x30/0x30
-[ 2655.371972]  [<arch/x86/kernel/entry_64.S:555>] ret_from_fork+0x7c/0xb0
-[ 2655.371972]  [<kernel/kthread.c:185>] ? set_kthreadd_affinity+0x30/0x30
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+index fd4c89d..74598ed 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+@@ -1516,7 +1516,8 @@ static struct wireless_dev *ath6kl_cfg80211_add_iface(struct wiphy *wiphy,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+-	wdev = ath6kl_interface_add(ar, name, type, if_idx, nw_type);
++	wdev = ath6kl_interface_add(ar, name, NET_NAME_USER, type,
++				    if_idx, nw_type);
+ 	if (!wdev)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -3625,6 +3626,7 @@ void ath6kl_cfg80211_vif_cleanup(struct ath6kl_vif *vif)
+ }
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type)
+ {
+@@ -3661,6 +3663,7 @@ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
+ 			ndev->dev_addr[4] ^= 0x80;
+ 	}
+ 
++	ndev->name_assign_type = name_assign_type;
+ 	init_netdev(ndev);
+ 
+ 	ath6kl_init_control_info(vif);
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.h b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+index b59becd..5aa57a7 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.h
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+@@ -25,6 +25,7 @@ enum ath6kl_cfg_suspend_mode {
+ };
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type);
+ void ath6kl_cfg80211_ch_switch_notify(struct ath6kl_vif *vif, int freq,
+diff --git a/drivers/net/wireless/ath/ath6kl/core.c b/drivers/net/wireless/ath/ath6kl/core.c
+index 4b46adb..3cc8145 100644
+--- a/drivers/net/wireless/ath/ath6kl/core.c
++++ b/drivers/net/wireless/ath/ath6kl/core.c
+@@ -195,8 +195,8 @@ int ath6kl_core_init(struct ath6kl *ar, enum ath6kl_htc_type htc_type)
+ 	rtnl_lock();
+ 
+ 	/* Add an initial station interface */
+-	wdev = ath6kl_interface_add(ar, "wlan%d", NL80211_IFTYPE_STATION, 0,
+-				    INFRA_NETWORK);
++	wdev = ath6kl_interface_add(ar, "wlan%d", NET_NAME_ENUM,
++				    NL80211_IFTYPE_STATION, 0, INFRA_NETWORK);
+ 
+ 	rtnl_unlock();
+ 
+-- 
+1.9.0
 
-
-Thanks,
-Sasha
