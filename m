@@ -1,170 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaB0FH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:07:56 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:38412 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaB0FHy (ORCPT
+	id S1751710AbaB0FK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:10:29 -0500
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:14833
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750823AbaB0FK2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:07:54 -0500
-X-AuditID: cbfee68e-b7f566d000002344-2b-530ec828e7da
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, "'Alexander Clouter'" <alex@digriz.org.uk>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-In-reply-to: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-Subject: [PATCH 5/5] hwrng: timeriomem - Use devm_*() functions
-Date: Thu, 27 Feb 2014 14:07:52 +0900
-Message-id: <004201cf3379$ddf4a190$99dde4b0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8zeMUulUPjKSZTQeuQ54WfZho3FgAAOmTQ
-Content-language: ko
-x-cr-hashedpuzzle: Babd D8qS FL7t PSQR PdPI UuJY U/6g XM6f XcjP ZbTk aWlg azto
- bXKi eTzL gBwo
- tIaB;4;YQBsAGUAeABAAGQAaQBnAHIAaQB6AC4AbwByAGcALgB1AGsAOwBoAGUAcgBiAGUAcgB0AEAAZwBvAG4AZABvAHIALgBhAHAAYQBuAGEALgBvAHIAZwAuAGEAdQA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{6D93E72C-55B7-42FE-A5AC-52777AA435A7};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 27 Feb 2014 05:07:45
- GMT;WwBQAEEAVABDAEgAIAA1AC8ANQBdACAAaAB3AHIAbgBnADoAIAB0AGkAbQBlAHIAaQBvAG0AZQBtACAALQAgAFUAcwBlACAAZABlAHYAbQBfACoAKAApACAAZgB1AG4AYwB0AGkAbwBuAHMA
-x-cr-puzzleid: {6D93E72C-55B7-42FE-A5AC-52777AA435A7}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t8zA13NE3zBBh9uMFp0NIdYdL+Ssbi8
-	8BKrxeVdc9gcWDzWzZvL5rHtgKpH35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZVyf+J6xYJJE
-	xayutawNjO+Euxg5OSQETCR+Td3ODGGLSVy4t56ti5GLQ0hgGaPE0iNtTDBF1zdvgkosYpRo
-	2faZGcL5zSixvOczI0gVm4CaxJcvh9lBbBEBPYm+9Y1AcQ4OZoECifOzXUDCQgK2Es8mLWED
-	sTkF7CQmTFjHAmILC9hL/PtxB2wZi4CqxJ95rWAX8QLVX7r/nBHCFpT4MfkeWD2zgJbE5m1N
-	rBC2vMTmNW+ZQVZJCKhLPPqrC3GBkcSW5Q1QJSIS+168YwQ5WUKghVXi4sx1rBCPmUosfdLK
-	BJF4xC5xftVMqCMEJL5NPsQCMVRWYtMBaAhJShxccYNlAqPULCQnzUJy0iwkJ81CsnsBI8sq
-	RtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJAI7tvBePOA9SHGZKD1E5mlRJPzgQkgryTe0NjM
-	yMLUxNTYyNzSjDRhJXHeRQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwLl2cX6oX1b6V
-	5Vad1JxkmTPFaRdZOI9ndKSyNOYYvGzYUsskq/Ro4+HqqEu20hXXRXrZbFxY3VgzxQ6tdrDe
-	pDrxWKljoO77jz5TVog8Ev8aviBWusZ0yrdk9m0c2S3/XNbUfa5alrm+ZK3fxRkrD6RUzT+b
-	wtjTkfdKREDsH1eGsPnit8+UWIozEg21mIuKEwGCbmb09gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jAV2NE3zBBlNOWVl0NIdYdL+Ssbi8
-	8BKrxeVdc9gcWDzWzZvL5rHtgKpH35ZVjB6fN8kFsEQ1MNpkpCampBYppOYl56dk5qXbKnkH
-	xzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAC1UUihLzCkFCgUkFhcr6dthmhAa4qZrAdMY
-	oesbEgTXY2SABhLWMWZcn/iesWCSRMWsrrWsDYzvhLsYOTkkBEwkrm/exAZhi0lcuLceyObi
-	EBJYxCjRsu0zM4Tzm1Fiec9nRpAqNgE1iS9fDrOD2CICehJ96xuB4hwczAIFEudnu4CEhQRs
-	JZ5NWgI2lFPATmLChHUsILawgL3Evx93mEBsFgFViT/zWplBbF6g+kv3nzNC2IISPybfA6tn
-	FtCS2LytiRXClpfYvOYtM8gqCQF1iUd/dSEuMJLYsrwBqkREYt+Ld4wgJ0sItLBKXJy5jhXi
-	MVOJpU9amSYwisxCsmIWkhWzkKyYhWTWAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjB
-	6eGZ9A7GVQ0WhxgFOBiVeHh/6PIFC7EmlhVX5h5ilOBgVhLhPeQCFOJNSaysSi3Kjy8qzUkt
-	PsSYDAyBicxSosn5wNSVVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgt
-	TBycUg2Mc07uLfPmsLjL+TuUK2HRk82r67pVvA+d3Nlv4btngVzgnbalC9s/R88P0ynanXcn
-	ZcvDLIm+4An13wUbUr9eNLELC7OUmvLHVtG46u41/a5pPpXy6TqHV+73du+P1tEwuvB1bZmw
-	+dy+5runr8Z9K9e9qyHo/6Xu17WmxCrGiH0vV8U2ep9VYinOSDTUYi4qTgQAFQ/WYlMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 27 Feb 2014 00:10:28 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huan Wang <Huan.Wang@freescale.com>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: RE: [PATCHv9 Resend 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Topic: [PATCHv9 Resend 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Index: AQHPLVcN3oW8l/g5/Ui0RvDMALhuK5rHjcGAgAELhtA=
+Date: Thu, 27 Feb 2014 05:10:10 +0000
+Message-ID: <d4640ae32c1041028dbf5ce0849e6f97@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392799137-17188-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392799137-17188-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140226131109.GA29779@ulmo.nvidia.com>
+In-Reply-To: <20140226131109.GA29779@ulmo.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 013568035E
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(24454002)(51704005)(76482001)(51856001)(33646001)(92566001)(74316001)(74366001)(47446002)(95416001)(81686001)(46102001)(53806001)(54316002)(81816001)(54356001)(50986001)(74662001)(93516002)(94316002)(94946001)(74502001)(31966008)(74706001)(85852003)(47736001)(49866001)(56816005)(90146001)(2656002)(83072002)(74876001)(80022001)(87936001)(65816001)(83322001)(80976001)(76796001)(76786001)(59766001)(76576001)(4396001)(47976001)(56776001)(93136001)(19580395003)(95666003)(86362001)(81342001)(85306002)(81542001)(63696002)(66066001)(69226001)(79102001)(87266001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB224;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:E2F7F0DC.ACF8D76A.B3DDA508.8EE6EB21.2043F;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_*() functions to make cleanup paths simpler.
+Hi Thierry,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/char/hw_random/timeriomem-rng.c |   40 ++++++++-----------------------
- 1 file changed, 10 insertions(+), 30 deletions(-)
+Thanks very much, I will fix them all.
 
-diff --git a/drivers/char/hw_random/timeriomem-rng.c b/drivers/char/hw_random/timeriomem-rng.c
-index 73ce739..439ff8b 100644
---- a/drivers/char/hw_random/timeriomem-rng.c
-+++ b/drivers/char/hw_random/timeriomem-rng.c
-@@ -118,7 +118,8 @@ static int timeriomem_rng_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Allocate memory for the device structure (and zero it) */
--	priv = kzalloc(sizeof(struct timeriomem_rng_private_data), GFP_KERNEL);
-+	priv = devm_kzalloc(&pdev->dev,
-+			sizeof(struct timeriomem_rng_private_data), GFP_KERNEL);
- 	if (!priv) {
- 		dev_err(&pdev->dev, "failed to allocate device structure.\n");
- 		return -ENOMEM;
-@@ -134,17 +135,16 @@ static int timeriomem_rng_probe(struct platform_device *pdev)
- 			period = i;
- 		else {
- 			dev_err(&pdev->dev, "missing period\n");
--			err = -EINVAL;
--			goto out_free;
-+			return -EINVAL;
- 		}
--	} else
-+	} else {
- 		period = pdata->period;
-+	}
- 
- 	priv->period = usecs_to_jiffies(period);
- 	if (priv->period < 1) {
- 		dev_err(&pdev->dev, "period is less than one jiffy\n");
--		err = -EINVAL;
--		goto out_free;
-+		return -EINVAL;
- 	}
- 
- 	priv->expires	= jiffies;
-@@ -160,24 +160,16 @@ static int timeriomem_rng_probe(struct platform_device *pdev)
- 	priv->timeriomem_rng_ops.data_read	= timeriomem_rng_data_read;
- 	priv->timeriomem_rng_ops.priv		= (unsigned long)priv;
- 
--	if (!request_mem_region(res->start, resource_size(res),
--				dev_name(&pdev->dev))) {
--		dev_err(&pdev->dev, "request_mem_region failed\n");
--		err = -EBUSY;
-+	priv->io_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->io_base)) {
-+		err = PTR_ERR(priv->io_base);
- 		goto out_timer;
- 	}
- 
--	priv->io_base = ioremap(res->start, resource_size(res));
--	if (priv->io_base == NULL) {
--		dev_err(&pdev->dev, "ioremap failed\n");
--		err = -EIO;
--		goto out_release_io;
--	}
--
- 	err = hwrng_register(&priv->timeriomem_rng_ops);
- 	if (err) {
- 		dev_err(&pdev->dev, "problem registering\n");
--		goto out;
-+		goto out_timer;
- 	}
- 
- 	dev_info(&pdev->dev, "32bits from 0x%p @ %dus\n",
-@@ -185,30 +177,18 @@ static int timeriomem_rng_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--out:
--	iounmap(priv->io_base);
--out_release_io:
--	release_mem_region(res->start, resource_size(res));
- out_timer:
- 	del_timer_sync(&priv->timer);
--out_free:
--	kfree(priv);
- 	return err;
- }
- 
- static int timeriomem_rng_remove(struct platform_device *pdev)
- {
- 	struct timeriomem_rng_private_data *priv = platform_get_drvdata(pdev);
--	struct resource *res;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
- 	hwrng_unregister(&priv->timeriomem_rng_ops);
- 
- 	del_timer_sync(&priv->timer);
--	iounmap(priv->io_base);
--	release_mem_region(res->start, resource_size(res));
--	kfree(priv);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+:)
 
+--
+Best Regards,
+Xiubo
 
+> Sorry for taking so long to get back to you. Things have been quite busy
+> lately. A few more comments below, but we're getting there.
+> 
+> On Wed, Feb 19, 2014 at 04:38:54PM +0800, Xiubo Li wrote:
+> [...]
+> > diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
+> [...]
+> > +static unsigned long fsl_pwm_calculate_period(struct fsl_pwm_chip *fpc,
+> > +					      unsigned long period_ns)
+> > +{
+> > +	struct clk *cnt_clk[3];
+> > +	enum fsl_pwm_clk m0, m1;
+> > +	unsigned long fix_rate, ext_rate, cycles;
+> > +
+> > +	fpc->counter_clk = fpc->sys_clk;
+> > +	cycles = fsl_pwm_calculate_period_cycles(fpc, period_ns,
+> > +			FSL_PWM_CLK_SYS);
+> > +	if (cycles)
+> > +		return cycles;
+> > +
+> > +	cnt_clk[FSL_PWM_CLK_FIX] = devm_clk_get(fpc->chip.dev, "ftm_fix");
+> > +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_FIX]))
+> > +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_FIX]);
+> > +
+> > +	cnt_clk[FSL_PWM_CLK_EXT] = devm_clk_get(fpc->chip.dev, "ftm_ext");
+> > +	if (IS_ERR(cnt_clk[FSL_PWM_CLK_EXT]))
+> > +		return PTR_ERR(cnt_clk[FSL_PWM_CLK_EXT]);
+> > +
+> > +	fpc->counter_clk_en = devm_clk_get(fpc->chip.dev, "ftm_cnt_clk_en");
+> > +	if (IS_ERR(fpc->counter_clk_en))
+> > +		return PTR_ERR(fpc->counter_clk_en);
+> 
+> You shouldn't do this. You're obtaining a reference to each of these
+> clocks whenever pwm_config() is called. And devres will only clean those
+> up after the driver is unbound. Can't you simply keep a reference to
+> these within struct fsl_pwm_chip?
+> 
+> > +static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+> > +{
+> > +	u32 val;
+> > +	int ret;
+> > +
+> > +	if (fpc->counter_clk_enable++)
+> 
+> This function is always called with the fpc->lock held, so you could
+> make this much easier by incrementing the .counter_clk_enable field only
+> at the very end of the function. That way...
+> 
+> > +		return 0;
+> > +
+> > +	ret = clk_prepare_enable(fpc->counter_clk);
+> > +	if (ret) {
+> > +		fpc->counter_clk_enable--;
+> 
+> ... this won't be necessary...
+> 
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = clk_prepare_enable(fpc->counter_clk_en);
+> > +	if (ret) {
+> > +		fpc->counter_clk_enable--;
+> 
+> ... and neither will this.
+> 
+> > +static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> > +{
+> > +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> > +	u32 val;
+> > +	int ret;
+> > +
+> > +	val = readl(fpc->base + FTM_OUTMASK);
+> > +	val &= ~BIT(pwm->hwpwm);
+> > +	writel(val, fpc->base + FTM_OUTMASK);
+> > +
+> > +	mutex_lock(&fpc->lock);
+> 
+> I think you want to extend the lock to cover the FTM_OUTMASK register
+> access as well because there could be a race between pwm_enable() and
+> pwm_disable().
+> 
+> > +	ret = fsl_counter_clock_enable(fpc);
+> > +	mutex_unlock(&fpc->lock);
+> > +
+> > +	return ret;
+> > +}
+> 
+> Can this function be moved somewhere else so fsl_counter_clock_enable()
+> and fsl_counter_clock_disable() are grouped together?
+> 
+> > +static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
+> > +{
+> > +	u32 val;
+> > +
+> > +	if (--fpc->counter_clk_enable)
+> > +		return;
+> 
+> This is going to break. Consider the case where you call pwm_disable()
+> on a PWM device and fpc->counter_clk_enable == 1. In that case, this
+> will decrement counter_clk_enable to 0 and proceed with the remainder of
+> this function.
+> 
+> Now you call pwm_disable() again. The above will decrement again and
+> cause fpc->counter_clk_enable to wrap around to UINT_MAX.
+> 
+> So I think a more correct implementation would be:
+> 
+> 	/*
+> 	 * already disabled, do nothing (perhaps output warning message
+> 	 * to catch unbalanced calls? )
+> 	 */
+> 	if (fpc->counter_clk_enable == 0)
+> 		return;
+> 
+> 	/* there are still users, so can't disable yet */
+> 	if (--fpc->counter_clk_enable > 0)
+> 		return;
+> 
+> 	/* no users left, disable clock */
+> 
+> > +static void fsl_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+> > +{
+> > +	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+> > +	u32 val;
+> > +
+> > +	val = readl(fpc->base + FTM_OUTMASK);
+> > +	val |= BIT(pwm->hwpwm);
+> > +	writel(val, fpc->base + FTM_OUTMASK);
+> > +
+> > +	mutex_lock(&fpc->lock);
+> 
+> This lock should also include the access to FTM_OUTMASK above.
+> 
+> > +static int fsl_pwm_probe(struct platform_device *pdev)
+> > +{
+> [...]
+> > +	fpc->sys_clk = devm_clk_get(&pdev->dev, "ftm_sys");
+> > +	if (IS_ERR(fpc->sys_clk)) {
+> > +		dev_err(&pdev->dev,
+> > +				"failed to get \"ftm_sys\" clock\n");
+> 
+> The above easily fits on a single line, no need for the wrapping.
+> 
+> > +		return PTR_ERR(fpc->sys_clk);
+> > +	}
+> > +
+> > +	ret = clk_prepare_enable(fpc->sys_clk);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	writel(0x00, fpc->base + FTM_CNTIN);
+> > +	writel(0x00, fpc->base + FTM_OUTINIT);
+> > +	writel(0xFF, fpc->base + FTM_OUTMASK);
+> > +	clk_disable_unprepare(fpc->sys_clk);
+> 
+> This looks out of place somehow, perhaps it should be moved off into a
+> separate function? fsl_pwm_init() perhaps.
+> 
+> Thierry
