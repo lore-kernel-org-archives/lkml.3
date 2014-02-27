@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773AbaB0FTh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:19:37 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:62648 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0FTg (ORCPT
+	id S1751532AbaB0FZV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:25:21 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:39419 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaB0FZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:19:36 -0500
+	Thu, 27 Feb 2014 00:25:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <530EC7D1.3000706@zytor.com>
-References: <cover.1393462777.git.luto@amacapital.net> <ecbd286ccd2ac038740a07cc04f5d98e96af669f.1393462777.git.luto@amacapital.net>
- <20140227033920.GI12219@tassilo.jf.intel.com> <530EC7D1.3000706@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 26 Feb 2014 22:19:15 -0700
-Message-ID: <CALCETrWbS3B_63Q76E5RL0Y6B=1=1ObmECR3HTMk1HQ-4OwN8A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86: Mark __vdso entries as asmlinkage
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Stefani Seibold <stefani@seibold.net>,
-        X86 ML <x86@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
+In-Reply-To: <20140226170847.GA18427@thin>
+References: <1393432706-25708-1-git-send-email-rashika.kheria@gmail.com>
+	<20140226164142.GA18079@thin>
+	<CAMpEsFFjR2e_kDn9-QuKcS3RjsSmru9XGjXqXXdO7sYeWdh9dw@mail.gmail.com>
+	<20140226170847.GA18427@thin>
+Date: Thu, 27 Feb 2014 10:55:18 +0530
+Message-ID: <CAKohpomqu22Pt5_wYV3u2uC36AgfmrkvxLtJCGakdodEQFE-jQ@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers: cpufreq: Mark function as static in cpufreq.c
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: josh@joshtriplett.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 10:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/26/2014 07:39 PM, Andi Kleen wrote:
->> On Wed, Feb 26, 2014 at 05:02:13PM -0800, Andy Lutomirski wrote:
->>> This makes no difference for 64-bit, bit it's critical for 32-bit code:
->>> these functions are called from outside the kernel, so they need to comply
->>> with the ABI.
->>
->> That's an odd patch. If that was wrong things couldn't have worked at all.
->> Probably hidden by inlining? If yes just make it static
->>
->> Also you would rather need notrace more often.
->>
->
-> It has to support *an* ABI... the syscall vdso entry point uses the old
-> int $0x80 calling convention rather than the normal ABI.  It would
-> depend on the test program and eventual glibc implementation.  And sure
-> enough, the test program has:
->
-> int (*vdso_gettimeofday)(struct timeval *tv, struct timezone *tz)
-> __attribute__ ((regparm (3)));
-> int (*vdso_clock_gettime)(clockid_t clk_id, struct timespec *tp)
-> __attribute__ ((regparm (3)));
-> time_t (*vdso_time)(time_t *t) __attribute__ ((regparm (3)));
->
-> That being said, since this code is compiled separately, the compiler
-> flags there determine what actually matters.  However, there we have:
->
-> KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=3 -freg-struct-return -fpic
->
-> The normal ABI almost certainly makes more sense; as such -mregparm=3 is
-> probably not what we want, and I suspect it makes more sense to just
-> drop that from the CFLAGS line?
+Hi Rashika,
 
-Hmm.  What happens on a native 32-bit build?  IIRC the whole kernel is
-build with regparm(3).
+On 26 February 2014 22:08, Rashika Kheria <rashika.kheria@gmail.com> wrote:
+> Mark function as static in cpufreq.c because it is not
+> used outside this file.
+>
+> This eliminates the following warning in cpufreq.c:
+> drivers/cpufreq/cpufreq.c:355:9: warning: no previous prototype for 'show_boost' [-Wmissing-prototypes]
 
-If we want to save a cycle or two, then regparm(3) is probably faster.
- But I think that these functions should either be asmlinkage or (on
-32 bit builds) explicitly regparm(3) to avoid confusion.
+Can you please elaborate how this warning is related to
+the non-static definition of this function?
 
---Andy
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+> ---
+>  drivers/cpufreq/cpufreq.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 08ca8c9..54fd670 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -352,7 +352,7 @@ EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+>  /*********************************************************************
+>   *                          SYSFS INTERFACE                          *
+>   *********************************************************************/
+> -ssize_t show_boost(struct kobject *kobj,
+> +static ssize_t show_boost(struct kobject *kobj,
+>                                  struct attribute *attr, char *buf)
+>  {
+>         return sprintf(buf, "%d\n", cpufreq_driver->boost_enabled);
+> --
+> 1.7.9.5
+>
