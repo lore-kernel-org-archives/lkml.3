@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaB0Kqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:46:31 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:30068
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752327AbaB0Kph (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:45:37 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <thierry.reding@gmail.com>
-CC: <linux-pwm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv10 2/4] ARM: dts: vf610: Add Freescale FTM PWM node.
-Date: Thu, 27 Feb 2014 17:39:50 +0800
-Message-ID: <1393493992-26073-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1393493992-26073-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1393493992-26073-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1751839AbaB0Kzb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:55:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59728 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993AbaB0Kz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 05:55:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,554,1389772800"; 
+   d="scan'208";a="482829515"
+Date: Thu, 27 Feb 2014 12:55:20 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>, Chen-Yu Tsai <wens@csie.org>,
+        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCHv2 4/5] net: rfkill: gpio: add ACPI ID for GPS module on
+ Lenove Miix2
+Message-ID: <20140227105520.GB17298@xps8300>
+References: <1393330950-7283-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1393330950-7283-5-git-send-email-heikki.krogerus@linux.intel.com>
+ <530CC796.1010800@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530CC796.1010800@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds devicetree node for VF610, and there are 8 channels
-supported.
+On Tue, Feb 25, 2014 at 08:40:54PM +0400, Sergei Shtylyov wrote:
+> On 25-02-2014 16:22, Heikki Krogerus wrote:
+> 
+> >On Lenovo Miix 2 8", BCM4752 is renamed LNV4752.
+> 
+>    You have typoed in the subject, s/Lenove/Lenovo/.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
-Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
----
- arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+True. I'll send a fixed version.
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index d31ce1b..6cce861 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -152,6 +152,19 @@
- 				clock-names = "pit";
- 			};
- 
-+			pwm0: pwm@40038000 {
-+				compatible = "fsl,vf610-ftm-pwm";
-+				#pwm-cells = <3>;
-+				reg = <0x40038000 0x1000>;
-+				clock-names = "ftm_sys", "ftm_ext",
-+					      "ftm_fix", "ftm_cnt_clk_en";
-+				clocks = <&clks VF610_CLK_FTM0>,
-+					<&clks VF610_CLK_FTM0_EXT_SEL>,
-+					<&clks VF610_CLK_FTM0_FIX_SEL>,
-+					<&clks VF610_CLK_FTM0_EXT_FIX_EN>;
-+				status = "disabled";
-+			};
-+
- 			wdog@4003e000 {
- 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
- 				reg = <0x4003e000 0x1000>;
+Thanks,
+
 -- 
-1.8.4
-
-
+heikki
