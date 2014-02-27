@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaB0Lba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:31:30 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:48158 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaB0Lb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752144AbaB0Lb2 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Feb 2014 06:31:28 -0500
-From: David Herrmann <dh.herrmann@gmail.com>
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:61570 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaB0Lb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 06:31:27 -0500
+Date: Thu, 27 Feb 2014 16:59:07 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Ray Strode <halfline@gmail.com>, Werner Fink <werner@suse.de>,
-        Hannes Reinecke <hare@suse.de>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v3] tty: Set correct tty name in 'active' sysfs attribute
-Date: Thu, 27 Feb 2014 12:30:51 +0100
-Message-Id: <1393500651-1064-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.0
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Vincent <vincent.stehle@laposte.net>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Emese Revfy <re.emese@gmail.com>, Andrey Vagin <avagin@openvz.org>,
+        Jesper Derehag <jderehag@hotmail.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        kgdb-bugreport@lists.sourceforge.net, josh@joshtriplett.org
+Subject: [PATCH 05/46] kernel: Include appropriate header file in
+ kernel/signal.c
+Message-ID: <ffebeb9154859c6e109c825597c473dd6527f6bc.1393493276.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Reinecke <hare@suse.de>
+Include appropriate header file kernel/debug/kdb/kdb_private.h in
+kernel/signal.c because it contains prototype definitions of functions
+declared in kernel/signal.c.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console. The
-console structure doesn't refer to any device in sysfs, only the tty the
-console is running on has. So we need to print out the tty names in
-'active', not the console names.
+Also, include include/linux/kdb.h in
+include/linux/kdb_private.h to remove the following errors:
+kernel/debug/kdb/kdb_private.h:172:2: error: unknown type name ‘kdb_func_t’
+kernel/debug/kdb/kdb_private.h:178:2: error: unknown type name ‘kdb_repeat_t’
+kernel/debug/kdb/kdb_private.h:196:5: error: expected ‘)’ before ‘int’
+Inclusion of kdb.h is necessary because it typedefs the above keywords.
 
-There is one special-case, which is tty0. If the console is directed to
-it, we want 'tty0' to show up in the file, so user-space knows that the
-messages get forwarded to the active VT. The ->device() callback would
-resolve tty0, though. Hence, treat it special and don't call into the VT
-layer to resolve it (plymouth is known to depend on it).
+This eliminates the following warning in kernel/signal.c:
+kernel/signal.c:3640:1: warning: no previous prototype for ‘kdb_send_sig_info’ [-Wmissing-prototypes]
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
-v2: use cs[i]->index instead of ->index
-    refactor code to avoid >80 lines
-    split out sprintf("%c",...);
+ kernel/debug/kdb/kdb_private.h |    1 +
+ kernel/signal.c                |    1 +
+ 2 files changed, 2 insertions(+)
 
-Tested on my x86-64 machine.
-
-David
-
- drivers/tty/tty_io.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index c74a00a..d3448a9 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
-  *
-  *	Locking: None
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index 7afd3c8..e7f2c35 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -13,6 +13,7 @@
   */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
  
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct device *dev,
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		int index = cs[i]->index;
-+		struct tty_driver *drv = cs[i]->device(cs[i], &index);
-+
-+		/* don't resolve tty0 as some programs depend on it */
-+		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
-+			count += tty_line_name(drv, index, buf + count);
-+		else
-+			count += sprintf(buf + count, "%s%d",
-+					 cs[i]->name, cs[i]->index);
-+
-+		count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+	}
- 	console_unlock();
+ #include <linux/kgdb.h>
++#include <linux/kdb.h>
+ #include "../debug_core.h"
  
- 	return count;
+ /* Kernel Debugger Command codes.  Must not overlap with error codes. */
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 52f881d..aa1cc60 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -42,6 +42,7 @@
+ #include <asm/siginfo.h>
+ #include <asm/cacheflush.h>
+ #include "audit.h"	/* audit_signal_info() */
++#include "debug/kdb/kdb_private.h"
+ 
+ /*
+  * SLAB caches for signal bits.
 -- 
-1.9.0
+1.7.9.5
 
