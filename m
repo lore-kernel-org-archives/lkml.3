@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaB0LLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:11:37 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:63557 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbaB0LLO (ORCPT
+	id S1752659AbaB0LMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:12:51 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:38251 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaB0LMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:11:14 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, veeableful@gmail.com, josh@joshtriplett.org,
-        rashika.kheria@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: bcm: fix checkpatch error 'assignment in if condition'
-Date: Thu, 27 Feb 2014 20:11:09 +0900
-Message-ID: <6252391.VE6NA7AxT4@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Thu, 27 Feb 2014 06:12:50 -0500
+Date: Thu, 27 Feb 2014 16:42:38 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>, Prarit Bhargava <prarit@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Robert P. J. Day" <rpjday@crashcourse.ca>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        David Miller <davem@davemloft.net>,
+        Rashika Kheria <rashika.kheria@gmail.com>, josh@joshtriplett.org
+Subject: [PATCH 03/46] kernel: Move prototype declaration to header file
+ include/linux/cpu.h
+Message-ID: <2f6da4289a80fcde70aec12f65c135fbf719e338.1393493276.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add prototype declaration to header file include/linux/cpu.h because
+they are used by more than one file.
 
-clean up checkpatch errors and bClassificationSucceed is set to "TRUE"
-proper location.
+This eliminates the following warning in kernel/cpu.c:
+kernel/cpu.c:512:13: warning: no previous prototype for ‘arch_enable_nonboot_cpus_begin’ [-Wmissing-prototypes]
+kernel/cpu.c:516:13: warning: no previous prototype for ‘arch_enable_nonboot_cpus_end’ [-Wmissing-prototypes]
 
-If protocal is not TCP or UDP, when it checks protocal, bClassificationSucceed
-must be set to TRUE.
-Also the end of do-while(0) loop, bClassificationSucceed is set to TRUE.
-
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/staging/bcm/Qos.c |   32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
+ arch/x86/kernel/smpboot.c |    1 +
+ include/linux/cpu.h       |    2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
-index ead57b4..4f31583 100644
---- a/drivers/staging/bcm/Qos.c
-+++ b/drivers/staging/bcm/Qos.c
-@@ -230,51 +230,47 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a32da80..e428764 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -49,6 +49,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/err.h>
+ #include <linux/nmi.h>
++#include <linux/cpu.h>
+ #include <linux/tboot.h>
+ #include <linux/stackprotector.h>
+ #include <linux/gfp.h>
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 03e235ad..9f633b0 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -38,6 +38,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
  
- 		//**************Checking IP header parameter**************************//
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Trying to match Source IP Address");
--		if (false == (bClassificationSucceed =
--			MatchSrcIpAddress(pstClassifierRule, iphd->saddr)))
-+		if (!MatchSrcIpAddress(pstClassifierRule, iphd->saddr))
- 			break;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Source IP Address Matched");
+ extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
+ extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
++void arch_enable_nonboot_cpus_begin(void);
++void arch_enable_nonboot_cpus_end(void);
  
--		if (false == (bClassificationSucceed =
--			MatchDestIpAddress(pstClassifierRule, iphd->daddr)))
-+		if (!MatchDestIpAddress(pstClassifierRule, iphd->daddr))
- 			break;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination IP Address Matched");
- 
--		if (false == (bClassificationSucceed =
--			MatchTos(pstClassifierRule, iphd->tos)))
--		{
-+		if (!MatchTos(pstClassifierRule, iphd->tos)) {
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "TOS Match failed\n");
- 			break;
- 		}
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "TOS Matched");
- 
--		if (false == (bClassificationSucceed =
--			MatchProtocol(pstClassifierRule, iphd->protocol)))
-+		if (!MatchProtocol(pstClassifierRule, iphd->protocol))
- 			break;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Protocol Matched");
- 
- 		//if protocol is not TCP or UDP then no need of comparing source port and destination port
--		if (iphd->protocol != TCP && iphd->protocol != UDP)
-+		if (iphd->protocol != TCP && iphd->protocol != UDP) {
-+			bClassificationSucceed = TRUE;
- 			break;
-+		}
- 		//******************Checking Transport Layer Header field if present *****************//
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Source Port %04x",
- 			(iphd->protocol == UDP) ? xprt_hdr->uhdr.source : xprt_hdr->thdr.source);
- 
--		if (false == (bClassificationSucceed =
--			MatchSrcPort(pstClassifierRule,
--				ntohs((iphd->protocol == UDP) ?
--				xprt_hdr->uhdr.source : xprt_hdr->thdr.source))))
-+		if (!MatchSrcPort(pstClassifierRule,
-+				  ntohs((iphd->protocol == UDP) ?
-+				  xprt_hdr->uhdr.source : xprt_hdr->thdr.source)))
- 			break;
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Src Port Matched");
- 
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "Destination Port %04x",
- 			(iphd->protocol == UDP) ? xprt_hdr->uhdr.dest :
- 			xprt_hdr->thdr.dest);
--		if (false == (bClassificationSucceed =
--			MatchDestPort(pstClassifierRule,
--			ntohs((iphd->protocol == UDP) ?
--			xprt_hdr->uhdr.dest : xprt_hdr->thdr.dest))))
-+		if (!MatchDestPort(pstClassifierRule,
-+				   ntohs((iphd->protocol == UDP) ?
-+				   xprt_hdr->uhdr.dest : xprt_hdr->thdr.dest)))
- 			break;
-+		bClassificationSucceed = TRUE;
- 	} while (0);
- 
- 	if (TRUE == bClassificationSucceed)
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern void unregister_cpu(struct cpu *cpu);
 -- 
 1.7.9.5
-
 
