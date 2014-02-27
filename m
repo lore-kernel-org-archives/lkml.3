@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaB0LfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:35:14 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:49381 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155AbaB0LfM (ORCPT
+	id S1752143AbaB0LgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:36:19 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:9024 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677AbaB0LgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:35:12 -0500
-Date: Thu, 27 Feb 2014 17:05:05 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: josh@joshtriplett.org
-Subject: [PATCH 09/46] kernel: Move prototype declaration to header file
- include/linux/hw_breakpoint.h
-Message-ID: <ac0b1edf9eb9a536dcda6a888e6666fe90d16dc4.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Feb 2014 06:36:16 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-10-530f232f0d60
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Graeme Gregory'" <gg@slimlogic.co.uk>
+Subject: [PATCH 1/2] extcon: palmas: Use SIMPLE_DEV_PM_OPS macro
+Date: Thu, 27 Feb 2014 20:36:15 +0900
+Message-id: <000801cf33b0$1f9876e0$5ec964a0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8zsB9vKpqotdqpRImP5zt9se4Hag==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zY119Zf5gg59PNCyuf3nOatG/xcXi
+	8sJLrBaXd81hs7jduILNgdWjb8sqRo+pU/4yenzeJBfAHMVlk5Kak1mWWqRvl8CVsXLbZtaC
+	DWwV8z5OZWlg3MTaxcjJISFgIjFv8id2CFtM4sK99WwgtpDAMkaJUw/4uxg5wGpebq6ACE9n
+	lGhaHdLFyAVk/2aUWNrTzwiSYBNQk/jy5TDYHBEBLYmJnTOZQIqYBWYwSqx6MROoiJ1DWMBB
+	4rcKSAmLgKrEv4M7wVbxCthKzD1/kBnCFpT4MfkeC4jNDDRm/c7jTBC2vMTmNW+ZIc5Rl3j0
+	Vxdik57Evv+fGSFKRCT2vXjHCLJVQmATu8SmXXvYIXYJSHybfIgFoldWYtMBZohvJSUOrrjB
+	MoFRbBaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJrv4djHcP
+	WB9iTAZaP5FZSjQ5HxideSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRf
+	VJqTWnyIkYmDU6qBcVHRSlF21Uf9FipvdASrdAXubM/b42r35bq1WZStuNaStopY6QfBqRzH
+	XwYE3mi/+myjVuKSo+aMEtxPJ5j88chj1Xli+/DPoYTUWeU3Nqsm1O6T+xBopmi9nN81YMMf
+	sxfvVC5dn/jYfBNPf+8llZtCs4O263LIfHPTXqV1+HT78j+nOg60K7EUZyQaajEXFScCAIkN
+	k9PEAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xoK6+Mn+wwbm3KhbXvzxntejf4mJx
+	eeElVovLu+awWdxuXMHmwOrRt2UVo8fUKX8ZPT5vkgtgjmpgtMlITUxJLVJIzUvOT8nMS7dV
+	8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBWqmkUJaYUwoUCkgsLlbSt8M0ITTETdcC
+	pjFC1zckCK7HyAANJKxjzFi5bTNrwQa2inkfp7I0MG5i7WLk4JAQMJF4ubmii5ETyBSTuHBv
+	PRuILSQwnVGiaXVIFyMXkP2bUWJpTz8jSIJNQE3iy5fD7CC2iICWxMTOmUwgRcwCMxglVr2Y
+	CVTEziEs4CDxWwWkhEVAVeLfwZ1gM3kFbCXmnj/IDGELSvyYfI8FxGYGGrN+53EmCFteYvOa
+	t8wQp6lLPPqrC7FJT2Lf/8+MECUiEvtevGOcwCgwC8mkWUgmzUIyaRaSlgWMLKsYRVMLkguK
+	k9JzDfWKE3OLS/PS9ZLzczcxgqP3mdQOxpUNFocYBTgYlXh4Fdj4goVYE8uKK3MPMUpwMCuJ
+	8K5n4g8W4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgYskriTc0NjEzsjQyszAyMTcnTVhJ
+	nPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsbZ/lveX/y/XvJJzCfB7lzZdIat7AeZon2irXzV
+	Hj5c7KZVeUHgVhwDfxdLeEVJvpjdr/sPdn936Ve+5qVv8iNHUioq7EPP30/ayY3hVjmFmj9Z
+	tt45Ih67Z0KQSGaLs+yp+2xi+QUHLk5Ov82bUuZg5CU9PW3f/6fe85QWf38sv71xxZPIbUos
+	xRmJhlrMRcWJAHRbLr4iAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declaration of function to header file
-include/linux/hw_breakpoint.h because it is used by more than one file.
+Use SIMPLE_DEV_PM_OPS macro in order to make the code simpler.
 
-This eliminates the following warning in kernel/events/hw_breakpoint.c:
-kernel/events/hw_breakpoint.c:231:13: warning: no previous prototype for ‘arch_unregister_hw_breakpoint’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- include/linux/hw_breakpoint.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/extcon/extcon-palmas.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
-index 0464c85..9ff0155 100644
---- a/include/linux/hw_breakpoint.h
-+++ b/include/linux/hw_breakpoint.h
-@@ -67,6 +67,8 @@ register_wide_hw_breakpoint(struct perf_event_attr *attr,
- 			    perf_overflow_handler_t triggered,
- 			    void *context);
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 2aea4bc..ddff2b7 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -271,10 +271,7 @@ static int palmas_usb_resume(struct device *dev)
+ };
+ #endif
  
-+void arch_unregister_hw_breakpoint(struct perf_event *bp);
-+
- extern int register_perf_hw_breakpoint(struct perf_event *bp);
- extern int __register_perf_hw_breakpoint(struct perf_event *bp);
- extern void unregister_hw_breakpoint(struct perf_event *bp);
+-static const struct dev_pm_ops palmas_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(palmas_usb_suspend,
+-				palmas_usb_resume)
+-};
++static SIMPLE_DEV_PM_OPS(palmas_pm_ops, palmas_usb_suspend, palmas_usb_resume);
+ 
+ static struct of_device_id of_palmas_match_tbl[] = {
+ 	{ .compatible = "ti,palmas-usb", },
 -- 
-1.7.9.5
+1.7.10.4
+
 
