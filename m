@@ -1,129 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaB0Uom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:44:42 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:35036 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaB0Uok (ORCPT
+	id S1751810AbaB0UpB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:45:01 -0500
+Received: from moutng.kundenserver.de ([212.227.17.13]:62535 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaB0Uo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:44:40 -0500
+	Thu, 27 Feb 2014 15:44:59 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michael Schmitz <schmitzmic@gmail.com>
+Subject: Re: [PATCH 02/16] scsi: atari_scsi: fix sleep_on race
+Date: Thu, 27 Feb 2014 21:44:50 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+References: <1393412516-3762435-1-git-send-email-arnd@arndb.de> <1393412516-3762435-3-git-send-email-arnd@arndb.de> <530EF01D.6000208@gmail.com>
+In-Reply-To: <530EF01D.6000208@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-References: <1393462087.24588.50.camel@joe-AO722>
-	<530E8C2E.7080307@zytor.com>
-	<1393466619.24588.65.camel@joe-AO722>
-	<20140227022857.GC23659@thin>
-	<1393469594.24588.71.camel@joe-AO722>
-	<20140227025845.GA25145@thin>
-	<530EB103.5070406@zytor.com>
-	<1393472326.24588.82.camel@joe-AO722>
-	<20140227040050.GA8449@nicira.com>
-	<530EBCED.9020705@zytor.com>
-	<20140227042636.GA9592@nicira.com>
-	<530EBFC7.9030309@zytor.com>
-	<CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-	<faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-Date: Thu, 27 Feb 2014 12:44:37 -0800
-X-Google-Sender-Auth: vLjWaYTx-93bZiuYkK-Uj7U_nsI
-Message-ID: <CANeU7QnB1Yfd6SjLeUmB1Q-a+U6G221J8es7ckfjB-U45sAVMA@mail.gmail.com>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Christopher Li <sparse@chrisli.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ben Pfaff <blp@nicira.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402272144.50946.arnd@arndb.de>
+X-Provags-ID: V02:K0:SM+pEkmaTqQh6i+uPsUdlLMLJ4Qmr7S3e+WOFRmaigZ
+ 8xDkgVSduAvaHiMDktnGjzpWNNSyb++Ae9RVy86R9CND+N6Emp
+ fZ54hV3VZWGExsmXiDqVhP+XMMJSiBzAdMoikjkccuYTSz9+D3
+ gA/cH5m7C1J1Epw4cgdm5yFbejfL3oCDBccqfU1zt+BtIUOmkb
+ CIGkxWVTkO369NxXUgij3tShBvq9oZcOw8aBFiEN70lLBBS5cu
+ elMUaF56I5jN5DmNq9OT1L6IxHe9vO6Xsa2Lzgt9Hhv328dv2C
+ 0PtMBbeyozaQ/1d37ybzkjwIloxqDv9SmTVCpBq3rKaBtkX8Ek
+ BbYf89RwyDlCm0SGSxPk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 12:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I would.
->
+On Thursday 27 February 2014, Michael Schmitz wrote:
+> Arnd Bergmann wrote:
+> >   
+> Nack - the completion condition in the first hunk has its logic 
+> reversed. Try this instead (while() loops while condition true, do {} 
+> until () loops while condition false, no?)
 
-Joe, I assume you are OK with this patch, the default is now off.
+Sorry about messing it up again. I though I had fixed it up the
+way you commented when you said it worked.
+ 
+> I'm 99% confident I had tested your current version of the patch before 
+> and found it still attempts to schedule while in interrupt. I can retest 
+> if you prefer, but that'll have to wait a few days.
 
-Chris
+I definitely trust you to have the right version, since you did the
+testing.
 
-Allow an override to emit or not the sizeof(bool) warning.
-Add a "-Wsizeof-bool" description to the manpage.
+> diff --git a/drivers/scsi/atari_scsi.c b/drivers/scsi/atari_scsi.c
+> index a3e6c8a..cc1b013 100644
+> --- a/drivers/scsi/atari_scsi.c
+> +++ b/drivers/scsi/atari_scsi.c
+> @@ -90,6 +90,7 @@
+>  #include <linux/init.h>
+>  #include <linux/nvram.h>
+>  #include <linux/bitops.h>
+> +#include <linux/wait.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/atarihw.h>
+> @@ -549,8 +550,10 @@ static void falcon_get_lock(void)
+>  
+>         local_irq_save(flags);
+>  
+> -       while (!in_irq() && falcon_got_lock && stdma_others_waiting())
+> -               sleep_on(&falcon_fairness_wait);
+> +       wait_event_cmd(falcon_fairness_wait,
+> +               in_irq() || !falcon_got_lock || !stdma_others_waiting(),
+> +               local_irq_restore(flags),
+> +               local_irq_save(flags));
+>  
+>         while (!falcon_got_lock) {
+>                 if (in_irq())
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Christopher Li <sparse@chrisli.org>
----
- evaluate.c | 3 ++-
- lib.c      | 2 ++
- lib.h      | 1 +
- sparse.1   | 8 ++++++++
- 4 files changed, 13 insertions(+), 1 deletion(-)
+Yes, by inspection your version looks correct and mine looks wrong.
+I had figured this out before, just sent the wrong version.
 
-diff --git a/evaluate.c b/evaluate.c
-index 6655615..a45f59b 100644
---- a/evaluate.c
-+++ b/evaluate.c
-@@ -2057,7 +2057,8 @@ static struct symbol *evaluate_sizeof(struct
-expression *expr)
-     }
+> @@ -562,7 +565,10 @@ static void falcon_get_lock(void)
+>                         falcon_trying_lock = 0;
+>                         wake_up(&falcon_try_wait);
+>                 } else {
+> -                       sleep_on(&falcon_try_wait);
+> +                       wait_event_cmd(falcon_try_wait,
+> +                               falcon_got_lock && !falcon_trying_lock,
+> +                               local_irq_restore(flags),
+> +                               local_irq_save(flags));
+>                 }
 
-     if (size == 1 && is_bool_type(type)) {
--        warning(expr->pos, "expression using sizeof bool");
-+        if (Wsizeof_bool)
-+            warning(expr->pos, "expression using sizeof bool");
-         size = bits_in_char;
-     }
+I did correct this part compared to my first patch, but forgot
+to change the other hunk.
 
-diff --git a/lib.c b/lib.c
-index 51b97fd..844797d 100644
---- a/lib.c
-+++ b/lib.c
-@@ -226,6 +226,7 @@ int Wparen_string = 0;
- int Wptr_subtraction_blows = 0;
- int Wreturn_void = 0;
- int Wshadow = 0;
-+int Wsizeof_bool = 0;
- int Wtransparent_union = 0;
- int Wtypesign = 0;
- int Wundef = 0;
-@@ -438,6 +439,7 @@ static const struct warning {
-     { "ptr-subtraction-blows", &Wptr_subtraction_blows },
-     { "return-void", &Wreturn_void },
-     { "shadow", &Wshadow },
-+    { "sizeof-bool", &Wsizeof_bool },
-     { "transparent-union", &Wtransparent_union },
-     { "typesign", &Wtypesign },
-     { "undef", &Wundef },
-diff --git a/lib.h b/lib.h
-index f09b338..f6cd9b4 100644
---- a/lib.h
-+++ b/lib.h
-@@ -120,6 +120,7 @@ extern int Wparen_string;
- extern int Wptr_subtraction_blows;
- extern int Wreturn_void;
- extern int Wshadow;
-+extern int Wsizeof_bool;
- extern int Wtransparent_union;
- extern int Wtypesign;
- extern int Wundef;
-diff --git a/sparse.1 b/sparse.1
-index cd6be26..54da09b 100644
---- a/sparse.1
-+++ b/sparse.1
-@@ -297,6 +297,14 @@ Such declarations can lead to error-prone code.
- Sparse does not issue these warnings by default.
- .
- .TP
-+.B \-Wsizeof-bool
-+Warn when checking the sizeof a _Bool.
-+
-+C99 does not specify the sizeof a _Bool.  gcc uses 1.
-+
-+Sparse does not issue these warnings by default.
-+.
-+.TP
- .B \-Wtransparent\-union
- Warn about any declaration using the GCC extension
- \fB__attribute__((transparent_union))\fR.
--- 
-1.8.5.3
+Can you send your version of the patch to Geert for inclusion?
+That way I don't have the danger of missing another negation.
+This code is clearly too weird to rely on inspection alone and
+we know that your version was working when you last tested it.
+
+	Arnd
