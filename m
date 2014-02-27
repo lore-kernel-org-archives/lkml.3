@@ -1,138 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaB0GhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 01:37:15 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:38192 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaB0GhM (ORCPT
+	id S1751224AbaB0GlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:41:21 -0500
+Received: from exprod5og118.obsmtp.com ([64.18.0.160]:54683 "HELO
+	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750952AbaB0GlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 01:37:12 -0500
-In-Reply-To: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-References: <1393412516-3762435-1-git-send-email-arnd@arndb.de>
-Mime-Version: 1.0 (Apple Message framework v624)
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Message-Id: <2e8474df8cbb7cc583fe1c4e01649835@biophys.uni-duesseldorf.de>
-Content-Transfer-Encoding: 7bit
-Cc: linux-scsi@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>,
-        linux-atm-general@lists.sourceforge.net, Andrew Morton <akpm@osdl.org>,
-        "David S. Miller" <davem@davemloft.net>, Jens Axboe <axboe@kernel.dk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-From: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
-Subject: Re: [PATCH 00/16] sleep_on removal, second try
-Date: Thu, 27 Feb 2014 19:37:13 +1300
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.624)
+	Thu, 27 Feb 2014 01:41:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <530EDC65.8060106@ti.com>
+References: <1393308882-3964-1-git-send-email-lho@apm.com>
+	<1393308882-3964-2-git-send-email-lho@apm.com>
+	<1393308882-3964-3-git-send-email-lho@apm.com>
+	<1393308882-3964-4-git-send-email-lho@apm.com>
+	<530DB713.6000701@ti.com>
+	<CAPw-ZT=eLbxt3wPL7hrZFtxTP9vGxbRyBY2Yoh77pq9ypphCaw@mail.gmail.com>
+	<530ED4EF.1060000@ti.com>
+	<CAPw-ZTnLYbUjQTm7QhJO5EMNqN5+dtWndSRUZn_bgMGvmNEu0Q@mail.gmail.com>
+	<530EDC65.8060106@ti.com>
+Date: Wed, 26 Feb 2014 22:41:18 -0800
+Message-ID: <CAPw-ZTn=za14-x9fjnDfcY419i5nuFPqsQp_r-75zjyHf11E4w@mail.gmail.com>
+Subject: Re: [PATCH RESEND v10 3/4] PHY: add APM X-Gene SoC 15Gbps
+ Multi-purpose PHY driver
+From: Loc Ho <lho@apm.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Tejun Heo <tj@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
+        "patches@apm.com" <patches@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+Hi,
 
+>>>>>> +
+>>>>>> +static void sds_wr(void __iomem *csr_base, u32 indirect_cmd_reg,
+>>>>>> +                  u32 indirect_data_reg, u32 addr, u32 data)
+>>>>>> +{
+>>>>>> +       u32 val;
+>>>>>> +       u32 cmd;
+>>>>>> +
+>>>>>> +       cmd = CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK;
+>>>>>> +       cmd = CFG_IND_ADDR_SET(cmd, addr);
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> This looks hacky. If 'CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK'
+>>>>> should
+>>>>> be set then it should be part of the second argument. From the macro
+>>>>> 'CFG_IND_ADDR_SET' the first argument should be more like the current
+>>>>> value
+>>>>> present in the register right? I feel the macro (CFG_IND_ADDR_SET) is
+>>>>> not
+>>>>> used in the way it is intended to.
+>>>>
+>>>>
+>>>>
+>>>> The macro XXX_SET is intended to update an field within the register.
+>>>> The update field is returned. The first assignment lines are setting
+>>>> another field. Those two lines can be written as:
+>>>>
+>>>> cmd = 0;
+>>>> cmd |= CFG_IND_WR_CMD_MASK;            ==> Set the CMD bit
+>>>> cmd |= CFG_IND_CMD_DONE_MASK;        ==> Set the DONE bit
+>>>> cmd = CFG_IND_ADDR_SET(cmd, addr);    ===> Set the field ADDR
+>>>
+>>>
+>>>
+>>> #define  CFG_IND_ADDR_SET(dst, src) \
+>>>                  (((dst) & ~0x003ffff0) | (((u32)(src)<<4) & 0x003ffff0))
+>>>
+>>>  From this macro the first argument should be the present value in that
+>>> register. Here you reset the address bits and write the new address bits.
+>>
+>>
+>> Yes.. This is correct. I am clearing x number of bit and then set new
+>> value.
+>>
+>>> IMO the first argument should be the value in 'csr_base +
+>>> indirect_cmd_reg'.
+>>> So it resets the address bits in 'csr_base + indirect_cmd_reg' and write
+>>> down the new address bits.
+>>
+>>
+>> Yes.. The above code does just that. In addition, I am also setting
+>> the bits CFG_IND_WR_CMD_MASK and CFG_IND_CMD_DONE_MASK with the two
+>> previous statement. Think of the code flow as follow:
+>>
+>> val = readl(some void * address); /* read the register */
+>
+>
+> Where are you reading the register in your code (before CFG_IND_ADDR_SET)?
 
-> It's been a while since the first submission of these patches,
-> but a lot of them have made it into linux-next already, so here
-> is the stuff that is not merged yet, hopefully addressing all
-> the comments.
->
-> Geert and Michael: the I was expecting the ataflop and atari_scsi
-> patches to be merged already, based on earlier discussion.
-> Can you apply them to the linux-m68k tree, or do you prefer
-> them to go through the scsi and block maintainers?
+I am not reading the register as I will be completely setting them.
+This example is to show how these macro intended to be used.
 
-Not sure what we decided to do - I'd prefer to double-check the latest 
-ones first, but I'd be OK with these to go via m68k.
+>>
+>> val = XXXX_SET(val, 0x1);            /* set bit 0  - assuming XXXX set
+>> bit 0 only */
+>
+> If you want to set other bits (other than address) don't use
+> CFG_IND_ADDR_SET macro. That looks hacky to me.
 
-Maybe Geert waits for acks from linux-scsi and linux-block? (The rest 
-of my patches to Atari SCSI still awaits comment there.)
+I am not. This example is only to show how it can be used if there are
+multiple fields to be set. I need to set three fields - two 1 bit
+fields and one 19 bit fields. For the one bit field, I just use the
+mask. For the 19 bit field, I am using the CFG_IND_ADDR_SET macro. Any
+issue before I post an update version?
 
-Geert?
+>
+>> val = YYYY_SET(val, 0x1);          /* set bit 1 - assuming YYYY set
+>> bit 1 only */
+>> val = ZZZZ_SET(val, 0x5);            /* set upper 16 bit of the
+>> register to 0x5 - assuming ZZZZ set field of the upper 16 bits */
+>>
+>> Instead writing the above, I am replacing the above 4 lines with these
+>> two lines:
+>>
+>> cmd = CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK;
+>> cmd = CFG_IND_ADDR_SET(cmd, addr);
+>>
+>> Is there clear?
+>>
 
-Regards,
-
-	Michael
-
-> Jens: I did not get any comments for the DAC960 and swim3 patches,
-> I assume they are good to go in. Please merge.
->
-> Hans and Mauro: As I commented on the old thread, I thought the
-> four media patches were on their way. I have addressed the one
-> comment that I missed earlier now, and used Hans' version for
-> the two patches he changed. Please merge or let me know the status
-> if you have already put them in some tree, but not yet into linux-next
->
-> Greg or Andrew: The parport subsystem is orphaned unfortunately,
-> can one of you pick up that patch?
->
-> Davem: The two ATM patches got acks, but I did not hear back from
-> Karsten regarding the ISDN patches. Can you pick up all six, or
-> should we wait for comments about the ISDN patches?
->
-> 	Arnd
->
-> Cc: Andrew Morton <akpm@osdl.org>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Karsten Keil <isdn@linux-pingi.de>
-> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-> Cc: Michael Schmitz <schmitz@biophys.uni-duesseldorf.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: linux-atm-general@lists.sourceforge.net
-> Cc: linux-media@vger.kernel.org
-> Cc: linux-scsi@vger.kernel.org
-> Cc: netdev@vger.kernel.org
->
-> Arnd Bergmann (16):
->   ataflop: fix sleep_on races
->   scsi: atari_scsi: fix sleep_on race
->   DAC960: remove sleep_on usage
->   swim3: fix interruptible_sleep_on race
->   [media] omap_vout: avoid sleep_on race
->   [media] usbvision: drop unused define USBVISION_SAY_AND_WAIT
->   [media] radio-cadet: avoid interruptible_sleep_on race
->   [media] arv: fix sleep_on race
->   parport: fix interruptible_sleep_on race
->   atm: nicstar: remove interruptible_sleep_on_timeout
->   atm: firestream: fix interruptible_sleep_on race
->   isdn: pcbit: fix interruptible_sleep_on race
->   isdn: hisax/elsa: fix sleep_on race in elsa FSM
->   isdn: divert, hysdn: fix interruptible_sleep_on race
->   isdn: fix multiple sleep_on races
->   sched: remove sleep_on() and friends
->
->  Documentation/DocBook/kernel-hacking.tmpl    | 10 ------
->  drivers/atm/firestream.c                     |  4 +--
->  drivers/atm/nicstar.c                        | 13 ++++----
->  drivers/block/DAC960.c                       | 34 ++++++++++----------
->  drivers/block/ataflop.c                      | 16 +++++-----
->  drivers/block/swim3.c                        | 18 ++++++-----
->  drivers/isdn/divert/divert_procfs.c          |  7 +++--
->  drivers/isdn/hisax/elsa.c                    |  9 ++++--
->  drivers/isdn/hisax/elsa_ser.c                |  3 +-
->  drivers/isdn/hysdn/hysdn_proclog.c           |  7 +++--
->  drivers/isdn/i4l/isdn_common.c               | 13 +++++---
->  drivers/isdn/pcbit/drv.c                     |  6 ++--
->  drivers/media/platform/arv.c                 |  6 ++--
->  drivers/media/platform/omap/omap_vout_vrfb.c |  3 +-
->  drivers/media/radio/radio-cadet.c            | 46 
-> ++++++++++++++++------------
->  drivers/media/usb/usbvision/usbvision.h      |  8 -----
->  drivers/parport/share.c                      |  3 +-
->  drivers/scsi/atari_scsi.c                    | 12 ++++++--
->  include/linux/wait.h                         | 11 -------
->  kernel/sched/core.c                          | 46 
-> ----------------------------
->  20 files changed, 113 insertions(+), 162 deletions(-)
->
-> -- 
-> 1.8.3.2
-
+-Loc
