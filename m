@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaB0TrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 14:47:11 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:39409 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaB0TrI (ORCPT
+	id S1753025AbaB0TrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 14:47:23 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:41432 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaB0TrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 14:47:08 -0500
+	Thu, 27 Feb 2014 14:47:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140226025444.GA21449@jenny-desktop>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
-	<1391490780-6141-4-git-send-email-jenny.tc@intel.com>
-	<20140204113640.GD2450@amd.pavel.ucw.cz>
-	<20140220051655.GB2498@jenny-desktop>
-	<20140221144529.GB5238@amd.pavel.ucw.cz>
-	<20140226025444.GA21449@jenny-desktop>
-Date: Thu, 27 Feb 2014 20:47:07 +0100
-Message-ID: <CACRpkdYQuggnUU+3JrxG9oA5_CRnbfT0aVL=L3K0QPrVzZTD-w@mail.gmail.com>
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jenny Tc <jenny.tc@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
+In-Reply-To: <20140227190611.GU8264@linux.vnet.ibm.com>
+References: <CA+55aFyjzR_Ga_HOKnBXpKYbuesqovj1-sFTVisD9UwA6JuJtw@mail.gmail.com>
+	<20140223063426.GT4250@linux.vnet.ibm.com>
+	<CA+55aFxMJvaQhoEwqgN=XA6gDOdZwoZQHdcAnB-FhAri_hK-6Q@mail.gmail.com>
+	<CA+55aFw5tdjmNyHCdcyZ8NPpd1wCgOjLRzstRhp0Njs9azpi8Q@mail.gmail.com>
+	<20140224172110.GO8264@linux.vnet.ibm.com>
+	<CA+55aFyi45f7oaG4MYP41TOc=E8Ze8Om88dV2Lq4F=qebhxt4A@mail.gmail.com>
+	<20140224185341.GU8264@linux.vnet.ibm.com>
+	<CA+55aFzXyob0aKnv1u7Stbu0rH5Aq2jaA1rHb=TvQe9c1KY0oQ@mail.gmail.com>
+	<1393515453.28840.9961.camel@triegel.csb>
+	<CA+55aFyE58NokYdoU+-feHTXv+5snByu+vCyMtg2fNc7npMbDg@mail.gmail.com>
+	<20140227190611.GU8264@linux.vnet.ibm.com>
+Date: Thu, 27 Feb 2014 11:47:08 -0800
+X-Google-Sender-Auth: qWeWZ-q6hLQsPhjuQQhImg6TCwU
+Message-ID: <CA+55aFzav_2ayvEgbgeAzQohJ7EQH0tgUU0WcSyvUA6hgOo_Ow@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/5] arch: atomic rework
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Torvald Riegel <triegel@redhat.com>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramana Radhakrishnan <Ramana.Radhakrishnan@arm.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?windows-1251?B?yOLg6evuIMTo7Ojy8O7i?= <freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "gcc@gcc.gnu.org" <gcc@gcc.gnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 26, 2014 at 3:54 AM, Jenny Tc <jenny.tc@intel.com> wrote:
+On Thu, Feb 27, 2014 at 11:06 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> 3.      The comparison was against another RCU-protected pointer,
+>         where that other pointer was properly fetched using one
+>         of the RCU primitives.  Here it doesn't matter which pointer
+>         you use.  At least as long as the rcu_assign_pointer() for
+>         that other pointer happened after the last update to the
+>         pointed-to structure.
+>
+> I am a bit nervous about #3.  Any thoughts on it?
 
-> The idea is to allow pluggable charging algorithms. Currently we have only one
-> charging algorithm proposed, but can have other charging algorithms (like pulse
-> charging, rule based charging etc.). Based on the platform need, the algorithms
-> can be selected. So this should be a user configurable option. I can add more
-> explanation on when to select this option.
+I think that it might be worth pointing out as an example, and saying
+that code like
 
-Do you see a generic framework for pluggable algorithms on an abstracted
-level, so that it could be used for the CC/CV charging, measurement and
-temperature check algorithm that is found in e.g.
-drivers/power/abx500_chargalg.c
-drivers/power/ab8500_charger.c etc, or do you envision a set of pluggable
-algorithms for this one hardware?
+   p = atomic_read(consume);
+   X;
+   q = atomic_read(consume);
+   Y;
+   if (p == q)
+        data = p->val;
 
-I'm asking because these drivers are a massive set of code and we may
-need to start to abstract out and define library functions and frameworks
-already now before it becomes impossible to contain.
+then the access of "p->val" is constrained to be data-dependent on
+*either* p or q, but you can't really tell which, since the compiler
+can decide that the values are interchangeable.
 
-Yours,
-Linus Walleij
+I cannot for the life of me come up with a situation where this would
+matter, though. If "X" contains a fence, then that fence will be a
+stronger ordering than anything the consume through "p" would
+guarantee anyway. And if "X" does *not* contain a fence, then the
+atomic reads of p and q are unordered *anyway*, so then whether the
+ordering to the access through "p" is through p or q is kind of
+irrelevant. No?
+
+                     Linus
