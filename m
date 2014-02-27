@@ -1,176 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaB0N4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:56:22 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34785 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaB0N4U convert rfc822-to-8bit (ORCPT
+	id S1752595AbaB0N4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:56:34 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:34836 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaB0N42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:56:20 -0500
-Date: Thu, 27 Feb 2014 13:56:16 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO
- resources.
-Message-ID: <20140227135616.GK1692@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: linux-pci <linux-pci@vger.kernel.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com>
- <1393506402-11474-2-git-send-email-Liviu.Dudau@arm.com>
- <CAPcvp5EqcKEWoH_--azp+sMykmEWtY5whHG=c9t3sZVXZyAPUg@mail.gmail.com>
+	Thu, 27 Feb 2014 08:56:28 -0500
+Date: Thu, 27 Feb 2014 14:56:20 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Henrik Austad <henrik@austad.us>
+Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6 v2] Expose do_timer CPU as RW to userspace
+Message-ID: <20140227135618.GB17608@localhost.localdomain>
+References: <1393331641-14016-1-git-send-email-henrik@austad.us>
+ <20140225141906.GA22814@localhost.localdomain>
+ <20140226081602.GA16591@austad.us>
+ <20140226130234.GA3104@localhost.localdomain>
+ <20140227083735.GA5129@austad.us>
 MIME-Version: 1.0
-In-Reply-To: <CAPcvp5EqcKEWoH_--azp+sMykmEWtY5whHG=c9t3sZVXZyAPUg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 27 Feb 2014 13:56:17.0537 (UTC) FILETIME=[AFA30710:01CF33C3]
-X-MC-Unique: 114022713561804701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140227083735.GA5129@austad.us>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 01:22:19PM +0000, Andrew Murray wrote:
-> On 27 February 2014 13:06, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >
-> > The ranges property for a host bridge controller in DT describes
-> > the mapping between the PCI bus address and the CPU physical address.
-> > The resources framework however expects that the IO resources start
-> > at a pseudo "port" address 0 (zero) and have a maximum size of 64kb.
+On Thu, Feb 27, 2014 at 09:37:35AM +0100, Henrik Austad wrote:
+> On Wed, Feb 26, 2014 at 02:02:42PM +0100, Frederic Weisbecker wrote:
+> > 
+> > -1 could be an option but hmm...
 > 
-> Is this just in the case of ARM? (I've tried to keep up with the
-> conversation, but apologies if I've misunderstood).
+> I don't really like -1, that indicates that it is disabled and could 
+> confuse people, letting them think that timekeeping is disabled at all 
+> cores.
 > 
-> > The conversion from pci ranges to resources failed to take that into
-> > account.
-> >
-> > In the process move the function into drivers/of/address.c as it
-> > now depends on pci_address_to_pio() code.
-> >
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >
-> > diff --git a/drivers/of/address.c b/drivers/of/address.c
-> > index 1a54f1f..7cf2b16 100644
-> > --- a/drivers/of/address.c
-> > +++ b/drivers/of/address.c
-> > @@ -719,3 +719,34 @@ void __iomem *of_iomap(struct device_node *np, int index)
-> >         return ioremap(res.start, resource_size(&res));
-> >  }
-> >  EXPORT_SYMBOL(of_iomap);
-> > +
-> > +/**
-> > + * of_pci_range_to_resource - Create a resource from an of_pci_range
-> > + * @range:     the PCI range that describes the resource
-> > + * @np:                device node where the range belongs to
-> > + * @res:       pointer to a valid resource that will be updated to
-> > + *              reflect the values contained in the range.
-> > + * Note that if the range is an IO range, the resource will be converted
-> > + * using pci_address_to_pio() which can fail if it is called to early or
-> > + * if the range cannot be matched to any host bridge IO space.
-> > + */
-> > +void of_pci_range_to_resource(struct of_pci_range *range,
-> > +       struct device_node *np, struct resource *res)
-> > +{
-> > +       res->flags = range->flags;
-> > +       if (res->flags & IORESOURCE_IO) {
-> > +               unsigned long port;
-> > +               port = pci_address_to_pio(range->pci_addr);
+> > Wouldn't it be saner to use a cpumask of the timer affinity instead? This
+> > is the traditional way we affine something in /proc or /sys
 > 
-> Is this likely to break existing users of of_pci_range_to_resource?
+> Yes, that's what I'm starting to think as well, that would make a lot more 
+> sense when the timer is bounced around.
+> 
+> something like a 'current_cpu_mask' which would return a hex-mask 
+> of the cores where the timekeeping update _could_ run.
 
-I've tested the change with a tegra2 based device (trimslice) and I've
-got a functional board.
+Right, or timekeeper_cpumask.
 
 > 
-> For example arch/mips: IO_SPACE_LIMIT defaults to 0xffff and there is
-> no overridden implementation for pci_address_to_pio, therefore this
-> will set res->start to OF_BAD_ADDR whereas previously it would have
-> been the CPU address for I/O (assuming the cpu_addr was previously >
-> 64K).
+> For periodic, that would be a single core (normally boot), and when forced, 
+> it would return a cpu-mask with only one cpu set. Then the result would be 
+> a lot more informative for NO_HZ_(IDLE|FULL) as well.
 
-And that is why I'm using pci_addr as the physical address passed to
-pci_address_to_pio. My idea is that when converting ranges into resources,
-for IORESOURCE_IO we should generate a resource that uses logical I/O
-addresses, not physical CPU addresses. How we get that needs debating,
-currently I've took the shortcut of using the pci_addr to get the port
-number.
+I'd rather suggest that for periodic and NO_HZ_IDLE, this should be equal to cpu_online_mask
+by default. Because the timekeeping duty can be taken by any CPU.
 
-> 
-> I have no idea if I/O previously worked for mips, but this patch seems
-> to change that behavior. It may be a similar story for microblaze and
-> powerpc.
+Then on subsequent writes on this cpumask, this reflects the reduced subset of CPUs that
+we allow to take the duty.
 
-Both microblaze and powerpc share an identical implementation and it is
-expecting that the physical address passed as parameter fits between
-io_base_phys and io_base_phys + pcibios_io_size(hose). So yes, the
-correct way is to use cpu_addr and fix the weak implementation? But we
-don't have enough information for the weak implementation to work, as
-we don't know where the physical IO base start (we are just about to
-find out from DT).
+In your usecase you're interested in a single CPU to take that duty but the cpumask
+allows more flexibility.
 
-Thanks for reviewing these patches!
-
-Liviu
+Now NO_HZ_FULL is a bit different. For now only CPU 0 can take the duty. This will extend
+later to every CPUs outside the range of full dynticks.
 
 > 
-> Andrew Murray
-> 
-> > +               if (port == (unsigned long)-1) {
-> > +                       res->start = (resource_size_t)OF_BAD_ADDR;
-> > +                       res->end = (resource_size_t)OF_BAD_ADDR;
-> > +                       return;
-> > +               }
-> > +               res->start = port;
-> > +       } else {
-> > +               res->start = range->cpu_addr;
-> > +       }
-> > +       res->end = res->start + range->size - 1;
-> > +       res->parent = res->child = res->sibling = NULL;
-> > +       res->name = np->full_name;
-> > +}
-> > diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-> > index 5f6ed6b..a667762 100644
-> > --- a/include/linux/of_address.h
-> > +++ b/include/linux/of_address.h
-> > @@ -23,17 +23,8 @@ struct of_pci_range {
-> >  #define for_each_of_pci_range(parser, range) \
-> >         for (; of_pci_range_parser_one(parser, range);)
-> >
-> > -static inline void of_pci_range_to_resource(struct of_pci_range *range,
-> > -                                           struct device_node *np,
-> > -                                           struct resource *res)
-> > -{
-> > -       res->flags = range->flags;
-> > -       res->start = range->cpu_addr;
-> > -       res->end = range->cpu_addr + range->size - 1;
-> > -       res->parent = res->child = res->sibling = NULL;
-> > -       res->name = np->full_name;
-> > -}
-> > -
-> > +extern void of_pci_range_to_resource(struct of_pci_range *range,
-> > +               struct device_node *np, struct resource *res);
-> >  /* Translate a DMA address from device space to CPU space */
-> >  extern u64 of_translate_dma_address(struct device_node *dev,
-> >                                     const __be32 *in_addr);
-> > --
-> > 1.9.0
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Worth a shot? (completely disjoint from the write-discussion below)
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+I can't judge alone if we really want this patchset. We need the input of timer
+maintainers for that.
 
+Assuming we want it then yeah, the cpumask affinity in sysfs/procfs looks like a sane
+approach to me. In term we should also plug it to rcu full system idle detection:
+https://lwn.net/Articles/558284/ so that we can shutdown the reduced set of timekeepers
+when there is no other CPU running. I have some patches for it that I can plug
+afterward. So no worry for you on that side.
+
+> 
+> > > > Now looking at the write part. What kind of usecase do you have in mind?
+> > > 
+> > > Forcing the timer to run on single core only, and a core of my choosing at 
+> > > that.
+> > > 
+> > > - Get timekeeping away from cores with bad interrupts (no, I cannot move 
+> > >   them).
+> > > - Avoid running timekeeping udpates on worker-cores.
+> > 
+> > Ok but what you're moving away is not the tick but the timekeeping duty, which
+> > is only a part of the tick. A significant part but still just a part.
+> 
+> That is certainly true, but that part happens to be of global influence, so 
+> if I have a core where a driver disables interrupts a lot (or drops into a 
+> hypervisor, or any other silly thing it really shouldn't be doing), then I 
+> would like to be able to move the timekeeping updates away from that core. 
+
+I don't understand how these things are linked together. If your driver disables
+interrupt and you don't want to be disturbed, moving the timekeeping duty doesn't
+move the tick itself.
+
+What happens to be disturbing for you in the timekeeping update that is not with
+the tick as a whole? Is the delta of cputime added by jiffies and gtod update
+alone a problem?
+
+This sounds surprising but possible. Still I want to be sure that's the exact
+problem you're encoutering.
+
+> 
+> The same goes for cores running rt-tasks (>1), I really do not want -any- 
+> interference at all, and if I can remove the extra jitter from the 
+> timekeeping, I'm pretty happy to do so.
+
+Then again if you don't want interference at all, NO_HZ_FULL sounds like a better
+solution. NO_HZ_FULL implies that the timekeeping is handled by CPUs in the nohz_full
+boot paramater range. If NO_HZ_FULL_ALL then it's CPU 0.
+
+> 
+> > Does this all make sense outside the NO_HZ_FULL case?
+> 
+> In my view, it makes sense in the periodic case as well since all 
+> timekeeping updates then happens on the boot-cpu (unless it is hotunplugged 
+> that is).
+
+But if we get back to your requirements, you want no interference at all. HZ_PERIODIC
+doesn't look like what you want.
+
+> 
+> > > 
+> > > > It's also important to consider that, in the case of NO_HZ_IDLE, if you force
+> > > > the timekeeping duty to a specific CPU, it won't be able to enter in dynticks
+> > > > idle mode as long as any other CPU is running. 
+> > > 
+> > > Yes, it will in effect be a TICK_PERIODIC core where I can configure which 
+> > > core the timekeeping update will happen.
+> > 
+> > Ok, I missed that part. So when the timekeeping is affine to a specific CPU,
+> > this CPU is prevented to enter into dynticks idle mode?
+> 
+> That's what I aimed at, and I *think* I managed that. I added a 
+> forced_timer_can_stop_tick() and let can_stop_full_tick() and 
+> can_stop_idle_tick() call that. I think that is sufficient, at least I did 
+> not see that the timerduty was transferred to another core afterwards.
+
+Ok, I need to look at the details.
+
+> 
+> > > > Because those CPUs can make use of jiffies or gettimeofday() and must 
+> > > > have uptodate values. This involve quite some complication like using the 
+> > > > full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE) to avoid races 
+> > > > between timekeeper entering dynticks idle mode and other CPUs waking up 
+> > > > from idle. But the worst here is the powesaving issues resulting from the 
+> > > > timekeeper who can't sleep.
+> > > 
+> > > Personally, when I force the timer to be bound to a specific CPU, I'm 
+> > > pretty happy with the fact that it won't be allowed to turn ticks off. At 
+> > > that stage, powersave is the least of my concerns, throughput and/or jitter 
+> > > is.
+> > > 
+> > > I know that what I'm doing is in effect turning the kernel into a 
+> > > somewhat more configurable TICK_PERIODIC kernel (in the sense that I can 
+> > > set the timer to run on something other than the boot-cpu).
+> > 
+> > I see.
+> > 
+> > > 
+> > > > These issues are being dealt with in NO_HZ_FULL because we want the 
+> > > > timekeeping duty to be affine to the CPUs that are no full dynticks. But 
+> > > > in the case of NO_HZ_IDLE, I fear it's not going to be desirable.
+> > > 
+> > > Hum? I didn't get that one, what do you mean?
+> > 
+> > So in NO_HZ_FULL we do something that is very close to what're doing: the timekeeping
+> > is affine to the boot CPU and it stays periodic whatever happens.
+> > 
+> > But we start to worry about powersaving. When the whole system is idle, there is
+> > no point is preventing the CPU 0 to sleep. So we are dealing with that by using a
+> > full system idle detection that lets CPU 0 go to sleep when there is strictly nothing
+> > to do. Then when nohz full CPU wakes up from idle, CPU 0 is woken up as well to get back
+> > to its timekeeping duty.
+> 
+> Hmm, I had the impreesion that when a CPU with timekeeping-duty was sent to 
+> sleep, it would set tick_do_timer_cpu to TICK_DO_TIMER_NONE, and whenever 
+> another core would run do_timer() it would see if tick_do_timer_cpu was set 
+> to TICK_DO_TIMER_NONE and if so, grab it and run with it.
+
+Yep that's true for periodic and dynticks idle. Not for full dynticks.
+
+> 
+> I really don't see how this wakes up CPU0 (but then again, there's probably 
+> several layers of logic here that I'm missing :)
+
+By way of an IPI.
+
+Scenario is: CPU 0 handles timekeeping and CPU 1 is full dynticks. Both are running
+then CPU 1 goes to sleep. CPU 0 notices that CPU 1 went to sleep and thus nobody else
+needs the timekeeping to be uptodate. If CPU 0 is idle as well it can go to sleep. So
+does it. Then later if CPU 1 wakes up to do something, it sends an IPI to CPU 0 such that
+CPU 0 wakes up, notices that CPU 1 is alive and run the timekeeping update on its behalf.
+
+It's not yet upstream but that's the plan :)
