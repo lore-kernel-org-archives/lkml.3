@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaB0UKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:10:14 -0500
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:55798 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751051AbaB0UKM (ORCPT
+	id S1751570AbaB0UMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:12:15 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:45557 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaB0UMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:10:12 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 64,4,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2332:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3867:3870:3871:4321:4605:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12555:12740:13069:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: coach93_75f634566c71a
-X-Filterd-Recvd-Size: 2179
-Message-ID: <1393531808.24588.119.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: fix spurious vendor compatible warnings
-From: Joe Perches <joe@perches.com>
-To: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: Andy Whitcroft <apw@canonical.com>, Rob Herring <robh@kernel.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Feb 2014 12:10:08 -0800
-In-Reply-To: <1393531019-25134-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1393531019-25134-1-git-send-email-florian.vaussard@epfl.ch>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Feb 2014 15:12:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <530ECBB1.40806@zytor.com>
+References: <cover.1393462777.git.luto@amacapital.net> <ecbd286ccd2ac038740a07cc04f5d98e96af669f.1393462777.git.luto@amacapital.net>
+ <20140227033920.GI12219@tassilo.jf.intel.com> <530EC7D1.3000706@zytor.com>
+ <CALCETrWbS3B_63Q76E5RL0Y6B=1=1ObmECR3HTMk1HQ-4OwN8A@mail.gmail.com> <530ECBB1.40806@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 27 Feb 2014 12:11:52 -0800
+Message-ID: <CALCETrWXO8zxvjbT9usjghkM_MEzGOa9_18x7xXPcOOPYeXijA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86: Mark __vdso entries as asmlinkage
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Stefani Seibold <stefani@seibold.net>,
+        X86 ML <x86@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 20:56 +0100, Florian Vaussard wrote:
-> With a compatible string like
-> 
-> compatible = "foo";
-> 
-> checkpatch will currently try to find "foo" in  vendor-prefixes.txt,
-> which is wrong since the vendor prefix is empty in this specific case.
-> 
-> Skip the vendor test if the compatible is not like
-> 
-> compatible = "vendor,something";
-> 
-> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-> ---
->  scripts/checkpatch.pl | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 464dcef..35ec185 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2058,6 +2058,7 @@ sub process {
->  				my $vendor = $compat;
->  				my $vendor_path = $dt_path . "vendor-prefixes.txt";
->  				next if (! -f $vendor_path);
-> +				next if not $vendor =~ /^[a-zA-Z0-9]+\,.*/;
->  				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
->  				`grep -Eq "$vendor" $vendor_path`;
->  				if ( $? >> 8 ) {
+On Wed, Feb 26, 2014 at 9:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/26/2014 09:19 PM, Andy Lutomirski wrote:
+>>>
+>>> The normal ABI almost certainly makes more sense; as such -mregparm=3 is
+>>> probably not what we want, and I suspect it makes more sense to just
+>>> drop that from the CFLAGS line?
+>>
+>> Hmm.  What happens on a native 32-bit build?  IIRC the whole kernel is
+>> build with regparm(3).
+>>
+>
+> Well, the vdso is still built separately, so we can use different CFLAGS
+> if we want to.
+>
+>> If we want to save a cycle or two, then regparm(3) is probably faster.
+>>  But I think that these functions should either be asmlinkage or (on
+>> 32 bit builds) explicitly regparm(3) to avoid confusion.
+>
+> I suggest using the standard ABI, but I suggest doing it via CFLAGS.
 
-Some vendor names have dashes.
-I don't know if underscores are allowed.
+Hmm.  This sort of goes against existing x86_32 practice where,
+AFAICT, things that need a particular calling convention specify
+asmlinkage and everything else uses regparm(3) if config/kbuild thinks
+it's appropriate.
 
-$ grep -rP --include=*.[ch] -oh "compatible\s*=\s*\"[^,]+,\w" * | \
-  sed -r -e 's/\s//g' -e 's/,.$//' | sort | uniq -c | grep "[_-]"
-      1 compatible="active-semi
-      8 compatible="asahi-kasei
+But I'm happy to resubmit the patch if you prefer the CFLAGS approach
+for the 32-bit vdso.  I don't think anything will break, since I don't
+think that the 32-bit vdso has any other exported C code.
 
+>
+> It isn't any faster if the C library has to provide a wrapper just to
+> marshal parameters.
 
+Probably true, given that the glibc wrapper could, in principle, use
+an optimized tail call.  Also, I see no reason why vdso functions,
+alone of all userspace code, should be special.
+
+--Andy
