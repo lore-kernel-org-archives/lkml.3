@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaB0Amf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 19:42:35 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:39183 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaB0Ame convert rfc822-to-8bit (ORCPT
+	id S1754375AbaB0AnH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 19:43:07 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55538 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260AbaB0AnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 19:42:34 -0500
-Content-Type: text/plain; charset="utf-8"
+	Wed, 26 Feb 2014 19:43:04 -0500
+Message-ID: <530E8A17.8060603@codeaurora.org>
+Date: Wed, 26 Feb 2014 16:43:03 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1391589458-28018-3-git-send-email-jjhiblot@traphandler.com>
-Cc: b.brezillon@overkiz.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jason@lakedaemon.net
-References: <1391589458-28018-1-git-send-email-jjhiblot@traphandler.com>
- <1391589458-28018-3-git-send-email-jjhiblot@traphandler.com>
-Message-ID: <20140227004229.12081.25317@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2 2/4] clk: at91: propagate rate change on system clks
-Date: Wed, 26 Feb 2014 16:42:29 -0800
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/9] Input: pmic8xxx-pwrkey - Migrate to regmap APIs
+References: <1393441562-685-1-git-send-email-sboyd@codeaurora.org> <1393441562-685-2-git-send-email-sboyd@codeaurora.org> <20140226235959.GD18563@joshc.qualcomm.com> <530E8154.9060403@codeaurora.org> <20140227001358.GF18563@joshc.qualcomm.com> <530E84B3.8020608@codeaurora.org> <20140227003009.GG18563@joshc.qualcomm.com>
+In-Reply-To: <20140227003009.GG18563@joshc.qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Jean-Jacques Hiblot (2014-02-05 00:37:36)
-> From: Boris BREZILLON <b.brezillon@overkiz.com>
-> 
-> System clks are just gates, and thus do not provide any rate operations.
-> Authorize clk rate change to be propagated to system clk parents.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  drivers/clk/at91/clk-system.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
-> index 8f7c043..a98557b 100644
-> --- a/drivers/clk/at91/clk-system.c
-> +++ b/drivers/clk/at91/clk-system.c
-> @@ -84,7 +84,8 @@ at91_clk_register_system(struct at91_pmc *pmc, const char *name,
->          * (see drivers/memory) which would request and enable the ddrck clock.
->          * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
->          */
-> -       init.flags = CLK_IGNORE_UNUSED;
-> +       init.flags = CLK_SET_RATE_GATE | CLK_SET_RATE_PARENT |
+On 02/26/14 16:30, Josh Cartwright wrote:
+> On Wed, Feb 26, 2014 at 04:20:03PM -0800, Stephen Boyd wrote:
+>> On 02/26/14 16:13, Josh Cartwright wrote:
+>>> On Wed, Feb 26, 2014 at 04:05:40PM -0800, Stephen Boyd wrote:
+>>>> On 02/26/14 15:59, Josh Cartwright wrote:
+>>> However, I think it needs to be made clear that your if "Modernize pm8921
+>>> with irqdomains, regmap, DT" lands before this patchset, this will start
+>>> breaking randconfig builds.  It isn't clear to me how this dependency
+>>> should be handled.
+>>>
+>> Hmm? If pm8921 lands before this what build breakage is there? The
+>> pm8xxx_read/write APIs are still exposed.
+> Well, with the pm8921 patchset in place, the keypad driver becomes
+> selectable, which, when built leads to the error below.  But AFAICT,
+> this isn't even addressed in this patchset?!
+>
+> drivers/input/keyboard/pmic8xxx-keypad.c:24:35: fatal error: linux/mfd/pm8xxx/gpio.h: No such file or directory
+>  #include <linux/mfd/pm8xxx/gpio.h>
+>                                    ^
+>
+> So, I'm confused...maybe the pm8921 cleanup patchset should be marking
+> the keypad driver BROKEN?
+>
 
-Just wanted to do a quick sanity check here. Do you really need
-CLK_SET_RATE_GATE? Otherwise these patches look fine.
+Ah, yes probably. I have a patch locally that rips out the gpio stuff
+because this driver has been uncompilable since it was introduced. I may
+as well send that along with this series so that people can actually
+compile this driver. Or like you say, send it along with the removal of
+the BROKEN in pm8921 Kconfig.
 
-Regards,
-Mike
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-> +                    CLK_IGNORE_UNUSED;
->  
->         sys->id = id;
->         sys->hw.init = &init;
-> -- 
-> 1.8.5.2
-> 
