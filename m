@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaB0Iep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 03:34:45 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:54931 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaB0Ien (ORCPT
+	id S1751823AbaB0Iet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 03:34:49 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:52614 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaB0Ieq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 03:34:43 -0500
-From: Peter Korsgaard <peter@korsgaard.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Herbert Xu'" <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
-        "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
-        "'Peter Korsgaard'" <jacmet@sunsite.dk>
-Subject: Re: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
-References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-Date: Thu, 27 Feb 2014 09:34:35 +0100
-In-Reply-To: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com> (Jingoo Han's
-	message of "Thu, 27 Feb 2014 14:00:09 +0900")
-Message-ID: <8738j5ar8k.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Thu, 27 Feb 2014 03:34:46 -0500
+Date: Thu, 27 Feb 2014 08:34:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 3/8] mfd: pm8921: Migrate to irqdomains
+Message-ID: <20140227083438.GW9195@lee--X1>
+References: <1393441166-32692-1-git-send-email-sboyd@codeaurora.org>
+ <1393441166-32692-4-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393441166-32692-4-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Jingoo" == Jingoo Han <jg1.han@samsung.com> writes:
+On Wed, 26 Feb 2014, Stephen Boyd wrote:
 
- > Use devm_clk_get() to make cleanup paths simpler.
- > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Convert this driver to use irqdomains so that the PMIC's child
+> devices can be converted to devicetree.
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/mfd/Kconfig               |   1 +
+>  drivers/mfd/pm8921-core.c         | 198 +++++++++++++++-----------------------
+>  include/linux/mfd/pm8xxx/irq.h    |  36 -------
+>  include/linux/mfd/pm8xxx/pm8921.h |  30 ------
+>  4 files changed, 76 insertions(+), 189 deletions(-)
+>  delete mode 100644 include/linux/mfd/pm8xxx/irq.h
+>  delete mode 100644 include/linux/mfd/pm8xxx/pm8921.h
 
-Acked-by: Peter Korsgaard <peter@korsgaard.com>
-
+Applied, thanks.
 
 -- 
-Bye, Peter Korsgaard
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
