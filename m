@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaB0OlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 09:41:06 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:49639 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaB0OlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 09:41:04 -0500
-Date: Thu, 27 Feb 2014 09:40:56 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpuset: fix a race condition in
- __cpuset_node_allowed_softwall()
-Message-ID: <20140227144056.GB19178@htj.dyndns.org>
-References: <530F1117.1020605@huawei.com>
- <530F1138.2090903@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530F1138.2090903@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752754AbaB0OmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 09:42:13 -0500
+Received: from mout.gmx.net ([212.227.17.20]:52565 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607AbaB0OmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 09:42:12 -0500
+From: xypron.glpk@gmx.de
+To: airlied@linux.ie
+Cc: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH] Memory leak in nouveau_sgdma_create_ttm
+Date: Thu, 27 Feb 2014 15:41:37 +0100
+Message-Id: <1393512097-10597-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Provags-ID: V03:K0:n2I77I06f1zZsIuWz+EGhgetRX62/HBGW+ewDYBhsIfzzBy21uS
+ OEPFh4Atb+fEnpGM0xoXZ8tJqUY5+O/i4k/34/rRyW0+ljfAMOMhFPH2iaNS/JcXHh0cliB
+ F7SRaWd3DlZclutsevszs4acCMfXvCbJEqLAbqbPJj+QPbZ+f8kYMK3NqpTVtlgsQ+hZ+hi
+ sXlGIt8QVk3KrsotAmRqw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 06:19:36PM +0800, Li Zefan wrote:
-> It's not safe to access task's cpuset after releasing task_lock().
-> Holding callback_mutex won't help.
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
 
-Applied to cgroup/for-3.14-fixes.
+In case of failure memory was not freed.
 
-Thanks.
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+index a4d22e5..23d880b 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
++++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+@@ -109,7 +109,9 @@ nouveau_sgdma_create_ttm(struct ttm_bo_device *bdev,
+ 	else
+ 		nvbe->ttm.ttm.func = &nv50_sgdma_backend;
+ 
+-	if (ttm_dma_tt_init(&nvbe->ttm, bdev, size, page_flags, dummy_read_page))
++	if (ttm_dma_tt_init(&nvbe->ttm, bdev, size, page_flags, dummy_read_page)) {
++		kfree(nvbe);
+ 		return NULL;
++	}
+ 	return &nvbe->ttm.ttm;
+ }
 -- 
-tejun
+1.7.10.4
+
