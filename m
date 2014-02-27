@@ -1,132 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaB0CTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 21:19:43 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:43146 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753759AbaB0CTm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 21:19:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADApbeiJ2ESEuBxGNXLe+sbKEox02Vr0hhO-rW7dosc_4A+TEQ@mail.gmail.com>
-References: <20140223212703.511977310@linutronix.de>
-	<20140223212737.214342433@linutronix.de>
-	<20140223231755.GA27579@pengutronix.de>
-	<CADApbeiyGoSAF9n5-+Ys1H4VDgN+d727E6ARWFGj4EixqeP79w@mail.gmail.com>
-	<CAN1soZy_TfzNigfn4y6kF2qe4K+AQsagd-1KWYrz1VEavMO4bA@mail.gmail.com>
-	<alpine.DEB.2.02.1402241227400.21251@ionos.tec.linutronix.de>
-	<CADApbeiJ2ESEuBxGNXLe+sbKEox02Vr0hhO-rW7dosc_4A+TEQ@mail.gmail.com>
-Date: Thu, 27 Feb 2014 10:19:41 +0800
-Message-ID: <CAN1soZzipHL=0i4gH3B7PwHaOJh6=_uwv5u0e7W2MsvARp_jLA@mail.gmail.com>
-Subject: Re: [patch 09/26] arm: mmp: Remove pointless fiddling with irq internals
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Eric Miao <eric.y.miao@gmail.com>,
+	id S1754508AbaB0CVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 21:21:16 -0500
+Received: from mail.efficios.com ([78.47.125.74]:44545 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754192AbaB0CVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Feb 2014 21:21:15 -0500
+Date: Thu, 27 Feb 2014 02:21:16 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        arm <linux-arm-kernel@lists.infradead.org>, fwu@marvell.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Frederic Weisbecker <fweisbec@gmail.com>
+Message-ID: <1534483926.31265.1393467676451.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20140226203853.09b7d843@gandalf.local.home>
+References: <20140226190140.590029589@goodmis.org> <1677033958.31194.1393450578584.JavaMail.zimbra@efficios.com> <20140226203853.09b7d843@gandalf.local.home>
+Subject: Re: [RFA][PATCH 0/4] tracing: Request for acks on fixing tracepoint
+ code
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
+Thread-Topic: tracing: Request for acks on fixing tracepoint code
+Thread-Index: tQtONmwbR9Ii0r/PhwnPYZUnfsp+EQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 9:37 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
-> On Mon, Feb 24, 2014 at 7:31 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> On Mon, 24 Feb 2014, Haojian Zhuang wrote:
->>
->>> On Mon, Feb 24, 2014 at 2:07 PM, Chao Xie <xiechao.mail@gmail.com> wrote:
->>> > On Mon, Feb 24, 2014 at 7:17 AM, Uwe Kleine-König
->>> > <u.kleine-koenig@pengutronix.de> wrote:
->>> >> Hi Thomas,
->>> >>
->>> >> On Sun, Feb 23, 2014 at 09:40:13PM -0000, Thomas Gleixner wrote:
->>> >>> The pm-mmp2 and pm-pxa910 power management related irq_set_wake
->>> >>> callbacks fiddle pointlessly with the irq actions for no reason except
->>> >>> for lack of understanding how the wakeup mechanism works.
->>> >>>
->>> >>> On supsend the core disables all interrupts lazily, i.e. it does not
->>> >>> mask them at the irq controller level. So any interrupt which is
->>> >>> firing during supsend will mark the corresponding interrupt line as
->>> >> s/supsend/suspend/ twice
->>> >>> pending. Just before the core powers down it checks whether there are
->>> >>> interrupts pending from interrupt lines which are marked as wakeup
->>> >>> sources and if so it aborts the resume and resends the interrupts.
->>> >> It's the suspend that is aborted, not the resume.
->>> >>
->>> >> Other than that your change looks fine.
->>> >>
->>> > For pxa910 and MMP2, wake up source only wake up the AP subsystem.
->>> > The AP subsystem includes the APMU(AP Power Mangament Unit) and cores.
->>> > Now the core is still powered down. APMU will check the interrupt
->>> > lines, and find
->>> > that there are interrupt pending, it will power on the cores.
->>> > So if the irq is disabled, even wake up source can wake up AP subsystem, but the
->>> > core is still powered down. It will not be powered up by APMU.
->>> >
->>>
->>> Yes, suspend/resume can't work if the above code is removed.
->>>
->>> Interrupt source (logic AND with interrupt mask register) is connected
->>> to MPMU as
->>> wakeup source. If the interrupt is disabled, there's no wakeup source event.
->>>
->>> And APMU is waken up by MPMU.
->>>
->>> So please don't remove the above code. We must keep these interrupt lines active
->>> to wake up the whole system.
->>
->> They are kept active at the interrupt controller level. You just
->> refuse to understand how the internals of the interrupt subsystem
->> work.
->>
-> If no irq_disable callback is hooked, when do irq_disable, it will not
-> actually disable
-> the interrupt, it will depend on next time when the irq happens, the
-> handler will first mask
-> the interrupt as this interrupt never happens.
-> So after system suspended, the interrupt happens, but the device
-> driver will not recieve this interrupt
-> because it is masked.
-> It results in that the device driver miss a important interrupt which
-> related to something need to be
-> handled. If user application for example android has power managment
-> daemon. It will find that nothing
-> to handle, it will make the system enter suspend again.
->
-Let me list the logic to make it easier to understand.
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Andrew Morton" <akpm@linux-foundation.org>,
+> "Peter Zijlstra" <peterz@infradead.org>, "Frederic Weisbecker" <fweisbec@gmail.com>
+> Sent: Wednesday, February 26, 2014 8:38:53 PM
+> Subject: Re: [RFA][PATCH 0/4] tracing: Request for acks on fixing tracepoint code
+> 
+> On Wed, 26 Feb 2014 21:36:18 +0000 (UTC)
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > ----- Original Message -----
+> > > From: "Steven Rostedt" <rostedt@goodmis.org>
+> > > To: linux-kernel@vger.kernel.org
+> > > Cc: "Ingo Molnar" <mingo@kernel.org>, "Andrew Morton"
+> > > <akpm@linux-foundation.org>, "Peter Zijlstra"
+> > > <peterz@infradead.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
+> > > "Mathieu Desnoyers"
+> > > <mathieu.desnoyers@efficios.com>
+> > > Sent: Wednesday, February 26, 2014 2:01:40 PM
+> > > Subject: [RFA][PATCH 0/4] tracing: Request for acks on fixing tracepoint
+> > > code
+> > > 
+> > > [ Request for Acks ]
+> > > 
+> > > Due to module tainting, we have tracepoints that silently do not work.
+> > > That will be solved another way. But the trace event infrastructure
+> > > should
+> > > not be created for tainted modules. That is, the debugfs files should
+> > > not exist for them.
+> > > 
+> > > By moving the tracepoint module taint test into tracepoint.h, we can
+> > > reuse that same test when creating the module tracepoint events.
+> > > 
+> > > Note, I had to remove the tracepoint.h include from module.h as there
+> > > was nothing in module.h that required tracepoint.h, but this broke
+> > > a couple of event files (migrate.h and writeback.h) because they did
+> > > not include tracepoint.h, and were just lucky that it was included
+> > > by module.h.
+> > 
+> > When designing tracepoint.h, a lot of care went into making sure it did
+> > not have needless dependency on other headers, since this header is
+> > expected to be included into many other files and headers, thus posing
+> > a clear risk of becoming yet another root of an include dependency hell.
+> 
+> Well, module.h is included in many more.
 
-suspend_enter()
-  --> dpm_suspend_end()
-           --> dpm_suspend_noirq()
-                    --> suspend_device_irqs()
-                             --> __disable_irq()
-                                     --> set IRQS_SUSPENDED && call
-irq_disable() if necessary
-  --> syscore_suspend()
-          --> check_wakeup_irqs()
-               If there's no pending irq in suspend process &&
-IRQS_SUSPENDED is set,
-               then mask the irq.
+That is not the question. We don't care about how many times module.h is
+included in the kernel, but rather what module.h itself includes and could
+include in the future, throughout generic and arch-specific headers. If
+someone want to add a tracepoint in a static inline function located within
+a header file, they will need to include tracepoint.h. If tracepoint.h
+happens to have a circular dependency on this header, there comes include
+hell.
 
-Yes, we didn't implement disable_irq(). But we must implement mask_irq().
+Arguing that it's OK to include headers within core instrumentation code
+because they are themselves included pretty much everywhere is a paved way
+to said include hell IMHO.
 
-So system suspends. Then system will never be waken up by this irq any
-more since
-it's masked.
+> 
+> > 
+> > While I agree on adding the API you propose, why made it a static inline ?
+> > This adds this dependency from tracepoint.h on module.h. Instead, we could
+> > just declare a symbol, and implement a tracepoint_module_has_bad_taint()
+> > within kernel/tracepoint.c. It should not be a fast path anyway, so I don't
+> > see the point it making it a static inline.
+> > 
+> > I also recommend sticking to the tracepoint_*() API (rather than trace_*).
+> 
+> Well, as this is now not just for tracepoints, but also used by the
+> trace_events, and because the name is already too big (but
+> descriptive), I rather not change it.
+
+I just recalled we already have things like "DECLARE_TRACE" and such in
+tracepoint.h. I'm OK with trace_module_has_bad_taint() then.
+
+> 
+> But as a compromise, I can move it to ftrace_event.h instead.
+
+Since it will be used in tracepoint.c as well, which is a foundation of
+ftrace_event, it would be bad coupling to make tracepoint.c include
+ftrace_event.h (abstraction inversion). So I still think tracepoint.h
+is the right place to put this, only not with the module.h dependency.
+
+But perhaps I'm missing something. Why is it so important to you to make
+this a static inline rather than a regular function call ?
+
+Thanks,
+
+Mathieu
 
 
->> And even if you would need this flag, then fiddling with the irq desc
->> internals is a big NONO. There is a proper way to hand that in.
->>
->
-> So can you suggest the proper way to handle it? Thanks.
->
->> Thanks,
->>
->>         tglx
->>
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
