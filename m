@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaB0Kcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 05:32:48 -0500
-Received: from [217.156.133.130] ([217.156.133.130]:56850 "EHLO
-	imgpgp01.kl.imgtec.org" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750952AbaB0Kco (ORCPT
+	id S1752167AbaB0KdD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 05:33:03 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:49396 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaB0Kc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 05:32:44 -0500
-X-Greylist: delayed 1154 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Feb 2014 05:32:43 EST
-X-PGP-Universal: processed;
-	by imgpgp01.kl.imgtec.org on Thu, 27 Feb 2014 10:13:17 +0000
-Message-ID: <530F0FBB.1030101@imgtec.com>
-Date: Thu, 27 Feb 2014 10:13:15 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 27 Feb 2014 05:32:59 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-metag <linux-metag@vger.kernel.org>
-Subject: [GIT PULL] Metag arch and asm-generic fixes for v3.14
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="ulL7A0WDGj4ucC4uPPjucJB8w0ssLRNvK"
-X-Originating-IP: [192.168.154.65]
-X-ESG-ENCRYPT-TAG: e1bf74bf
+In-Reply-To: <20140227103031.GA9987@twins.programming.kicks-ass.net>
+References: <20140225163010.GG24636@pd.tnic>
+	<CABPqkBT3O2VwV48OC9TgCLKrEnC_qokxU8_odMZQ+d+55wdKgA@mail.gmail.com>
+	<20140225173946.GH24636@pd.tnic>
+	<CABPqkBTk+KA2kd7Qge2SkNXebDoh9Ntc2L_E3p2k42sbMxoYXw@mail.gmail.com>
+	<20140225221027.GB21559@pd.tnic>
+	<CABPqkBSH-cHDZ16y0WMyJ2e-kmJ6G_8DkJXPDa7pc4Hp63xG4g@mail.gmail.com>
+	<20140226092903.GA22639@pd.tnic>
+	<CABPqkBTxQpihn574NArDri0q8ZAOZxXSCSTBfoYfnSxjUH6q6g@mail.gmail.com>
+	<20140226095956.GB22639@pd.tnic>
+	<CABPqkBS04H6GOT4prZ3v=YZMdj=3KHkW77ON67p8f_Wor17kpw@mail.gmail.com>
+	<20140227103031.GA9987@twins.programming.kicks-ass.net>
+Date: Thu, 27 Feb 2014 11:32:58 +0100
+Message-ID: <CABPqkBSKH0SGHiWh77ef5eDF7f+4sRmjOppDZzdHSvGs=QQOAg@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ulL7A0WDGj4ucC4uPPjucJB8w0ssLRNvK
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 27, 2014 at 11:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Feb 27, 2014 at 11:12:32AM +0100, Stephane Eranian wrote:
+>> As a asides, my SNB and HSW desktops with 3.14-rc4 are totally unstable.
+>> They  hang if I type make in my kernel tree. Whereas 3.14-rc3 is stable. I am
+>> not so sure this is all related to the uncore IMC support, though.
+>
+> Unstable with 3.14-rc4-tip you mean? Yeah, there's a rather crucial
+> patch missing. I'll try and get Thomas to merge it if Ingo doesn't show
+> up soon.
 
-Hi Linus,
-
-Please pull the following changes since commit cfbf8d4857c26a8a307fb7cd25=
-8074c9dcd8c691:
-
-  Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
-
-which are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jhogan/metag.git tags/met=
-ag-fixes-v3.14
-
-for you to fetch changes up to f229006ec6beabf7b844653d92fa61f025fe3dcf:
-
-  irq-metag*: stop set_affinity vectoring to offline cpus (2014-02-25 22:=
-35:06 +0000)
-
-Thanks
-James
-
-----------------------------------------------------------------
-Metag arch and asm-generic fixes for v3.14
-
-- Add the new sched_setattr/sched_getattr syscalls to the asm-generic
-  syscall list, which is used by arc, arm64, c6x, hexagon, metag,
-  openrisc, score, tile, and unicore32.
-
-- An IRQ affinity bug fix for metag to prevent interrupts being vectored
-  to offline CPUs when their affinity is changed via /proc/irq/ (thanks
-  tglx).
-
-----------------------------------------------------------------
-James Hogan (2):
-      asm-generic: add sched_setattr/sched_getattr syscalls
-      irq-metag*: stop set_affinity vectoring to offline cpus
-
- drivers/irqchip/irq-metag-ext.c   | 2 +-
- drivers/irqchip/irq-metag.c       | 2 +-
- include/uapi/asm-generic/unistd.h | 6 +++++-
- 3 files changed, 7 insertions(+), 3 deletions(-)
-
-
---ulL7A0WDGj4ucC4uPPjucJB8w0ssLRNvK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTDw+8AAoJEKHZs+irPybf9AEP/3I6KgEk9G0XMqzxKml6sF6W
-XFy/2em41sttC4ZKqrQzrd0zxwi/QAG5pxlZ30D0Y4iWLC1RgWUxs19mkuPzJb4q
-l8nP6/f3L+fhYTNe1EyuLhPC0CiuisuSmRMel6k5YRJsaHT46Kf2GkwIImb4pCka
-X9GrF6ZB1iYge8FfzCeNCr5fL7dyCC4LKNsZ78OiHnhktQreKSOswYWWkzhngEa0
-xTjlzIT605RQjtssAWj98wXGSo9Kk++5xyvUe5t/FOImI/pQFIU3VKkEfS+fCf6d
-1z/z88gXanape1pF3WFYCZPL58RHYDcizNkvbb1aFwNI4rdjyjsxde4j/+x8NkuM
-OJ6luU+r4GkMivVe9svNdYIzeiAKNZE/t0gueb/K/vpLY6rVrSuVa7MoUB8FvYSE
-OMj5B6kp48XG+ocRvqRcYyHAfeUGdLcI8GmFlIGn9lbhRSGb13e4fu5zIW/GacZW
-/ST9hyM20dshNS9FTL5eszsHQa6wpm3ORSTB752PUgZphc9+ExxLavAAj8Es2how
-W7HFohxvuibjbO9/G2Jck/aSADAcr45oAarOGjmY0YA4dL7zjSKQTqKsRg5jKgPX
-4In1Ud0YMv87fWUQ2xHovOmy5GRTKmMPHn29erTXVKWDOB/GUnS8L/4gfdfbsqVB
-BX+Xc4U2J6dIrs/RJK2D
-=fH3w
------END PGP SIGNATURE-----
-
---ulL7A0WDGj4ucC4uPPjucJB8w0ssLRNvK--
+Yes, I mean from tip.git.
