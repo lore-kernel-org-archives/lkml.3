@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaB0Xcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 18:32:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40495 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaB0Xco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 18:32:44 -0500
-Date: Thu, 27 Feb 2014 15:32:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux RAID <linux-raid@vger.kernel.org>,
-        "majianpeng" <majianpeng@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] md / procfs: avoid Oops if md-mod removed while
- /proc/mdstat is being polled.
-Message-Id: <20140227153242.42cb9b9ef83dacc895017d44@linux-foundation.org>
-In-Reply-To: <20140228100757.7dbd3dae@notabene.brown>
-References: <20140227172445.13644477@notabene.brown>
-	<20140227125807.d034c50c7fe2e1a9f3c38ec1@linux-foundation.org>
-	<20140228083443.64c92382@notabene.brown>
-	<20140227135125.92a56ff656b3ca8d0b5d9029@linux-foundation.org>
-	<20140228100757.7dbd3dae@notabene.brown>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752702AbaB0Xgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 18:36:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:32173 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213AbaB0Xgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 18:36:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,558,1389772800"; 
+   d="scan'208";a="463759703"
+Date: Thu, 27 Feb 2014 15:41:31 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Felipe Balbi <balbi@ti.com>, Josh Cartwright <joshc@codeaurora.org>,
+        linux-pm@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] usb: phy: msm: use ASSIGN_*_PM_OPS variants
+Message-ID: <20140227234129.GA21032@psi-dev26.jf.intel.com>
+References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
+ <1393261707-30565-4-git-send-email-joshc@codeaurora.org>
+ <20140225183336.GH23275@saruman.home>
+ <20140227190324.GC4421@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227190324.GC4421@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 10:07:57 +1100 NeilBrown <neilb@suse.de> wrote:
-
-> On Thu, 27 Feb 2014 13:51:25 -0800 Andrew Morton <akpm@linux-foundation.org>
-> wrote:
+On Thu, Feb 27, 2014 at 11:03:24AM -0800, Greg Kroah-Hartman wrote:
+> On Tue, Feb 25, 2014 at 12:33:36PM -0600, Felipe Balbi wrote:
+> > Hi,
+> > 
+> > On Mon, Feb 24, 2014 at 11:08:27AM -0600, Josh Cartwright wrote:
+> > > Use ASSIGN_SYSTEM_SLEEP_PM_OPS and ASSIGN_RUNTIME_PM_OPS in the
+> > > initializer for msm_otg_dev_pm_ops.  Doing so allows us to eliminate
+> > > preprocessor conditionals around the specified callbacks.
+> > > 
+> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > ---
+> > >  drivers/usb/phy/phy-msm-usb.c | 13 +++----------
+> > >  1 file changed, 3 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> > > index 5b37b81..c04f2e3 100644
+> > > --- a/drivers/usb/phy/phy-msm-usb.c
+> > > +++ b/drivers/usb/phy/phy-msm-usb.c
+> > > @@ -414,8 +414,6 @@ static int msm_otg_reset(struct usb_phy *phy)
+> > >  #define PHY_SUSPEND_TIMEOUT_USEC	(500 * 1000)
+> > >  #define PHY_RESUME_TIMEOUT_USEC	(100 * 1000)
+> > >  
+> > > -#ifdef CONFIG_PM
+> > > -
+> > >  #define USB_PHY_SUSP_DIG_VOL  500000
+> > >  static int msm_hsusb_config_vddcx(int high)
+> > >  {
+> > > @@ -609,7 +607,6 @@ skip_phy_resume:
+> > >  
+> > >  	return 0;
+> > >  }
+> > > -#endif
+> > >  
+> > >  static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
+> > >  {
+> > > @@ -1664,7 +1661,6 @@ static int msm_otg_remove(struct platform_device *pdev)
+> > >  	return 0;
+> > >  }
+> > >  
+> > > -#ifdef CONFIG_PM_RUNTIME
+> > >  static int msm_otg_runtime_idle(struct device *dev)
+> > >  {
+> > >  	struct msm_otg *motg = dev_get_drvdata(dev);
+> > > @@ -1699,9 +1695,7 @@ static int msm_otg_runtime_resume(struct device *dev)
+> > >  	dev_dbg(dev, "OTG runtime resume\n");
+> > >  	return msm_otg_resume(motg);
+> > >  }
+> > > -#endif
+> > >  
+> > > -#ifdef CONFIG_PM_SLEEP
+> > >  static int msm_otg_pm_suspend(struct device *dev)
+> > >  {
+> > >  	struct msm_otg *motg = dev_get_drvdata(dev);
+> > > @@ -1731,12 +1725,11 @@ static int msm_otg_pm_resume(struct device *dev)
+> > >  
+> > >  	return 0;
+> > >  }
+> > > -#endif
+> > >  
+> > >  static const struct dev_pm_ops msm_otg_dev_pm_ops = {
+> > > -	SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+> > > -	SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+> > > -				msm_otg_runtime_idle)
+> > > +	ASSIGN_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
+> > > +	ASSIGN_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
+> > > +			      msm_otg_runtime_idle)
+> > 
+> > if the patch introducing assign_if() gets accepted, I'm ok with this
+> > patch.
 > 
-> > On Fri, 28 Feb 2014 08:34:43 +1100 NeilBrown <neilb@suse.de> wrote:
-> > 
-> > > On Thu, 27 Feb 2014 12:58:07 -0800 Andrew Morton <akpm@linux-foundation.org>
-> > > wrote:
-> > > 
-> > > > On Thu, 27 Feb 2014 17:24:45 +1100 NeilBrown <neilb@suse.de> wrote:
-> > > > 
-> > > > > If poll or select is waiting on /proc/mdstat when md-mod is unloaded
-> > > > > an oops will ensure when the poll/select completes.
-> > > > > 
-> > > > > This is because the wait_queue_head which is registered with poll_wait()
-> > > > > is local to the module and no longer exists when the poll completes and
-> > > > > detaches that wait_queue_head (in poll_free_wait -> remove_wait_queue).
-> > > > > 
-> > > > > To fix this we need the wait_queue_head to have (at least) the same life
-> > > > > time as the proc_dir_entry.  So this patch places it in that structure.
-> > > > > 
-> > > > > We:
-> > > > >   - add pde_poll_wait to struct proc_dir_entry
-> > > > >   - call poll_wait() passing this when poll() is called on the proc file
-> > > > >   - export a function proc_wake_up which will call wake_up() on pde_poll_wait
-> > > > > 
-> > > > > and make use of all that in md.c
-> > > > 
-> > > > This sounds wrong.  If a userspace process is waiting on
-> > > > md_event_waiters then the md module is "busy" and the rmmod attempt
-> > > > should fail?
-> > > 
-> > > Al Viro says "no" quite firmly.
-> > > 
-> > > I think the core argument is that
-> > > 
-> > >   rmmod md-mod < /proc/mdstat
-> > > 
-> > > would deadlock.
-> > 
-> > Well, only if the rmmod hangs around waiting for the module to go idle.
-> > I'm thinking rmmod should fail.  EBUSY.
+> I can't take that patch at this point in time, it's just too ugly...
+> 
+> As are those crazy SET_SYSTEM_SLEEP_PM_OPS() macros, ick, who made those
+> things?
+> 
+> What language are we trying to program in here people?
 
-This?  What happens if we just fail the rmmod when the module is busy
-(which it is).
+Since we're discussing this topic here, I'd like point my RFC which gets
+rid of same ifdeffery in a different way:
+http://lkml.org/lkml/2013/12/13/4
 
+Comments are welcome.
 
+Br, David
+
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
