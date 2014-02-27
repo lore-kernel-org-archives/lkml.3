@@ -1,102 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaB0UpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:45:01 -0500
-Received: from moutng.kundenserver.de ([212.227.17.13]:62535 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaB0Uo7 (ORCPT
+	id S1752001AbaB0Uql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:46:41 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55451 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaB0Uqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:44:59 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michael Schmitz <schmitzmic@gmail.com>
-Subject: Re: [PATCH 02/16] scsi: atari_scsi: fix sleep_on race
-Date: Thu, 27 Feb 2014 21:44:50 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-References: <1393412516-3762435-1-git-send-email-arnd@arndb.de> <1393412516-3762435-3-git-send-email-arnd@arndb.de> <530EF01D.6000208@gmail.com>
-In-Reply-To: <530EF01D.6000208@gmail.com>
+	Thu, 27 Feb 2014 15:46:39 -0500
+Date: Thu, 27 Feb 2014 21:46:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jenny Tc <jenny.tc@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20140227204636.GA5053@amd.pavel.ucw.cz>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+ <20140204113640.GD2450@amd.pavel.ucw.cz>
+ <20140220051655.GB2498@jenny-desktop>
+ <20140221144529.GB5238@amd.pavel.ucw.cz>
+ <20140226025444.GA21449@jenny-desktop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402272144.50946.arnd@arndb.de>
-X-Provags-ID: V02:K0:SM+pEkmaTqQh6i+uPsUdlLMLJ4Qmr7S3e+WOFRmaigZ
- 8xDkgVSduAvaHiMDktnGjzpWNNSyb++Ae9RVy86R9CND+N6Emp
- fZ54hV3VZWGExsmXiDqVhP+XMMJSiBzAdMoikjkccuYTSz9+D3
- gA/cH5m7C1J1Epw4cgdm5yFbejfL3oCDBccqfU1zt+BtIUOmkb
- CIGkxWVTkO369NxXUgij3tShBvq9oZcOw8aBFiEN70lLBBS5cu
- elMUaF56I5jN5DmNq9OT1L6IxHe9vO6Xsa2Lzgt9Hhv328dv2C
- 0PtMBbeyozaQ/1d37ybzkjwIloxqDv9SmTVCpBq3rKaBtkX8Ek
- BbYf89RwyDlCm0SGSxPk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140226025444.GA21449@jenny-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014, Michael Schmitz wrote:
-> Arnd Bergmann wrote:
-> >   
-> Nack - the completion condition in the first hunk has its logic 
-> reversed. Try this instead (while() loops while condition true, do {} 
-> until () loops while condition false, no?)
+On Wed 2014-02-26 08:24:44, Jenny Tc wrote:
+> On Fri, Feb 21, 2014 at 03:45:29PM +0100, Pavel Machek wrote:
+> > On Thu 2014-02-20 10:46:55, Jenny Tc wrote:
+> > > On Tue, Feb 04, 2014 at 12:36:40PM +0100, Pavel Machek wrote:
+> > > > > --- a/drivers/power/Kconfig
+> > > > > +++ b/drivers/power/Kconfig
+> > > > > @@ -22,6 +22,19 @@ config POWER_SUPPLY_CHARGER
+> > > > >  	  drivers to keep the charging logic outside and the charger driver
+> > > > >  	  just need to abstract the charger hardware.
+> > > > >  
+> > > > > +config POWER_SUPPLY_CHARGING_ALGO_PSE
+> > > > > +	bool "PSE compliant charging algorithm"
+> > > > > +	help
+> > > > > +	  Say Y here to select Product Safety Engineering (PSE) compliant
+> > > > > +	  charging algorithm. As per PSE standard the battery characteristics
+> > > > > +	  and thereby the charging rates can vary on different temperature
+> > > > > +	  zones. This config will enable PSE compliant charging algorithm with
+> > > > > +	  maintenance charging support. At runtime the algorithm will be
+> > > > > +	  selected by the psy charger driver based on the type of the battery
+> > > > > +	  charging profile.
+> > > > 
+> > > > Information where to expect PSE compliant chargers would be nice.
+> > > 
+> > > This algorithm can be used with non PSE compliant chargers also. This is a SW
+> > > based charging algorithm.
+> > 
+> > Ok, but you need to explain for the users when it might be good idea
+> > to select this option...
+> > 
+> > Or maybe this should not be user configurable and drivers should just
+> > select it?
+> 
+> The idea is to allow pluggable charging algorithms. Currently we have only one
+> charging algorithm proposed, but can have other charging algorithms (like pulse
+> charging, rule based charging etc.). Based on the platform need, the algorithms
+> can be selected. So this should be a user configurable option. I can add more
+> explanation on when to select this option.
 
-Sorry about messing it up again. I though I had fixed it up the
-way you commented when you said it worked.
- 
-> I'm 99% confident I had tested your current version of the patch before 
-> and found it still attempts to schedule while in interrupt. I can retest 
-> if you prefer, but that'll have to wait a few days.
-
-I definitely trust you to have the right version, since you did the
-testing.
-
-> diff --git a/drivers/scsi/atari_scsi.c b/drivers/scsi/atari_scsi.c
-> index a3e6c8a..cc1b013 100644
-> --- a/drivers/scsi/atari_scsi.c
-> +++ b/drivers/scsi/atari_scsi.c
-> @@ -90,6 +90,7 @@
->  #include <linux/init.h>
->  #include <linux/nvram.h>
->  #include <linux/bitops.h>
-> +#include <linux/wait.h>
->  
->  #include <asm/setup.h>
->  #include <asm/atarihw.h>
-> @@ -549,8 +550,10 @@ static void falcon_get_lock(void)
->  
->         local_irq_save(flags);
->  
-> -       while (!in_irq() && falcon_got_lock && stdma_others_waiting())
-> -               sleep_on(&falcon_fairness_wait);
-> +       wait_event_cmd(falcon_fairness_wait,
-> +               in_irq() || !falcon_got_lock || !stdma_others_waiting(),
-> +               local_irq_restore(flags),
-> +               local_irq_save(flags));
->  
->         while (!falcon_got_lock) {
->                 if (in_irq())
-
-Yes, by inspection your version looks correct and mine looks wrong.
-I had figured this out before, just sent the wrong version.
-
-> @@ -562,7 +565,10 @@ static void falcon_get_lock(void)
->                         falcon_trying_lock = 0;
->                         wake_up(&falcon_try_wait);
->                 } else {
-> -                       sleep_on(&falcon_try_wait);
-> +                       wait_event_cmd(falcon_try_wait,
-> +                               falcon_got_lock && !falcon_trying_lock,
-> +                               local_irq_restore(flags),
-> +                               local_irq_save(flags));
->                 }
-
-I did correct this part compared to my first patch, but forgot
-to change the other hunk.
-
-Can you send your version of the patch to Geert for inclusion?
-That way I don't have the danger of missing another negation.
-This code is clearly too weird to rely on inspection alone and
-we know that your version was working when you last tested it.
-
-	Arnd
+Yes please. Because with current description, user has no chance.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
