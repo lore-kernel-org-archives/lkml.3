@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289AbaB0QBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 11:01:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37102 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076AbaB0QBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 11:01:19 -0500
-Date: Thu, 27 Feb 2014 17:01:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Joe Perches <joe@perches.com>,
-        Ben Pfaff <blp@nicira.com>, Christopher Li <sparse@chrisli.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-Message-ID: <20140227160112.GG18191@pd.tnic>
-References: <20140227022857.GC23659@thin>
- <1393469594.24588.71.camel@joe-AO722>
- <20140227025845.GA25145@thin>
- <530EB103.5070406@zytor.com>
- <1393472326.24588.82.camel@joe-AO722>
- <60797a1a-1a83-468e-9629-abf4e8712d65@email.android.com>
- <20140227082529.GA18210@pd.tnic>
- <dbc47544-a6f6-4ab4-80b0-25d93a1666e2@email.android.com>
- <20140227152435.GA7982@thunk.org>
- <530F5E53.5070208@zytor.com>
+	id S1753344AbaB0QBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 11:01:44 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:64819 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaB0QBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 11:01:42 -0500
+X-IronPort-AV: E=Sophos;i="4.97,555,1389744000"; 
+   d="scan'208";a="104689939"
+Date: Thu, 27 Feb 2014 16:01:41 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v5 4/9] xen-netback: Change RX path for mapped
+ SKB fragments
+Message-ID: <20140227160141.GJ16241@zion.uk.xensource.com>
+References: <1390253069-25507-1-git-send-email-zoltan.kiss@citrix.com>
+ <1390253069-25507-5-git-send-email-zoltan.kiss@citrix.com>
+ <1392745532.23084.65.camel@kazak.uk.xensource.com>
+ <53093051.9040907@citrix.com>
+ <530B4E05.4020900@schaman.hu>
+ <530B606F.2070902@citrix.com>
+ <20140227124327.GD16241@zion.uk.xensource.com>
+ <530F5E9B.5020404@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <530F5E53.5070208@zytor.com>
+In-Reply-To: <530F5E9B.5020404@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 07:48:35AM -0800, H. Peter Anvin wrote:
-> No, but I think we can certainly make a list... a lot of it right now
-> sits in various people's heads.
+On Thu, Feb 27, 2014 at 03:49:47PM +0000, Zoltan Kiss wrote:
+> On 27/02/14 12:43, Wei Liu wrote:
+> >On Mon, Feb 24, 2014 at 03:08:31PM +0000, Zoltan Kiss wrote:
+> >>On 24/02/14 13:49, Zoltan Kiss wrote:
+> >>>On 22/02/14 23:18, Zoltan Kiss wrote:
+> >>>>On 18/02/14 17:45, Ian Campbell wrote:
+> >>>>>On Mon, 2014-01-20 at 21:24 +0000, Zoltan Kiss wrote:
+> >>>>>
+> >>>>>Re the Subject: change how? Perhaps "handle foreign mapped pages on the
+> >>>>>guest RX path" would be clearer.
+> >>>>Ok, I'll do that.
+> >>>>
+> >>>>>
+> >>>>>>RX path need to know if the SKB fragments are stored on
+> >>>>>>pages from another
+> >>>>>>domain.
+> >>>>>Does this not need to be done either before the mapping change
+> >>>>>or at the
+> >>>>>same time? -- otherwise you have a window of a couple of commits where
+> >>>>>things are broken, breaking bisectability.
+> >>>>I can move this to the beginning, to keep bisectability. I've
+> >>>>put it here originally because none of these makes sense without
+> >>>>the previous patches.
+> >>>Well, I gave it a close look: to move this to the beginning as a
+> >>>separate patch I would need to put move a lot of definitions from
+> >>>the first patch to here (ubuf_to_vif helper,
+> >>>xenvif_zerocopy_callback etc.). That would be the best from bisect
+> >>>point of view, but from patch review point of view even worse than
+> >>>now. So the only option I see is to merge this with the first 2
+> >>>patches, so it will be even bigger.
+> >>Actually I was stupid, we can move this patch earlier and introduce
+> >>stubs for those 2 functions. But for the another two patches (#6 and
+> >>#8) it's still true that we can't move them before, only merge them
+> >>into the main, as they heavily rely on the main patch. #6 is
+> >>necessary for Windows frontends, as they are keen to send too many
+> >>slots. #8 is quite a rare case, happens only if a guest wedge or
+> >>malicious, and sits on the packet.
+> >>So my question is still up: do you prefer perfect bisectability or
+> >>more segmented patches which are not that pain to review?
+> >>
+> >
+> >What's the diff stat if you merge those patches?
+> >
 > 
-> Here are a couple:
-> 
-> - Bytes are 8 bits
-> - Signed integers will be 2's complement
-> - sizeof char, short, int, long, and long long will be 1, 2, 4, 4, 8 or
-		^					   ^
-	       bool, 					  ,1 ,
+>  drivers/net/xen-netback/common.h    |   33 ++-
+>  drivers/net/xen-netback/interface.c |   67 +++++-
+>  drivers/net/xen-netback/netback.c   |  424
+> ++++++++++++++++++++++-------------
+>  3 files changed, 362 insertions(+), 162 deletions(-)
 
-
->   1, 2, 4, 8, 8 on 32- and 64-bit processors, respectively.
-> - sizeof(long) == sizeof(void *)
-> - NULL is represented by all zero
-> - Structures will not add padding as long as all the members are
->   naturally aligned.
-> 
-> Someone want to set up a collaborative document of some kind and collect
-> more?
-
-https://wiki.kernel.org/ but I hear spammers love it.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Not terribly bad IMHO -- if you look at netback's changelog, I've done
+worse. :-P
