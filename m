@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255AbaB0LjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 06:39:12 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40736 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009AbaB0LjK (ORCPT
+	id S1752536AbaB0LjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 06:39:24 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:51240 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaB0LjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 06:39:10 -0500
-Date: Thu, 27 Feb 2014 17:09:03 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>, josh@joshtriplett.org
-Subject: [PATCH 11/46] kernel: Add prototype declaration in kernel/gcov/base.c
-Message-ID: <6fc7e35882693c30f7f7adad20838a123fac29c3.1393493276.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 27 Feb 2014 06:39:19 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-b3-530f23e617f2
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] mfd: ucb1x00-core: Use SIMPLE_DEV_PM_OPS macro
+Date: Thu, 27 Feb 2014 20:39:18 +0900
+Message-id: <000b01cf33b0$8c7f3000$a57d9000$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8zsIxqTEsSdWYrT/ykVIEeiUcNig==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zfd1nyvzBBh9eS1lcXniJ1eL+16OM
+	Fpd3zWGzON3N6sDicefaHjaPeScDPfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj8qrn7AWP
+	WSvm3exhb2B8zdLFyMEhIWAiseh3fRcjJ5ApJnHh3nq2LkYuDiGBZYwSTddnskMkTCSWNn1k
+	h0gsYpTYd2wzC4Tzm1Fi0+OXLCBVbAJqEl++HAbrEAGyb+6ZxQRiMwvkSXzYvJkRxBYWsJe4
+	NmcTmM0ioCpx/nwTWC+vgK3EgRnNjBC2oMSPyfdYIHq1JNbvPA41R15i85q3zBBXq0s8+qsL
+	sUpPYl3HXjaIEhGJfS/eMYLcJiGwjl3i48vlTBC7BCS+TT4E9bGsxKYDzBCPSUocXHGDZQKj
+	2Cwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRESYb07GG8fsD7E
+	mAy0fiKzlGhyPjBC80riDY3NjCxMTUyNjcwtzUgTVhLnTXqYFCQkkJ5YkpqdmlqQWhRfVJqT
+	WnyIkYmDU6qB0duxRH9KZhqPnazUs3jZI+m6aQqGp9vyRT7mP37swnquZq324s1PLqx/l+70
+	im1VzD4hAQaNM/En3aYeUVq7T0if/9yEI9+XBjysZ31/aO26fv0pspnaNnyPWuZ2Mz8N/Plt
+	/ZuDp8Lnvf8kd9n62LKYp/08fd4iN2aImE+qeO3wfuKOr10H2JRYijMSDbWYi4oTAa7QUOzG	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd1nyvzBBpPniVtcXniJ1eL+16OM
+	Fpd3zWGzON3N6sDicefaHjaPeScDPfq2rGL0+LxJLoAlqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
+	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
+	xghd35AguB4jAzSQsI4x4/Kq5+wFj1kr5t3sYW9gfM3SxcjJISFgIrG06SM7hC0mceHeerYu
+	Ri4OIYFFjBL7jm1mgXB+M0psevwSrINNQE3iy5fDYB0iQPbNPbOYQGxmgTyJD5s3M4LYwgL2
+	EtfmbAKzWQRUJc6fbwLr5RWwlTgwo5kRwhaU+DH5HgtEr5bE+p3HoebIS2xe85a5i5ED6CJ1
+	iUd/dSFW6Ums69jLBlEiIrHvxTvGCYwCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk911Cv
+	ODG3uDQvXS85P3cTIziCn0ntYFzZYHGIUYCDUYmHV4GNL1iINbGsuDL3EKMEB7OSCO96Jv5g
+	Id6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HJpe8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoH
+	CgmkJ5akZqemFqQWwWxh4uCUamCc+K9lAfvLyNNSd1JN5E8cPCWkkiwUl8h9X/f07M8d0y+n
+	y78U8PvB+WH6YlvdKY63lT+3zXNdYcFy+DDHriT5xHMffX9E3Vd4xF7evb+1sWnSvVDeg9HF
+	ZUmvNiQ7yG85eMJh1yztGK5qzROXxddLSN1yvaQmNz1rqs3Hn/l3Pi2v0Pzw5ZikEktxRqKh
+	FnNRcSIAiJyGSyQDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declarations of functions in kernel/gcov/base.c. These
-functions are required by GCC builtins and hence can not be removed
-despite of their unreferenced appearance in kernel source.
+Use SIMPLE_DEV_PM_OPS macro in order to make the code simpler.
 
-This eliminates the following warning in kernel/gcov/base.c:
-kernel/gcov/base.c:30:6: warning: no previous prototype for ‘__gcov_init’ [-Wmissing-prototypes]
-kernel/gcov/base.c:58:6: warning: no previous prototype for ‘__gcov_flush’ [-Wmissing-prototypes]
-kernel/gcov/base.c:64:6: warning: no previous prototype for ‘__gcov_merge_add’ [-Wmissing-prototypes]
-kernel/gcov/base.c:70:6: warning: no previous prototype for ‘__gcov_merge_single’ [-Wmissing-prototypes]
-kernel/gcov/base.c:76:6: warning: no previous prototype for‘__gcov_merge_delta’ [-Wmissing-prototypes]
-kernel/gcov/base.c:82:6: warning: no previous prototype for ‘__gcov_merge_ior’ [-Wmissing-prototypes]
-
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/gcov/base.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/mfd/ucb1x00-core.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/kernel/gcov/base.c b/kernel/gcov/base.c
-index f45b75b..c0cb53a 100644
---- a/kernel/gcov/base.c
-+++ b/kernel/gcov/base.c
-@@ -27,6 +27,7 @@ static DEFINE_MUTEX(gcov_lock);
-  * __gcov_init is called by gcc-generated constructor code for each object
-  * file compiled with -fprofile-arcs.
-  */
-+void __gcov_init(struct gcov_info *info);
- void __gcov_init(struct gcov_info *info)
- {
- 	static unsigned int gcov_version;
-@@ -55,30 +56,35 @@ EXPORT_SYMBOL(__gcov_init);
-  * These functions may be referenced by gcc-generated profiling code but serve
-  * no function for kernel profiling.
-  */
-+void __gcov_flush(void);
- void __gcov_flush(void)
- {
- 	/* Unused. */
+diff --git a/drivers/mfd/ucb1x00-core.c b/drivers/mfd/ucb1x00-core.c
+index 0313f83..153d595 100644
+--- a/drivers/mfd/ucb1x00-core.c
++++ b/drivers/mfd/ucb1x00-core.c
+@@ -742,9 +742,7 @@ static int ucb1x00_resume(struct device *dev)
  }
- EXPORT_SYMBOL(__gcov_flush);
+ #endif
  
-+void __gcov_merge_add(gcov_type *counters, unsigned int n_counters);
- void __gcov_merge_add(gcov_type *counters, unsigned int n_counters)
- {
- 	/* Unused. */
- }
- EXPORT_SYMBOL(__gcov_merge_add);
+-static const struct dev_pm_ops ucb1x00_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(ucb1x00_suspend, ucb1x00_resume)
+-};
++static SIMPLE_DEV_PM_OPS(ucb1x00_pm_ops, ucb1x00_suspend, ucb1x00_resume);
  
-+void __gcov_merge_single(gcov_type *counters, unsigned int n_counters);
- void __gcov_merge_single(gcov_type *counters, unsigned int n_counters)
- {
- 	/* Unused. */
- }
- EXPORT_SYMBOL(__gcov_merge_single);
- 
-+void __gcov_merge_delta(gcov_type *counters, unsigned int n_counters);
- void __gcov_merge_delta(gcov_type *counters, unsigned int n_counters)
- {
- 	/* Unused. */
- }
- EXPORT_SYMBOL(__gcov_merge_delta);
- 
-+void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters);
- void __gcov_merge_ior(gcov_type *counters, unsigned int n_counters)
- {
- 	/* Unused. */
+ static struct mcp_driver ucb1x00_driver = {
+ 	.drv		= {
 -- 
-1.7.9.5
+1.7.10.4
+
 
