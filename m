@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaB0FEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:04:33 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:44508 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaB0FEc (ORCPT
+	id S1751607AbaB0FGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 00:06:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:17935 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaB0FGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:04:32 -0500
-X-AuditID: cbfee690-b7f266d00000287c-d0-530ec75c6df3
+	Thu, 27 Feb 2014 00:06:35 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-0d-530ec7d7fba0
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, "'Jamie Iles'" <jamie@jamieiles.com>,
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Rubini'" <rubini@gnudd.com>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
 In-reply-to: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-Subject: [PATCH 3/5] hwrng: pixocell - Use devm_clk_get()
-Date: Thu, 27 Feb 2014 14:04:28 +0900
-Message-id: <004001cf3379$64363fd0$2ca2bf70$%han@samsung.com>
+Subject: [PATCH 4/5] hwrng: nomadik - Use devm_*() functions
+Date: Thu, 27 Feb 2014 14:06:31 +0900
+Message-id: <004101cf3379$ada38d30$08eaa790$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8zeMUulUPjKSZTQeuQ54WfZho3FgAAFZBA
+Thread-index: Ac8zeMUulUPjKSZTQeuQ54WfZho3FgAAJyJg
 Content-language: ko
-x-cr-hashedpuzzle: BJUC BUw1 Kv/V P8Oc RjN2 Vxn5 V0Tg WHTH X8/t bN4Z bfvc eCAF
- gwWm hh50 llnQ
- n78+;4;aABlAHIAYgBlAHIAdABAAGcAbwBuAGQAbwByAC4AYQBwAGEAbgBhAC4AbwByAGcALgBhAHUAOwBqAGEAbQBpAGUAQABqAGEAbQBpAGUAaQBsAGUAcwAuAGMAbwBtADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{2BA754ED-9503-43E3-A38F-33EF4EC23F42};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 27 Feb 2014 05:04:22
- GMT;WwBQAEEAVABDAEgAIAAzAC8ANQBdACAAaAB3AHIAbgBnADoAIABwAGkAeABvAGMAZQBsAGwAIAAtACAAVQBzAGUAIABkAGUAdgBtAF8AYwBsAGsAXwBnAGUAdAAoACkA
-x-cr-puzzleid: {2BA754ED-9503-43E3-A38F-33EF4EC23F42}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zQ92Y43zBBrefall0v5KxmLF5PpPF
-	5YWXWC0u75rD5sDise2Aqsee7v/sHn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXR8f0iW8FP
-	roqOuX+YGxg7OLsYOTkkBEwkvj9azgJhi0lcuLeerYuRi0NIYBmjxOYlWxhhijr7FzNDJBYx
-	Smz7/44RwvnNKLF/wzo2kCo2ATWJL18Os4PYIgJ6En3rG8G6mQWyJC4uPQFmCwnYSjybtASs
-	nlPATmLChHVgq4UFLCXetJ8AinNwsAioSlz57wgS5gUq/9SxghHCFpT4MfkeC8RILYnN25pY
-	IWx5ic1r3jKDtEoIqEs8+qsLcYGRRMfCw0wQJSIS+15AnCwh8IVF4si0s8wQj5lKNJ94DZW4
-	xy5xfPFRsGUsAgIS3yYfYoEYKiux6QBUvaTEwRU3WCYwSs1CctIsJCfNQnLSLCS7FzCyrGIU
-	TS1ILihOSi8y0StOzC0uzUvXS87P3cQIieEJOxjvHbA+xJgMtH4is5Rocj4wBeSVxBsamxlZ
-	mJqYGhuZW5qRJqwkzqv2KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+MyTRuFJ4tLFxlx
-	MGreL1pxX3Hf83qNhsxVRtPCdE89nfPvd7zm4V9+ThOOGrZLlV7Mu72bR8H4UgmHc8fZeG0B
-	VWcX9zPr/3KardyxXuXF59R4lksHY+5xnxPYNGG1UV9AlVXEy7vP7DoTN6j1ut9dESh2bfXi
-	0EV8TlU/JddZfmS9H2X9O0uJpTgj0VCLuag4EQBOUqxs9wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIKsWRmVeSWpSXmKPExsVy+t9jAd2Y43zBBlsa1S26X8lYzNg8n8ni
-	8sJLrBaXd81hc2Dx2HZA1WNP9392j74tqxg9Pm+SC2CJamC0yUhNTEktUkjNS85PycxLt1Xy
-	Do53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAHaqKRQlphTChQKSCwuVtK3wzQhNMRN1wKm
-	MULXNyQIrsfIAA0krGPM6Ph+ka3gJ1dFx9w/zA2MHZxdjJwcEgImEp39i5khbDGJC/fWs3Ux
-	cnEICSxilNj2/x0jhPObUWL/hnVsIFVsAmoSX74cZgexRQT0JPrWNzKC2MwCWRIXl54As4UE
-	bCWeTVoCVs8pYCcxYcI6FhBbWMBS4k37CaA4BweLgKrElf+OIGFeoPJPHSsYIWxBiR+T77FA
-	jNSS2LytiRXClpfYvOYtM0irhIC6xKO/uhAXGEl0LDzMBFEiIrHvBcTJEgJfWCSOTDsL9Zip
-	RPOJ14wTGEVmIVkxC8mKWUhWzEIyawEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4ATx
-	THoH46oGi0OMAhyMSjy8P3T5goVYE8uKK3MPMUpwMCuJ8B5yAQrxpiRWVqUW5ccXleakFh9i
-	TAYGwERmKdHkfGDyyiuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2ampBahHMFiYO
-	TqkGRoc8nfUl/2y/sr2OOMBfUSFWu/O4bm9bxa6QEodjp85vWp16qX59nkGj5eIkWdN53P5t
-	9ssqvwieatg9b8/PU65vQnr3i+/SuuzYrjjvrLtEq5dbqMG2/gh1Q9GsxIV//Yr+XHFZt799
-	6yU3z/uG+txH50pcfZxzX29bS1lBqm7WsuOcrEFNSizFGYmGWsxFxYkAemW2L1QDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zY93rx/mCDX5v1LDofiVjcXnhJVaL
+	KX+WM1lc3jWHzeL3yWQHVo+trQdYPbYdUPW4c20Pm0ffllWMHp83yQWwRnHZpKTmZJalFunb
+	JXBlnLyym6XgJ0/FyvermRsYT3J1MXJwSAiYSExZE9nFyAlkiklcuLeerYuRi0NIYBmjxOGp
+	55kgEiYSvRs3QCUWMUo83HGKGSQhJPCbUWLFkywQm01ATeLLl8PsILaIgJ5E3/pGRpAGZoFZ
+	jBIdR/6wQzTYSjybtIQNxOYUsJOYMGEdC4gtLGAjMXPTJlaQi1gEVCV2/YsHCfMClc85/JYJ
+	whaU+DH5Hlg5s4CWxOZtTawQtrzE5jVvmSGeUZd49FcX4gQjiVPvjjNClIhI7HvxDuwcCYFr
+	7BKdS2aB9bIICEh8m3yIBaJXVmLTAWaIfyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIU
+	TS1ILihOSi8y1StOzC0uzUvXS87P3cQIidCJOxjvH7A+xJgMtH4is5Rocj4wwvNK4g2NzYws
+	TE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXHHp+3z42/beB01
+	1TJrCmcrmXLx+oUNXJd2Tq9nnT7nNK+jUfzMTTXXzrt9rXFvsHY1CT3KVmKseaZmclRq2Jvb
+	X/fPPvO48ceqG7uSynOuPNkSblU3r61d2eXOv8uc857wrtLSnPb7uZztnC0iJy2PZXL802nf
+	E/ne4V5ptUPsBInIFTz/NhcpsRRnJBpqMRcVJwIAw0qS9uYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAd3rx/mCDZaeUbHofiVjcXnhJVaL
+	KX+WM1lc3jWHzeL3yWQHVo+trQdYPbYdUPW4c20Pm0ffllWMHp83yQWwRjUw2mSkJqakFimk
+	5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVZSKEvMKQUKBSQWFyvp
+	22GaEBripmsB0xih6xsSBNdjZIAGEtYxZpy8spul4CdPxcr3q5kbGE9ydTFyckgImEj0btzA
+	BmGLSVy4tx7I5uIQEljEKPFwxylmkISQwG9GiRVPskBsNgE1iS9fDrOD2CICehJ96xsZQRqY
+	BWYxSnQc+cMO0WAr8WzSErCpnAJ2EhMmrGMBsYUFbCRmbtrE2sXIwcEioCqx6188SJgXqHzO
+	4bdMELagxI/J98DKmQW0JDZva2KFsOUlNq95ywzSKiGgLvHory7ECUYSp94dZ4QoEZHY9+Id
+	4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcAJ5J7WBc
+	2WBxiFGAg1GJh1eBjS9YiDWxrLgy9xCjBAezkgjvIRegEG9KYmVValF+fFFpTmrxIcZkoD8n
+	MkuJJucDk1NeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTCW
+	/VN4vpnj8B5Xy7Kzk3XPXE1OWl866YVSJW+0MHNnF5/dlzYf91+esYeb0mY3M86quxzk8kDv
+	4L9uX++X8d+rX6a23F6pXj6fmWtB27Gygx43PDkdA5rVdHmLbmxvDa82YdrF8WSmgZ79Vbsn
+	RjNv3amM6ZYV4W0KM9bkLvmieGiK8NS0U0osxRmJhlrMRcWJAP25dblEAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,53 +56,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_clk_get() to make cleanup paths simpler.
+Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/char/hw_random/picoxcell-rng.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/char/hw_random/nomadik-rng.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/char/hw_random/picoxcell-rng.c b/drivers/char/hw_random/picoxcell-rng.c
-index c03beee..eab5448 100644
---- a/drivers/char/hw_random/picoxcell-rng.c
-+++ b/drivers/char/hw_random/picoxcell-rng.c
-@@ -108,7 +108,7 @@ static int picoxcell_trng_probe(struct platform_device *pdev)
- 	if (IS_ERR(rng_base))
- 		return PTR_ERR(rng_base);
+diff --git a/drivers/char/hw_random/nomadik-rng.c b/drivers/char/hw_random/nomadik-rng.c
+index 00e9d2d..9c85815 100644
+--- a/drivers/char/hw_random/nomadik-rng.c
++++ b/drivers/char/hw_random/nomadik-rng.c
+@@ -43,7 +43,7 @@ static int nmk_rng_probe(struct amba_device *dev, const struct amba_id *id)
+ 	void __iomem *base;
+ 	int ret;
  
--	rng_clk = clk_get(&pdev->dev, NULL);
-+	rng_clk = devm_clk_get(&pdev->dev, NULL);
+-	rng_clk = clk_get(&dev->dev, NULL);
++	rng_clk = devm_clk_get(&dev->dev, NULL);
  	if (IS_ERR(rng_clk)) {
- 		dev_warn(&pdev->dev, "no clk\n");
- 		return PTR_ERR(rng_clk);
-@@ -117,7 +117,7 @@ static int picoxcell_trng_probe(struct platform_device *pdev)
- 	ret = clk_enable(rng_clk);
- 	if (ret) {
- 		dev_warn(&pdev->dev, "unable to enable clk\n");
--		goto err_enable;
-+		return ret;
- 	}
+ 		dev_err(&dev->dev, "could not get rng clock\n");
+ 		ret = PTR_ERR(rng_clk);
+@@ -56,33 +56,28 @@ static int nmk_rng_probe(struct amba_device *dev, const struct amba_id *id)
+ 	if (ret)
+ 		goto out_clk;
+ 	ret = -ENOMEM;
+-	base = ioremap(dev->res.start, resource_size(&dev->res));
++	base = devm_ioremap(&dev->dev, dev->res.start,
++			    resource_size(&dev->res));
+ 	if (!base)
+ 		goto out_release;
+ 	nmk_rng.priv = (unsigned long)base;
+ 	ret = hwrng_register(&nmk_rng);
+ 	if (ret)
+-		goto out_unmap;
++		goto out_release;
+ 	return 0;
  
- 	picoxcell_trng_start();
-@@ -132,9 +132,6 @@ static int picoxcell_trng_probe(struct platform_device *pdev)
- 
- err_register:
+-out_unmap:
+-	iounmap(base);
+ out_release:
+ 	amba_release_regions(dev);
+ out_clk:
  	clk_disable(rng_clk);
--err_enable:
 -	clk_put(rng_clk);
--
  	return ret;
  }
  
-@@ -142,7 +139,6 @@ static int picoxcell_trng_remove(struct platform_device *pdev)
+ static int nmk_rng_remove(struct amba_device *dev)
  {
- 	hwrng_unregister(&picoxcell_trng);
+-	void __iomem *base = (void __iomem *)nmk_rng.priv;
+ 	hwrng_unregister(&nmk_rng);
+-	iounmap(base);
+ 	amba_release_regions(dev);
  	clk_disable(rng_clk);
 -	clk_put(rng_clk);
- 
  	return 0;
  }
+ 
 -- 
 1.7.10.4
 
