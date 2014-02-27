@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbaB0BdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:33:18 -0500
-Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:49787 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753978AbaB0BdR (ORCPT
+	id S1754563AbaB0Bds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:33:48 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:55271 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534AbaB0Bdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:33:17 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2892:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:4321:4419:5007:6119:7652:7903:10004:10400:10848:11026:11473:11658:11914:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cough84_731006ec13924
-X-Filterd-Recvd-Size: 2338
-Message-ID: <1393464789.24588.60.camel@joe-AO722>
-Subject: [PATCH] err.h: Use bool for IS_ERR and IS_ERR_OR_NULL
-From: Joe Perches <joe@perches.com>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 26 Feb 2014 17:33:09 -0800
-In-Reply-To: <530E8C2E.7080307@zytor.com>
-References: <530E6F76.1070605@zytor.com>
-	 <1393462087.24588.50.camel@joe-AO722> <530E8C2E.7080307@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 26 Feb 2014 20:33:47 -0500
+Message-ID: <530E95F2.5040209@linaro.org>
+Date: Thu, 27 Feb 2014 10:33:38 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>
+Subject: Re: [PATCH v2 1/1] arm64: make a single hook to syscall_trace() for
+ all syscall features
+References: <1391767651-5296-1-git-send-email-takahiro.akashi@linaro.org> <1393319683-2707-1-git-send-email-takahiro.akashi@linaro.org> <1393319683-2707-2-git-send-email-takahiro.akashi@linaro.org> <20140225150007.GB23136@mudshark.cambridge.arm.com> <530D4AB3.4000700@linaro.org> <20140226112544.GD8961@mudshark.cambridge.arm.com>
+In-Reply-To: <20140226112544.GD8961@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the more natural return of bool for these tests.
+On 02/26/2014 08:25 PM, Will Deacon wrote:
+> On Wed, Feb 26, 2014 at 02:00:19AM +0000, AKASHI Takahiro wrote:
+>> On 02/26/2014 12:00 AM, Will Deacon wrote:
+>>> On Tue, Feb 25, 2014 at 09:14:43AM +0000, AKASHI Takahiro wrote:
+>>>> Currently syscall_trace() is called only for ptrace.
+>>>> With additional TIF_xx flags defined, it is now called in all the cases
+>>>> of audit, ftrace and seccomp in addition to ptrace.
+>>>>
+>>>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>>>> Acked-by: Richard Guy Briggs <rgb@redhat.com>
+>>>> ---
+>>>>    arch/arm64/include/asm/thread_info.h |   13 ++++++++++
+>>>>    arch/arm64/kernel/entry.S            |    5 ++--
+>>>>    arch/arm64/kernel/ptrace.c           |   45 +++++++++++++++++-----------------
+>>>>    3 files changed, 38 insertions(+), 25 deletions(-)
+>>
+>> [...]
+>>
+>>>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>>>> index 6a8928b..c70133e 100644
+>>>> --- a/arch/arm64/kernel/ptrace.c
+>>>> +++ b/arch/arm64/kernel/ptrace.c
+>>>> @@ -1062,31 +1062,30 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
+>>>>    {
+>>>>    	unsigned long saved_reg;
+>>>>
+>>>> -	if (!test_thread_flag(TIF_SYSCALL_TRACE))
+>>>> -		return regs->syscallno;
+>>>> -
+>>>> -	if (is_compat_task()) {
+>>>> -		/* AArch32 uses ip (r12) for scratch */
+>>>> -		saved_reg = regs->regs[12];
+>>>> -		regs->regs[12] = dir;
+>>>> -	} else {
+>>>> -		/*
+>>>> -		 * Save X7. X7 is used to denote syscall entry/exit:
+>>>> -		 *   X7 = 0 -> entry, = 1 -> exit
+>>>> -		 */
+>>>> -		saved_reg = regs->regs[7];
+>>>> -		regs->regs[7] = dir;
+>>>> -	}
+>>>> +	if (test_thread_flag(TIF_SYSCALL_TRACE)) {
+>>>> +		if (is_compat_task()) {
+>>>> +			/* AArch32 uses ip (r12) for scratch */
+>>>> +			saved_reg = regs->regs[12];
+>>>> +			regs->regs[12] = dir;
+>>>> +		} else {
+>>>> +			/*
+>>>> +			 * Save X7. X7 is used to denote syscall entry/exit:
+>>>> +			 *   X7 = 0 -> entry, = 1 -> exit
+>>>> +			 */
+>>>> +			saved_reg = regs->regs[7];
+>>>> +			regs->regs[7] = dir;
+>>>> +		}
+>>>>
+>>>> -	if (dir)
+>>>> -		tracehook_report_syscall_exit(regs, 0);
+>>>> -	else if (tracehook_report_syscall_entry(regs))
+>>>> -		regs->syscallno = ~0UL;
+>>>> +		if (dir)
+>>>> +			tracehook_report_syscall_exit(regs, 0);
+>>>> +		else if (tracehook_report_syscall_entry(regs))
+>>>> +			regs->syscallno = ~0UL;
+>>>>
+>>>> -	if (is_compat_task())
+>>>> -		regs->regs[12] = saved_reg;
+>>>> -	else
+>>>> -		regs->regs[7] = saved_reg;
+>>>> +		if (is_compat_task())
+>>>> +			regs->regs[12] = saved_reg;
+>>>> +		else
+>>>> +			regs->regs[7] = saved_reg;
+>>>> +	}
+>>>
+>>> Aren't these changes (to ptrace.c) just a giant NOP?
+>>
+>> Umm, the purpose of this big "if" is to run the code only if TIF_SYSCALL_TRACE is set,
+>> and to make it easy to add additional hooks, audit and ftrace, around tracehook_report_*()
+>> later on.
+>
+> The existing code already checks TIF_SYSCALL_TRACE. I'd rather you added
+> this new code when it's actually nedded (e.g. when adding audit on top).
 
-No difference observed in .o files produced by gcc
-for x86.
+* This patch is required only if you really merge my audit and/or ftrace patch.
+* Putting these changes in audit patch would impose an extra (unnecessary) dependency on ftrace patch.
+* Putting them both in audit and ftrace patch would cause a conflict when applying both patches.
 
-Remove the dentry description of kernel pointers
-left over from the 90's and 2002's cleanup move
-of parts of fs.h to err.h.
+Even so, since I don't bother you on this minor issue, I will follow your comment and make changes on:
+* arm64: make a single hook to syscall_trace() for all syscall features
+* arm64: Add audit support
+* arm64: Add ftrace support
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/err.h | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+-Takahiro AKASHI
 
-diff --git a/include/linux/err.h b/include/linux/err.h
-index 15f92e0..a729120 100644
---- a/include/linux/err.h
-+++ b/include/linux/err.h
-@@ -2,12 +2,13 @@
- #define _LINUX_ERR_H
- 
- #include <linux/compiler.h>
-+#include <linux/types.h>
- 
- #include <asm/errno.h>
- 
- /*
-  * Kernel pointers have redundant information, so we can use a
-- * scheme where we can return either an error code or a dentry
-+ * scheme where we can return either an error code or a normal
-  * pointer with the same return value.
-  *
-  * This should be a per-architecture thing, to allow different
-@@ -29,12 +30,12 @@ static inline long __must_check PTR_ERR(__force const void *ptr)
- 	return (long) ptr;
- }
- 
--static inline long __must_check IS_ERR(__force const void *ptr)
-+static inline bool __must_check IS_ERR(__force const void *ptr)
- {
- 	return IS_ERR_VALUE((unsigned long)ptr);
- }
- 
--static inline long __must_check IS_ERR_OR_NULL(__force const void *ptr)
-+static inline bool __must_check IS_ERR_OR_NULL(__force const void *ptr)
- {
- 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
- }
-
-
+> Will
+>
