@@ -1,305 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaB0Nbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 08:31:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54916 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229AbaB0Nbh (ORCPT
+	id S1753280AbaB0Nb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 08:31:59 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49128 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751296AbaB0Nb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 08:31:37 -0500
-Date: Thu, 27 Feb 2014 05:29:16 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-0a4f2b6a3ba5066947a8cbd7cfa26fb8a9280625@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1392825179-5228-6-git-send-email-jolsa@redhat.com>
-References: <1392825179-5228-6-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Setup default dwarf post unwinder
-Git-Commit-ID: 0a4f2b6a3ba5066947a8cbd7cfa26fb8a9280625
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 27 Feb 2014 08:31:57 -0500
+Message-ID: <530F3E47.5040904@hurleysoftware.com>
+Date: Thu, 27 Feb 2014 08:31:51 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Kay Sievers <kay@vrfy.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Ray Strode <halfline@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Werner Fink <werner@suse.de>
+Subject: Re: [PATCH] tty: Add sysfs symlink for console name->tty device
+References: <1393425651-7374-1-git-send-email-peter@hurleysoftware.com> <CAPXgP112sBy+ErD3xYK8=+0tfXPY80wb8Zco5cJKuKkv7+ZViA@mail.gmail.com>
+In-Reply-To: <CAPXgP112sBy+ErD3xYK8=+0tfXPY80wb8Zco5cJKuKkv7+ZViA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a4f2b6a3ba5066947a8cbd7cfa26fb8a9280625
-Gitweb:     http://git.kernel.org/tip/0a4f2b6a3ba5066947a8cbd7cfa26fb8a9280625
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 19 Feb 2014 16:52:58 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Feb 2014 09:29:36 -0300
+On 02/27/2014 06:13 AM, Kay Sievers wrote:
+> On Wed, Feb 26, 2014 at 3:40 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> Enable a user-space process to discover the underlying tty device
+>> for a console, if one exists, and when the tty device is later
+>> created or destroyed.
+>>
+>> Add sysfs symlinks for registered consoles to their respective
+>> devices in [sys/class,sys/devices/virtual]/tty/console.
+>> Scan consoles at tty device (un)registration to handle deferred
+>> console<->device (un)binding.
+>
+> What tool is supposed to read that? I can't think of anything
+> interested in this, as soon as we have fixed the "active" console
+> output.
 
-perf tools: Setup default dwarf post unwinder
+Kay,
 
-Factor NO_LIBDW_DWARF_UNWIND makefile variable and code that selects
-default DWARf post unwinder based on detected features (libdw and
-libunwind support)
+With all due respect, that "fix" is a ridiculous hack, being done
+for self-serving expedience. It already caused one user-space breakage
+which you did not expect.
 
-If both are detected the libunwind is selected as default.  Simple
-'make' will try to add:
+This sysfs interface is superior in every way.
 
-  - libunwind unwinder if present
-  - libdw unwinder if present
-  - disable dwarf unwind if non of libunwind and libdw
-    libraries are present
+Regards,
+Peter Hurley
 
-If one of the DWARF unwind libraries is detected, message is displayed
-which one (libunwind/libdw) is compiled in.
-
-Examples:
-  - compile in libdw unwinder if present:
-
-    $ make NO_LIBUNWIND=1
-
-  - compile in libdw (with libdw installation directory) unwinder if present:
-
-    $ make LIBDW_DIR=/opt/elfutils/ NO_LIBUNWIND=1
-      BUILD:   Doing 'make -j4' parallel build
-
-    Auto-detecting system features:
-    ...                         dwarf: [ on  ]
-    ...                         glibc: [ on  ]
-    ...                          gtk2: [ on  ]
-    ...                      libaudit: [ on  ]
-    ...                        libbfd: [ on  ]
-    ...                        libelf: [ on  ]
-    ...                       libnuma: [ on  ]
-    ...                       libperl: [ on  ]
-    ...                     libpython: [ on  ]
-    ...                      libslang: [ on  ]
-    ...                     libunwind: [ on  ]
-    ...            libdw-dwarf-unwind: [ on  ]
-    ...     DWARF post unwind library: libdw
-
-  - disable post dwarf unwind completely:
-
-    $ make NO_LIBUNWIND=1 NO_LIBDW_DWARF_UNWIND=1
-      BUILD:   Doing 'make -j4' parallel build
-
-    Auto-detecting system features:
-    ...                         dwarf: [ on  ]
-    ...                         glibc: [ on  ]
-    ...                          gtk2: [ on  ]
-    ...                      libaudit: [ on  ]
-    ...                        libbfd: [ on  ]
-    ...                        libelf: [ on  ]
-    ...                       libnuma: [ on  ]
-    ...                       libperl: [ on  ]
-    ...                     libpython: [ on  ]
-    ...                      libslang: [ on  ]
-    ...                     libunwind: [ on  ]
-    ...            libdw-dwarf-unwind: [ on  ]
-    ...     DWARF post unwind library: libunwind
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1392825179-5228-6-git-send-email-jolsa@redhat.com
-[ Add suggestion about setting LIBDW_DIR when not finding libdw ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile.perf     |  5 +--
- tools/perf/arch/x86/Makefile |  6 ++--
- tools/perf/config/Makefile   | 78 ++++++++++++++++++++++++++++++++++----------
- 3 files changed, 66 insertions(+), 23 deletions(-)
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 2dff0b8..1f7ec48 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -61,9 +61,6 @@ include config/utilities.mak
- # Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
- # for dwarf backtrace post unwind.
- 
--# temporarily disabled
--NO_LIBDW_DWARF_UNWIND := 1
--
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
- srctree := $(patsubst %/,%,$(dir $(srctree)))
-@@ -412,7 +409,7 @@ endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
- LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
--ifndef NO_LIBUNWIND
-+ifndef NO_DWARF_UNWIND
- ifeq ($(ARCH),x86)
- LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
- endif
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 37c4652..1641542 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -4,12 +4,14 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
- ifndef NO_LIBUNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
- endif
- ifndef NO_LIBDW_DWARF_UNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libdw.o
- endif
-+ifndef NO_DWARF_UNWIND
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
-+endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
- LIB_H += arch/$(ARCH)/util/tsc.h
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index c040d86..f7c81d3 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -159,7 +159,8 @@ CORE_FEATURE_TESTS =			\
- 	libunwind			\
- 	on-exit				\
- 	stackprotector-all		\
--	timerfd
-+	timerfd				\
-+	libdw-dwarf-unwind
- 
- LIB_FEATURE_TESTS =			\
- 	dwarf				\
-@@ -172,7 +173,8 @@ LIB_FEATURE_TESTS =			\
- 	libperl				\
- 	libpython			\
- 	libslang			\
--	libunwind
-+	libunwind			\
-+	libdw-dwarf-unwind
- 
- VF_FEATURE_TESTS =			\
- 	backtrace			\
-@@ -280,6 +282,12 @@ else
-       msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
-     endif
-   else
-+    ifndef NO_LIBDW_DWARF_UNWIND
-+      ifneq ($(feature-libdw-dwarf-unwind),1)
-+        NO_LIBDW_DWARF_UNWIND := 1
-+        msg := $(warning No libdw DWARF unwind found, Please install elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR);
-+      endif
-+    endif
-     ifneq ($(feature-dwarf), 1)
-       msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
-       NO_DWARF := 1
-@@ -315,25 +323,51 @@ endif # NO_LIBELF
- 
- ifndef NO_LIBUNWIND
-   ifneq ($(feature-libunwind), 1)
--    msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
-+    msg := $(warning No libunwind found. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
-     NO_LIBUNWIND := 1
-+  endif
-+endif
-+
-+dwarf-post-unwind := 1
-+dwarf-post-unwind-text := BUG
-+
-+# setup DWARF post unwinder
-+ifdef NO_LIBUNWIND
-+  ifdef NO_LIBDW_DWARF_UNWIND
-+    msg := $(warning Disabling post unwind, no support found.);
-+    dwarf-post-unwind := 0
-   else
--    ifeq ($(ARCH),arm)
--      $(call feature_check,libunwind-debug-frame)
--      ifneq ($(feature-libunwind-debug-frame), 1)
--        msg := $(warning No debug_frame support found in libunwind);
--        CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
--      endif
--    else
--      # non-ARM has no dwarf_find_debug_frame() function:
-+    dwarf-post-unwind-text := libdw
-+  endif
-+else
-+  dwarf-post-unwind-text := libunwind
-+  # Enable libunwind support by default.
-+  ifndef NO_LIBDW_DWARF_UNWIND
-+    NO_LIBDW_DWARF_UNWIND := 1
-+  endif
-+endif
-+
-+ifeq ($(dwarf-post-unwind),1)
-+  CFLAGS += -DHAVE_DWARF_UNWIND_SUPPORT
-+else
-+  NO_DWARF_UNWIND := 1
-+endif
-+
-+ifndef NO_LIBUNWIND
-+  ifeq ($(ARCH),arm)
-+    $(call feature_check,libunwind-debug-frame)
-+    ifneq ($(feature-libunwind-debug-frame), 1)
-+      msg := $(warning No debug_frame support found in libunwind);
-       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-     endif
--
--    CFLAGS += -DHAVE_DWARF_UNWIND_SUPPORT -DHAVE_LIBUNWIND_SUPPORT
--    EXTLIBS += $(LIBUNWIND_LIBS)
--    CFLAGS += $(LIBUNWIND_CFLAGS)
--    LDFLAGS += $(LIBUNWIND_LDFLAGS)
--  endif # ifneq ($(feature-libunwind), 1)
-+  else
-+    # non-ARM has no dwarf_find_debug_frame() function:
-+    CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-+  endif
-+  CFLAGS  += -DHAVE_LIBUNWIND_SUPPORT
-+  EXTLIBS += $(LIBUNWIND_LIBS)
-+  CFLAGS  += $(LIBUNWIND_CFLAGS)
-+  LDFLAGS += $(LIBUNWIND_LDFLAGS)
- endif
- 
- ifndef NO_LIBAUDIT
-@@ -620,6 +654,10 @@ endef
- PERF_FEATURES := $(foreach feat,$(LIB_FEATURE_TESTS),feature-$(feat)($(feature-$(feat))))
- PERF_FEATURES_FILE := $(shell touch $(OUTPUT)PERF-FEATURES; cat $(OUTPUT)PERF-FEATURES)
- 
-+ifeq ($(dwarf-post-unwind),1)
-+  PERF_FEATURES += dwarf-post-unwind($(dwarf-post-unwind-text))
-+endif
-+
- # The $(display_lib) controls the default detection message
- # output. It's set if:
- # - detected features differes from stored features from
-@@ -650,6 +688,10 @@ ifeq ($(display_lib),1)
-   $(info )
-   $(info Auto-detecting system features:)
-   $(foreach feat,$(LIB_FEATURE_TESTS),$(call feature_print_status,$(feat),))
-+
-+  ifeq ($(dwarf-post-unwind),1)
-+    $(call feature_print_text,"DWARF post unwind library", $(dwarf-post-unwind-text))
-+  endif
- endif
- 
- ifeq ($(display_vf),1)
-@@ -659,6 +701,8 @@ ifeq ($(display_vf),1)
-   $(call feature_print_var,bindir)
-   $(call feature_print_var,libdir)
-   $(call feature_print_var,sysconfdir)
-+  $(call feature_print_var,LIBUNWIND_DIR)
-+  $(call feature_print_var,LIBDW_DIR)
- endif
- 
- ifeq ($(display_lib),1)
