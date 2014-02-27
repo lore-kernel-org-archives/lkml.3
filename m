@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaB0MVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:21:03 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:37233 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847AbaB0MU7 (ORCPT
+	id S1751974AbaB0MYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:24:23 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64398 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaB0MYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:20:59 -0500
+	Thu, 27 Feb 2014 07:24:22 -0500
+Date: Thu, 27 Feb 2014 17:52:05 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sahara <keun-o.park@windriver.com>, josh@joshtriplett.org
+Subject: [PATCH 37/46] kernel: Include appropriate header file in tracepoint.c
+Message-ID: <146d7ec7dd9959f01020fb5543699966b50484ef.1393493277.git.rashika.kheria@gmail.com>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140227110841.GB9987@twins.programming.kicks-ass.net>
-References: <20140225173946.GH24636@pd.tnic>
-	<CABPqkBTk+KA2kd7Qge2SkNXebDoh9Ntc2L_E3p2k42sbMxoYXw@mail.gmail.com>
-	<20140225221027.GB21559@pd.tnic>
-	<CABPqkBSH-cHDZ16y0WMyJ2e-kmJ6G_8DkJXPDa7pc4Hp63xG4g@mail.gmail.com>
-	<20140226092903.GA22639@pd.tnic>
-	<CABPqkBTxQpihn574NArDri0q8ZAOZxXSCSTBfoYfnSxjUH6q6g@mail.gmail.com>
-	<20140226095956.GB22639@pd.tnic>
-	<CABPqkBS04H6GOT4prZ3v=YZMdj=3KHkW77ON67p8f_Wor17kpw@mail.gmail.com>
-	<20140227103031.GA9987@twins.programming.kicks-ass.net>
-	<CABPqkBSKH0SGHiWh77ef5eDF7f+4sRmjOppDZzdHSvGs=QQOAg@mail.gmail.com>
-	<20140227110841.GB9987@twins.programming.kicks-ass.net>
-Date: Thu, 27 Feb 2014 13:20:58 +0100
-Message-ID: <CABPqkBTxm-yBRaNNGOk+zxdfTDY2QMfmutu6JvdpjnmJ_0yE9Q@mail.gmail.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, lkml <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        x86 <x86@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 12:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Feb 27, 2014 at 11:32:58AM +0100, Stephane Eranian wrote:
->> On Thu, Feb 27, 2014 at 11:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, Feb 27, 2014 at 11:12:32AM +0100, Stephane Eranian wrote:
->> >> As a asides, my SNB and HSW desktops with 3.14-rc4 are totally unstable.
->> >> They  hang if I type make in my kernel tree. Whereas 3.14-rc3 is stable. I am
->> >> not so sure this is all related to the uncore IMC support, though.
->> >
->> > Unstable with 3.14-rc4-tip you mean? Yeah, there's a rather crucial
->> > patch missing. I'll try and get Thomas to merge it if Ingo doesn't show
->> > up soon.
->>
->> Yes, I mean from tip.git.
->
-> lkml.kernel.org/r/20140224121218.GR15586@twins.programming.kicks-ass.net
->
-> Should cure things; unless there's more borkage.
+Include appropriate header file include/trace/events/syscalls.h in
+kernel/tracepoint.c because it has prototype definition of functions
+defined in kernel/tracepoint.c.
 
-Works again now with your patch.
-Thanks.
+This eliminates the following warning in kernel/tracepoint.c:
+kernel/tracepoint.c:738:6: warning: no previous prototype for ‘syscall_regfunc’ [-Wmissing-prototypes]
+kernel/tracepoint.c:755:6: warning: no previous prototype for ‘syscall_unregfunc’ [-Wmissing-prototypes]
+
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/tracepoint.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index 0e26255..124d733 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/static_key.h>
++#include <trace/events/syscalls.h>
+ 
+ extern struct tracepoint * const __start___tracepoints_ptrs[];
+ extern struct tracepoint * const __stop___tracepoints_ptrs[];
+-- 
+1.7.9.5
+
