@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaB0V21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:28:27 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:60564 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaB0V2Y (ORCPT
+	id S1751912AbaB0V2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:28:20 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:39864 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaB0V2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:28:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Thu, 27 Feb 2014 13:28:22 -0800
-X-Google-Sender-Auth: Xr3wdp5fubZA5ROVVYJcGW7IIfs
-Message-ID: <CA+55aFwOe_m3cfQDGxmcBavhyQTqQQNGvACR4YPLaazM_0oyUw@mail.gmail.com>
-Subject: Re: [PATCHv3 0/2] mm: map few pages around fault address if they are
- in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 27 Feb 2014 16:28:17 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] ARM: dove: move Dove DT to MVEBU
+Date: Thu, 27 Feb 2014 22:28:01 +0100
+Message-Id: <1393536486-3827-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:53 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Here's new version of faultaround patchset. It took a while to tune it and
-> collect performance data.
+Thanks to DT conversion effort, Marvell Dove with DT support is now
+ready to leave mach-dove and hop into mach-mvebu. As discussed with
+MVEBU maintainers, we first add dove.c now and keep on migrating
+it with Armada 3xx SoCs the next cycle.
 
-Andrew, mind taking this into -mm with my acks? It's based on top of
-Kirill's cleanup patches that I think are also in your tree.
+Patch 1 adds a DT node for the system controller found on Marvell
+MVEBU SoCs.
 
-Kirill - no complaints from me. I do have two minor issues that you
-might satisfy, but I think the patch is fine as-is.
+Patch 2 copies an approach taken by Andrew Lunn for Kirkwood-to-MVEBU
+patches, that add MACH_DOVE for Dove in mach-mvebu to distinguish it
+from ARCH_DOVE in mach-dove, where drivers still support both non-DT
+and DT.
 
-The issues/questions are:
+Patch 3 then moves mach-dove/board-dt.c to mach-mvebu/dove.c with
+minor cleanups and converts drivers/phy/Kconfig to MACH_DOVE for
+a DT-only driver.
 
- (a) could you test this on a couple of different architectures? Even
-if you just have access to intel machines, testing it across a couple
-of generations of microarchitectures would be good. The reason I say
-that is that from my profiles, it *looks* like the page fault costs
-are relatively higher on Ivybridge/Haswell than on some earlier
-uarchs.
+Patch 4 finally adds MACH_DOVE and some of its drivers to multi_v7
+defconfig.
 
-   Now, I may well be wrong about the uarch issue, and maybe I just
-didn't notice it as much before. I've stared at a lot of profiles over
-the years, though, and the page fault cost seems to stand out much
-more than it used to. And don't get me wrong - it might not be because
-Ivy/Haswell is any worse, it might just be that exception performance
-hasn't improved together with some other improvements.
+The patches are based on v3.14-rc4, recently posted mvebu/pinctrl-cleanup
+and mvebu/pinctrl-dove branches: v3.14-rc4 is required for a irqchip
+driver fix when SPARSE_IRQ is set, the pinctrl branches remove hard-coded
+addresses from Dove's pinctrl driver.
 
- (b) I suspect we should try to strongly discourage filesystems from
-actually using map_pages unless they use the standard
-filemap_map_pages function as-is. Even with the fairly clean
-interface, and forcing people to use "do_set_pte()", I think the docs
-might want to try to more explicitly discourage people from using this
-to do their own hacks..
+An unstable branch with above dependencies met, is available at
 
-Hmm? Either way, even without those questions answered, I'm happy with
-how your patches look.
+https://github.com/shesselba/linux-dove.git unstable/dove-mvebu-for-3.15_v1
 
-                    Linus
+Sebastian Hesselbarth (4):
+  ARM: dove: add system controller node
+  ARM: dove: prepare new Dove DT Kconfig variable
+  ARM: mvebu: move DT Dove to MVEBU
+  ARM: add Marvell Dove and some drivers to multi_v7 defconfig
+
+ arch/arm/boot/dts/Makefile                           | 12 ++++++------
+ arch/arm/boot/dts/dove.dtsi                          |  5 +++++
+ arch/arm/configs/multi_v7_defconfig                  |  4 ++++
+ arch/arm/mach-dove/Kconfig                           | 12 ------------
+ arch/arm/mach-dove/Makefile                          |  1 -
+ arch/arm/mach-mvebu/Kconfig                          | 12 ++++++++++++
+ arch/arm/mach-mvebu/Makefile                         |  1 +
+ arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} | 20 ++++++++------------
+ drivers/mmc/host/Kconfig                             |  2 +-
+ drivers/phy/Kconfig                                  |  2 +-
+ drivers/thermal/Kconfig                              |  2 +-
+ drivers/watchdog/Kconfig                             |  2 +-
+ sound/soc/kirkwood/Kconfig                           |  2 +-
+ 13 files changed, 41 insertions(+), 36 deletions(-)
+ rename arch/arm/{mach-dove/board-dt.c => mach-mvebu/dove.c} (61%)
+
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+-- 
+1.8.5.3
+
