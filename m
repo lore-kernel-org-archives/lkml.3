@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaB0Bbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Feb 2014 20:31:38 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36904 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbaB0Bbe (ORCPT
+	id S1754502AbaB0BcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Feb 2014 20:32:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:32458 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaB0BcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Feb 2014 20:31:34 -0500
-Date: Wed, 26 Feb 2014 17:30:35 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Chinner <david@fromorbit.com>
-cc: Hugh Dickins <hughd@google.com>, Namjae Jeon <linkinjeon@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Theodore Ts'o" <tytso@mit.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, viro@zeniv.linux.org.uk,
-        bpm@sgi.com, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, lczerner@redhat.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH v5 0/10] fs: Introduce new flag(FALLOC_FL_COLLAPSE_RANGE)
- for fallocate
-In-Reply-To: <20140227012431.GW13647@dastard>
-Message-ID: <alpine.LSU.2.11.1402261729020.29071@eggly.anvils>
-References: <1392741436-19995-1-git-send-email-linkinjeon@gmail.com> <20140224005710.GH4317@dastard> <20140225141601.358f6e3df2660d4af44da876@canb.auug.org.au> <20140225041346.GA29907@dastard> <alpine.LSU.2.11.1402251217030.2380@eggly.anvils>
- <20140226011347.GL13647@dastard> <alpine.LSU.2.11.1402251856060.1114@eggly.anvils> <20140226064224.GU13647@dastard> <alpine.LSU.2.11.1402261454270.2808@eggly.anvils> <20140227012431.GW13647@dastard>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 26 Feb 2014 20:32:13 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-11-530e959b9007
+Message-id: <530E996A.9080208@samsung.com>
+Date: Thu, 27 Feb 2014 10:48:26 +0900
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
+ Thunderbird/17.0.4
+MIME-version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH 3/3] ARM: S3C24XX: select COMMON_CLK_SAMSUNG for S3C24XX
+References: <1393392247-6247-1-git-send-email-pankaj.dubey@samsung.com>
+ <1393392247-6247-4-git-send-email-pankaj.dubey@samsung.com>
+ <20140227001620.12081.28601@quantum>
+In-reply-to: <20140227001620.12081.28601@quantum>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zI93ZU/mCDfa8lrOYtO4Ak0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCxuX+a1eDrhIpsDu0dLcw+bx99VL5g97lzbw+axeUm9R9+WVYwe
+	nzfJBbBFcdmkpOZklqUW6dslcGV8v9rDWDCVv+L51n6WBsbL3F2MnBwSAiYSMz/MYISwxSQu
+	3FvP1sXIxSEksIxRYvXm+cxdjBxgRRt310LEFzFKbJtwhR3Cec0ocW7NWnaQbl4BLYkNXY0s
+	IDaLgKrErB0bmUBsNgFdiSfv5zKD2KICYRKbpvexQtQLSvyYfA+sXgSod9uBVrDNzAI3GSWO
+	H1zOBLJZWMBHoq/XAqRGSGANo8T7F6wgYU4BQ4nnl9JAwswCZhKPWtYxQ9jyEpvXvGUGGSMh
+	cI1dYu2l24wQ9whIfJt8iAXiGVmJTQeYIR6WlDi44gbLBEaxWUgumoVk7CwkYxcwMq9iFE0t
+	SC4oTkovMtUrTswtLs1L10vOz93ECIm9iTsY7x+wPsSYDLRyIrOUaHI+MHbzSuINjc2MLExN
+	TI2NzC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHx7JQXGRr1gVxv3LIi
+	Hy00FNyxk6lX7s/KRW2Cm7Knr369K9riyYzZN8Lle+7PUfxll3kzb9nXn1aNLxIkricybFmQ
+	cTdDW57321bm1g3OqyQW+lyOmckdqOvnbKUqwiXI13Jkjk7Q7FqJvSvn+Bj0bX0ou/3VynXL
+	zj1fJpwxeaNEVvXiE9zflViKMxINtZiLihMBt3Ff69MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd3ZU/mCDS7dl7KYtO4Ak0Xvgqts
+	FpseX2O1uLxrDpvFjPP7mCxuX+a1eDrhIpsDu0dLcw+bx99VL5g97lzbw+axeUm9R9+WVYwe
+	nzfJBbBFNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl
+	5gCdoqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM+H61h7FgKn/F8639
+	LA2Ml7m7GDk4JARMJDburu1i5AQyxSQu3FvP1sXIxSEksIhRYtuEK+wQzmtGiXNr1rKDVPEK
+	aEls6GpkAbFZBFQlZu3YyARiswnoSjx5P5cZxBYVCJPYNL2PFaJeUOLH5Htg9SJAvdsOtIJt
+	YBa4yShx/OByJpArhAV8JPp6LUBqhATWMEq8f8EKEuYUMJR4fikNJMwsYCbxqGUdM4QtL7F5
+	zVvmCYwCs5BsmIWkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgiP7mdQOxpUN
+	FocYBTgYlXh4Fdj4goVYE8uKK3MPMUpwMCuJ8B5yAQrxpiRWVqUW5ccXleakFh9iTAYGwERm
+	KdHkfGDSySuJNzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGxorc
+	wstrMwIT2HgPVbmrxHwsD37/39Phd3a4ZJIH3/cSf5UaJ4fHy9YlCe728rnLW3qnS+sr6+uy
+	z8cvHuMOX2Gw2DfWNKXpx5b8mwpZXqWSDo9u1vGVmEuqPohY/GGRXNCkq1uddayVz6b+faXF
+	++Vu82auNaWKDRr5zk8Pr9r72lxKuEpJiaU4I9FQi7moOBEA3jNhBjADAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Feb 2014, Dave Chinner wrote:
-> On Wed, Feb 26, 2014 at 03:08:58PM -0800, Hugh Dickins wrote:
-> > 
-> > Thanks for explaining more, I was just about to acknowledge what a good
-> > example that is.  Indeed, it seems not unreasonable to be editing the
-> > earlier part of a file while the later part of it is still streaming in.
-> > 
-> > But damn, it now occurs to me that there's still a problem at the
-> > streaming end: its file write offset won't be updated to reflect
-> > the collapse, so there would be a sparse hole at that end.  And
-> > collapse returns -EPERM if IS_APPEND(inode).
-> 
-> Well, we figure that most applications won't be using append only
-> inode flags for files that they know they want to edit at random
-> offsets later on. ;)
-> 
-> However, I can see how DVR apps would use open(O_APPEND) to obtain
-> the fd they write to because that sets the write position to the EOF
-> on every write() call (i.e. in generic_write_checks()). And collapse
-> range should behave sanely with this sort of usage.
-> 
-> e.g. XFS calls generic_write_checks() after it has taken the IO lock
-> to set the current write position to EOF. Hence it will be correctly
-> serialised against collapse range calls and so O_APPEND writes will
-> not leave sparse holes if collapse range calls are interleaved with
-> the write stream....
+On 02/27/2014 09:16 AM, Mike Turquette wrote:
+> Quoting Pankaj Dubey (2014-02-25 21:24:07)
+>> CC: Ben Dooks <ben-linux@fluff.org>
+>> CC: Kukjin Kim <kgene.kim@samsung.com>
+>> CC: Russell King <linux@arm.linux.org.uk>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   arch/arm/mach-s3c24xx/Kconfig |    3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
+>> index 80373da..5cf82a1 100644
+>> --- a/arch/arm/mach-s3c24xx/Kconfig
+>> +++ b/arch/arm/mach-s3c24xx/Kconfig
+>> @@ -40,6 +40,7 @@ config CPU_S3C2410
+>>   config CPU_S3C2412
+>>          bool "SAMSUNG S3C2412"
+>>          select COMMON_CLK
+>> +       select COMMON_CLK_SAMSUNG
+> I guess this depends on Heiko's "[PATCH 00/12] ARM: S3C24XX: convert
+> s3c2410, s3c2440 s3c2442 to common clock framework" series?
+>
+> Regards,
+> Mike
 
-Right, I was getting confused between O_APPEND and APPEND_Only!
-Thanks, I'm back to being convinced by your example.
+Yes, this series is based on latest kgene/for-next branch where Heiko's 
+series is merged.
 
-Hugh
+>>          select CPU_ARM926T
+>>          select CPU_LLSERIAL_S3C2440
+>>          select S3C2412_COMMON_CLK
+>> @@ -51,6 +52,7 @@ config CPU_S3C2412
+>>   config CPU_S3C2416
+>>          bool "SAMSUNG S3C2416/S3C2450"
+>>          select COMMON_CLK
+>> +       select COMMON_CLK_SAMSUNG
+>>          select CPU_ARM926T
+>>          select CPU_LLSERIAL_S3C2440
+>>          select S3C2416_PM if PM
+>> @@ -89,6 +91,7 @@ config CPU_S3C244X
+>>   config CPU_S3C2443
+>>          bool "SAMSUNG S3C2443"
+>>          select COMMON_CLK
+>> +       select COMMON_CLK_SAMSUNG
+>>          select CPU_ARM920T
+>>          select CPU_LLSERIAL_S3C2440
+>>          select S3C2443_COMMON_CLK
+>> -- 
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+-- 
+Best Regards,
+Pankaj Dubey
+
