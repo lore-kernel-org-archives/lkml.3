@@ -1,58 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaB0Rav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 12:30:51 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:16891 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaB0Rat (ORCPT
+	id S1752966AbaB0Rf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 12:35:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:5223 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751434AbaB0Rf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 12:30:49 -0500
-X-IronPort-AV: E=Sophos;i="4.97,556,1389772800"; 
-   d="scan'208";a="16710316"
-Message-ID: <530F762E.6030301@broadcom.com>
-Date: Thu, 27 Feb 2014 18:30:22 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 27 Feb 2014 12:35:56 -0500
+Date: Thu, 27 Feb 2014 12:35:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        stable@vger.kernel.org, Petr Mladek <pmladek@suse.cz>
+Subject: Re: [RFA][PATCH 2/5] ftrace/x86: One more missing sync after fixup
+ of function modification failure
+Message-ID: <20140227123553.03ce3c4b@gandalf.local.home>
+In-Reply-To: <20140227171935.GD19580@localhost.localdomain>
+References: <20140227154616.703252665@goodmis.org>
+	<20140227154923.103932155@goodmis.org>
+	<20140227163731.GC19580@localhost.localdomain>
+	<20140227120014.7ba8b484@gandalf.local.home>
+	<20140227171935.GD19580@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>, <netdev@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tom Gundersen <teg@jklm.no>,
-        Johannes berg <johannes@sipsolutions.net>,
-        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>
-Subject: Re: [PATCH 4/4] brcmfmac: set NET_NAME_USER for P2P ifs
-References: <1393512434-1325-1-git-send-email-dh.herrmann@gmail.com> <1393512434-1325-5-git-send-email-dh.herrmann@gmail.com>
-In-Reply-To: <1393512434-1325-5-git-send-email-dh.herrmann@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 03:47 PM, David Herrmann wrote:
-> Netdevs created via nl80211 (currently only P2P ifs) have names provided
-> by user-space. Therefore, set the naming-policy to NET_NAME_USER so it is
-> correctly shown in sysfs.
-> 
-- Cc: Arend van Spriel <arend@broadcom.com>
-+ Acked-by: Arend van Spriel <arend@broadcom.com>
+On Thu, 27 Feb 2014 18:19:37 +0100
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> ---
->  drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
->  1 file changed, 1 insertion(+)
+> On Thu, Feb 27, 2014 at 12:00:14PM -0500, Steven Rostedt wrote:
+> > On Thu, 27 Feb 2014 17:37:32 +0100
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > On Thu, Feb 27, 2014 at 10:46:18AM -0500, Steven Rostedt wrote:
+> > > > [Request for Ack]
+> > > > 
+> > > > From: Petr Mladek <pmladek@suse.cz>
+> > > > 
+> > > > If a failure occurs while modifying ftrace function, it bails out and will
+> > > > remove the tracepoints to be back to what the code originally was.
+> > > > 
+> > > > There is missing the final sync run across the CPUs after the fix up is done
+> > > > and before the ftrace int3 handler flag is reset.
+> > > 
+> > > So IIUC the risk is that other CPUs may spuriously ignore non-ftrace traps if we don't sync the
+> > > other cores after reverting the int3 before decrementing the modifying_ftrace_code counter?
+> > 
+> > Actually, the bug is that they will not ignore the ftrace traps after
+> > we decrement modifying_ftrace_code counter. Here's the race:
+> > 
+> > 	CPU0				CPU1
+> > 	----				----
+> >   remove_breakpoint();
+> >   modifying_ftrace_code = 0;
+> > 
+> > 				[still sees breakpoint]
+> > 				<takes trap>
+> > 				[sees modifying_ftrace_code as zero]
+> > 				[no breakpoint handler]
+> > 				[goto failed case]
+> > 				[trap exception - kernel breakpoint, no
+> > 				 handler]
+> > 				BUG()
+> > 
+> > 
+> > Even if we had a smp_wmb() after removing the breakpoint and clearing
+> > the modifying_ftrace_code, we still need the smp_rmb() on the other
+> > CPUS. The run_sync() does a IPI on all CPUs doing the smp_rmb().
 > 
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-> index fc4f98b..6af4d26 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/p2p.c
-> @@ -2310,6 +2310,7 @@ struct wireless_dev *brcmf_p2p_add_vif(struct wiphy *wiphy, const char *name,
->  		goto fail;
->  	}
->  
-> +	ifp->ndev->name_assign_type = NET_NAME_USER;
->  	strncpy(ifp->ndev->name, name, sizeof(ifp->ndev->name) - 1);
->  	err = brcmf_net_attach(ifp, true);
->  	if (err) {
-> 
+> Ah ok. My understanding was indeed that it doesn't ignore the ftrace trap,
+> but I thought the consequence was that we return immediately from the trap
+> handler.
 
+I'll add my above cpu race diagram (is that what we call it?). That
+should make this change more understandable.
+
+
+> Ok but what I meant is to do this instead:
+> 
+>  fail_update:
+>     probe_kernel_write((void *)ip, &old_code[0], 1);
+> +   run_sync()
+>     goto out;
+> 
+> Because with the current patch we also call run_sync() on add_break() failure.
+
+Ah ok (my turn to understand). Yeah, if the add_break() fails, then we
+don't need to do the run_sync().
+
+But this is just for now, to prevent the add_update_code() error from
+crashing. I have more patches that clean this up further. But they are
+for 3.15.
+
+-- Steve
