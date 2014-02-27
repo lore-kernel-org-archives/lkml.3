@@ -1,238 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaB0FyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 00:54:10 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15093 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaB0FyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 00:54:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 26 Feb 2014 21:50:21 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
-CC: <linux-pwm@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/2] pwm-backlight: switch to gpiod interface
-Date: Thu, 27 Feb 2014 14:53:34 +0900
-Message-ID: <1393480414-19473-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
-References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	id S1753437AbaB0GDI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 01:03:08 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52594 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaB0GDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 01:03:06 -0500
+Message-ID: <530ED4EF.1060000@ti.com>
+Date: Thu, 27 Feb 2014 11:32:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Loc Ho <lho@apm.com>
+CC: Tejun Heo <tj@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Don Dutile <ddutile@redhat.com>, Jon Masters <jcm@redhat.com>,
+        "patches@apm.com" <patches@apm.com>, Tuan Phan <tphan@apm.com>,
+        Suman Tripathi <stripathi@apm.com>
+Subject: Re: [PATCH RESEND v10 3/4] PHY: add APM X-Gene SoC 15Gbps Multi-purpose
+ PHY driver
+References: <1393308882-3964-1-git-send-email-lho@apm.com> <1393308882-3964-2-git-send-email-lho@apm.com> <1393308882-3964-3-git-send-email-lho@apm.com> <1393308882-3964-4-git-send-email-lho@apm.com> <530DB713.6000701@ti.com> <CAPw-ZT=eLbxt3wPL7hrZFtxTP9vGxbRyBY2Yoh77pq9ypphCaw@mail.gmail.com>
+In-Reply-To: <CAPw-ZT=eLbxt3wPL7hrZFtxTP9vGxbRyBY2Yoh77pq9ypphCaw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to the new gpiod interface, which allows to handle GPIO
-properties such as active low transparently and removes a whole bunch of
-code.
+On Thursday 27 February 2014 02:15 AM, Loc Ho wrote:
+> Hi,
+>
+>>>
+>>> +config PHY_XGENE
+>>> +       tristate "APM X-Gene 15Gbps PHY support"
+>>> +       depends on ARM64 || COMPILE_TEST
+>>> +       select GENERIC_PHY
+>>
+>>
+>> depends on HAS_IOMEM and CONFIG_OF..
+>
+> I will make it depends as "HAS_IOMEM && OF && (ARM64 || COMPILE_TEST)
+>
+>>>
+>>> +/* PLL Clock Macro Unit (CMU) CSR accessing from SDS indirectly */
+>>> +#define CMU_REG0                       0x00000
+>>> +#define  CMU_REG0_PLL_REF_SEL_MASK     0x00002000
+>>> +#define  CMU_REG0_PLL_REF_SEL_SET(dst, src)    \
+>>> +               (((dst) & ~0x00002000) | (((u32)(src) << 0xd) & 0x00002000))
+>>
+>>
+>> using decimals for shift value would be better. No strong feeling though.
+>
+> I will change to integer value.
+>
+>>> +/*
+>>> + * For chip earlier than A3 version, enable this flag.
+>>> + * To enable, pass boot argument phy_xgene.preA3Chip=1
+>>> + */
+>>> +static int preA3Chip;
+>>> +MODULE_PARM_DESC(preA3Chip, "Enable pre-A3 chip support (1=enable 0=disable)");
+>>> +module_param_named(preA3Chip, preA3Chip, int, 0444);
+>>
+>>
+>> Do we need to have module param for this? I mean we can differentiate between
+>> different chip versions in dt data only.
+>
+> This is only required for the short term. Once all the pre-A3 system
+> are replaced, there isn't an need for this. For those who still has an
+> pre-A3 silicon system, this would provide an short term solution for
+> them. DT isn't quite correct here. This is an global thing. I guess I
+> can OR all node. If it is still better to put in the DT, let me know
+> and I will move it.
+>
+>>> +
+>>> +static void sds_wr(void __iomem *csr_base, u32 indirect_cmd_reg,
+>>> +                  u32 indirect_data_reg, u32 addr, u32 data)
+>>> +{
+>>> +       u32 val;
+>>> +       u32 cmd;
+>>> +
+>>> +       cmd = CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK;
+>>> +       cmd = CFG_IND_ADDR_SET(cmd, addr);
+>>
+>>
+>> This looks hacky. If 'CFG_IND_WR_CMD_MASK | CFG_IND_CMD_DONE_MASK' should be set then it should be part of the second argument. From the macro 'CFG_IND_ADDR_SET' the first argument should be more like the current value present in the register right? I feel the macro (CFG_IND_ADDR_SET) is not used in the way it is intended to.
+>
+> The macro XXX_SET is intended to update an field within the register.
+> The update field is returned. The first assignment lines are setting
+> another field. Those two lines can be written as:
+>
+> cmd = 0;
+> cmd |= CFG_IND_WR_CMD_MASK;            ==> Set the CMD bit
+> cmd |= CFG_IND_CMD_DONE_MASK;        ==> Set the DONE bit
+> cmd = CFG_IND_ADDR_SET(cmd, addr);    ===> Set the field ADDR
 
-There are still a couple of users of this driver that rely on passing
-the enable GPIO number through platform data, so a fallback mechanism
-using a GPIO number is still available to avoid breaking them. It will
-be removed once current users have switched to the GPIO lookup tables
-provided by the gpiod interface.
+#define  CFG_IND_ADDR_SET(dst, src) \
+		(((dst) & ~0x003ffff0) | (((u32)(src)<<4) & 0x003ffff0))
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/video/backlight/pwm_bl.c | 72 +++++++++++++++++-----------------------
- include/linux/pwm_backlight.h    |  5 +--
- 2 files changed, 32 insertions(+), 45 deletions(-)
+ From this macro the first argument should be the present value in that 
+register. Here you reset the address bits and write the new address bits.
+IMO the first argument should be the value in 'csr_base + 
+indirect_cmd_reg'. So it resets the address bits in 'csr_base + 
+indirect_cmd_reg' and write down the new address bits.
 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index b75201ff46f6..533057688d93 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -10,8 +10,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/gpio/consumer.h>
- #include <linux/gpio.h>
--#include <linux/of_gpio.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
-@@ -32,8 +32,7 @@ struct pwm_bl_data {
- 	unsigned int		*levels;
- 	bool			enabled;
- 	struct regulator	*power_supply;
--	int			enable_gpio;
--	unsigned long		enable_gpio_flags;
-+	struct gpio_desc	*enable_gpio;
- 	unsigned int		scale;
- 	int			(*notify)(struct device *,
- 					  int brightness);
-@@ -54,12 +53,8 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb, int brightness)
- 	if (err < 0)
- 		dev_err(pb->dev, "failed to enable power supply\n");
- 
--	if (gpio_is_valid(pb->enable_gpio)) {
--		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
--			gpio_set_value(pb->enable_gpio, 0);
--		else
--			gpio_set_value(pb->enable_gpio, 1);
--	}
-+	if (pb->enable_gpio)
-+		gpiod_set_value(pb->enable_gpio, 1);
- 
- 	pwm_enable(pb->pwm);
- 	pb->enabled = true;
-@@ -73,12 +68,8 @@ static void pwm_backlight_power_off(struct pwm_bl_data *pb)
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
- 
--	if (gpio_is_valid(pb->enable_gpio)) {
--		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
--			gpio_set_value(pb->enable_gpio, 1);
--		else
--			gpio_set_value(pb->enable_gpio, 0);
--	}
-+	if (pb->enable_gpio)
-+		gpiod_set_value(pb->enable_gpio, 0);
- 
- 	regulator_disable(pb->power_supply);
- 	pb->enabled = false;
-@@ -148,7 +139,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 				  struct platform_pwm_backlight_data *data)
- {
- 	struct device_node *node = dev->of_node;
--	enum of_gpio_flags flags;
- 	struct property *prop;
- 	int length;
- 	u32 value;
-@@ -189,14 +179,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
- 		data->max_brightness--;
- 	}
- 
--	data->enable_gpio = of_get_named_gpio_flags(node, "enable-gpios", 0,
--						    &flags);
--	if (data->enable_gpio == -EPROBE_DEFER)
--		return -EPROBE_DEFER;
--
--	if (gpio_is_valid(data->enable_gpio) && (flags & OF_GPIO_ACTIVE_LOW))
--		data->enable_gpio_flags |= PWM_BACKLIGHT_GPIO_ACTIVE_LOW;
--
- 	return 0;
- }
- 
-@@ -256,8 +238,6 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	} else
- 		pb->scale = data->max_brightness;
- 
--	pb->enable_gpio = data->enable_gpio;
--	pb->enable_gpio_flags = data->enable_gpio_flags;
- 	pb->notify = data->notify;
- 	pb->notify_after = data->notify_after;
- 	pb->check_fb = data->check_fb;
-@@ -265,26 +245,39 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	pb->dev = &pdev->dev;
- 	pb->enabled = false;
- 
--	if (gpio_is_valid(pb->enable_gpio)) {
--		unsigned long flags;
--
--		if (pb->enable_gpio_flags & PWM_BACKLIGHT_GPIO_ACTIVE_LOW)
--			flags = GPIOF_OUT_INIT_HIGH;
--		else
--			flags = GPIOF_OUT_INIT_LOW;
-+	pb->enable_gpio = devm_gpiod_get(&pdev->dev, "enable");
-+	if (IS_ERR(pb->enable_gpio)) {
-+		ret = PTR_ERR(pb->enable_gpio);
-+		if (ret == -ENOENT) {
-+			pb->enable_gpio = NULL;
-+			ret = 0;
-+		} else {
-+			goto err_alloc;
-+		}
-+	}
- 
--		ret = gpio_request_one(pb->enable_gpio, flags, "enable");
-+	/*
-+	 * Compatibility fallback for drivers still using the integer GPIO
-+	 * platform data. Must go away soon.
-+	 */
-+	if (pb->enable_gpio == NULL && gpio_is_valid(data->enable_gpio)) {
-+		ret = devm_gpio_request_one(&pdev->dev, data->enable_gpio,
-+					    GPIOF_OUT_INIT_HIGH, "enable");
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to request GPIO#%d: %d\n",
--				pb->enable_gpio, ret);
-+				data->enable_gpio, ret);
- 			goto err_alloc;
- 		}
-+		pb->enable_gpio = gpio_to_desc(data->enable_gpio);
- 	}
- 
-+	if (pb->enable_gpio)
-+		gpiod_direction_output(pb->enable_gpio, 1);
-+
- 	pb->power_supply = devm_regulator_get(&pdev->dev, "power");
- 	if (IS_ERR(pb->power_supply)) {
- 		ret = PTR_ERR(pb->power_supply);
--		goto err_gpio;
-+		goto err_alloc;
- 	}
- 
- 	pb->pwm = devm_pwm_get(&pdev->dev, NULL);
-@@ -295,7 +288,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 		if (IS_ERR(pb->pwm)) {
- 			dev_err(&pdev->dev, "unable to request legacy PWM\n");
- 			ret = PTR_ERR(pb->pwm);
--			goto err_gpio;
-+			goto err_alloc;
- 		}
- 	}
- 
-@@ -320,7 +313,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
- 		ret = PTR_ERR(bl);
--		goto err_gpio;
-+		goto err_alloc;
- 	}
- 
- 	if (data->dft_brightness > data->max_brightness) {
-@@ -336,9 +329,6 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, bl);
- 	return 0;
- 
--err_gpio:
--	if (gpio_is_valid(pb->enable_gpio))
--		gpio_free(pb->enable_gpio);
- err_alloc:
- 	if (data->exit)
- 		data->exit(&pdev->dev);
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 2de2e275b2cb..efdd9227a49c 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -6,9 +6,6 @@
- 
- #include <linux/backlight.h>
- 
--/* TODO: convert to gpiod_*() API once it has been merged */
--#define PWM_BACKLIGHT_GPIO_ACTIVE_LOW	(1 << 0)
--
- struct platform_pwm_backlight_data {
- 	int pwm_id;
- 	unsigned int max_brightness;
-@@ -16,8 +13,8 @@ struct platform_pwm_backlight_data {
- 	unsigned int lth_brightness;
- 	unsigned int pwm_period_ns;
- 	unsigned int *levels;
-+	/* TODO remove once all users are switched to gpiod_* API */
- 	int enable_gpio;
--	unsigned long enable_gpio_flags;
- 	int (*init)(struct device *dev);
- 	int (*notify)(struct device *dev, int brightness);
- 	void (*notify_after)(struct device *dev, int brightness);
--- 
-1.9.0
-
+Thanks
+Kishon
