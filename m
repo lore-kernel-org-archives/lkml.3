@@ -1,54 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbaB0HNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 02:13:06 -0500
-Received: from [213.199.154.206] ([213.199.154.206]:11859 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751287AbaB0HNE (ORCPT
+	id S1751047AbaB0HdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 02:33:11 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:45232 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaB0HdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 02:13:04 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <shawn.guo@linaro.org>
-CC: <wsa@the-dreams.de>, <mark.rutland@arm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH 2/3] ARM: dts: vf610: i2c: Add eDMA support
-Date: Thu, 27 Feb 2014 14:06:19 +0800
-Message-ID: <1393481179-22187-1-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Thu, 27 Feb 2014 02:33:10 -0500
+Date: Thu, 27 Feb 2014 15:32:58 +0800
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: linux-mm@kvack.org
+Cc: nasa4836@gmail.com, cl@linux-foundation.org, penberg@kernel.org,
+        mpm@selenic.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm/slab.c: cleanup outdated comments and unify variables
+ naming
+Message-ID: <20140227073258.GA11087@meta-silence.Home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add i2c dts node properties for eDMA support, them depend on the eDMA driver.
+As time goes, the code changes a lot, and this leads to that
+some old-days comments scatter around , which instead of faciliating
+understanding, but make more confusion. So this patch cleans up them.
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+Also, this patch unifies some variables naming.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 ---
- arch/arm/boot/dts/vf610.dtsi | 3 +++
- 1 file changed, 3 insertions(+)
+ mm/slab.c | 66 +++++++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 32 insertions(+), 34 deletions(-)
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 91a7757..9d14a19 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -273,6 +273,9 @@
- 				interrupts =<0 71 IRQ_TYPE_LEVEL_HIGH>;
- 				clocks = <&clks VF610_CLK_I2C0>;
- 				clock-names = "ipg";
-+				dmas = <&edma0 0 50>,
-+					<&edma0 0 51>;
-+				dma-names = "rx","tx";
- 				status = "disabled";
- 			};
+diff --git a/mm/slab.c b/mm/slab.c
+index b264214..5678673 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -277,8 +277,8 @@ static void kmem_cache_node_init(struct kmem_cache_node *parent)
+  * OTOH the cpuarrays can contain lots of objects,
+  * which could lock up otherwise freeable slabs.
+  */
+-#define REAPTIMEOUT_CPUC	(2*HZ)
+-#define REAPTIMEOUT_LIST3	(4*HZ)
++#define REAPTIMEOUT_AC		(2*HZ)
++#define REAPTIMEOUT_NODE	(4*HZ)
  
+ #if STATS
+ #define	STATS_INC_ACTIVE(x)	((x)->num_active++)
+@@ -1067,7 +1067,7 @@ static int init_cache_node_node(int node)
+ 
+ 	list_for_each_entry(cachep, &slab_caches, list) {
+ 		/*
+-		 * Set up the size64 kmemlist for cpu before we can
++		 * Set up the kmem_cache_node for cpu before we can
+ 		 * begin anything. Make sure some other cpu on this
+ 		 * node has not already allocated this
+ 		 */
+@@ -1076,12 +1076,12 @@ static int init_cache_node_node(int node)
+ 			if (!n)
+ 				return -ENOMEM;
+ 			kmem_cache_node_init(n);
+-			n->next_reap = jiffies + REAPTIMEOUT_LIST3 +
+-			    ((unsigned long)cachep) % REAPTIMEOUT_LIST3;
++			n->next_reap = jiffies + REAPTIMEOUT_NODE +
++			    ((unsigned long)cachep) % REAPTIMEOUT_NODE;
+ 
+ 			/*
+-			 * The l3s don't come and go as CPUs come and
+-			 * go.  slab_mutex is sufficient
++			 * The kmem_cache_nodes don't come and go as CPUs
++			 * come and go.  slab_mutex is sufficient
+ 			 * protection here.
+ 			 */
+ 			cachep->node[node] = n;
+@@ -1406,8 +1406,8 @@ static void __init set_up_node(struct kmem_cache *cachep, int index)
+ 	for_each_online_node(node) {
+ 		cachep->node[node] = &init_kmem_cache_node[index + node];
+ 		cachep->node[node]->next_reap = jiffies +
+-		    REAPTIMEOUT_LIST3 +
+-		    ((unsigned long)cachep) % REAPTIMEOUT_LIST3;
++		    REAPTIMEOUT_NODE +
++		    ((unsigned long)cachep) % REAPTIMEOUT_NODE;
+ 	}
+ }
+ 
+@@ -2103,8 +2103,8 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+ 		}
+ 	}
+ 	cachep->node[numa_mem_id()]->next_reap =
+-			jiffies + REAPTIMEOUT_LIST3 +
+-			((unsigned long)cachep) % REAPTIMEOUT_LIST3;
++			jiffies + REAPTIMEOUT_NODE +
++			((unsigned long)cachep) % REAPTIMEOUT_NODE;
+ 
+ 	cpu_cache_get(cachep)->avail = 0;
+ 	cpu_cache_get(cachep)->limit = BOOT_CPUCACHE_ENTRIES;
+@@ -2300,10 +2300,10 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	if (flags & CFLGS_OFF_SLAB) {
+ 		cachep->freelist_cache = kmalloc_slab(freelist_size, 0u);
+ 		/*
+-		 * This is a possibility for one of the malloc_sizes caches.
++		 * This is a possibility for one of the kmalloc_{dma,}_caches.
+ 		 * But since we go off slab only for object size greater than
+-		 * PAGE_SIZE/8, and malloc_sizes gets created in ascending order,
+-		 * this should not happen at all.
++		 * PAGE_SIZE/8, and kmalloc_{dma,}_caches get created
++		 * in ascending order,this should not happen at all.
+ 		 * But leave a BUG_ON for some lucky dude.
+ 		 */
+ 		BUG_ON(ZERO_OR_NULL_PTR(cachep->freelist_cache));
+@@ -2511,14 +2511,17 @@ int __kmem_cache_shutdown(struct kmem_cache *cachep)
+ 
+ /*
+  * Get the memory for a slab management obj.
+- * For a slab cache when the slab descriptor is off-slab, slab descriptors
+- * always come from malloc_sizes caches.  The slab descriptor cannot
+- * come from the same cache which is getting created because,
+- * when we are searching for an appropriate cache for these
+- * descriptors in kmem_cache_create, we search through the malloc_sizes array.
+- * If we are creating a malloc_sizes cache here it would not be visible to
+- * kmem_find_general_cachep till the initialization is complete.
+- * Hence we cannot have freelist_cache same as the original cache.
++ *
++ * For a slab cache when the slab descriptor is off-slab, the
++ * slab descriptor can't come from the same cache which is being created,
++ * Because if it is the case, that means we defer the creation of
++ * the kmalloc_{dma,}_cache of size sizeof(slab descriptor) to this point.
++ * And we eventually call down to __kmem_cache_create(), which
++ * in turn looks up in the kmalloc_{dma,}_caches for the disired-size one.
++ * This is a "chicken-and-egg" problem.
++ *
++ * So the off-slab slab descriptor shall come from the kmalloc_{dma,}_caches,
++ * which are all initialized during kmem_cache_init().
+  */
+ static void *alloc_slabmgmt(struct kmem_cache *cachep,
+ 				   struct page *page, int colour_off,
+@@ -3320,7 +3323,7 @@ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
+ }
+ 
+ /*
+- * Caller needs to acquire correct kmem_list's list_lock
++ * Caller needs to acquire correct kmem_cache_node's list_lock
+  */
+ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+ 		       int node)
+@@ -3574,11 +3577,6 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
+ 	struct kmem_cache *cachep;
+ 	void *ret;
+ 
+-	/* If you want to save a few bytes .text space: replace
+-	 * __ with kmem_.
+-	 * Then kmalloc uses the uninlined functions instead of the inline
+-	 * functions.
+-	 */
+ 	cachep = kmalloc_slab(size, flags);
+ 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
+ 		return cachep;
+@@ -3670,7 +3668,7 @@ EXPORT_SYMBOL(kfree);
+ /*
+  * This initializes kmem_cache_node or resizes various caches for all nodes.
+  */
+-static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
++static int alloc_kmem_cache_node(struct kmem_cache *cachep, gfp_t gfp)
+ {
+ 	int node;
+ 	struct kmem_cache_node *n;
+@@ -3726,8 +3724,8 @@ static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
+ 		}
+ 
+ 		kmem_cache_node_init(n);
+-		n->next_reap = jiffies + REAPTIMEOUT_LIST3 +
+-				((unsigned long)cachep) % REAPTIMEOUT_LIST3;
++		n->next_reap = jiffies + REAPTIMEOUT_NODE +
++				((unsigned long)cachep) % REAPTIMEOUT_NODE;
+ 		n->shared = new_shared;
+ 		n->alien = new_alien;
+ 		n->free_limit = (1 + nr_cpus_node(node)) *
+@@ -3813,7 +3811,7 @@ static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
+ 		kfree(ccold);
+ 	}
+ 	kfree(new);
+-	return alloc_kmemlist(cachep, gfp);
++	return alloc_kmem_cache_node(cachep, gfp);
+ }
+ 
+ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
+@@ -3982,7 +3980,7 @@ static void cache_reap(struct work_struct *w)
+ 		if (time_after(n->next_reap, jiffies))
+ 			goto next;
+ 
+-		n->next_reap = jiffies + REAPTIMEOUT_LIST3;
++		n->next_reap = jiffies + REAPTIMEOUT_NODE;
+ 
+ 		drain_array(searchp, n, n->shared, 0, node);
+ 
+@@ -4003,7 +4001,7 @@ next:
+ 	next_reap_node();
+ out:
+ 	/* Set up the next iteration */
+-	schedule_delayed_work(work, round_jiffies_relative(REAPTIMEOUT_CPUC));
++	schedule_delayed_work(work, round_jiffies_relative(REAPTIMEOUT_AC));
+ }
+ 
+ #ifdef CONFIG_SLABINFO
 -- 
-1.8.4
-
+1.8.5.3
 
