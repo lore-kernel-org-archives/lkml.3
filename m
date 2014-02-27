@@ -1,78 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaB0MjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 07:39:13 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:45340 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaB0MjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 07:39:10 -0500
-Date: Thu, 27 Feb 2014 18:06:51 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1751747AbaB0Mlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 07:41:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaB0Mld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 07:41:33 -0500
+Date: Thu, 27 Feb 2014 13:40:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, josh@joshtriplett.org
-Subject: [PATCH 45/46] kernel: Move prototype declaration to header file
- include/linux/sched.h from init/main.c
-Message-ID: <14a2e98b318cdefa161fbfed220d566599ec7f89.1393493278.git.rashika.kheria@gmail.com>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+        Jean Pihet <jean.pihet@linaro.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/12] perf/core improvements and fixes
+Message-ID: <20140227124047.GF9614@krava.brq.redhat.com>
+References: <1393271800-17505-1-git-send-email-acme@infradead.org>
+ <20140227114658.GA26449@gmail.com>
+ <20140227120227.GC9614@krava.brq.redhat.com>
+ <20140227123052.GA11475@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+In-Reply-To: <20140227123052.GA11475@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add prototype declaration of function to header file
-include/linux/sched.h from init/main.c because it is used by more than
-one file.
+On Thu, Feb 27, 2014 at 01:30:52PM +0100, Ingo Molnar wrote:
+> 
+> * Jiri Olsa <jolsa@redhat.com> wrote:
+> 
+> > On Thu, Feb 27, 2014 at 12:46:58PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > > 
+> > > > From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> > > > 
 
-This eliminates the following warning in kernel/fork.c:
-kernel/fork.c:252:13: warning: no previous prototype for ‘fork_init’ [-Wmissing-prototypes]
+SNIP
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- include/linux/sched.h |    1 +
- init/main.c           |    1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
+> > > Pulled, thanks a lot Arnaldo!
+> > > 
+> > > Btw., the build output looks weird now - on a system that used to pass 
+> > > all feature tests there's this output:
+> > > 
+> > >   BUILD:   Doing 'make -j12' parallel build
+> > > config/Makefile:288: No libdw DWARF unwind found, Please install 
+> > > elfutils-devel/libdw-dev >= 0.158 and/or set LIBDW_DIR
+> > > 
+> > > Auto-detecting system features:
+> > > ...                         dwarf: [ on  ]
+> > > ...                         glibc: [ on  ]
+> > > ...                          gtk2: [ on  ]
+> > > ...                      libaudit: [ on  ]
+> > > ...                        libbfd: [ on  ]
+> > > ...                        libelf: [ on  ]
+> > > ...                       libnuma: [ on  ]
+> > > ...                       libperl: [ on  ]
+> > > ...                     libpython: [ on  ]
+> > > ...                      libslang: [ on  ]
+> > > ...                     libunwind: [ on  ]
+> > > ...            libdw-dwarf-unwind: [ OFF ]
+> > > ...     DWARF post unwind library: libunwind
+> > > 
+> > > but:
+> > > 
+> > >    Package elfutils-devel-0.156-5.fc19.x86_64 already installed and latest version
+> > > 
+> > > Also, the information content of this line is unclear to me:
+> > > 
+> > > ...     DWARF post unwind library: libunwind
+> > > 
+> > > 
+> > > what does that line want to tell?
+> > 
+> > this tells what DWARF unwind library is compiled
+> > in.. 'libunwind' in this case
+> 
+> So my (stylistic) complaint is that it's really reading weird in a 
+> table generated with the following purpose:
+> 
+>       Auto-detecting system features:
+> 
+> Also, we already know that libunwind is present, because just in the 
+> line before it, it says:
+> 
+>     ...                     libunwind: [ on  ]
+> 
+> So it's doubly confusing. How about not displaying that line at all? 
+> Is there a strong reason to not keep 'OFF' messages on a single line?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d162e3b..f08958b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -161,6 +161,7 @@ extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
- 	load += n*(FIXED_1-exp); \
- 	load >>= FSHIFT;
- 
-+void fork_init(unsigned long mempages);
- extern unsigned long total_forks;
- extern int nr_threads;
- DECLARE_PER_CPU(unsigned long, process_counts);
-diff --git a/init/main.c b/init/main.c
-index eb03090..48929e3 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -91,7 +91,6 @@
- static int kernel_init(void *);
- 
- extern void init_IRQ(void);
--extern void fork_init(unsigned long);
- extern void radix_tree_init(void);
- #ifndef CONFIG_DEBUG_RODATA
- static inline void mark_rodata_ro(void) { }
--- 
-1.7.9.5
+well, on/OFF lines are only about detecting libs
 
+this line:
+'DWARF post unwind library: libunwind'
+
+is about telling which one goes in.. could be you have both
+libraries detected and need to choose one or keep default
+
+> 
+> > the other choice is 'libdw', which was not detected in your case 
+> > (and thats what the 1st message tells you)
+> > 
+> > we discussed with Arnaldo, that we would not display warnings for 
+> > missing features by default.. only tell that there are missing 
+> > features and display them for verbose (VF=1) output
+> 
+> That's probably a good plan. I'd suggest the following 'short log' for 
+> failures:
+> 
+>      # Auto-detecting system features: 2 libraries are missing. Try 'make VF=1' for a verbose list.
+> 
+> I.e. that way people can notice if the count goes up or down after an 
+> update. Also, that too should be a single line, so that it does not 
+> spam people.
+
+ook
+
+jirka
