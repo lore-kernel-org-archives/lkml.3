@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaB0Uxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 15:53:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10534 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751326AbaB0Uxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 15:53:50 -0500
-Message-ID: <1393534420.24180.59.camel@flatline.rdu.redhat.com>
-Subject: Re: [libseccomp-discuss] Making a universal list of syscalls?
-From: Eric Paris <eparis@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        libseccomp-discuss@lists.sourceforge.net,
-        Steve Grubb <sgrubb@redhat.com>
-Date: Thu, 27 Feb 2014 15:53:40 -0500
-In-Reply-To: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-References: <CALCETrWbjazg_kAY1uAB+cMTdaJqtyGrTwQWNFCSzZ56B0KEkw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752302AbaB0Uy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 15:54:29 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45610 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaB0Uy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 15:54:28 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Kumar Gala <galak@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: [PATCH v1.1/3] ARM: config: Add qcom_defconfig
+Date: Thu, 27 Feb 2014 12:54:24 -0800
+Message-Id: <1393534464-14620-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <530F985E.5030503@codeaurora.org>
+References: <530F985E.5030503@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 12:40 -0800, Andy Lutomirski wrote:
-> Currently, dealing with Linux syscalls in an architecture-independent
-> way is a mess.  Here are some issues:
-> 
->  1. There's no clean way to map between syscall names and numbers on
-> different architectures.  The kernel contains a number of tables (that
-> work differently for different architectures).  strace has some arcane
-> mechanism.  libseccomp has another.
+Add a defconfig for mach-qcom platforms (copied from msm_defconfig).
+Although these platforms are part of the multi-platform kernel, it's
+useful to have a stripped down version of the defconfig that just
+selects the DT based Qualcomm platforms and drivers.
 
-userspace audit a 3rd.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-> I'd like to see a master list in the kernel that lists, for every
-> syscall, the name, the number for each architecture that implements it
-> (using the AUDIT_ARCH semantics, probably), and the signature.  The
-> build process could parse this table to replace the current per-arch
-> mess.
+Changes since v1:
+ * Added CONFIG_DEVTMPFS/DEVTMPFS_MOUNT per Josh
 
-I know for audit it would be huge if userspace didn't try to organically
-grow this knowledge on their own!  So +1 from me!
+ arch/arm/configs/{msm_defconfig => qcom_defconfig} | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+ copy arch/arm/configs/{msm_defconfig => qcom_defconfig} (97%)
 
-> 
-> Issues here: some syscalls have different signatures on different
-> architectures.  Maybe we could require that a canonical syscall name
-> would have the same signature everywhere, but architectures could
-> specify alternate names.  So, for things like clone (?), there could
-> actually be a few syscalls that all have alternate names of "clone".
-> 
-> More importantly, we could add a library in tools that exposes this
-> information to userspace.  Useful operations:
-> 
->  - For a given (arch, nr), indicate, for each logical argument, which
-> physical argument slot is used or, if the argument is split into a
-> high and low part, which pair of slots is used.
-> 
->  - For a given (nr, logical args), issue the syscall for the
-> architecture that build the library.
-> 
->  - For a given (arch, nr, logical args), issue the syscall if
-> possible.  An x86_32 build could issue x86_64 syscalls with some
-> effort, and an x86_64 build could easily issue 32-bit syscalls.
-> 
->  - For a given arch, map between name and nr, and give access to the signature.
-> 
-> If this happened, presumably all architectures that supported it would
-> have to have valid AUDIT_ARCH support.  That means that someone would
-> have to fix ARM OABI (sigh).
-> 
-> Thoughts?
+diff --git a/arch/arm/configs/msm_defconfig b/arch/arm/configs/qcom_defconfig
+similarity index 97%
+copy from arch/arm/configs/msm_defconfig
+copy to arch/arm/configs/qcom_defconfig
+index c5858b9eb516..5f11d6de9084 100644
+--- a/arch/arm/configs/msm_defconfig
++++ b/arch/arm/configs/qcom_defconfig
+@@ -17,7 +17,7 @@ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODULE_FORCE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_PARTITION_ADVANCED=y
+-CONFIG_ARCH_MSM_DT=y
++CONFIG_ARCH_QCOM=y
+ CONFIG_ARCH_MSM8X60=y
+ CONFIG_ARCH_MSM8960=y
+ CONFIG_ARCH_MSM8974=y
+@@ -27,7 +27,6 @@ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+ CONFIG_HIGHPTE=y
+ CONFIG_CLEANCACHE=y
+-CONFIG_CC_STACKPROTECTOR=y
+ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_VFP=y
+@@ -49,6 +48,8 @@ CONFIG_IP_PNP_DHCP=y
+ # CONFIG_IPV6 is not set
+ CONFIG_CFG80211=y
+ CONFIG_RFKILL=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_SCSI=y
+@@ -111,7 +112,6 @@ CONFIG_USB_SERIAL=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_DEBUG_FILES=y
+ CONFIG_USB_GADGET_VBUS_DRAW=500
+-CONFIG_NEW_LEDS=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_STAGING=y
+ CONFIG_COMMON_CLK_QCOM=y
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
