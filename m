@@ -1,50 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaB0Vl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 16:41:27 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:57035 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaB0VlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 16:41:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1393534841.24588.131.camel@joe-AO722>
-References: <1393462087.24588.50.camel@joe-AO722>
-	<530E8C2E.7080307@zytor.com>
-	<1393466619.24588.65.camel@joe-AO722>
-	<20140227022857.GC23659@thin>
-	<1393469594.24588.71.camel@joe-AO722>
-	<20140227025845.GA25145@thin>
-	<530EB103.5070406@zytor.com>
-	<1393472326.24588.82.camel@joe-AO722>
-	<20140227040050.GA8449@nicira.com>
-	<530EBCED.9020705@zytor.com>
-	<20140227042636.GA9592@nicira.com>
-	<530EBFC7.9030309@zytor.com>
-	<CANeU7Q=RNXR00bQcPzJYTOcZmRSn3U31ZcadPTHu6Y_Uk0UnYw@mail.gmail.com>
-	<faa9e231-d561-417b-8b8b-95192cb0e56a@email.android.com>
-	<CANeU7QnB1Yfd6SjLeUmB1Q-a+U6G221J8es7ckfjB-U45sAVMA@mail.gmail.com>
-	<1393534841.24588.131.camel@joe-AO722>
-Date: Thu, 27 Feb 2014 13:41:23 -0800
-X-Google-Sender-Auth: JEV0oCOb5dmE05-2TYW1eUkA7e8
-Message-ID: <CANeU7Q=QoDN2itH9pVt4v+NE1YULpDL38Fj9ES511fCH7Wn0Sg@mail.gmail.com>
-Subject: Re: [PATCH V2] sparse: Allow override of sizeof(bool) warning
-From: Christopher Li <sparse@chrisli.org>
-To: Joe Perches <joe@perches.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ben Pfaff <blp@nicira.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752393AbaB0VnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 16:43:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453AbaB0VnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 16:43:09 -0500
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        stable@vger.kernel.org
+Subject: [PATCH 2/2] bdi: Avoid oops on device removal
+Date: Thu, 27 Feb 2014 22:43:02 +0100
+Message-Id: <1393537382-26255-3-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1393537382-26255-1-git-send-email-jack@suse.cz>
+References: <1393537382-26255-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 1:00 PM, Joe Perches <joe@perches.com> wrote:
+After 839a8e8660b67 "writeback: replace custom worker pool
+implementation with unbound workqueue" when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.  This can happen because
+even though bdi_unregister() cancels all pending flushing work, nothing
+really prevents new ones from being queued from balance_dirty_pages() or
+other places.
 
-> Of course
->
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
 
-The change has applied and pushed.
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+CC: stable@vger.kernel.org
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c           | 23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |  2 +-
+ mm/backing-dev.c            | 13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
-Chris
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8277b76be983..c24e7b8b521b 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -94,16 +94,29 @@ static inline struct inode *wb_inode(struct list_head *head)
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
+ {
+ 	trace_writeback_queue(bdi, work);
+ 
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
+-
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ static void
+@@ -119,7 +132,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
+ 	}
+ 
+@@ -166,7 +179,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+ 	 * writeback as soon as there is no other work to do.
+ 	 */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
+ 
+ /*
+@@ -1025,7 +1038,7 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 24819001f5c8..e488e9459a93 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index fab8401fc54e..09d9591b7708 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -297,7 +297,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -310,9 +313,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -363,6 +363,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
+-- 
+1.8.1.4
+
