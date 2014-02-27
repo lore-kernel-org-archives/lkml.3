@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaB0OBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 09:01:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009AbaB0OB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 09:01:29 -0500
-Message-ID: <530F451F.9020107@redhat.com>
-Date: Thu, 27 Feb 2014 15:01:03 +0100
-From: Florian Weimer <fweimer@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751716AbaB0OI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 09:08:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:55653 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaB0OIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 09:08:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-kernel@lists.linaro.org
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Thu, 27 Feb 2014 15:08:44 +0100
+Message-ID: <7049275.SxVd47MEQ4@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140227135616.GK1692@e106497-lin.cambridge.arm.com>
+References: <1393506402-11474-1-git-send-email-Liviu.Dudau@arm.com> <CAPcvp5EqcKEWoH_--azp+sMykmEWtY5whHG=c9t3sZVXZyAPUg@mail.gmail.com> <20140227135616.GK1692@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        willy@linux.intel.com
-Subject: Re: [PATCH v6 00/22] Support ext4 on NV-DIMMs
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
-In-Reply-To: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QODVOw5kxajaWftLDuUsWuZI8UwuuJXuQ/5Fzt0C1/1
+ KgTcSXxFUNJmaB+KlAM/p0aA6URm7SzFM3Z+n6rNMtbVhGsrrL
+ F/oriP2vWv0C5c/ynMCERUrna/dCshnqEisTgrA53qx6D4+skE
+ hAPKnyqt5Enp2A2LwWutrSMfw27ZKe58ccdjEOrpK7MOgrI7f0
+ tGh5LZth/HAn1Z9wEE39bVBTas1sruDFG3BRgF1TsLSy3/brW0
+ Rrqpg1/z3qXtR+Hp3sT5KL5F2DAbnBTXPJOW0k6vJFpyibt7on
+ yIdk6pNXwxgnyMoyi1vZMppqBWuuCs9BuGElEKlxNN4+P4HgIT
+ 576fGskOTxk9OLHxCzWA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 03:18 PM, Matthew Wilcox wrote:
-> One of the primary uses for NV-DIMMs is to expose them as a block device
-> and use a filesystem to store files on the NV-DIMM.  While that works,
-> it currently wastes memory and CPU time buffering the files in the page
-> cache.  We have support in ext2 for bypassing the page cache, but it
-> has some races which are unfixable in the current design.  This series
-> of patches rewrite the underlying support, and add support for direct
-> access to ext4.
+On Thursday 27 February 2014 13:56:16 Liviu Dudau wrote:
+> On Thu, Feb 27, 2014 at 01:22:19PM +0000, Andrew Murray wrote:
+> > On 27 February 2014 13:06, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > >
+> > > +/**
+> > > + * of_pci_range_to_resource - Create a resource from an of_pci_range
+> > > + * @range:     the PCI range that describes the resource
+> > > + * @np:                device node where the range belongs to
+> > > + * @res:       pointer to a valid resource that will be updated to
+> > > + *              reflect the values contained in the range.
+> > > + * Note that if the range is an IO range, the resource will be converted
+> > > + * using pci_address_to_pio() which can fail if it is called to early or
+> > > + * if the range cannot be matched to any host bridge IO space.
+> > > + */
+> > > +void of_pci_range_to_resource(struct of_pci_range *range,
+> > > +       struct device_node *np, struct resource *res)
+> > > +{
+> > > +       res->flags = range->flags;
+> > > +       if (res->flags & IORESOURCE_IO) {
+> > > +               unsigned long port;
+> > > +               port = pci_address_to_pio(range->pci_addr);
+> > 
+> > Is this likely to break existing users of of_pci_range_to_resource?
+> 
+> I've tested the change with a tegra2 based device (trimslice) and I've
+> got a functional board.
 
-I'm wondering if there is a potential security issue lurking here.
+Did you have any devices using I/O ports though? They are fairly rare
+these days.
 
-Some distributions use udisks2 to grant permission to local console 
-users to create new loop devices from files.  File systems on these 
-block devices are then mounted.  This is a replacement for several file 
-systems implemented in user space, and for the users, this is a good 
-thing because the in-kernel implementations are generally of higher quality.
+> > I have no idea if I/O previously worked for mips, but this patch seems
+> > to change that behavior. It may be a similar story for microblaze and
+> > powerpc.
+> 
+> Both microblaze and powerpc share an identical implementation and it is
+> expecting that the physical address passed as parameter fits between
+> io_base_phys and io_base_phys + pcibios_io_size(hose). So yes, the
+> correct way is to use cpu_addr and fix the weak implementation? But we
+> don't have enough information for the weak implementation to work, as
+> we don't know where the physical IO base start (we are just about to
+> find out from DT).
 
-What happens if we have DAX support in the entire stack, and an 
-enterprising user mounts a file system?  Will she be able to fuzz the 
-file system or binfmt loaders concurrently, changing the bits while they 
-are being read?
+I think using pci_address_to_pio() at that point is just wrong
+in either way. Before the host is fully registered, you can't actually
+look up the port number -- you are only trying to assign one at this time.
 
-Currently, it appears that the loop device duplicates pages in the page 
-cache, so this does not seem to be possible, but DAX support might 
-change this.
+The implementation that Will wrote for ARM would work here: find the
+next available virtual I/O range, call pci_ioremap_io on range->pci_addr
+and then return the virtual address. Unfortunately that code is not
+architecture independent at this time, and we will first have to come
+up with something that can be made to work for powerpc, microblaze,
+mips and arm.
 
--- 
-Florian Weimer / Red Hat Product Security Team
+	Arnd
