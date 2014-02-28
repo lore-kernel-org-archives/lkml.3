@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaB1PHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:07:15 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42131 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819AbaB1PHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:07:12 -0500
-Message-ID: <5310A61C.5000105@ti.com>
-Date: Fri, 28 Feb 2014 09:07:08 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752611AbaB1PIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:08:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43396 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097AbaB1PIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 10:08:36 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1393572505.1019.10.camel@wall-e.seibold.net>
+References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com> <cover.1393545985.git.luto@amacapital.net> <2f5d45b67dcd2c4ba58ed7ff13cfcd7a4da977fa.1393545985.git.luto@amacapital.net> <1393572505.1019.10.camel@wall-e.seibold.net>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Lee Jones <lee.jones@linaro.org>
-CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
- regmap patch
-References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com> <53109C92.10104@ti.com>
-In-Reply-To: <53109C92.10104@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v2 1/4] x86: Use the default ABI for the 32-bit vDSO
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 28 Feb 2014 07:06:29 -0800
+To: Stefani Seibold <stefani@seibold.net>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: X86 ML <x86@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Message-ID: <e33a0c21-5d74-4584-ac35-8cd45a905310@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 08:26 AM, Peter Ujfalusi wrote:
-> On 02/28/2014 03:30 PM, Nishanth Menon wrote:
->> TWL6030 can do 3.3MHz by default and there are no speed registers to
->> configure.
-> 
-> According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
-> not seen registers or pins to select the speed. As the documentation puts
-> this: High-speed mode (limited to 2.4Mbit/s maximum)
+How many internal function calls are there? It seems we should try to avoid those as much as possible by suitable inlining.
 
-Aye, you are correct, the latest data sheet does show this - i made
-the mistake of opening an older spec doc :(..
-
->>> Also you could have more devices on the bus, wired for 3.4MHz. In that case we
->>> would need to make sure that the first access happens with 100KHz to twl6040
->>> to select 3.4MHz mode, switch the controller speed and allow the communication
->>> to other chips. It is another question how the 3.4MHz clients will interpret
->>> the 100KHz communication on the bus, I guess it is ignored by them.
->> As far as the i2c spec 2.1 says:
->> "Fast-mode devices are downward-compatible and can communicate with
->> Standard-mode devices in a 0 to 100 kbit/s I2C-bus system"
->> ...
->> "Hs-mode devices can transfer information at bit rates of up to 3.4
->> Mbit/s, yet they remain fully downward compatible with Fast- or
->> Standard-mode (F/S-mode) devices for bi-directional communication in a
->> mixed-speed bus system."
->>
->> So, they are backward compatible.
-> 
-> I just tried it on PandaBoard to set the i2c speed to 24MHz. If I do not touch
-> the twl6040 ACCCTL register's i2cmode I can not access to twl6040 later on.
-> However if I select the high-speed mode as the first write everything is fine
-> afterwards.
-> Hrm, it is possible that I can write with high-speed to twl6040 but the
-> twl6040 is sending back the data in normal-mode?
-
-I doubt it would do that as it would be a violation of i2c high speed
-specification.
-
-> So in theory if I have the ACCCTL write as a first I2C access towards twl6040
-> we might be safe if the bus is in high-speed mode?
-
-I think you did catch the real behavior in the email below.
-
-I do however suggest that you put one of those i2c analyser on the
-rail to see what is happening. else, we'd be doing a lot of guessing here.
-
-> 
-> If I have fast mode configured to the controller, I can still communicate with
-> twl6040 even if it is set to normal mode.
-
-> 
-> I still think that this patch is safe for now. We could try to figure out how
-> to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
-> done in the same series.
-
-?? you mean set i2c bus speed to full speed on PandaBoard? it is
-already full speed[1]!
-
-> 
-> Now after several boots:
-> It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
-> right after cold power on.
-> So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
-> register. But the content of ACCCTL register seams to be preserved between
-> reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
-
-This observation is the key.
-
-Are you power cycling the regulators for TWL6040 as part of your
-shutdown handler? Did you read the ACCTL register after a reboot to
-see if the register contents are still the same as before?
-
-Based on this observation, I suggest switching [1] to 100KHz.
-
-[1]
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/arm/boot/dts/omap4-panda-common.dtsi#n291
+On February 27, 2014 11:28:25 PM PST, Stefani Seibold <stefani@seibold.net> wrote:
+>Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
+>> There's no reason for the vDSO to use a special function call ABI. 
+>Use
+>> the platform defaults.
+>> 
+>
+>The only reason was performance. What is good for the kernel should be
+>also good for the VDSO. Now all functions inside the VDSO will pass the
+>arguments by stack.
+>
+>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> ---
+>>  arch/x86/vdso/Makefile | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+>> index 92daaa6..80584f5 100644
+>> --- a/arch/x86/vdso/Makefile
+>> +++ b/arch/x86/vdso/Makefile
+>> @@ -149,7 +149,7 @@ KBUILD_CFLAGS_32 := $(filter-out
+>-m64,$(KBUILD_CFLAGS))
+>>  KBUILD_CFLAGS_32 := $(filter-out
+>-mcmodel=kernel,$(KBUILD_CFLAGS_32))
+>>  KBUILD_CFLAGS_32 := $(filter-out -fno-pic,$(KBUILD_CFLAGS_32))
+>>  KBUILD_CFLAGS_32 := $(filter-out -mfentry,$(KBUILD_CFLAGS_32))
+>> -KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=3
+>-freg-struct-return -fpic
+>> +KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=0 -fpic
+>>  $(vdso32-images:%=$(obj)/%.dbg): KBUILD_CFLAGS = $(KBUILD_CFLAGS_32)
+>>  
+>>  $(vdso32-images:%=$(obj)/%.dbg): $(obj)/vdso32-%.so.dbg: FORCE \
 
 -- 
-Regards,
-Nishanth Menon
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
