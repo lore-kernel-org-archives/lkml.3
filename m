@@ -1,59 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaB1QGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:06:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47341 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbaB1QGd (ORCPT
+	id S1752828AbaB1QIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:08:54 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:6243 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752509AbaB1QIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:06:33 -0500
-Date: Fri, 28 Feb 2014 08:06:35 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, galak@kernel.crashing.org,
-        rob@landley.net, robherring2@gmail.com, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        rob.herring@calxeda.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        grygorii.strashko@ti.com, dwmw2@infradead.org, nsekhar@ti.com
-Subject: Re: [PATCH v6 0/2]  Introduce AEMIF driver for Davinci/Keystone archs
-Message-ID: <20140228160635.GA6144@kroah.com>
-References: <1393262772-24442-1-git-send-email-ivan.khoronzhuk@ti.com>
- <5310AEA8.1070804@ti.com>
+	Fri, 28 Feb 2014 11:08:52 -0500
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Feb 2014 11:08:52 EST
+Date: Fri, 28 Feb 2014 11:01:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH] x86 trace: Fix page fault tracing bug
+Message-ID: <20140228160148.GB19658@home.goodmis.org>
+References: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5310AEA8.1070804@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:43:36AM -0500, Santosh Shilimkar wrote:
-> Greg,
+On Fri, Feb 28, 2014 at 04:33:40PM +0100, Jiri Olsa wrote:
+> The trace_do_page_fault function trigger tracepoint
+> and then handles the actual page fault.
 > 
-> On Monday 24 February 2014 12:26 PM, Ivan Khoronzhuk wrote:
-> > These patches introduce Async External Memory Interface (EMIF16/AEMIF)
-> > controller driver for Davinci/Keystone archs.
-> > 
-> > For more informations see documentation:
-> > Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
-> > OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
-> > Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
-> > 
-> [..]
+> This could lead to error if the tracepoint caused page
+> fault. The original cr2 value gets lost and the original
+> page fault handler kills current process with SIGSEGV.
 > 
-> > 
-> > v5..v6:
-> > - memory: ti-aemif: introduce AEMIF driver
-> > - memory: ti-aemif: add bindings for AEMIF driver
-> > 	changed opaque names for cs node properties
-> > 
-> Can you please pick these two patches ? 
+> This happens if you record page faults with callchain
+> data, the user part of it will cause tracepoint handler
+> to page fault:
+> 
+>   # perf record -g -e exceptions:page_fault_user ls
+> 
+> Fixing this by saving the original cr2 value
+> and using it after tracepoint handler is done.
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+> ---
+>  arch/x86/mm/fault.c | 25 ++++++++++++++++++-------
+>  1 file changed, 18 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 9d591c8..52fad6c 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -1016,11 +1016,11 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
+>   * routines.
+>   */
+>  static void __kprobes
+> -__do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> +__do_page_fault(struct pt_regs *regs, unsigned long error_code,
+> +		unsigned long address)
+>  {
+>  	struct vm_area_struct *vma;
+>  	struct task_struct *tsk;
+> -	unsigned long address;
+>  	struct mm_struct *mm;
+>  	int fault;
+>  	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+> @@ -1028,9 +1028,6 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  	tsk = current;
+>  	mm = tsk->mm;
+>  
+> -	/* Get the faulting address: */
+> -	address = read_cr2();
+> -
+>  	/*
+>  	 * Detect and handle instructions that would cause a page fault for
+>  	 * both a tracked kernel page and a userspace page.
+> @@ -1248,9 +1245,14 @@ dotraplinkage void __kprobes
+>  do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  {
+>  	enum ctx_state prev_state;
+> +	unsigned long address;
+>  
+>  	prev_state = exception_enter();
+> -	__do_page_fault(regs, error_code);
+> +
+> +	/* Get the faulting address: */
+> +	address = read_cr2();
+> +
 
-Asking for a response with less than a weeks time is really bold:
-  $ ~/bin/mdfrm -c ~/mail/todo/
-  521 messages in /home/gregkh/mail/todo/
+As Peter already stated, the address = read_cr2() needs to go before the
+exception_enter() call.
 
-Give me a chance to catch up please...
+> +	__do_page_fault(regs, error_code, address);
+>  	exception_exit(prev_state);
+>  }
+>  
+> @@ -1267,9 +1269,18 @@ dotraplinkage void __kprobes
+>  trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  {
+>  	enum ctx_state prev_state;
+> +	unsigned long address;
+>  
+>  	prev_state = exception_enter();
+> +
+> +	/*
+> +	 * The tracepoint processing could trigger another page
+> +	 * fault (user space callchain reading) and destroy the
+> +	 * original cr2 value, so read the faulting address now.
+> +	 */
+> +	address = read_cr2();
+
+Same here.
+
+After that, you can add:
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> +
+>  	trace_page_fault_entries(regs, error_code);
+> -	__do_page_fault(regs, error_code);
+> +	__do_page_fault(regs, error_code, address);
+>  	exception_exit(prev_state);
+>  }
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
