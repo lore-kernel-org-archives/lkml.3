@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaB1Nq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:46:26 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29568 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbaB1NnS (ORCPT
+	id S1752836AbaB1Nqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:46:44 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:18793 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393AbaB1NnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:43:18 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-22-53109274c7c4
+	Fri, 28 Feb 2014 08:43:17 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-3b-531092739b9d
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
@@ -28,88 +28,85 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v6 07/11] drivers: dma-coherent: add initialization from device
- tree
-Date: Fri, 28 Feb 2014 14:42:52 +0100
-Message-id: <1393594976-16728-8-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v6 06/11] drivers: of: initialize and assign reserved memory to
+ newly created devices
+Date: Fri, 28 Feb 2014 14:42:51 +0100
+Message-id: <1393594976-16728-7-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com>
 References: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAyWRa0hTYRzGe8/OzjlOl6e17CChsYjA0LT68FJm0adXiSgEBbvY0uEkN2Xz
-	klI5hopO5+YUNHW2eYOGOpuSFwxyzEtauTXdimVSBjFdligVNSWn334P/9/zfPlTLF4dHk5l
-	S/NFMqkwR0Bw8NntqYXofB2dHKuYOwy3dJMk/KksZ8Ef3TUAPrG9ZUONz8iGL/3DAPrUlTgc
-	6VsD8I3SR8KhqiYSbs5/xqBl2cWGxopOHDpHWwnYa1skYb93HINdbgcGDVNlbOhvjIAz7g0C
-	9tg6SKht7MVh+QsbCbeGLDhcGa/AoblpFYemUT+A3vVp/NIR1NPWA9C/vzqAVuu1ADlr1Rga
-	aV4kUY2vjI0spioCfXSNEWigsxR5tpdZaH5ayUZ9/hUMabZikX60FqDaQRNAG5aIawfSOPGZ
-	opzsQpHsVMIdjthZGZw3uP+++v0sSwFaQlQgiGLos4zj+Ttyj8MY+yczoQIcikd3AUZhnsD2
-	QjXG2N16ImARdByj+q7aZT5tBMxGGx6QWPQSwVQ6arDA4SCdwixo9LuzOH2cWVOu7xQoiksj
-	ZsAjDCBDH2VadfEBI4hOZBSNS+wA83YMzx830AKuAewzgUOigow8+d0sSVyMXCiRF0izYjJy
-	JRaw98bNYdAxec4KaAoIQrjaxNBkHltYKC+WWAFDsQR87lclnczjZgqLS0Sy3HRZQY5IbgUY
-	FRSuAFhqSvR5Q9k387F2sXHu+pg305qmiz1pSX2myW2fKSdkYn6kp+HK1awhWtBtn2oWO2/U
-	q1eyb9u40pYPkbeCTY9CS+ZeraZ3vC7Sz7rW7EmP7+X/OjH221H61Js00dB/GY/ZNjTU6S+0
-	Vp/2bhZdhA9unqkodIUxugT+wyjbFwEuFwvjolgyufA/3h44QqQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t/xq7rFkwSCDT5t4LD4O+kYu8WHplZm
+	i/fLehgt5h85x2rR/2Yhq8WBPzsYLd70drBY7Fz3jtHibNMbdovtnTPYLb5cechksenxNVaL
+	hW1LWCwu75rDZrH2yF12iw0vDzJZLL1+kcliwfEWVos/0+UsTl3/zGax5shidosJ09eyWLTu
+	PcJu8Xf7JhaLVwfbWCzWz3jNYrFq1x9Gi5cfT7A4yHismbeG0eP3r0mMHq8nT2D0uNzXy+Sx
+	c9Zddo+eNy2sHptWdbJ53Lm2h81j85J6j9v/HjN7XDnRxOqx7s8rJo/+vwYec3f1MXr0bVnF
+	6PF5k1yAYBSXTUpqTmZZapG+XQJXxrIp51gLXvBVfLzRwNLAuIGni5GTQ0LAROLMnnXMELaY
+	xIV769m6GLk4hASWMkrsm3kayulmkriwYT8bSBWbgKFE19suMFtEYCGjxOd5LCBFzAL32SQ6
+	LvYwgSSEBdIlrryeBGRzcLAIqEr0nZcFMXkFPCQ6Z6eDmBICChJzJtmAFHMKeEo0TL/PCmIL
+	AVXc/nGdcQIj7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIdH4dQfj0mNWhxgFOBiV
+	eHgnePIHC7EmlhVX5h5ilOBgVhLhfdIkECzEm5JYWZValB9fVJqTWnyIkYmDU6qBcWfk9LNe
+	Xe7KCjN82pw+X1lyiH87R9bkns5NJTmmSvPrPDc26MdN8S+1vT85RCmhxm1ji1Lgo/1ZE4MU
+	L9QkXtrVEWlbpT3ZoyyCsW1R2g7eywLX7y+8vjpZqLLexnvbxP3FLb7fovR3PI1rneXGbbm3
+	4ZBW2fXDews+TRVZknlFX9f9p6m4EktxRqKhFnNRcSIA+ZizP6QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for handling 'shared-dma-pool' reserved-memory device tree
-nodes.
-
-Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
+Use recently introduced of_reserved_mem_device_init() function to
+automatically assign respective reserved memory region to the newly created
+platform and amba device.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/base/dma-coherent.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/of/platform.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/base/dma-coherent.c b/drivers/base/dma-coherent.c
-index bc256b641027..0a5fc7f3d03e 100644
---- a/drivers/base/dma-coherent.c
-+++ b/drivers/base/dma-coherent.c
-@@ -218,3 +218,43 @@ int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
- 	return 0;
- }
- EXPORT_SYMBOL(dma_mmap_from_coherent);
-+
-+/*
-+ * Support for reserved memory regions defined in device tree
-+ */
-+#ifdef CONFIG_OF_RESERVED_MEM
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 404d1daebefa..3df0b1826e8b 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -21,6 +21,7 @@
+ #include <linux/of_device.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
 +#include <linux/of_reserved_mem.h>
+ #include <linux/platform_device.h>
+ 
+ const struct of_device_id of_default_bus_match_table[] = {
+@@ -220,6 +221,8 @@ static struct platform_device *of_platform_device_create_pdata(
+ 	dev->dev.bus = &platform_bus_type;
+ 	dev->dev.platform_data = platform_data;
+ 
++	of_reserved_mem_device_init(&dev->dev);
 +
-+static void rmem_dma_device_init(struct reserved_mem *rmem, struct device *dev)
-+{
-+	dma_declare_coherent_memory(dev, rmem->base, rmem->base,
-+		rmem->size, DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-+}
+ 	/* We do not fill the DMA ops for platform devices by default.
+ 	 * This is currently the responsibility of the platform code
+ 	 * to do such, possibly using a device notifier
+@@ -227,6 +230,7 @@ static struct platform_device *of_platform_device_create_pdata(
+ 
+ 	if (of_device_add(dev) != 0) {
+ 		platform_device_put(dev);
++		of_reserved_mem_device_release(&dev->dev);
+ 		return NULL;
+ 	}
+ 
+@@ -282,6 +286,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 	else
+ 		of_device_make_bus_id(&dev->dev);
+ 
++	of_reserved_mem_device_init(&dev->dev);
 +
-+static void rmem_dma_device_release(struct reserved_mem *rmem,
-+				    struct device *dev)
-+{
-+	dma_release_declared_memory(dev);
-+}
-+
-+static const struct reserved_mem_ops rmem_dma_ops = {
-+	.device_init	= rmem_dma_device_init,
-+	.device_release	= rmem_dma_device_release,
-+};
-+
-+static int __init rmem_dma_setup(struct reserved_mem *rmem,
-+				 unsigned long node,
-+				 const char *uname)
-+{
-+	if (of_get_flat_dt_prop(node, "reusable", NULL))
-+		return -EINVAL;
-+
-+	rmem->ops = &rmem_dma_ops;
-+	pr_info("Reserved memory: created DMA memory pool at %pa, size %ld MiB\n",
-+		&rmem->base, (unsigned long)rmem->size / SZ_1M);
-+	return 0;
-+}
-+RESERVEDMEM_OF_DECLARE(dma, "shared-dma-pool", rmem_dma_setup);
-+#endif
+ 	/* Allow the HW Peripheral ID to be overridden */
+ 	prop = of_get_property(node, "arm,primecell-periphid", NULL);
+ 	if (prop)
+@@ -308,6 +314,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 	return dev;
+ 
+ err_free:
++	of_reserved_mem_device_release(&dev->dev);
+ 	amba_device_put(dev);
+ 	return NULL;
+ }
 -- 
 1.7.9.5
 
