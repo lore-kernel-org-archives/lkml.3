@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaB1Rzu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:55:50 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:46101 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaB1Rzr (ORCPT
+	id S1753606AbaB1R5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:57:43 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:53455 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131AbaB1Rzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:55:47 -0500
+	Fri, 28 Feb 2014 12:55:49 -0500
 From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Minchan Kim <minchan@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv9 1/7] zram: introduce compressing backend abstraction
-Date: Fri, 28 Feb 2014 20:52:01 +0300
-Message-Id: <1393609927-22090-2-git-send-email-sergey.senozhatsky@gmail.com>
+Subject: [PATCHv9 2/7] zram: use zcomp compressing backends
+Date: Fri, 28 Feb 2014 20:52:02 +0300
+Message-Id: <1393609927-22090-3-git-send-email-sergey.senozhatsky@gmail.com>
 X-Mailer: git-send-email 1.9.0.359.g5e34a15
 In-Reply-To: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
 References: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
@@ -23,362 +23,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ZRAM performs direct LZO compression algorithm calls, making it the one and
-only option. While LZO is generally performs well, LZ4 algorithm tends to
-have a faster decompression (see http://code.google.com/p/lz4/ for full
-report)
-
-	Name            Ratio  C.speed D.speed
-	                        MB/s    MB/s
-	LZ4 (r101)      2.084    422    1820
-	LZO 2.06        2.106    414     600
-
-Thus, users who have mostly read (decompress) usage scenarious or mixed
-workflow (writes with relatively high read ops number) will benefit from
-using LZ4 compression backend.
-
-Introduce compressing backend abstraction zcomp in order to support multiple
-compression algorithms with the following set of operations:
-        .create
-        .destroy
-        .compress
-        .decompress
-
-Schematically zram write() usually contains the following steps:
-0) preparation (decompression of partioal IO, etc.)
-1) lock buffer_lock mutex (protects meta compress buffers)
-2) compress (using meta compress buffers)
-3) alloc and map zs_pool object
-4) copy compressed data (from meta compress buffers) to object allocated by 3)
-5) free previous pool page, assign a new one
-6) unlock buffer_lock mutex
-
-As we can see, compressing buffers must remain untouched from 1) to 4),
-because, otherwise, concurrent write() can overwrite data. At the same time,
-zram_meta must be aware of a) specific compression algorithm memory requirements
-and b) necessary locking to protect compression buffers. To remove requirement
-a) new struct zcomp_strm introduced, which contains a compress/decompress
-`buffer' and compression algorithm `private' part. While struct zcomp implements
-zcomp_strm stream handling and locking and removes requirement b) from zram meta.
-zcomp ->create() and ->destroy(), respectively, allocate and deallocate algorithm
-specific zcomp_strm `private' part.
-
-Every zcomp has zcomp stream and mutex to protect its compression stream. Stream
-usage semantics remains the same -- only one write can hold stream lock and use
-its buffers. zcomp_strm_find() turns caller into exclusive user of a stream
-(holding stream mutex until zram release stream), and zcomp_strm_release()
-makes zcomp stream available (unlock the stream mutex). Hence no concurrent
-write (compression) operations possible at the moment.
-
-iozone -t 3 -R -r 16K -s 60M -I +Z
-
-       test            base           patched
---------------------------------------------------
-  Initial write      597992.91       591660.58
-        Rewrite      609674.34       616054.97
-           Read     2404771.75      2452909.12
-        Re-read     2459216.81      2470074.44
-   Reverse Read     1652769.66      1589128.66
-    Stride read     2202441.81      2202173.31
-    Random read     2236311.47      2276565.31
- Mixed workload     1423760.41      1709760.06
-   Random write      579584.08       615933.86
-         Pwrite      597550.02       594933.70
-          Pread     1703672.53      1718126.72
-         Fwrite     1330497.06      1461054.00
-          Fread     3922851.00      3957242.62
-
-Usage examples:
-
-	comp = zcomp_create(NAME) /* NAME e.g. "lzo" */
-
-which initialises compressing backend if requested algorithm is supported.
-
-Compress:
-	zstrm = zcomp_strm_find(comp)
-	zcomp_compress(comp, zstrm, src, &dst_len)
-	[..] /* copy compressed data */
-	zcomp_strm_release(comp, zstrm)
-
-Decompress:
-	zcomp_decompress(comp, src, src_len, dst);
-
-Free compessing backend and its zcomp stream:
-	zcomp_destroy(comp)
+Do not perform direct LZO compress/decompress calls, initialise
+and use zcomp LZO backend (single compression stream) instead.
 
 Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 ---
- drivers/block/zram/zcomp.c     | 115 +++++++++++++++++++++++++++++++++++++++++
- drivers/block/zram/zcomp.h     |  58 +++++++++++++++++++++
- drivers/block/zram/zcomp_lzo.c |  47 +++++++++++++++++
- drivers/block/zram/zcomp_lzo.h |  17 ++++++
- 4 files changed, 237 insertions(+)
- create mode 100644 drivers/block/zram/zcomp.c
- create mode 100644 drivers/block/zram/zcomp.h
- create mode 100644 drivers/block/zram/zcomp_lzo.c
- create mode 100644 drivers/block/zram/zcomp_lzo.h
+ drivers/block/zram/Makefile   |  2 +-
+ drivers/block/zram/zram_drv.c | 59 ++++++++++++++++++-------------------------
+ drivers/block/zram/zram_drv.h |  8 +++---
+ 3 files changed, 29 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-new file mode 100644
-index 0000000..22f4ae2
---- /dev/null
-+++ b/drivers/block/zram/zcomp.c
-@@ -0,0 +1,115 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/slab.h>
-+#include <linux/wait.h>
-+#include <linux/sched.h>
-+
-+#include "zcomp.h"
-+#include "zcomp_lzo.h"
-+
-+static struct zcomp_backend *find_backend(const char *compress)
-+{
-+	if (strncmp(compress, "lzo", 3) == 0)
-+		return &zcomp_lzo;
-+	return NULL;
-+}
-+
-+static void zcomp_strm_free(struct zcomp *comp, struct zcomp_strm *zstrm)
-+{
-+	if (zstrm->private)
-+		comp->backend->destroy(zstrm->private);
-+	free_pages((unsigned long)zstrm->buffer, 1);
-+	kfree(zstrm);
-+}
-+
-+/*
-+ * allocate new zcomp_strm structure with ->private initialized by
-+ * backend, return NULL on error
-+ */
-+static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
-+{
-+	struct zcomp_strm *zstrm = kmalloc(sizeof(*zstrm), GFP_KERNEL);
-+	if (!zstrm)
-+		return NULL;
-+
-+	zstrm->private = comp->backend->create();
-+	/*
-+	 * allocate 2 pages. 1 for compressed data, plus 1 extra for the
-+	 * case when compressed size is larger than the original one
-+	 */
-+	zstrm->buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-+	if (!zstrm->private || !zstrm->buffer) {
-+		zcomp_strm_free(comp, zstrm);
-+		zstrm = NULL;
-+	}
-+	return zstrm;
-+}
-+
-+struct zcomp_strm *zcomp_strm_find(struct zcomp *comp)
-+{
-+	mutex_lock(&comp->strm_lock);
-+	return comp->zstrm;
-+}
-+
-+void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm)
-+{
-+	mutex_unlock(&comp->strm_lock);
-+}
-+
-+int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-+		const unsigned char *src, size_t *dst_len)
-+{
-+	return comp->backend->compress(src, zstrm->buffer, dst_len,
-+			zstrm->private);
-+}
-+
-+int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-+		size_t src_len, unsigned char *dst)
-+{
-+	return comp->backend->decompress(src, src_len, dst);
-+}
-+
-+void zcomp_destroy(struct zcomp *comp)
-+{
-+	zcomp_strm_free(comp, comp->zstrm);
-+	kfree(comp);
-+}
-+
-+/*
-+ * search available compressors for requested algorithm.
-+ * allocate new zcomp and initialize it. return NULL
-+ * if requested algorithm is not supported or in case
-+ * of init error
-+ */
-+struct zcomp *zcomp_create(const char *compress)
-+{
-+	struct zcomp *comp;
-+	struct zcomp_backend *backend;
-+
-+	backend = find_backend(compress);
-+	if (!backend)
-+		return NULL;
-+
-+	comp = kzalloc(sizeof(struct zcomp), GFP_KERNEL);
-+	if (!comp)
-+		return NULL;
-+
-+	comp->backend = backend;
-+	mutex_init(&comp->strm_lock);
-+
-+	comp->zstrm = zcomp_strm_alloc(comp);
-+	if (!comp->zstrm) {
-+		kfree(comp);
-+		return NULL;
-+	}
-+	return comp;
-+}
-diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-new file mode 100644
-index 0000000..c9a98e1
---- /dev/null
-+++ b/drivers/block/zram/zcomp.h
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _ZCOMP_H_
-+#define _ZCOMP_H_
-+
-+#include <linux/mutex.h>
-+
-+struct zcomp_strm {
-+	/* compression/decompression buffer */
-+	void *buffer;
-+	/*
-+	 * The private data of the compression stream, only compression
-+	 * stream backend can touch this (e.g. compression algorithm
-+	 * working memory)
-+	 */
-+	void *private;
-+};
-+
-+/* static compression backend */
-+struct zcomp_backend {
-+	int (*compress)(const unsigned char *src, unsigned char *dst,
-+			size_t *dst_len, void *private);
-+
-+	int (*decompress)(const unsigned char *src, size_t src_len,
-+			unsigned char *dst);
-+
-+	void *(*create)(void);
-+	void (*destroy)(void *private);
-+
-+	const char *name;
-+};
-+
-+/* dynamic per-device compression frontend */
-+struct zcomp {
-+	struct mutex strm_lock;
+diff --git a/drivers/block/zram/Makefile b/drivers/block/zram/Makefile
+index cb0f9ce..757c6a5 100644
+--- a/drivers/block/zram/Makefile
++++ b/drivers/block/zram/Makefile
+@@ -1,3 +1,3 @@
+-zram-y	:=	zram_drv.o
++zram-y	:=	zcomp_lzo.o zcomp.o zram_drv.o
+ 
+ obj-$(CONFIG_ZRAM)	+=	zram.o
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9baac5b..fc12a69 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -29,7 +29,6 @@
+ #include <linux/genhd.h>
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
+-#include <linux/lzo.h>
+ #include <linux/string.h>
+ #include <linux/vmalloc.h>
+ 
+@@ -38,6 +37,7 @@
+ /* Globals */
+ static int zram_major;
+ static struct zram *zram_devices;
++static const char *default_compressor = "lzo";
+ 
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+@@ -160,8 +160,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
+ static void zram_meta_free(struct zram_meta *meta)
+ {
+ 	zs_destroy_pool(meta->mem_pool);
+-	kfree(meta->compress_workmem);
+-	free_pages((unsigned long)meta->compress_buffer, 1);
+ 	vfree(meta->table);
+ 	kfree(meta);
+ }
+@@ -173,22 +171,11 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+ 	if (!meta)
+ 		goto out;
+ 
+-	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+-	if (!meta->compress_workmem)
+-		goto free_meta;
+-
+-	meta->compress_buffer =
+-		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
+-	if (!meta->compress_buffer) {
+-		pr_err("Error allocating compressor buffer space\n");
+-		goto free_workmem;
+-	}
+-
+ 	num_pages = disksize >> PAGE_SHIFT;
+ 	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+ 	if (!meta->table) {
+ 		pr_err("Error allocating zram address table\n");
+-		goto free_buffer;
++		goto free_meta;
+ 	}
+ 
+ 	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
+@@ -198,15 +185,10 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+ 	}
+ 
+ 	rwlock_init(&meta->tb_lock);
+-	mutex_init(&meta->buffer_lock);
+ 	return meta;
+ 
+ free_table:
+ 	vfree(meta->table);
+-free_buffer:
+-	free_pages((unsigned long)meta->compress_buffer, 1);
+-free_workmem:
+-	kfree(meta->compress_workmem);
+ free_meta:
+ 	kfree(meta);
+ 	meta = NULL;
+@@ -280,8 +262,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 
+ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ {
+-	int ret = LZO_E_OK;
+-	size_t clen = PAGE_SIZE;
++	int ret = 0;
+ 	unsigned char *cmem;
+ 	struct zram_meta *meta = zram->meta;
+ 	unsigned long handle;
+@@ -301,12 +282,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ 	if (size == PAGE_SIZE)
+ 		copy_page(mem, cmem);
+ 	else
+-		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
++		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+ 	zs_unmap_object(meta->mem_pool, handle);
+ 	read_unlock(&meta->tb_lock);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+-	if (unlikely(ret != LZO_E_OK)) {
++	if (unlikely(ret)) {
+ 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+ 		atomic64_inc(&zram->stats.failed_reads);
+ 		return ret;
+@@ -349,7 +330,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 
+ 	ret = zram_decompress_page(zram, uncmem, index);
+ 	/* Should NEVER happen. Return bio error if it does. */
+-	if (unlikely(ret != LZO_E_OK))
++	if (unlikely(ret))
+ 		goto out_cleanup;
+ 
+ 	if (is_partial_io(bvec))
+@@ -374,11 +355,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	struct page *page;
+ 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+ 	struct zram_meta *meta = zram->meta;
 +	struct zcomp_strm *zstrm;
-+	struct zcomp_backend *backend;
-+};
+ 	bool locked = false;
+ 
+ 	page = bvec->bv_page;
+-	src = meta->compress_buffer;
+-
+ 	if (is_partial_io(bvec)) {
+ 		/*
+ 		 * This is a partial IO. We need to read the full page
+@@ -394,7 +374,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			goto out;
+ 	}
+ 
+-	mutex_lock(&meta->buffer_lock);
++	zstrm = zcomp_strm_find(zram->comp);
+ 	locked = true;
+ 	user_mem = kmap_atomic(page);
+ 
+@@ -420,22 +400,20 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		goto out;
+ 	}
+ 
+-	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+-			       meta->compress_workmem);
++	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
+ 	if (!is_partial_io(bvec)) {
+ 		kunmap_atomic(user_mem);
+ 		user_mem = NULL;
+ 		uncmem = NULL;
+ 	}
+ 
+-	if (unlikely(ret != LZO_E_OK)) {
++	if (unlikely(ret)) {
+ 		pr_err("Compression failed! err=%d\n", ret);
+ 		goto out;
+ 	}
+-
++	src = zstrm->buffer;
+ 	if (unlikely(clen > max_zpage_size)) {
+ 		clen = PAGE_SIZE;
+-		src = NULL;
+ 		if (is_partial_io(bvec))
+ 			src = uncmem;
+ 	}
+@@ -457,6 +435,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		memcpy(cmem, src, clen);
+ 	}
+ 
++	zcomp_strm_release(zram->comp, zstrm);
++	locked = false;
+ 	zs_unmap_object(meta->mem_pool, handle);
+ 
+ 	/*
+@@ -475,10 +455,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	atomic64_inc(&zram->stats.pages_stored);
+ out:
+ 	if (locked)
+-		mutex_unlock(&meta->buffer_lock);
++		zcomp_strm_release(zram->comp, zstrm);
+ 	if (is_partial_io(bvec))
+ 		kfree(uncmem);
+-
+ 	if (ret)
+ 		atomic64_inc(&zram->stats.failed_writes);
+ 	return ret;
+@@ -522,6 +501,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 		zs_free(meta->mem_pool, handle);
+ 	}
+ 
++	zcomp_destroy(zram->comp);
+ 	zram_meta_free(zram->meta);
+ 	zram->meta = NULL;
+ 	/* Reset stats */
+@@ -550,9 +530,18 @@ static ssize_t disksize_store(struct device *dev,
+ 		return -EBUSY;
+ 	}
+ 
++	zram->comp = zcomp_create(default_compressor);
++	if (!zram->comp) {
++		up_write(&zram->init_lock);
++		pr_info("Cannot initialise %s compressing backend\n",
++				default_compressor);
++		return -EINVAL;
++	}
 +
-+struct zcomp *zcomp_create(const char *comp);
-+void zcomp_destroy(struct zcomp *comp);
-+
-+struct zcomp_strm *zcomp_strm_find(struct zcomp *comp);
-+void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm);
-+
-+int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-+		const unsigned char *src, size_t *dst_len);
-+
-+int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-+		size_t src_len, unsigned char *dst);
-+#endif /* _ZCOMP_H_ */
-diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
-new file mode 100644
-index 0000000..da1bc47
---- /dev/null
-+++ b/drivers/block/zram/zcomp_lzo.c
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/lzo.h>
-+
-+#include "zcomp_lzo.h"
-+
-+static void *lzo_create(void)
-+{
-+	return kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-+}
-+
-+static void lzo_destroy(void *private)
-+{
-+	kfree(private);
-+}
-+
-+static int lzo_compress(const unsigned char *src, unsigned char *dst,
-+		size_t *dst_len, void *private)
-+{
-+	int ret = lzo1x_1_compress(src, PAGE_SIZE, dst, dst_len, private);
-+	return ret == LZO_E_OK ? 0 : ret;
-+}
-+
-+static int lzo_decompress(const unsigned char *src, size_t src_len,
-+		unsigned char *dst)
-+{
-+	size_t dst_len = PAGE_SIZE;
-+	int ret = lzo1x_decompress_safe(src, src_len, dst, &dst_len);
-+	return ret == LZO_E_OK ? 0 : ret;
-+}
-+
-+struct zcomp_backend zcomp_lzo = {
-+	.compress = lzo_compress,
-+	.decompress = lzo_decompress,
-+	.create = lzo_create,
-+	.destroy = lzo_destroy,
-+	.name = "lzo",
-+};
-diff --git a/drivers/block/zram/zcomp_lzo.h b/drivers/block/zram/zcomp_lzo.h
-new file mode 100644
-index 0000000..128c580
---- /dev/null
-+++ b/drivers/block/zram/zcomp_lzo.h
-@@ -0,0 +1,17 @@
-+/*
-+ * Copyright (C) 2014 Sergey Senozhatsky.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _ZCOMP_LZO_H_
-+#define _ZCOMP_LZO_H_
-+
+ 	disksize = PAGE_ALIGN(disksize);
+ 	zram->meta = zram_meta_alloc(disksize);
+ 	if (!zram->meta) {
++		zcomp_destroy(zram->comp);
+ 		up_write(&zram->init_lock);
+ 		return -ENOMEM;
+ 	}
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index 1d5b1f5..45e04f7 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -16,9 +16,10 @@
+ #define _ZRAM_DRV_H_
+ 
+ #include <linux/spinlock.h>
+-#include <linux/mutex.h>
+ #include <linux/zsmalloc.h>
+ 
 +#include "zcomp.h"
 +
-+extern struct zcomp_backend zcomp_lzo;
+ /*
+  * Some arbitrary value. This is just to catch
+  * invalid value for num_devices module parameter.
+@@ -81,17 +82,16 @@ struct zram_stats {
+ 
+ struct zram_meta {
+ 	rwlock_t tb_lock;	/* protect table */
+-	void *compress_workmem;
+-	void *compress_buffer;
+ 	struct table *table;
+ 	struct zs_pool *mem_pool;
+-	struct mutex buffer_lock; /* protect compress buffers */
+ };
+ 
+ struct zram {
+ 	struct zram_meta *meta;
+ 	struct request_queue *queue;
+ 	struct gendisk *disk;
++	struct zcomp *comp;
 +
-+#endif /* _ZCOMP_LZO_H_ */
+ 	/* Prevent concurrent execution of device init, reset and R/W request */
+ 	struct rw_semaphore init_lock;
+ 	/*
 -- 
 1.9.0.359.g5e34a15
 
