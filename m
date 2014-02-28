@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaB1Kti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:49:38 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:43324 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaB1Ktg (ORCPT
+	id S1751862AbaB1Kvk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:51:40 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35943 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaB1Kvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:49:36 -0500
-Date: Fri, 28 Feb 2014 10:49:27 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH 0/4] mfd: sec: Add support for S2MPS14
-Message-ID: <20140228104927.GB31720@lee--X1>
-References: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 28 Feb 2014 05:51:39 -0500
+Message-ID: <1393584643.3522.5.camel@tkhai>
+Subject: Re: [PATCH]sched/core: Return possibility to set RT and DL classes
+ back
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        <tkhai@yandex.ru>
+Date: Fri, 28 Feb 2014 14:50:43 +0400
+In-Reply-To: <1393496657.3522.3.camel@tkhai>
+References: <1393496657.3522.3.camel@tkhai>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Few days ago I sent patches adding support for S2MPS14 device to the
-> sec-core/s2mps11 drivers. These patches were rather large as they covered
-> multiple subsystems so I decided to split everything into smaller, separate
-> patches.
-> 
-> The original patchset (version 3) can be found here:
-> http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
-> 
-> This patchset is a small subset of the patchset related to the MFD core
-> driver. It adds support for the S2MPS14 device only to the MFD core driver.
-> I already obtained acks from Lee Jones during previous reviews.
-> 
-> The patchset is based on current Linus' tree *with* patch:
-> mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-> (which is already in Lee Jones' MFD tree)
+Thomas, have you seen this?
 
-Can all of these patches be applied as they are?
+Nothing works at the moment:
 
-Is anything going to break as a result?
+now
 
-> Krzysztof Kozlowski (4):
->   mfd: sec: Add maximum RTC register for regmap config
->   mfd: sec: Select different RTC regmaps for devices
->   mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
->   mfd: sec: Add support for S2MPS14
+   21 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3                                                                                                                                            
+   16 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2                                                                                                                                            
+   11 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1                                                                                                                                            
+   10 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
+
+   22 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
+   17 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/2                                                                                                                                           
+   12 root      20   0     0    0    0 S  0.0  0.0   0:00.04 migration/1                                                                                                                                           
+    9 root      20   0     0    0    0 S  0.0  0.0   0:00.20 migration/0
+
+with fix
+
+   21 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3         
+   16 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2         
+   11 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1         
+   10 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
+
+   22 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
+   17 root      RT   0     0    0    0 S  0.0  0.0   0:00.03 migration/2                                                                                                                                           
+   12 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/1                                                                                                                                           
+    9 root      RT   0     0    0    0 S  0.0  0.0   0:00.24 migration/0
+
+В Чт, 27/02/2014 в 14:24 +0400, Kirill Tkhai пишет:
+> [PATCH]sched/core: Return possibility to set RT and DL classes back
 > 
->  drivers/mfd/sec-core.c              |   57 ++++++++++++-
->  drivers/mfd/sec-irq.c               |   97 ++++++++++++++++++++--
->  include/linux/mfd/samsung/core.h    |    1 +
->  include/linux/mfd/samsung/irq.h     |   31 ++++++-
->  include/linux/mfd/samsung/rtc.h     |   57 +++++++++++--
->  include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
->  6 files changed, 378 insertions(+), 17 deletions(-)
->  create mode 100644 include/linux/mfd/samsung/s2mps14.h
+> I found that it's impossible to set RT policy for tasks at the moment.
+> 
+> This is regression after commit [sched: Consider pi boosting in setscheduler()]
+> 				[c365c292d05908c6ea6f32708f331e21033fe71d     ]
+> Fix that.
+> 
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@redhat.com>
+> ---
+>  kernel/sched/core.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 84b23ce..30cf9ad 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -3193,6 +3193,10 @@ static void __setscheduler_params(struct task_struct *p,
+>  	 * getparam()/getattr() don't report silly values for !rt tasks.
+>  	 */
+>  	p->rt_priority = attr->sched_priority;
+> +
+> +	p->normal_prio = normal_prio(p);
+> +	p->prio = rt_mutex_getprio(p);
+> +
+>  	set_load_weight(p);
+>  }
+>  
 > 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
