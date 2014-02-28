@@ -1,128 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaB1Pra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:47:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaB1Pr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:47:28 -0500
-Date: Fri, 28 Feb 2014 16:47:15 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Re: [PATCH] x86 trace: Fix page fault tracing bug
-Message-ID: <20140228154715.GC1133@krava.brq.redhat.com>
-References: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
+	id S1752816AbaB1Pud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:50:33 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:52582 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752332AbaB1Pub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 10:50:31 -0500
+Date: Fri, 28 Feb 2014 16:50:28 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: atmel_usba: Fix crashed during stopping
+ when DEBUG is enabled
+Message-ID: <20140228155027.GC2974@piout.net>
+References: <1393598066-4016-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
 Content-Disposition: inline
-In-Reply-To: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1393598066-4016-1-git-send-email-gregory.clement@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 04:33:40PM +0100, Jiri Olsa wrote:
-> The trace_do_page_fault function trigger tracepoint
-> and then handles the actual page fault.
-> 
-> This could lead to error if the tracepoint caused page
-> fault. The original cr2 value gets lost and the original
-> page fault handler kills current process with SIGSEGV.
-> 
-> This happens if you record page faults with callchain
-> data, the user part of it will cause tracepoint handler
-> to page fault:
-> 
->   # perf record -g -e exceptions:page_fault_user ls
-> 
-> Fixing this by saving the original cr2 value
-> and using it after tracepoint handler is done.
-> 
 
-sry, forgot..
+--qDbXVdCdHGoSgWSk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Hi Gregory,
 
-jirka
-
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+On 28/02/2014 at 15:34:01 +0100, Gregory CLEMENT wrote :
+> The debug trace in the atmel_usba_stop function made the assumption
+> that the driver pointer passed in parameter was not NULL. Since the
+> commit "usb: gadget: udc-core: fix a regression during gadget driver
+> unbinding", it was no more always true. This lead to a kernel crash.
+>=20
+> This commit now use the driver pointer stored in udc which fixes this
+> issue.
+>=20
+> Since the commit which have triggered this issue was backported to the
+> 3.2 stable branch, then this one should also be backported to the same
+> kernel.
+>=20
+> Cc: stable@vger.kernel.org # v3.2+
+> Fixes: 511f3c5326ea (usb: gadget: udc-core: fix a regression during gadge=
+t driver unbinding)
 > ---
->  arch/x86/mm/fault.c | 25 ++++++++++++++++++-------
->  1 file changed, 18 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 9d591c8..52fad6c 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -1016,11 +1016,11 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
->   * routines.
->   */
->  static void __kprobes
-> -__do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> +__do_page_fault(struct pt_regs *regs, unsigned long error_code,
-> +		unsigned long address)
->  {
->  	struct vm_area_struct *vma;
->  	struct task_struct *tsk;
-> -	unsigned long address;
->  	struct mm_struct *mm;
->  	int fault;
->  	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
-> @@ -1028,9 +1028,6 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  	tsk = current;
->  	mm = tsk->mm;
->  
-> -	/* Get the faulting address: */
-> -	address = read_cr2();
+>  drivers/usb/gadget/atmel_usba_udc.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atm=
+el_usba_udc.c
+> index 52771d4c44bc..167843de2d8a 100644
+> --- a/drivers/usb/gadget/atmel_usba_udc.c
+> +++ b/drivers/usb/gadget/atmel_usba_udc.c
+> @@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_gadget *gad=
+get,
+>  	toggle_bias(0);
+>  	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
+> =20
+> -	udc->driver =3D NULL;
 > -
->  	/*
->  	 * Detect and handle instructions that would cause a page fault for
->  	 * both a tracked kernel page and a userspace page.
-> @@ -1248,9 +1245,14 @@ dotraplinkage void __kprobes
->  do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  {
->  	enum ctx_state prev_state;
-> +	unsigned long address;
->  
->  	prev_state = exception_enter();
-> -	__do_page_fault(regs, error_code);
+>  	clk_disable_unprepare(udc->hclk);
+>  	clk_disable_unprepare(udc->pclk);
+> =20
+> -	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
+> +	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
 > +
-> +	/* Get the faulting address: */
-> +	address = read_cr2();
-> +
-> +	__do_page_fault(regs, error_code, address);
->  	exception_exit(prev_state);
+> +	udc->driver =3D NULL;
+
+Shouldn't we get rid of that assignment as it is done in
+usb_gadget_remove_driver() anyway ?
+
+> =20
+>  	return 0;
 >  }
->  
-> @@ -1267,9 +1269,18 @@ dotraplinkage void __kprobes
->  trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
->  {
->  	enum ctx_state prev_state;
-> +	unsigned long address;
->  
->  	prev_state = exception_enter();
-> +
-> +	/*
-> +	 * The tracepoint processing could trigger another page
-> +	 * fault (user space callchain reading) and destroy the
-> +	 * original cr2 value, so read the faulting address now.
-> +	 */
-> +	address = read_cr2();
-> +
->  	trace_page_fault_entries(regs, error_code);
-> -	__do_page_fault(regs, error_code);
-> +	__do_page_fault(regs, error_code, address);
->  	exception_exit(prev_state);
->  }
-> -- 
-> 1.7.11.7
-> 
+> --=20
+> 1.8.1.2
+>=20
+
+--=20
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--qDbXVdCdHGoSgWSk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTELBDAAoJEKbNnwlvZCyzKnsQALtqY0XDBGJbBZMsK9M0o/jN
+3tS3ZuuxcwH3GB8LGcZKnkzuWxF4RQ1ZoNGYSwZUx+u6efccLew1u9GRGceL0fcp
+455TofGkaTPGAYGLs8TeYfSgeXy+VCgFnZhr6Bpihxu6zqohw+sDLqIoGj25jxDi
+xyKRO4H2kSRwhI7BXS3YqsA6EaU3d+aFL2tTQ3Ze4uIsLL+BqJo4hVlhkjmMxy17
+T1MxhM671Fccf7Vf+HxewX/Ywh/6V30d4UYUTcXnD16R7CC1AHvkqowB8LUwYw5c
+5WRWi8pLEho87XRkMhtu7Q8bQfpinZvZ6TqjjPoDdfskVOTCrsMWm9Q0u7lAlmk2
+aOQNDkJ8jW7aiFBAbpxRHMrTGySxn63sH0IzcaSirWgeZrfuBee5oN4OBPaF3oRo
+JQVk6zHIItAqu6b/QaYfR1dXrPEe1bKBXFahnZ2KRYF/pXSQ3U0KUOoiSDJuhqKz
+HFI31Yb6XvPmXEd7n7CDGjOATRpLmoPgCgs0aPxjvc12BXPlrqjpBTF4zfGzRDVL
+d2ckmhnb01CoUi0rzafNOCu2icAZw5lDxzq8gfYEoyY2xMnK/C358UGXNv2qIcZy
+Mh6Fn/0a1UziijwUzS60h5h71tWw/SetDula89ppExk1K7uDKA16UStjXY9fbrLm
+oHAtGmKuEFZhPbs5PlSp
+=+Vx1
+-----END PGP SIGNATURE-----
+
+--qDbXVdCdHGoSgWSk--
