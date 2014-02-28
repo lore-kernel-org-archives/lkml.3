@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaB1Ule (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:41:34 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:44249 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaB1Ulc (ORCPT
+	id S1752434AbaB1Uqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:46:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41904 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaB1Uqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:41:32 -0500
+	Fri, 28 Feb 2014 15:46:31 -0500
+Date: Fri, 28 Feb 2014 21:46:21 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] x86: Rename copy_from_user_nmi() to
+ copy_from_user_trace()
+Message-ID: <20140228204621.GA14089@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+ <20140227215726.7018c861@gandalf.local.home>
+ <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+ <20140228092341.12a40f7c@gandalf.local.home>
+ <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+ <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+ <20140228154026.GH9987@twins.programming.kicks-ass.net>
+ <5310B60F.30806@zytor.com>
+ <20140228112946.1f194397@gandalf.local.home>
+ <20140228143316.211d4034@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20140228203200.GE3405@xanatos>
-References: <1393259343-825-1-git-send-email-mathias.nyman@linux.intel.com>
-	<Pine.LNX.4.44L0.1402241243230.1427-100000@iolanthe.rowland.org>
-	<20140228203200.GE3405@xanatos>
-Date: Fri, 28 Feb 2014 12:41:31 -0800
-Message-ID: <CAPcyv4j4qsuXGqpUEV1rTLDg4jZix_MEQho8fzxYV5eQ9tyusA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] xhci: Prevent runtime pm from autosuspending
- during initialization
-From: Dan Williams <dan.j.williams@intel.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        USB list <linux-usb@vger.kernel.org>, david.a.cohen@linux.intel.com,
-        Jianqiang Tang <jianqiang.tang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228143316.211d4034@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 12:32 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Mon, Feb 24, 2014 at 12:44:46PM -0500, Alan Stern wrote:
->> On Mon, 24 Feb 2014, Mathias Nyman wrote:
->>
->> > xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
->> > to register its usb-2 bus, and then continue to manually register the
->> > usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
->> > might thus trigger a runtime suspend before the usb-3 bus is ready.
->> >
->> > Prevent the runtime suspend by increasing the usage count in the
->> > beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
->> > ready.
->> >
->> > xhci-platform driver is not using usb_hcd_pci_probe to set up
->> > busses and should not need to have it's usage count increased during probe.
->> >
->> > Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
->> > ---
->> >  drivers/usb/host/xhci-pci.c | 11 ++++++++++-
->> >  1 file changed, 10 insertions(+), 1 deletion(-)
->> >
->> > diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
->> > index 04f986d..ea7158b 100644
->> > --- a/drivers/usb/host/xhci-pci.c
->> > +++ b/drivers/usb/host/xhci-pci.c
->> > @@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
->> >     struct usb_hcd *hcd;
->> >
->> >     driver = (struct hc_driver *)id->driver_data;
->> > +
->> > +   /* Prevent USB-2 roothub runtime suspend until USB-3 is initialized. */
->> > +   pm_runtime_get_noresume(&dev->dev);
->>
->> Strictly speaking, this prevents the _controller_ from going into
->> runtime suspend -- not the root hub.
->
-> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+On Fri, Feb 28, 2014 at 02:33:16PM -0500, Steven Rostedt wrote:
+> [ H. Peter, Here's the rename patch. I did not include your update. You
+> can add that first and then massage this patch on top. But this isn't
+> critical for mainline or stable, where as I believe your patch is. ]
+> 
+> The tracing utilities sometimes need to read from userspace (stack tracing),
+> and to do this it has as special copy_from_user function called
+> copy_from_user_nmi(). Well, as tracers can call this from outside of
+> nmi context, the "_nmi" part is a misnomer and "_trace" is a better
+> name.
 
-Pardon the nitpick, but this is an acked-by if Mathias is submitting.
+NAK, spin_lock_irq() is very much an IRQ safe lock. Similarly
+copy_from_user_nmi() is an NMI safe copy from user.
+
+Furthermore, there's exactly 0 trace users, so the proposed name is
+actively worse.
