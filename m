@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaB1PeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:34:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677AbaB1PeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:34:02 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: [PATCH] x86 trace: Fix page fault tracing bug
-Date: Fri, 28 Feb 2014 16:33:40 +0100
-Message-Id: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
+	id S1752513AbaB1Pki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:40:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33158 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaB1Pkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 10:40:37 -0500
+Date: Fri, 28 Feb 2014 16:40:26 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228154026.GH9987@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
+ <20140227173150.4e5ed747@gandalf.local.home>
+ <530FC1C6.5040209@zytor.com>
+ <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+ <20140227215726.7018c861@gandalf.local.home>
+ <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+ <20140228092341.12a40f7c@gandalf.local.home>
+ <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+ <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The trace_do_page_fault function trigger tracepoint
-and then handles the actual page fault.
+On Fri, Feb 28, 2014 at 07:13:06AM -0800, H. Peter Anvin wrote:
+> If I'm reading this right we end up going from the page fault
+> tracepoint to copy_from_user_nmi() without going through NMI, and the
+> cr2 corruption is obvious.  I guess the assumption that only the NMI
+> path needed to save cr2 is flawed?
 
-This could lead to error if the tracepoint caused page
-fault. The original cr2 value gets lost and the original
-page fault handler kills current process with SIGSEGV.
+It was never assumed it would only go through NMI, but that it would be
+NMI safe -- and as it turns out, it is that.
 
-This happens if you record page faults with callchain
-data, the user part of it will cause tracepoint handler
-to page fault:
+What I did assume was that any other callsites would be safe, seeing how
+they'd already be running in 'normal' contexts.
 
-  # perf record -g -e exceptions:page_fault_user ls
+I had not considered people putting tracepoints _that_ early in the
+exception paths.
 
-Fixing this by saving the original cr2 value
-and using it after tracepoint handler is done.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
----
- arch/x86/mm/fault.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 9d591c8..52fad6c 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1016,11 +1016,11 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
-  * routines.
-  */
- static void __kprobes
--__do_page_fault(struct pt_regs *regs, unsigned long error_code)
-+__do_page_fault(struct pt_regs *regs, unsigned long error_code,
-+		unsigned long address)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
--	unsigned long address;
- 	struct mm_struct *mm;
- 	int fault;
- 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
-@@ -1028,9 +1028,6 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	tsk = current;
- 	mm = tsk->mm;
- 
--	/* Get the faulting address: */
--	address = read_cr2();
--
- 	/*
- 	 * Detect and handle instructions that would cause a page fault for
- 	 * both a tracked kernel page and a userspace page.
-@@ -1248,9 +1245,14 @@ dotraplinkage void __kprobes
- do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-+	unsigned long address;
- 
- 	prev_state = exception_enter();
--	__do_page_fault(regs, error_code);
-+
-+	/* Get the faulting address: */
-+	address = read_cr2();
-+
-+	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
- 
-@@ -1267,9 +1269,18 @@ dotraplinkage void __kprobes
- trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
- {
- 	enum ctx_state prev_state;
-+	unsigned long address;
- 
- 	prev_state = exception_enter();
-+
-+	/*
-+	 * The tracepoint processing could trigger another page
-+	 * fault (user space callchain reading) and destroy the
-+	 * original cr2 value, so read the faulting address now.
-+	 */
-+	address = read_cr2();
-+
- 	trace_page_fault_entries(regs, error_code);
--	__do_page_fault(regs, error_code);
-+	__do_page_fault(regs, error_code, address);
- 	exception_exit(prev_state);
- }
--- 
-1.7.11.7
-
+Note that there's more tracepoints there than the one mentioned.
