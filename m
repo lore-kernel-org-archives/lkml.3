@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904AbaB1UT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:19:56 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:39746 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaB1UTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:19:54 -0500
+	id S1752124AbaB1UUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:20:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30011 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041AbaB1UUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 15:20:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,564,1389772800"; 
+   d="scan'208";a="483841112"
+Date: Fri, 28 Feb 2014 15:20:31 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140228202031.GB12820@linux.intel.com>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com>
+ <1393609771.6784.83.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <e33a0c21-5d74-4584-ac35-8cd45a905310@email.android.com>
-References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
- <cover.1393545985.git.luto@amacapital.net> <2f5d45b67dcd2c4ba58ed7ff13cfcd7a4da977fa.1393545985.git.luto@amacapital.net>
- <1393572505.1019.10.camel@wall-e.seibold.net> <e33a0c21-5d74-4584-ac35-8cd45a905310@email.android.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 28 Feb 2014 12:19:34 -0800
-Message-ID: <CALCETrXOrJPidKSAshwE94wumnWqZdwDQ0+fWAY8UZxLf+PCdw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] x86: Use the default ABI for the 32-bit vDSO
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stefani Seibold <stefani@seibold.net>, X86 ML <x86@kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393609771.6784.83.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 7:06 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> How many internal function calls are there? It seems we should try to avoid those as much as possible by suitable inlining.
+On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
+> On Tue, 2014-02-25 at 09:18 -0500, Matthew Wilcox wrote:
+> > Instead of calling aops->get_xip_mem from the fault handler, the
+> > filesystem passes a get_block_t that is used to find the appropriate
+> > blocks.
+>  :
+> > +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> > +			get_block_t get_block)
+> > +{
+> > +	struct file *file = vma->vm_file;
+> > +	struct inode *inode = file_inode(file);
+> > +	struct address_space *mapping = file->f_mapping;
+> > +	struct buffer_head bh;
+> > +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
+> > +	sector_t block;
+> > +	pgoff_t size;
+> > +	unsigned long pfn;
+> > +	int error;
+> > +
+> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > +	if (vmf->pgoff >= size)
+> > +		return VM_FAULT_SIGBUS;
+> > +
+> > +	memset(&bh, 0, sizeof(bh));
+> > +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - inode->i_blkbits);
+> > +	bh.b_size = PAGE_SIZE;
+> > +	error = get_block(inode, block, &bh, 0);
+> > +	if (error || bh.b_size < PAGE_SIZE)
+> > +		return VM_FAULT_SIGBUS;
+> 
+> I am learning the code and have some questions.
 
-There are no non-static calls at all, except for __x86.get_pc_thunk.
-I imagine that gcc is smart enough to improve the calling convention
-to non-externally-visible functions.
+Hi Toshi,
 
-Amazingly (to me, anyway), the performance of the 32-bit version seems
-to be within 1 ns or so of the 64-bit version on SNB.  I suspect that
-Intel has optimized the crap out of these things.
+Glad to see you're looking at it.  Let me try to help ...
 
---Andy
+> The original code,
+> xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
+> get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
+> calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
+> function, it looks to me that get_block(,,,0) returns 0 for both cases
+> (success and -ENODATA previously), which are dealt in the same way.  Is
+> that right?  If so, is there any reason for the change?
+
+Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
+interface because filesystems are actually capable of returning more
+information than that, eg how long the hole is (ext4 *doesn't*, but I
+consider that to be a bug).
+
+I don't get to decide what the get_block() interface looks like.  It's the
+standard way that the VFS calls back into the filesystem and has been
+around for probably close to twenty years at this point.  I'm still trying
+to understand exactly what the contract is for get_blocks() ... I have
+a document that I'm working on to try to explain it, but it's tough going!
+
+> Also, isn't it
+> possible to call get_block(,,,1) even if get_block(,,,0) found a block?
+
+The code in question looks like this:
+
+        error = get_block(inode, block, &bh, 0);
+        if (error || bh.b_size < PAGE_SIZE)
+                goto sigbus;
+
+        if (!buffer_written(&bh) && !vmf->cow_page) {
+                if (vmf->flags & FAULT_FLAG_WRITE) {
+                        error = get_block(inode, block, &bh, 1);
+
+where buffer_written is defined as:
+        return buffer_mapped(bh) && !buffer_unwritten(bh);
+
+Doing some boolean algebra, that's:
+
+	if (!buffer_mapped || buffer_unwritten)
+
+In either case, we want to tell the filesystem that we're writing to
+this block.  At least, that's my current understanding of the get_block()
+interface.  I'm open to correction here!
