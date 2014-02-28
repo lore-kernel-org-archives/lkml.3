@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaB1VSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:18:08 -0500
-Received: from sauhun.de ([89.238.76.85]:57151 "EHLO pokefinder.org"
+	id S1752576AbaB1VUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:20:35 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:55383 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206AbaB1VSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:18:04 -0500
-Date: Fri, 28 Feb 2014 22:17:58 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: David Howells <dhowells@redhat.com>
-Cc: wolfram@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c: Add message transfer tracepoints for I2C
-Message-ID: <20140228211758.GB2517@katana>
-References: <20140218203346.GG18768@katana>
- <20140109214954.25590.73057.stgit@warthog.procyon.org.uk>
- <10892.1393506444@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l76fUT7nc3MelDdI"
-Content-Disposition: inline
-In-Reply-To: <10892.1393506444@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751931AbaB1VUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 16:20:34 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: David Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jakob Bornecrant <jakob@vmware.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] drm/vmwgfx: avoid null pointer dereference at failure paths
+Date: Sat,  1 Mar 2014 01:20:18 +0400
+Message-Id: <1393622418-6515-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+vmw_takedown_otable_base() and vmw_mob_unbind() check for
+potential vmw_fifo_reserve() failure and print error message,
+but then immediately dereference NULL pointer.
 
---l76fUT7nc3MelDdI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Found by Linux Driver Verification project (linuxtesting.org).
 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_mob.c | 35 +++++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 16 deletions(-)
 
-> > And for the buffer: %*phN is difficult to read IMO. What about %*ph? Or
-> > %*phD at least?
->=20
-> My problem with that is that it increases the length of the output by 50%=
- and
-> there's a hard limit on how much output we may produce.
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
+index d4a5a19cb8c3..04a64b8cd3cd 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
+@@ -188,18 +188,20 @@ static void vmw_takedown_otable_base(struct vmw_private *dev_priv,
+ 
+ 	bo = otable->page_table->pt_bo;
+ 	cmd = vmw_fifo_reserve(dev_priv, sizeof(*cmd));
+-	if (unlikely(cmd == NULL))
+-		DRM_ERROR("Failed reserving FIFO space for OTable setup.\n");
+-
+-	memset(cmd, 0, sizeof(*cmd));
+-	cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
+-	cmd->header.size = sizeof(cmd->body);
+-	cmd->body.type = type;
+-	cmd->body.baseAddress = 0;
+-	cmd->body.sizeInBytes = 0;
+-	cmd->body.validSizeInBytes = 0;
+-	cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
+-	vmw_fifo_commit(dev_priv, sizeof(*cmd));
++	if (unlikely(cmd == NULL)) {
++		DRM_ERROR("Failed reserving FIFO space for OTable "
++			  "takedown.\n");
++	} else {
++		memset(cmd, 0, sizeof(*cmd));
++		cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
++		cmd->header.size = sizeof(cmd->body);
++		cmd->body.type = type;
++		cmd->body.baseAddress = 0;
++		cmd->body.sizeInBytes = 0;
++		cmd->body.validSizeInBytes = 0;
++		cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
++		vmw_fifo_commit(dev_priv, sizeof(*cmd));
++	}
+ 
+ 	if (bo) {
+ 		int ret;
+@@ -562,11 +564,12 @@ void vmw_mob_unbind(struct vmw_private *dev_priv,
+ 	if (unlikely(cmd == NULL)) {
+ 		DRM_ERROR("Failed reserving FIFO space for Memory "
+ 			  "Object unbinding.\n");
++	} else {
++		cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
++		cmd->header.size = sizeof(cmd->body);
++		cmd->body.mobid = mob->id;
++		vmw_fifo_commit(dev_priv, sizeof(*cmd));
+ 	}
+-	cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
+-	cmd->header.size = sizeof(cmd->body);
+-	cmd->body.mobid = mob->id;
+-	vmw_fifo_commit(dev_priv, sizeof(*cmd));
+ 	if (bo) {
+ 		vmw_fence_single_bo(bo, NULL);
+ 		ttm_bo_unreserve(bo);
+-- 
+1.8.3.2
 
-Is it PAGE_SIZE? How is this handled when the buffer is so big that the
-limit will be reached anyhow? Note that it is really uncommon to
-transfer kilobytes in one go via i2c. Usually, big transfers are split
-up into smaller fragments, say 128-256 byte. So, for readability, I'd
-still favour %*ph.
-
-
---l76fUT7nc3MelDdI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTEP0FAAoJEBQN5MwUoCm2N8QQAJwcR8oQtE8665iDc3n9GSvr
-dNf2LeaMc9glfRZmHXDW6rVFe7duP/ZdBKLklmFLhNEIUALvtDywUpjEn/yFwI4Q
-eGDte13BVq12VgHk9Z56HWxNkLUB+emWl80W3B3eVL5HX4oNopaFlPhcQEIKUln3
-7Lg2pyxAaSgzjmD3Cjq0/gSM7jJqwQR84vqp2FtdUfJ2BcmnGYN6imYgMMpshyyx
-QWrBI4TJE/ZQOIeFYK5/vuEumjX3vsgcbYoC83W7vceNx8B7EVxtV6Qj8FMfXZzL
-bIlJGvGSeHHh96AS3L1itflmthsuFh1inF/Q2qKZB/7oCgP9jrS7s2LMOgHylSz+
-lkVCT8irweisW6vSAymXJlBz5lQiZrl24Zs0u6nP9wPY6Qz6LwqFE4HX5IWWtl94
-rFlwiRN7X/Z4y+MRX6WbalVaRLa74qELN+rhe88dACIgsmrwmYeSTsxqmEXnL+6w
-WDF6HjL2foEdinQaYS9jqUECNY7zOILyRshug8T0rhPxo557qJ9QkVVqA+ai3jmU
-nCXmOPtWihktGzUj7SVDs8MtBXlqGCatwFdJ5Yio13Eol+XD3TanswIXD9uYfm6R
-iNFzg+RTF0ZaM9F7ychKWFuZGIlQPOo2m+20CASlpRq+oKCd7l3fbJjeSsBhzdb6
-rlj+g2jsrt/IL3UsHgXm
-=Yiah
------END PGP SIGNATURE-----
-
---l76fUT7nc3MelDdI--
