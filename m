@@ -1,258 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843AbaB1VKD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:10:03 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:54977 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810AbaB1VJ7 (ORCPT
+	id S1752057AbaB1VNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:13:30 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:54078 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaB1VN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:09:59 -0500
-Message-ID: <5310FB23.5040203@gmail.com>
-Date: Fri, 28 Feb 2014 22:09:55 +0100
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Fri, 28 Feb 2014 16:13:28 -0500
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Grant Likely <grant.likely@linaro.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to drivers/of
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de> <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140228210857.GA17467@earth.universe>
+References: <1393375569-21751-1-git-send-email-sre@debian.org>
+	<1393375569-21751-2-git-send-email-sre@debian.org>
+	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
+	<20140226215452.GA11468@earth.universe>
+	<CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
+	<20140228020536.GB5427@earth.universe>
+	<CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
+	<20140228210857.GA17467@earth.universe>
+Date: Fri, 28 Feb 2014 22:13:27 +0100
+Message-ID: <CAAfyv34UB52FCDQGMWWgsdHH8ksTLmTg0iWQcC+dUbhk5nwuoQ@mail.gmail.com>
+Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 06:35 PM, Philipp Zabel wrote:
-> This patch adds a new struct of_endpoint which is then embedded in struct
-> v4l2_of_endpoint and contains the endpoint properties that are not V4L2
-> (or even media) specific: the port number, endpoint id, local device tree
-> node and remote endpoint phandle. of_graph_parse_endpoint parses those
-> properties and is used by v4l2_of_parse_endpoint, which just adds the
-> V4L2 MBUS information to the containing v4l2_of_endpoint structure.
+On Fri, Feb 28, 2014 at 10:08 PM, Sebastian Reichel <sre@debian.org> wrote:
+> On Fri, Feb 28, 2014 at 09:32:12PM +0100, Belisko Marek wrote:
+>> On Fri, Feb 28, 2014 at 3:05 AM, Sebastian Reichel <sre@debian.org> wrote:
+>> > On Thu, Feb 27, 2014 at 10:34:35PM +0100, Belisko Marek wrote:
+>> >> Well I've tried and it's worse :). I got during booting:
+>> >> [    2.218383] ERROR: could not get IIO channel /battery:temp(0)
+>> >> [    2.224639] platform battery.4: Driver twl4030_madc_battery
+>> >> requests probe deferral
+>> >> Not sure if it's just error or warning but temp is always reported as
+>> >> 0 (and also other values in sysfs).
+>> >
+>> > This is an error, which basically means, that twl4030-madc has not
+>> > yet been loaded. Do you get proper values when you use the old madc
+>> > API with the patchset applied?
+>>
+>> It works without converting to iio consumer (at least I get some
+>> reasonable values).  With conversion it fails with above error. I
+>> recheck (add printk to iio twl4030-madc) that madc driver is
+>> loaded. Could this be that twl4030_madc_battery is loaded earlier
+>> then twl4030_madc and than it fails to get iio channels?
 >
-> Signed-off-by: Philipp Zabel<p.zabel@pengutronix.de>
-> ---
-> Changes since v4:
->   - Fixed users of struct v4l2_of_endpoint
->   - Removed left-over #include<media/of_graph.h>  from v4l2-of.h
-> ---
->   drivers/media/platform/exynos4-is/media-dev.c | 10 ++++-----
->   drivers/media/platform/exynos4-is/mipi-csis.c |  2 +-
->   drivers/media/v4l2-core/v4l2-of.c             | 16 +++-----------
->   drivers/of/base.c                             | 31 +++++++++++++++++++++++++++
->   include/linux/of_graph.h                      | 20 +++++++++++++++++
->   include/media/v4l2-of.h                       |  8 ++-----
->   6 files changed, 62 insertions(+), 25 deletions(-)
+> The error above implies, that twl4030-madc has not been loaded when
+> twl4030-madc-battery was loaded. This iio_channel_get() fails and
+> returns -EPROBE_DEFER. This results in twl4030-madc-battery probe
+> function returning -EPROBE_DEFER. Thus you can simply ignore the
+> error if the twl4030-madc-battery driver is loaded later.
 >
-> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> index d0f82da..04d6ecd 100644
-> --- a/drivers/media/platform/exynos4-is/media-dev.c
-> +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> @@ -469,10 +469,10 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->   		return 0;
+> I guess the easiest way to debug the problem is adding some
+> dev_dbg() at the start of twl4030_madc_conversion(), which
+> prints out the entries of twl4030_madc_request. Currently
+> the IIO API simply calls twl4030_madc_request(), so you
+> should be able to find out the difference.
+OK I'll try to debug it deeper.
 >
->   	v4l2_of_parse_endpoint(ep,&endpoint);
-> -	if (WARN_ON(endpoint.port == 0) || index>= FIMC_MAX_SENSORS)
-> +	if (WARN_ON(endpoint.base.port == 0) || index>= FIMC_MAX_SENSORS)
->   		return -EINVAL;
+> Also: Can you post you DTS? I use the following for Nokia N900:
 >
-> -	pd->mux_id = (endpoint.port - 1)&  0x1;
-> +	pd->mux_id = (endpoint.base.port - 1)&  0x1;
+> / {
+>         battery: n900-battery {
+>                 compatible = "nokia,n900-battery";
+>                 io-channels = <&twl_madc 0>, <&twl_madc 4>, <&twl_madc 12>;
+>                 io-channel-names = "temp", "bsi", "vbat";
+>         };
+> };
 >
->   	rem = of_graph_get_remote_port_parent(ep);
->   	of_node_put(ep);
-> @@ -494,13 +494,13 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->   		return -EINVAL;
->   	}
->
-> -	if (fimc_input_is_parallel(endpoint.port)) {
-> +	if (fimc_input_is_parallel(endpoint.base.port)) {
->   		if (endpoint.bus_type == V4L2_MBUS_PARALLEL)
->   			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_601;
->   		else
->   			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_656;
->   		pd->flags = endpoint.bus.parallel.flags;
-> -	} else if (fimc_input_is_mipi_csi(endpoint.port)) {
-> +	} else if (fimc_input_is_mipi_csi(endpoint.base.port)) {
->   		/*
->   		 * MIPI CSI-2: only input mux selection and
->   		 * the sensor's clock frequency is needed.
-> @@ -508,7 +508,7 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
->   		pd->sensor_bus_type = FIMC_BUS_TYPE_MIPI_CSI2;
->   	} else {
->   		v4l2_err(&fmd->v4l2_dev, "Wrong port id (%u) at node %s\n",
-> -			 endpoint.port, rem->full_name);
-> +			 endpoint.base.port, rem->full_name);
->   	}
->   	/*
->   	 * For FIMC-IS handled sensors, that are placed under i2c-isp device
-> diff --git a/drivers/media/platform/exynos4-is/mipi-csis.c b/drivers/media/platform/exynos4-is/mipi-csis.c
-> index fd1ae65..3678ba5 100644
-> --- a/drivers/media/platform/exynos4-is/mipi-csis.c
-> +++ b/drivers/media/platform/exynos4-is/mipi-csis.c
-> @@ -772,7 +772,7 @@ static int s5pcsis_parse_dt(struct platform_device *pdev,
->   	/* Get port node and validate MIPI-CSI channel id. */
->   	v4l2_of_parse_endpoint(node,&endpoint);
->
-> -	state->index = endpoint.port - FIMC_INPUT_MIPI_CSI2_0;
-> +	state->index = endpoint.base.port - FIMC_INPUT_MIPI_CSI2_0;
->   	if (state->index<  0 || state->index>= CSIS_MAX_ENTITIES)
->   		return -ENXIO;
->
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index f919db3..b4ed9a9 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -127,17 +127,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
->   int v4l2_of_parse_endpoint(const struct device_node *node,
->   			   struct v4l2_of_endpoint *endpoint)
->   {
-> -	struct device_node *port_node = of_get_parent(node);
-> -
-> -	memset(endpoint, 0, offsetof(struct v4l2_of_endpoint, head));
-> -
-> -	endpoint->local_node = node;
-> -	/*
-> -	 * It doesn't matter whether the two calls below succeed.
-> -	 * If they don't then the default value 0 is used.
-> -	 */
-> -	of_property_read_u32(port_node, "reg",&endpoint->port);
-> -	of_property_read_u32(node, "reg",&endpoint->id);
-> +	of_graph_parse_endpoint(node,&endpoint->base);
-> +	endpoint->bus_type = 0;
-> +	memset(&endpoint->bus, 0, sizeof(endpoint->bus));
->
->   	v4l2_of_parse_csi_bus(node, endpoint);
->   	/*
-> @@ -147,8 +139,6 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
->   	if (endpoint->bus.mipi_csi2.flags == 0)
->   		v4l2_of_parse_parallel_bus(node, endpoint);
->
-> -	of_node_put(port_node);
-> -
->   	return 0;
->   }
->   EXPORT_SYMBOL(v4l2_of_parse_endpoint);
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 8ecca7a..ba3cfca 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1985,6 +1985,37 @@ struct device_node *of_find_next_cache_node(const struct device_node *np)
->   }
->
->   /**
-> + * of_graph_parse_endpoint() - parse common endpoint node properties
-> + * @node: pointer to endpoint device_node
-> + * @endpoint: pointer to the OF endpoint data structure
-> + *
-> + * All properties are optional. If none are found, we don't set any flags.
-> + * This means the port has a static configuration and no properties have
-> + * to be specified explicitly.
+> &twl {
+>         twl_madc: madc {
+>                 compatible = "ti,twl4030-madc";
+>                 interrupts = <3>;
+>                 #io-channel-cells = <1>;
+>         };
+> };
+I put twl_madc property to twl4030.dtsi as following:
+twl_madc: madc {
+compatible = "ti,twl4030-madc";
+interrupts = <3>;
+#io-channel-cells = <1>;
+};
 
-I don't think these two sentences are needed, it's all described in the
-DT binding documentation. And struct of_endpoint doesn't contain any
-"flags" field.
+and node for battery is:
+battery {
+compatible = "ti,twl4030-madc-battery";
+capacity = <1200000>;
+charging-calibration-data = <4200 100
+    4100 75
+    4000 55
+    3900 25
+    3800 5
+    3700 2
+    3600 1
+    3300 0>;
+discharging-calibration-data = <4200 100
+4100 95
+4000 70
+3800 50
+3700 10
+3600 5
+3300 0>;
+io-channels = <&twl_madc 1>,
+                     <&twl_madc 10>,
+     <&twl_madc 12>;
+io-channel-names = "temp",
+                  "ichg",
+                  "vbat";
+};
+>
+> -- Sebastian
 
-> + * The caller should hold a reference to @node.
-> + */
-> +int of_graph_parse_endpoint(const struct device_node *node,
-> +			    struct of_endpoint *endpoint)
-> +{
-> +	struct device_node *port_node = of_get_parent(node);
-> +
-> +	memset(endpoint, 0, sizeof(*endpoint));
-> +
-> +	endpoint->local_node = node;
-> +	/*
-> +	 * It doesn't matter whether the two calls below succeed.
-> +	 * If they don't then the default value 0 is used.
-> +	 */
-> +	of_property_read_u32(port_node, "reg",&endpoint->port);
-> +	of_property_read_u32(node, "reg",&endpoint->id);
-> +
-> +	of_node_put(port_node);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(of_graph_parse_endpoint);
-> +
-> +/**
->    * of_graph_get_next_endpoint() - get next endpoint node
->    * @parent: pointer to the parent device node
->    * @prev: previous endpoint node, or NULL to get first
-> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-> index 3bbeb60..2b233db 100644
-> --- a/include/linux/of_graph.h
-> +++ b/include/linux/of_graph.h
-> @@ -14,7 +14,21 @@
->   #ifndef __LINUX_OF_GRAPH_H
->   #define __LINUX_OF_GRAPH_H
->
-> +/**
-> + * struct of_endpoint - the OF graph endpoint data structure
-> + * @port: identifier (value of reg property) of a port this endpoint belongs to
-> + * @id: identifier (value of reg property) of this endpoint
-> + * @local_node: pointer to device_node of this endpoint
-> + */
-> +struct of_endpoint {
-> +	unsigned int port;
-> +	unsigned int id;
-> +	const struct device_node *local_node;
-> +};
-> +
->   #ifdef CONFIG_OF
-> +int of_graph_parse_endpoint(const struct device_node *node,
-> +				struct of_endpoint *endpoint);
->   struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->   					struct device_node *previous);
->   struct device_node *of_graph_get_remote_port_parent(
-> @@ -22,6 +36,12 @@ struct device_node *of_graph_get_remote_port_parent(
->   struct device_node *of_graph_get_remote_port(const struct device_node *node);
->   #else
->
-> +static inline int of_graph_parse_endpoint(const struct device_node *node,
-> +					struct of_endpoint *endpoint);
-> +{
-> +	return -ENOSYS;
-> +}
-> +
->   static inline struct device_node *of_graph_get_next_endpoint(
->   					const struct device_node *parent,
->   					struct device_node *previous)
-> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
-> index 3a49735..70fa7b7 100644
-> --- a/include/media/v4l2-of.h
-> +++ b/include/media/v4l2-of.h
-> @@ -51,17 +51,13 @@ struct v4l2_of_bus_parallel {
->
->   /**
->    * struct v4l2_of_endpoint - the endpoint data structure
-> - * @port: identifier (value of reg property) of a port this endpoint belongs to
-> - * @id: identifier (value of reg property) of this endpoint
-> - * @local_node: pointer to device_node of this endpoint
-> + * @base: struct of_endpoint containing port, id, and local of_node
->    * @bus_type: bus type
->    * @bus: bus configuration data structure
->    * @head: list head for this structure
->    */
->   struct v4l2_of_endpoint {
-> -	unsigned int port;
-> -	unsigned int id;
-> -	const struct device_node *local_node;
-> +	struct of_endpoint base;
->   	enum v4l2_mbus_type bus_type;
->   	union {
->   		struct v4l2_of_bus_parallel parallel;
+BR,
 
-Otherwise looks good to me.
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
