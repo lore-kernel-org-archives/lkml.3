@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaB1AS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 19:18:28 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:51713 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaB1AS0 (ORCPT
+	id S1752064AbaB1ASe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 19:18:34 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41892 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaB1ASb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 19:18:26 -0500
+	Thu, 27 Feb 2014 19:18:31 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: Stefani Seibold <stefani@seibold.net>, X86 ML <x86@kernel.org>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -20,57 +20,40 @@ Cc: Greg KH <gregkh@linuxfoundation.org>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
         Andreas.Brief@rohde-schwarz.com, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/4] vDSO fixes, on top of tip/x86/vdso
-Date: Thu, 27 Feb 2014 16:18:11 -0800
-Message-Id: <cover.1393545985.git.luto@amacapital.net>
+Subject: [PATCH v2 1/4] x86: Use the default ABI for the 32-bit vDSO
+Date: Thu, 27 Feb 2014 16:18:12 -0800
+Message-Id: <2f5d45b67dcd2c4ba58ed7ff13cfcd7a4da977fa.1393545985.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+In-Reply-To: <cover.1393545985.git.luto@amacapital.net>
 References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+ <cover.1393545985.git.luto@amacapital.net>
+In-Reply-To: <cover.1393545985.git.luto@amacapital.net>
+References: <cover.1393545985.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd still like someone else to confirm that the 32-bit vDSO is working
-on all common configurations before I'm happy with it, but this should
-be a considerable improvement.
+There's no reason for the vDSO to use a special function call ABI.  Use
+the platform defaults.
 
-Someone who maintains the clock code should review the changes in:
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/vdso/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    commit 0fc8a237cbe98a06962f5ea37d24fc2369e23c74
-    Author: Stefani Seibold <stefani@seibold.net>
-    Date:   Wed Feb 19 10:09:10 2014 +0100
-    
-        x86, vdso: Add 32-bit VDSO time support for the 64-bit kernel
-
-very carefully.
-
-There's still something extremely questionable about VDSO_PAGES in the
-32-bit vDSO code.  It appears to be terminally screwed up, and AFAICS it
-only works at all because none of the 32-bit vDSO images ever exceed
-4096 bytes.
-
-Note: Patch 4 fixes a bug that's present even in -linus, so it might
-make sense to send it to Linus more quickly than the rest of this
-series.
-
-Changes from v1:
- - Adjust CFLAGS instead of using asmlinkage.
- - Add more fixes.
-
-Andy Lutomirski (4):
-  x86: Use the default ABI for the 32-bit vDSO
-  x86: Inline the CLOCK_MONOTONIC vdso code
-  x86: Patch alternatives in the 32-bit vDSO
-  x86: Zero-pad the VVAR page
-
- arch/x86/include/asm/vdso.h    |  2 ++
- arch/x86/kernel/vmlinux.lds.S  |  5 +++++
- arch/x86/vdso/Makefile         |  2 +-
- arch/x86/vdso/vclock_gettime.c |  2 +-
- arch/x86/vdso/vdso32-setup.c   | 25 +++++++++++++------------
- arch/x86/vdso/vma.c            |  9 ++++++---
- 6 files changed, 28 insertions(+), 17 deletions(-)
-
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 92daaa6..80584f5 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -149,7 +149,7 @@ KBUILD_CFLAGS_32 := $(filter-out -m64,$(KBUILD_CFLAGS))
+ KBUILD_CFLAGS_32 := $(filter-out -mcmodel=kernel,$(KBUILD_CFLAGS_32))
+ KBUILD_CFLAGS_32 := $(filter-out -fno-pic,$(KBUILD_CFLAGS_32))
+ KBUILD_CFLAGS_32 := $(filter-out -mfentry,$(KBUILD_CFLAGS_32))
+-KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=3 -freg-struct-return -fpic
++KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=0 -fpic
+ $(vdso32-images:%=$(obj)/%.dbg): KBUILD_CFLAGS = $(KBUILD_CFLAGS_32)
+ 
+ $(vdso32-images:%=$(obj)/%.dbg): $(obj)/vdso32-%.so.dbg: FORCE \
 -- 
 1.8.5.3
 
