@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaB1K74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:59:56 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:61130 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaB1K7z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:59:55 -0500
-Date: Fri, 28 Feb 2014 11:59:25 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Marek Vasut <marex@denx.de>
-Cc: Yao Yuan <yao.yuan@freescale.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
-Message-ID: <20140228115925.5fe07693@ipc1.ka-ro>
-In-Reply-To: <201402281004.10238.marex@denx.de>
-References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com>
-	<201402272139.36076.marex@denx.de>
-	<3f58a8abdda74100b4f7b14d0c31c90e@BL2PR03MB338.namprd03.prod.outlook.com>
-	<201402281004.10238.marex@denx.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751805AbaB1LDN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:03:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365AbaB1LDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 06:03:11 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140226.140053.115418122553568429.davem@davemloft.net>
+References: <20140226.140053.115418122553568429.davem@davemloft.net> <12143.1393436505@warthog.procyon.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: dhowells@redhat.com, netdev@vger.kernel.org, linux-afs@lists.infradead.org,
+        tim@electronghost.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] AF_RXRPC fixes and development
+Date: Fri, 28 Feb 2014 11:02:44 +0000
+Message-ID: <18115.1393585364@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+David Miller <davem@davemloft.net> wrote:
 
-Marek Vasut wrote:
-> On Friday, February 28, 2014 at 06:19:18 AM, Yao Yuan wrote:
+> > Here are some AF_RXRPC fixes (to tag rxrpc-20140226):
 > 
-> [...]
-> > Yes, here have two dma channels, one for RX and the other one for TX.
-> > When we request the channel we should determine it for TX or RX.
-> 
-> Sorry, I don't quite understand this. If you have two DMA channels, can you not 
-> use them both to do full-duplex SPI transfer ?
-> 
-SPI != I2C
+> You really need to post the patch series along with the pull
+> request so that netdev can review your changes.
 
+Okay.  Fengguang's magic box reported some warnings with one of the patches,
+which I'll get fixed up first.  Turns out it doesn't like a bunch of __be
+values being added together to make a hash value without casts:-/
 
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+David
