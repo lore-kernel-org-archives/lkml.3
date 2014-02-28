@@ -1,170 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaB1Msk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:48:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12335 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaB1Msj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:48:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,561,1389772800"; 
-   d="scan'208";a="491522244"
-Message-ID: <531085BD.2060305@intel.com>
-Date: Fri, 28 Feb 2014 20:49:01 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751977AbaB1MuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:50:12 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52459 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751157AbaB1MuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 07:50:10 -0500
+Message-ID: <531085FE.2050902@hurleysoftware.com>
+Date: Fri, 28 Feb 2014 07:50:06 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
-        Chris Ball <chris@printf.net>
-CC: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [RFC PATCH] mmc: core: Invoke sdio func driver's PM callbacks
- from the sdio bus
-References: <1393588140-20605-1-git-send-email-ulf.hansson@linaro.org>
-In-Reply-To: <1393588140-20605-1-git-send-email-ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Will Deacon <will.deacon@arm.com>, Davidlohr Bueso <davidlohr@hp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
+Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
+ via atomic_long_*
+References: <1393003347-24958-1-git-send-email-will.deacon@arm.com> <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net> <20140228121314.GC674@mudshark.cambridge.arm.com>
+In-Reply-To: <20140228121314.GC674@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 07:49 PM, Ulf Hansson wrote:
-> The sdio func device is added to the driver model after the card
-> device.
-> 
-> This means the sdio func device will be suspend before the card device
-> and thus resumed after. The consequence are the mmc core don't
-> explicity need to protect itself from receiving sdio requests in
-> suspended state. Instead that can be handled from the sdio bus, which
-> is thus invokes the PM callbacks instead of old dummy function.
-> 
-> In the case were the sdio func driver don't implement the PM callbacks
-> the mmc core will in the early phase of system suspend, remove the
-> card from the driver model and thus power off it.
-> 
-> Cc: Aaron Lu <aaron.lu@intel.com>
-> Cc: NeilBrown <neilb@suse.de>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
-> 
-> Note, this patch has only been compile tested. Would appreciate if some with
-> SDIO and a sdio func driver could help out to test this. Especially the
-> libertas driver would be nice.
-> 
-> ---
->  drivers/mmc/core/sdio.c     |   45 ++++---------------------------------------
->  drivers/mmc/core/sdio_bus.c |   14 +-------------
->  2 files changed, 5 insertions(+), 54 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index 4d721c6..9933e42 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -943,40 +943,21 @@ static int mmc_sdio_pre_suspend(struct mmc_host *host)
->   */
->  static int mmc_sdio_suspend(struct mmc_host *host)
->  {
-> -	int i, err = 0;
-> -
-> -	for (i = 0; i < host->card->sdio_funcs; i++) {
-> -		struct sdio_func *func = host->card->sdio_func[i];
-> -		if (func && sdio_func_present(func) && func->dev.driver) {
-> -			const struct dev_pm_ops *pmops = func->dev.driver->pm;
-> -			err = pmops->suspend(&func->dev);
-> -			if (err)
-> -				break;
-> -		}
-> -	}
-> -	while (err && --i >= 0) {
-> -		struct sdio_func *func = host->card->sdio_func[i];
-> -		if (func && sdio_func_present(func) && func->dev.driver) {
-> -			const struct dev_pm_ops *pmops = func->dev.driver->pm;
-> -			pmops->resume(&func->dev);
-> -		}
-> -	}
-> -
-> -	if (!err && mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
-> +	if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
->  		mmc_claim_host(host);
->  		sdio_disable_wide(host->card);
->  		mmc_release_host(host);
->  	}
->  
-> -	if (!err && !mmc_card_keep_power(host))
-> +	if (!mmc_card_keep_power(host))
->  		mmc_power_off(host);
->  
-> -	return err;
-> +	return 0;
->  }
->  
->  static int mmc_sdio_resume(struct mmc_host *host)
->  {
-> -	int i, err = 0;
-> +	int err = 0;
->  
->  	BUG_ON(!host);
->  	BUG_ON(!host->card);
-> @@ -1019,24 +1000,6 @@ static int mmc_sdio_resume(struct mmc_host *host)
->  		wake_up_process(host->sdio_irq_thread);
->  	mmc_release_host(host);
->  
-> -	/*
-> -	 * If the card looked to be the same as before suspending, then
-> -	 * we proceed to resume all card functions.  If one of them returns
-> -	 * an error then we simply return that error to the core and the
-> -	 * card will be redetected as new.  It is the responsibility of
-> -	 * the function driver to perform further tests with the extra
-> -	 * knowledge it has of the card to confirm the card is indeed the
-> -	 * same as before suspending (same MAC address for network cards,
-> -	 * etc.) and return an error otherwise.
-> -	 */
-> -	for (i = 0; !err && i < host->card->sdio_funcs; i++) {
-> -		struct sdio_func *func = host->card->sdio_func[i];
-> -		if (func && sdio_func_present(func) && func->dev.driver) {
-> -			const struct dev_pm_ops *pmops = func->dev.driver->pm;
-> -			err = pmops->resume(&func->dev);
-> -		}
-> -	}
-> -
->  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
->  	return err;
->  }
-> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-> index 92d1ba8..4fa8fef9 100644
-> --- a/drivers/mmc/core/sdio_bus.c
-> +++ b/drivers/mmc/core/sdio_bus.c
-> @@ -197,20 +197,8 @@ static int sdio_bus_remove(struct device *dev)
->  
->  #ifdef CONFIG_PM
->  
-> -#ifdef CONFIG_PM_SLEEP
-> -static int pm_no_operation(struct device *dev)
-> -{
-> -	/*
-> -	 * Prevent the PM core from calling SDIO device drivers' suspend
-> -	 * callback routines, which it is not supposed to do, by using this
-> -	 * empty function as the bus type suspend callaback for SDIO.
-> -	 */
-> -	return 0;
-> -}
-> -#endif
-> -
->  static const struct dev_pm_ops sdio_bus_pm_ops = {
-> -	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
-> +	SET_SYSTEM_SLEEP_PM_OPS(pm_generic_suspend, pm_generic_resume)
+On 02/28/2014 07:13 AM, Will Deacon wrote:
+> On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
+>> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
+>>> The asm-generic rwsem implementation directly acceses sem->cnt when
+>>> performing a __down_read_trylock operation. Whilst this is probably safe
+>>> on all architectures, we should stick to the atomic_long_* API and use
+>>> atomic_long_read instead.
+>>>
+>>> Signed-off-by: Will Deacon <will.deacon@arm.com>
+>>> ---
+>>>   include/asm-generic/rwsem.h | 2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+>>> index bb1e2cdeb9bf..75af612f54f8 100644
+>>> --- a/include/asm-generic/rwsem.h
+>>> +++ b/include/asm-generic/rwsem.h
+>>> @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
+>>>   {
+>>>   	long tmp;
+>>>
+>>> -	while ((tmp = sem->count) >= 0) {
+>>> +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
+>>
+>> That's pretty ugly, how about having infinite look and just do the tmp
+>> assign separately from the conditional?
+>>
+>> It also looks like a cpu_relax() could help here between iterations.
 
-The same thing can be achieved by not defining the two callbacks here,
-the PM core will use driver's callback in that case, but that is not a
-big deal.
+This is the read trylock so no cpu_relax().
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+>> Other than that:
+>>
+>> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+>
+> Actually, we should make that cmpxchg an atomic_long_cmpxchg, so the extra
+> diff ends up looking like below. It's ugly adding a cpu_relax(), since you
+> only want it when the cmpxchg fails (and we don't have such logic in the
+> asm-generic __atomic_add_unless, for example).
+>
+> Will
+>
+> --->8
+>
+> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> index 603a0a11e592..2b6401f9e428 100644
+> --- a/include/asm-generic/rwsem.h
+> +++ b/include/asm-generic/rwsem.h
+> @@ -40,14 +40,16 @@ static inline void __down_read(struct rw_semaphore *sem)
+>   static inline int __down_read_trylock(struct rw_semaphore *sem)
+>   {
+>          long tmp;
+> +       atomic_long_t *cnt = (atomic_long_t *)&sem->count;
 
-Thanks,
-Aaron
+The shared rwsem failure paths (kernel/locking/rwsem_xadd.c) peek at
+sem->count as long type, so this isn't really necessary.
 
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
-> 
+>
+> -       while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
+> -               if (tmp == cmpxchg(&sem->count, tmp,
+> -                                  tmp + RWSEM_ACTIVE_READ_BIAS)) {
+> -                       return 1;
+> -               }
+> -       }
+> -       return 0;
+> +       do {
+> +               tmp = atomic_long_read(cnt);
+> +               if (tmp < 0)
+> +                       return 0;
+> +       } while (tmp != atomic_long_cmpxchg(cnt, tmp,
+> +                                           tmp + RWSEM_ACTIVE_READ_BIAS));
+> +
+> +       return 1;
+>   }
 
+Regards,
+Peter Hurley
