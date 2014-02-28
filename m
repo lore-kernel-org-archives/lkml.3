@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaB1IBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:01:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40115 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaB1IBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:01:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,560,1389772800"; 
-   d="scan'208";a="489743889"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>
-Cc: Chew Kean Ho <kean.ho.chew@intel.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: i801: enable Intel BayTrail SMBUS
-Date: Sat,  1 Mar 2014 00:03:56 +0800
-Message-Id: <1393603436-3494-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1751954AbaB1IDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:03:42 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39169 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaB1IDk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 03:03:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <5310359F.2040904@ti.com>
+References: <1393502086-9433-1-git-send-email-tomi.valkeinen@ti.com>
+	<530F80ED.1040509@infradead.org>
+	<5310359F.2040904@ti.com>
+Date: Fri, 28 Feb 2014 09:03:39 +0100
+X-Google-Sender-Auth: 4ik1tIN4wKFgu_gz1G66IPtQyUo
+Message-ID: <CAMuHMdVcXmukvrJ7KYNY5WJPgS3=oOqsfvb3k89UANx_6QBTKA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Reorder drivers/video directory
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        David Airlie <airlied@linux.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chew, Kean ho <kean.ho.chew@intel.com>
+On Fri, Feb 28, 2014 at 8:07 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 27/02/14 20:16, Randy Dunlap wrote:
+>> On 02/27/2014 03:54 AM, Tomi Valkeinen wrote:
+>>> Hi,
+>>>
+>>> This is a re-send of the series, with RFC removed from the subject, and a bunch
+>>> of acks added.
+>>>
+>>> I'm cc'ing more people, to make sure this doesn't come as a surprise, and to
+>>> make sure this is not a bad idea, doomed to fail horribly.
+>>
+>> What does this patch apply to?  I can't get it to apply cleanly to
+>> -rc4 or Linus's current git tree.
+>>
+>> I like what I see so far.
+>
+> My branch was based on -rc2. Some minor fbdev fixes went in after that,
+> and they seem to break the apply. I think the drivers/video/Kconfig and
+> drivers/video/Makefile are the most problematic ones, any change there
+> will conflict badly.
 
-Add Device ID of Intel BayTrail SMBus Controller.
+So you want to do the move based on one of the later -rcs, to avoid conflicits.
+-rc5 may be too late, but it's up to Linus to decide.
 
-Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
----
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+), 0 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index aaaf0693..adf5e33 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -26,6 +26,7 @@ Supported adapters:
-   * Intel Wellsburg (PCH)
-   * Intel Coleto Creek (PCH)
-   * Intel Wildcat Point-LP (PCH)
-+  * Intel BayTrail (SOC)
-    Datasheets: Publicly available at the Intel website
- 
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index f5ed031..f23da0e 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -110,6 +110,7 @@ config I2C_I801
- 	    Wellsburg (PCH)
- 	    Coleto Creek (PCH)
- 	    Wildcat Point-LP (PCH)
-+	    BayTrail (SOC)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index 349c2d3..899f559 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -60,6 +60,7 @@
-   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
-   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
-   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
-+  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -161,6 +162,7 @@
- 				 STATUS_ERROR_FLAGS)
- 
- /* Older devices have their ID defined in <linux/pci_ids.h> */
-+#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
- /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
-@@ -822,6 +824,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
- 	{ 0, }
- };
- 
--- 
-1.7.4.4
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
