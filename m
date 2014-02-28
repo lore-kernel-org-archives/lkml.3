@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaB1RVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:21:01 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43708 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbaB1RU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:20:59 -0500
-Message-ID: <5310C56C.60709@oracle.com>
-Date: Fri, 28 Feb 2014 12:20:44 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
-References: <5307D74C.5070002@oracle.com> <20140221235145.GA18046@node.dhcp.inet.fi> <5307F90C.9060602@oracle.com>
-In-Reply-To: <5307F90C.9060602@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753178AbaB1RYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:24:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38340 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494AbaB1RYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:24:07 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: robert.moore@intel.com, lv.zheng@intel.com, david.e.box@intel.com,
+        rafael.j.wysocki@intel.com
+Cc: Thomas Renninger <trenn@suse.de>, hpa@zytor.com, tglx@linutronix.de,
+        ck@conrad-kostecki.de, linux-kernel@vger.kernel.org, x86@kernel.org,
+        mingo@redhat.com, rjw@rjwysocki.net, devel@acpica.org
+Subject: [PATCH 4/4] ACPI: Add new table signatures that can be overridden/added.
+Date: Fri, 28 Feb 2014 18:24:01 +0100
+Message-Id: <1393608241-31037-5-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1393608241-31037-1-git-send-email-trenn@suse.de>
+References: <1393608241-31037-1-git-send-email-trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 08:10 PM, Sasha Levin wrote:
-> On 02/21/2014 06:51 PM, Kirill A. Shutemov wrote:
->> On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
->>> >Hi all,
->>> >
->>> >While fuzzing with trinity inside a KVM tools guest running latest -next
->>> >kernel I've stumbled on the following (now with pretty line numbers!) spew:
->>> >
->>> >[  746.125099] kernel BUG at mm/huge_memory.c:1371!
->> It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
->> I don't see dump_page() output.
->
-> Right. However, I'm not seeing the dump_page() output in the log.
->
-> I see that dump_page() has been modified not long ago, I'm looking into it.
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: hpa@zytor.com
+CC: tglx@linutronix.de
+CC: ck@conrad-kostecki.de
+CC: linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+CC: mingo@redhat.com
+CC: rjw@rjwysocki.net
+CC: devel@acpica.org
+---
+ drivers/acpi/osl.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Alright, here we go:
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 7f9a865..23ce5b1 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -38,6 +38,7 @@
+ #include <linux/delay.h>
+ #include <linux/workqueue.h>
+ #include <linux/nmi.h>
++# define ACPI_UNDEFINED_TABLES 1
+ #include <linux/acpi.h>
+ #include <linux/efi.h>
+ #include <linux/ioport.h>
+@@ -559,7 +560,8 @@ static const char * const table_sigs[] = {
+ 	ACPI_SIG_IBFT, ACPI_SIG_IVRS, ACPI_SIG_MCFG, ACPI_SIG_MCHI,
+ 	ACPI_SIG_SLIC, ACPI_SIG_SPCR, ACPI_SIG_SPMI, ACPI_SIG_TCPA,
+ 	ACPI_SIG_UEFI, ACPI_SIG_WAET, ACPI_SIG_WDAT, ACPI_SIG_WDDT,
+-	ACPI_SIG_WDRT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
++	ACPI_SIG_WDRT, ACPI_SIG_BGRT, ACPI_SIG_ATKG, ACPI_SIG_GSCI,
++	ACPI_SIG_IEIT, ACPI_SIG_DSDT, ACPI_SIG_FADT, ACPI_SIG_PSDT,
+ 	ACPI_SIG_RSDT, ACPI_SIG_XSDT, ACPI_SIG_SSDT, NULL };
+ 
+ #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+-- 
+1.7.6.1
 
-[ 3323.062742] page:ffffea00080f0000 count:3 mapcount:0 mapping:ffff8802292ee0e1 index:0x7fa2e6800
-[ 3323.065978] page flags: 0x16fffff80090018(uptodate|dirty|swapcache|swapbacked)
-[ 3323.068535] ------------[ cut here ]------------
-[ 3323.069669] kernel BUG at mm/huge_memory.c:1371!
-[ 3323.070961] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 3323.071028] Dumping ftrace buffer:
-[ 3323.071028]    (ftrace buffer empty)
-[ 3323.071028] Modules linked in:
-[ 3323.071028] CPU: 101 PID: 48284 Comm: trinity-c101 Tainted: G        W 
-3.14.0-rc4-next-20140228-sasha-00011-g4077c67 #25
-[ 3323.071028] task: ffff8800c2718000 ti: ffff8800c26ec000 task.ti: ffff8800c26ec000
-[ 3323.071028] RIP: 0010:[<ffffffff812c083a>]  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-[ 3323.071028] RSP: 0018:ffff8800c26edc78  EFLAGS: 00010246
-[ 3323.071028] RAX: ffff88022febc000 RBX: ffff8800c26edde8 RCX: 0000000000000040
-[ 3323.071028] RDX: 0000000000000000 RSI: ffff8800c2718cc0 RDI: 000000000203c000
-[ 3323.071028] RBP: ffff8800c26edcb8 R08: 0000000000000000 R09: 0000000000000000
-[ 3323.071028] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0008b9e240
-[ 3323.071028] R13: ffffea00080f0000 R14: 00007fa2e6800000 R15: 00007fa2ffffffff
-[ 3323.071028] FS:  00007fa31e1b8700(0000) GS:ffff880230600000(0000) knlGS:0000000000000000
-[ 3323.071028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 3323.071028] CR2: 00007fa31e1e8990 CR3: 0000000005c25000 CR4: 00000000000006e0
-[ 3323.071028] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000698000
-[ 3323.071028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 3323.071028] Stack:
-[ 3323.071028]  00000000000004de ffff88022e2139d0 ffff8800c26edcb8 ffff88021b7ef9a0
-[ 3323.071028]  00007fa2e6800000 00007fa300000000 ffff8800c26edde8 00007fa2ffffffff
-[ 3323.071028]  ffff8800c26edd48 ffffffff812800c6 ffffea0008454540 00007fa2e6a00000
-[ 3323.071028] Call Trace:
-[ 3323.071028]  [<ffffffff812800c6>] unmap_page_range+0x2c6/0x410
-[ 3323.071028]  [<ffffffff81280301>] unmap_single_vma+0xf1/0x110
-[ 3323.071028]  [<ffffffff81280381>] unmap_vmas+0x61/0xa0
-[ 3323.071028]  [<ffffffff812875e0>] exit_mmap+0xd0/0x170
-[ 3323.071028]  [<ffffffff811387a7>] mmput+0x77/0xe0
-[ 3323.071028]  [<ffffffff8113c80d>] exit_mm+0x18d/0x1a0
-[ 3323.071028]  [<ffffffff811ecea5>] ? acct_collect+0x175/0x1b0
-[ 3323.071028]  [<ffffffff8113ec1a>] do_exit+0x26a/0x510
-[ 3323.071028]  [<ffffffff8113ef61>] do_group_exit+0xa1/0xe0
-[ 3323.071028]  [<ffffffff8113efb2>] SyS_exit_group+0x12/0x20
-[ 3323.071028]  [<ffffffff8439f720>] tracesys+0xdd/0xe2
-[ 3323.071028] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 
-45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 f6 1f f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 
-03 f0 48 ff 48
-[ 3323.071028] RIP  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-[ 3323.071028]  RSP <ffff8800c26edc78>
-
-
-Thanks,
-Sasha
