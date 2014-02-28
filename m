@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaB1KmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:42:00 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:9691 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaB1Kly (ORCPT
+	id S1752086AbaB1Kl7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:41:59 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:14525 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaB1Kly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Feb 2014 05:41:54 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-6f-531067f0611a
+X-AuditID: cbfec7f4-b7f796d000005a13-fe-531067efc625
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
@@ -17,83 +17,84 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/4] mfd: sec: Use consistent S2MPS11 RTC alarm interrupt
- indexes
-Date: Fri, 28 Feb 2014 11:41:43 +0100
-Message-id: <1393584104-18912-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 2/4] mfd: sec: Select different RTC regmaps for devices
+Date: Fri, 28 Feb 2014 11:41:42 +0100
+Message-id: <1393584104-18912-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
 References: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLJMWRmVeSWpSXmKPExsVy+t/xK7of0gWCDXbckrXYOGM9q8XrF4YW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDJMWRmVeSWpSXmKPExsVy+t/xK7rv0wWCDZZMNrPYOGM9q8XrF4YW
 	Z5vesFvc/3qU0eLyrjlsFjPO72OyWHvkLrvF6W5Wi4srvjBZrJ/xmsWBy+POtT1sHvNOBnr0
-	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxsu+H2wFm/gq7rdsZm1gfM7dxcjJISFgInHk2Qx2
-	CFtM4sK99WxdjFwcQgJLGSX2PHrJBOH0MUk8XXiLBaSKTcBYYvPyJWBVIgKbGSUWf7/KCpJg
-	FnjOKPH0eziILSwQLPG4oZMNxGYRUJXYO2EDE4jNK+Au8W7BS6B6DqB1ChJzJtmAhDkFPCRm
-	z38ONkYIqORZ2wXmCYy8CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBNnXHYxLj1kd
-	YhTgYFTi4Z3gyR8sxJpYVlyZe4hRgoNZSYQ3z10gWIg3JbGyKrUoP76oNCe1+BAjEwenVANj
-	2J1Nu3f0bXu3VmHhHK1irzPi/fEJJbpM6WI3t/4/MtMlfn1uQdGhTLFOhw8Vq+7zHTnGYKm/
-	9kDHvo0lM/fzfbx8z/JkSPhMvxi9L2eubhQ/eNnTx7OIPePs89WNj+93aB5iWP/qVs+0fbNu
-	SYteP8SSOkdaIDEkWZNLQldlY0SrTtx0nd3TlViKMxINtZiLihMB+YfVLxACAAA=
+	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxtT3E9kLZgpU/Hr5mrGBcRFvFyMnh4SAicSvNfvY
+	IGwxiQv31gPZXBxCAksZJf58bWCEcPqYJCZ2/2UCqWITMJbYvHwJWJWIwGZGicXfr7KCJJgF
+	njNKPP0e3sXIwSEs4C5x/UUASJhFQFWi7+FisA28QOHbx9oZQUokBBQk5kyyAQlzCnhIzJ7/
+	HGyKEFDJs7YLzBMYeRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAmxLzsYFx+zOsQo
+	wMGoxMM7wZM/WIg1say4MvcQowQHs5IIb567QLAQb0piZVVqUX58UWlOavEhRiYOTqkGxhBl
+	kdfHezWj9Hcc8hHZwmuQojf5k/Ak65s2an+P+Qg1GcxWDV7dtvPSatk4iZf8FtPEFOVOvb7D
+	1qWWu+oPb5MPh3tj0/lCZavivrk1gY3hIZftrSo3vk5v+KT30N45fUuP7r3dq/UNHTfZni78
+	xco3Me5SCKP8gxpOJvmPU5Se5Rj6t7grsRRnJBpqMRcVJwIAMbiRoQ8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The S2MPS11 RTC has two alarms: alarm0 and alarm1 (corresponding
-interrupts are named similarly). Use consistent names for interrupts to
-limit possible errors.
+This patch prepares for adding support for S2MPS14 RTC driver by
+selecting different regmaps for S2MPS1X/S5M876X RTC devices.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/sec-irq.c           |    8 ++++----
- include/linux/mfd/samsung/irq.h |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/mfd/sec-core.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index 4de494f51d40..e403c293b437 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -59,13 +59,13 @@ static const struct regmap_irq s2mps11_irqs[] = {
- 		.reg_offset = 1,
- 		.mask = S2MPS11_IRQ_RTC60S_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA1] = {
-+	[S2MPS11_IRQ_RTCA0] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
- 	},
--	[S2MPS11_IRQ_RTCA2] = {
-+	[S2MPS11_IRQ_RTCA1] = {
- 		.reg_offset = 1,
--		.mask = S2MPS11_IRQ_RTCA2_MASK,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
- 	},
- 	[S2MPS11_IRQ_SMPL] = {
- 		.reg_offset = 1,
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index d43b4f9e7fb2..abe1a6aae3b7 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -24,8 +24,8 @@ enum s2mps11_irq {
- 	S2MPS11_IRQ_MRB,
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 074939c9bd42..e717c6dfb105 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -199,7 +199,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct sec_platform_data *pdata = dev_get_platdata(&i2c->dev);
+-	const struct regmap_config *regmap;
++	const struct regmap_config *regmap, *regmap_rtc;
+ 	struct sec_pmic_dev *sec_pmic;
+ 	int ret;
  
- 	S2MPS11_IRQ_RTC60S,
-+	S2MPS11_IRQ_RTCA0,
- 	S2MPS11_IRQ_RTCA1,
--	S2MPS11_IRQ_RTCA2,
- 	S2MPS11_IRQ_SMPL,
- 	S2MPS11_IRQ_RTC1S,
- 	S2MPS11_IRQ_WTSR,
-@@ -47,7 +47,7 @@ enum s2mps11_irq {
+@@ -233,15 +233,25 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	switch (sec_pmic->device_type) {
+ 	case S2MPS11X:
+ 		regmap = &s2mps11_regmap_config;
++		/*
++		 * The rtc-s5m driver does not support S2MPS11 and there
++		 * is no mfd_cell for S2MPS11 RTC device.
++		 * However we must pass something to devm_regmap_init_i2c()
++		 * so use S5M-like regmap config even though it wouldn't work.
++		 */
++		regmap_rtc = &sec_rtc_regmap_config;
+ 		break;
+ 	case S5M8763X:
+ 		regmap = &s5m8763_regmap_config;
++		regmap_rtc = &sec_rtc_regmap_config;
+ 		break;
+ 	case S5M8767X:
+ 		regmap = &s5m8767_regmap_config;
++		regmap_rtc = &sec_rtc_regmap_config;
+ 		break;
+ 	default:
+ 		regmap = &sec_regmap_config;
++		regmap_rtc = &sec_rtc_regmap_config;
+ 		break;
+ 	}
  
- #define S2MPS11_IRQ_RTC60S_MASK		(1 << 0)
- #define S2MPS11_IRQ_RTCA1_MASK		(1 << 1)
--#define S2MPS11_IRQ_RTCA2_MASK		(1 << 2)
-+#define S2MPS11_IRQ_RTCA0_MASK		(1 << 2)
- #define S2MPS11_IRQ_SMPL_MASK		(1 << 3)
- #define S2MPS11_IRQ_RTC1S_MASK		(1 << 4)
- #define S2MPS11_IRQ_WTSR_MASK		(1 << 5)
+@@ -260,8 +270,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	}
+ 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+ 
+-	sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc,
+-			&sec_rtc_regmap_config);
++	sec_pmic->regmap_rtc = devm_regmap_init_i2c(sec_pmic->rtc, regmap_rtc);
+ 	if (IS_ERR(sec_pmic->regmap_rtc)) {
+ 		ret = PTR_ERR(sec_pmic->regmap_rtc);
+ 		dev_err(&i2c->dev, "Failed to allocate RTC register map: %d\n",
 -- 
 1.7.9.5
 
