@@ -1,189 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaB1TdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 14:33:21 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:19219 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751715AbaB1TdT (ORCPT
+	id S1752159AbaB1Ti2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 14:38:28 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:47952 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743AbaB1Ti0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 14:33:19 -0500
-Date: Fri, 28 Feb 2014 14:33:16 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] x86: Rename copy_from_user_nmi() to copy_from_user_trace()
-Message-ID: <20140228143316.211d4034@gandalf.local.home>
-In-Reply-To: <20140228112946.1f194397@gandalf.local.home>
-References: <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
-	<20140227173150.4e5ed747@gandalf.local.home>
-	<530FC1C6.5040209@zytor.com>
-	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
-	<20140227215726.7018c861@gandalf.local.home>
-	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
-	<20140228092341.12a40f7c@gandalf.local.home>
-	<alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
-	<1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
-	<20140228154026.GH9987@twins.programming.kicks-ass.net>
-	<5310B60F.30806@zytor.com>
-	<20140228112946.1f194397@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 28 Feb 2014 14:38:26 -0500
+Date: Fri, 28 Feb 2014 16:38:19 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-02-28
+Message-ID: <20140228193819.GA1700@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ H. Peter, Here's the rename patch. I did not include your update. You
-can add that first and then massage this patch on top. But this isn't
-critical for mainline or stable, where as I believe your patch is. ]
 
-The tracing utilities sometimes need to read from userspace (stack tracing),
-and to do this it has as special copy_from_user function called
-copy_from_user_nmi(). Well, as tracers can call this from outside of
-nmi context, the "_nmi" part is a misnomer and "_trace" is a better
-name.
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Hi John,
+
+Another pull request to 3.15. Here we have the second part of the LE private
+feature, the LE auto-connect feature and improvements to the power off
+procedures. The rest are small improvements, clean up, and fixes.
+
+Please pull or let me know of any problem. Thanks.
+
+	Gustavo
+
 ---
- arch/x86/include/asm/perf_event.h          |  2 +-
- arch/x86/include/asm/uaccess.h             |  2 +-
- arch/x86/kernel/cpu/perf_event.c           |  4 ++--
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |  2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  2 +-
- arch/x86/lib/usercopy.c                    | 10 ++++++----
- arch/x86/oprofile/backtrace.c              |  4 ++--
- 7 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 8249df4..7bf4b25 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -274,6 +274,6 @@ static inline void perf_check_microcode(void) { }
-  static inline void amd_pmu_disable_virt(void) { }
- #endif
- 
--#define arch_perf_out_copy_user copy_from_user_nmi
-+#define arch_perf_out_copy_user copy_from_user_trace
- 
- #endif /* _ASM_X86_PERF_EVENT_H */
-diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index 8ec57c0..d734baf 100644
---- a/arch/x86/include/asm/uaccess.h
-+++ b/arch/x86/include/asm/uaccess.h
-@@ -515,7 +515,7 @@ struct __large_struct { unsigned long buf[100]; };
- 	__put_user_size_ex((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
- 
- extern unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
-+copy_from_user_trace(void *to, const void __user *from, unsigned long n);
- extern __must_check long
- strncpy_from_user(char *dst, const char __user *src, long count);
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8e13293..7eda4af 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1988,7 +1988,7 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		frame.next_frame     = 0;
- 		frame.return_address = 0;
- 
--		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-+		bytes = copy_from_user_trace(&frame, fp, sizeof(frame));
- 		if (bytes != 0)
- 			break;
- 
-@@ -2040,7 +2040,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		frame.next_frame	     = NULL;
- 		frame.return_address = 0;
- 
--		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-+		bytes = copy_from_user_trace(&frame, fp, sizeof(frame));
- 		if (bytes != 0)
- 			break;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index ae96cfa..95d76c6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -788,7 +788,7 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 		u8 *buf = this_cpu_read(insn_buffer);
- 
- 		size = ip - to; /* Must fit our buffer, see above */
--		bytes = copy_from_user_nmi(buf, (void __user *)to, size);
-+		bytes = copy_from_user_trace(buf, (void __user *)to, size);
- 		if (bytes != 0)
- 			return 0;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index d82d155..0505ada 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -490,7 +490,7 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
- 			return X86_BR_NONE;
- 
- 		/* may fail if text not present */
--		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
-+		bytes = copy_from_user_trace(buf, (void __user *)from, size);
- 		if (bytes != 0)
- 			return X86_BR_NONE;
- 
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-index ddf9ecb..131ff16e 100644
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -11,11 +11,13 @@
- #include <linux/sched.h>
- 
- /*
-- * We rely on the nested NMI work to allow atomic faults from the NMI path; the
-- * nested NMI paths are careful to preserve CR2.
-+ * Used by tracing, needs to restore state of the cr2 register if
-+ * the copy triggered a page fault. That's because tracing can happen
-+ * between the time a normal page fault occurred and the cr2 is read
-+ * by the handler.
-  */
- unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+copy_from_user_trace(void *to, const void __user *from, unsigned long n)
- {
- 	unsigned long ret;
- 
-@@ -33,4 +35,4 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(copy_from_user_nmi);
-+EXPORT_SYMBOL_GPL(copy_from_user_trace);
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 5d04be5..7831650 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -46,7 +46,7 @@ dump_user_backtrace_32(struct stack_frame_ia32 *head)
- 	struct stack_frame_ia32 *fp;
- 	unsigned long bytes;
- 
--	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-+	bytes = copy_from_user_trace(bufhead, head, sizeof(bufhead));
- 	if (bytes != 0)
- 		return NULL;
- 
-@@ -92,7 +92,7 @@ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
- 	struct stack_frame bufhead[2];
- 	unsigned long bytes;
- 
--	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-+	bytes = copy_from_user_trace(bufhead, head, sizeof(bufhead));
- 	if (bytes != 0)
- 		return NULL;
- 
--- 
-1.8.1.4
+The following changes since commit 668b7b19820b0801c425d31cc27fd6f499050e5c:
 
+  Bluetooth: Fix iterating wrong list in hci_remove_irk() (2014-02-21 11:07:46 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 81ad6fd9698f659dbabdc6cd3e1667a98eb2be3b:
+
+  Bluetooth: Remove unnecessary stop_scan_complete function (2014-02-28 10:28:17 -0800)
+
+----------------------------------------------------------------
+Andre Guedes (17):
+      Bluetooth: Create hci_req_add_le_scan_disable helper
+      Bluetooth: Declare le_conn_failed in hci_core.h
+      Bluetooth: Stop scanning on LE connection
+      Bluetooth: Remove unused function
+      Bluetooth: Refactor HCI connection code
+      Bluetooth: Move address type conversion to outside hci_connect_le
+      Bluetooth: Introduce hdev->pend_le_conn list
+      Bluetooth: Introduce LE auto connection infrastructure
+      Bluetooth: Introduce LE auto connect options
+      Bluetooth: Connection parameters and auto connection
+      Bluetooth: Temporarily stop background scanning on discovery
+      Bluetooth: Auto connection and power on
+      Bluetooth: Connection parameters and resolvable address
+      Bluetooth: Support resolvable private addresses
+      Bluetooth: Add le_auto_conn file on debugfs
+      Bluetooth: Create hci_req_add_le_passive_scan helper
+      Bluetooth: Update background scan parameters
+
+Andrzej Kaczmarek (1):
+      Bluetooth: Fix NULL pointer dereference when sending data
+
+Johan Hedberg (47):
+      Bluetooth: Add helper variables to smp_distribute_keys()
+      Bluetooth: Add initial code for distributing local IRK
+      Bluetooth: Move enable/disable_advertising higher up in mgmt.c
+      Bluetooth: Add mgmt defines for privacy
+      Bluetooth: Add Privacy flag to mgmt supported/current settings
+      Bluetooth: Ensure hci_conn always contains the local identity address
+      Bluetooth: Set the correct values for Identity Address Information
+      Bluetooth: Add SMP function for generating RPAs
+      Bluetooth: Add timer for regenerating local RPA
+      Bluetooth: Add hci_update_random_address() convenience function
+      Bluetooth: Use hci_update_random_address() when connecting LE
+      Bluetooth: Use hci_update_random_address() for enabling advertising
+      Bluetooth: Use hci_update_random_address() for initiating LE scan
+      Bluetooth: Don't write static address during power on
+      Bluetooth: Add debugfs entry for RPA regeneration timeout
+      Bluetooth: Add support for Set Privacy command
+      Bluetooth: Fix setting correct src_type when connecting LE
+      Bluetooth: Remove unneeded hdev->own_addr_type
+      Bluetooth: Enable RPA resolving if mgmt_set_privacy is called
+      Bluetooth: Fix canceling RPA expiry timer
+      Bluetooth: Add convenience function for getting total connection count
+      Bluetooth: Move HCI_ADVERTISING handling into mgmt.c
+      Bluetooth: Move check for MGMT_CONNECTED flag into mgmt.c
+      Bluetooth: Don't clear HCI_DISCOVERABLE when powering off
+      Bluetooth: Don't clear HCI_CONNECTABLE when powering off
+      Bluetooth: Don't clear HCI_ADVERTISING when powering off
+      Bluetooth: Clean up HCI state when doing power off
+      Bluetooth: Fix advertising address type when toggling connectable
+      Bluetooth: Ignore IRKs with no Identity Address
+      Bluetooth: Track not yet received keys in SMP
+      Bluetooth: Simplify logic for checking for SMP completion
+      Bluetooth: Remove unneeded "force" parameter from smp_distribute_keys()
+      Bluetooth: Add tracking of advertising address type
+      Bluetooth: Add hci_copy_identity_address convenience function
+      Bluetooth: Fix disconnecting connections in non-connected states
+      Bluetooth: Add timer to force power off
+      Bluetooth: Fix clearing SMP keys if pairing fails
+      Bluetooth: Add protections for updating local random address
+      Bluetooth: Fix updating connection state to BT_CONNECT too early
+      Bluetooth: Track LE initiator and responder address information
+      Bluetooth: Use hdev->init/resp_addr values for smp_c1 function
+      Bluetooth: Add defines for LE initiator filter policy
+      Bluetooth: Add timeout for LE connection attempts
+      Bluetooth: Re-encrypt link after receiving an LTK
+      Bluetooth: Delay LTK encryption to let remote receive all keys
+      Bluetooth: Fix trying to disable scanning twice
+      Bluetooth: Remove unnecessary stop_scan_complete function
+
+Lukasz Rymanowski (1):
+      Bluetooth: Fix response on confirm_name
+
+Marcel Holtmann (12):
+      Bluetooth: Fix issue with missing management event opcode
+      Bluetooth: Expose current identity information in debugfs
+      Bluetooth: Use unresolvable private address for active scanning
+      Bluetooth: Use privacy mode for non-connectable advertising
+      Bluetooth: Store current RPA and update it if needed
+      Bluetooth: Export current local RPA with identity information
+      Bluetooth: Make hci_blacklist_clear function static
+      Bluetooth: Add definitions for LE white list HCI commands
+      Bluetooth: Clear all LE white list entries when powering controller
+      Bluetooth: Add support for storing LE white list entries
+      Bluetooth: Track LE white list modification via HCI commands
+      Bluetooth: Use __le64 type for LE random numbers
+
+ include/net/bluetooth/hci.h      |  27 +-
+ include/net/bluetooth/hci_core.h |  78 ++++-
+ include/net/bluetooth/mgmt.h     |  10 +-
+ net/bluetooth/hci_conn.c         | 116 ++++----
+ net/bluetooth/hci_core.c         | 679 ++++++++++++++++++++++++++++++++++++++++---
+ net/bluetooth/hci_event.c        | 274 ++++++++++++++++-
+ net/bluetooth/l2cap_core.c       |  37 ++-
+ net/bluetooth/mgmt.c             | 425 ++++++++++++++++++++++-----
+ net/bluetooth/smp.c              | 180 +++++++++---
+ net/bluetooth/smp.h              |  11 +-
+ 10 files changed, 1585 insertions(+), 252 deletions(-)
+
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTEOWrAAoJEPs3PUX4s20o/ZkP/1GI1GZhhGTKcp+lnwd2Z2t1
+0LzZy5+N7mJx/TPCp2R6svyypSKGLOkwsDOHgDfOePYxbH+YgEH0FaLe22gM3dhX
+H4FsGXhNzJQtpP/rvW/Pzzx428hYC9jC8am2eqKTm4LqpdrxzBtic7/5ymf2g6vB
+K+V6ud+Inp+t/oU7KAZOFb3H0m63/2sb4bH4XrvrjokZYIyoQDR0tZzAAqfQIEuu
+wQkvl0gEDvM7H8152MmbuGv9FIGP+SK/0wO/ZUUiiPtfrZT24GZgLGf1Jzag41dC
+BeQrvNbpXSOSWFXbYqj2Tc4aVRx2HpEaiOkHWq7uutaN3I0Iygo13aH/OjbCllXK
+xzlPXHT6N83MRAxQ9mo3ZbfaNCn1awBB4kif/BJKf4x8/00wuK/HlnyyC5Fq8Xol
+E1Ivu3UFPYiSfXjFkOWgRdSh3by1bZfGcq89xa9kFPIvO1inB3HNfRrhDf7z3usO
+Ke+1eYMRG6BUOKTUspYJob3omLbmJBCWmJLOCH6QOgAhiJQq32RiIvZMNkVXKG5x
+84fdA14UXz5IiSNQUOGOq+WReR6Qw+5BGks+X99wWrBX8yXjrtRzcT9Tggv99FYg
+FhBkLVNMQkL8jDV2PugnVquj5AbnGPZ+7t6yM+jy6buejDBBIVbdDjSjXeqOvSIj
+fA2/ImQWpzVfIDxCulSh
+=2srC
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
