@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaB1B4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 20:56:07 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36062 "EHLO
+	id S1752939AbaB1B6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 20:58:49 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36794 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaB1Bz0 (ORCPT
+	with ESMTP id S1752825AbaB1B6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 20:55:26 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+	Thu, 27 Feb 2014 20:58:43 -0500
+From: Saravana Kannan <skannan@codeaurora.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH v4 7/9] devicetree: bindings: Document PM8921/8058 keypads
-Date: Thu, 27 Feb 2014 17:55:18 -0800
-Message-Id: <1393552520-9068-8-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
-References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+        "Saravana Kannan" <skannan@codeaurora.org>
+Subject: [PATCH v3 1/3] cpufreq: stats: Remove redundant cpufreq_cpu_get() call
+Date: Thu, 27 Feb 2014 17:58:34 -0800
+Message-Id: <1393552716-9754-1-git-send-email-skannan@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the keypad device found on PM8921 and PM8058 PMICs.
+__cpufreq_stats_create_table always gets pass the valid and real policy
+struct. So, there's no need to call cpufreq_cpu_get() to get the policy
+again.
 
-Cc: <devicetree@vger.kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 ---
- .../bindings/input/qcom,pm8xxx-keypad.txt          | 72 ++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
+ drivers/cpufreq/cpufreq_stats.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-new file mode 100644
-index 000000000000..aa5a9c6cf512
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-@@ -0,0 +1,72 @@
-+Qualcomm PM8xxx PMIC Keypad
-+
-+PROPERTIES
-+
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,pm8058-keypad"
-+		    "qcom,pm8921-keypad"
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: the first interrupt specifies the key sense interrupt
-+		    and the second interrupt specifies the key stuck interrupt.
-+		    The format of the specifier is defined by the binding
-+		    document describing the node's interrupt parent.
-+
-+- linux,keymap:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: the linux keymap. More information can be found in
-+		    input/matrix-keymap.txt.
-+
-+- keypad,num-rows:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: number of rows in the keymap. More information can be found
-+		    in input/matrix-keymap.txt.
-+
-+- keypad,num-columns:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: number of columns in the keymap. More information can be
-+		    found in input/matrix-keymap.txt.
-+
-+- debounce:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds that key must be pressed or release
-+		    for key sense interrupt to trigger.
-+
-+- scan-delay:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds to pause between successive scans
-+		    of the matrix array.
-+
-+- row-hold:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in nanoseconds to pause between scans of each row in
-+		    the matrix array.
-+
-+EXAMPLE
-+
-+	keypad {
-+		compatible = "qcom,pm8921-keypad";
-+		interrupt-parent = <&pmicintc>;
-+		interrupts = <74 1>, <75 1>;
-+		linux,keymap = <
-+			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-+			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-+			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-+			MATRIX_KEY(0, 3, KEY_CAMERA)
-+			>;
-+		keypad,num-rows = <1>;
-+		keypad,num-columns = <5>;
-+		debounce = <15>;
-+		scan-delay = <32>;
-+		row-hold = <91500>;
-+	};
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index 5793e14..e4bd27f 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -185,7 +185,6 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+ {
+ 	unsigned int i, j, count = 0, ret = 0;
+ 	struct cpufreq_stats *stat;
+-	struct cpufreq_policy *current_policy;
+ 	unsigned int alloc_size;
+ 	unsigned int cpu = policy->cpu;
+ 	if (per_cpu(cpufreq_stats_table, cpu))
+@@ -194,13 +193,7 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+ 	if ((stat) == NULL)
+ 		return -ENOMEM;
+ 
+-	current_policy = cpufreq_cpu_get(cpu);
+-	if (current_policy == NULL) {
+-		ret = -EINVAL;
+-		goto error_get_fail;
+-	}
+-
+-	ret = sysfs_create_group(&current_policy->kobj, &stats_attr_group);
++	ret = sysfs_create_group(&policy->kobj, &stats_attr_group);
+ 	if (ret)
+ 		goto error_out;
+ 
+@@ -243,11 +236,8 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
+ 	stat->last_time = get_jiffies_64();
+ 	stat->last_index = freq_table_get_index(stat, policy->cur);
+ 	spin_unlock(&cpufreq_stats_lock);
+-	cpufreq_cpu_put(current_policy);
+ 	return 0;
+ error_out:
+-	cpufreq_cpu_put(current_policy);
+-error_get_fail:
+ 	kfree(stat);
+ 	per_cpu(cpufreq_stats_table, cpu) = NULL;
+ 	return ret;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
