@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaB1WeO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:34:14 -0500
-Received: from mail.efficios.com ([78.47.125.74]:54439 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475AbaB1WeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:34:13 -0500
-Date: Fri, 28 Feb 2014 22:34:15 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-ID: <1929970380.32531.1393626855704.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1671875579.32530.1393626840963.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] Userspace RCU 0.7.10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1752585AbaB1Wen (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:34:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52004 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849AbaB1Wel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 17:34:41 -0500
+Date: Fri, 28 Feb 2014 14:34:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ning Qu <quning@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if
+ they are in page cache
+Message-Id: <20140228143440.e0ec026baeced2efbb52aa50@linux-foundation.org>
+In-Reply-To: <1393625931-2858-1-git-send-email-quning@google.com>
+References: <1393625931-2858-1-git-send-email-quning@google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [24.201.126.139]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Userspace RCU 0.7.10
-Thread-Index: OMnBWmJyudUPRwixMiFGTiLme7ZNmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+On Fri, 28 Feb 2014 14:18:50 -0800 Ning Qu <quning@google.com> wrote:
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+> This is a follow-up patch for "mm: map few pages around fault address if they are in page cache"
+> 
+> We use the generic filemap_map_pages as ->map_pages in shmem/tmpfs.
+> 
 
-Changelog:
-2014-02-28 Userspace RCU 0.7.10
-        * Fix: urcu-bp interaction with threads vs constructors/destructors
-        * Fix undefined NULL pointer arithmetic
-        * Blacklist ARM gcc 4.8.0, 4.8.1, 4.8.2
-        * rculfhash: document max_nr_buckets = 0
+Please cc Hugh on shmem/tmpfs things
 
-Project website: http://urcu.so
-Download link: http://urcu.so/files/
-Git repository: git://git.urcu.so/urcu.git
+> 
+> =========================================================================
+> Below is just some simple experiment numbers from this patch, let me know if
+> you would like more:
+> 
+> Tested on Xeon machine with 64GiB of RAM, using the current default fault
+> order 4.
+> 
+> Sequential access 8GiB file
+> 			Baseline 	with-patch
+> 1 thread
+>     minor fault		205		101	
 
+Confused.  Sequential access of an 8G file should generate 2,000,000
+minor faults, not 205.  And with FAULT_AROUND_ORDER=4, that should come
+down to 2,000,000/16 minor faults when using faultaround?
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+>     time, seconds	7.94		7.82
+> 
+> Random access 8GiB file
+> 			Baseline 	with-patch
+> 1 thread
+>     minor fault		724		623
+>     time, seconds	9.75		9.84
+> 
+
