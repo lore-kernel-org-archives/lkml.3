@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaB1BLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 20:11:55 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51996 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaB1BLy (ORCPT
+	id S1751763AbaB1BYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 20:24:17 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60254 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaB1BYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 20:11:54 -0500
-Subject: [RESEND PATCH v3] scsi: Add timeout to avoid infinite command retry
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: clbchenlibo.chen@huawei.com, handai.szj@gmail.com,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Fri, 28 Feb 2014 10:13:02 +0900
-Message-ID: <20140228011302.7250.37517.stgit@ltc223.sdl.hitachi.co.jp>
-User-Agent: StGit/0.16
+	Thu, 27 Feb 2014 20:24:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1393545229.24588.147.camel@joe-AO722>
+References: <1393531019-25134-1-git-send-email-florian.vaussard@epfl.ch>
+	<1393531808.24588.119.camel@joe-AO722>
+	<530F9F03.40803@epfl.ch>
+	<1393545229.24588.147.camel@joe-AO722>
+Date: Thu, 27 Feb 2014 19:24:14 -0600
+X-Google-Sender-Auth: -CMSpt_sJlMonShC3J4nSLZlzUM
+Message-ID: <CAL_JsqLnMyHGsv7L64FxooH0jaRjjF8uE=d=n6C84+hYB+ryVQ@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: fix spurious vendor compatible warnings
+From: Rob Herring <robh@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andy Whitcroft <apw@canonical.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, scsi error handling in scsi_io_completion() tries to
-unconditionally requeue scsi command when device keeps some error state.
-For example, UNIT_ATTENTION causes infinite retry with
-action == ACTION_RETRY.
-This is because retryable errors are thought to be temporary and the scsi
-device will soon recover from those errors. Normally, such retry policy is
-appropriate because the device will soon recover from temporary error state.
+On Thu, Feb 27, 2014 at 5:53 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2014-02-27 at 21:24 +0100, Florian Vaussard wrote:
+>> On 02/27/2014 09:10 PM, Joe Perches wrote:
+>> > On Thu, 2014-02-27 at 20:56 +0100, Florian Vaussard wrote:
+>> >> With a compatible string like
+>> >> compatible = "foo";
+>> >> checkpatch will currently try to find "foo" in  vendor-prefixes.txt,
+>> >> which is wrong since the vendor prefix is empty in this specific case.
+> []
+>> > Some vendor names have dashes.
+>> > I don't know if underscores are allowed.
+>> >
+>> > $ grep -rP --include=*.[ch] -oh "compatible\s*=\s*\"[^,]+,\w" * | \
+>> >   sed -r -e 's/\s//g' -e 's/,.$//' | sort | uniq -c | grep "[_-]"
+>> >       1 compatible="active-semi
+>> >       8 compatible="asahi-kasei
+> []
+>> In ePAPR v1.1, I could not find any strict requirement. It
+>> is just saying:
+>>
+>> The recommended format is "manufacturer,model", where manufacturer is a
+>> string describing the name of the manufacturer (such as a stock ticker
+>> symbol), and model specifies the model number.
+>
+> Should there also be a check in .c and .h files for
+>         .compatible = "somestring"
 
-But there is no guarantee that device is able to recover from error state
-immediately. Some hardware error can prevent device from recovering.
+Ideally, yes. I didn't do that because I figured there would be too
+many variations in formatting compared to dts files.
 
-This patch adds timeout in scsi_io_completion() to avoid infinite command
-retry in scsi_io_completion(). Once scsi command retry time is longer than
-this timeout, the command is treated as failure.
+> and
+>         OF_DEV_AUXDATA("somestring",,,,)
 
-Changes in v3:
- - use existing timeout instead of adding new sysfs attribute
-   (Thanks to James)
+Probably not. OF_DEV_AUXDATA is hopefully temporary. There are 156
+instances now and it looks like they've been going down since 3.8.
 
-Changes in v2:
- - check retry timeout in scsi_io_completion() instead of scsi_softirq_done()
-
-Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/scsi_lib.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 62ec84b..f97a1a6 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -788,6 +788,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 	enum {ACTION_FAIL, ACTION_REPREP, ACTION_RETRY,
- 	      ACTION_DELAYED_RETRY} action;
- 	char *description = NULL;
-+	unsigned long wait_for = (cmd->allowed + 1) * req->timeout;
- 
- 	if (result) {
- 		sense_valid = scsi_command_normalize_sense(cmd, &sshdr);
-@@ -989,6 +990,12 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 		action = ACTION_FAIL;
- 	}
- 
-+	if (action != ACTION_FAIL &&
-+	    time_before(cmd->jiffies_at_alloc + wait_for, jiffies)) {
-+		action = ACTION_FAIL;
-+		description = "Command timed out";
-+	}
-+
- 	switch (action) {
- 	case ACTION_FAIL:
- 		/* Give up and fail the remainder of the request */
-
+Rob
