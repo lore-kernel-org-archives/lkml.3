@@ -1,169 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaB1Hfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:35:42 -0500
-Received: from nm12-vm10.bullet.mail.gq1.yahoo.com ([98.136.218.139]:22909
-	"EHLO nm12-vm10.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750701AbaB1Hfk (ORCPT
+	id S1752149AbaB1HgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:36:10 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:36452 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaB1HgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:35:40 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
-	b=HNTouVz0AgHEs0sGS+616EPd8boAn0qh+TQK3d+MiM1KzUZ+w3ff4edZjjTUR5KrWAfZocvknaJDGu05QOLIi97xdJISCQ5G9SKufjAFZFeEwsqKn8XT62hnq2uu6kY1sco2FjNZQHEruR35grZ5OVVjDUgDDN9sVP1I87ukKb4=;
-X-Yahoo-Newman-Id: 184338.70357.bm@smtp234.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: _aWdqLIVM1kLWnL0Hhx0p2pJVI23prPqgy6_i22Vv0i6VPi
- O.4gB7OVnylJOxXSLdmCKx7aI7P22IbAit5ZIz5nUZtrGbed5nT6QuDtu57u
- 1vMtY41onWt_HzpI.512qgLwM2PJlzIYXAMzKLZwWNEHN8GcMjEA.VrHacmg
- lkYPAFZWwPaR6ZEoxz744BJvTYy8eMO4h7oKZVyPghVEC.zRmiYIkDkPhCDT
- giMljVbSX7fxbL6WMkh6m3iTjpNF61U9kADhK_z0spgewEXCzl8RT8QOG360
- ImFgSwH2YOplnU3wahxv59UH0z.2pWtt6GoDJ7iM0c2Z4i0B8fodDbefKQOP
- CdZvCtyqCBp_deBRuk7wdLicFB80NbA2Y2Hpzw8jScZXWA3x79c6vhZM9UhN
- uhVkKMZBWtvF5BTSTpAjGGaFfsMN0fSwUdy.5Ugg5hTW0wpZJ9lFcnFPJWcG
- UkyNPIDYBX_ZsegRPl0e1rSekMuCH1NlU1Xe0cd7ZHSkB59A9_imh9_Jmiam
- kMLQS34zEXpfCH1668Lkl9.qleNLf09O5zapO
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
-        by smtp234.mail.gq1.yahoo.com with SMTP; 28 Feb 2014 07:35:40 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
+	Fri, 28 Feb 2014 02:36:08 -0500
+From: Daeseok Youn <daeseok.youn@gmail.com>
 To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH] Staging: comedi: add timeouts to while loops in s626.c
-Date: Fri, 28 Feb 2014 01:35:36 -0600
-Message-Id: <1393572936-9676-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
+Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
+        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5 v2] Staging: cxt1e1: Fix line length over 80 characters in hwprobe.c
+Date: Fri, 28 Feb 2014 16:36:03 +0900
+Message-ID: <3980699.cFzmTHesZE@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch located a handful of while loops testing readl calls in s626.c.
-Since these while loops depend on readl succeeding, it's safer to make
-sure they time out eventually.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+clean up checkpatch.pl warnings:
+ WARNING: Line length over 80 characters
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-Ian and/or Hartley, I'd love your comments on this.  It seems to me that
-we want these kinds of while loops properly timed out, but I want to make
-sure I'm doing everything properly.  First off, s626_debi_transfer() says
-directly that it is called from within critical sections, so I assume
-that means that the new comedi_timeout() function is no good here, and
-s626_send_dac() looked equally suspicious, so I opted for iterative
-timeouts.  Is this correct?  Also, for these timeouts, I used a very
-conservative 10000 iterations, would it be better to decrease that?
-Also, do my error strings appear acceptable?
+ drivers/staging/cxt1e1/hwprobe.c |   45 ++++++++++++++++++++++++--------------
+ 1 file changed, 28 insertions(+), 17 deletions(-)
 
-And finally, are timeouts here even necessary or helpful, or are there
-any better ways to do it?
-
-Thanks,
-Chase
-
- drivers/staging/comedi/drivers/s626.c | 49 ++++++++++++++++++++++++++++-------
- 1 file changed, 39 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 5ba4b4a..282636b 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -209,6 +209,8 @@ static const struct comedi_lrange s626_range_table = {
- static void s626_debi_transfer(struct comedi_device *dev)
- {
- 	struct s626_private *devpriv = dev->private;
-+	static const int timeout = 10000;
-+	int i;
+diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+index 85040bb..d6ccbd9 100644
+--- a/drivers/staging/cxt1e1/hwprobe.c
++++ b/drivers/staging/cxt1e1/hwprobe.c
+@@ -37,7 +37,8 @@ extern int  drvr_state;
  
- 	/* Initiate upload of shadow RAM to DEBI control register */
- 	s626_mc_enable(dev, S626_MC2_UPLD_DEBI, S626_P_MC2);
-@@ -221,8 +223,13 @@ static void s626_debi_transfer(struct comedi_device *dev)
- 		;
+ /* forward references */
+ void        c4_stopwd(ci_t *);
+-struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long, unsigned long, int, int);
++struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long,
++				      unsigned long, int, int);
  
- 	/* Wait until DEBI transfer is done */
--	while (readl(devpriv->mmio + S626_P_PSR) & S626_PSR_DEBI_S)
--		;
-+	for (i = 0; i < timeout; i++) {
-+		if (!(readl(devpriv->mmio + S626_P_PSR) & S626_PSR_DEBI_S))
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "DEBI transfer timeout.");
- }
  
- /*
-@@ -359,6 +366,8 @@ static const uint8_t s626_trimadrs[] = {
- static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- {
- 	struct s626_private *devpriv = dev->private;
-+	static const int timeout = 10000;
-+	int i;
+ struct s_hdw_info hdw_info[MAX_BOARDS];
+@@ -104,24 +105,31 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
+ 	addr = (long) hi->addr_mapped[1] + EEPROM_OFFSET;
  
- 	/* START THE SERIAL CLOCK RUNNING ------------- */
+ 	/* read EEPROM with largest known format size... */
+-	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data, sizeof(FLD_TYPE2));
++	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data,
++			       sizeof(FLD_TYPE2));
  
-@@ -404,8 +413,13 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * Done by polling the DMAC enable flag; this flag is automatically
- 	 * cleared when the transfer has finished.
- 	 */
--	while (readl(devpriv->mmio + S626_P_MC1) & S626_MC1_A2OUT)
--		;
-+	for  (i = 0; i < timeout; i++) {
-+		if (!(readl(devpriv->mmio + S626_P_MC1) & S626_MC1_A2OUT))
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "DMA transfer timeout.");
+ #if 0
+ 	{
+ 		unsigned char *ucp = (unsigned char *) &hi->mfg_info.data;
  
- 	/* START THE OUTPUT STREAM TO THE TARGET DAC -------------------- */
- 
-@@ -425,8 +439,13 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * finished transferring the DAC's data DWORD from the output FIFO
- 	 * to the output buffer register.
- 	 */
--	while (!(readl(devpriv->mmio + S626_P_SSR) & S626_SSR_AF2_OUT))
--		;
-+	for (i = 0; i < timeout; i++) {
-+		if (readl(devpriv->mmio + S626_P_SSR) & S626_SSR_AF2_OUT)
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "TSL timeout waiting for slot 1 to execute.");
- 
- 	/*
- 	 * Set up to trap execution at slot 0 when the TSL sequencer cycles
-@@ -466,8 +485,13 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 		 * from 0xFF to 0x00, which slot 0 causes to happen by shifting
- 		 * out/in on SD2 the 0x00 that is always referenced by slot 5.
- 		 */
--		while (readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000)
--			;
-+		for (i = 0; i < timeout; i++) {
-+			if (!(readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000))
-+				break;
-+			udelay(1);
-+		}
-+		if (i == timeout)
-+			comedi_error(dev, "TSL timeout waiting for slot 0 to execute.");
+ 		pr_info("eeprom[00]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3), *(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
++			*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3),
++			*(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
+ 		pr_info("eeprom[08]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11), *(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
++			*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11),
++			*(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
+ 		pr_info("eeprom[16]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19), *(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
++			*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19),
++			*(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
+ 		pr_info("eeprom[24]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27), *(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
++			*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27),
++			*(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
+ 		pr_info("eeprom[32]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35), *(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
++			*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35),
++			*(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
+ 		pr_info("eeprom[40]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
+-				*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43), *(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
++			*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43),
++			*(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
  	}
- 	/*
- 	 * Either (1) we were too late setting the slot 0 trap; the TSL
-@@ -486,8 +510,13 @@ static void s626_send_dac(struct comedi_device *dev, uint32_t val)
- 	 * the next DAC write.  This is detected when FB_BUFFER2 MSB changes
- 	 * from 0x00 to 0xFF.
- 	 */
--	while (!(readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000))
--		;
-+	for (i = 0; i < timeout; i++) {
-+		if (readl(devpriv->mmio + S626_P_FB_BUFFER2) & 0xff000000)
-+			break;
-+		udelay(1);
-+	}
-+	if (i == timeout)
-+		comedi_error(dev, "TLS timeout waiting for slot 0 to execute.");
- }
+ #endif
+ #if 0
+@@ -230,10 +238,11 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 		return 0;
+ 	}
  
- /*
+-	if (pdev->bus)                  /* obtain bus number */
++	/* obtain bus number */
++	if (pdev->bus)
+ 		busno = pdev->bus->number;
+ 	else
+-		busno = 0;                  /* default for system PCI inconsistency */
++		busno = 0; /* default for system PCI inconsistency */
+ 	slot = pdev->devfn & ~0x07;
+ 
+ 	/*
+@@ -246,8 +255,8 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
+ 	{
+ 		/*
+-		 * match with board's first found interface, otherwise this is first
+-		 * found
++		 * match with board's first found interface, otherwise this is
++		 * fisrt found
+ 		 */
+ 		if ((hi->pci_slot == 0xff) ||   /* new board */
+ 		    ((hi->pci_slot == slot) && (hi->bus == pdev->bus)))
+@@ -256,13 +265,14 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 	if (i == MAX_BOARDS)            /* no match in above loop means MAX
+ 					 * exceeded */
+ 	{
+-		pr_warning("exceeded number of allowed devices (>%d)?\n", MAX_BOARDS);
++		pr_warning("exceeded number of allowed devices (>%d)?\n",
++			   MAX_BOARDS);
+ 		return 0;
+ 	}
+ 	if (pdev->bus)
+ 		hi->pci_busno = pdev->bus->number;
+ 	else
+-		hi->pci_busno = 0;          /* default for system PCI inconsistency */
++		hi->pci_busno = 0; /* default for system PCI inconsistency */
+ 	hi->pci_slot = slot;
+ 	pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &hi->pci_pin[fun]);
+ 	pci_read_config_byte(pdev, PCI_REVISION_ID, &hi->revid[fun]);
+@@ -345,7 +355,8 @@ c4hw_attach_all(void)
+ 			}
+ #ifdef SBE_MAP_DEBUG
+ 			pr_warning("%s: io remapped from phys %x to virt %x\n",
+-				   hi->devname, (u_int32_t) hi->addr[j], (u_int32_t) hi->addr_mapped[j]);
++				   hi->devname, (u_int32_t) hi->addr[j],
++				   (u_int32_t) hi->addr_mapped[j]);
+ #endif
+ 		}
+ 	}
+@@ -380,9 +391,9 @@ c4hw_attach_all(void)
+ #if 0
+ 			cleanup_devs();
+ #endif
+-			return error_flag;      /* error_flag set w/in add_dev() */
++			return error_flag; /* error_flag set w/in add_dev() */
+ 		}
+-		show_two(hi, i);           /* displays found information */
++		show_two(hi, i); /* displays found information */
+ 	}
+ 	return 0;
+ }
 -- 
-1.8.5.3
+1.7.9.5
 
+---
