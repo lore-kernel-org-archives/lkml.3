@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaB1Uqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:46:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028AbaB1Uqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:46:39 -0500
-Date: Fri, 28 Feb 2014 15:45:57 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>, viro@zeniv.linux.org.uk,
-        eparis@redhat.com, Catalin.Marinas@arm.com, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH v6 2/2] arm64: audit: Add audit hook in
- ptrace/syscall_trace
-Message-ID: <20140228204557.GJ16640@madcap2.tricolour.ca>
-References: <1393319934-2810-1-git-send-email-takahiro.akashi@linaro.org>
- <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
- <1393564635-3921-3-git-send-email-takahiro.akashi@linaro.org>
- <20140228161558.GE29546@mudshark.cambridge.arm.com>
+	id S1752497AbaB1Uql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:46:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:44232 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751708AbaB1Uqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 15:46:38 -0500
+Date: Fri, 28 Feb 2014 15:46:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228154636.3634a8b3@gandalf.local.home>
+In-Reply-To: <40f095f7-605f-4885-951f-31da7d2d637a@email.android.com>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
+	<20140224193043.GP6835@laptop.programming.kicks-ass.net>
+	<530C12CA.6070308@zytor.com>
+	<alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
+	<dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
+	<20140225094352.73e0e28c@gandalf.local.home>
+	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
+	<20140227173150.4e5ed747@gandalf.local.home>
+	<530FC1C6.5040209@zytor.com>
+	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+	<20140227215726.7018c861@gandalf.local.home>
+	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+	<20140228092341.12a40f7c@gandalf.local.home>
+	<alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+	<40f095f7-605f-4885-951f-31da7d2d637a@email.android.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228161558.GE29546@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/28, Will Deacon wrote:
-> On Fri, Feb 28, 2014 at 05:17:15AM +0000, AKASHI Takahiro wrote:
-> > This patch adds auditing functions on entry to or exit from
-> > every system call invocation.
-> > 
-> > Acked-by: Richard Guy Briggs <rgb@redhat.com>
-> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> > ---
-> >  arch/arm64/kernel/ptrace.c |   54 ++++++++++++++++++++++++++------------------
-> >  1 file changed, 32 insertions(+), 22 deletions(-)
-> 
-> I think you need to do something like I did for arch/arm/, where we have
-> separate trace functions for entry/exit to make sure that we invoke the
-> various helpers in the correct order (for example, you want to invoke all
-> the debug stuff *first* on entry, but *last* on exit).
+On Fri, 28 Feb 2014 12:38:52 -0800
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-I'd have to agree.  I've just had my head deep in audit_syscall_entry()
-and syscall_get_arch to clean them up.  Since current is only ever fed
-to syscall_get_arch() and regs is never used by syscall_get_arch(), I'm
-looking at dropping both from the syscall_get_arch() args list, but
-leave syscall_get_arch() as you have it for now.
+> Now we need to figure out if the reboot problem and the segfault problem are actually the same... I have a nasty feeling they might be different problems.
 
-> Will
+I wonder if there was any recursion problem. Although, I believe perf
+has recursion checks. But perhaps something recursed before the checks?
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+-- Steve
