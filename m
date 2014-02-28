@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaB1EXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 23:23:39 -0500
+	id S1751993AbaB1EYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 23:24:50 -0500
 Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaB1EWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 23:22:37 -0500
+	id S1750907AbaB1EWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 23:22:36 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
-   d="scan'208";a="483314719"
+   d="scan'208";a="483314718"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@redhat.com
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
         namhyung@kernel.org, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 4/8] perf, tools: Enable printing the srcline in the history v2
-Date: Thu, 27 Feb 2014 20:22:28 -0800
-Message-Id: <1393561352-23448-5-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 6/8] perf, tools: Support source line numbers in annotate
+Date: Thu, 27 Feb 2014 20:22:30 -0800
+Message-Id: <1393561352-23448-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
 References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
@@ -25,222 +25,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+With srcline key/sort'ing it's useful to have line numbers
+in the annotate window. This patch implements this.
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
+Use objdump -l to request the line numbers and
+save them in the line structure. Then the browser
+displays them for source lines.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
+The line numbers are not displayed by default, but can be
+toggled on with 'k'
 
-Contains fixes from Namhyung Kim
+There is one unfortunate problem with this setup. For
+lines not containing source and which are outside functions
+objdump -l reports line numbers off by a few: it always reports
+the first line number in the next function even for lines
+that are outside the function.
+I haven't find a nice way to detect/correct this. Probably objdump
+has to be fixed.
+See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
 
-v2: Refactor code into common function
+The line numbers are still useful even with these problems,
+as most are correct and the ones which are not are nearby.
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/ui/browsers/hists.c | 17 -----------------
- tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
- tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
- tools/perf/util/callchain.h    |  5 +++++
- tools/perf/util/machine.c      |  2 +-
- tools/perf/util/srcline.c      |  6 ++++--
- 6 files changed, 48 insertions(+), 34 deletions(-)
+ tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
+ tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
+ tools/perf/util/annotate.h        |  1 +
+ 3 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b720b92..ec69142 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -394,23 +394,6 @@ out:
- 	return key;
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index f0697a3..8df6787 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
+ 	bool hide_src_code,
+ 	     use_offset,
+ 	     jump_arrows,
++	     show_linenr,
+ 	     show_nr_jumps;
+ } annotate_browser__opts = {
+ 	.use_offset	= true,
+@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
+ 	if (!*dl->line)
+ 		slsmg_write_nstring(" ", width - pcnt_width);
+ 	else if (dl->offset == -1) {
+-		printed = scnprintf(bf, sizeof(bf), "%*s  ",
++		if (dl->line_nr && annotate_browser__opts.show_linenr)
++			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
++					ab->addr_width, " ", dl->line_nr);
++		else
++			printed = scnprintf(bf, sizeof(bf), "%*s  ",
+ 				    ab->addr_width, " ");
+ 		slsmg_write_nstring(bf, printed);
+ 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
+@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
+ 		"o             Toggle disassembler output/simplified view\n"
+ 		"s             Toggle source code view\n"
+ 		"/             Search string\n"
++		"k	       Toggle line numbers\n"
+ 		"r             Run available scripts\n"
+ 		"?             Search string backwards\n");
+ 			continue;
+@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
+ 				script_browse(NULL);
+ 				continue;
+ 			}
++		case 'k':
++			annotate_browser__opts.show_linenr =
++				!annotate_browser__opts.show_linenr;
++			break;
+ 		case 'H':
+ 			nd = browser->curr_hot;
+ 			break;
+@@ -984,6 +994,7 @@ static struct annotate_config {
+ } annotate__configs[] = {
+ 	ANNOTATE_CFG(hide_src_code),
+ 	ANNOTATE_CFG(jump_arrows),
++	ANNOTATE_CFG(show_linenr),
+ 	ANNOTATE_CFG(show_nr_jumps),
+ 	ANNOTATE_CFG(use_offset),
+ };
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 469eb67..f020110 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -15,11 +15,13 @@
+ #include "debug.h"
+ #include "annotate.h"
+ #include "evsel.h"
++#include <regex.h>
+ #include <pthread.h>
+ #include <linux/bitops.h>
+ 
+ const char 	*disassembler_style;
+ const char	*objdump_path;
++static regex_t	 file_lineno;
+ 
+ static struct ins *ins__find(const char *name);
+ static int disasm_line__parse(char *line, char **namep, char **rawp);
+@@ -562,13 +564,15 @@ out_free_name:
+ 	return -1;
  }
  
--static char *callchain_list__sym_name(struct callchain_list *cl,
--				      char *bf, size_t bfsize, bool show_dso)
--{
--	int printed;
--
--	if (cl->ms.sym)
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
--		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
--
--	if (show_dso)
--		scnprintf(bf + printed, bfsize - printed, " %s",
--			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
--
--	return bf;
--}
--
- #define LEVEL_OFFSET_STEP 3
- 
- static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 831fbb7..3ac9ace 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+-static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
++static struct disasm_line *disasm_line__new(s64 offset, char *line,
++					size_t privsize, int line_nr)
  {
- 	int i;
- 	size_t ret = 0;
-+	char bf[1024];
+ 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
  
- 	ret += callchain__fprintf_left_margin(fp, left_margin);
- 	for (i = 0; i < depth; i++) {
-@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 		} else
- 			ret += fprintf(fp, "%s", "          ");
+ 	if (dl != NULL) {
+ 		dl->offset = offset;
+ 		dl->line = strdup(line);
++		dl->line_nr = line_nr;
+ 		if (dl->line == NULL)
+ 			goto out_delete;
+ 
+@@ -780,13 +784,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
+  * The ops.raw part will be parsed further according to type of the instruction.
+  */
+ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+-				      FILE *file, size_t privsize)
++				      FILE *file, size_t privsize,
++				      int *line_nr)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	struct disasm_line *dl;
+ 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
+ 	size_t line_len;
+ 	s64 line_ip, offset = -1;
++	regmatch_t match[2];
+ 
+ 	if (getline(&line, &line_len, file) < 0)
+ 		return -1;
+@@ -804,6 +810,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 	line_ip = -1;
+ 	parsed_line = line;
+ 
++	/* /filename:linenr ? Save line number and ignore. */
++	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
++		*line_nr = atoi(line + match[1].rm_so);
++		return 0;
++	}
++
+ 	/*
+ 	 * Strip leading spaces:
+ 	 */
+@@ -834,8 +846,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 			parsed_line = tmp2 + 1;
  	}
--	if (chain->ms.sym)
--		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
--	else
--		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
--
-+	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
-+	fputc('\n', fp);
- 	return ret;
+ 
+-	dl = disasm_line__new(offset, parsed_line, privsize);
++	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
+ 	free(line);
++	(*line_nr)++;
+ 
+ 	if (dl == NULL)
+ 		return -1;
+@@ -861,6 +874,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 	return 0;
  }
  
-@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 	struct rb_node *node;
- 	int i = 0;
- 	int ret = 0;
-+	char bf[1024];
++static __attribute__((constructor)) void symbol__init_regexpr(void)
++{
++	regcomp(&file_lineno, "^/[^:]+:([0-9]+)$", REG_EXTENDED);
++}
++
+ static void delete_last_nop(struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+@@ -896,6 +914,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
+ 	char symfs_filename[PATH_MAX];
+ 	struct kcore_extract kce;
+ 	bool delete_extract = false;
++	int lineno = 0;
+ 
+ 	if (filename) {
+ 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
+@@ -977,7 +996,7 @@ fallback:
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+-		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
++		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
+ 		 objdump_path ? objdump_path : "objdump",
+ 		 disassembler_style ? "-M " : "",
+ 		 disassembler_style ? disassembler_style : "",
+@@ -994,7 +1013,8 @@ fallback:
+ 		goto out_free_filename;
+ 
+ 	while (!feof(file))
+-		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
++		if (symbol__parse_objdump_line(sym, map, file, privsize,
++			    &lineno) < 0)
+ 			break;
  
  	/*
- 	 * If have one single callchain root, don't bother printing
-@@ -195,10 +194,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
- 			} else
- 				ret += callchain__fprintf_left_margin(fp, left_margin);
- 
--			if (chain->ms.sym)
--				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
--			else
--				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
-+			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
-+							false));
- 
- 			if (++entries_printed == callchain_param.print_limit)
- 				break;
-@@ -218,6 +215,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- {
- 	struct callchain_list *chain;
- 	size_t ret = 0;
-+	char bf[1024];
- 
- 	if (!node)
- 		return 0;
-@@ -228,11 +226,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
- 	list_for_each_entry(chain, &node->val, list) {
- 		if (chain->ip >= PERF_CONTEXT_MAX)
- 			continue;
--		if (chain->ms.sym)
--			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
--		else
--			ret += fprintf(fp, "                %p\n",
--					(void *)(long)chain->ip);
-+		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
-+					bf, sizeof(bf), false));
- 	}
- 
- 	return ret;
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 8d9db45..56ab517 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -551,3 +551,32 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
- 		return 0;
- 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
- }
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso)
-+{
-+	int printed;
-+
-+	if (cl->ms.sym) {
-+		if (callchain_param.key == CCKEY_ADDRESS &&
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s",
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s",
-+					    cl->ms.sym->name);
-+	} else
-+		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+
-+	if (show_dso)
-+		scnprintf(bf + printed, bfsize - printed, " %s",
-+			  cl->ms.map ?
-+			  cl->ms.map->dso->short_name :
-+			  "unknown");
-+
-+	return bf;
-+}
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index be29bb8..39322ef 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -59,6 +59,7 @@ struct callchain_param {
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char		       *srcline;
- 	struct list_head	list;
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index b2aef59..a124e7e 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -58,6 +58,7 @@ struct disasm_line {
+ 	char		    *line;
+ 	char		    *name;
+ 	struct ins	    *ins;
++	int		    line_nr;
+ 	struct ins_operands ops;
  };
  
-@@ -158,4 +159,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
- int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
- 
- extern const char record_callchain_help[];
-+
-+char *callchain_list__sym_name(struct callchain_list *cl,
-+			       char *bf, size_t bfsize, bool show_dso);
-+
- #endif	/* __PERF_CALLCHAIN_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6eff65e..ef198c3 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1310,7 +1310,7 @@ static int add_callchain_ip(struct machine *machine,
- 			return -EINVAL;
- 	}
- 
--	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
-+	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
- }
- 
- #define CHASHSZ 127
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..c6a7cdc 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
- 
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
- 
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
- 
- void free_srcline(char *srcline)
 -- 
 1.8.5.3
 
