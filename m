@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaB1Vgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:36:48 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:29754 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaB1Vgp (ORCPT
+	id S1752424AbaB1VnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:43:18 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:60610 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751729AbaB1VnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:36:45 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19/2mNzOlTZ934w/Li3oBvx
-Date: Fri, 28 Feb 2014 13:36:30 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, linux@arm.linux.org.uk, rnayak@ti.com,
-        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com,
-        robherring2@gmail.com, galak@codeaurora.org, rob.herring@calxeda.com,
-        santosh.shilimkar@ti.com, nm@ti.com, bcousson@baylibre.com,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for
- Crossbar IP
-Message-ID: <20140228213629.GB13624@atomide.com>
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com>
- <1386066445-28245-3-git-send-email-r.sricharan@ti.com>
- <52D7B2CA.8080902@ti.com>
- <52EF7D85.5070705@ti.com>
- <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de>
- <52F23887.9060209@ti.com>
- <52F24683.9060200@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F24683.9060200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Feb 2014 16:43:16 -0500
+Message-ID: <1393623789.4052.17.camel@x220>
+Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 28 Feb 2014 22:43:09 +0100
+In-Reply-To: <20140212160431.GB28112@sirena.org.uk>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-15-git-send-email-richard@nod.at>
+	 <20140210114154.GQ1757@sirena.org.uk> <1392039072.3585.15.camel@x220>
+	 <20140210141255.GI1757@sirena.org.uk> <1392046242.3585.41.camel@x220>
+	 <20140210163621.GA13533@sirena.org.uk> <1392070159.27939.34.camel@x220>
+	 <20140212160431.GB28112@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Feb 2014 21:43:14.0454 (UTC) FILETIME=[156F0B60:01CF34CE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sricharan R <r.sricharan@ti.com> [140205 06:13]:
-> Tony,
+On Wed, 2014-02-12 at 16:04 +0000, Mark Brown wrote:
+> On Mon, Feb 10, 2014 at 11:09:19PM +0100, Paul Bolle wrote:
+> > See, if you scan v3.10:arch/arm/mach-exynos/mach-smdkv310.c you'll
+> > notice the string "smdk-audio". If you grep that string you get a few
+> > hits. But none in v3.10:sound/soc/samsung/smdk_wm9713.c. And if you scan
+> > v3.10:sound/soc/samsung/smdk_wm9713.c for strings you'll find stuff like
+> > "wm9713-hifi",  "wm9713-codec", and "soc-audio". But these don't show up
+> > in v3.10:arch/arm/mach-exynos/mach-smdkv310.c. So it's not obvious how
+> > these two files relate.
 > 
-> On Wednesday 05 February 2014 06:41 PM, Sricharan R wrote:
-> > On Tuesday 04 February 2014 09:44 PM, Thomas Gleixner wrote:
-> >> On Mon, 3 Feb 2014, Sricharan R wrote:
-> >>>> I already have your reviewed-by tag for the first patch in this series.
-> >>>>
-> >>>> Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
-> >>>> to be merged. We are planning to take this series through arm-soc tree.
-> >>>>
-> >>>> Can i please have your tag for this patch as well ?
-> >>
-> >> Acked-by-me
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> > Thanks Thomas.
-> > 
-> > Kevin,
-> >     I will re-send a branch based on rc1 for this.
-> > 
+> > And I'm left wondering why SND_SOC_SAMSUNG_SMDK_WM9713 actually depends
+> > on (among other symbols) MACH_SMDKV310 and MACH_SMDKC210 in v3.10.
 > 
-> I have pushed a branch based on mainline,
->    git://github.com/Sricharanti/sricharan.git
->    branch: crossbar_3.14_rc1
+> The hardware is physically present on those boards but must be selected
+> with DIP switches, the device registration needs to be changed in the
+> kernel when that happens (as the DT must be when it is in use).
 
-OK pulling into omap-for-v3.15/crossbar thanks.
+In v3.14-rc4 these two symbols suddenly got removed, see commit
+eaff64705dd5 ("ASoC: samsung: Remove invalid dependencies"). It does
+exactly what I proposed last year, see
+https://lkml.org/lkml/2013/7/14/27 . (That link currently shows a rather
+empty page; is lkml.org having problems again?)
 
-Tony
+That commit is fine with me, of course. I now see no reason to continue
+my, rather slowly progressing, search for the problem that you wanted to
+get properly fixed. I suppose another commit already fixed it.
+
+Thanks,
+
+
+Paul Bolle
+
