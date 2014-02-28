@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaB1H0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:26:46 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57397 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaB1H0o (ORCPT
+	id S1751723AbaB1H1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:27:11 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:54750 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaB1H1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:26:44 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <531039F3.4050707@jp.fujitsu.com>
-Date: Fri, 28 Feb 2014 16:25:39 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 28 Feb 2014 02:27:08 -0500
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, <viro@zeniv.linux.org.uk>,
-        <jmoyer@redhat.com>, <kosaki.motohiro@gmail.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-fsdevel@vger.kernel.org>, <linux-aio@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] aio, mem-hotplug: Add memory barrier to aio ring
- page migration.
-References: <1393497616-16428-1-git-send-email-tangchen@cn.fujitsu.com> <1393497616-16428-3-git-send-email-tangchen@cn.fujitsu.com> <20140227145730.GA639@kvack.org>
-In-Reply-To: <20140227145730.GA639@kvack.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <1375189476-21557-1-git-send-email-coelho@ti.com>
+References: <1375189476-21557-1-git-send-email-coelho@ti.com>
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Fri, 28 Feb 2014 08:26:46 +0100
+Message-ID: <CAGm1_kvdzkvzEEymQ+H0XiKugifHF27KDz3jwX5Frg_U=S7KgA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/8] wilink: add device tree support
+To: Luciano Coelho <coelho@ti.com>
+Cc: linux-wireless@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>, luca@coelho.fi, mturquette@linaro.org,
+        mark.rutland@arm.com, balbi@ti.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, kernel list <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>, nm@ti.com,
+        martinez.javier@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/27 23:57), Benjamin LaHaise wrote:
-> On Thu, Feb 27, 2014 at 06:40:16PM +0800, Tang Chen wrote:
->> When doing aio ring page migration, we migrated the page, and update
->> ctx->ring_pages[]. Like the following:
->>
->> aio_migratepage()
->>   |-> migrate_page_copy(new, old)
->>   |   ......				/* Need barrier here */
->>   |-> ctx->ring_pages[idx] = new
->>
->> Actually, we need a memory barrier between these two operations.
->> Otherwise, if ctx->ring_pages[] is updated before memory copy due to
->> the compiler optimization, other processes may have an opportunity
->> to access to the not fully initialized new ring page.
->>
->> So add a wmb to synchronize them.
+On Tue, Jul 30, 2013 at 3:04 PM, Luciano Coelho <coelho@ti.com> wrote:
+> Hi,
 >
-> The smp_wmb() is not needed after you added the taking of ctx->completion_lock
-> lock since all accesses to ring_pages is then protected by the spinlock.
-> Why are you adding this then?  Or have you missed adding the lock somewhere?
-
-Pleaes see following thread. It's a updated patch.
-
-https://lkml.org/lkml/2014/2/27/237
-
-aio_read_events_ring() accesses ring_pages without locking ctx-completion_lock.
-If copying old page'date to new page runs after new page was set to ctx->ring_pages
-by changing order, aio_read_events_ring() may not work correctly.
-
-So smp_wmb() and smp_rmb() is needed.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> Also, if you've changed the patch, it is customary to add a "v2" somewhere in
-> the patch title so that I have some idea what version of the patch should be
-> applied.
+> This patch series adds device tree support to the wlcore_sdio driver,
+> which is used by WiLink6, WiLink7 and WiLink8.
 >
-> 		-ben
-
-
-
+> The first patches do some clean-up to make the data needed in the
+> wilink device tree node smaller.  The remaining patches implement the
+> actual device tree node parsing in wlcore_sdio.
 >
->> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
->> ---
->>   fs/aio.c | 8 ++++++++
->>   1 file changed, 8 insertions(+)
->>
->> diff --git a/fs/aio.c b/fs/aio.c
->> index 50c089c..f0ed838 100644
->> --- a/fs/aio.c
->> +++ b/fs/aio.c
->> @@ -327,6 +327,14 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
->>   		pgoff_t idx;
->>   		spin_lock_irqsave(&ctx->completion_lock, flags);
->>   		migrate_page_copy(new, old);
->> +
->> +		/*
->> +		 * Ensure memory copy is finished before updating
->> +		 * ctx->ring_pages[]. Otherwise other processes may access to
->> +		 * new ring pages which are not fully initialized.
->> +		 */
->> +		smp_wmb();
->> +
->>   		idx = old->index;
->>   		if (idx < (pgoff_t)ctx->nr_pages) {
->>   			/* And only do the move if things haven't changed */
->> --
->> 1.8.3.1
+> Regarding the XTAL clock issues, for now we don't support XTAL mode
+> with DT, but I have sent a proposal for a small change in the clock
+> framework to support this, but it's still under discussions [1].
 >
+> The DTS file changes will be sent separately, since they need to go
+> via different trees.
+>
+> A new version of the bindings documentation has been sent [2] and, if
+> no more comments are given to it, I'll apply it via my tree.
+>
+> [1] http://news.gmane.org/find-root.php?message_id=1372971912-10877-1-git-send-email-coelho@ti.com
+> [2] http://news.gmane.org/find-root.php?message_id=1375109728-5931-1-git-send-email-coelho@ti.com
+>
+> Changes in v4:
+>
+> * Rebased on top of 3.11-rc3 (eg. no more changes on the board files
+>   that were removed);
+>
+> * Use the new irq_get_trigger_type() instead of
+>   irqd_get_trigger_type() (thanks Javier);
+>
+> * Added some missing const's (thanks Felipe);
+>
+> * Reverted Tony's workaround to get WiLink to work on Panda while DT
+>   was not supported yet.
+>
+>
+> Please review.
 
+What is the state of the series? Who is now responsible for the
+patches? What issues were still not handled?
 
+Yegor
 
-
+> Luciano Coelho (8):
+>   wl1251: split wl251 platform data to a separate structure
+>   wlcore: set irq_flags in the board files instead of hiding behind a
+>     quirk
+>   wlcore: remove pwr_in_suspend from platform data
+>   wl12xx: use frequency instead of enumerations for pdata clocks
+>   wlcore: add initial device tree support to the sdio module
+>   wlcore: sdio: add wilink clock providers
+>   wlcore: sdio: get clocks from device tree
+>   wlcore/wl12xx: check if we got correct clock data from DT
+>
+>  arch/arm/mach-davinci/board-da850-evm.c        |  11 ++-
+>  arch/arm/mach-omap2/board-omap3evm.c           |  22 ++++-
+>  arch/arm/mach-omap2/board-omap3pandora.c       |   4 +-
+>  arch/arm/mach-omap2/board-rx51-peripherals.c   |   2 +-
+>  arch/arm/mach-omap2/board-zoom-peripherals.c   |  33 +++++++-
+>  arch/arm/mach-omap2/devices.c                  |  39 ---------
+>  drivers/net/wireless/ti/wilink_platform_data.c |  37 ++++++--
+>  drivers/net/wireless/ti/wl1251/sdio.c          |  12 +--
+>  drivers/net/wireless/ti/wl1251/spi.c           |   2 +-
+>  drivers/net/wireless/ti/wl12xx/main.c          |  78 +++++++++++++++--
+>  drivers/net/wireless/ti/wl12xx/wl12xx.h        |  28 +++++++
+>  drivers/net/wireless/ti/wlcore/debugfs.c       |   2 +-
+>  drivers/net/wireless/ti/wlcore/main.c          |  20 ++---
+>  drivers/net/wireless/ti/wlcore/sdio.c          | 112 +++++++++++++++++++++++--
+>  drivers/net/wireless/ti/wlcore/wlcore.h        |   5 +-
+>  drivers/net/wireless/ti/wlcore/wlcore_i.h      |   1 +
+>  include/linux/wl12xx.h                         |  52 +++++-------
+>  17 files changed, 340 insertions(+), 120 deletions(-)
+>
+> --
+> 1.8.3.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
