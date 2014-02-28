@@ -1,371 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaB1Rnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:43:49 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:58643 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131AbaB1Rnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:43:41 -0500
-Date: Fri, 28 Feb 2014 20:40:00 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv8 1/6] zram: introduce compressing backend abstraction
-Message-ID: <20140228174000.GA2619@swordfish.minsk.epam.com>
-References: <1393417679-13657-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1393417679-13657-2-git-send-email-sergey.senozhatsky@gmail.com>
- <20140227151848.e2e0b136757414d0f87e7d8b@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227151848.e2e0b136757414d0f87e7d8b@linux-foundation.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753641AbaB1Rr1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:47:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753291AbaB1Rns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:43:48 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 16/19] perf, c2c: Output summary stats
+Date: Fri, 28 Feb 2014 12:43:05 -0500
+Message-Id: <1393609388-40489-17-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+Output some summary stats based on the processed records.
+Mainly diagnostic uses.
 
-On (02/27/14 15:18), Andrew Morton wrote:
-> On Wed, 26 Feb 2014 15:27:54 +0300 Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-> 
-> > ZRAM performs direct LZO compression algorithm calls, making it the one and
-> > only option. Introduce compressing backend abstraction zcomp in order to
-> > support multiple compression algorithms with the following set of operations:
-> 
-> Well...  why?  Presumably because other compression schemes have
-> compelling advantages over LZO, otherwise there's no point in the
-> patch!
-> 
-> Please describe this in some detail, so that others can judge the
-> desirability of the patch.
-> 
+Stats done by Dick Fowles, backported by me.
 
-thanks for review.
-all of your notes and concerns were addressed in v9 (will send shortly).
+Sample output:
 
-	-ss
+=================================================
+            Trace Event Information
+=================================================
+  Total records                     :    1322047
+  Locked Load/Store Operations      :     206317
+  Load Operations                   :     355701
+  Loads - uncacheable               :        590
+  Loads - IO                        :          0
+  Loads - Miss                      :        440
+  Loads - no mapping                :        207
+  Load Fill Buffer Hit              :     100214
+  Load L1D hit                      :     148454
+  Load L2D hit                      :      15170
+  Load LLC hit                      :      53872
+  Load Local HITM                   :      15388
+  Load Remote HITM                  :      26760
+  Load Remote HIT                   :       3910
+  Load Local DRAM                   :       2436
+  Load Remote DRAM                  :       3648
+  Load MESI State Exclusive         :       2883
+  Load MESI State Shared            :       3201
+  Load LLC Misses                   :      36754
+  LLC Misses to Local DRAM          :        6.6%
+  LLC Misses to Remote DRAM         :        9.9%
+  LLC Misses to Remote cache (HIT)  :       10.6%
+  LLC Misses to Remote cache (HITM) :       72.8%
+  Store Operations                  :     966322
+  Store - uncacheable               :          0
+  Store - no mapping                :      42931
+  Store L1D Hit                     :     915696
+  Store L1D Miss                    :       7695
+  No Page Map Rejects               :       1193
+  Unable to parse data source       :         24
 
-> >         .create
-> >         .destroy
-> >         .compress
-> >         .decompress
-> > 
-> > Schematically zram write() usually contains the following steps:
-> > 0) preparation (decompression of partioal IO, etc.)
-> > 1) lock buffer_lock mutex (protects meta compress buffers)
-> > 2) compress (using meta compress buffers)
-> > 3) alloc and map zs_pool object
-> > 4) copy compressed data (from meta compress buffers) to object allocated by 3)
-> > 5) free previous pool page, assign a new one
-> > 6) unlock buffer_lock mutex
-> > 
-> > As we can see, compressing buffers must remain untouched from 1) to 4),
-> > because, otherwise, concurrent write() can overwrite data. At the same time,
-> > zram_meta must be aware of a) specific compression algorithm memory requirements
-> > and b) necessary locking to protect compression buffers. To remove requirement
-> > a) new struct zcomp_strm introduced, which contains a compress/decompress
-> > `buffer' and compression algorithm `private' part. While struct zcomp implements
-> > zcomp_strm stream handling and locking by means of get() and put() semantics and
-> > removes requirement b) from zram meta. zcomp ->create() and ->destroy(),
-> > respectively, allocate and deallocate algorithm specific zcomp_strm `private'
-> > part.
-> > 
-> > Every zcomp has zcomp stream and mutex to protect its compression stream. Stream
-> > usage semantics remains the same -- only one write can hold stream lock and use
-> > its buffers. zcomp_strm_get() turns caller into exclusive user of a stream
-> > (holding stream mutex until zram put stream), and zcomp_strm_put() makes zcomp
-> > stream available (unlock the stream mutex). Hence no concurrent write
-> > (compression) operations possible at the moment.
-> > 
-> > iozone -t 3 -R -r 16K -s 60M -I +Z
-> > 
-> >        test            base           patched
-> > --------------------------------------------------
-> >   Initial write      597992.91       591660.58
-> >         Rewrite      609674.34       616054.97
-> >            Read     2404771.75      2452909.12
-> >         Re-read     2459216.81      2470074.44
-> >    Reverse Read     1652769.66      1589128.66
-> >     Stride read     2202441.81      2202173.31
-> >     Random read     2236311.47      2276565.31
-> >  Mixed workload     1423760.41      1709760.06
-> >    Random write      579584.08       615933.86
-> >          Pwrite      597550.02       594933.70
-> >           Pread     1703672.53      1718126.72
-> >          Fwrite     1330497.06      1461054.00
-> >           Fread     3922851.00      3957242.62
-> > 
-> > Usage examples:
-> > 
-> > 	comp = zcomp_create(NAME) /* NAME e.g. "lzo" */
-> > 
-> > which initialises compressing backend if requested algorithm is supported.
-> > 
-> > Compress:
-> > 	zstrm = zcomp_strm_get(comp)
-> > 	zcomp_compress(comp, zstrm, src, &dst_len)
-> > 	[..] /* copy compressed data */
-> > 	zcomp_strm_put(comp, zstrm)
-> > 
-> > Decompress:
-> > 	zcomp_decompress(comp, src, src_len, dst);
-> > 
-> > Free compessing backend and its zcomp stream:
-> > 	zcomp_destroy(comp)
-> > 
-> > ...
-> >
-> > --- /dev/null
-> > +++ b/drivers/block/zram/zcomp.c
-> > @@ -0,0 +1,116 @@
-> > +/*
-> > + * Copyright (C) 2014 Sergey Senozhatsky.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + */
-> > +
-> > +#include <linux/kernel.h>
-> > +#include <linux/string.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/wait.h>
-> > +#include <linux/sched.h>
-> > +
-> > +#include "zcomp.h"
-> > +
-> > +extern struct zcomp_backend zcomp_lzo;
-> 
-> This should be in a header file please.  So we know that the definition
-> site and all users agree on the type.
-> 
-> > +static struct zcomp_backend *find_backend(const char *compress)
-> > +{
-> > +	if (strncmp(compress, "lzo", 3) == 0)
-> > +		return &zcomp_lzo;
-> > +	return NULL;
-> > +}
-> > +
-> > +static void zcomp_strm_free(struct zcomp *comp, struct zcomp_strm *zstrm)
-> > +{
-> > +	if (zstrm->private)
-> > +		comp->backend->destroy(zstrm->private);
-> > +	free_pages((unsigned long)zstrm->buffer, 1);
-> > +	kfree(zstrm);
-> > +}
-> > +
-> > +/*
-> > + * allocate new zcomp_strm structure with ->private initialized by
-> > + * backend, return NULL on error
-> > + */
-> > +static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
-> > +{
-> > +	struct zcomp_strm *zstrm = kmalloc(sizeof(*zstrm), GFP_KERNEL);
-> > +	if (!zstrm)
-> > +		return NULL;
-> > +
-> > +	zstrm->private = comp->backend->create();
-> > +	/*
-> > +	 * allocate 2 pages. 1 for compressed data, plus 1 extra for the
-> > +	 * case when compressed size is larger than the original one
-> > +	 */
-> > +	zstrm->buffer = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-> > +	if (!zstrm->private || !zstrm->buffer) {
-> > +		zcomp_strm_free(comp, zstrm);
-> > +		zstrm = NULL;
-> > +	}
-> > +	return zstrm;
-> > +}
-> > +
-> > +struct zcomp_strm *zcomp_strm_get(struct zcomp *comp)
-> > +{
-> > +	mutex_lock(&comp->strm_lock);
-> > +	return comp->zstrm;
-> > +}
-> > +
-> > +void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm)
-> > +{
-> > +	mutex_unlock(&comp->strm_lock);
-> > +}
-> 
-> These are poorly named.  When we see "get" and "put" we expect that
-> they will increment-refcount and decrement-refcount-free-on-zero.  But
-> these function do not implement such a pattern.
-> 
-> > +int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-> > +		const unsigned char *src, size_t *dst_len)
-> > +{
-> > +	return comp->backend->compress(src, zstrm->buffer, dst_len,
-> > +			zstrm->private);
-> > +}
-> > +
-> > +int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-> > +		size_t src_len, unsigned char *dst)
-> > +{
-> > +	return comp->backend->decompress(src, src_len, dst);
-> > +}
-> > +
-> > +void zcomp_destroy(struct zcomp *comp)
-> > +{
-> > +	zcomp_strm_free(comp, comp->zstrm);
-> > +	kfree(comp);
-> > +}
-> > +
-> > +/*
-> > + * search available compressors for requested algorithm.
-> > + * allocate new zcomp and initialize it. return NULL
-> > + * if requested algorithm is not supported or in case
-> > + * of init error
-> > + */
-> > +struct zcomp *zcomp_create(const char *compress)
-> > +{
-> > +	struct zcomp *comp;
-> > +	struct zcomp_backend *backend;
-> > +
-> > +	backend = find_backend(compress);
-> > +	if (!backend)
-> > +		return NULL;
-> > +
-> > +	comp = kzalloc(sizeof(struct zcomp), GFP_KERNEL);
-> > +	if (!comp)
-> > +		return NULL;
-> > +
-> > +	comp->backend = backend;
-> > +	mutex_init(&comp->strm_lock);
-> > +
-> > +	comp->zstrm = zcomp_strm_alloc(comp);
-> > +	if (!comp->zstrm) {
-> > +		kfree(comp);
-> > +		return NULL;
-> > +	}
-> > +	return comp;
-> > +}
-> > diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-> > new file mode 100644
-> > index 0000000..5106f8e
-> > --- /dev/null
-> > +++ b/drivers/block/zram/zcomp.h
-> > @@ -0,0 +1,53 @@
-> > +/*
-> > + * Copyright (C) 2014 Sergey Senozhatsky.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + */
-> > +
-> > +#ifndef _ZCOMP_H_
-> > +#define _ZCOMP_H_
-> > +
-> > +#include <linux/mutex.h>
-> > +
-> > +struct zcomp_strm {
-> > +	void *buffer;     /* compression/decompression buffer */
-> > +	void *private;
-> 
-> Document this?
-> 
-> > +	struct list_head list;
-> 
-> What does this do and what lock protects it?
-> 
-> > +};
-> > +
-> > +/* static compression backend */
-> > +struct zcomp_backend {
-> > +	int (*compress)(const unsigned char *src, unsigned char *dst,
-> > +			size_t *dst_len, void *private);
-> > +
-> > +	int (*decompress)(const unsigned char *src, size_t src_len,
-> > +			unsigned char *dst);
-> > +
-> > +	void *(*create)(void);
-> > +	void (*destroy)(void *private);
-> > +
-> > +	const char *name;
-> > +};
-> > +
-> > +/* dynamic per-device compression frontend */
-> > +struct zcomp {
-> > +	struct mutex strm_lock;
-> > +	struct zcomp_strm *zstrm;
-> > +	struct zcomp_backend *backend;
-> > +};
-> > +
-> > +struct zcomp *zcomp_create(const char *comp);
-> > +void zcomp_destroy(struct zcomp *comp);
-> > +
-> > +struct zcomp_strm *zcomp_strm_get(struct zcomp *comp);
-> > +void zcomp_strm_put(struct zcomp *comp, struct zcomp_strm *zstrm);
-> > +
-> > +int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-> > +		const unsigned char *src, size_t *dst_len);
-> > +
-> > +int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
-> > +		size_t src_len, unsigned char *dst);
-> > +#endif /* _ZCOMP_H_ */
-> > diff --git a/drivers/block/zram/zcomp_lzo.c b/drivers/block/zram/zcomp_lzo.c
-> > new file mode 100644
-> > index 0000000..b7722a2
-> > --- /dev/null
-> > +++ b/drivers/block/zram/zcomp_lzo.c
-> > @@ -0,0 +1,48 @@
-> > +/*
-> > + * Copyright (C) 2014 Sergey Senozhatsky.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + */
-> > +
-> > +#include <linux/kernel.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/lzo.h>
-> > +
-> > +#include "zcomp.h"
-> > +
-> > +static void *lzo_create(void)
-> > +{
-> > +	return kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> > +}
-> > +
-> > +static void lzo_destroy(void *private)
-> > +{
-> > +	kfree(private);
-> > +}
-> > +
-> > +static int lzo_compress(const unsigned char *src, unsigned char *dst,
-> > +		size_t *dst_len, void *private)
-> > +{
-> > +	int ret = lzo1x_1_compress(src, PAGE_SIZE, dst, dst_len, private);
-> > +	return ret == LZO_E_OK ? 0 : ret;
-> > +}
-> > +
-> > +static int lzo_decompress(const unsigned char *src, size_t src_len,
-> > +		unsigned char *dst)
-> > +{
-> > +	size_t dst_len = PAGE_SIZE;
-> > +	int ret = lzo1x_decompress_safe(src, src_len, dst, &dst_len);
-> > +	return ret == LZO_E_OK ? 0 : ret;
-> > +}
-> > +
-> > +extern struct zcomp_backend zcomp_lzo;
-> 
-> This is unneeded, should be in the header file.
-> 
-> > +struct zcomp_backend zcomp_lzo = {
-> > +	.compress = lzo_compress,
-> > +	.decompress = lzo_decompress,
-> > +	.create = lzo_create,
-> > +	.destroy = lzo_destroy,
-> > +	.name = "lzo",
-> > +};
-> 
+V2: refresh to hist_entry
+
+Original-by: Dick Fowles <rfowles@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/builtin-c2c.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
+index 8756ca5..3b0e0b2 100644
+--- a/tools/perf/builtin-c2c.c
++++ b/tools/perf/builtin-c2c.c
+@@ -963,7 +963,6 @@ static void print_hitm_cacheline_offset(struct c2c_hit *clo,
+ 						 23, stdout);
+ 	}
+ }
+-
+ static void print_c2c_hitm_report(struct rb_root *hitm_tree,
+ 				  struct c2c_stats *hitm_stats __maybe_unused,
+ 				  struct c2c_stats *c2c_stats)
+@@ -1158,6 +1157,51 @@ cleanup:
+ 	return;
+ }
+ 
++static void print_c2c_trace_report(struct perf_c2c *c2c)
++{
++	int llc_misses;
++	struct c2c_stats *stats = &c2c->stats;
++
++	llc_misses = stats->t.lcl_dram +
++		     stats->t.rmt_dram +
++		     stats->t.rmt_hit +
++		     stats->t.rmt_hitm;
++
++	printf("=================================================\n");
++	printf("            Trace Event Information              \n");
++	printf("=================================================\n");
++	printf("  Total records                     : %10d\n", c2c->stats.nr_entries);
++	printf("  Locked Load/Store Operations      : %10d\n", stats->t.locks);
++	printf("  Load Operations                   : %10d\n", stats->t.load);
++	printf("  Loads - uncacheable               : %10d\n", stats->t.ld_uncache);
++	printf("  Loads - IO                        : %10d\n", stats->t.ld_io);
++	printf("  Loads - Miss                      : %10d\n", stats->t.ld_miss);
++	printf("  Loads - no mapping                : %10d\n", stats->t.ld_noadrs);
++	printf("  Load Fill Buffer Hit              : %10d\n", stats->t.ld_fbhit);
++	printf("  Load L1D hit                      : %10d\n", stats->t.ld_l1hit);
++	printf("  Load L2D hit                      : %10d\n", stats->t.ld_l2hit);
++	printf("  Load LLC hit                      : %10d\n", stats->t.ld_llchit + stats->t.lcl_hitm);
++	printf("  Load Local HITM                   : %10d\n", stats->t.lcl_hitm);
++	printf("  Load Remote HITM                  : %10d\n", stats->t.rmt_hitm);
++	printf("  Load Remote HIT                   : %10d\n", stats->t.rmt_hit);
++	printf("  Load Local DRAM                   : %10d\n", stats->t.lcl_dram);
++	printf("  Load Remote DRAM                  : %10d\n", stats->t.rmt_dram);
++	printf("  Load MESI State Exclusive         : %10d\n", stats->t.ld_excl);
++	printf("  Load MESI State Shared            : %10d\n", stats->t.ld_shared);
++	printf("  Load LLC Misses                   : %10d\n", llc_misses);
++	printf("  LLC Misses to Local DRAM          : %10.1f%%\n", ((double)stats->t.lcl_dram/(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote DRAM         : %10.1f%%\n", ((double)stats->t.rmt_dram/(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote cache (HIT)  : %10.1f%%\n", ((double)stats->t.rmt_hit /(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote cache (HITM) : %10.1f%%\n", ((double)stats->t.rmt_hitm/(double)llc_misses) * 100.);
++	printf("  Store Operations                  : %10d\n", stats->t.store);
++	printf("  Store - uncacheable               : %10d\n", stats->t.st_uncache);
++	printf("  Store - no mapping                : %10d\n", stats->t.st_noadrs);
++	printf("  Store L1D Hit                     : %10d\n", stats->t.st_l1hit);
++	printf("  Store L1D Miss                    : %10d\n", stats->t.st_l1miss);
++	printf("  No Page Map Rejects               : %10d\n", stats->t.nomap);
++	printf("  Unable to parse data source       : %10d\n", stats->t.noparse);
++}
++
+ static int perf_c2c__process_events(struct perf_session *session,
+ 				    struct perf_c2c *c2c)
+ {
+@@ -1169,6 +1213,7 @@ static int perf_c2c__process_events(struct perf_session *session,
+ 		goto err;
+ 	}
+ 
++	print_c2c_trace_report(c2c);
+ 	c2c_analyze_hitms(c2c);
+ 
+ err:
+-- 
+1.7.11.7
+
