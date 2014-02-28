@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaB1LlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:41:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53344 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083AbaB1LlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:41:08 -0500
-Date: Fri, 28 Feb 2014 12:40:57 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: josh@joshtriplett.org
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 08/46] kernel: MOve prototype declaration to header file
- include/linux/perf_event.h
-Message-ID: <20140228114057.GL27965@twins.programming.kicks-ass.net>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
- <137eb91c7ce020384a1fb967c1c8b7eaeded21d8.1393493276.git.rashika.kheria@gmail.com>
- <20140227115414.GD9987@twins.programming.kicks-ass.net>
- <20140227155149.GB26756@thin>
- <20140227192335.GZ27965@twins.programming.kicks-ass.net>
- <20140227225545.GC30335@cloud>
+	id S1751960AbaB1Lnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:43:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54787 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751360AbaB1Ln2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 06:43:28 -0500
+Message-ID: <5310762C.90108@redhat.com>
+Date: Fri, 28 Feb 2014 12:42:36 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140227225545.GC30335@cloud>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
+CC: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm, s390: Ignore MADV_HUGEPAGE on s390 to prevent
+ SIGSEGV in qemu
+References: <cover.1393516106.git.athorlton@sgi.com> <c856e298ae180842638bdf85d74436ad8bbb84e4.1393516106.git.athorlton@sgi.com>
+In-Reply-To: <c856e298ae180842638bdf85d74436ad8bbb84e4.1393516106.git.athorlton@sgi.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 02:55:45PM -0800, josh@joshtriplett.org wrote:
-> On Thu, Feb 27, 2014 at 08:23:35PM +0100, Peter Zijlstra wrote:
-> > On Thu, Feb 27, 2014 at 07:51:50AM -0800, Josh Triplett wrote:
-> > > On Thu, Feb 27, 2014 at 12:54:14PM +0100, Peter Zijlstra wrote:
-> > > > On Thu, Feb 27, 2014 at 05:02:48PM +0530, Rashika Kheria wrote:
-> > > > > Add prototype declaration of function to header file
-> > > > > include/linux/perf_event.h because it is used by more than one file.
-> > > > > 
-> > > > > This eliminates the following warning in kernel/events/core.c:
-> > > > > kernel/events/core.c:3743:13: warning: no previous prototype for ‘arch_perf_update_userpage’ [-Wmissing-prototypes]
-> > > > 
-> > > > # git grep arch_perf_update_userpage
-> > > > arch/x86/kernel/cpu/perf_event.c:void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-> > > > kernel/events/core.c:void __weak arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-> > > > kernel/events/core.c:   arch_perf_update_userpage(userpg, now);
-> > > > 
-> > > > 
-> > > > There's two definitions; one weak, and one usage site.
-> > > > 
-> > > > What gives?
-> > > 
-> > > There's no prototype for the function anywhere, so -Wmissing-prototypes
-> > > rightfully complains.  Adding the prototype to a header included in both
-> > > source files ensures that the function signatures must match, and
-> > > eliminates the warning.
-> > 
-> > Definitions don't require prior declarations. Only usage without prior
-> > definitions require them.
-> > 
-> > I still don't see a problem.
-> 
-> There's value in -Wmissing-prototypes; it's equivalent to the Sparse
-> check that ensures functions are marked as static when they're not used
-> outside the file they're defined in (though unlike the Sparse check it
-> only applies to functions, not data).  The goal isn't "make the warning
-> go away"; the goal of passing -Wmissing-prototypes is:
-> 
-> - Get rid of unused functions (many of which have been caught by this
->   effort).
-> - Mark functions as static where possible (which enables the above and
->   also improves code generation).
-> - Include headers that declare functions in the source files that define
->   them, not just in the source files that use them.  That keeps the
->   declaration and definition in sync (which has caught some real bugs as
->   part of this effort).
-> - When no such header exists for a function used across multiple files,
->   add the prototype to an appropriate header and use that.  Again, this
->   has caught real bugs as part of this effort, when the definition and
->   use were out of sync.  (For instance, disagreeing in return type.)
+Il 27/02/2014 18:23, Alex Thorlton ha scritto:
+> As Christian pointed out, the recent 'Revert "thp: make MADV_HUGEPAGE
+> check for mm->def_flags"' breaks qemu, it does QEMU_MADV_HUGEPAGE for
+> all kvm pages but this doesn't work after s390_enable_sie/thp_split_mm.
+>
+> Paolo suggested that instead of failing on the call to madvise, we
+> simply ignore the call (return 0).
+>
+> Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+> Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+> Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: linux390@de.ibm.com
+> Cc: linux-s390@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> Cc: linux-api@vger.kernel.org
+>
+> ---
+>  mm/huge_memory.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index a4310a5..61d234d 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1970,6 +1970,15 @@ int hugepage_madvise(struct vm_area_struct *vma,
+>  {
+>  	switch (advice) {
+>  	case MADV_HUGEPAGE:
+> +#ifdef CONFIG_S390
+> +		/*
+> +		 * qemu blindly sets MADV_HUGEPAGE on all allocations, but s390
+> +		 * can't handle this properly after s390_enable_sie, so we simply
+> +		 * ignore the madvise to prevent qemu from causing a SIGSEGV.
+> +		 */
+> +		if (mm_has_pgste(vma->vm_mm))
+> +			return 0;
+> +#endif
+>  		/*
+>  		 * Be somewhat over-protective like KSM for now!
+>  		 */
+>
 
-Well then say that already;  the reason I reacted so strongly is because
-I'm busy, and I don't have time for */46 patches that look like robot
-output.
-
-The changelog reads like its just making warns go away; the patches look
-automated; including the typical non-thinking robot fails; _AND_ its
-got a review tag from someone who should bloody well know better than to
-send crap patches like this.
-
-This all is a huge waste of time from my side; and you're doing your
-intern a disservice by training him to be a thoughtless robot.
-
-
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
