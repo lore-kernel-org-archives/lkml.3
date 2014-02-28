@@ -1,120 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaB1Rn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:43:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39430 "EHLO mx1.redhat.com"
+	id S1753452AbaB1Rn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:43:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33636 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282AbaB1Rny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:43:54 -0500
+	id S1753282AbaB1Rn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:43:58 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, eranian@google.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 17/19] perf, c2c: Dump rbtree for debugging
-Date: Fri, 28 Feb 2014 12:43:06 -0500
-Message-Id: <1393609388-40489-18-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 19/19] perf, c2c: Add shared cachline summary table
+Date: Fri, 28 Feb 2014 12:43:08 -0500
+Message-Id: <1393609388-40489-20-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes you want to verify the rbtree sorting on a unique id
-is working correctly.  This allows you to dump it.
+This adds a quick summary of the hottest cache contention lines based
+on the input data.  This summarizes what the broken table shows you,
+so you can see at a quick glance which cachelines are interesting.
 
-Sample output:
+Originally done by Dick Fowles, backported by me.
 
-   Idx Hit Maj Min      Ino           InoGen    Pid            Daddr            Iaddr         Data Src                         (string)  cpumode
-     0       0   0        0                0      0               22 ffffffff813044cf         48080184           [STORE,L1,MISS,SNP NA]        1
+Sample output (width trimmed):
 
-     1       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
-     2       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
-     3       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
-     4       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
-     5       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
-     6       0   0        0                0   2332              ca3 ffffffffa0226032         48080184           [STORE,L1,MISS,SNP NA]        1
+===================================================================================================================================================
 
-     7       0   0        0                0  18179          135f860 ffffffff812ad509         68100242          [LOAD,LFB,HIT,SNP NONE]        1
+                                                                                          Shared Data Cache Line Table
 
-     8       0   0        0                0  18179     7ff9d7fbaf98 ffffffff812ad509         68100242          [LOAD,LFB,HIT,SNP NONE]        1
+                                 Total     %All                Total       ---- Core Load Hit ----  -- LLC Load Hit --     ----- LLC Load Hitm -----
+   Index           Phys Adrs   Records   Ld Miss     %hitm     Loads        FB       L1D       L2D       Lcl       Rmt     Total       Lcl       Rmt
+====================================================================================================================================================
+       0  0xffff881fa55b0140     72006    16.97%    23.31%     43095     13591     16860        45      2651        25      9526      3288      6238
+       1  0xffff881fba47f000     21854     5.29%     7.26%     13938      3887      6941        15         1         7      3087      1143      1944
+       2  0xffff881fc21b9cc0      2153     1.61%     2.21%       862        32        70         0        15         1       740       148       592
+       3  0xffff881fc7d91cc0      1957     1.40%     1.92%       866        34        94         0        14         3       720       207       513
+       4  0xffff881fba539cc0      1813     1.35%     1.85%       808        33        84         3        14         1       665       170       495
 
-V2: refresh with hist_entry
-
+Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+ tools/perf/builtin-c2c.c | 136 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 3b0e0b2..c095f1b 100644
+index 0749ea6..57441b9 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -616,6 +616,55 @@ err:
+@@ -783,6 +783,141 @@ cleanup:
+ 	}
+ }
  
- #define HAS_HITMS(h) (h->stats.t.lcl_hitm || h->stats.t.rmt_hitm)
- 
-+static void dump_rb_tree(struct rb_root *tree,
-+			 struct perf_c2c *c2c __maybe_unused)
++static void print_c2c_shared_cacheline_report(struct rb_root *hitm_tree,
++					      struct c2c_stats *shared_stats __maybe_unused,
++					      struct c2c_stats *c2c_stats __maybe_unused)
 +{
-+	struct rb_node *next = rb_first(tree);
-+	struct hist_entry *he;
-+	u64 cl = 0;
-+	int idx = 0;
++#define   SHM_TITLE  "Shared Data Cache Line Table"
 +
-+	printf("# Summary: Total entries - %d\n", c2c->stats.nr_entries);
-+	printf("# HITMs: Local - %d   Remote - %d     Total - %d\n",
-+		c2c->stats.t.lcl_hitm, c2c->stats.t.rmt_hitm,
-+		(c2c->stats.t.lcl_hitm + c2c->stats.t.rmt_hitm));
++	struct rb_node	*next = rb_first(hitm_tree);
++	struct c2c_hit	*h;
++	char		header[256];
++	char		delimit[256];
++	u32		crecords;
++	u32		lclmiss;
++	u32		ldcnt;
++	double		p_hitm;
++	double		p_all;
++	int		totmiss;
++	int		rmt_hitm;
++	int		len;
++	int		pad;
++	int		i;
 +
-+	printf("%6s %3s %3s %3s %8s %16s %6s %16s %16s %16s %32s %8s\n",
-+		"Idx", "Hit", "Maj", "Min", "Ino", "InoGen", "Pid", 
-+		"Daddr", "Iaddr", "Data Src", "(string)", "cpumode");
++	sprintf(header,"%28s  %8s  %8s  %8s  %8s  %28s  %18s  %28s  %18s  %8s  %28s",
++		" ",
++		"Total",
++		"%All ",
++		" ",
++		"Total",
++		"---- Core Load Hit ----",
++		"-- LLC Load Hit --",
++		"----- LLC Load Hitm -----",
++		"-- Load Dram --",
++		"LLC  ",
++		"---- Store Reference ----");
++
++	len = strlen(header);
++	delimit[0] = '\0';
++
++	for (i = 0; i < len; i++)
++		strcat(delimit, "=");
++
++	printf("\n\n");
++	printf("%s\n", delimit);
++	printf("\n");
++	pad = (strlen(header)/2) - (strlen(SHM_TITLE)/2);
++	for (i = 0; i < pad; i++)
++		printf(" ");
++	printf("%s\n", SHM_TITLE);
++	printf("\n");
++	printf("%s\n", header);
++
++	sprintf(header, "%8s  %18s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s",
++		"Index",
++		"Phys Adrs",
++		"Records",
++		"Ld Miss",
++		"%hitm",
++		"Loads",
++		"FB",
++		"L1D",
++		"L2D",
++		"Lcl",
++		"Rmt",
++		"Total",
++		"Lcl",
++		"Rmt",
++		"Lcl",
++		"Rmt",
++		"Ld Miss",
++		"Total",
++		"L1Hit",
++		"L1Miss");
++
++	printf("%s\n", header);
++	printf("%s\n", delimit);
++
++	rmt_hitm    = c2c_stats->t.rmt_hitm;
++	totmiss     = c2c_stats->t.lcl_dram +
++		      c2c_stats->t.rmt_dram +
++		      c2c_stats->t.rmt_hit +
++		      c2c_stats->t.rmt_hitm;
++
++	i = 0;
 +	while (next) {
-+		char data_src[32];
-+		u64 val;
++		h = rb_entry(next, struct c2c_hit, rb_node);
++		next = rb_next(&h->rb_node);
 +
-+		he = rb_entry(next, struct hist_entry, rb_node_in);
-+		next = rb_next(&he->rb_node_in);
++		lclmiss  = h->stats.t.lcl_dram +
++			   h->stats.t.rmt_dram +
++			   h->stats.t.rmt_hitm +
++			   h->stats.t.rmt_hit;
 +
-+		if ((!he->color) || (cl != CLADRS(he->mem_info->daddr.al_addr))) {
-+			printf("\n");
-+			cl = CLADRS(he->mem_info->daddr.al_addr);
-+		}
++		ldcnt    = lclmiss +
++			   h->stats.t.ld_fbhit +
++			   h->stats.t.ld_l1hit +
++			   h->stats.t.ld_l2hit +
++			   h->stats.t.ld_llchit +
++			   h->stats.t.lcl_hitm;
 +
-+		val = he->mem_info->data_src.val;
-+		perf_c2c__scnprintf_data_src(data_src, sizeof(data_src), val);
++		crecords = ldcnt +
++			   h->stats.t.st_l1hit +
++			   h->stats.t.st_l1miss;
 +
-+		printf("%6d %3s %3x %3x %8lx %16lx %6d %16lx %16lx %16lx %32s %8x\n",
-+			idx,
-+			(PERF_MEM_S(SNOOP,HITM) & val) ? " * " : "   ",
-+			he->mem_info->daddr.map->maj,
-+			he->mem_info->daddr.map->min,
-+			he->mem_info->daddr.map->ino,
-+			he->mem_info->daddr.map->ino_generation,
-+			he->thread->pid_,
-+			he->mem_info->daddr.addr,
-+			he->mem_info->iaddr.addr,
-+			val,
-+			data_src,
-+			he->cpumode);
++		p_hitm = (double)h->stats.t.rmt_hitm / (double)rmt_hitm;
++		p_all  = (double)h->stats.t.rmt_hitm / (double)totmiss;
 +
-+		idx++;
++		/* stop when the percentage gets to low */
++		if (p_hitm < DISPLAY_LINE_LIMIT)
++			break;
++
++		printf("%8d  %#18lx  %8u  %7.2f%%  %7.2f%%  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u  %8u\n",
++			i,
++			h->cacheline,
++			crecords,
++			100. * p_all,
++			100. * p_hitm,
++			ldcnt,
++			h->stats.t.ld_fbhit,
++			h->stats.t.ld_l1hit,
++			h->stats.t.ld_l2hit,
++			h->stats.t.ld_llchit,
++			h->stats.t.rmt_hit,
++			h->stats.t.lcl_hitm + h->stats.t.rmt_hitm,
++			h->stats.t.lcl_hitm,
++			h->stats.t.rmt_hitm,
++			h->stats.t.lcl_dram,
++			h->stats.t.rmt_dram,
++			lclmiss,
++			h->stats.t.store,
++			h->stats.t.st_l1hit,
++			h->stats.t.st_l1miss);
++
++		i++;
 +	}
 +}
 +
- static void c2c_hit__update_stats(struct c2c_stats *new,
- 				  struct c2c_stats *old)
+ static void print_hitm_cacheline_header(void)
  {
-@@ -1213,6 +1262,8 @@ static int perf_c2c__process_events(struct perf_session *session,
- 		goto err;
- 	}
+ #define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
+@@ -1290,6 +1425,7 @@ static void c2c_analyze_hitms(struct perf_c2c *c2c)
+ 		free(h);
  
-+	if (verbose > 2)
-+		dump_rb_tree(c2c->hists.entries_in, c2c);
- 	print_c2c_trace_report(c2c);
- 	c2c_analyze_hitms(c2c);
+ 	print_shared_cacheline_info(&hitm_stats, shared_clines);
++	print_c2c_shared_cacheline_report(&hitm_tree, &hitm_stats, &c2c->stats);
+ 	print_c2c_hitm_report(&hitm_tree, &hitm_stats, &c2c->stats);
  
+ cleanup:
 -- 
 1.7.11.7
 
