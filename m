@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaB1U6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:58:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42458 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaB1U6d (ORCPT
+	id S1752506AbaB1U7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:59:31 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64734 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaB1U72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:58:33 -0500
-Date: Fri, 28 Feb 2014 21:58:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] x86: Rename copy_from_user_nmi() to
- copy_from_user_trace()
-Message-ID: <20140228205828.GE14089@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
- <20140228092341.12a40f7c@gandalf.local.home>
- <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
- <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
- <20140228154026.GH9987@twins.programming.kicks-ass.net>
- <5310B60F.30806@zytor.com>
- <20140228112946.1f194397@gandalf.local.home>
- <20140228143316.211d4034@gandalf.local.home>
- <20140228204621.GA14089@laptop.programming.kicks-ass.net>
- <20140228155130.26adcef3@gandalf.local.home>
+	Fri, 28 Feb 2014 15:59:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228155130.26adcef3@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
+References: <1393375569-21751-1-git-send-email-sre@debian.org>
+	<1393375569-21751-2-git-send-email-sre@debian.org>
+	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
+	<20140226215452.GA11468@earth.universe>
+	<CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
+	<20140228020536.GB5427@earth.universe>
+	<CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
+Date: Fri, 28 Feb 2014 21:59:28 +0100
+Message-ID: <CAAfyv345wNTquDcxPRZGU6_9QQkPJvY4YRd=PJo549_-Yif8Ag@mail.gmail.com>
+Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jonathan Cameron <jic23@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-iio@vger.kernel.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 03:51:30PM -0500, Steven Rostedt wrote:
-> On Fri, 28 Feb 2014 21:46:21 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, Feb 28, 2014 at 02:33:16PM -0500, Steven Rostedt wrote:
-> > > [ H. Peter, Here's the rename patch. I did not include your update. You
-> > > can add that first and then massage this patch on top. But this isn't
-> > > critical for mainline or stable, where as I believe your patch is. ]
-> > > 
-> > > The tracing utilities sometimes need to read from userspace (stack tracing),
-> > > and to do this it has as special copy_from_user function called
-> > > copy_from_user_nmi(). Well, as tracers can call this from outside of
-> > > nmi context, the "_nmi" part is a misnomer and "_trace" is a better
-> > > name.
-> > 
-> > NAK, spin_lock_irq() is very much an IRQ safe lock. Similarly
-> > copy_from_user_nmi() is an NMI safe copy from user.
-> > 
-> > Furthermore, there's exactly 0 trace users, so the proposed name is
-> > actively worse.
-> 
-> Heh, I consider perf and oprofile special tracers ;-)
+On Fri, Feb 28, 2014 at 9:32 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
+> Hi Sebastian,
+>
+> On Fri, Feb 28, 2014 at 3:05 AM, Sebastian Reichel <sre@debian.org> wrote:
+>> On Thu, Feb 27, 2014 at 10:34:35PM +0100, Belisko Marek wrote:
+>>> Well I've tried and it's worse :). I got during booting:
+>>> [    2.218383] ERROR: could not get IIO channel /battery:temp(0)
+>>> [    2.224639] platform battery.4: Driver twl4030_madc_battery
+>>> requests probe deferral
+>>> Not sure if it's just error or warning but temp is always reported as
+>>> 0 (and also other values in sysfs).
+>>
+>> This is an error, which basically means, that twl4030-madc has not
+>> yet been loaded. Do you get proper values when you use the old madc
+>> API with the patchset applied?
+> It works without converting to iio consumer (at least I get some
+> reasonable values).
+> With conversion it fails with above error. I recheck (add printk to
+> iio twl4030-madc) that
+> madc driver is loaded. Could this be that twl4030_madc_battery is
+> loaded earlier then
+> twl4030_madc and than it fails to get iio channels?
+Hmm I wasn't far away from truth in previous email. I think that channel doesn't
+exists because twl4030_madc driver isn't loaded yet and that is the
+reason for deferral probe
+message in log. So it seems after some time it is loaded correctly but
+not working. No ideas.
+>>
+>> -- Sebastian
+>
+> BR,
+>
+> marek
+>
+> --
+> as simple and primitive as possible
+> -------------------------------------------------
+> Marek Belisko - OPEN-NANDRA
+> Freelance Developer
+>
+> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+> Tel: +421 915 052 184
+> skype: marekwhite
+> twitter: #opennandra
+> web: http://open-nandra.com
 
-They're first and foremost profilers; which is an entirely different
-thing. But other people seem to get confused on this distinction too.
+BR,
+
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
