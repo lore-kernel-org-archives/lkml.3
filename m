@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaB1HWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:22:52 -0500
-Received: from www84.your-server.de ([213.133.104.84]:40420 "EHLO
+	id S1751642AbaB1HWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:22:50 -0500
+Received: from www84.your-server.de ([213.133.104.84]:40417 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaB1HWt (ORCPT
+	with ESMTP id S1750844AbaB1HWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Feb 2014 02:22:49 -0500
-Message-ID: <1393572151.1019.4.camel@wall-e.seibold.net>
-Subject: Re: [PATCH v2 3/4] x86: Patch alternatives in the 32-bit vDSO
+Message-ID: <1393572124.1019.3.camel@wall-e.seibold.net>
+Subject: Re: Final: Add 32 bit VDSO time function support
 From: Stefani Seibold <stefani@seibold.net>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Andi Kleen <ak@linux.intel.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         John Stultz <john.stultz@linaro.org>,
@@ -22,11 +22,12 @@ Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
         andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
         Andreas.Brief@rohde-schwarz.com
-Date: Fri, 28 Feb 2014 08:22:31 +0100
-In-Reply-To: <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
-References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
-	 <cover.1393545985.git.luto@amacapital.net>
-	 <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
+Date: Fri, 28 Feb 2014 08:22:04 +0100
+In-Reply-To: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+References: <1393443298.1917.5.camel@wall-e.seibold.net>
+	 <20140226204524.GA1598@kroah.com>
+	 <CALCETrU+u3GMK-GaTk4gbAjyMbpQY15qNC4D9q9h2a26YfsLwA@mail.gmail.com>
+	 <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
@@ -36,111 +37,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
-> rdtsc_barrier() needs this.
+Am Mittwoch, den 26.02.2014, 16:55 -0800 schrieb Andy Lutomirski:
+> Um.  This code doesn't work.  I'll send a patch.  I can't speak
+> towards how well it compiles in different configurations.
+> 
+> I can't speak towards how well it compiles in different
+> configurations.  Also, vdso_fallback_gettime needs .cfi annotations, I
+> think.  I could probably dredge the required incantations from
+> somewhere, but someone else may know how to do it.
+> 
+> Once I patch it to work, your 32-bit code is considerably faster than
+> the 64-bit case.  It's enough faster that I suspect a bug.  Dumping
+> the in-memory shows some rather suspicious nops before the rdtsc
+> instruction.  I suspect that you've forgotten to run the 32-bit vdso
+> through the alternatives code.  The is a nasty bug: it will appear to
+> work, but you'll see non-monotonic times on some SMP systems.
 > 
 
-Thanks for doing this.
+I didn't know this. My basic test case is a KVM which defaults to 1 cpu.
+Thanks for discovering the issue.
 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/include/asm/vdso.h  |  2 ++
->  arch/x86/vdso/vdso32-setup.c | 25 +++++++++++++------------
->  arch/x86/vdso/vma.c          |  9 ++++++---
->  3 files changed, 21 insertions(+), 15 deletions(-)
+> In my configuration, with your patches, I get (64-bit):
 > 
-> diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-> index 6db8b23..a844f90 100644
-> --- a/arch/x86/include/asm/vdso.h
-> +++ b/arch/x86/include/asm/vdso.h
-> @@ -40,4 +40,6 @@ extern const char vdso32_int80_start, vdso32_int80_end;
->  extern const char vdso32_syscall_start, vdso32_syscall_end;
->  extern const char vdso32_sysenter_start, vdso32_sysenter_end;
->  
-> +void __init patch_vdso32(void *vdso, size_t len);
-> +
->  #endif /* _ASM_X86_VDSO_H */
-> diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-> index 6b74a46..b37aa1d 100644
-> --- a/arch/x86/vdso/vdso32-setup.c
-> +++ b/arch/x86/vdso/vdso32-setup.c
-> @@ -273,29 +273,30 @@ static void map_compat_vdso(int map)
->  
->  int __init sysenter_setup(void)
->  {
-> -	void *syscall_page = (void *)get_zeroed_page(GFP_ATOMIC);
-> -	const void *vsyscall;
-> -	size_t vsyscall_len;
-> +	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
-> +	const void *vdso;
-> +	size_t vdso_len;
->  
-> -	vdso32_pages[0] = virt_to_page(syscall_page);
-> +	vdso32_pages[0] = virt_to_page(vdso_page);
->  
->  #ifdef CONFIG_X86_32
->  	gate_vma_init();
->  #endif
->  
->  	if (vdso32_syscall()) {
-> -		vsyscall = &vdso32_syscall_start;
-> -		vsyscall_len = &vdso32_syscall_end - &vdso32_syscall_start;
-> +		vdso = &vdso32_syscall_start;
-> +		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
->  	} else if (vdso32_sysenter()){
-> -		vsyscall = &vdso32_sysenter_start;
-> -		vsyscall_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
-> +		vdso = &vdso32_sysenter_start;
-> +		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
->  	} else {
-> -		vsyscall = &vdso32_int80_start;
-> -		vsyscall_len = &vdso32_int80_end - &vdso32_int80_start;
-> +		vdso = &vdso32_int80_start;
-> +		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
->  	}
->  
-> -	memcpy(syscall_page, vsyscall, vsyscall_len);
-> -	relocate_vdso(syscall_page);
-> +	memcpy(vdso_page, vdso, vdso_len);
-> +	patch_vdso32(vdso_page, vdso_len);
-> +	relocate_vdso(vdso_page);
->  
->  	return 0;
->  }
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index 431e875..149caa1 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -28,8 +28,11 @@ static unsigned vdso_size;
->  extern char vdsox32_start[], vdsox32_end[];
->  extern struct page *vdsox32_pages[];
->  static unsigned vdsox32_size;
-> +#endif
->  
-> -static void __init patch_vdsox32(void *vdso, size_t len)
-> +#if defined(CONFIG_X86_32) || defined(CONFIG_X86_X32_ABI) || \
-> +	defined(CONFIG_COMPAT)
-> +void __init patch_vdso32(void *vdso, size_t len)
->  {
->  	Elf32_Ehdr *hdr = vdso;
->  	Elf32_Shdr *sechdrs, *alt_sec = 0;
-> @@ -52,7 +55,7 @@ static void __init patch_vdsox32(void *vdso, size_t len)
->  	}
->  
->  	/* If we get here, it's probably a bug. */
-> -	pr_warning("patch_vdsox32: .altinstructions not found\n");
-> +	pr_warning("patch_vdso32: .altinstructions not found\n");
->  	return;  /* nothing to patch */
->  
->  found:
-> @@ -104,7 +107,7 @@ static int __init init_vdso(void)
->  		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
->  
->  #ifdef CONFIG_X86_X32_ABI
-> -	patch_vdsox32(vdsox32_start, vdsox32_end - vdsox32_start);
-> +	patch_vdso32(vdsox32_start, vdsox32_end - vdsox32_start);
->  	npages = (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE;
->  	vdsox32_size = npages << PAGE_SHIFT;
->  	for (i = 0; i < npages; i++)
+> CLOCK_REALTIME:
+> 100000000 loops in 2.07105s = 20.71 nsec / loop
+> 100000000 loops in 2.06874s = 20.69 nsec / loop
+> 100000000 loops in 2.29415s = 22.94 nsec / loop
+> CLOCK_MONOTONIC:
+> 100000000 loops in 2.06526s = 20.65 nsec / loop
+> 100000000 loops in 2.10134s = 21.01 nsec / loop
+> 100000000 loops in 2.10615s = 21.06 nsec / loop
+> CLOCK_REALTIME_COARSE:
+> 100000000 loops in 0.37440s = 3.74 nsec / loop
+> [  503.011756] perf samples too long (2550 > 2500), lowering
+> kernel.perf_event_max_sample_rate to 50000
+> 100000000 loops in 0.37399s = 3.74 nsec / loop
+> 100000000 loops in 0.38445s = 3.84 nsec / loop
+> CLOCK_MONOTONIC_COARSE:
+> 100000000 loops in 0.40238s = 4.02 nsec / loop
+> 100000000 loops in 0.40939s = 4.09 nsec / loop
+> 100000000 loops in 0.41152s = 4.12 nsec / loop
+> 
+> Without the patches, I get:
+> 
+> CLOCK_REALTIME:
+> 100000000 loops in 2.07348s = 20.73 nsec / loop
+> 100000000 loops in 2.07346s = 20.73 nsec / loop
+> 100000000 loops in 2.06922s = 20.69 nsec / loop
+> CLOCK_MONOTONIC:
+> 100000000 loops in 1.98955s = 19.90 nsec / loop
+> 100000000 loops in 1.98895s = 19.89 nsec / loop
+> 100000000 loops in 1.98881s = 19.89 nsec / loop
+> CLOCK_REALTIME_COARSE:
+> 100000000 loops in 0.37462s = 3.75 nsec / loop
+> 100000000 loops in 0.37460s = 3.75 nsec / loop
+> 100000000 loops in 0.37428s = 3.74 nsec / loop
+> CLOCK_MONOTONIC_COARSE:
+> 100000000 loops in 0.40081s = 4.01 nsec / loop
+> 100000000 loops in 0.39834s = 3.98 nsec / loop
+> [   36.706696] perf samples too long (2565 > 2500), lowering
+> kernel.perf_event_max_sample_rate to 50000
+> 100000000 loops in 0.39949s = 3.99 nsec / loop
+> 
+> This looks like a wash, except for CLOCK_MONOTONIC, which got a bit
+> slower.  I'll send a followup patch once the bugs are fixed that
+> improves the timings to:
+> 
+> CLOCK_REALTIME:
+> 100000000 loops in 2.08621s = 20.86 nsec / loop
+> 100000000 loops in 2.07122s = 20.71 nsec / loop
+> 100000000 loops in 2.07089s = 20.71 nsec / loop
+> CLOCK_MONOTONIC:
+> 100000000 loops in 2.06831s = 20.68 nsec / loop
+> 100000000 loops in 2.06862s = 20.69 nsec / loop
+> 100000000 loops in 2.06195s = 20.62 nsec / loop
+> CLOCK_REALTIME_COARSE:
+> 100000000 loops in 0.37274s = 3.73 nsec / loop
+> 100000000 loops in 0.37247s = 3.72 nsec / loop
+> 100000000 loops in 0.37234s = 3.72 nsec / loop
+> CLOCK_MONOTONIC_COARSE:
+> 100000000 loops in 0.39944s = 3.99 nsec / loop
+> 100000000 loops in 0.39940s = 3.99 nsec / loop
+> 100000000 loops in 0.40054s = 4.01 nsec / loop
+> 
+> I'm not quite sure that causes the remaining loss.
+> 
+> Test code is here:
+> 
+> https://gitorious.org/linux-test-utils/linux-clock-tests
 
 
