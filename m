@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaB1LLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:11:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52723 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaB1LLS (ORCPT
+	id S1751864AbaB1LME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:12:04 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:55060 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaB1LMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:11:18 -0500
-Date: Fri, 28 Feb 2014 12:11:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228111111.GI27965@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
- <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
- <20140225094352.73e0e28c@gandalf.local.home>
- <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
- <20140227173150.4e5ed747@gandalf.local.home>
- <530FC1C6.5040209@zytor.com>
- <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
- <20140227215726.7018c861@gandalf.local.home>
+	Fri, 28 Feb 2014 06:12:00 -0500
+Date: Fri, 28 Feb 2014 11:11:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH 0/4] mfd: sec: Add support for S2MPS14
+Message-ID: <20140228111153.GC31720@lee--X1>
+References: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
+ <20140228104927.GB31720@lee--X1>
+ <1393585526.31997.1.camel@AMDC1943>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140227215726.7018c861@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1393585526.31997.1.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 09:57:26PM -0500, Steven Rostedt wrote:
-> @@ -512,8 +508,21 @@ static inline void nmi_nesting_postprocess(void)
->  dotraplinkage notrace __kprobes void
->  do_nmi(struct pt_regs *regs, long error_code)
->  {
-> +	unsigned long cr2;
-> +	
->  	nmi_nesting_preprocess(regs);
->  
-> +	/*
-> +	 * Save off the CR2 register. If we take a page fault in the NMI then
-> +	 * it could corrupt the CR2 value. If the NMI preempts a page fault
-> +	 * handler before it was able to read the CR2 register, and then the
-> +	 * NMI itself takes a page fault, the page fault that was preempted
-> +	 * will read the information from the NMI page fault and not the
-> +	 * origin fault. Save it off and restore it if it changes.
+> > > Few days ago I sent patches adding support for S2MPS14 device to the
+> > > sec-core/s2mps11 drivers. These patches were rather large as they covered
+> > > multiple subsystems so I decided to split everything into smaller, separate
+> > > patches.
+> > > 
+> > > The original patchset (version 3) can be found here:
+> > > http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
+> > > 
+> > > This patchset is a small subset of the patchset related to the MFD core
+> > > driver. It adds support for the S2MPS14 device only to the MFD core driver.
+> > > I already obtained acks from Lee Jones during previous reviews.
+> > > 
+> > > The patchset is based on current Linus' tree *with* patch:
+> > > mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
+> > > (which is already in Lee Jones' MFD tree)
+> > 
+> > Can all of these patches be applied as they are?
+> > 
+> > Is anything going to break as a result?
+> 
+> Yes, they can be applied as they are. That was the reason behind
+> splitting everything. Nothing should break, as far as I reviewed this
+> and tested.
 
-> +	 * Use the r12 callee-saved register.
+Very well, all applied, thanks.
 
-You might want to make that line go away :-)
+> > > Krzysztof Kozlowski (4):
+> > >   mfd: sec: Add maximum RTC register for regmap config
+> > >   mfd: sec: Select different RTC regmaps for devices
+> > >   mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
+> > >   mfd: sec: Add support for S2MPS14
+> > > 
+> > >  drivers/mfd/sec-core.c              |   57 ++++++++++++-
+> > >  drivers/mfd/sec-irq.c               |   97 ++++++++++++++++++++--
+> > >  include/linux/mfd/samsung/core.h    |    1 +
+> > >  include/linux/mfd/samsung/irq.h     |   31 ++++++-
+> > >  include/linux/mfd/samsung/rtc.h     |   57 +++++++++++--
+> > >  include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
+> > >  6 files changed, 378 insertions(+), 17 deletions(-)
+> > >  create mode 100644 include/linux/mfd/samsung/s2mps14.h
+> > > 
+> > 
+> 
 
-> +	 */
-> +	cr2 = read_cr2();
-> +
->  	nmi_enter();
->  
->  	inc_irq_stat(__nmi_count);
-> @@ -523,6 +532,10 @@ do_nmi(struct pt_regs *regs, long error_code)
->  
->  	nmi_exit();
->  
-> +	/* Reads are cheaper than writes */
-> +	if (unlikely(cr2 != read_cr2()))
-> +		write_cr2(cr2);
-> +
->  	/* On i386, may loop back to preprocess */
->  	nmi_nesting_postprocess();
->  }
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
