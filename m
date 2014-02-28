@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaB1S1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 13:27:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49365 "EHLO
+	id S1751807AbaB1S3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 13:29:18 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49641 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaB1S1r (ORCPT
+	with ESMTP id S1750746AbaB1S3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 13:27:47 -0500
-Date: Fri, 28 Feb 2014 10:27:45 -0800
+	Fri, 28 Feb 2014 13:29:16 -0500
+Date: Fri, 28 Feb 2014 10:29:15 -0800
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] ARM: qcom: Enable basic support for Qualcomm platforms
- in multi_v7_defconfig
-Message-ID: <20140228182745.GC2487@codeaurora.org>
-References: <1393360445-16923-1-git-send-email-galak@codeaurora.org>
- <7hy50xv3rw.fsf@paris.lan>
- <7hzjlbtc9y.fsf@paris.lan>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 4/9] Input: pmic8xxx-keypad - Migrate to DT
+Message-ID: <20140228182915.GD2487@codeaurora.org>
+References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+ <1393552520-9068-5-git-send-email-sboyd@codeaurora.org>
+ <20140228034138.GD7308@joshc.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7hzjlbtc9y.fsf@paris.lan>
+In-Reply-To: <20140228034138.GD7308@joshc.qualcomm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Kevin Hilman wrote:
-> Hi Kumar,
+On 02/27, Josh Cartwright wrote:
+> Looks good, with the exception of one thing...
 > 
-> Kevin Hilman <khilman@linaro.org> writes:
+> On Thu, Feb 27, 2014 at 05:55:15PM -0800, Stephen Boyd wrote:
+> > The driver is only supported on DT enabled platforms. Convert the
+> > driver to DT so that it can probe properly.
+> > 
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  drivers/input/keyboard/pmic8xxx-keypad.c | 150 ++++++++++++++++++-------------
+> > @@ -471,50 +514,27 @@ static void pmic8xxx_kp_close(struct input_dev *dev)
+> >   */
+> >  static int pmic8xxx_kp_probe(struct platform_device *pdev)
+> >  {
+> [..]
+> > -	keymap_data = pdata->keymap_data;
+> > -	if (!keymap_data) {
+> > -		dev_err(&pdev->dev, "no keymap data supplied\n");
+> > -		return -EINVAL;
+> > -	}
+> > +	repeat = !of_property_read_bool(pdev->dev.of_node,
+> > +					"linux,input-no-autorepeat");
+> > +	wakeup = !of_property_read_bool(pdev->dev.of_node,
+> > +					"linux,keypad-wakeup");
 > 
-> > Kumar Gala <galak@codeaurora.org> writes:
-> >
-> >> Enable support for the MSM8x60, MSM8960, and MSM8974 SoCs, clocks and
-> >> serial console as part of the standard multi_v7_defconfig.
-> >>
-> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> >> ---
-> >>
-> >> I leave this to the arm-soc guys to apply because of possible conflicts
-> >> with other updates to multi_v7_defconfig.
-> >
-> > Seem to be a handful of !qcom changes here, probably resulting from a
-> > run of 'make savedefconfig' without all the new changes in.
-> >
-> > I've thinned this out to only the qcom changes and applied the following
-> > to next/boards.  I think it's better to do any 'make savedefconfig'
-> > cleanups as a separate, cleanup-only patch as needed.
-> 
-> Bisecting a new boot failure on u8500/snowball came down to this patch.
-> Simply disabling CONFIG_ARCH_QCOM in mutli_v7_defconfig gets the
-> u8500/snowball booting again, so it looks like there may still be some
-> qcom specifics that are being run on non-qcom platforms with a
-> multi-platform config.
-> 
-> Could you audit for initcalls/drivers being initialized on non-qcom
-> SoCs?
+> I don't think you mean to invert this.
 > 
 
-Can you try disabling CONFIG_ARCH_MSM8X60 and
-CONFIG_ARCH_MSM8960? MY suspicion is the text offset movement is
-causing problems, but I hope I'm wrong.
+Good catch. Thanks.
 
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
