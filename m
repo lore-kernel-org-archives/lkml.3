@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaB1Kl4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:41:56 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:20302 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaB1Klx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:41:53 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-66-531067ee51de
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 0/4] mfd: sec: Add support for S2MPS14
-Date: Fri, 28 Feb 2014 11:41:40 +0100
-Message-id: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xK7rv0gWCDV5fMLDYOGM9q8XrF4YW
-	Z5vesFvc/3qU0eLyrjlsFjPO72OyWHvkLrvF6W5Wi4srvjBZrJ/xmsWBy+POtT1sHvNOBnr0
-	bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxtdnD1gLmnkqWqfvZmpgvMzZxcjJISFgInFlwzYW
-	CFtM4sK99WxdjFwcQgJLGSXO3JrICpIQEuhjkri5FsxmEzCW2Lx8CViRiMBmRonF36+CJZgF
-	njNKPP0eDmILC5hJvLt0iRHEZhFQlTg28xcbiM0r4C4x58kE9i5GDqBtChJzJtlMYORewMiw
-	ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkZL7uYFx6zOoQowAHoxIP7wRP/mAh1sSy4src
-	Q4wSHMxKIrx57gLBQrwpiZVVqUX58UWlOanFhxiZODilGhjPV/5lVu40z1RbtdYo6ex3v6n6
-	LPL5SZt3eb1e8SPS4FqxcYtEol7VtO9q+r8n/fx0cXH9ydSD386Jzq/hnbKuZV5iZf+vW089
-	VDWOmJqqHVY5xfyvv+DsJmHhHrcyzdbMlo3bVnI2rPxYbDs55s4345RbaXya4fcLGwXzfkpd
-	N+FeN/MBzyclluKMREMt5qLiRABLLCsa9wEAAA==
+	id S1751914AbaB1KpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:45:17 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43824 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532AbaB1KpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 05:45:14 -0500
+Message-ID: <531068AB.5060600@ti.com>
+Date: Fri, 28 Feb 2014 12:44:59 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Gerd Hoffmann <kraxel@redhat.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <kys@microsoft.com>,
+        <abgupta@microsoft.com>, <haiyangz@microsoft.com>,
+        <jasowang@redhat.com>, <devel@linuxdriverproject.org>
+Subject: Re: [PATCH v5 0/2] hyperv-fb: add support for generation 2 virtual
+ machines
+References: <1393411885-14895-1-git-send-email-kraxel@redhat.com>	 <53105077.4090102@ti.com> <1393582795.3364.5.camel@nilsson.home.kraxel.org>
+In-Reply-To: <1393582795.3364.5.camel@nilsson.home.kraxel.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Few days ago I sent patches adding support for S2MPS14 device to the
-sec-core/s2mps11 drivers. These patches were rather large as they covered
-multiple subsystems so I decided to split everything into smaller, separate
-patches.
+On 28/02/14 12:19, Gerd Hoffmann wrote:
+> On Fr, 2014-02-28 at 11:01 +0200, Tomi Valkeinen wrote:
+>> On 26/02/14 12:51, Gerd Hoffmann wrote:
+>>>   Hi,
+>>>
+>>> This patch series adds support for uefi-based gen2 virtual machines
+>>> to the hyperv-fb driver.  It depends on a few vmbus changes which are=
 
-The original patchset (version 3) can be found here:
-http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
+>>> staged in Greg's char-misc tree (and linux-next).
+>>
+>> Depends how?
+>=20
+> Will fail to build without the vmbus patches.
+>=20
+>> Patches that depend on other patches should be merged via
+>> the same tree to avoid compile or functional breaks.
+>=20
+> I think Greg will happily merge them through char-misc if he gets your
+> fbdev maintainer ACK for the patches.
 
-This patchset is a small subset of the patchset related to the MFD core
-driver. It adds support for the S2MPS14 device only to the MFD core driver.
-I already obtained acks from Lee Jones during previous reviews.
+Ok. It's usually good to mention if only an ack is needed (and from
+whom). You did send this to fbdev, and said "please apply". So I already
+applied it, until I realized you said there are dependencies.
 
-The patchset is based on current Linus' tree *with* patch:
-mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-(which is already in Lee Jones' MFD tree)
+So:
 
-Best regards,
-Krzysztof
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+ Tomi
 
 
-Krzysztof Kozlowski (4):
-  mfd: sec: Add maximum RTC register for regmap config
-  mfd: sec: Select different RTC regmaps for devices
-  mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
-  mfd: sec: Add support for S2MPS14
 
- drivers/mfd/sec-core.c              |   57 ++++++++++++-
- drivers/mfd/sec-irq.c               |   97 ++++++++++++++++++++--
- include/linux/mfd/samsung/core.h    |    1 +
- include/linux/mfd/samsung/irq.h     |   31 ++++++-
- include/linux/mfd/samsung/rtc.h     |   57 +++++++++++--
- include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
- 6 files changed, 378 insertions(+), 17 deletions(-)
- create mode 100644 include/linux/mfd/samsung/s2mps14.h
+--7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
+iQIcBAEBAgAGBQJTEGirAAoJEPo9qoy8lh71jxwQAIGAgDaZ7RvyV3U82uHWLLj8
+Ck3yrroFASIplen6CLrdIFA2rv1jgnDuRrSZ/SpYHd8M3rqfFD9G7ASFdRy9AVzp
+UjM86Rgbot9HhOfeWis57oQAbJRw41FKwj7bniykElK2Wdrw+0LJL55bg6kBgO3p
+cI0KXI7MDbi1hdHJZdHs+X1gcEu548zHq6lw4cw4Gmz18ktB7sJRY9Hhi1T3ddwb
+cCJi6DKvKQwDZFhpBHnsirbMdhwSmQJ1lRrx5B3mDYyR/aGaVU3SP5vukSTwX2ZW
+UpVnID2P0xvt54tHB7VCYmXbDebCJawH7KedCfPdpT22AacJF1WsGvNjeR4WsNhq
+Q3V5BrrNNQoC+1XX/HFXJVo1Wmw6O7zBFEc552/N3QIWnMbR0SSfuIINCxvQ8D/r
+n8Lbk+7nLLcfJmz6YISX/hLedlqUFhYzCancNp7pjdlmg0jFABuCwDtB3wpcDnN2
+PZkRqwRLwd5NesWGfHAuL6aroxgKr07Ps0PHKDNAcKoQQ0S4ryBVsGndtt1/1qOp
+eqxTrKEfJtTz4O7KzNkuuhIbUti+OutRrgiyBOMdr4kJ3g9p9V1G4WRzuyr8hbf9
+xCLBlbLvtKAPDTtGexHYr/lBfehoVpJ3tNjSlS3sKu0escWTjFwtOOuPimCse/Mc
+5wgAy3Pk4ap+SmnDPMf/
+=2oE+
+-----END PGP SIGNATURE-----
+
+--7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k--
