@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaB1NPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:15:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33328 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaB1NPj (ORCPT
+	id S1752323AbaB1NPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:15:47 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:61500 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207AbaB1NPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:15:39 -0500
-Message-ID: <53108BEF.1020308@pengutronix.de>
-Date: Fri, 28 Feb 2014 14:15:27 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Fri, 28 Feb 2014 08:15:43 -0500
 MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local> <530DEA7C.6010609@pengutronix.de> <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local> <530E0B92.5010903@pengutronix.de> <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local> <53104995.4010305@pengutronix.de> <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local> <53108798.7090902@pengutronix.de> <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
-In-Reply-To: <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <530C186D.3050602@roeck-us.net>
+References: <52F5A6EE.7020000@roeck-us.net>
+	<CAAhV-H7GbarXPb2uye1jiH+caAL4vWTVBeGY77Yf0tvdpGJtiA@mail.gmail.com>
+	<52F5B8CE.1000808@roeck-us.net>
+	<530C186D.3050602@roeck-us.net>
+Date: Fri, 28 Feb 2014 21:15:41 +0800
+Message-ID: <CAAhV-H5+6BFr4Or8LP4T=td4eqsBvTsenaX0UgR6kqcUnxe6hA@mail.gmail.com>
+Subject: Re: Commit 597ce1723 (MIPS: Support for 64-bit FP with O32 binaries)
+ causing qemu hang with mips64 kernels
+From: Huacai Chen <chenhuacai@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        Paul Burton <paul.burton@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi, Ralf,
 
-On 02/28/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
->>>> What happens if the interrupt handler is delayed? For example in a R=
-T
->>>> enabled system the interrupt handler runs as a thread. There might b=
-e
->>>> other threads with higher priority. The hardware will probably send
->>>> all CAN frames in the FIFO, so you want to reduce the overhead and
->>>> loop in the tx complete handler.
+Could these two patches be merged in 3.14 (there is an updated
+version: http://patchwork.linux-mips.org/patch/6550/ and
+http://patchwork.linux-mips.org/patch/6551/)?
+
+And by the way, is the V19 of Loongson-3's patchset good enough to be
+merged in 3.15?
+
+Huacai
+
+On Tue, Feb 25, 2014 at 12:13 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 02/07/2014 08:55 PM, Guenter Roeck wrote:
+>>
+>> On 02/07/2014 07:57 PM, Huacai Chen wrote:
+>>>
+>>> Hi,
+>>>
+>>> Maybe you can try this:
+>>> http://patchwork.linux-mips.org/patch/6506/
+>>> http://patchwork.linux-mips.org/patch/6507/
+>>>
+>> With those two patches applied the problem is gone.
+>>
+>
+> Any idea if and when those patches may find their way upstream ?
+> 3.14-rc4 still has the problem.
+>
+> Thanks,
+> Guenter
+>
+>
+>> Thanks a lot!
+>>
+>> Guenter
+>>
+>>> On Sat, Feb 8, 2014 at 11:39 AM, Guenter Roeck <linux@roeck-us.net>
+>>> wrote:
 >>>>
->>> Yes I agree with your comment.
->>> It will be good to have a loop in the Tx interrupt handler I am
->>> modifying the Tx interrupt handler like below.
+>>>>
+>>>> Hi all,
+>>>>
+>>>> in 3.14-rc1, my mips64 qemu test fails. The image boots and then hangs.
+>>>> Bisect points to commit 597ce1723 (MIPS: Support for 64-bit FP with O32
+>>>> binaries).
+>>>> Reverting this commit fixes the problem. Disabling MIPS_O32_FP64_SUPPORT
+>>>> in my test image does _not_ solve the problem. The qemu version does not
+>>>> seem
+>>>> to make a difference; I tested with qemu 1.6.0 and 1.7.0.
+>>>>
+>>>> Console log output is available in
+>>>>
+>>>> http://server.roeck-us.net:8010/builders/qemu-mips64-master/builds/34/steps/buildcommand/logs/stdio
+>>>>
+>>>> When the problem is seen, the emulation hangs as can be seen in the log,
+>>>> and the qemu process consumes 100% CPU until it is killed.
+>>>>
+>>>> qemu command line is
+>>>>
+>>>> qemu-system-mips64 -kernel vmlinux -M malta -hda
+>>>> core-image-minimal-qemumips64.ext3 \
+>>>> -vga cirrus -usb -usbdevice wacom-tablet -no-reboot -m 128 --append
+>>>> "root=/dev/hda \
+>>>> rw mem=128M console=ttyS0 console=tty" -nographic
+>>>>
+>>>> The same configuration works fine with earlier kernels. I'll be happy to
+>>>> provide
+>>>> the detailed configuration as well as the root file system for testing
+>>>> if
+>>>> needed.
+>>>>
+>>>> Obviously I have no idea if this is a problem with the patch or with
+>>>> qemu.
+>>>> If there is anything I can do to help tracking down the problem further,
+>>>> please let me know.
+>>>>
+>>>> Thanks,
+>>>> Guenter
+>>>>
 >>>
->>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
->>>         struct xcan_priv *priv =3D netdev_priv(ndev);
->>>         struct net_device_stats *stats =3D &ndev->stats;
 >>>
->>>         while (priv->tx_head - priv->tx_tail > 0) {
->>>                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
->>>                         break;
->>>                 }
->>>                 can_get_echo_skb(ndev, priv->tx_tail %
->>>                                         priv->xcan_echo_skb_max_tx);
->>>                 priv->tx_tail++;
->>>                 stats->tx_packets++;
->>>                 can_led_event(ndev, CAN_LED_EVENT_TX);
-
-Probably first clear the interrupt, because you've just handled it, then
-check if it's still present. The question is, do you have to clear the
-IRQ for each transmitted frame, or does one clean of the interrupt clear
-the bit for more then one transmitted frame?
-
->>>                 isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
->             --> clear Tx OK interrupt.
-
->=20
->>>         }
->>>         netif_wake_queue(ndev);
->>> }
->>>
->>> Are you Ok with this?
-
-Were getting there :)
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMQi+8ACgkQjTAFq1RaXHPqFwCgidLsjs4bf60MlQaZsLvSmgvE
-hugAn1Et9bzUjDb07qlE8dv+dsDEfaV7
-=OMGk
------END PGP SIGNATURE-----
-
---BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE--
+>>
+>
