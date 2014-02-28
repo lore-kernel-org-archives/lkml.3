@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaB1QKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:10:44 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42750 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaB1QKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:10:43 -0500
-Date: Fri, 28 Feb 2014 08:10:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, peterz@infradead.org, oleg@redhat.com,
-        rostedt@goodmis.org
-Subject: Re: [GIT PULL timers] Timer-wheel bandaids^Wcommits for 3.15
-Message-ID: <20140228161037.GB11910@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140228012704.GA20805@linux.vnet.ibm.com>
- <1393563998.6018.19.camel@marge.simpson.net>
+	id S1752986AbaB1QM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:12:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44108 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751677AbaB1QM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 11:12:56 -0500
+Message-ID: <5310B54F.3000709@zytor.com>
+Date: Fri, 28 Feb 2014 08:11:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393563998.6018.19.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022816-1344-0000-0000-00000625CED6
+To: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCHv2] x86 trace: Fix page fault tracing bug
+References: <1393601620-13117-1-git-send-email-jolsa@redhat.com> <20140228154708.GI9987@twins.programming.kicks-ass.net> <20140228160526.GD1133@krava.brq.redhat.com>
+In-Reply-To: <20140228160526.GD1133@krava.brq.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 06:06:38AM +0100, Mike Galbraith wrote:
-> On Thu, 2014-02-27 at 17:27 -0800, Paul E. McKenney wrote: 
-> > Hello, Thomas and Ingo,
-> > 
-> > This pull request contains latency bandaids^Woptimizations to the
-> > timer-wheel code that are useful in conjunction with NO_HZ_FULL Kconfig
-> > option.  These optimizations reduce the jiffy-by-jiffy looping in cases
-> > where there is either zero or one timers in the timer wheel, which is
-> > a common case for NO_HZ_FULL "worker" CPUs that run almost entirely
-> > in usermode for a single task.
+On 02/28/2014 08:05 AM, Jiri Olsa wrote:
+> On Fri, Feb 28, 2014 at 04:47:08PM +0100, Peter Zijlstra wrote:
+>> On Fri, Feb 28, 2014 at 04:33:40PM +0100, Jiri Olsa wrote:
+>>
+>> While I like the idea of just pushing up the CR2 read; the below does
+>> the read too late still, exception_enter() also has a tracepoint in.
 > 
-> FWIW, these have seen quite a bit of runtime on various boxen, both in
-> day to day and piddle about -rt kernels, with zero attention grabbers.
+> please check v2, thanks
 
-Thank you very much for your testing efforts, Mike!
+Is there any way something could come in even earlier (perhaps via
+__fentry__)?
 
-							Thanx, Paul
+If so, do we need to hoist the reading of %cr2 all the way into assembly
+or something else?
+
+	-hpa
 
