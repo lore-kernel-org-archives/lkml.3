@@ -1,164 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaB1Hb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:31:27 -0500
-Received: from nm20-vm5.bullet.mail.gq1.yahoo.com ([98.136.217.36]:45480 "EHLO
-	nm20-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751263AbaB1HbZ (ORCPT
+	id S1751711AbaB1Hct (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:32:49 -0500
+Received: from nm9-vm9.bullet.mail.gq1.yahoo.com ([98.136.218.248]:50065 "EHLO
+	nm9-vm9.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751297AbaB1Hcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:31:25 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=gcom1024; d=yahoo.com;
-	b=FMTdWsnfs250tBs/W1Z4h5jboK/ArZUCybDp8DHOLqYoIoHtq3DjbxuLW7EneYJKSQe1ogFhCC89g/Gid0haFN4vOVC084LF5dA6RmcGE+vqkZM1k6qkim30dwZfnqwyWUTGMeegItjWYYsaDJjXPlpGh8qnOotWQr9gXdR2hf4=;
-X-Yahoo-Newman-Id: 77545.4483.bm@smtp210.mail.gq1.yahoo.com
+	Fri, 28 Feb 2014 02:32:48 -0500
+X-Yahoo-Newman-Id: 839489.50317.bm@smtp213.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: QV6ySSEVM1kyC9AFjjYd1eONGE_GTj.RfDYXZK5egImkYiG
- Q6CtYUMwe3H0B4vuOJ6Mng2fnQweyJP3uXIhLYfcmZZb6SPtyVr5yDw0HTmA
- Ji8DgZQa7BG5pYdzzz1zn6FvDm1sRJCYD9TemMjTnU2ogZS63WCxn5TnC_Eo
- E9qFCEMShb_u5oa38SvpMs7fnNyAGbLCKS0864Mo3TmSWS9hIEVpCXPy_yqK
- 0QrqZVoz41SleD0A2biLpotJ4DxDI4rGaCbyhxAdCgzKl7eKLXh1ZjIVFBpa
- 2g786ja5Dux8KmK44VZFkAXH8UZ.sj_E7tDvKDYo0_57sESJBpiqcmCsjX84
- sUL_eam9v8UhwB9wb8NYHA2r1QneASwRmCi8IwLnjfa4uGv9MeawyJNa0L.A
- d7cLTZC7WAlF8zUPjyP_nVn9QkpuBSefSsLeA4E4U68NTeULNwGjD4N0vJ0T
- vTSV_3QnP.mDuwOELbww3bAzZI0MaHJWoNCWQWq65kceMLkfKN_qHQmREccO
- n1M4FyXe.AEhGnBo1fZTWvY8h9QEQwB0-
+X-YMail-OSG: jDPISQsVM1kxZ1G6PodYUIyAMUeskQJRYqNmL85BUC28SQf
+ .cEuUDKL_e4RdUYGvlBpEsW6kWNsTYan2Uzu0hba_8l0jc1DWktT781vR0eI
+ foJnuEOPvnYfL2BroZo.3ho.ncQy4zSYj6G94WfLv2AMPYgnoR6Gg0gok0B2
+ n2PGS8rDBaLUqOvbJga4RHeqXMMQouw0ilWoKI2zG.dCuJ6f8ehBWXpVB.N1
+ u2la_p_Lf8KiL2o5p.ZEnp9OSNZJsNZZNcvvqnR1ePjwm3L05HFCJ8ftJ7Q8
+ MufFRVW7mwj7nPEYxqM3jNDbmmW9fi1hjSfjcPwc5EYYFe8daDGFTEqXiA6B
+ d9vkKXovwT2SFPJgNWmq7JtFf1TQ1aP4whMklzBkcUKMUA2HYreVFrMkkGB1
+ d0PIbmFRZHQ9jCr0IWXNaY1Q9Th0.FFih8mkEQa8XWIrmGsUXg1uots_xcPC
+ DJ7WhR6Fhp6bNR9Czz5UeVV5UJHWcfCguxm7yyVtPx8uhLGcM4SQlpXaEX9D
+ Tay1f3h0X1SYcjiYTpai6Nrp2B2nBjEvmxyBV
 X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.138.105.21])
-        by smtp210.mail.gq1.yahoo.com with SMTP; 27 Feb 2014 23:31:24 -0800 PST
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.139.211.125])
+        by smtp213.mail.gq1.yahoo.com with SMTP; 28 Feb 2014 07:32:47 +0000 UTC
 From: Chase Southwood <chase.southwood@yahoo.com>
 To: gregkh@linuxfoundation.org
 Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>,
-        Chase Southwood <chase.southwoo@yahoo.com>
-Subject: [PATCH 1/2] Staging: comedi: addi-data: fix lines that are over 80 characters
-Date: Fri, 28 Feb 2014 01:31:20 -0600
-Message-Id: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH 2/2] Staging: comedi: addi-data: remove unnecessary variable initializations in hwdrv_apci1564.c
+Date: Fri, 28 Feb 2014 01:32:41 -0600
+Message-Id: <1393572761-9614-1-git-send-email-chase.southwood@yahoo.com>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
+References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hwdrv_apci1564.c had numerous lines over the column limit.  This patch
-splits all such lines to bring them in compliance with coding style.
+A handful of variables here were being initialized to 0 upon declaration,
+however they are always then set to another value before their first use,
+so initialization here is useless and we can remove it.
 
-Signed-off-by: Chase Southwood <chase.southwoo@yahoo.com>
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 ---
- .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 50 ++++++++++++++++------
- 1 file changed, 36 insertions(+), 14 deletions(-)
+ drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 2b47fa1..77030c5 100644
+index 968e26c..83e4a41 100644
 --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
 +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -324,11 +324,15 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 			inl(devpriv->i_IobaseAmcc + APCI1564_TIMER +
- 			APCI1564_TCW_PROG);
- 		ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
--		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* Stop The Timer */
-+		/* Stop The Timer */
-+		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER +
-+			APCI1564_TCW_PROG);
- 
- 		devpriv->b_TimerSelectMode = ADDIDATA_TIMER;
- 		if (data[1] == 1) {
--			outl(0x02, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* Enable TIMER int & DISABLE ALL THE OTHER int SOURCES */
-+			/* Enable TIMER int & DISABLE ALL THE OTHER int SOURCES */
-+			outl(0x02, devpriv->i_IobaseAmcc + APCI1564_TIMER +
-+				APCI1564_TCW_PROG);
- 			outl(0x0,
- 				devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
- 				APCI1564_DIGITAL_IP_IRQ);
-@@ -352,7 +356,9 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 				devpriv->iobase + APCI1564_COUNTER4 +
- 				APCI1564_TCW_IRQ);
- 		} else {
--			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* disable Timer interrupt */
-+			/* disable Timer interrupt */
-+			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER +
-+				APCI1564_TCW_PROG);
- 		}
- 
- 		/*  Loading Timebase */
-@@ -370,7 +376,9 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 			APCI1564_TCW_PROG);
- 		ul_Command1 =
- 			(ul_Command1 & 0xFFF719E2UL) | 2UL << 13UL | 0x10UL;
--		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* mode 2 */
-+		/* mode 2 */
-+		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER +
-+			APCI1564_TCW_PROG);
- 	} else if (data[0] == ADDIDATA_COUNTER) {
- 		devpriv->b_TimerSelectMode = ADDIDATA_COUNTER;
- 		devpriv->b_ModeSelectRegister = data[5];
-@@ -380,7 +388,9 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 			inl(devpriv->iobase + ((data[5] - 1) * 0x20) +
- 			APCI1564_TCW_PROG);
- 		ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
--		outl(ul_Command1, devpriv->iobase + ((data[5] - 1) * 0x20) + APCI1564_TCW_PROG);	/* Stop The Timer */
-+		/* Stop The Timer */
-+		outl(ul_Command1, devpriv->iobase + ((data[5] - 1) * 0x20) +
-+			APCI1564_TCW_PROG);
- 
- 		/* Set the reload value */
- 		outl(data[3],
-@@ -457,7 +467,9 @@ static int i_APCI1564_StartStopWriteTimerCounterWatchdog(struct comedi_device *d
- 	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
- 		switch (data[1]) {
- 		case 0:	/* stop the watchdog */
--			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_WATCHDOG + APCI1564_TCW_PROG);	/* disable the watchdog */
-+			/* disable the watchdog */
-+			outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_WATCHDOG +
-+				APCI1564_TCW_PROG);
- 			break;
- 		case 1:	/* start the watchdog */
- 			outl(0x0001,
-@@ -678,13 +690,18 @@ static void v_APCI1564_Interrupt(int irq, void *d)
- 			inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
- 			APCI1564_DIGITAL_IP_INTERRUPT_STATUS);
- 		ui_InterruptStatus_1564 = ui_InterruptStatus_1564 & 0X000FFFF0;
--		send_sig(SIGIO, devpriv->tsk_Current, 0);	/*  send signal to the sample */
--		outl(ui_DI, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + APCI1564_DIGITAL_IP_IRQ);	/* enable the interrupt */
-+		/*  send signal to the sample */
-+		send_sig(SIGIO, devpriv->tsk_Current, 0);
-+		/* enable the interrupt */
-+		outl(ui_DI, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
-+			APCI1564_DIGITAL_IP_IRQ);
- 		return;
- 	}
- 
- 	if (ui_DO == 1) {
--		/*  Check for Digital Output interrupt Type - 1: Vcc interrupt 2: CC interrupt. */
-+		/*  Check for Digital Output interrupt Type	*/
-+		/*  1: Vcc interrupt						*/
-+		/*  2: CC interrupt							*/
- 		ui_Type =
- 			inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP +
- 			APCI1564_DIGITAL_OP_INTERRUPT_STATUS) & 0x3;
-@@ -829,14 +846,19 @@ static int i_APCI1564_Reset(struct comedi_device *dev)
+@@ -304,7 +304,7 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
+ 						 unsigned int *data)
  {
  	struct addi_private *devpriv = dev->private;
+-	unsigned int ul_Command1 = 0;
++	unsigned int ul_Command1;
  
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_IRQ);	/* disable the interrupts */
--	inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_STATUS);	/* Reset the interrupt status register */
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1);	/* Disable the and/or interrupt */
-+	/* disable the interrupts */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_IRQ);
-+	/* Reset the interrupt status register */
-+	inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_STATUS);
-+	/* Disable the and/or interrupt */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
- 	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE2);
- 	devpriv->b_DigitalOutputRegister = 0;
- 	ui_Type = 0;
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP);	/* Resets the output channels */
--	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_INTERRUPT);	/* Disables the interrupt. */
-+	/* Resets the output channels */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP);
-+	/* Disables the interrupt. */
-+	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_INTERRUPT);
- 	outl(0x0,
- 		devpriv->i_IobaseAmcc + APCI1564_DIGITAL_OP_WATCHDOG +
- 		APCI1564_TCW_RELOAD_VALUE);
+ 	devpriv->tsk_Current = current;
+ 	if (data[0] == ADDIDATA_WATCHDOG) {
+@@ -462,7 +462,7 @@ static int i_APCI1564_StartStopWriteTimerCounterWatchdog(struct comedi_device *d
+ 							 unsigned int *data)
+ {
+ 	struct addi_private *devpriv = dev->private;
+-	unsigned int ul_Command1 = 0;
++	unsigned int ul_Command1;
+ 
+ 	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+ 		switch (data[1]) {
+@@ -560,7 +560,7 @@ static int i_APCI1564_ReadTimerCounterWatchdog(struct comedi_device *dev,
+ 					       unsigned int *data)
+ {
+ 	struct addi_private *devpriv = dev->private;
+-	unsigned int ul_Command1 = 0;
++	unsigned int ul_Command1;
+ 
+ 	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
+ 		/*  Stores the status of the Watchdog */
+@@ -658,7 +658,7 @@ static void v_APCI1564_Interrupt(int irq, void *d)
+ 	unsigned int ui_DO, ui_DI;
+ 	unsigned int ui_Timer;
+ 	unsigned int ui_C1, ui_C2, ui_C3, ui_C4;
+-	unsigned int ul_Command2 = 0;
++	unsigned int ul_Command2;
+ 
+ 	ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
+ 		APCI1564_DIGITAL_IP_IRQ) & 0x01;
 -- 
 1.8.5.3
 
