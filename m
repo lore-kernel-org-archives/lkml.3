@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbaB1Nwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:52:34 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:40277 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaB1Nwd (ORCPT
+	id S1752570AbaB1Nw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:52:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:17023 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751974AbaB1Nw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:52:33 -0500
-Message-ID: <5310949F.7000901@atmel.com>
-Date: Fri, 28 Feb 2014 14:52:31 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 28 Feb 2014 08:52:56 -0500
+Date: Fri, 28 Feb 2014 08:52:54 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/5] [GIT PULL] x86: Consolidate 32 and 64 bit
+ thead_info (again)
+Message-ID: <20140228085254.16aefb01@gandalf.local.home>
+In-Reply-To: <20140206144127.181568017@goodmis.org>
+References: <20140206144127.181568017@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>,
-        "'Herbert Xu'" <herbert@gondor.apana.org.au>
-CC: <linux-kernel@vger.kernel.org>, "'Peter Korsgaard'" <jacmet@sunsite.dk>
-Subject: Re: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
-References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-In-Reply-To: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/02/2014 06:00, Jingoo Han :
-> Use devm_clk_get() to make cleanup paths simpler.
+On Thu, 06 Feb 2014 09:41:27 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+HPA, Ping?
+
+-- Steve
+
+
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Thanks a lot.
-
-> ---
->  drivers/char/hw_random/atmel-rng.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
+> Peter,
 > 
-> diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-> index dfeddf2..851bc7e 100644
-> --- a/drivers/char/hw_random/atmel-rng.c
-> +++ b/drivers/char/hw_random/atmel-rng.c
-> @@ -63,13 +63,13 @@ static int atmel_trng_probe(struct platform_device *pdev)
->  	if (IS_ERR(trng->base))
->  		return PTR_ERR(trng->base);
->  
-> -	trng->clk = clk_get(&pdev->dev, NULL);
-> +	trng->clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(trng->clk))
->  		return PTR_ERR(trng->clk);
->  
->  	ret = clk_enable(trng->clk);
->  	if (ret)
-> -		goto err_enable;
-> +		return ret;
->  
->  	writel(TRNG_KEY | 1, trng->base + TRNG_CR);
->  	trng->rng.name = pdev->name;
-> @@ -85,9 +85,6 @@ static int atmel_trng_probe(struct platform_device *pdev)
->  
->  err_register:
->  	clk_disable(trng->clk);
-> -err_enable:
-> -	clk_put(trng->clk);
-> -
->  	return ret;
->  }
->  
-> @@ -99,7 +96,6 @@ static int atmel_trng_remove(struct platform_device *pdev)
->  
->  	writel(TRNG_KEY, trng->base + TRNG_CR);
->  	clk_disable(trng->clk);
-> -	clk_put(trng->clk);
->  
->  	return 0;
->  }
+> Back in August 2011, I had a pull request to make the irq stack of
+> i386 more like the x86_64 code. There seemed to be acceptance back
+> then and you said you would even pull it after the merge window.
+> But due to your travels it was forgotten (and I forgot about it too).
 > 
+> http://lkml.kernel.org/r/20110806011102.721109343@goodmis.org
+> 
+> I stumbled on these changes again and noticed that they were never
+> applied so I forward ported them with a few more adjustments.
+> 
+> Hopefully they are still worth pulling. This time I waited till after
+> the merge window to post :-)
+> 
+> Please pull the latest tip/x86/core tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/x86/core
+> 
+> Head SHA1: 3132e107d608f8753240d82d61303c500fd515b4
+> 237dfcadc93749ca5cdd2f683f887c3dcf3a0c04
+> 
+> 
+> Steven Rostedt (4):
+>       x86: Nuke the supervisor_stack field in i386 thread_info
+>       x86: Prepare removal of previous_esp from i386 thread_info structure
+>       x86: Keep thread_info on thread stack in x86_32
+>       x86: Clean up dumpstack_64.c code
+> 
+> Steven Rostedt (Red Hat) (1):
+>       x86: Nuke GET_THREAD_INFO_WITH_ESP() macro for i386
+> 
+> ----
+>  arch/x86/include/asm/processor.h   |   9 +++
+>  arch/x86/include/asm/thread_info.h |  52 ++---------------
+>  arch/x86/kernel/cpu/common.c       |   8 +--
+>  arch/x86/kernel/dumpstack_32.c     |  44 ++++++++++++--
+>  arch/x86/kernel/dumpstack_64.c     | 117 ++++++++++++++++++++++++++-----------
+>  arch/x86/kernel/irq_32.c           |  79 ++++++++++++-------------
+>  arch/x86/kernel/process_32.c       |   4 ++
+>  arch/x86/kernel/ptrace.c           |   8 +--
+>  arch/x86/kernel/smpboot.c          |   2 +-
+>  9 files changed, 188 insertions(+), 135 deletions(-)
 
-
--- 
-Nicolas Ferre
