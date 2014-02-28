@@ -1,85 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaB1A2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 19:28:20 -0500
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:47728 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751808AbaB1A1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 19:27:33 -0500
-From: Shuah Khan <shuah.kh@samsung.com>
-To: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, andy.grover@gmail.com,
-        valentina.manea.m@gmail.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: [PATCH 1/3] staging/usbip: add uapi header to export usbip kernel interfaces
-Date: Thu, 27 Feb 2014 17:27:25 -0700
-Message-Id: <10c9784313c5bafc6410b95cb3b569d5925eeaaa.1393542201.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1393542201.git.shuah.kh@samsung.com>
-References: <cover.1393542201.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1393542201.git.shuah.kh@samsung.com>
-References: <cover.1393542201.git.shuah.kh@samsung.com>
+	id S1751810AbaB1Abs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 19:31:48 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:59440 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750999AbaB1Abq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 19:31:46 -0500
+Date: Fri, 28 Feb 2014 02:31:29 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/2] mm: implement ->map_pages for page cache
+Message-ID: <20140228003129.GD8034@node.dhcp.inet.fi>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1393530827-25450-3-git-send-email-kirill.shutemov@linux.intel.com>
+ <20140227134711.329eb3c385098c8bce37c8d1@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227134711.329eb3c385098c8bce37c8d1@linux-foundation.org>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usbip userspace has duplicated enum definition to report usbip device
-status maintained by the kernel. Adding an usbip uapi header file will
-define the kernel - userspace interface for this device status.
+On Thu, Feb 27, 2014 at 01:47:11PM -0800, Andrew Morton wrote:
+> On Thu, 27 Feb 2014 21:53:47 +0200 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > filemap_map_pages() is generic implementation of ->map_pages() for
+> > filesystems who uses page cache.
+> > 
+> > It should be safe to use filemap_map_pages() for ->map_pages() if
+> > filesystem use filemap_fault() for ->fault().
+> > 
+> > ...
+> >
+> > --- a/include/linux/mm.h
+> > +++ b/include/linux/mm.h
+> > @@ -1818,6 +1818,7 @@ extern void truncate_inode_pages_range(struct address_space *,
+> >  
+> >  /* generic vm_area_ops exported for stackable file systems */
+> >  extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
+> > +extern void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf);
+> >  extern int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
+> >  
+> >  /* mm/page-writeback.c */
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index 7a13f6ac5421..1bc12a96060d 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -33,6 +33,7 @@
+> >  #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+> >  #include <linux/memcontrol.h>
+> >  #include <linux/cleancache.h>
+> > +#include <linux/rmap.h>
+> >  #include "internal.h"
+> >  
+> >  #define CREATE_TRACE_POINTS
+> > @@ -1726,6 +1727,76 @@ page_not_uptodate:
+> >  }
+> >  EXPORT_SYMBOL(filemap_fault);
+> >  
+> > +void filemap_map_pages(struct vm_area_struct *vma, struct vm_fault *vmf)
+> > +{
+> > +	struct radix_tree_iter iter;
+> > +	void **slot;
+> > +	struct file *file = vma->vm_file;
+> > +	struct address_space *mapping = file->f_mapping;
+> > +	loff_t size;
+> > +	struct page *page;
+> > +	unsigned long address = (unsigned long) vmf->virtual_address;
+> > +	unsigned long addr;
+> > +	pte_t *pte;
+> > +
+> > +	rcu_read_lock();
+> > +	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, vmf->pgoff) {
+> > +		if (iter.index > vmf->max_pgoff)
+> > +			break;
+> > +repeat:
+> > +		page = radix_tree_deref_slot(slot);
+> > +		if (radix_tree_exception(page)) {
+> > +			if (radix_tree_deref_retry(page))
+> > +				break;
+> > +			else
+> > +				goto next;
+> > +		}
+> > +
+> > +		if (!page_cache_get_speculative(page))
+> > +			goto repeat;
+> > +
+> > +		/* Has the page moved? */
+> > +		if (unlikely(page != *slot)) {
+> > +			page_cache_release(page);
+> > +			goto repeat;
+> > +		}
+> > +
+> > +		if (!PageUptodate(page) ||
+> > +				PageReadahead(page) ||
+> > +				PageHWPoison(page))
+> > +			goto skip;
+> > +		if (!trylock_page(page))
+> > +			goto skip;
+> > +
+> > +		if (page->mapping != mapping || !PageUptodate(page))
+> > +			goto unlock;
+> > +
+> > +		size = i_size_read(mapping->host) + PAGE_CACHE_SIZE - 1;
+> 
+> Could perhaps use round_up here.
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- include/uapi/linux/Kbuild  |    1 +
- include/uapi/linux/usbip.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
- create mode 100644 include/uapi/linux/usbip.h
+Okay, I'll update tomorrow.
 
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 3ce25b5..4fb4800 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -393,6 +393,7 @@ header-y += un.h
- header-y += unistd.h
- header-y += unix_diag.h
- header-y += usbdevice_fs.h
-+header-y += usbip.h
- header-y += utime.h
- header-y += utsname.h
- header-y += uuid.h
-diff --git a/include/uapi/linux/usbip.h b/include/uapi/linux/usbip.h
-new file mode 100644
-index 0000000..fa5db30
---- /dev/null
-+++ b/include/uapi/linux/usbip.h
-@@ -0,0 +1,26 @@
-+/*
-+ *	usbip.h
-+ *
-+ *	USBIP uapi defines and function prototypes etc.
-+*/
-+
-+#ifndef _UAPI_LINUX_USBIP_H
-+#define _UAPI_LINUX_USBIP_H
-+
-+/* usbip device status - exported in usbip device sysfs status */
-+enum usbip_device_status {
-+	/* sdev is available. */
-+	SDEV_ST_AVAILABLE = 0x01,
-+	/* sdev is now used. */
-+	SDEV_ST_USED,
-+	/* sdev is unusable because of a fatal error. */
-+	SDEV_ST_ERROR,
-+
-+	/* vdev does not connect a remote device. */
-+	VDEV_ST_NULL,
-+	/* vdev is used, but the USB address is not assigned yet */
-+	VDEV_ST_NOTASSIGNED,
-+	VDEV_ST_USED,
-+	VDEV_ST_ERROR
-+};
-+#endif /* _UAPI_LINUX_USBIP_H */
+> > +		if (page->index >= size	>> PAGE_CACHE_SHIFT)
+> > +			goto unlock;
+> > +		pte = vmf->pte + page->index - vmf->pgoff;
+> > +		if (!pte_none(*pte))
+> > +			goto unlock;
+> > +
+> > +		if (file->f_ra.mmap_miss > 0)
+> > +			file->f_ra.mmap_miss--;
+> 
+> I'm wondering about this.  We treat every speculative faultahead as a
+> hit, whether or not userspace will actually touch that page.
+> 
+> What's the effect of this?  To cause the amount of physical readahead
+> to increase?  But if userspace is in fact touching the file in a sparse
+> random fashion, that is exactly the wrong thing to do?
+
+IIUC, it will not increase readahead window: readahead recalculate the
+window when it hits PageReadahead() and we don't touch these pages.
+
+It can increase number of readahead retry before give up.
+
+I'm not sure what we should do here if anything. We could decrease
+->mmap_miss by half of mapped pages or something. But I think
+MMAP_LOTSAMISS is pretty arbitrary anyway.
+
+> 
+> > +		addr = address + (page->index - vmf->pgoff) * PAGE_SIZE;
+> > +		do_set_pte(vma, addr, page, pte, false, false);
+> > +		unlock_page(page);
+> > +		goto next;
+> > +unlock:
+> > +		unlock_page(page);
+> > +skip:
+> > +		page_cache_release(page);
+> > +next:
+> > +		if (page->index == vmf->max_pgoff)
+> > +			break;
+> > +	}
+> > +	rcu_read_unlock();
+> > +}
+> > +EXPORT_SYMBOL(filemap_map_pages);
+> > +
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.10.4
-
+ Kirill A. Shutemov
