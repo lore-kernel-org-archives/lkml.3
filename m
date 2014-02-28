@@ -1,145 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaB1QvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:51:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48138 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765AbaB1QvP (ORCPT
+	id S1753031AbaB1Qvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:51:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41745 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868AbaB1Qv1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:51:15 -0500
-Date: Fri, 28 Feb 2014 08:52:53 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: David Cohen <david.a.cohen@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] usb: phy: msm: use ASSIGN_*_PM_OPS variants
-Message-ID: <20140228165253.GA19872@kroah.com>
-References: <1393261707-30565-1-git-send-email-joshc@codeaurora.org>
- <1393261707-30565-4-git-send-email-joshc@codeaurora.org>
- <20140225183336.GH23275@saruman.home>
- <20140227190324.GC4421@kroah.com>
- <20140227234129.GA21032@psi-dev26.jf.intel.com>
- <20140227234425.GA32426@kroah.com>
- <CAPDyKFp3R=w6Vx6zCHZQJXgLgh=u5HdwmUcbgkbsGb=pVah9Mw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFp3R=w6Vx6zCHZQJXgLgh=u5HdwmUcbgkbsGb=pVah9Mw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 28 Feb 2014 11:51:27 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH v9 3/3] mmc: sdhci-msm: Add platform_execute_tunning implementation
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1393586675-14628-4-git-send-email-gdjakov@mm-sol.com>
+Date: Fri, 28 Feb 2014 10:51:19 -0600
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, ulf.hansson@linaro.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F9D8CFEF-1A3C-4B25-B593-419C56E3A168@codeaurora.org>
+References: <1393586675-14628-1-git-send-email-gdjakov@mm-sol.com> <1393586675-14628-4-git-send-email-gdjakov@mm-sol.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 09:48:08AM +0100, Ulf Hansson wrote:
-> On 28 February 2014 00:44, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Feb 27, 2014 at 03:41:31PM -0800, David Cohen wrote:
-> >> On Thu, Feb 27, 2014 at 11:03:24AM -0800, Greg Kroah-Hartman wrote:
-> >> > On Tue, Feb 25, 2014 at 12:33:36PM -0600, Felipe Balbi wrote:
-> >> > > Hi,
-> >> > >
-> >> > > On Mon, Feb 24, 2014 at 11:08:27AM -0600, Josh Cartwright wrote:
-> >> > > > Use ASSIGN_SYSTEM_SLEEP_PM_OPS and ASSIGN_RUNTIME_PM_OPS in the
-> >> > > > initializer for msm_otg_dev_pm_ops.  Doing so allows us to eliminate
-> >> > > > preprocessor conditionals around the specified callbacks.
-> >> > > >
-> >> > > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> >> > > > ---
-> >> > > >  drivers/usb/phy/phy-msm-usb.c | 13 +++----------
-> >> > > >  1 file changed, 3 insertions(+), 10 deletions(-)
-> >> > > >
-> >> > > > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-> >> > > > index 5b37b81..c04f2e3 100644
-> >> > > > --- a/drivers/usb/phy/phy-msm-usb.c
-> >> > > > +++ b/drivers/usb/phy/phy-msm-usb.c
-> >> > > > @@ -414,8 +414,6 @@ static int msm_otg_reset(struct usb_phy *phy)
-> >> > > >  #define PHY_SUSPEND_TIMEOUT_USEC       (500 * 1000)
-> >> > > >  #define PHY_RESUME_TIMEOUT_USEC        (100 * 1000)
-> >> > > >
-> >> > > > -#ifdef CONFIG_PM
-> >> > > > -
-> >> > > >  #define USB_PHY_SUSP_DIG_VOL  500000
-> >> > > >  static int msm_hsusb_config_vddcx(int high)
-> >> > > >  {
-> >> > > > @@ -609,7 +607,6 @@ skip_phy_resume:
-> >> > > >
-> >> > > >         return 0;
-> >> > > >  }
-> >> > > > -#endif
-> >> > > >
-> >> > > >  static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
-> >> > > >  {
-> >> > > > @@ -1664,7 +1661,6 @@ static int msm_otg_remove(struct platform_device *pdev)
-> >> > > >         return 0;
-> >> > > >  }
-> >> > > >
-> >> > > > -#ifdef CONFIG_PM_RUNTIME
-> >> > > >  static int msm_otg_runtime_idle(struct device *dev)
-> >> > > >  {
-> >> > > >         struct msm_otg *motg = dev_get_drvdata(dev);
-> >> > > > @@ -1699,9 +1695,7 @@ static int msm_otg_runtime_resume(struct device *dev)
-> >> > > >         dev_dbg(dev, "OTG runtime resume\n");
-> >> > > >         return msm_otg_resume(motg);
-> >> > > >  }
-> >> > > > -#endif
-> >> > > >
-> >> > > > -#ifdef CONFIG_PM_SLEEP
-> >> > > >  static int msm_otg_pm_suspend(struct device *dev)
-> >> > > >  {
-> >> > > >         struct msm_otg *motg = dev_get_drvdata(dev);
-> >> > > > @@ -1731,12 +1725,11 @@ static int msm_otg_pm_resume(struct device *dev)
-> >> > > >
-> >> > > >         return 0;
-> >> > > >  }
-> >> > > > -#endif
-> >> > > >
-> >> > > >  static const struct dev_pm_ops msm_otg_dev_pm_ops = {
-> >> > > > -       SET_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
-> >> > > > -       SET_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
-> >> > > > -                               msm_otg_runtime_idle)
-> >> > > > +       ASSIGN_SYSTEM_SLEEP_PM_OPS(msm_otg_pm_suspend, msm_otg_pm_resume)
-> >> > > > +       ASSIGN_RUNTIME_PM_OPS(msm_otg_runtime_suspend, msm_otg_runtime_resume,
-> >> > > > +                             msm_otg_runtime_idle)
-> >> > >
-> >> > > if the patch introducing assign_if() gets accepted, I'm ok with this
-> >> > > patch.
-> >> >
-> >> > I can't take that patch at this point in time, it's just too ugly...
-> >> >
-> >> > As are those crazy SET_SYSTEM_SLEEP_PM_OPS() macros, ick, who made those
-> >> > things?
-> >> >
-> >> > What language are we trying to program in here people?
-> >>
-> >> Since we're discussing this topic here, I'd like point my RFC which gets
-> >> rid of same ifdeffery in a different way:
-> >> http://lkml.org/lkml/2013/12/13/4
-> >
-> > Again, why can't we just always define these fields in the structure,
-> > then we don't need any crazy, complicated mess for assigning the
-> > function pointers?
-> >
-> > Again, the odds that this config option is ever disabled in "real"
-> > systems is so low these days, I have half a mind just to rip it out
-> > entirely as the amount of work spent on compiler warnings and the like
-> > in this area has proably offset any power savings the code was supposed
-> > to save on systems :(
+
+On Feb 28, 2014, at 5:24 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+
+> This patch adds implementation for platform specific tuning in order to support
+> HS200 bus speed mode on Qualcomm SDHCI controller.
 > 
-> Your point is certainly valid. I suppose the footprint of the kernel
-> is nothing we should bother about? We have other solutions for that,
-> right?
+> Signed-off-by: Asutosh Das <asutoshd@codeaurora.org>
+> Signed-off-by: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+> drivers/mmc/host/sdhci-msm.c |  424 +++++++++++++++++++++++++++++++++++++++++-
+> 1 file changed, 418 insertions(+), 6 deletions(-)
 
-What does the "footprint of the kernel" have to do with an option that
-everyone enables as they want/need the functionality?  You are only
-talking about saving size for systems that do not exist.  Do you know of
-any commen system that cares about size and yet not power that would be
-affected by this change?
+minor nit, in subject (platform_execute_tuning, with one ’n’).
 
-And exactly how much "size" are we talking about here?  Did the
-available memory size for new chips just increase more in me writing
-this email than the size that this proposed patch would have offset?
+- k
 
-greg k-h
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
