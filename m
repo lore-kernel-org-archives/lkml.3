@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaB1B6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 20:58:46 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36814 "EHLO
+	id S1752258AbaB1B4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 20:56:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36051 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaB1B6n (ORCPT
+	with ESMTP id S1752040AbaB1BzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 20:58:43 -0500
-From: Saravana Kannan <skannan@codeaurora.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+	Thu, 27 Feb 2014 20:55:25 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        "Saravana Kannan" <skannan@codeaurora.org>
-Subject: [PATCH v3 3/3] cpufreq: stats: Refactor common code into __cpufreq_stats_create_table()
-Date: Thu, 27 Feb 2014 17:58:36 -0800
-Message-Id: <1393552716-9754-3-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org
+Subject: [PATCH v4 6/9] Input: pm8xxx-vibrator - Add DT match table
+Date: Thu, 27 Feb 2014 17:55:17 -0800
+Message-Id: <1393552520-9068-7-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq_frequency_get_table() is called from all callers of
-__cpufreq_stats_create_table(). So, move it inside.
+The driver is only supported on DT enabled platforms. Convert the
+driver to DT so that it can probe properly.
 
-Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/cpufreq/cpufreq_stats.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ drivers/input/misc/pm8xxx-vibrator.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index c52b440..eb214d8 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -180,13 +180,18 @@ static void cpufreq_stats_free_table(unsigned int cpu)
- 	cpufreq_cpu_put(policy);
+diff --git a/drivers/input/misc/pm8xxx-vibrator.c b/drivers/input/misc/pm8xxx-vibrator.c
+index b88b7cbf93e2..5079bc54c3aa 100644
+--- a/drivers/input/misc/pm8xxx-vibrator.c
++++ b/drivers/input/misc/pm8xxx-vibrator.c
+@@ -141,6 +141,13 @@ static int pm8xxx_vib_play_effect(struct input_dev *dev, void *data,
+ 	return 0;
  }
  
--static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
--		struct cpufreq_frequency_table *table)
-+static int __cpufreq_stats_create_table(struct cpufreq_policy *policy)
- {
- 	unsigned int i, j, count = 0, ret = 0;
- 	struct cpufreq_stats *stat;
- 	unsigned int alloc_size;
- 	unsigned int cpu = policy->cpu;
-+	struct cpufreq_frequency_table *table;
++static const struct of_device_id pm8xxx_vib_id_table[] = {
++	{ .compatible = "qcom,pm8058-vib" },
++	{ .compatible = "qcom,pm8921-vib" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pm8xxx_vib_id_table);
 +
-+	table = cpufreq_frequency_get_table(cpu);
-+	if (unlikely(!table))
-+		return 0;
-+
- 	if (per_cpu(cpufreq_stats_table, cpu))
- 		return -EBUSY;
- 	stat = kzalloc(sizeof(*stat), GFP_KERNEL);
-@@ -248,7 +253,6 @@ error_out:
- static void cpufreq_stats_create_table(unsigned int cpu)
+ static int pm8xxx_vib_probe(struct platform_device *pdev)
+ 
  {
- 	struct cpufreq_policy *policy;
--	struct cpufreq_frequency_table *table;
- 
- 	/*
- 	 * "likely(!policy)" because normally cpufreq_stats will be registered
-@@ -258,9 +262,7 @@ static void cpufreq_stats_create_table(unsigned int cpu)
- 	if (likely(!policy))
- 		return;
- 
--	table = cpufreq_frequency_get_table(policy->cpu);
--	if (likely(table))
--		__cpufreq_stats_create_table(policy, table);
-+	__cpufreq_stats_create_table(policy);
- 
- 	cpufreq_cpu_put(policy);
- }
-@@ -283,20 +285,14 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
- {
- 	int ret = 0;
- 	struct cpufreq_policy *policy = data;
--	struct cpufreq_frequency_table *table;
--	unsigned int cpu = policy->cpu;
- 
- 	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
- 		cpufreq_stats_update_policy_cpu(policy);
- 		return 0;
- 	}
- 
--	table = cpufreq_frequency_get_table(cpu);
--	if (!table)
--		return 0;
--
- 	if (val == CPUFREQ_CREATE_POLICY)
--		ret = __cpufreq_stats_create_table(policy, table);
-+		ret = __cpufreq_stats_create_table(policy);
- 	else if (val == CPUFREQ_REMOVE_POLICY)
- 		__cpufreq_stats_free_table(policy);
- 
+@@ -220,6 +227,7 @@ static struct platform_driver pm8xxx_vib_driver = {
+ 		.name	= "pm8xxx-vib",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &pm8xxx_vib_pm_ops,
++		.of_match_table = pm8xxx_vib_id_table,
+ 	},
+ };
+ module_platform_driver(pm8xxx_vib_driver);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
