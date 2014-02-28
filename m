@@ -1,128 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaB1Nch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:32:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35231 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaB1Ncf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:32:35 -0500
-Message-ID: <53108FE6.80405@pengutronix.de>
-Date: Fri, 28 Feb 2014 14:32:22 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
-MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local> <530DEA7C.6010609@pengutronix.de> <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local> <530E0B92.5010903@pengutronix.de> <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local> <53104995.4010305@pengutronix.de> <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local> <53108798.7090902@pengutronix.de> <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local> <53108BEF.1020308@pengutronix.de> <f7b303dd-bf23-40f2-bbd4-4594cba8f345@CO9EHSMHS026.ehs.local>
-In-Reply-To: <f7b303dd-bf23-40f2-bbd4-4594cba8f345@CO9EHSMHS026.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752240AbaB1NdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:33:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43325 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904AbaB1NdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 08:33:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,561,1389772800"; 
+   d="scan'208";a="491554173"
+Message-ID: <1393594391.28803.79.camel@smile.fi.intel.com>
+Subject: Re: [PATCH 4/5] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Date: Fri, 28 Feb 2014 15:33:11 +0200
+In-Reply-To: <20140228103614.GM607@lukather>
+References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
+	 <1393258967-4843-5-git-send-email-maxime.ripard@free-electrons.com>
+	 <1393327695.28803.25.camel@smile.fi.intel.com>
+	 <20140228103614.GM607@lukather>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-02-28 at 11:36 +0100, Maxime Ripard wrote:
+> Hi Andy,
+> 
+> On Tue, Feb 25, 2014 at 01:28:15PM +0200, Andy Shevchenko wrote:
+> > > +static irqreturn_t sun6i_dma_interrupt(int irq, void *dev_id)
+> > > +{
+> > > +	struct sun6i_dma_dev *sdev = (struct sun6i_dma_dev *)dev_id;
+> > > +	struct sun6i_vchan *vchan;
+> > > +	struct sun6i_pchan *pchan;
+> > > +	int i, j, ret = 0;
+> > > +	u32 status;
+> > > +
+> > > +	for (i = 0; i < 2; i++) {
+> > > +		status = readl(sdev->base + DMA_IRQ_STAT(i));
+> > > +		if (!status) {
+> > > +			ret |= IRQ_NONE;
+> > 
+> > Maybe move this to definition block.
+> > 
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		dev_dbg(sdev->slave.dev, "DMA irq status %s: 0x%x\n",
+> > > +			i ? "high" : "low", status);
+> > > +
+> > > +		writel(status, sdev->base + DMA_IRQ_STAT(i));
+> > > +
+> > > +		for (j = 0; (j < 8) && status; j++) {
+> > > +			if (status & DMA_IRQ_QUEUE) {
+> > > +				pchan = sdev->pchans + j;
+> > > +				vchan = pchan->vchan;
+> > > +
+> > > +				if (vchan) {
+> > > +					unsigned long flags;
+> > > +
+> > > +					spin_lock_irqsave(&vchan->vc.lock,
+> > > +							  flags);
+> > > +					vchan_cookie_complete(&pchan->desc->vd);
+> > > +					pchan->done = pchan->desc;
+> > > +					spin_unlock_irqrestore(&vchan->vc.lock,
+> > > +							       flags);
+> > > +				}
+> > > +			}
+> > > +
+> > > +			status = status >> 4;
+> > > +		}
+> > > +
+> > > +		ret |= IRQ_HANDLED;
+> > 
+> > In case one is handled, another is not, what you have to do?
+> 
+> The interrupt status is split across two registers. In the case where
+> one of the two register reports an interrupt, we still have to handle
+> our interrupt, we actually did, so we have to return IRQ_HANDLED.
 
-On 02/28/2014 02:27 PM, Appana Durga Kedareswara Rao wrote:
+You removed the code below this assignment, but if I remember correctly
+you check for exact value there.
 
->> -----Original Message-----
->> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
->> Sent: Friday, February 28, 2014 6:45 PM
->> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
->> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org=
-
->> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linu=
-x-
->> kernel@vger.kernel.org; devicetree@vger.kernel.org
->> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
->>
->> On 02/28/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
->>>>>> What happens if the interrupt handler is delayed? For example in a=
-
->>>>>> RT enabled system the interrupt handler runs as a thread. There
->>>>>> might be other threads with higher priority. The hardware will
->>>>>> probably send all CAN frames in the FIFO, so you want to reduce th=
-e
->>>>>> overhead and loop in the tx complete handler.
->>>>>>
->>>>> Yes I agree with your comment.
->>>>> It will be good to have a loop in the Tx interrupt handler I am
->>>>> modifying the Tx interrupt handler like below.
->>>>>
->>>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
->>>>>         struct xcan_priv *priv =3D netdev_priv(ndev);
->>>>>         struct net_device_stats *stats =3D &ndev->stats;
->>>>>
->>>>>         while (priv->tx_head - priv->tx_tail > 0) {
->>>>>                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
->>>>>                         break;
->>>>>                 }
->>>>>                 can_get_echo_skb(ndev, priv->tx_tail %
->>>>>                                         priv->xcan_echo_skb_max_tx)=
-;
->>>>>                 priv->tx_tail++;
->>>>>                 stats->tx_packets++;
->>>>>                 can_led_event(ndev, CAN_LED_EVENT_TX);
->>
->> Probably first clear the interrupt, because you've just handled it, th=
-en check
->> if it's still present. The question is, do you have to clear the IRQ f=
-or each
->> transmitted frame, or does one clean of the interrupt clear the bit fo=
-r more
->> then one transmitted frame?
->>
->=20
-> We already were clearing it in the interrupt routine
-> (xcan_interrupt). That's why clearing it at the end of the loop. We
-> have to clear the IRQ (TXOK) for each transmitted frame.
-
-Please move the clear into the loop. Then it's all in one place. Good
-that you have to clear the bit for each transmitted frame. I think,
-we're almost done :) When I'm okay with the driver, let Wolfgang have a
-look at the error handling.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+In case of one is not handled and the other is handled you will have ret
+= IRQ_HANDLED | IRQ_NONE. Thus, your following code will not be
+executed. Is it by design?
 
 
---4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
-iEYEARECAAYFAlMQj+YACgkQjTAFq1RaXHPxEQCdFOpBeFoC9vm/5oStNOK/07cd
-I+MAnjpuCqb7t0byrHGqEwjPN3VVV3GU
-=UJdI
------END PGP SIGNATURE-----
-
---4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm--
