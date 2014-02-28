@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaB1U7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:59:31 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64734 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaB1U72 (ORCPT
+	id S1752347AbaB1VBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:01:46 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:53398 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751814AbaB1VBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:59:28 -0500
+	Fri, 28 Feb 2014 16:01:45 -0500
+Date: Fri, 28 Feb 2014 16:01:39 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH] x86: Rename copy_from_user_nmi() to
+ copy_from_user_trace()
+Message-ID: <20140228160139.3762b511@gandalf.local.home>
+In-Reply-To: <20140228204621.GA14089@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+	<20140227215726.7018c861@gandalf.local.home>
+	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+	<20140228092341.12a40f7c@gandalf.local.home>
+	<alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+	<1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+	<20140228154026.GH9987@twins.programming.kicks-ass.net>
+	<5310B60F.30806@zytor.com>
+	<20140228112946.1f194397@gandalf.local.home>
+	<20140228143316.211d4034@gandalf.local.home>
+	<20140228204621.GA14089@laptop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
-References: <1393375569-21751-1-git-send-email-sre@debian.org>
-	<1393375569-21751-2-git-send-email-sre@debian.org>
-	<CAAfyv37B=xn3AktnUxPDpuey+5S73vW0PJnuUZtorP4rajPKiw@mail.gmail.com>
-	<20140226215452.GA11468@earth.universe>
-	<CAAfyv340pA2ihUAoFytBgevLtedvtj5Z0aw_=G9Rbx5occtyqw@mail.gmail.com>
-	<20140228020536.GB5427@earth.universe>
-	<CAAfyv36jJoMxZQ5e43pEC2rzNBHHW9Jt_4dg5O-fS8e+Aim7jA@mail.gmail.com>
-Date: Fri, 28 Feb 2014 21:59:28 +0100
-Message-ID: <CAAfyv345wNTquDcxPRZGU6_9QQkPJvY4YRd=PJo549_-Yif8Ag@mail.gmail.com>
-Subject: Re: [PATCHv1 1/2] rx51_battery: convert to iio consumer
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jonathan Cameron <jic23@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-iio@vger.kernel.org,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 9:32 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
-> Hi Sebastian,
->
-> On Fri, Feb 28, 2014 at 3:05 AM, Sebastian Reichel <sre@debian.org> wrote:
->> On Thu, Feb 27, 2014 at 10:34:35PM +0100, Belisko Marek wrote:
->>> Well I've tried and it's worse :). I got during booting:
->>> [    2.218383] ERROR: could not get IIO channel /battery:temp(0)
->>> [    2.224639] platform battery.4: Driver twl4030_madc_battery
->>> requests probe deferral
->>> Not sure if it's just error or warning but temp is always reported as
->>> 0 (and also other values in sysfs).
->>
->> This is an error, which basically means, that twl4030-madc has not
->> yet been loaded. Do you get proper values when you use the old madc
->> API with the patchset applied?
-> It works without converting to iio consumer (at least I get some
-> reasonable values).
-> With conversion it fails with above error. I recheck (add printk to
-> iio twl4030-madc) that
-> madc driver is loaded. Could this be that twl4030_madc_battery is
-> loaded earlier then
-> twl4030_madc and than it fails to get iio channels?
-Hmm I wasn't far away from truth in previous email. I think that channel doesn't
-exists because twl4030_madc driver isn't loaded yet and that is the
-reason for deferral probe
-message in log. So it seems after some time it is loaded correctly but
-not working. No ideas.
->>
->> -- Sebastian
->
-> BR,
->
-> marek
->
-> --
-> as simple and primitive as possible
-> -------------------------------------------------
-> Marek Belisko - OPEN-NANDRA
-> Freelance Developer
->
-> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-> Tel: +421 915 052 184
-> skype: marekwhite
-> twitter: #opennandra
-> web: http://open-nandra.com
+On Fri, 28 Feb 2014 21:46:21 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-BR,
+> NAK, spin_lock_irq() is very much an IRQ safe lock. Similarly
 
-marek
+Actually, that's not true. It doesn't mean it is an IRQ safe lock. That
+would mean it is safe to use in IRQs. What it does mean is that it
+disables irqs and spin_unlock_irq() enables irqs. And we have
+spin_lock_irqsave() which disables irqs and saves the flags for a
+spin_lock_irqrestore()
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+> copy_from_user_nmi() is an NMI safe copy from user.
+> 
+> Furthermore, there's exactly 0 trace users, so the proposed name is
+> actively worse.
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+OK, I'll go with that. So instead of an _nmi() which it has nothing to
+do with NMIs, how about making it like spin_lock_irq() and a more
+descriptive name about what it does?
+
+ copy_from_user_savecr2()
+
+?
+
+-- Steve
+
