@@ -1,121 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaB1DHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 22:07:48 -0500
-Received: from mga14.intel.com ([143.182.124.37]:47541 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007AbaB1DHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 22:07:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
-   d="scan'208";a="414440016"
-Date: Fri, 28 Feb 2014 08:37:27 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140228030727.GB27921@jenny-desktop>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
- <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
- <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
+	id S1751680AbaB1DVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 22:21:12 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:7316 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaB1DVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 22:21:06 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 27 Feb 2014 19:18:22 -0800
+Message-ID: <531000A6.1010709@nvidia.com>
+Date: Fri, 28 Feb 2014 11:21:10 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] hwmon: (lm90) split set&show temp as common codes
+References: <1393309301-28337-1-git-send-email-wni@nvidia.com> <1393309301-28337-2-git-send-email-wni@nvidia.com> <530C391B.5090206@roeck-us.net> <530C527F.1020806@nvidia.com> <530C5AE8.8010709@roeck-us.net> <530C60A4.5040302@nvidia.com> <20140225160653.GA18768@roeck-us.net>
+In-Reply-To: <20140225160653.GA18768@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 09:18:57PM +0100, Linus Walleij wrote:
-> On Tue, Feb 4, 2014 at 6:12 AM, Jenny TC <jenny.tc@intel.com> wrote:
-> 
-> > +static inline bool __is_battery_full
-> > +       (long volt, long cur, long iterm, unsigned long cv)
-> 
-> Overall I wonder if you've run checkpatch on these patches, but why
-> are you naming this one function with a double __underscore?
-> Just is_battery_full_check() or something would work fine I guess?
+On 02/26/2014 12:06 AM, Guenter Roeck wrote:
+> On Tue, Feb 25, 2014 at 05:21:40PM +0800, Wei Ni wrote:
+>> On 02/25/2014 04:57 PM, Guenter Roeck wrote:
+>>> On 02/25/2014 12:21 AM, Wei Ni wrote:
+>>>> On 02/25/2014 02:32 PM, Guenter Roeck wrote:
+>>>>> On 02/24/2014 10:21 PM, Wei Ni wrote:
+>>>>>> Split set&show temp codes as common functions, so we can use it
+>>>>>> directly when implement linux thermal framework.
+>>>>>> And handle error return value for the lm90_select_remote_channel
+>>>>>> and write_tempx, then set_temp8 and set_temp11 could return it
+>>>>>> to user-space.
+>>>>>>
+>>>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>>>> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+>>>>>> ---
+>>>>>>    drivers/hwmon/lm90.c |  170 ++++++++++++++++++++++++++++++++++----------------
+>>>>>>    1 file changed, 115 insertions(+), 55 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>>>>>> index c9ff08d..fb9e224 100644
+>>>>>> --- a/drivers/hwmon/lm90.c
+>>>>>> +++ b/drivers/hwmon/lm90.c
+>>>>>> @@ -473,20 +473,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+>>>>>>     * various registers have different meanings as a result of selecting a
+>>>>>>     * non-default remote channel.
+>>>>>>     */
+>>>>>> -static inline void lm90_select_remote_channel(struct i2c_client *client,
+>>>>>> -					      struct lm90_data *data,
+>>>>>> -					      int channel)
+>>>>>> +static inline int lm90_select_remote_channel(struct i2c_client *client,
+>>>>>> +					     struct lm90_data *data,
+>>>>>> +					     int channel)
+>>>>>>    {
+>>>>>>    	u8 config;
+>>>>>> +	int err;
+>>>>>>
+>>>>>>    	if (data->kind == max6696) {
+>>>>>>    		lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+>>>>>>    		config &= ~0x08;
+>>>>>>    		if (channel)
+>>>>>>    			config |= 0x08;
+>>>>>> -		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>>>>>> -					  config);
+>>>>>> +		err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>>>>>> +						config);
+>>>>>> +		if (err < 0) {
+>>>>>> +			dev_err(&client->dev,
+>>>>>> +				"Failed to select remote channel %d, err %d\n",
+>>>>>> +				channel, err);
+>>>>>> +			return err;
+>>>>>
+>>>>> Not my call to make, but I really dislike all that new noisiness.
+>>>>> Sure, it is ok to pass the error back, but in my opinion that is
+>>>>> good enough. If every driver in the kernel would be that noisy,
+>>>>> the log would be all but useless.
+>>>>
+>>>> This was discussed in https://lkml.org/lkml/2013/12/227
+>>>> Jean wish to catch and return write errors,then the set_temp8() could
+>>>> return error to user-space.
+>>>>
+>>>
+>>> The link doesn't work for me. Anyway, catching write errors and being
+>>> noisy about it are different issues, and I am a bit surprised that
+>>> Jean wants the driver to be noisy about it, but if so I won't object.
+>>
+>> Sorry, the link should be https://lkml.org/lkml/2013/7/12/227
+>>
+> FWIW, Jean was asking for errors to be detected and be reported to the user,
+> not to create log messages to the console for each error.
 
-Just to convey that is_battery_full is a local function and not generic. You
-can find similar usage in power_supply_core.c (__power_supply_changed_work)
-and in other drivers. Isn't it advised to have __ prefixes?
-> (...)
-> > +/* Parameters defining the charging range */
-> > +struct psy_ps_temp_chg_table {
-> > +       /* upper temperature limit for each zone */
-> > +       short int temp_up_lim; /* Degree Celsius */
-> > +
-> > +       /* charge current and voltage */
-> > +       short int full_chrg_vol; /* mV */
-> > +       short int full_chrg_cur; /* mA */
-> > +
-> > +       /*
-> > +       *  Maintenance charging thresholds.
-> > +       *  Maintenance charging voltage lower limit - Once battery hits full,
-> > +       *  charging will be resumed when battery voltage <= this voltage
-> > +       */
-> > +       short int maint_chrg_vol_ll; /* mV */
-> > +
-> > +       /* Charge current and voltage in maintenance charging mode */
-> > +       short int maint_chrg_vol_ul; /* mV */
-> > +       short int maint_chrg_cur;   /* mA */
-> > +} __packed;
-> 
-> Why are you packing these structs? If no real reason, remove it.
-> The compiler will pack what it thinks is appropriate anyway.
+Sorry for late reply, I'm busy on other issues these days.
+I will remove that log messages, and will try to add this node in dts
+file for our tegra board.
+I will send out patch next week.
 
-The structure is part of the  battery charging profile which can be read directly
-from an EEPROM or from secondary storage (emmc). So it should be packed to keep
-it align with the stored format.
+Wei.
 
-> > +#define BATTID_STR_LEN         8
-> > +#define BATT_TEMP_NR_RNG       6
-> > +
-> > +struct psy_pse_chrg_prof {
-> > +       /* battery id */
-> > +       char batt_id[BATTID_STR_LEN];
-> > +       u16 battery_type; /* Defined as POWER_SUPPLY_TECHNOLOGY_* */
 > 
-> Use a named enum by patching that in <linux/power_supply.h>?
+> Guenter
+> 
 
-This is to convey that battery_type takes value as defined by
-POWER_SUPPLY_TECHNOLOGY_*
-> 
-> > +       u16 capacity;   /* mAh */
-> > +       u16 voltage_max; /* mV */
-> > +       /* charge termination current */
-> > +       u16 chrg_term_mA;
-> > +       /* Low battery level voltage */
-> > +       u16 low_batt_mV;
-> > +       /* upper and lower temperature limits on discharging */
-> > +       s8 disch_temp_ul; /* Degree Celsius */
-> > +       s8 disch_temp_ll; /* Degree Celsius */
-> > +       /* number of temperature monitoring ranges */
-> > +       u16 temp_mon_ranges;
-> > +       struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
-> > +       /* lowest temperature supported */
-> > +       s8 temp_low_lim;
-> > +} __packed;
-> 
-> Why packed, and convert to kerneldoc for this struct.
-
-Battery charging profile, may come from EEPROM/emmc which would be packed.
