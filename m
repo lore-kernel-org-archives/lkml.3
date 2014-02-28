@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaB1Gfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 01:35:42 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62323 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750750AbaB1Gfk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 01:35:40 -0500
-Message-ID: <53102EE4.80702@metafoo.de>
-Date: Fri, 28 Feb 2014 07:38:28 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-CC: Mark Brown <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
- regmap.
-References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com> <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com> <20140228035244.GJ9383@sirena.org.uk> <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com> <20140228052904.GP9383@sirena.org.uk> <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
-In-Reply-To: <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751956AbaB1GiO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 01:38:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1336 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184AbaB1GiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 01:38:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,560,1389772800"; 
+   d="scan'208";a="489716930"
+From: shuox.liu@intel.com
+To: linux-kernel@vger.kernel.org
+Cc: tony.luck@intel.com, keescook@chromium.org, ccross@android.com,
+        anton@enomsg.org, yanmin_zhang@linux.intel.com
+Subject: [PATCH] pstore: reset ftrace_read_cnt at ramoops_pstore_open
+Date: Fri, 28 Feb 2014 14:37:44 +0800
+Message-Id: <1393569464-14904-1-git-send-email-shuox.liu@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 06:56 AM, Li.Xiubo@freescale.com wrote:
->> Subject: Re: [PATCH 2/3] ASoC: core: Set the default I/O up try regmap.
->>
->> On Fri, Feb 28, 2014 at 04:00:38AM +0000, Li.Xiubo@freescale.com wrote:
->>
->>> I'll send another patches to applied to use this for another CODEC drivers.
->>> And there almost 80 files, Should I send them in one patch or split them
->> into
->>> individual patch for each CODEC driver ?
->>
->> I'd suggest doing one patch that covers the boring drivers where the
->> first thing they do is call set_cache_io() but split out the others into
->> one patch per driver since the need more examination.
->
-> Got it.
+From: Liu ShuoX <shuox.liu@intel.com>
 
-Btw. be careful, just removing the set_cache_io() call will not work for all 
-drivers. There are some MFD child devices which use regmap from the parent 
-device. So dev_get_regmap() will return NULL for those.
+ftrace_read_cnt need to be reset in open to support mutli times
+getting the records.
 
-- Lars
+Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+---
+ fs/pstore/ram.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index fa8cef2..a5d0cab 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -101,6 +101,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
+ 
+ 	cxt->dump_read_cnt = 0;
+ 	cxt->console_read_cnt = 0;
++	cxt->ftrace_read_cnt = 0;
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.2
 
