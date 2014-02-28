@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbaB1Hct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:32:49 -0500
-Received: from nm9-vm9.bullet.mail.gq1.yahoo.com ([98.136.218.248]:50065 "EHLO
-	nm9-vm9.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751297AbaB1Hcs (ORCPT
+	id S1751791AbaB1Hdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:33:45 -0500
+Received: from www84.your-server.de ([213.133.104.84]:41001 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaB1Hdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:32:48 -0500
-X-Yahoo-Newman-Id: 839489.50317.bm@smtp213.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jDPISQsVM1kxZ1G6PodYUIyAMUeskQJRYqNmL85BUC28SQf
- .cEuUDKL_e4RdUYGvlBpEsW6kWNsTYan2Uzu0hba_8l0jc1DWktT781vR0eI
- foJnuEOPvnYfL2BroZo.3ho.ncQy4zSYj6G94WfLv2AMPYgnoR6Gg0gok0B2
- n2PGS8rDBaLUqOvbJga4RHeqXMMQouw0ilWoKI2zG.dCuJ6f8ehBWXpVB.N1
- u2la_p_Lf8KiL2o5p.ZEnp9OSNZJsNZZNcvvqnR1ePjwm3L05HFCJ8ftJ7Q8
- MufFRVW7mwj7nPEYxqM3jNDbmmW9fi1hjSfjcPwc5EYYFe8daDGFTEqXiA6B
- d9vkKXovwT2SFPJgNWmq7JtFf1TQ1aP4whMklzBkcUKMUA2HYreVFrMkkGB1
- d0PIbmFRZHQ9jCr0IWXNaY1Q9Th0.FFih8mkEQa8XWIrmGsUXg1uots_xcPC
- DJ7WhR6Fhp6bNR9Czz5UeVV5UJHWcfCguxm7yyVtPx8uhLGcM4SQlpXaEX9D
- Tay1f3h0X1SYcjiYTpai6Nrp2B2nBjEvmxyBV
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.129.102.163 with plain [98.139.211.125])
-        by smtp213.mail.gq1.yahoo.com with SMTP; 28 Feb 2014 07:32:47 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH 2/2] Staging: comedi: addi-data: remove unnecessary variable initializations in hwdrv_apci1564.c
-Date: Fri, 28 Feb 2014 01:32:41 -0600
-Message-Id: <1393572761-9614-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
+	Fri, 28 Feb 2014 02:33:44 -0500
+Message-ID: <1393572804.1019.14.camel@wall-e.seibold.net>
+Subject: Re: [PATCH v2 0/4] vDSO fixes, on top of tip/x86/vdso
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Fri, 28 Feb 2014 08:33:24 +0100
+In-Reply-To: <cover.1393545985.git.luto@amacapital.net>
+References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+	 <cover.1393545985.git.luto@amacapital.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A handful of variables here were being initialized to 0 upon declaration,
-however they are always then set to another value before their first use,
-so initialization here is useless and we can remove it.
+Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
+> I'd still like someone else to confirm that the 32-bit vDSO is working
+> on all common configurations before I'm happy with it, but this should
+> be a considerable improvement.
+> 
+> Someone who maintains the clock code should review the changes in:
+> 
+>     commit 0fc8a237cbe98a06962f5ea37d24fc2369e23c74
+>     Author: Stefani Seibold <stefani@seibold.net>
+>     Date:   Wed Feb 19 10:09:10 2014 +0100
+>     
+>         x86, vdso: Add 32-bit VDSO time support for the 64-bit kernel
+> 
+> very carefully.
+> 
+> There's still something extremely questionable about VDSO_PAGES in the
+> 32-bit vDSO code.  It appears to be terminally screwed up, and AFAICS it
+> only works at all because none of the 32-bit vDSO images ever exceed
+> 4096 bytes.
+> 
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
- drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+The 4096 bytes limit was not introduced by the patch set. It is still
+there for compatibility reason.
+ 
+> Note: Patch 4 fixes a bug that's present even in -linus, so it might
+> make sense to send it to Linus more quickly than the rest of this
+> series.
+> 
+> Changes from v1:
+>  - Adjust CFLAGS instead of using asmlinkage.
+>  - Add more fixes.
+> 
+> Andy Lutomirski (4):
+>   x86: Use the default ABI for the 32-bit vDSO
+>   x86: Inline the CLOCK_MONOTONIC vdso code
+>   x86: Patch alternatives in the 32-bit vDSO
+>   x86: Zero-pad the VVAR page
+> 
+>  arch/x86/include/asm/vdso.h    |  2 ++
+>  arch/x86/kernel/vmlinux.lds.S  |  5 +++++
+>  arch/x86/vdso/Makefile         |  2 +-
+>  arch/x86/vdso/vclock_gettime.c |  2 +-
+>  arch/x86/vdso/vdso32-setup.c   | 25 +++++++++++++------------
+>  arch/x86/vdso/vma.c            |  9 ++++++---
+>  6 files changed, 28 insertions(+), 17 deletions(-)
+> 
 
-diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 968e26c..83e4a41 100644
---- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-+++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -304,7 +304,7 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
- 						 unsigned int *data)
- {
- 	struct addi_private *devpriv = dev->private;
--	unsigned int ul_Command1 = 0;
-+	unsigned int ul_Command1;
- 
- 	devpriv->tsk_Current = current;
- 	if (data[0] == ADDIDATA_WATCHDOG) {
-@@ -462,7 +462,7 @@ static int i_APCI1564_StartStopWriteTimerCounterWatchdog(struct comedi_device *d
- 							 unsigned int *data)
- {
- 	struct addi_private *devpriv = dev->private;
--	unsigned int ul_Command1 = 0;
-+	unsigned int ul_Command1;
- 
- 	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
- 		switch (data[1]) {
-@@ -560,7 +560,7 @@ static int i_APCI1564_ReadTimerCounterWatchdog(struct comedi_device *dev,
- 					       unsigned int *data)
- {
- 	struct addi_private *devpriv = dev->private;
--	unsigned int ul_Command1 = 0;
-+	unsigned int ul_Command1;
- 
- 	if (devpriv->b_TimerSelectMode == ADDIDATA_WATCHDOG) {
- 		/*  Stores the status of the Watchdog */
-@@ -658,7 +658,7 @@ static void v_APCI1564_Interrupt(int irq, void *d)
- 	unsigned int ui_DO, ui_DI;
- 	unsigned int ui_Timer;
- 	unsigned int ui_C1, ui_C2, ui_C3, ui_C4;
--	unsigned int ul_Command2 = 0;
-+	unsigned int ul_Command2;
- 
- 	ui_DI = inl(devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP +
- 		APCI1564_DIGITAL_IP_IRQ) & 0x01;
--- 
-1.8.5.3
 
