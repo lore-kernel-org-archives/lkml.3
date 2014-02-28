@@ -1,238 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbaB1EYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 23:24:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
+	id S1751453AbaB1E2F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 23:28:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38021 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaB1EWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 23:22:36 -0500
+	id S1750957AbaB1E2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 23:28:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
-   d="scan'208";a="483314718"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
-        namhyung@kernel.org, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/8] perf, tools: Support source line numbers in annotate
-Date: Thu, 27 Feb 2014 20:22:30 -0800
-Message-Id: <1393561352-23448-7-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
-References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
+   d="scan'208";a="489675902"
+Date: Fri, 28 Feb 2014 09:57:53 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/4] power_supply: Introduce generic psy charging driver
+Message-ID: <20140228042753.GC27921@jenny-desktop>
+References: <1392875640-29230-1-git-send-email-jenny.tc@intel.com>
+ <1392875640-29230-3-git-send-email-jenny.tc@intel.com>
+ <CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaU44iinj2iDNdYm62J+4jQbg+XJ=Zq4GmJryPeu7GfTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Feb 27, 2014 at 09:08:01PM +0100, Linus Walleij wrote:
+> On Thu, Feb 20, 2014 at 6:53 AM, Jenny TC <jenny.tc@intel.com> wrote:
+> 
+> > +++ b/include/linux/power/power_supply_charger.h
+> 
+> > +#define MAX_CUR_VOLT_SAMPLES 3
+> > +#define DEF_CUR_VOLT_SAMPLE_JIFF (30*HZ)
+> 
+> Why are things defined in Jiffies like this insead of seconds, milliseconds
+> etc? This will vary with the current operating frequency of the system,
+> why should physical measurements do that?
 
-With srcline key/sort'ing it's useful to have line numbers
-in the annotate window. This patch implements this.
+Is it fine if I use msecs_to_jiffies(30000)?
 
-Use objdump -l to request the line numbers and
-save them in the line structure. Then the browser
-displays them for source lines.
+> > +enum psy_charger_cable_event {
+> > +       PSY_CHARGER_CABLE_EVENT_DISCONNECT = 0,
+> > +       PSY_CHARGER_CABLE_EVENT_CONNECT,
+> > +       PSY_CHARGER_CABLE_EVENT_UPDATE,
+> > +       PSY_CHARGER_CABLE_EVENT_RESUME,
+> > +       PSY_CHARGER_CABLE_EVENT_SUSPEND,
+> > +};
+> > +
+> > +enum psy_charger_cable_type {
+> > +       PSY_CHARGER_CABLE_TYPE_NONE = 0,
+> > +       PSY_CHARGER_CABLE_TYPE_USB_SDP = 1 << 0,
+> > +       PSY_CHARGER_CABLE_TYPE_USB_DCP = 1 << 1,
+> > +       PSY_CHARGER_CABLE_TYPE_USB_CDP = 1 << 2,
+> > +       PSY_CHARGER_CABLE_TYPE_USB_ACA = 1 << 3,
+> > +       PSY_CHARGER_CABLE_TYPE_AC = 1 << 4,
+> > +       PSY_CHARGER_CABLE_TYPE_ACA_DOCK = 1 << 5,
+> > +       PSY_CHARGER_CABLE_TYPE_ACA_A = 1 << 6,
+> > +       PSY_CHARGER_CABLE_TYPE_ACA_B = 1 << 7,
+> > +       PSY_CHARGER_CABLE_TYPE_ACA_C = 1 << 8,
+> > +       PSY_CHARGER_CABLE_TYPE_SE1 = 1 << 9,
+> > +       PSY_CHARGER_CABLE_TYPE_MHL = 1 << 10,
+> > +       PSY_CHARGER_CABLE_TYPE_B_DEVICE = 1 << 11,
+> > +};
+> 
+> Why is this even an enum? It is clearly bitfields. I would just:
+> 
+> #include <linux/bitops.h>
+> 
+> #define PSY_CHARGER_CABLE_TYPE_NONE 0x0
+> #define PSY_CHARGER_CABLE_TYPE_USB_SDP BIT(0)
+> #define PSY_CHARGER_CABLE_TYPE_USB_DCP BIT(1)
+> (etc)
 
-The line numbers are not displayed by default, but can be
-toggled on with 'k'
+This is to ensure type checks when the cable types are handled, #defines will
+not help in type checks. 
 
-There is one unfortunate problem with this setup. For
-lines not containing source and which are outside functions
-objdump -l reports line numbers off by a few: it always reports
-the first line number in the next function even for lines
-that are outside the function.
-I haven't find a nice way to detect/correct this. Probably objdump
-has to be fixed.
-See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
+> 
+> > +enum {
+> > + POWER_SUPPLY_BATTERY_REMOVED = 0,
+> > + POWER_SUPPLY_BATTERY_INSERTED,
+> > +};
+> 
+> Why is this enum anonymous? Does that mean the code just
+> casts the enum to an int?
 
-The line numbers are still useful even with these problems,
-as most are correct and the ones which are not are nearby.
+OK.I'll name the enum.
+> 
+> > +
+> > +struct psy_cable_props {
+> > +       enum psy_charger_cable_event    chrg_evt;
+> > +       enum psy_charger_cable_type     chrg_type;
+> > +       unsigned int                    mA;     /* input current limit */
+> 
+> You are naming a struct member after a unit, can it not
+> be given a better name like "current_limit" and write in the
+> kerneldoc (not a comment) that it is stated in mA?
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
- tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
- tools/perf/util/annotate.h        |  1 +
- 3 files changed, 38 insertions(+), 6 deletions(-)
+I'll change the variable name in next patch set.
+> > +struct psy_batt_props {
+> > +       struct list_head node;
+> > +       const char *name;
+> > +       long voltage_now; /* mV */
+> > +       long voltage_now_cache[MAX_CUR_VOLT_SAMPLES]; /* mV */
+> > +       long current_now; /* mA */
+> > +       long current_now_cache[MAX_CUR_VOLT_SAMPLES]; /* mV */
+> > +       int temperature; /* Degree Celsius */
+> > +       long status; /* POWER_SUPPLY_STATUS_* */
+> 
+> I don't understand these comments... Do you mean you are
+> using the enums from <linux/power_supply.h>?
+>
+> Would it not be better to give those enums a real name
+> (as a separate patch) and then use:
+> 
+> enum power_supply_status status;
+> 
+> here? That would be helpful methinks.
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index f0697a3..8df6787 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
- 	bool hide_src_code,
- 	     use_offset,
- 	     jump_arrows,
-+	     show_linenr,
- 	     show_nr_jumps;
- } annotate_browser__opts = {
- 	.use_offset	= true,
-@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - pcnt_width);
- 	else if (dl->offset == -1) {
--		printed = scnprintf(bf, sizeof(bf), "%*s  ",
-+		if (dl->line_nr && annotate_browser__opts.show_linenr)
-+			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
-+					ab->addr_width, " ", dl->line_nr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 				    ab->addr_width, " ");
- 		slsmg_write_nstring(bf, printed);
- 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
-@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 		"o             Toggle disassembler output/simplified view\n"
- 		"s             Toggle source code view\n"
- 		"/             Search string\n"
-+		"k	       Toggle line numbers\n"
- 		"r             Run available scripts\n"
- 		"?             Search string backwards\n");
- 			continue;
-@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 				script_browse(NULL);
- 				continue;
- 			}
-+		case 'k':
-+			annotate_browser__opts.show_linenr =
-+				!annotate_browser__opts.show_linenr;
-+			break;
- 		case 'H':
- 			nd = browser->curr_hot;
- 			break;
-@@ -984,6 +994,7 @@ static struct annotate_config {
- } annotate__configs[] = {
- 	ANNOTATE_CFG(hide_src_code),
- 	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_linenr),
- 	ANNOTATE_CFG(show_nr_jumps),
- 	ANNOTATE_CFG(use_offset),
- };
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 469eb67..f020110 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -15,11 +15,13 @@
- #include "debug.h"
- #include "annotate.h"
- #include "evsel.h"
-+#include <regex.h>
- #include <pthread.h>
- #include <linux/bitops.h>
- 
- const char 	*disassembler_style;
- const char	*objdump_path;
-+static regex_t	 file_lineno;
- 
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -562,13 +564,15 @@ out_free_name:
- 	return -1;
- }
- 
--static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line,
-+					size_t privsize, int line_nr)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
- 
- 	if (dl != NULL) {
- 		dl->offset = offset;
- 		dl->line = strdup(line);
-+		dl->line_nr = line_nr;
- 		if (dl->line == NULL)
- 			goto out_delete;
- 
-@@ -780,13 +784,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
-  * The ops.raw part will be parsed further according to type of the instruction.
-  */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
--				      FILE *file, size_t privsize)
-+				      FILE *file, size_t privsize,
-+				      int *line_nr)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-+	regmatch_t match[2];
- 
- 	if (getline(&line, &line_len, file) < 0)
- 		return -1;
-@@ -804,6 +810,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	line_ip = -1;
- 	parsed_line = line;
- 
-+	/* /filename:linenr ? Save line number and ignore. */
-+	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
-+		*line_nr = atoi(line + match[1].rm_so);
-+		return 0;
-+	}
-+
- 	/*
- 	 * Strip leading spaces:
- 	 */
-@@ -834,8 +846,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
- 	}
- 
--	dl = disasm_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
- 	free(line);
-+	(*line_nr)++;
- 
- 	if (dl == NULL)
- 		return -1;
-@@ -861,6 +874,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static __attribute__((constructor)) void symbol__init_regexpr(void)
-+{
-+	regcomp(&file_lineno, "^/[^:]+:([0-9]+)$", REG_EXTENDED);
-+}
-+
- static void delete_last_nop(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -896,6 +914,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	char symfs_filename[PATH_MAX];
- 	struct kcore_extract kce;
- 	bool delete_extract = false;
-+	int lineno = 0;
- 
- 	if (filename) {
- 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-@@ -977,7 +996,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
-+		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
-@@ -994,7 +1013,8 @@ fallback:
- 		goto out_free_filename;
- 
- 	while (!feof(file))
--		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-+		if (symbol__parse_objdump_line(sym, map, file, privsize,
-+			    &lineno) < 0)
- 			break;
- 
- 	/*
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index b2aef59..a124e7e 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -58,6 +58,7 @@ struct disasm_line {
- 	char		    *line;
- 	char		    *name;
- 	struct ins	    *ins;
-+	int		    line_nr;
- 	struct ins_operands ops;
- };
- 
--- 
-1.8.5.3
+My intention is to convey that status variable takes values
+POWER_SUPPLY_STATUS_*. I'll submit a separate patch to name the enums in
+power_supply.h. Also I'll make the appropriate changes in power_supply_charger.h
+> > +struct power_supply_charger {
+> > +       struct power_supply *psy;
+> > +       struct psy_throttle_state *throttle_states;
+> > +       size_t num_throttle_states;
+> > +       unsigned long supported_cables;
+> > +       int (*get_property)(struct power_supply_charger *psyc,
+> > +                           enum power_supply_charger_property psp,
+> > +                           union power_supply_propval *val);
+> > +       int (*set_property)(struct power_supply_charger *psyc,
+> > +                           enum power_supply_charger_property psp,
+> > +                           const union power_supply_propval *val);
+> > +       int (*property_is_writeable)(struct power_supply_charger *psyc,
+> > +                                    enum power_supply_charger_property psp);
+> > +};
+> 
+> Kerneldoc this vtable struct.
 
+I'll make the necessary kerneldoc changes as you suggested for this structure
+and other structures.
+> 
+> > +/* power_supply_charger functions */
+> > +
+> > +#ifdef CONFIG_POWER_SUPPLY_CHARGER
+> > +
+> > +extern int power_supply_register_charger(struct power_supply_charger *psyc);
+> > +extern int power_supply_unregister_charger(struct power_supply_charger *psyc);
+> > +extern int power_supply_register_charging_algo(struct psy_charging_algo *);
+> > +extern int power_supply_unregister_charging_algo(struct psy_charging_algo *);
+> > +extern int psy_get_battery_prop(struct psy_batt_chrg_prof *batt_prop);
+> > +extern void psy_battery_prop_changed(int battery_conn_stat,
+> > +                               struct psy_batt_chrg_prof *batt_prop);
+> > +
+> > +#else
+> > +
+> > +static int power_supply_register_charger(struct power_supply_charger *psyc)
+> > +{ return 0; }
+> > +static  int power_supply_unregister_charger(struct power_supply_charger *psyc)
+> > +{ return 0; }
+> > +static int power_supply_register_charging_algo(struct psy_charging_algo *algo)
+> > +{ return 0; }
+> > +static int power_supply_unregister_charging_algo(struct psy_charging_algo *algo)
+> > +{ return 0; }
+> 
+> Why do these return 0? Should they not just fail if the power supply
+> charger support is not compiled in, like return -EINVAL etc?
+> 
+> Sorry for just making some random review of the header files, but
+> this caught my attention and I couldn't resist.
+
+No issues, it make sense to return error instead of 0. Thanks for the comments.
+
+-Jenny
