@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaB1UYZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:24:25 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:38109 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaB1UYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:24:24 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org
-Subject: Re: [PATCH] ARM: qcom: Enable basic support for Qualcomm platforms in multi_v7_defconfig
-References: <1393360445-16923-1-git-send-email-galak@codeaurora.org>
-	<7hy50xv3rw.fsf@paris.lan> <7hzjlbtc9y.fsf@paris.lan>
-	<20140228182745.GC2487@codeaurora.org> <7heh2nt6uj.fsf@paris.lan>
-Date: Fri, 28 Feb 2014 12:24:21 -0800
-In-Reply-To: <7heh2nt6uj.fsf@paris.lan> (Kevin Hilman's message of "Fri, 28
-	Feb 2014 10:44:36 -0800")
-Message-ID: <7htxbjrnnu.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	id S1751881AbaB1UcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:32:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15263 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576AbaB1UcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 15:32:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,564,1389772800"; 
+   d="scan'208";a="491844949"
+Date: Fri, 28 Feb 2014 12:32:00 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linux-usb@vger.kernel.org,
+        david.a.cohen@linux.intel.com, jianqiang.tang@intel.com,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2] xhci: Prevent runtime pm from autosuspending
+ during initialization
+Message-ID: <20140228203200.GE3405@xanatos>
+References: <1393259343-825-1-git-send-email-mathias.nyman@linux.intel.com>
+ <Pine.LNX.4.44L0.1402241243230.1427-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <Pine.LNX.4.44L0.1402241243230.1427-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman <khilman@linaro.org> writes:
+On Mon, Feb 24, 2014 at 12:44:46PM -0500, Alan Stern wrote:
+> On Mon, 24 Feb 2014, Mathias Nyman wrote:
+> 
+> > xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
+> > to register its usb-2 bus, and then continue to manually register the
+> > usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
+> > might thus trigger a runtime suspend before the usb-3 bus is ready.
+> > 
+> > Prevent the runtime suspend by increasing the usage count in the
+> > beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
+> > ready.
+> > 
+> > xhci-platform driver is not using usb_hcd_pci_probe to set up
+> > busses and should not need to have it's usage count increased during probe.
+> > 
+> > Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+> > ---
+> >  drivers/usb/host/xhci-pci.c | 11 ++++++++++-
+> >  1 file changed, 10 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+> > index 04f986d..ea7158b 100644
+> > --- a/drivers/usb/host/xhci-pci.c
+> > +++ b/drivers/usb/host/xhci-pci.c
+> > @@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+> >  	struct usb_hcd *hcd;
+> >  
+> >  	driver = (struct hc_driver *)id->driver_data;
+> > +
+> > +	/* Prevent USB-2 roothub runtime suspend until USB-3 is initialized. */
+> > +	pm_runtime_get_noresume(&dev->dev);
+> 
+> Strictly speaking, this prevents the _controller_ from going into
+> runtime suspend -- not the root hub.
 
-> Stephen Boyd <sboyd@codeaurora.org> writes:
->
->> On 02/28, Kevin Hilman wrote:
->>> Hi Kumar,
->>> 
->>> Kevin Hilman <khilman@linaro.org> writes:
->>> 
->>> > Kumar Gala <galak@codeaurora.org> writes:
->>> >
->>> >> Enable support for the MSM8x60, MSM8960, and MSM8974 SoCs, clocks and
->>> >> serial console as part of the standard multi_v7_defconfig.
->>> >>
->>> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->>> >> ---
->>> >>
->>> >> I leave this to the arm-soc guys to apply because of possible conflicts
->>> >> with other updates to multi_v7_defconfig.
->>> >
->>> > Seem to be a handful of !qcom changes here, probably resulting from a
->>> > run of 'make savedefconfig' without all the new changes in.
->>> >
->>> > I've thinned this out to only the qcom changes and applied the following
->>> > to next/boards.  I think it's better to do any 'make savedefconfig'
->>> > cleanups as a separate, cleanup-only patch as needed.
->>> 
->>> Bisecting a new boot failure on u8500/snowball came down to this patch.
->>> Simply disabling CONFIG_ARCH_QCOM in mutli_v7_defconfig gets the
->>> u8500/snowball booting again, so it looks like there may still be some
->>> qcom specifics that are being run on non-qcom platforms with a
->>> multi-platform config.
->>> 
->>> Could you audit for initcalls/drivers being initialized on non-qcom
->>> SoCs?
->>> 
->>
->> Can you try disabling CONFIG_ARCH_MSM8X60 and
->> CONFIG_ARCH_MSM8960? MY suspicion is the text offset movement is
->> causing problems, but I hope I'm wrong.
->
-> Sorry to dash your hopes, but you're right.
->
-> Starting from a fresh multi_v7_defconfig and disabling those two Kconfig
-> options gets the snowball booting again on multi_v7_defconfig.
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-For the record...
+Mathias, want to fix this comment and queue this up to Greg?  It should
+probably be marked for stable.
 
-After some discussion on IRC, we discovered this is because those
-options add a 2Mb offset to TEXT_OFFSET, and my boot tool wasn't taking
-that into account when creating the uImage to boot on snowball.
-
-I guess it's time to upgrade u-boot on snowball with bootz support so it
-can directly boot a zImage.
-
-Kevin
+> Apart from nit about the comment,
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> 
