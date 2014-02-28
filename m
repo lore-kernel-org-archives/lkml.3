@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaB1VUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:20:35 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:55383 "EHLO mail.ispras.ru"
+	id S1752826AbaB1VVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:21:42 -0500
+Received: from sauhun.de ([89.238.76.85]:59151 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931AbaB1VUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:20:34 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: David Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Jakob Bornecrant <jakob@vmware.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] drm/vmwgfx: avoid null pointer dereference at failure paths
-Date: Sat,  1 Mar 2014 01:20:18 +0400
-Message-Id: <1393622418-6515-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752130AbaB1VVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 16:21:41 -0500
+Date: Fri, 28 Feb 2014 22:21:35 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: David Howells <dhowells@redhat.com>
+Cc: wolfram@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] i2c: Add message transfer tracepoints for SMBUS
+Message-ID: <20140228212134.GC2517@katana>
+References: <20140218205418.GH18768@katana>
+ <20140109214954.25590.73057.stgit@warthog.procyon.org.uk>
+ <20140109215002.25590.51609.stgit@warthog.procyon.org.uk>
+ <11165.1393507178@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
+Content-Disposition: inline
+In-Reply-To: <11165.1393507178@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmw_takedown_otable_base() and vmw_mob_unbind() check for
-potential vmw_fifo_reserve() failure and print error message,
-but then immediately dereference NULL pointer.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+--da4uJneut+ArUgXk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/gpu/drm/vmwgfx/vmwgfx_mob.c | 35 +++++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-index d4a5a19cb8c3..04a64b8cd3cd 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
-@@ -188,18 +188,20 @@ static void vmw_takedown_otable_base(struct vmw_private *dev_priv,
- 
- 	bo = otable->page_table->pt_bo;
- 	cmd = vmw_fifo_reserve(dev_priv, sizeof(*cmd));
--	if (unlikely(cmd == NULL))
--		DRM_ERROR("Failed reserving FIFO space for OTable setup.\n");
--
--	memset(cmd, 0, sizeof(*cmd));
--	cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
--	cmd->header.size = sizeof(cmd->body);
--	cmd->body.type = type;
--	cmd->body.baseAddress = 0;
--	cmd->body.sizeInBytes = 0;
--	cmd->body.validSizeInBytes = 0;
--	cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
--	vmw_fifo_commit(dev_priv, sizeof(*cmd));
-+	if (unlikely(cmd == NULL)) {
-+		DRM_ERROR("Failed reserving FIFO space for OTable "
-+			  "takedown.\n");
-+	} else {
-+		memset(cmd, 0, sizeof(*cmd));
-+		cmd->header.id = SVGA_3D_CMD_SET_OTABLE_BASE;
-+		cmd->header.size = sizeof(cmd->body);
-+		cmd->body.type = type;
-+		cmd->body.baseAddress = 0;
-+		cmd->body.sizeInBytes = 0;
-+		cmd->body.validSizeInBytes = 0;
-+		cmd->body.ptDepth = SVGA3D_MOBFMT_INVALID;
-+		vmw_fifo_commit(dev_priv, sizeof(*cmd));
-+	}
- 
- 	if (bo) {
- 		int ret;
-@@ -562,11 +564,12 @@ void vmw_mob_unbind(struct vmw_private *dev_priv,
- 	if (unlikely(cmd == NULL)) {
- 		DRM_ERROR("Failed reserving FIFO space for Memory "
- 			  "Object unbinding.\n");
-+	} else {
-+		cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
-+		cmd->header.size = sizeof(cmd->body);
-+		cmd->body.mobid = mob->id;
-+		vmw_fifo_commit(dev_priv, sizeof(*cmd));
- 	}
--	cmd->header.id = SVGA_3D_CMD_DESTROY_GB_MOB;
--	cmd->header.size = sizeof(cmd->body);
--	cmd->body.mobid = mob->id;
--	vmw_fifo_commit(dev_priv, sizeof(*cmd));
- 	if (bo) {
- 		vmw_fence_single_bo(bo, NULL);
- 		ttm_bo_unreserve(bo);
--- 
-1.8.3.2
+> > Also, the I2C tracing has first 'f' then 'a', that should be consistent,
+> > too.
+>=20
+> Flags first or address first?  Do you have a preference (for both)?
 
+I'd say address first, yet no strong preference.
+
+> > Can we have something like this for 'flags'?
+>=20
+> There's a __print_flags() which should work.  One thing I'm concerned abo=
+ut
+> there is how do we handle more flags being added - does that count as an =
+ABI
+> break if the printed format changes?
+
+Not sure, I mean, this is debug output, no?
+
+> SMBus flags are basically the same as I2C flags, right?
+
+Basically, yes.
+
+Thanks,
+
+   Wolfram
+
+
+--da4uJneut+ArUgXk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTEP3dAAoJEBQN5MwUoCm2n6kP/RTSBe8QE3nBjDQIl5D3Dvsq
+3UJRi1j657xk1PzIRwDxlexhKoqamnB/d2D13deOJVM52CCcvGa7XF5B64e2NNwl
+DoaiCCGmzLSJAUUaFnnKGC+5LvBLspnSADHHgruRUiXTmITkkmpTIcaDKFkCKbJl
+wKpyC/UXv4KAqdjzhVoDkd/+IWAMHrBdf0LfysB8C3b/+34mIMYZa+s8rrsBcpq+
+HM4ABbI0s7rtfcf0QSGq34o5DT1IRsKV31+6AoxF+jkGAK+PDRaK5MNZLTLP9jEA
+xVAYQn1gKA+79coHcxadD3i+OuHwBp+SKVnILtJSktVJmRfusAJcZ+qDSloMCKrt
+st0V0KWOoCOA6TcsKMZo03OT8ONrivMmQaoI883o5VCjpFxxmIOtmy1eVoRRdrUB
+gNNDd/xNnaZnW0+ihwmhfMCTJPnC87QuRVs61ABwMV/ekqJWTL9f0N2Wjb1+eFog
+bs9Hz4H2d5vk9JWDXglyEU+I7Q57k1CaHaSXnEWwozeY5N7GqSDbJ+KdMf3faIsw
+v2/MAhrKGlbXEKGCKfZJC9SOJCaumsbhgqca3p844JBSDkLi7HWTnfXCUqBD1rrV
+KMm5gZmOgx2ER0chgrkfTQyzhwOTnLpC0Dep4iosc8bkFLukV0rO+3UbSCnqvCjY
+uBogJ8qKXTFhAmLbJZq+
+=IYV6
+-----END PGP SIGNATURE-----
+
+--da4uJneut+ArUgXk--
