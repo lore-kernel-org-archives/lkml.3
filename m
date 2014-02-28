@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaB1I7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:59:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49051 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaB1I67 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:58:59 -0500
-Date: Fri, 28 Feb 2014 09:58:52 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: josh@joshtriplett.org
-Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 18/46] kernel: Mark functions as static in sched/fair.c
-Message-ID: <20140228085852.GC27965@twins.programming.kicks-ass.net>
-References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
- <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
- <20140227115805.GE9987@twins.programming.kicks-ass.net>
- <20140227160322.GC26756@thin>
- <20140227192435.GA27965@twins.programming.kicks-ass.net>
- <20140227230905.GD30335@cloud>
+	id S1752021AbaB1JB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 04:01:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39445 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751198AbaB1JBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 04:01:54 -0500
+Message-ID: <53105077.4090102@ti.com>
+Date: Fri, 28 Feb 2014 11:01:43 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140227230905.GD30335@cloud>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Gerd Hoffmann <kraxel@redhat.com>, <linux-fbdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <kys@microsoft.com>, <abgupta@microsoft.com>, <haiyangz@microsoft.com>,
+        <jasowang@redhat.com>, <devel@linuxdriverproject.org>
+Subject: Re: [PATCH v5 0/2] hyperv-fb: add support for generation 2 virtual
+ machines
+References: <1393411885-14895-1-git-send-email-kraxel@redhat.com>
+In-Reply-To: <1393411885-14895-1-git-send-email-kraxel@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="l0iuHr5xEEFNCHLwwRgO7LS7PRItn893X"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 03:09:05PM -0800, josh@joshtriplett.org wrote:
-> On Thu, Feb 27, 2014 at 08:24:35PM +0100, Peter Zijlstra wrote:
-> > On Thu, Feb 27, 2014 at 08:03:22AM -0800, Josh Triplett wrote:
-> > > Did you perhaps check, and notice that there are *zero* uses of this
-> > > function in the kernel?  Nothing overrides this weak symbol; it is no
-> > > longer needed.  You removed the one and only user in your commit:
-> > 
-> > I know that; but you don't get to remove interfaces under the guise of a
-> > static checker and without mention of such in the changelog.
-> 
-> So the changelog message needed improvement.  Got it; that would have
-> been helpful to hear.
-> 
-> The kernel hardly goes to great lengths to preserve old interfaces with
-> no users (per stable_api_nonsense), and the commit message already stated
-> that the function was being marked as static because it wasn't used
-> elsewhere.  But sure, perhaps something like the following, added to the
-> commit message, would address your concern?
-> 
-> """
-> arch_scale_smt_power, in particular, is a __weak function provided for
-> architectures to override.  However, the only overriding definition was
-> removed before v3.6, in commit ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
-> ("sched/x86: Remove broken power estimation").  Thus, drop the __weak
-> and make the function static.
-> """
-> 
-> Or would you prefer to see it completely eliminated (inlining it into
-> its caller) as part of the same patch?
+--l0iuHr5xEEFNCHLwwRgO7LS7PRItn893X
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Also remove the arch_ prefix, its not longer an arch function if you
-make it static, is it.
+On 26/02/14 12:51, Gerd Hoffmann wrote:
+>   Hi,
+>=20
+> This patch series adds support for uefi-based gen2 virtual machines
+> to the hyperv-fb driver.  It depends on a few vmbus changes which are
+> staged in Greg's char-misc tree (and linux-next).
+
+Depends how? Patches that depend on other patches should be merged via
+the same tree to avoid compile or functional breaks.
+
+ Tomi
+
+
+
+--l0iuHr5xEEFNCHLwwRgO7LS7PRItn893X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTEFB3AAoJEPo9qoy8lh71TJsP/RW4drjOoS5twwNVoH9GL6y/
+BEb5TwEuvfa10d8LSJ0Lqg64bwE/6UZi0yQTtOFRmdn1li0uKpK3/5Wck98fbCqf
+Ogla7RmUNx0nbvxf++5snW5+w/ZyMzGTl2BNt4plzjBvXhOxuoPNNTvuFKF2qJTw
+wq4E4W4MJ8cnV2L0dB99Ue62OWpaQn+h62M/BTxL1l6BeFifW6Koi3ji5oo7QIte
+BAyz/P0BYr/hRzJXyygn72yAIkuLcmPZBL6TxP52/u1KJ/r4bIRBmZ+hye7JTmy8
+XYyIjiH0xBvbEfJcwPv6B24Uf3tAOPndXtv2bq2On7Il0eO8HVQ6URqxZw9BC/95
+2cWc7VN//sTTgXqpVYF4P1VdiCKdW/FRyYBcwN7jpuFdXWyzKWDJaBScfn275dhY
+lp0Ng+I4B9r5mUopalqJWuB79lQeBZykxhqJHoLqYkZYI4umZi7j5DlR+QEojcZC
+4LtR+5gRwzvQfTi0UCysGYJZMyLQl0HyZT7PYnq/jkOTlEUgHhS4rTFlDo5m/jPP
+W6Clz5lKASO7Se29qS4FXyvb9Oy7XVMXbG3N6YxYyOg2VXkULLUHyJqeyUkbudKt
+jyC1zMzRsXAzrPp+kUM4CQlEgsKSma9fBpW+K4iAHLlzxWLh5Be+zYTcWRlAQiqr
+tuvkZ15mX2FHdCDwqoxE
+=/FiR
+-----END PGP SIGNATURE-----
+
+--l0iuHr5xEEFNCHLwwRgO7LS7PRItn893X--
