@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaB1U4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:56:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42435 "EHLO
+	id S1752319AbaB1U6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:58:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42458 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaB1U4o (ORCPT
+	with ESMTP id S1751646AbaB1U6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:56:44 -0500
-Date: Fri, 28 Feb 2014 21:56:38 +0100
+	Fri, 28 Feb 2014 15:58:33 -0500
+Date: Fri, 28 Feb 2014 21:58:28 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228205638.GD14089@laptop.programming.kicks-ass.net>
-References: <530FC1C6.5040209@zytor.com>
- <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
- <20140227215726.7018c861@gandalf.local.home>
- <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+Subject: Re: [PATCH] x86: Rename copy_from_user_nmi() to
+ copy_from_user_trace()
+Message-ID: <20140228205828.GE14089@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
  <20140228092341.12a40f7c@gandalf.local.home>
  <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
  <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
  <20140228154026.GH9987@twins.programming.kicks-ass.net>
  <5310B60F.30806@zytor.com>
  <20140228112946.1f194397@gandalf.local.home>
+ <20140228143316.211d4034@gandalf.local.home>
+ <20140228204621.GA14089@laptop.programming.kicks-ass.net>
+ <20140228155130.26adcef3@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140228112946.1f194397@gandalf.local.home>
+In-Reply-To: <20140228155130.26adcef3@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 11:29:46AM -0500, Steven Rostedt wrote:
-> On Fri, 28 Feb 2014 08:15:11 -0800
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Fri, Feb 28, 2014 at 03:51:30PM -0500, Steven Rostedt wrote:
+> On Fri, 28 Feb 2014 21:46:21 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> > Well, I was talking about the assumption spelled out in the comment
-> > above copy_from_user_nmi() which pretty much states "cr2 is safe because
-> > cr2 is saved/restored in the NMI wrappers."
+> > On Fri, Feb 28, 2014 at 02:33:16PM -0500, Steven Rostedt wrote:
+> > > [ H. Peter, Here's the rename patch. I did not include your update. You
+> > > can add that first and then massage this patch on top. But this isn't
+> > > critical for mainline or stable, where as I believe your patch is. ]
+> > > 
+> > > The tracing utilities sometimes need to read from userspace (stack tracing),
+> > > and to do this it has as special copy_from_user function called
+> > > copy_from_user_nmi(). Well, as tracers can call this from outside of
+> > > nmi context, the "_nmi" part is a misnomer and "_trace" is a better
+> > > name.
+> > 
+> > NAK, spin_lock_irq() is very much an IRQ safe lock. Similarly
+> > copy_from_user_nmi() is an NMI safe copy from user.
+> > 
+> > Furthermore, there's exactly 0 trace users, so the proposed name is
+> > actively worse.
 > 
-> Yeah, it seems that the name "copy_from_user_nmi()" is a misnomer. As
-> it can be called outside of nmi context. Perhaps we should have a
-> copy_from_user_trace() that does the save and restore of the cr2.
-> 
-> As that's the only place that faults, it may be the best answer.
-> 
-> Arnaldo,
-> 
-> Can you test this patch and see if it fixes the bug for you too. Vince
-> already said it fixes it for him.
-> 
-> I'm attaching it below (it's from H. Peter).
-> 
-> Peter Z., as both Jiri's and my patch fixed the callers of the problem
-> area, and as we have been discussing, there may be more problem areas,
-> I'm thinking the best solution is to just use H. Peter's patch instead.
-> And then we should rename it to copy_from_user_trace().
+> Heh, I consider perf and oprofile special tracers ;-)
 
-Like already said; _trace is an absolutely abysmal name. Also you
-_really_ don't want an unconditional CR2 write in there, that's just
-stupidly expensive.
-
-Also, this function is called a _LOT_ under certain workloads, I don't
-know how cheap a CR2 read is, but it had better be really cheap.
+They're first and foremost profilers; which is an entirely different
+thing. But other people seem to get confused on this distinction too.
