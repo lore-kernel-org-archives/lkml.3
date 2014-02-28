@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021AbaB1Fdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 00:33:36 -0500
-Received: from mga14.intel.com ([143.182.124.37]:2011 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719AbaB1Fdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 00:33:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,560,1389772800"; 
-   d="scan'208";a="483336031"
-Message-ID: <53101FAB.3080609@linux.intel.com>
-Date: Fri, 28 Feb 2014 13:33:31 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751300AbaB1FmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 00:42:16 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:36038 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaB1FmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 00:42:14 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len.Brown@intel.com, "alan@linux.intel.com" <alan@linux.intel.com>,
-        "Raj, Ashok" <ashok.raj@intel.com>
-Subject: Re: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be
- installed
-References: <530D558D.6090607@linux.intel.com> <1853937.5e0COHhnpP@vostro.rjw.lan>
-In-Reply-To: <1853937.5e0COHhnpP@vostro.rjw.lan>
+In-Reply-To: <53101E1A.6020707@huawei.com>
+References: <530FF7BF.4030706@huawei.com> <53100677.2060705@intel.com> <53101E1A.6020707@huawei.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 27 Feb 2014 21:41:33 -0800
+Message-ID: <CAGVrzcb_eD18-XGC34fZaQFbH3f5-NZk+6N5YbjYMSxCCSZX2w@mail.gmail.com>
+Subject: Re: [PATCH net RESEND] vlan: don't allow to add VLAN on VLAN device
+To: Ding Tianhong <dingtianhong@huawei.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/27 7:50, Rafael J. Wysocki wrote:
-> On Wednesday, February 26, 2014 10:46:37 AM Li, Aubrey wrote:
->> Sleep control and status registers need santity check before ACPI
->> install acpi_power_off to pm_power_off hook. The checking code in
->> acpi_enter_sleep_state() is too late, we should not allow a not-working
->> pm_power_off function hooked.
+2014-02-27 21:26 GMT-08:00 Ding Tianhong <dingtianhong@huawei.com>:
+> On 2014/2/28 11:45, John Fastabend wrote:
+>> On 2/27/2014 6:43 PM, Ding Tianhong wrote:
+>>> I run these steps:
+>>>
+>>> modprobe 8021q
+>>> vconfig add eth2 20
+>>> vconfig add eth2.20 20
+>>> ifconfig eth2 xx.xx.xx.xx
+>>>
+>>> then the Call Trace happened:
+>>>
 >>
->> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
->> ---
->>  drivers/acpi/sleep.c |    7 +++++--
->>  1 file changed, 5 insertions(+), 2 deletions(-)
+>> [...]
 >>
->> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
->> index b718806..0284d22 100644
->> --- a/drivers/acpi/sleep.c
->> +++ b/drivers/acpi/sleep.c
->> @@ -809,8 +809,11 @@ int __init acpi_sleep_init(void)
->>  	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
->>  	if (ACPI_SUCCESS(status)) {
->>  		sleep_states[ACPI_STATE_S5] = 1;
-> 
-> Do we still want to set this if the check below fails?  If so, then why?
-
-We know \_S5_ is valid. The fault is sleep registers, not S5 ACPI object
-
-Thanks,
--Aubrey
-
-> 
->> -		pm_power_off_prepare = acpi_power_off_prepare;
->> -		pm_power_off = acpi_power_off;
->> +		if (acpi_gbl_FADT.sleep_control.address &&
->> +			acpi_gbl_FADT.sleep_status.address) {
->> +			pm_power_off_prepare = acpi_power_off_prepare;
->> +			pm_power_off = acpi_power_off;
->> +		}
->>  	}
+>>> ========================================================================
+>>>
+>>> The reason is that if add vlan on vlan dev, the vlan dev will create vlan_info,
+>>> then the notification will let the real dev to run dev_set_rx_mode() and hold
+>>> netif_addr_lock, and then the real dev will call ndo_set_rx_mode(), if the real
+>>> dev is vlan dev, the ndo_set_rx_mode() will hold netif_addr_lock again, so deadlock
+>>> happened.
+>>>
+>>> Don't allow to add vlan on vlan dev to fix this problem.
+>>>
+>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>>> ---
 >>
->>  	supported[0] = 0;
+>> I'm not sure we can just disable stacked vlans. There might be something
+>> using them today and they have worked in the past. Lets try to find a
+>> better fix.
 >>
-> 
+>> .John
+>
+> Yes, maybe I miss something, can you gave me a scene that the use of eth2.20.30?
+> the device is created from vlan device eth2.20, than I will find a better way to fix it.
 
+Is not QinQ (802.1ad) such as case [1]?
+
+[1]: http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8ad227ff89a7e6f05d07cd0acfd95ed3a24450ca
+--
+Florian
