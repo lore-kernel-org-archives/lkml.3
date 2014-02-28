@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaB1Nfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:35:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15521 "EHLO
+	id S1752612AbaB1Ng5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:36:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:15659 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751628AbaB1Nfh (ORCPT
+	by vger.kernel.org with ESMTP id S1752345AbaB1Nfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:35:37 -0500
-Message-Id: <20140228133536.055574839@goodmis.org>
+	Fri, 28 Feb 2014 08:35:40 -0500
+Message-Id: <20140228133535.384953200@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 08:35:00 -0500
+Date: Fri, 28 Feb 2014 08:34:55 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 06/11] rt: Make cpu_chill() use hrtimer instead of msleep()
+Subject: [PATCH RT 01/11] timers: do not raise softirq unconditionally
 References: <20140228133454.373761937@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0006-rt-Make-cpu_chill-use-hrtimer-instead-of-msleep.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-timers-do-not-raise-softirq-unconditionally.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,96 +32,171 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
-up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
-called from softirq context, it may block the ksoftirqd() from running, in
-which case, it may never wake up the msleep() causing the deadlock.
+Mike,
 
-I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
-running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
-runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
-ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
-blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
+On Thu, 7 Nov 2013, Mike Galbraith wrote:
 
-The solution is not to convert the cpu_chill() back to a cpu_relax() as that
-will re-create a possible live lock that the cpu_chill() fixed earlier, and may
-also leave this bug open on other softirqs. The fix is to remove the
-dependency on ksoftirqd from cpu_chill(). That is, instead of calling
-msleep() that requires ksoftirqd to wake it up, use the
-hrtimer_nanosleep() code that does the wakeup from hard irq context.
+> On Thu, 2013-11-07 at 04:26 +0100, Mike Galbraith wrote:
+> > On Wed, 2013-11-06 at 18:49 +0100, Thomas Gleixner wrote:
+>
+> > > I bet you are trying to work around some of the side effects of the
+> > > occasional tick which is still necessary despite of full nohz, right?
+> >
+> > Nope, I wanted to check out cost of nohz_full for rt, and found that it
+> > doesn't work at all instead, looked, and found that the sole running
+> > task has just awakened ksoftirqd when it wants to shut the tick down, so
+> > that shutdown never happens.
+>
+> Like so in virgin 3.10-rt.  Box is x3550 M3 booted nowatchdog
+> rcu_nocbs=1-3 nohz_full=1-3, and CPUs1-3 are completely isolated via
+> cpusets as well.
 
-|Looks to be the lock of the block softirq. I don't have the core dump
-|anymore, but from what I could tell the ksoftirqd was blocked on the
-|block softirq lock, where the block softirq handler did a msleep
-|(called by the qla2xxx interrupt handler).
-|
-|Looking at trigger_softirq() in block/blk-softirq.c, it can do a
-|smp_callfunction() to another cpu to run the block softirq. If that
-|happens to be the cpu where the qla2xx irq handler is doing the block
-|softirq and is in a middle of a msleep(), I believe the ksoftirqd will
-|try to run the softirq. If it does that, then BOOM, it's deadlocked
-|because the ksoftirqd will never run the timer softirq either.
+well, that very same problem is in mainline if you add "threadirqs" to
+the command line. But we can be smart about this. The untested patch
+below should address that issue. If that works on mainline we can
+adapt it for RT (needs a trylock(&base->lock) there).
 
-|I should have also stated that it was only one lock that was involved.
-|But the lock owner was doing a msleep() that requires a wakeup by
-|ksoftirqd to continue. If ksoftirqd happens to be blocked on a lock
-|held by the msleep() caller, then you have your deadlock.
-|
-|It's best not to have any softirqs going to sleep requiring another
-|softirq to wake it up. Note, if we ever require a timer softirq to do a
-|cpu_chill() it will most definitely hit this deadlock.
+Though it's not a full solution. It needs some thought versus the
+softirq code of timers. Assume we have only one timer queued 1000
+ticks into the future. So this change will cause the timer softirq not
+to be called until that timer expires and then the timer softirq is
+going to do 1000 loops until it catches up with jiffies. That's
+anything but pretty ...
 
+What worries me more is this one:
+
+  pert-5229  [003] d..h1..   684.482618: softirq_raise: vec=9 [action=RCU]
+
+The CPU has no callbacks as you shoved them over to cpu 0, so why is
+the RCU softirq raised?
+
+Thanks,
+
+	tglx
+------------------
+Message-id: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
+|CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
 Cc: stable-rt@vger.kernel.org
-Found-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: add the 4 | chapters from email]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- include/linux/delay.h |  2 +-
- kernel/hrtimer.c      | 15 +++++++++++++++
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ include/linux/hrtimer.h |  3 +--
+ kernel/hrtimer.c        | 31 +++++++------------------------
+ kernel/timer.c          | 28 +++++++++++++++++++++++++---
+ 3 files changed, 33 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index e23a7c0..37caab3 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -53,7 +53,7 @@ static inline void ssleep(unsigned int seconds)
- }
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 79a7a35..bdbf77db 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -461,9 +461,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+ 		unsigned long delta, const enum hrtimer_mode mode, int clock);
+ extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
  
- #ifdef CONFIG_PREEMPT_RT_FULL
--# define cpu_chill()	msleep(1)
-+extern void cpu_chill(void);
- #else
- # define cpu_chill()	cpu_relax()
- #endif
+-/* Soft interrupt function to run the hrtimer queues: */
++/* Called from the periodic timer tick */
+ extern void hrtimer_run_queues(void);
+-extern void hrtimer_run_pending(void);
+ 
+ /* Bootup initialization: */
+ extern void __init hrtimers_init(void);
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a7e90b2..b569c6d 100644
+index a63cfaf..a7e90b2 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -1887,6 +1887,21 @@ SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp,
- 	return hrtimer_nanosleep(&tu, rmtp, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
+@@ -1691,30 +1691,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
  }
  
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+/*
-+ * Sleep for 1 ms in hope whoever holds what we want will let it go.
-+ */
-+void cpu_chill(void)
-+{
-+	struct timespec tu = {
-+		.tv_nsec = NSEC_PER_MSEC,
-+	};
-+
-+	hrtimer_nanosleep(&tu, NULL, HRTIMER_MODE_REL, CLOCK_MONOTONIC);
-+}
-+EXPORT_SYMBOL(cpu_chill);
-+#endif
-+
  /*
-  * Functions related to boot-time initialization:
+- * Called from timer softirq every jiffy, expire hrtimers:
+- *
+- * For HRT its the fall back code to run the softirq in the timer
+- * softirq context in case the hrtimer initialization failed or has
+- * not been done yet.
+- */
+-void hrtimer_run_pending(void)
+-{
+-	if (hrtimer_hres_active())
+-		return;
+-
+-	/*
+-	 * This _is_ ugly: We have to check in the softirq context,
+-	 * whether we can switch to highres and / or nohz mode. The
+-	 * clocksource switch happens in the timer interrupt with
+-	 * xtime_lock held. Notification from there only sets the
+-	 * check bit in the tick_oneshot code, otherwise we might
+-	 * deadlock vs. xtime_lock.
+-	 */
+-	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
+-		hrtimer_switch_to_hres();
+-}
+-
+-/*
+  * Called from hardirq context every jiffy
   */
+ void hrtimer_run_queues(void)
+@@ -1727,6 +1703,13 @@ void hrtimer_run_queues(void)
+ 	if (hrtimer_hres_active())
+ 		return;
+ 
++	/*
++	 * Check whether we can switch to highres mode.
++	 */
++	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
++	    && hrtimer_switch_to_hres())
++		return;
++
+ 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
+ 		base = &cpu_base->clock_base[index];
+ 		if (!timerqueue_getnext(&base->active))
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 48652cc..3d7313c 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1443,8 +1443,6 @@ static void run_timer_softirq(struct softirq_action *h)
+ 	irq_work_run();
+ #endif
+ 
+-	hrtimer_run_pending();
+-
+ 	if (time_after_eq(jiffies, base->timer_jiffies))
+ 		__run_timers(base);
+ }
+@@ -1454,8 +1452,32 @@ static void run_timer_softirq(struct softirq_action *h)
+  */
+ void run_local_timers(void)
+ {
++	struct tvec_base *base = __this_cpu_read(tvec_bases);
++
+ 	hrtimer_run_queues();
+-	raise_softirq(TIMER_SOFTIRQ);
++	/*
++	 * We can access this lockless as we are in the timer
++	 * interrupt. If there are no timers queued, nothing to do in
++	 * the timer softirq.
++	 */
++#ifdef CONFIG_PREEMPT_RT_FULL
++	if (!spin_do_trylock(&base->lock)) {
++		raise_softirq(TIMER_SOFTIRQ);
++		return;
++	}
++#endif
++	if (!base->active_timers)
++		goto out;
++
++	/* Check whether the next pending timer has expired */
++	if (time_before_eq(base->next_timer, jiffies))
++		raise_softirq(TIMER_SOFTIRQ);
++out:
++#ifdef CONFIG_PREEMPT_RT_FULL
++	rt_spin_unlock_after_trylock_in_irq(&base->lock);
++#endif
++	/* The ; ensures that gcc won't complain in the !RT case */
++	;
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
 -- 
 1.8.5.3
 
