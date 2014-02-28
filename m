@@ -1,121 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaB1NEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:04:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35172 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaB1NEb convert rfc822-to-8bit (ORCPT
+	id S1752050AbaB1NHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:07:55 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:4793
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751812AbaB1NHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:04:31 -0500
-Date: Tue, 25 Feb 2014 15:45:45 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yijing Wang <wangyijing@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-ia64@vger.kernel.org, linux-pci@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH 3/8] lib: Move prototype declaration to header file
- include/linux/swiotlb.h
-Message-ID: <20140225204545.GA4801@phenom.dumpdata.com>
-References: <7bf34999aea7f3d1441dc8fc344882a814da6e06.1393313946.git.rashika.kheria@gmail.com>
- <f95be69d8113dc58603894701e5a3114723b7acc.1393313946.git.rashika.kheria@gmail.com>
+	Fri, 28 Feb 2014 08:07:52 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068h1954cbhz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh906i1155h)
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH v4] can: xilinx CAN controller support.
+Thread-Topic: [PATCH v4] can: xilinx CAN controller support.
+Thread-Index: AQHPMnBMZEwPglt3TUmAMsU8apdwWZrHhtZVgAAnVUOAAqxFHIAASeaWgAABKWA=
+Date: Fri, 28 Feb 2014 13:07:45 +0000
+References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local>
+ <530D0A9C.5090402@pengutronix.de>
+ <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
+ <530DEA7C.6010609@pengutronix.de>
+ <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
+ <530E0B92.5010903@pengutronix.de>
+ <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local>
+ <53104995.4010305@pengutronix.de>
+ <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local>
+ <53108798.7090902@pengutronix.de>
+In-Reply-To: <53108798.7090902@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.97.219]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <f95be69d8113dc58603894701e5a3114723b7acc.1393313946.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-RCIS-Action: ALLOW
+Message-ID: <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1SD857q015216
 
-On Tue, Feb 25, 2014 at 01:14:17PM +0530, Rashika Kheria wrote:
-> Move prototype declaration of function to header file
-> include/linux/swiotlb.h from arch/ia64/hp/common/hwsw_iommu.c,
-> arch/ia64/hp/common/sba_iommu.c and arch/x86/pci/sta2x11-fixup.c because
-> it is used by more than one file.
-> 
-> This eliminates the following warning in lib/swiotlb.c:
-> lib/swiotlb.c:240:1: warning: no previous prototype for â€˜swiotlb_late_init_with_default_sizeâ€™ [-Wmissing-prototypes]
-> lib/swiotlb.c:537:13: warning: no previous prototype for â€˜map_singleâ€™ [-Wmissing-prototypes]
-> 
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
-One issue below. Did you compile check it on ia64 and arm?
-I presume you did it on x86 right?
+Hi Marc,
 
 
-> ---
->  arch/ia64/hp/common/hwsw_iommu.c |    3 ---
->  arch/ia64/hp/common/sba_iommu.c  |    2 --
->  arch/x86/pci/sta2x11-fixup.c     |    1 -
->  include/linux/swiotlb.h          |    4 +++-
->  4 files changed, 3 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/ia64/hp/common/hwsw_iommu.c b/arch/ia64/hp/common/hwsw_iommu.c
-> index 1e4cae5..b14cab1 100644
-> --- a/arch/ia64/hp/common/hwsw_iommu.c
-> +++ b/arch/ia64/hp/common/hwsw_iommu.c
-> @@ -20,9 +20,6 @@
->  
->  extern struct dma_map_ops sba_dma_ops, swiotlb_dma_ops;
->  
-> -/* swiotlb declarations & definitions: */
-> -extern int swiotlb_late_init_with_default_size (size_t size);
-> -
->  /*
->   * Note: we need to make the determination of whether or not to use
->   * the sw I/O TLB based purely on the device structure.  Anything else
-> diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-> index 8e858b5..b341994 100644
-> --- a/arch/ia64/hp/common/sba_iommu.c
-> +++ b/arch/ia64/hp/common/sba_iommu.c
-> @@ -46,8 +46,6 @@
->  
->  #include <asm/acpi-ext.h>
->  
-> -extern int swiotlb_late_init_with_default_size (size_t size);
-> -
->  #define PFX "IOC: "
->  
->  /*
-> diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-> index 9d8a509..a39000b 100644
-> --- a/arch/x86/pci/sta2x11-fixup.c
-> +++ b/arch/x86/pci/sta2x11-fixup.c
-> @@ -28,7 +28,6 @@
->  #include <linux/list.h>
->  
->  #define STA2X11_SWIOTLB_SIZE (4*1024*1024)
-> -extern int swiotlb_late_init_with_default_size(size_t default_size);
->  
->  /*
->   * We build a list of bus numbers that are under the ConneXt. The
-> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-> index a5ffd32..7f419b6 100644
-> --- a/include/linux/swiotlb.h
-> +++ b/include/linux/swiotlb.h
-> @@ -27,7 +27,9 @@ int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
->  extern unsigned long swiotlb_nr_tbl(void);
->  unsigned long swiotlb_size_or_default(void);
->  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
-> -
-> +int swiotlb_late_init_with_default_size (size_t );
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Friday, February 28, 2014 6:27 PM
+> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org
+> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; devicetree@vger.kernel.org
+> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+>
+> On 02/28/2014 01:44 PM, Appana Durga Kedareswara Rao wrote:
+> > Hi Marc,
+> >
+> >
+> >> -----Original Message-----
+> >> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >> Sent: Friday, February 28, 2014 2:02 PM
+> >> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> >> grant.likely@linaro.org; robh+dt@kernel.org;
+> >> linux-can@vger.kernel.org
+> >> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> >> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
+> >> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+> >>
+> >> On 02/28/2014 06:50 AM, Appana Durga Kedareswara Rao wrote:
+> >>> Hi Marc,
+> >>>
+> >>>
+> >>>> -----Original Message-----
+> >>>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >>>> Sent: Wednesday, February 26, 2014 9:13 PM
+> >>>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal
+> Simek;
+> >>>> grant.likely@linaro.org; robh+dt@kernel.org;
+> >>>> linux-can@vger.kernel.org
+> >>>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> >>>> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
+> >>>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+> >>>>
+> >>>> On 02/26/2014 03:46 PM, Appana Durga Kedareswara Rao wrote:
+> >>>>> Hi Marc,
+> >>>>>
+> >>>>>
+> >>>>>> -----Original Message-----
+> >>>>>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >>>>>> Sent: Wednesday, February 26, 2014 6:52 PM
+> >>>>>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal
+> >> Simek;
+> >>>>>> grant.likely@linaro.org; robh+dt@kernel.org;
+> >>>>>> linux-can@vger.kernel.org
+> >>>>>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> >>>>>> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
+> >>>>>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+> >>>>>>
+> >>>>>> On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
+> >>>>>>>> This loop looks broken. Can you explain how it works.
+> >>>>>>>>
+> >>>>>>>> What it shoud do is:
+> >>>>>>>> We have put (priv->tx_head - priv->tx_tail) CAN frames into the
+> >> FIFO.
+> >>>>>>>> This means at maximum there could be this amount of CAN frames
+> >>>>>>>> which have been successfully transmitted. For every cycle in
+> >>>>>>>> this while loop you
+> >>>>>>>> should:
+> >>>>>>>> a) check if a CAN frame has successfully been transmitted
+> >>>>>>>>    (as this CAN core uses a FIFO it should be "oldest")
+> >>>>>>>>    A read_reg() of some kind is missing in your loop.
+> >>>>>>>> b) if needed, remove this event from the FIFO or
+> >>>>>>>>    mark the interrupt as done. Whatever you hardware needs.
+> >>>>>>>> c) update your statistics
+> >>>>>>>> d) Use can_get_echo_skb to push this frame into the networking
+> >>>>>>>> stack
+> >>>>>>>> e) As a CAN frame has been transmitted successfully, wake the
+> >>>> tx_queue.
+> >>>>>>>>
+> >>>>>>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
+> >>>>>>>>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
+> >>>>>>>>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
+> >>>>>>>>> +                                   XCAN_IXR_TXFLL_MASK);
+> >>>>>>>>> +                   netif_stop_queue(ndev);
+> >>>>>>>>
+> >>>>>>>> Why do you stop the queue here? A CAN frame has successfully
+> >> been
+> >>>>>>>> transmitted, there should be room in the FIFO.
+> >>>>>>>>
+> >>>>>>>>> +                   break;
+> >>>>>>>>> +           }
+> >>>>>>>>> +           can_get_echo_skb(ndev, priv->tx_tail %
+> >>>>>>>>> +                                   priv->xcan_echo_skb_max_tx);
+> >>>>>>>>> +           priv->tx_tail++;
+> >>>>>>>>> +   }
+> >>>>>>>>> +
+> >>>>>>>
+> >>>>>>> The below are the bit fields available for the Transmit FIFO.
+> >>>>>>> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx
+> >>>>>>> fifo full
+> >>>>>> interrupt.
+> >>>>>>> 2) in the SR(Status Register) Tx fifo full condition.
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> I am modifying the entire tx interrupt logic to like below.
+> >>>>>>>
+> >>>>>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+> >>>>>>>         struct xcan_priv *priv = netdev_priv(ndev);
+> >>>>>>>         struct net_device_stats *stats = &ndev->stats;
+> >>>>>>>
+> >>>>>>>             while (priv->tx_head - priv->tx_tail > 0) {
+> >>>>>>>                 if (isr & XCAN_IXR_TXFLL_MASK) {
+> >>>>>>>                         priv->write_reg(priv, XCAN_ICR_OFFSET,
+> >>>>>>>                                         XCAN_IXR_TXFLL_MASK);
+> >>>>>>>                           break;
+> >>>>>>>                 }
+> >>>>>>>                 can_get_echo_skb(ndev, priv->tx_tail %
+> >>>>>>>                                         priv->xcan_echo_skb_max_tx);
+> >>>>>>>                 priv->tx_tail++;
+> >>>>>>>          stats->tx_packets++;
+> >>>>>>>         netif_wake_queue(ndev);
+> >>>>>>>               can_led_event(ndev, CAN_LED_EVENT_TX);
+> >>>>>>>
+> >>>>>>>         }
+> >>>>>>
+> >>>>>> You just need to wake the queue once.
+> >>>>>
+> >>>>> Ok
+> >>>>>>
+> >>>>>>> }
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> Are you Ok with the above logic?
+> >>>>>>
+> >>>>>> No, how can you tell how many frames have been transmitted?
+> >>>>>
+> >>>>> There is no register to read how many can frames are transmitted.
+> >>>>> The only way to know Is by reading this parameter
+> >>>>> (stats->tx_packets++;) through ip command
+> >>>>
+> >>>> stats->tx_packets is calculated in the above loop and the loop is
+> >>>> broken. Let me illustrate the problem:
+> >>>>
+> >>>> - xmit is called 10 times in a row
+> >>>> - this means you have 10 CAN frames in the TX FIFO
+> >>>> - a single CAN frame gets transmitted
+> >>>> - you get an interrupt
+> >>>> - you enter the above routine and loop 10 times and echo the CAN
+> frame
+> >>>>   back into the stack
+> >>>>
+> >>>> Now every application sees 10 transmitted packages, but there is
+> >>>> only one transmitted. Every time you loop you have to check if the
+> >>>> CAN frame has already been transmitted or not. Is that possible
+> >>>> with the
+> >> hardware?
+> >>>
+> >>>         The only way to know whether the TX packet is transmitted
+> >> successfully or not is by using the Tx Ok interrupt from the ISR.
+> >>> This interrupt will come for every Tx Packet.
+> >>> So I am thinking of there is no loop required in the TX interrupt
+> >>> routine. As
+> >> it is called for each and every packet.
+> >>
+> >> What happens if the interrupt handler is delayed? For example in a RT
+> >> enabled system the interrupt handler runs as a thread. There might be
+> >> other threads with higher priority. The hardware will probably send
+> >> all CAN frames in the FIFO, so you want to reduce the overhead and
+> >> loop in the tx complete handler.
+> >>
+> > Yes I agree with your comment.
+> > It will be good to have a loop in the Tx interrupt handler I am
+> > modifying the Tx interrupt handler like below.
+> >
+> > static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+> >         struct xcan_priv *priv = netdev_priv(ndev);
+> >         struct net_device_stats *stats = &ndev->stats;
+> >
+> >         while (priv->tx_head - priv->tx_tail > 0) {
+> >                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
+> >                         break;
+> >                 }
+> >                 can_get_echo_skb(ndev, priv->tx_tail %
+> >                                         priv->xcan_echo_skb_max_tx);
+> >                 priv->tx_tail++;
+> >                 stats->tx_packets++;
+> >                 can_led_event(ndev, CAN_LED_EVENT_TX);
+> >                 isr = priv->read_reg(priv, XCAN_ISR_OFFSET);
+            --> clear Tx OK interrupt.
 
-Your editor seems to have added an extra space!
+> >         }
+> >         netif_wake_queue(ndev);
+> > }
+> >
+> > Are you Ok with this?
+>
+> Do you have to ACK the interrupt, so that TXOK_MASK is finally cleared?
+> The use case is here: m CAN frames are put into the FIFO, n out of m CAN
+> frames are transferred, where n < m. In this case you have to leave the loop
+> after n, but "priv->tx_head - priv->tx_tail == m".
+>
 
-> +phys_addr_t map_single(struct device *hwdev, phys_addr_t phys, size_t size,
-> +		       enum dma_data_direction dir);
->  /*
->   * Enumeration for sync targets
->   */
-> -- 
-> 1.7.9.5
-> 
+Yes I forget to add that I added a line here above in the loop clear TXOK interrupt.
+I think it fixes your above question. Please Correct me if I miss understand your question.
+
+
+Regards,
+Kedar.
+
+> Marc
+>
+> --
+> Pengutronix e.K.                  | Marc Kleine-Budde           |
+> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
