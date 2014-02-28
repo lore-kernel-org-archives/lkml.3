@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaB1TRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 14:17:07 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2745 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681AbaB1TRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 14:17:04 -0500
-X-IronPort-AV: E=Sophos;i="4.97,563,1389744000"; 
-   d="scan'208";a="105108196"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
-        <dev@openvswitch.org>
-CC: <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH] openvswitch: Orphan frags before sending to userspace via Netlink to avoid guest stall
-Date: Fri, 28 Feb 2014 19:16:56 +0000
-Message-ID: <1393615016-9187-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752016AbaB1TdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 14:33:00 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36997 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715AbaB1Tc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 14:32:59 -0500
+Message-ID: <5310E449.1050609@oracle.com>
+Date: Fri, 28 Feb 2014 14:32:25 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+To: Sasha Levin <sasha.levin@oracle.com>, peterz@infradead.org,
+        mingo@redhat.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lockdep: increase static allocations
+References: <1389208906-24338-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1389208906-24338-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel datapath now switched to zerocopy Netlink messages, but that also
-means that the pages on frags array are sent straight to userspace. If those
-pages came outside the kernel, we have to swap them out with local copies.
+On 01/08/2014 02:21 PM, Sasha Levin wrote:
+> Fuzzing a recent kernel with a large configuration hits the static
+> allocation limits and disables lockdep.
+>
+> This patch doubles the limits.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>   kernel/locking/lockdep_internals.h | 6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/locking/lockdep_internals.h b/kernel/locking/lockdep_internals.h
+> index 4f560cf..51c4b24 100644
+> --- a/kernel/locking/lockdep_internals.h
+> +++ b/kernel/locking/lockdep_internals.h
+> @@ -54,9 +54,9 @@ enum {
+>    * table (if it's not there yet), and we check it for lock order
+>    * conflicts and deadlocks.
+>    */
+> -#define MAX_LOCKDEP_ENTRIES	16384UL
+> +#define MAX_LOCKDEP_ENTRIES	32768UL
+>
+> -#define MAX_LOCKDEP_CHAINS_BITS	15
+> +#define MAX_LOCKDEP_CHAINS_BITS	16
+>   #define MAX_LOCKDEP_CHAINS	(1UL << MAX_LOCKDEP_CHAINS_BITS)
+>
+>   #define MAX_LOCKDEP_CHAIN_HLOCKS (MAX_LOCKDEP_CHAINS*5)
+> @@ -65,7 +65,7 @@ enum {
+>    * Stack-trace: tightly packed array of stack backtrace
+>    * addresses. Protected by the hash_lock.
+>    */
+> -#define MAX_STACK_TRACE_ENTRIES	262144UL
+> +#define MAX_STACK_TRACE_ENTRIES	524288UL
+>
+>   extern struct list_head all_lock_classes;
+>   extern struct lock_chain lock_chains[];
+>
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- net/openvswitch/datapath.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index 36f8872..ffb563c 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -464,6 +464,12 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
- 	}
- 	nla->nla_len = nla_attr_size(skb->len);
- 
-+	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC))) {
-+		err = -ENOMEM;
-+		skb_tx_error(skb);
-+		goto out;
-+	}
-+
- 	skb_zerocopy(user_skb, skb, skb->len, hlen);
- 
- 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
+Can someone pick the patch up please? PeterZ even (seemed to) acked it.
+
+
+Thanks,
+Sasha
