@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaB1WXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:23:33 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40628 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaB1WXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:23:32 -0500
-Date: Fri, 28 Feb 2014 14:23:28 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228222328.GN11910@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <530FCE6C.4080808@zytor.com>
- <alpine.DEB.2.10.1402271957380.6210@vincent-weaver-1.um.maine.edu>
- <20140228203405.GH11910@linux.vnet.ibm.com>
- <20140228154716.0198d7cb@gandalf.local.home>
- <20140228205409.GB14089@laptop.programming.kicks-ass.net>
- <20140228211733.GK11910@linux.vnet.ibm.com>
- <20140228212700.GH14089@laptop.programming.kicks-ass.net>
- <20140228215150.GM11910@linux.vnet.ibm.com>
- <20140228215511.GB6835@laptop.programming.kicks-ass.net>
- <20140228170553.49f77108@gandalf.local.home>
+	id S1752925AbaB1WYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:24:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13142 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402AbaB1WY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 17:24:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,564,1389772800"; 
+   d="scan'208";a="483909732"
+Message-ID: <53110C97.3040207@linux.intel.com>
+Date: Sat, 01 Mar 2014 06:24:23 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228170553.49f77108@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022822-9332-0000-0000-00000342BE17
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len.Brown@intel.com, "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Raj, Ashok" <ashok.raj@intel.com>
+Subject: Re: [PATCH] ACPI/Sleep: pm_power_off need more sanity check to be
+ installed
+References: <530D558D.6090607@linux.intel.com> <1853937.5e0COHhnpP@vostro.rjw.lan> <53101FAB.3080609@linux.intel.com>
+In-Reply-To: <53101FAB.3080609@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 05:05:53PM -0500, Steven Rostedt wrote:
-> On Fri, 28 Feb 2014 22:55:11 +0100
-> Peter Zijlstra <peterz@infradead.org> wrote:
+On 2014/2/28 13:33, Li, Aubrey wrote:
+> On 2014/2/27 7:50, Rafael J. Wysocki wrote:
+>> On Wednesday, February 26, 2014 10:46:37 AM Li, Aubrey wrote:
+>>> Sleep control and status registers need santity check before ACPI
+>>> install acpi_power_off to pm_power_off hook. The checking code in
+>>> acpi_enter_sleep_state() is too late, we should not allow a not-working
+>>> pm_power_off function hooked.
+>>>
+>>> Signed-off-by: Aubrey Li <aubrey.li@intel.com>
+>>> ---
+>>>  drivers/acpi/sleep.c |    7 +++++--
+>>>  1 file changed, 5 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+>>> index b718806..0284d22 100644
+>>> --- a/drivers/acpi/sleep.c
+>>> +++ b/drivers/acpi/sleep.c
+>>> @@ -809,8 +809,11 @@ int __init acpi_sleep_init(void)
+>>>  	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
+>>>  	if (ACPI_SUCCESS(status)) {
+>>>  		sleep_states[ACPI_STATE_S5] = 1;
+>>
+>> Do we still want to set this if the check below fails?  If so, then why?
 > 
-> > On Fri, Feb 28, 2014 at 01:51:50PM -0800, Paul E. McKenney wrote:
-> > > On Fri, Feb 28, 2014 at 10:27:00PM +0100, Peter Zijlstra wrote:
-> > > > On Fri, Feb 28, 2014 at 01:17:33PM -0800, Paul E. McKenney wrote:
-> > > > > This code isn't running in idle context is it?  If so, RCU will happily
-> > > > > free out from under it.  CONFIG_PROVE_RCU should detect this sort of thing,
-> > > > > though.
-> > > > 
-> > > > Well, interrupts/NMIs can happen when idle, but the interrupt/NMI
-> > > > entry code deals with the idle state AFAIK.
-> > > 
-> > > Yep, rcu_irq_enter() and rcu_nmi_enter() deal with that.  More worried
-> > > about this being code invoked from some energy-efficiency driver or
-> > > another within the idle loop.
-> > 
-> > Right, so any tracepoint can end up there; but I thought there was
-> > already the rule that tracepoints needed RCU enabled.
-> 
-> There is and we have special tracepoint caller for those cases we want a
-> tracepoint out of RCU scope. These will reactivate rcu in the
-> tracepoint code.
-> 
->   trace_<tp_name>_rcuidle(...)
+> We know \_S5_ is valid. The fault is sleep registers, not S5 ACPI object
 
-OK, I finally looked at the emails leading up to this in the thread...
-I believe that I am doing premature debugging.
+Hi Rafael, do you still have any concern?
 
-							Thanx, Paul
+Thanks,
+-Aubrey
+> 
+>>
+>>> -		pm_power_off_prepare = acpi_power_off_prepare;
+>>> -		pm_power_off = acpi_power_off;
+>>> +		if (acpi_gbl_FADT.sleep_control.address &&
+>>> +			acpi_gbl_FADT.sleep_status.address) {
+>>> +			pm_power_off_prepare = acpi_power_off_prepare;
+>>> +			pm_power_off = acpi_power_off;
+>>> +		}
+>>>  	}
+>>>
+>>>  	supported[0] = 0;
+>>>
+>>
+> 
 
