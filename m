@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaB1ORJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 09:17:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60937 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433AbaB1OPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 09:15:34 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH 3/6] mm: add is_migrate_isolate_page_nolock() for cases where locking is undesirable
-Date: Fri, 28 Feb 2014 15:15:01 +0100
-Message-Id: <1393596904-16537-4-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
-References: <1393596904-16537-1-git-send-email-vbabka@suse.cz>
+	id S1752161AbaB1OXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 09:23:44 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:31411 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751532AbaB1OXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 09:23:43 -0500
+Date: Fri, 28 Feb 2014 09:23:41 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228092341.12a40f7c@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
+	<530B90A5.3090302@zytor.com>
+	<20140224141329.1cd3bb52@gandalf.local.home>
+	<20140224193043.GP6835@laptop.programming.kicks-ass.net>
+	<530C12CA.6070308@zytor.com>
+	<alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
+	<dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
+	<20140225094352.73e0e28c@gandalf.local.home>
+	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
+	<20140227173150.4e5ed747@gandalf.local.home>
+	<530FC1C6.5040209@zytor.com>
+	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+	<20140227215726.7018c861@gandalf.local.home>
+	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch complements the addition of get_pageblock_migratetype_nolock() for
-the case where is_migrate_isolate_page() cannot be called with zone->lock held.
-A race with set_pageblock_migratetype() may be detected, in which case a caller
-supplied argument is returned.
+On Fri, 28 Feb 2014 09:15:33 -0500 (EST)
+Vince Weaver <vincent.weaver@maine.edu> wrote:
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
----
- include/linux/page-isolation.h | 24 ++++++++++++++++++++++++
- mm/hugetlb.c                   |  2 +-
- 2 files changed, 25 insertions(+), 1 deletion(-)
+> On Thu, 27 Feb 2014, Steven Rostedt wrote:
+> 
+> > On Thu, 27 Feb 2014 20:34:34 -0500 (EST)
+> > Vince Weaver <vincent.weaver@maine.edu> wrote:
+> > 
+> > 
+> > > > I would actually suggest we do the equivalent on i386 as well.
+> > > > 
+> > > > Vince, could you try this patch as an experiment?
+> > > 
+> > > OK with your patch applied it does not segfault.
+> > > 
+> > 
+> > Vince, Great! Can you remove Peter's patch, and try this one. It
+> > removes the crud to save the cr2 from entry_64.S and makes both i386
+> > and x86_64 do the same thing in regards to cr2 handling.
+> 
+> no, with only this patch applied it segfaults as per previous:
+> 
+> [  126.396049] perf_fuzzer[2904]: segfault at 17a0 ip 00000000004017fd sp 00000000ffaff3f0 error 6 in perf_fuzzer[400000+d1000]
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 3fff8e7..f7bd491 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -2,10 +2,30 @@
- #define __LINUX_PAGEISOLATION_H
+Interesting. Are you doing a perf function trace?
+
+And just in case, can you add this patch and make sure the copy is
+called by NMI.
+
+-- Steve
+
+diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
+index ddf9ecb..ca943cd 100644
+--- a/arch/x86/lib/usercopy.c
++++ b/arch/x86/lib/usercopy.c
+@@ -29,6 +29,7 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+ 	 */
+ 	pagefault_disable();
+ 	ret = __copy_from_user_inatomic(to, from, n);
++	trace_dump_stack(2)
+ 	pagefault_enable();
  
- #ifdef CONFIG_MEMORY_ISOLATION
-+/*
-+ * Should be called only with zone->lock held. In cases where locking overhead
-+ * is undesirable, consider the _nolock version.
-+ */
- static inline bool is_migrate_isolate_page(struct page *page)
- {
- 	return get_pageblock_migratetype(page) == MIGRATE_ISOLATE;
- }
-+/*
-+ * When called without zone->lock held, a race with set_pageblock_migratetype
-+ * may result in bogus values. The race may be detected, in which case the
-+ * value of race_fallback argument is returned. For details, see
-+ * get_pageblock_migratetype_nolock().
-+ */
-+static inline bool is_migrate_isolate_page_nolock(struct page *page,
-+		bool race_fallback)
-+{
-+	int migratetype = get_pageblock_migratetype_nolock(page, MIGRATE_TYPES);
-+
-+	if (unlikely(migratetype == MIGRATE_TYPES))
-+		return race_fallback;
-+
-+	return migratetype == MIGRATE_ISOLATE;
-+}
- static inline bool is_migrate_isolate(int migratetype)
- {
- 	return migratetype == MIGRATE_ISOLATE;
-@@ -15,6 +35,10 @@ static inline bool is_migrate_isolate_page(struct page *page)
- {
- 	return false;
- }
-+static inline bool is_migrate_isolate_page_nolock(struct page *page)
-+{
-+	return false;
-+}
- static inline bool is_migrate_isolate(int migratetype)
- {
- 	return false;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 2252cac..fac4003 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -525,7 +525,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
- 	struct page *page;
- 
- 	list_for_each_entry(page, &h->hugepage_freelists[nid], lru)
--		if (!is_migrate_isolate_page(page))
-+		if (!is_migrate_isolate_page_nolock(page, true))
- 			break;
- 	/*
- 	 * if 'non-isolated free hugepage' not found on the list,
--- 
-1.8.4.5
-
+ 	return ret;
