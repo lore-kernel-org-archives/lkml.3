@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaB1MNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:13:36 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48635 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751296AbaB1MNf (ORCPT
+	id S1751930AbaB1MT6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:19:58 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:40210 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751447AbaB1MTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:13:35 -0500
-Date: Fri, 28 Feb 2014 12:13:15 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
-Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
- via atomic_long_*
-Message-ID: <20140228121314.GC674@mudshark.cambridge.arm.com>
-References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
- <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Feb 2014 07:19:55 -0500
+From: Maxime COQUELIN <maxime.coquelin@st.com>
+To: Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com
+Cc: lee.jones@linaro.org
+Subject: [PATCH 0/5] Add STiH407 SoC and reference board support
+Date: Fri, 28 Feb 2014 13:17:16 +0100
+Message-Id: <1393589841-6634-1-git-send-email-maxime.coquelin@st.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
-> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
-> > The asm-generic rwsem implementation directly acceses sem->cnt when
-> > performing a __down_read_trylock operation. Whilst this is probably safe
-> > on all architectures, we should stick to the atomic_long_* API and use
-> > atomic_long_read instead.
-> > 
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  include/asm-generic/rwsem.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-> > index bb1e2cdeb9bf..75af612f54f8 100644
-> > --- a/include/asm-generic/rwsem.h
-> > +++ b/include/asm-generic/rwsem.h
-> > @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
-> >  {
-> >  	long tmp;
-> >  
-> > -	while ((tmp = sem->count) >= 0) {
-> > +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
-> 
-> That's pretty ugly, how about having infinite look and just do the tmp
-> assign separately from the conditional?
-> 
-> It also looks like a cpu_relax() could help here between iterations.
-> Other than that:
-> 
-> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+This series adds basic support to the STMicroelectronics STiH407 SoC and its
+B2120 reference board. The STiH407 is a dual-core ARM Cortex-A9 CPU aimed at
+STB market.
 
-Actually, we should make that cmpxchg an atomic_long_cmpxchg, so the extra
-diff ends up looking like below. It's ugly adding a cpu_relax(), since you
-only want it when the cmpxchg fails (and we don't have such logic in the
-asm-generic __atomic_add_unless, for example).
+Giuseppe Cavallaro (2):
+  ARM: STi: add pinctrl support for the STiH407 SoC
+  pinctrl: st: Enhance the controller to manage unavailable registers
 
-Will
+Maxime Coquelin (3):
+  ARM: STi: Add STiH407 SoC support
+  ARM: dts: Add STiH407 SoC support
+  ARM: dts: STiH407: Add B2120 board support
 
---->8
+ Documentation/arm/sti/stih407-overview.txt    |  18 +
+ Documentation/devicetree/bindings/arm/sti.txt |  15 +
+ arch/arm/boot/dts/Makefile                    |   3 +-
+ arch/arm/boot/dts/stih407-b2120.dts           |  78 ++++
+ arch/arm/boot/dts/stih407-clock.dtsi          |  41 ++
+ arch/arm/boot/dts/stih407-pinctrl.dtsi        | 618 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/stih407.dtsi                | 250 +++++++++++
+ arch/arm/mach-sti/Kconfig                     |   9 +
+ arch/arm/mach-sti/board-dt.c                  |   1 +
+ drivers/pinctrl/pinctrl-st.c                  | 123 +++--
+ 10 files changed, 1110 insertions(+), 46 deletions(-)
+ create mode 100644 Documentation/arm/sti/stih407-overview.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/sti.txt
+ create mode 100644 arch/arm/boot/dts/stih407-b2120.dts
+ create mode 100644 arch/arm/boot/dts/stih407-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih407-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih407.dtsi
 
-diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-index 603a0a11e592..2b6401f9e428 100644
---- a/include/asm-generic/rwsem.h
-+++ b/include/asm-generic/rwsem.h
-@@ -40,14 +40,16 @@ static inline void __down_read(struct rw_semaphore *sem)
- static inline int __down_read_trylock(struct rw_semaphore *sem)
- {
-        long tmp;
-+       atomic_long_t *cnt = (atomic_long_t *)&sem->count;
- 
--       while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
--               if (tmp == cmpxchg(&sem->count, tmp,
--                                  tmp + RWSEM_ACTIVE_READ_BIAS)) {
--                       return 1;
--               }
--       }
--       return 0;
-+       do {
-+               tmp = atomic_long_read(cnt);
-+               if (tmp < 0)
-+                       return 0;
-+       } while (tmp != atomic_long_cmpxchg(cnt, tmp,
-+                                           tmp + RWSEM_ACTIVE_READ_BIAS));
-+
-+       return 1;
- }
- 
- /*
+-- 
+1.9.0
 
