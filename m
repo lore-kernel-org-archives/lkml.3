@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaB1CND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 21:13:03 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37928 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaB1CNA (ORCPT
+	id S1752086AbaB1COC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 21:14:02 -0500
+Received: from mga02.intel.com ([134.134.136.20]:6896 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaB1COA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 21:13:00 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-bf-530ff0a91068
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [f2fs-dev] [PATCH] f2fs: fix dirty page accounting when redirty
-Date: Fri, 28 Feb 2014 10:12:05 +0800
-Message-id: <000001cf342a$95864830$c092d890$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac80KB2pPVC0MC+AQFCPZKSJB1syhA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd2VH/iDDbYe5re4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PU+neMBUv5Ku5N
-	XMTWwPiRu4uRk0NCwESie+ZGRghbTOLCvfVsILaQwHRGiVNvKyHsH4wS3StLQWw2ARWJ5R3/
-	mUBsEQFFiQ3vN7CD2MwCmRJzXk9mBbGFBTwkHs28BjaHRUBV4uGyc8wgNq+ApcTe1T+gbEGJ
-	H5PvsUD0akms33mcCcKWl9i85i0zxD0KEjvOvmaE2KUn8eH9Q6gacYmNR26xTGAUmIVk1Cwk
-	o2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFh/Ex6B+OqBotDjAIcjEo8
-	vBM8+YOFWBPLiitzDzFKcDArifD6zgEK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCe
-	WJKanZpakFoEk2Xi4JRqYOxkeq7tIGcyrz7w0qkan5kmrsWVjHflIrJz109/aTbDbWrH/suH
-	Zd1ET+fam8wszd6wjPnEQv8vna82P5PiCuGtdPAJb3gV/X3b2VChxM2fDkx0zSn56/ftjd2l
-	E7VLNBkf3ZAK7e6W2Nwk88H56O7774Nfz/u9xa7ikVzo25etx4ocfiaXv1ViKc5INNRiLipO
-	BACyK+bsXwIAAA==
+	Thu, 27 Feb 2014 21:14:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
+   d="scan'208";a="491264953"
+From: "Du, Yuyang" <yuyang.du@intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+Subject: [RFC] Splitting scheduler into two halves
+Thread-Topic: [RFC] Splitting scheduler into two halves
+Thread-Index: Ac80Kq2aoa1KkBsvRPK/b91papdg8g==
+Date: Fri, 28 Feb 2014 02:13:32 +0000
+Message-ID: <0DA73B5D686AEC4AAEF6054BE04DA1CD116C50EA@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should de-account dirty counters for page when redirty in ->writepage().
+Hi Peter/Ingo and all,
 
-Wu Fengguang described in 'commit 971767caf632190f77a40b4011c19948232eed75':
-"writeback: fix dirtied pages accounting on redirty
-De-account the accumulative dirty counters on page redirty.
+With the advent of more cores and heterogeneous architectures, the scheduler is required to be more complex (power efficiency) and diverse (big.little). For the scheduler to address that challenge as a whole, it is costly but not necessary. This proposal argues that the scheduler be spitted into two parts: top half (task scheduling) and bottom half (load balance). Let the bottom half take charge of the incoming requirements.
 
-Page redirties (very common in ext4) will introduce mismatch between
-counters (a) and (b)
+The two halves are rather orthogonal in functionality. The task scheduling (top half) seeks for *ONE* CPU to execute running tasks fairly (priority included), while the load balance (bottom half) aims for *ALL* CPUs to maximize the throughput of the computing power. The goal of task scheduling is pretty unique and clear, and CFS and RT in that part are exactly approaching the goal. The load balance, however, is constrained to meet more goals, to name a few, performance (throughput/responsiveness), power consumption, architecture differences, etc. Those things are often hard to achieve because they may conflict and are difficult to estimate and plan. So, shall we declare the independence of the two, give them freedom to pursue their own "happiness".
 
-a) NR_DIRTIED, BDI_DIRTIED, tsk->nr_dirtied
-b) NR_WRITTEN, BDI_WRITTEN
+We take an incremental development method. As a starting point, we did three things (but did not change one single line of real-work code):
+	1)	Remove load balance from fair.c into load_balance.c (~3000 lines of codes). As a result, fair.c/rt.c and load_balance.c have very little intersection.
+	2)	Define struct sched_lb_class that consists of the following members to umbrella the load balance entry points.
+		a.	const struct sched_lb_class *next;
+		b.	int (*fork_balance) (struct task_struct *p, int sd_flags, int wake_flags);
+		c.	int (*exec_balance) (struct task_struct *p, int sd_flags, int wake_flags);
+		d.	int (*wakeup_balance) (struct task_struct *p, int sd_flags, int wake_flags);
+		e.	void (*idle_balance) (int this_cpu, struct rq *this_rq);
+		f.	void (*periodic_rebalance) (int cpu, enum cpu_idle_type idle);
+		g.	void (*nohz_idle_balance) (int this_cpu, enum cpu_idle_type idle);
+		h.	void (*start_periodic_balance) (struct rq *rq, int cpu);
+		i.	void (*check_nohz_idle_balance) (struct rq *rq, int cpu);
+	3)	Insert another layer of indirection to wrap the implemented functions in sched_lb_class. Implement a default load balance class that is just the previous load balance.
 
-This will introduce systematic errors in balanced_rate and result in
-dirty page position errors (ie. the dirty pages are no longer balanced
-around the global/bdi setpoints)."
+The next to do is to continue redesigning and refactoring to make life easier toward more powerful and diverse load balance. And more importantly, this RFC solicits a discussion to get early feedback on the big proposed change.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/checkpoint.c |    1 +
- fs/f2fs/data.c       |    1 +
- fs/f2fs/node.c       |    1 +
- 3 files changed, 3 insertions(+)
-
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index c8516ee..f069249 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -178,6 +178,7 @@ no_write:
- redirty_out:
- 	dec_page_count(sbi, F2FS_DIRTY_META);
- 	wbc->pages_skipped++;
-+	account_page_redirty(page);
- 	set_page_dirty(page);
- 	return AOP_WRITEPAGE_ACTIVATE;
- }
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 93d80ea..101b4cd 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -839,6 +839,7 @@ out:
- 
- redirty_out:
- 	wbc->pages_skipped++;
-+	account_page_redirty(page);
- 	set_page_dirty(page);
- 	return AOP_WRITEPAGE_ACTIVATE;
- }
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 1f9cf21..8c14110 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1193,6 +1193,7 @@ static int f2fs_write_node_page(struct page *page,
- redirty_out:
- 	dec_page_count(sbi, F2FS_DIRTY_NODES);
- 	wbc->pages_skipped++;
-+	account_page_redirty(page);
- 	set_page_dirty(page);
- 	return AOP_WRITEPAGE_ACTIVATE;
- }
--- 
-1.7.9.5
-
+Thanks,
+Yuyang
