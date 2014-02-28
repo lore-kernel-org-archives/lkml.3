@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaB1CIb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 21:08:31 -0500
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:49075
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750999AbaB1CI3 convert rfc822-to-8bit (ORCPT
+	id S1752285AbaB1CJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 21:09:40 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9395 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaB1CJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 21:08:29 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Ales Novak <alnovak@suse.cz>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jkosina@suse.cz" <jkosina@suse.cz>,
-        Thomas Abraham <tabraham@suse.com>
-Subject: RE: [PATCH] scsi: storvsc_device_destroy NULL pointer fix
-Thread-Topic: [PATCH] scsi: storvsc_device_destroy NULL pointer fix
-Thread-Index: AQHPM6M6W9uUPbUsck2+emTpYkAlW5rJ7Ggw
-Date: Fri, 28 Feb 2014 02:08:26 +0000
-Message-ID: <3f6f360973de44bcb1991c510ca8a81e@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1393495410-17575-1-git-send-email-alnovak@suse.cz>
-In-Reply-To: <1393495410-17575-1-git-send-email-alnovak@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [167.220.233.2]
-x-forefront-prvs: 0136C1DDA4
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(377454003)(13464003)(81542001)(65816001)(95666003)(92566001)(74502001)(33646001)(74662001)(31966008)(47446002)(63696002)(87266001)(87936001)(76796001)(93136001)(2656002)(56776001)(54316002)(76482001)(85852003)(83072002)(90146001)(85306002)(76576001)(95416001)(80976001)(54356001)(4396001)(94946001)(86362001)(53806001)(59766001)(49866001)(77982001)(50986001)(47976001)(47736001)(79102001)(74876001)(51856001)(69226001)(46102001)(81342001)(80022001)(66066001)(81816001)(74366001)(93516002)(81686001)(94316002)(74706001)(83322001)(19580405001)(74316001)(19580395003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB596;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:167.220.233.2;FPR:F93AF44D.A5374665.C7D6AFBF.84AEDA8D.20202;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Feb 2014 21:09:38 -0500
+Message-ID: <530FEF9C.7070106@huawei.com>
+Date: Fri, 28 Feb 2014 10:08:28 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH net] vlan: don't allow to add VLAN on VLAN device
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I run these steps:
 
+modprobe 8021q
+vconfig add eth2 20
+vconfig add eth2.20 20
+ifconfig eth2 xx.xx.xx.xx
 
-> -----Original Message-----
-> From: Ales Novak [mailto:alnovak@suse.cz]
-> Sent: Thursday, February 27, 2014 2:04 AM
-> To: KY Srinivasan; James E.J. Bottomley
-> Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
-> jkosina@suse.cz; Ales Novak; Thomas Abraham
-> Subject: [PATCH] scsi: storvsc_device_destroy NULL pointer fix
-> 
-> If the initialization of storvsc fails, the storvsc_device_destroy() causes NULL
-> pointer dereference.
-> 
-> storvsc_bus_scan()
->   scsi_scan_target()
->     __scsi_scan_target()
->       scsi_probe_and_add_lun(hostdata=NULL)
->         scsi_alloc_sdev(hostdata=NULL)
-> 
-> 	  sdev->hostdata = hostdata
-> 
-> 	  now the host allocation fails
-> 
->           __scsi_remove_device(sdev)
-> 
-> 	  calls sdev->host->hostt->slave_destroy() ==
-> 	  storvsc_device_destroy(sdev)
-> 	    access of sdev->hostdata->request_mempool
-> 
-> Signed-off-by: Ales Novak <alnovak@suse.cz>
-> Signed-off-by: Thomas Abraham <tabraham@suse.com>
-> Acked-by: Jiri Kosina <jkosina@suse.cz>
+then the Call Trace happened:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/scsi/storvsc_drv.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c index
-> 17d7404..9969fa1 100644
-> --- a/drivers/scsi/storvsc_drv.c
-> +++ b/drivers/scsi/storvsc_drv.c
-> @@ -1419,6 +1419,9 @@ static void storvsc_device_destroy(struct
-> scsi_device *sdevice)  {
->  	struct stor_mem_pools *memp = sdevice->hostdata;
-> 
-> +	if (!memp)
-> +		return;
-> +
->  	mempool_destroy(memp->request_mempool);
->  	kmem_cache_destroy(memp->request_pool);
->  	kfree(memp);
-> --
-> 1.8.1.4
+[32524.386288] =============================================
+[32524.386293] [ INFO: possible recursive locking detected ]
+[32524.386298] 3.14.0-rc2-0.7-default+ #35 Tainted: G           O
+[32524.386302] ---------------------------------------------
+[32524.386306] ifconfig/3103 is trying to acquire lock:
+[32524.386310]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386326]
+[32524.386326] but task is already holding lock:
+[32524.386330]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386341]
+[32524.386341] other info that might help us debug this:
+[32524.386345]  Possible unsafe locking scenario:
+[32524.386345]
+[32524.386350]        CPU0
+[32524.386352]        ----
+[32524.386354]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386359]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386364]
+[32524.386364]  *** DEADLOCK ***
+[32524.386364]
+[32524.386368]  May be due to missing lock nesting notation
+[32524.386368]
+[32524.386373] 2 locks held by ifconfig/3103:
+[32524.386376]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81431d42>] rtnl_lock+0x12/0x20
+[32524.386387]  #1:  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386398]
+[32524.386398] stack backtrace:
+[32524.386403] CPU: 1 PID: 3103 Comm: ifconfig Tainted: G           O 3.14.0-rc2-0.7-default+ #35
+[32524.386409] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[32524.386414]  ffffffff81ffae40 ffff8800d9625ae8 ffffffff814f68a2 ffff8800d9625bc8
+[32524.386421]  ffffffff810a35fb ffff8800d8a8d9d0 00000000d9625b28 ffff8800d8a8e5d0
+[32524.386428]  000003cc00000000 0000000000000002 ffff8800d8a8e5f8 0000000000000000
+[32524.386435] Call Trace:
+[32524.386441]  [<ffffffff814f68a2>] dump_stack+0x6a/0x78
+[32524.386448]  [<ffffffff810a35fb>] __lock_acquire+0x7ab/0x1940
+[32524.386454]  [<ffffffff810a323a>] ? __lock_acquire+0x3ea/0x1940
+[32524.386459]  [<ffffffff810a4874>] lock_acquire+0xe4/0x110
+[32524.386464]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386471]  [<ffffffff814fc07a>] _raw_spin_lock_nested+0x2a/0x40
+[32524.386476]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386481]  [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386489]  [<ffffffffa0500cab>] vlan_dev_set_rx_mode+0x2b/0x50 [8021q]
+[32524.386495]  [<ffffffff8141addf>] __dev_set_rx_mode+0x5f/0xb0
+[32524.386500]  [<ffffffff8141af8b>] dev_set_rx_mode+0x2b/0x40
+[32524.386506]  [<ffffffff8141b3cf>] __dev_open+0xef/0x150
+[32524.386511]  [<ffffffff8141b177>] __dev_change_flags+0xa7/0x190
+[32524.386516]  [<ffffffff8141b292>] dev_change_flags+0x32/0x80
+[32524.386524]  [<ffffffff8149ca56>] devinet_ioctl+0x7d6/0x830
+[32524.386532]  [<ffffffff81437b0b>] ? dev_ioctl+0x34b/0x660
+[32524.386540]  [<ffffffff814a05b0>] inet_ioctl+0x80/0xa0
+[32524.386550]  [<ffffffff8140199d>] sock_do_ioctl+0x2d/0x60
+[32524.386558]  [<ffffffff81401a52>] sock_ioctl+0x82/0x2a0
+[32524.386568]  [<ffffffff811a7123>] do_vfs_ioctl+0x93/0x590
+[32524.386578]  [<ffffffff811b2705>] ? rcu_read_lock_held+0x45/0x50
+[32524.386586]  [<ffffffff811b39e5>] ? __fget_light+0x105/0x110
+[32524.386594]  [<ffffffff811a76b1>] SyS_ioctl+0x91/0xb0
+[32524.386604]  [<ffffffff815057e2>] system_call_fastpath+0x16/0x1b
+
+========================================================================
+
+The reason is that if add vlan on vlan dev, the vlan dev will create vlan_info,
+then the notification will let the real dev to run dev_set_rx_mode() and hold
+netif_addr_lock, and then the real dev will call ndo_set_rx_mode(), if the real
+dev is vlan dev, the ndo_set_rx_mode() will hold netif_addr_lock again, so deadlock
+happened.
+
+Don't allow to add vlan on vlan dev to fix this problem.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ net/8021q/vlan.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 16fb0f4..052d201 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -132,6 +132,11 @@ int vlan_check_real_dev(struct net_device *real_dev,
+ 		return -EOPNOTSUPP;
+ 	}
+ 
++	if (real_dev->priv_flags & IFF_802_1Q_VLAN) {
++		pr_info("Don't add VLAN on VLAN device %s\n", name);
++		return -EOPNOTSUPP;
++        }
++
+ 	if (vlan_find_dev(real_dev, protocol, vlan_id) != NULL)
+ 		return -EEXIST;
+ 
+-- 
+1.8.0
+
 
