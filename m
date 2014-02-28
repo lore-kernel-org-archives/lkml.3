@@ -1,198 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaB1HOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:14:19 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47112 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaB1HOR (ORCPT
+	id S1752021AbaB1HPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:15:17 -0500
+Received: from smtp-out-127.synserver.de ([212.40.185.127]:1056 "EHLO
+	smtp-out-167.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751198AbaB1HPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:14:17 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] staging: cxt1e1: fix checkpatch errors with open brace '{'
-Date: Fri, 28 Feb 2014 16:14:13 +0900
-Message-ID: <17016461.nmGpby2gZL@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Fri, 28 Feb 2014 02:15:15 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12320
+Message-ID: <53103787.2020702@metafoo.de>
+Date: Fri, 28 Feb 2014 08:15:19 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
+ regmap.
+References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com> <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com> <20140228035244.GJ9383@sirena.org.uk> <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com> <20140228052904.GP9383@sirena.org.uk> <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com> <53102EE4.80702@metafoo.de> <d872d0fd60eb4c01b38af98014c802aa@BY2PR03MB505.namprd03.prod.outlook.com> <531030C7.2060703@metafoo.de> <5d534c2ac77040d9bc373db9e43dde7c@BY2PR03MB505.namprd03.prod.outlook.com>
+In-Reply-To: <5d534c2ac77040d9bc373db9e43dde7c@BY2PR03MB505.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/28/2014 08:08 AM, Li.Xiubo@freescale.com wrote:
+>>>>>> Subject: Re: [PATCH 2/3] ASoC: core: Set the default I/O up try regmap.
+>>>>>>
+>>>>>> On Fri, Feb 28, 2014 at 04:00:38AM +0000, Li.Xiubo@freescale.com wrote:
+>>>>>>
+>>>>>>> I'll send another patches to applied to use this for another CODEC
+>> drivers.
+>>>>>>> And there almost 80 files, Should I send them in one patch or split them
+>>>>>> into
+>>>>>>> individual patch for each CODEC driver ?
+>>>>>>
+>>>>>> I'd suggest doing one patch that covers the boring drivers where the
+>>>>>> first thing they do is call set_cache_io() but split out the others into
+>>>>>> one patch per driver since the need more examination.
+>>>>>
+>>>>> Got it.
+>>>>
+>>>> Btw. be careful, just removing the set_cache_io() call will not work for
+>> all
+>>>> drivers. There are some MFD child devices which use regmap from the parent
+>>>> device. So dev_get_regmap() will return NULL for those.
+>>>>
+>>>
+>>> @Lars,
+>>>
+>>> Do you mean the CODEC drivers like wm5110 and wm8997 ?
+>>>
+>>
+>>
+>> Yes.
+>>
+>
+> I only found these two CODEC drivers using MFD who would get its parent's regmap.
+>
+> Has I missed some ?
 
-clean up checkpatch.pl error:
- ERROR: that open brace { should be on the previous line
+A quick grep reveals:
+mc13783.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+si476x.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+wm5102.c:	codec->control_data = priv->core.arizona->regmap;
+wm5110.c:	codec->control_data = priv->core.arizona->regmap;
+wm8997.c:	codec->control_data = priv->core.arizona->regmap;
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/hwprobe.c |   62 +++++++++++++++-----------------------
- 1 file changed, 25 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 5f0e05d..d87a011 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -58,8 +58,7 @@ show_two(hdw_info_t *hi, int brdno)
- 
- 	ci = (ci_t *)(netdev_priv(hi->ndev));
- 	bid = sbeid_get_bdname(ci);
--	switch (hi->promfmt)
--	{
-+	switch (hi->promfmt) {
- 	case PROM_FORMAT_TYPE1:
- 		memcpy(sn, (FLD_TYPE1 *)(hi->mfg_info.pft1.Serial), 6);
- 		break;
-@@ -159,8 +158,7 @@ prep_hdw_info(void)
- 	hdw_info_t *hi;
- 	int         i;
- 
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		hi->pci_busno = 0xff;
- 		hi->pci_slot = 0xff;
- 		hi->pci_pin[0] = 0;
-@@ -179,18 +177,15 @@ cleanup_ioremap(void)
- 	hdw_info_t *hi;
- 	int         i;
- 
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		if (hi->pci_slot == 0xff)
- 			break;
--		if (hi->addr_mapped[0])
--		{
-+		if (hi->addr_mapped[0]) {
- 			iounmap((void *)(hi->addr_mapped[0]));
- 			release_mem_region((long) hi->addr[0], hi->len[0]);
- 			hi->addr_mapped[0] = 0;
- 		}
--		if (hi->addr_mapped[1])
--		{
-+		if (hi->addr_mapped[1]) {
- 			iounmap((void *)(hi->addr_mapped[1]));
- 			release_mem_region((long) hi->addr[1], hi->len[1]);
- 			hi->addr_mapped[1] = 0;
-@@ -205,8 +200,7 @@ cleanup_devs(void)
- 	hdw_info_t *hi;
- 	int         i;
- 
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		if (hi->pci_slot == 0xff || !hi->ndev)
- 			break;
- 		c4_stopwd(netdev_priv(hi->ndev));
-@@ -252,8 +246,7 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	 * element, identified by "slot==(0xff)".  The second part of a board's
- 	 * functionality will match the previously loaded slot/busno.
- 	 */
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		/*
- 		 * match with board's first found interface, otherwise this is
- 		 * fisrt found
-@@ -262,17 +255,19 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 		    ((hi->pci_slot == slot) && (hi->bus == pdev->bus)))
- 			break;                  /* found for-loop exit */
- 	}
--	if (i == MAX_BOARDS)            /* no match in above loop means MAX
--					 * exceeded */
--	{
-+
-+	/* no match in above loop means MAX exceeded */
-+	if (i == MAX_BOARDS) {
- 		pr_warning("exceeded number of allowed devices (>%d)?\n",
- 			   MAX_BOARDS);
- 		return 0;
- 	}
-+
- 	if (pdev->bus)
- 		hi->pci_busno = pdev->bus->number;
- 	else
- 		hi->pci_busno = 0; /* default for system PCI inconsistency */
-+
- 	hi->pci_slot = slot;
- 	pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &hi->pci_pin[fun]);
- 	pci_read_config_byte(pdev, PCI_REVISION_ID, &hi->revid[fun]);
-@@ -311,43 +306,38 @@ c4hw_attach_all(void)
- 	/*** scan PCI bus for all possible boards */
- 	while ((pdev = pci_get_device(PCI_VENDOR_ID_CONEXANT,
- 				      PCI_DEVICE_ID_CN8474,
--				      pdev)))
--	{
-+				      pdev))) {
- 		if (c4_hdw_init(pdev, found))
- 			found++;
- 	}
--	if (!found)
--	{
-+
-+	if (!found) {
- 		pr_warning("No boards found\n");
- 		return -ENODEV;
- 	}
-+
- 	/* sanity check for consistent hardware found */
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
--		if (hi->pci_slot != 0xff && (!hi->addr[0] || !hi->addr[1]))
--		{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
-+		if (hi->pci_slot != 0xff && (!hi->addr[0] || !hi->addr[1])) {
- 			pr_warning("%s: something very wrong with pci_get_device\n",
- 				   hi->devname);
- 			return -EIO;
- 		}
- 	}
- 	/* bring board's memory regions on/line */
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		if (hi->pci_slot == 0xff)
- 			break;
--		for (j = 0; j < 2; j++)
--		{
--			if (!request_mem_region(hi->addr[j], hi->len[j], hi->devname))
--			{
-+		for (j = 0; j < 2; j++) {
-+			if (!request_mem_region(hi->addr[j], hi->len[j], hi->devname)) {
- 				pr_warning("%s: memory in use, addr=0x%lx, len=0x%lx ?\n",
- 					   hi->devname, hi->addr[j], hi->len[j]);
- 				cleanup_ioremap();
- 				return -ENOMEM;
- 			}
-+
- 			hi->addr_mapped[j] = (unsigned long)ioremap(hi->addr[j], hi->len[j]);
--			if (!hi->addr_mapped[j])
--			{
-+			if (!hi->addr_mapped[j]) {
- 				pr_warning("%s: ioremap fails, addr=0x%lx, len=0x%lx ?\n",
- 					   hi->devname, hi->addr[j], hi->len[j]);
- 				cleanup_ioremap();
-@@ -364,13 +354,11 @@ c4hw_attach_all(void)
- 	drvr_state = SBE_DRVR_AVAILABLE;
- 
- 	/* Have now memory mapped all boards.  Now allow board's access to system */
--	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
--	{
-+	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++) {
- 		if (hi->pci_slot == 0xff)
- 			break;
- 		if (pci_enable_device(hi->pdev[0]) ||
--		    pci_enable_device(hi->pdev[1]))
--		{
-+		    pci_enable_device(hi->pdev[1])) {
- 			drvr_state = SBE_DRVR_DOWN;
- 			pr_warning("%s: failed to enable card %d slot %d\n",
- 				   hi->devname, i, hi->pci_slot);
--- 
-1.7.9.5
-
----
+But there might be more.
