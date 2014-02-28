@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaB1DrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 22:47:09 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53424 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaB1DrH (ORCPT
+	id S1751406AbaB1DsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 22:48:06 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:52680 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaB1DsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 22:47:07 -0500
-Date: Fri, 28 Feb 2014 12:47:02 +0900
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org
-Message-ID: <20140228034702.GI9383@sirena.org.uk>
-References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com>
- <1393494593-26310-2-git-send-email-Li.Xiubo@freescale.com>
+	Thu, 27 Feb 2014 22:48:03 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="588wvpgrYaEESfyK"
-Content-Disposition: inline
-In-Reply-To: <1393494593-26310-2-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Q:	Are we not men?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 175.126.181.153
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] ASoC: io: Clean up snd_soc_codec_set_cache_io()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1393552716-9754-1-git-send-email-skannan@codeaurora.org>
+References: <1393552716-9754-1-git-send-email-skannan@codeaurora.org>
+Date: Fri, 28 Feb 2014 09:18:02 +0530
+Message-ID: <CAKohpomjtE7Rtrs-TgxtSo658+4p0AHLzr9niN1GnkkrDqTxTw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] cpufreq: stats: Remove redundant cpufreq_cpu_get() call
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 28 February 2014 07:28, Saravana Kannan <skannan@codeaurora.org> wrote:
+> __cpufreq_stats_create_table always gets pass the valid and real policy
+> struct. So, there's no need to call cpufreq_cpu_get() to get the policy
+> again.
+>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> ---
+>  drivers/cpufreq/cpufreq_stats.c | 12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
 
---588wvpgrYaEESfyK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+All patches look fine now. Rafael you can queue them up as per your
+convenience.
 
-On Thu, Feb 27, 2014 at 05:49:51PM +0800, Xiubo Li wrote:
-> Now that all users have been converted to regmap and the config.reg_bits
-> and config.val_bits can be setted by each user through regmap core API.
-> So these two params are redundant here.
+@Saravana: Though I am quite sure you still need my patches to get
+your initial issue fixed. So, can you please get them tested as early
+as possible, so that we can get them in for 3.14?
 
-Applied, thanks.
-
---588wvpgrYaEESfyK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTEAazAAoJELSic+t+oim9OlwP/0coeFE0yRzho8Ed73TOG7Vh
-3nMmsBQg2xyYeMo5/rEz2S9NEzWwCzQ2103c76EEu7YXSN2BT39vqknKaYhWsdd2
-/c2dqTHVmNrs0rvjhiGrI1yKAUCrxqpl6U1ICsUPtbD6UHObzesZZRXwlo6QRsJi
-k599BJHpMUGhd7+uHGY8LaLKn+QIMTxzBzs67bm59LF/anlXzuBjPy7F/xY0x1+e
-xNzSpO7NeVGxseg4okfXz8xp79A0/IRtwKxBoMST4LiaQa0e12hb8xPCKeja2A9B
-/iEycwjVfy4T8zIOh3AWAQvFf59RV2X9Wv9b/K1ABbx5Kjag5UAa2/DyNJ4YqrYL
-n3ayXndLcO9u8Mdl6SO46T4Ct0+H8TmmblUTb27CbTecQ2peE/GLNiO1OKUtiz60
-sLPrVUsfpyqRG+4/Hncyvr+oM6UeaKzgRicNdfAzrJ/n9YjYrY2FW5ktqEwy8dmr
-uH/ouqC2kVtaqPfggPXya/eNkfO8uLe/Pd3C/8wOZh5m4mpK1wM31u3IO/EvkkIe
-J2TBadE+3myWJcFJu/iYsv3jHCbAuylIcuW8lCRrx3vQVdShg0tC7oNVEy/bktKo
-65rBYN0iywAtauJDYdiCSm7ZHZK1velnS9ifnYMGlGtxxxVKHypabpNgwvL2IWDj
-cm4BypfcqWGExSwPqfHL
-=xFqG
------END PGP SIGNATURE-----
-
---588wvpgrYaEESfyK--
+@Srivatsa: Your reviews will also help :)
