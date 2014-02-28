@@ -1,495 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaB1LZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:25:40 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:49043 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215AbaB1LZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:25:36 -0500
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: linux-mmc@vger.kernel.org, cjb@laptop.org, ulf.hansson@linaro.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v9 3/3] mmc: sdhci-msm: Add platform_execute_tunning implementation
-Date: Fri, 28 Feb 2014 13:24:35 +0200
-Message-Id: <1393586675-14628-4-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393586675-14628-1-git-send-email-gdjakov@mm-sol.com>
-References: <1393586675-14628-1-git-send-email-gdjakov@mm-sol.com>
+	id S1751945AbaB1Lbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:31:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53908 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaB1Lbv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 06:31:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Krzysztof =?utf-8?B?SGHFgmFzYQ==?= <khalasa@piap.pl>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <anton@enomsg.org>, Yinghai Lu <yinghai@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [ARM] CNS3xxx: 3 regressions identified in v3.14-rc4+
+Date: Fri, 28 Feb 2014 12:31:45 +0100
+Message-ID: <10801013.Hh6CjhvAyx@wuerfel>
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <m3eh2nqz7n.fsf@t19.piap.pl>
+References: <m3eh2nqz7n.fsf@t19.piap.pl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:v7AAFi9mlZJd3vBmopUVDb2+FTS6bmEvPaFmk4fNabr
+ 47lfTxPsKN9Esox3gpC7b7OThnVdxc4d9TP3Rptg693Wi+4raq
+ WcUS8SdCA141+lxlKVxp2Ec/R8TFxywN/O8cKMbcjaT9fmxxZl
+ pzuKS/ZosAplYvi5lvmumX6M7yWj3LRS5p8QR/4g78kuv8hLTN
+ 2FRJVLX2YWY2J323tkT9yMYJLqDbD5YOf3Gi9as/2VgKnbuaUH
+ 0Mvh3HjLpQft6Oy3+kJSXQhuaE28QdFyYAKuaxtNif6XnzTSAW
+ E+Fa4JLn21mQz93LUh841AmGKQMNV9Y3l3A/WxX15+M3nU5+DL
+ lFbm7tyaxVM8RkL6tw4s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds implementation for platform specific tuning in order to support
-HS200 bus speed mode on Qualcomm SDHCI controller.
+On Friday 28 February 2014 12:00:12 Krzysztof Hałasa wrote:
+> 
+> PCI hangs system completely while trying to access any PCI MMIO region
+> (plain IO not tested).
+> 
+> The guilty commit is 928bea964827d7824b548c1f8e06eccbbc4d0d7d:
+> 
+>     PCI: Delay enabling bridges until they're needed
+> 
+>     We currently enable PCI bridges after scanning a bus and assigning
+>     resources.  This is often done in arch code.
+> 
+>     This patch changes this so we don't enable a bridge until necessary, i.e.,
+>     until we enable a PCI device behind the bridge.  We do this in the generic
+>     pci_enable_device() path, so this also removes the arch-specific code to
+>     enable bridges.
+> 
+> Reverting changes in arch/arm/kernel/bios32.c, drivers/pci/bus.c and
+> include/linux/pci.h (= essentially adding pci_enable_bridges(bus) in
+> ARM's pci_common_init_dev()) makes it work again.
+> 
+> Options?
 
-Signed-off-by: Asutosh Das <asutoshd@codeaurora.org>
-Signed-off-by: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- drivers/mmc/host/sdhci-msm.c |  424 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 418 insertions(+), 6 deletions(-)
+Hmm, this was in 3.12 already, right?
 
-diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-index b4490a2..69f6887 100644
---- a/drivers/mmc/host/sdhci-msm.c
-+++ b/drivers/mmc/host/sdhci-msm.c
-@@ -18,6 +18,8 @@
- #include <linux/of_device.h>
- #include <linux/regulator/consumer.h>
- #include <linux/delay.h>
-+#include <linux/mmc/mmc.h>
-+#include <linux/slab.h>
- 
- #include "sdhci-pltfm.h"
- 
-@@ -43,7 +45,45 @@
- #define CORE_PWRCTL_IO_FAIL	BIT(3)
- 
- #define INT_MASK		0xf
-+#define MAX_PHASES		16
-+
-+#define CORE_DLL_LOCK		BIT(7)
-+#define CORE_DLL_EN		BIT(16)
-+#define CORE_CDR_EN		BIT(17)
-+#define CORE_CK_OUT_EN		BIT(18)
-+#define CORE_CDR_EXT_EN		BIT(19)
-+#define CORE_DLL_PDN		BIT(29)
-+#define CORE_DLL_RST		BIT(30)
-+#define CORE_DLL_CONFIG		0x100
-+#define CORE_DLL_TEST_CTL	0x104
-+#define CORE_DLL_STATUS		0x108
-+
-+#define CORE_VENDOR_SPEC	0x10c
-+#define CORE_CLK_PWRSAVE	BIT(1)
-+#define CORE_IO_PAD_PWR_SWITCH	BIT(16)
-+
-+#define CDR_SELEXT_SHIFT	20
-+#define CDR_SELEXT_MASK		(0xf << CDR_SELEXT_SHIFT)
-+#define CMUX_SHIFT_PHASE_SHIFT	24
-+#define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
-+
-+static const u32 tuning_block_64[] = {
-+	0x00ff0fff, 0xccc3ccff, 0xffcc3cc3, 0xeffefffe,
-+	0xddffdfff, 0xfbfffbff, 0xff7fffbf, 0xefbdf777,
-+	0xf0fff0ff, 0x3cccfc0f, 0xcfcc33cc, 0xeeffefff,
-+	0xfdfffdff, 0xffbfffdf, 0xfff7ffbb, 0xde7b7ff7
-+};
- 
-+static const u32 tuning_block_128[] = {
-+	0xff00ffff, 0x0000ffff, 0xccccffff, 0xcccc33cc,
-+	0xcc3333cc, 0xffffcccc, 0xffffeeff, 0xffeeeeff,
-+	0xffddffff, 0xddddffff, 0xbbffffff, 0xbbffffff,
-+	0xffffffbb, 0xffffff77, 0x77ff7777, 0xffeeddbb,
-+	0x00ffffff, 0x00ffffff, 0xccffff00, 0xcc33cccc,
-+	0x3333cccc, 0xffcccccc, 0xffeeffff, 0xeeeeffff,
-+	0xddffffff, 0xddffffff, 0xffffffdd, 0xffffffbb,
-+	0xffffbbbb, 0xffff77ff, 0xff7777ff, 0xeeddbb77
-+};
- 
- /* This structure keeps information per regulator */
- struct sdhci_msm_reg_data {
-@@ -73,18 +113,390 @@ struct sdhci_msm_host {
- 	struct sdhci_pltfm_data sdhci_msm_pdata;
- };
- 
--/* MSM platform specific tuning */
--int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
-+/* Platform specific tuning */
-+static inline int msm_dll_poll_ck_out_en(struct sdhci_host *host, u8 poll)
-+{
-+	u32 wait_cnt = 50;
-+	u8 ck_out_en;
-+	struct mmc_host *mmc = host->mmc;
-+
-+	/* Poll for CK_OUT_EN bit.  max. poll time = 50us */
-+	ck_out_en = !!(readl_relaxed(host->ioaddr + CORE_DLL_CONFIG) &
-+			CORE_CK_OUT_EN);
-+
-+	while (ck_out_en != poll) {
-+		if (--wait_cnt == 0) {
-+			dev_err(mmc_dev(mmc), "%s: CK_OUT_EN bit is not %d\n",
-+			       mmc_hostname(mmc), poll);
-+			return -ETIMEDOUT;
-+		}
-+		udelay(1);
-+
-+		ck_out_en = !!(readl_relaxed(host->ioaddr + CORE_DLL_CONFIG) &
-+				CORE_CK_OUT_EN);
-+	}
-+
-+	return 0;
-+}
-+
-+static int msm_config_cm_dll_phase(struct sdhci_host *host, u8 phase)
-+{
-+	int rc;
-+	static const u8 grey_coded_phase_table[] = {
-+		0x0, 0x1, 0x3, 0x2, 0x6, 0x7, 0x5, 0x4,
-+		0xc, 0xd, 0xf, 0xe, 0xa, 0xb, 0x9, 0x8
-+	};
-+	unsigned long flags;
-+	u32 config;
-+	struct mmc_host *mmc = host->mmc;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+
-+	config = readl_relaxed(host->ioaddr + CORE_DLL_CONFIG);
-+	config &= ~(CORE_CDR_EN | CORE_CK_OUT_EN);
-+	config |= (CORE_CDR_EXT_EN | CORE_DLL_EN);
-+	writel_relaxed(config, host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Wait until CK_OUT_EN bit of DLL_CONFIG register becomes '0' */
-+	rc = msm_dll_poll_ck_out_en(host, 0);
-+	if (rc)
-+		goto err_out;
-+
-+	/*
-+	 * Write the selected DLL clock output phase (0 ... 15)
-+	 * to CDR_SELEXT bit field of DLL_CONFIG register.
-+	 */
-+	config = readl_relaxed(host->ioaddr + CORE_DLL_CONFIG);
-+	config &= ~CDR_SELEXT_MASK;
-+	config |= grey_coded_phase_table[phase] << CDR_SELEXT_SHIFT;
-+	writel_relaxed(config, host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Set CK_OUT_EN bit of DLL_CONFIG register to 1. */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			| CORE_CK_OUT_EN), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Wait until CK_OUT_EN bit of DLL_CONFIG register becomes '1' */
-+	rc = msm_dll_poll_ck_out_en(host, 1);
-+	if (rc)
-+		goto err_out;
-+
-+	config = readl_relaxed(host->ioaddr + CORE_DLL_CONFIG);
-+	config |= CORE_CDR_EN;
-+	config &= ~CORE_CDR_EXT_EN;
-+	writel_relaxed(config, host->ioaddr + CORE_DLL_CONFIG);
-+	goto out;
-+
-+err_out:
-+	dev_err(mmc_dev(mmc), "%s: Failed to set DLL phase: %d\n",
-+	       mmc_hostname(mmc), phase);
-+out:
-+	spin_unlock_irqrestore(&host->lock, flags);
-+	return rc;
-+}
-+
-+/*
-+ * Find out the greatest range of consecuitive selected
-+ * DLL clock output phases that can be used as sampling
-+ * setting for SD3.0 UHS-I card read operation (in SDR104
-+ * timing mode) or for eMMC4.5 card read operation (in HS200
-+ * timing mode).
-+ * Select the 3/4 of the range and configure the DLL with the
-+ * selected DLL clock output phase.
-+ */
-+
-+static int msm_find_most_appropriate_phase(struct sdhci_host *host,
-+					   u8 *phase_table, u8 total_phases)
-+{
-+	int ret;
-+	u8 ranges[MAX_PHASES][MAX_PHASES] = { {0}, {0} };
-+	u8 phases_per_row[MAX_PHASES] = { 0 };
-+	int row_index = 0, col_index = 0, selected_row_index = 0, curr_max = 0;
-+	int i, cnt, phase_0_raw_index = 0, phase_15_raw_index = 0;
-+	bool phase_0_found = false, phase_15_found = false;
-+	struct mmc_host *mmc = host->mmc;
-+
-+	if (!total_phases || (total_phases > MAX_PHASES)) {
-+		dev_err(mmc_dev(mmc), "%s: Invalid argument: total_phases=%d\n",
-+		       mmc_hostname(mmc), total_phases);
-+		return -EINVAL;
-+	}
-+
-+	for (cnt = 0; cnt < total_phases; cnt++) {
-+		ranges[row_index][col_index] = phase_table[cnt];
-+		phases_per_row[row_index] += 1;
-+		col_index++;
-+
-+		if ((cnt + 1) == total_phases) {
-+			continue;
-+		/* check if next phase in phase_table is consecutive or not */
-+		} else if ((phase_table[cnt] + 1) != phase_table[cnt + 1]) {
-+			row_index++;
-+			col_index = 0;
-+		}
-+	}
-+
-+	if (row_index >= MAX_PHASES)
-+		return -EINVAL;
-+
-+	/* Check if phase-0 is present in first valid window? */
-+	if (!ranges[0][0]) {
-+		phase_0_found = true;
-+		phase_0_raw_index = 0;
-+		/* Check if cycle exist between 2 valid windows */
-+		for (cnt = 1; cnt <= row_index; cnt++) {
-+			if (phases_per_row[cnt]) {
-+				for (i = 0; i < phases_per_row[cnt]; i++) {
-+					if (ranges[cnt][i] == 15) {
-+						phase_15_found = true;
-+						phase_15_raw_index = cnt;
-+						break;
-+					}
-+				}
-+			}
-+		}
-+	}
-+
-+	/* If 2 valid windows form cycle then merge them as single window */
-+	if (phase_0_found && phase_15_found) {
-+		/* number of phases in raw where phase 0 is present */
-+		u8 phases_0 = phases_per_row[phase_0_raw_index];
-+		/* number of phases in raw where phase 15 is present */
-+		u8 phases_15 = phases_per_row[phase_15_raw_index];
-+
-+		if (phases_0 + phases_15 >= MAX_PHASES)
-+			/*
-+			 * If there are more than 1 phase windows then total
-+			 * number of phases in both the windows should not be
-+			 * more than or equal to MAX_PHASES.
-+			 */
-+			return -EINVAL;
-+
-+		/* Merge 2 cyclic windows */
-+		i = phases_15;
-+		for (cnt = 0; cnt < phases_0; cnt++) {
-+			ranges[phase_15_raw_index][i] =
-+			    ranges[phase_0_raw_index][cnt];
-+			if (++i >= MAX_PHASES)
-+				break;
-+		}
-+
-+		phases_per_row[phase_0_raw_index] = 0;
-+		phases_per_row[phase_15_raw_index] = phases_15 + phases_0;
-+	}
-+
-+	for (cnt = 0; cnt <= row_index; cnt++) {
-+		if (phases_per_row[cnt] > curr_max) {
-+			curr_max = phases_per_row[cnt];
-+			selected_row_index = cnt;
-+		}
-+	}
-+
-+	i = (curr_max * 3) / 4;
-+	if (i)
-+		i--;
-+
-+	ret = ranges[selected_row_index][i];
-+
-+	if (ret >= MAX_PHASES) {
-+		ret = -EINVAL;
-+		dev_err(mmc_dev(mmc), "%s: Invalid phase selected=%d\n",
-+		       mmc_hostname(mmc), ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static inline void msm_cm_dll_set_freq(struct sdhci_host *host)
-+{
-+	u32 mclk_freq = 0, config;
-+
-+	/* Program the MCLK value to MCLK_FREQ bit field */
-+	if (host->clock <= 112000000)
-+		mclk_freq = 0;
-+	else if (host->clock <= 125000000)
-+		mclk_freq = 1;
-+	else if (host->clock <= 137000000)
-+		mclk_freq = 2;
-+	else if (host->clock <= 150000000)
-+		mclk_freq = 3;
-+	else if (host->clock <= 162000000)
-+		mclk_freq = 4;
-+	else if (host->clock <= 175000000)
-+		mclk_freq = 5;
-+	else if (host->clock <= 187000000)
-+		mclk_freq = 6;
-+	else if (host->clock <= 200000000)
-+		mclk_freq = 7;
-+
-+	config = readl_relaxed(host->ioaddr + CORE_DLL_CONFIG);
-+	config &= ~CMUX_SHIFT_PHASE_MASK;
-+	config |= mclk_freq << CMUX_SHIFT_PHASE_SHIFT;
-+	writel_relaxed(config, host->ioaddr + CORE_DLL_CONFIG);
-+}
-+
-+/* Initialize the DLL (Programmable Delay Line) */
-+static int msm_init_cm_dll(struct sdhci_host *host)
- {
-+	struct mmc_host *mmc = host->mmc;
-+	int wait_cnt = 50;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+
- 	/*
--	 * Tuning is required for SDR104, HS200 and HS400 cards and if the clock
--	 * frequency greater than 100MHz in those modes. The standard tuning
--	 * procedure should not be executed, but a custom implementation will be
--	 * added here instead.
-+	 * Make sure that clock is always enabled when DLL
-+	 * tuning is in progress. Keeping PWRSAVE ON may
-+	 * turn off the clock.
- 	 */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_VENDOR_SPEC)
-+			& ~CORE_CLK_PWRSAVE), host->ioaddr + CORE_VENDOR_SPEC);
-+
-+	/* Write 1 to DLL_RST bit of DLL_CONFIG register */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			| CORE_DLL_RST), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Write 1 to DLL_PDN bit of DLL_CONFIG register */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			| CORE_DLL_PDN), host->ioaddr + CORE_DLL_CONFIG);
-+	msm_cm_dll_set_freq(host);
-+
-+	/* Write 0 to DLL_RST bit of DLL_CONFIG register */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			& ~CORE_DLL_RST), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Write 0 to DLL_PDN bit of DLL_CONFIG register */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			& ~CORE_DLL_PDN), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Set DLL_EN bit to 1. */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			| CORE_DLL_EN), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Set CK_OUT_EN bit to 1. */
-+	writel_relaxed((readl_relaxed(host->ioaddr + CORE_DLL_CONFIG)
-+			| CORE_CK_OUT_EN), host->ioaddr + CORE_DLL_CONFIG);
-+
-+	/* Wait until DLL_LOCK bit of DLL_STATUS register becomes '1' */
-+	while (!(readl_relaxed(host->ioaddr + CORE_DLL_STATUS) &
-+		 CORE_DLL_LOCK)) {
-+		/* max. wait for 50us sec for LOCK bit to be set */
-+		if (--wait_cnt == 0) {
-+			dev_err(mmc_dev(mmc), "%s: DLL failed to LOCK\n",
-+			       mmc_hostname(mmc));
-+			spin_unlock_irqrestore(&host->lock, flags);
-+			return -ETIMEDOUT;
-+		}
-+		udelay(1);
-+	}
-+
-+	spin_unlock_irqrestore(&host->lock, flags);
- 	return 0;
- }
- 
-+int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
-+{
-+	int tuning_seq_cnt = 3;
-+	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
-+	const u32 *tuning_block_pattern = tuning_block_64;
-+	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
-+	int rc;
-+	struct mmc_host *mmc = host->mmc;
-+	struct mmc_ios ios = host->mmc->ios;
-+
-+	/*
-+	 * Tuning is required for SDR104, HS200 and HS400 cards and
-+	 * if clock frequency is greater than 100MHz in these modes.
-+	 */
-+	if (host->clock <= 100 * 1000 * 1000 ||
-+	    !((ios.timing == MMC_TIMING_MMC_HS200) ||
-+	      (ios.timing == MMC_TIMING_UHS_SDR104)))
-+		return 0;
-+
-+	if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
-+	    (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
-+		tuning_block_pattern = tuning_block_128;
-+		size = sizeof(tuning_block_128);
-+	}
-+
-+	data_buf = kmalloc(size, GFP_KERNEL);
-+	if (!data_buf)
-+		return -ENOMEM;
-+
-+retry:
-+	/* First of all reset the tuning block */
-+	rc = msm_init_cm_dll(host);
-+	if (rc)
-+		goto out;
-+
-+	phase = 0;
-+	do {
-+		struct mmc_command cmd = { 0 };
-+		struct mmc_data data = { 0 };
-+		struct mmc_request mrq = {
-+			.cmd = &cmd,
-+			.data = &data
-+		};
-+		struct scatterlist sg;
-+
-+		/* Set the phase in delay line hw block */
-+		rc = msm_config_cm_dll_phase(host, phase);
-+		if (rc)
-+			goto out;
-+
-+		cmd.opcode = opcode;
-+		cmd.flags = MMC_RSP_R1 | MMC_CMD_ADTC;
-+
-+		data.blksz = size;
-+		data.blocks = 1;
-+		data.flags = MMC_DATA_READ;
-+		data.timeout_ns = NSEC_PER_SEC;	/* 1 second */
-+
-+		data.sg = &sg;
-+		data.sg_len = 1;
-+		sg_init_one(&sg, data_buf, sizeof(data_buf));
-+		memset(data_buf, 0, sizeof(data_buf));
-+		mmc_wait_for_req(mmc, &mrq);
-+
-+		if (!cmd.error && !data.error &&
-+		    !memcmp(data_buf, tuning_block_pattern, sizeof(data_buf))) {
-+			/* Tuning is successful at this tuning point */
-+			tuned_phases[tuned_phase_cnt++] = phase;
-+			dev_dbg(mmc_dev(mmc), "%s: Found good phase = %d\n",
-+				 mmc_hostname(mmc), phase);
-+		}
-+	} while (++phase < ARRAY_SIZE(tuned_phases));
-+
-+	if (tuned_phase_cnt) {
-+		rc = msm_find_most_appropriate_phase(host, tuned_phases,
-+						     tuned_phase_cnt);
-+		if (rc < 0)
-+			goto out;
-+		else
-+			phase = rc;
-+
-+		/*
-+		 * Finally set the selected phase in delay
-+		 * line hw block.
-+		 */
-+		rc = msm_config_cm_dll_phase(host, phase);
-+		if (rc)
-+			goto out;
-+		dev_dbg(mmc_dev(mmc), "%s: Setting the tuning phase to %d\n",
-+			 mmc_hostname(mmc), phase);
-+	} else {
-+		if (--tuning_seq_cnt)
-+			goto retry;
-+		/* Tuning failed */
-+		dev_dbg(mmc_dev(mmc), "%s: No tuning point found\n",
-+		       mmc_hostname(mmc));
-+		rc = -EIO;
-+	}
-+
-+out:
-+	kfree(data_buf);
-+	return rc;
-+}
-+
- #define MAX_PROP_SIZE 32
- static int sdhci_msm_dt_parse_vreg_info(struct device *dev,
- 			struct sdhci_msm_reg_data *vreg, const char *vreg_name)
--- 
-1.7.9.5
+Can you try adding the code in a host specific callback such as
+hw->add_bus?
 
+> Issue #3 ###################################################
+> 
+> NR_IRQS:16 nr_irqs:96 96
+> 
+> WARNING: at drivers/irqchip/irq-gic.c:952 gic_init_bases+0xe4/0x2b8()
+> Cannot allocate irq_descs @ IRQ16, assuming pre-allocated
+> Backtrace:
+> gic_init_bases    from cns3xxx_init_irq+0x24/0x34
+> cns3xxx_init_irq  from init_IRQ+0x24/0x2c
+> init_IRQ          from start_kernel+0x1a8/0x338
+> start_kernel      from 0x2000806c
+> 
+> I'm having problems understanding how is machine_desc->nr_irqs supposed
+> to work with CONFIG_ARM_GIC and CONFIG_SPARSE_IRQ set.
+> 
+> machine_desc->nr_irqs is set to NR_IRQS_CNS3XXX =
+> IRQ_TC11MP_GIC_START + 64 = 32 + 64 = 96.
+> 
+> At start, machine_desc->nr_irqs are pre-allocated via
+> start_kernel() -> early_irq_init().
+> 
+> Then, gic_init(0, 29, ...) ->  gic_init_bases(0, 29, ...) tries this
+> (and fails):
+> 
+>         /*
+>          * For primary GICs, skip over SGIs.
+>          * For secondary GICs, skip over PPIs, too.
+>          */
+>         irq_start = (effectively) 16;
+> 
+>         irq_base = irq_alloc_descs(irq_start, 16, gic_irqs, numa_node_id());
+>         if (IS_ERR_VALUE(irq_base)) {
+>                 WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+>                      irq_start);
+> 
+> Does this mean machine_desc->nr_irqs is to be kept at 16
+> (NR_IRQS_LEGACY) or less, so it doesn't conflict with gic_init()?
+> 
+> Or perhaps gic_init() shouldn't warn about this?
+
+I think the problem is that both the board file and the gic code try to
+set up legacy interrupts. Try just removing the 'nr_irqs=' line.
+
+	Arnd
