@@ -1,389 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaB1FT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 00:19:28 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42059 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaB1FTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 00:19:25 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
-Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v5 1/7] arm64: Add ftrace support
-Date: Fri, 28 Feb 2014 14:18:38 +0900
-Message-Id: <1393564724-3966-2-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1393320196-2942-1-git-send-email-takahiro.akashi@linaro.org>
- <1393564724-3966-1-git-send-email-takahiro.akashi@linaro.org>
+	id S1751914AbaB1FTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 00:19:24 -0500
+Received: from mail-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:5183
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751100AbaB1FTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 00:19:22 -0500
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Marek Vasut <marex@denx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+Thread-Index: AQHPM4sizgrOvCG4PUOY3HGRfTyOT5rJkPaAgABWrGA=
+Date: Fri, 28 Feb 2014 05:19:18 +0000
+Message-ID: <3f58a8abdda74100b4f7b14d0c31c90e@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com>
+ <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
+ <201402272139.36076.marex@denx.de>
+In-Reply-To: <201402272139.36076.marex@denx.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-forefront-prvs: 0136C1DDA4
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(13464003)(164054003)(24454002)(84964002)(51704005)(199002)(189002)(377454003)(41574002)(76576001)(76786001)(93516002)(77982001)(575784001)(86362001)(74366001)(93136001)(76796001)(47446002)(53806001)(50986001)(81342001)(79102001)(54356001)(47736001)(47976001)(74316001)(59766001)(94316002)(63696002)(95416001)(76482001)(54316002)(46102001)(51856001)(4396001)(74706001)(94946001)(81542001)(19580395003)(83322001)(80976001)(19580405001)(74876001)(81816001)(81686001)(33646001)(85852003)(83072002)(85306002)(74502001)(31966008)(56776001)(74662001)(92566001)(65816001)(69226001)(49866001)(2656002)(95666003)(90146001)(87266001)(80022001)(87936001)(66066001)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB418;H:BL2PR03MB338.namprd03.prod.outlook.com;CLIP:123.151.195.50;FPR:DC3CF32D.A82E11CB.BAD39D87.C4E7FA7D.20590;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1S5JWtT012757
 
-This patch implements arm64 specific part to support function tracers,
-such as function (CONFIG_FUNCTION_TRACER), function_graph
-(CONFIG_FUNCTION_GRAPH_TRACER) and function profiler
-(CONFIG_FUNCTION_PROFILER).
+Hi Marek,
 
-With 'function' tracer, all the functions in the kernel are traced with
-timestamps in ${sysfs}/tracing/trace. If function_graph tracer is
-specified, call graph is generated.
+Thank you very much for your suggestion.
 
-The kernel must be compiled with -pg option so that _mcount() is inserted
-at the beginning of functions. This function is called on every function's
-entry as long as tracing is enabled.
-In addition, function_graph tracer also needs to be able to probe function's
-exit. ftrace_graph_caller() & return_to_handler do this by faking link
-register's value to intercept function's return path.
+> -----Original Message-----
+> From: Marek Vasut [mailto:marex@denx.de]
+> Sent: Friday, February 28, 2014 4:40 AM
+> To: linux-arm-kernel@lists.infradead.org
+> Cc: Yuan Yao-B46683; wsa@the-dreams.de; mark.rutland@arm.com;
+> shawn.guo@linaro.org; linux-kernel@vger.kernel.org; linux-
+> i2c@vger.kernel.org
+> Subject: Re: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
+> 
+> On Thursday, February 27, 2014 at 07:05:14 AM, Yuan Yao wrote:
+> 
+> [...]
+> 
+> > *****/ @@ -63,6 +68,9 @@
+> >  /* Default value */
+> >  #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
+> >
+> > +/* enable DMA if transfer size is bigger than this threshold */
+> > +#define IMX_I2C_DMA_THRESHOLD	16
+> 
+> So what's the unit here , potatoes or beers or what ? I suppose it's
+> bytes , but please make it explicit in the comment ...
+> 
 
-More details on architecture specific requirements are described in
-Documentation/trace/ftrace-design.txt.
+Yes it's bytes. I will make it explicit in the comment.
 
-Reviewed-by: Ganapatrao Kulkarni <ganapatrao.kulkarni@cavium.com>
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/Kconfig               |    2 +
- arch/arm64/include/asm/ftrace.h  |   23 +++++
- arch/arm64/kernel/Makefile       |    4 +
- arch/arm64/kernel/arm64ksyms.c   |    4 +
- arch/arm64/kernel/entry-ftrace.S |  174 ++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/ftrace.c       |   64 ++++++++++++++
- 6 files changed, 271 insertions(+)
- create mode 100644 arch/arm64/include/asm/ftrace.h
- create mode 100644 arch/arm64/kernel/entry-ftrace.S
- create mode 100644 arch/arm64/kernel/ftrace.c
+> [...]
+> 
+> >  static const struct imx_i2c_hwdata imx1_i2c_hwdata  = { @@ -193,6
+> > +216,7 @@ static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
+> >  	.ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
+> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
+> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
+> > +	.has_dma_support	= false,
+> >
+> >  };
+> >
+> > @@ -203,6 +227,7 @@ static const struct imx_i2c_hwdata imx21_i2c_hwdata
+> =
+> > { .ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
+> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
+> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
+> > +	.has_dma_support	= false,
+> >
+> >  };
+> >
+> > @@ -213,6 +238,7 @@ static struct imx_i2c_hwdata vf610_i2c_hwdata = {
+> >  	.ndivs			= ARRAY_SIZE(vf610_i2c_clk_div),
+> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W1C,
+> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_0,
+> > +	.has_dma_support	= true,
+> 
+> So why exactly don't we have a DT prop for determining whether the
+> controller has DMA support ?
+> 
+> What about the other controllers, do they not support DMA for some
+> specific reason? Please elaborate on that, thank you !
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 27bbcfc..5783641 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -33,6 +33,8 @@ config ARM64
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_CONTIGUOUS
- 	select HAVE_EFFICIENT_UNALIGNED_ACCESS
-+	select HAVE_FUNCTION_TRACER
-+	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
- 	select HAVE_MEMBLOCK
-diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
-new file mode 100644
-index 0000000..58ea595
---- /dev/null
-+++ b/arch/arm64/include/asm/ftrace.h
-@@ -0,0 +1,23 @@
-+/*
-+ * arch/arm64/include/asm/ftrace.h
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_FTRACE_H
-+#define __ASM_FTRACE_H
-+
-+#include <asm/insn.h>
-+
-+#define MCOUNT_ADDR		((unsigned long)_mcount)
-+#define MCOUNT_INSN_SIZE	AARCH64_INSN_SIZE
-+
-+#ifndef __ASSEMBLY__
-+extern void _mcount(unsigned long);
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* __ASM_FTRACE_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 2d4554b..ac67fd0 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -5,6 +5,9 @@
- CPPFLAGS_vmlinux.lds	:= -DTEXT_OFFSET=$(TEXT_OFFSET)
- AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
- 
-+CFLAGS_REMOVE_ftrace.o = -pg
-+CFLAGS_REMOVE_insn.o = -pg
-+
- # Object file lists.
- arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
- 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
-@@ -13,6 +16,7 @@ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
- 
- arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
- 					   sys_compat.o
-+arm64-obj-$(CONFIG_FUNCTION_TRACER)	+= ftrace.o entry-ftrace.o
- arm64-obj-$(CONFIG_MODULES)		+= arm64ksyms.o module.o
- arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
-diff --git a/arch/arm64/kernel/arm64ksyms.c b/arch/arm64/kernel/arm64ksyms.c
-index 338b568..7f0512f 100644
---- a/arch/arm64/kernel/arm64ksyms.c
-+++ b/arch/arm64/kernel/arm64ksyms.c
-@@ -56,3 +56,7 @@ EXPORT_SYMBOL(clear_bit);
- EXPORT_SYMBOL(test_and_clear_bit);
- EXPORT_SYMBOL(change_bit);
- EXPORT_SYMBOL(test_and_change_bit);
-+
-+#ifdef CONFIG_FUNCTION_TRACER
-+EXPORT_SYMBOL(_mcount);
-+#endif
-diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
-new file mode 100644
-index 0000000..0e5b8b0
---- /dev/null
-+++ b/arch/arm64/kernel/entry-ftrace.S
-@@ -0,0 +1,174 @@
-+/*
-+ * arch/arm64/kernel/entry-ftrace.S
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/ftrace.h>
-+#include <asm/insn.h>
-+
-+/*
-+ * Gcc with -pg will put the following code in the beginning of each function:
-+ *      mov x0, x30
-+ *      bl _mcount
-+ *	[function's body ...]
-+ * "bl _mcount" may be replaced to "bl ftrace_caller" or NOP if dynamic
-+ * ftrace is enabled.
-+ *
-+ * Please note that x0 as an argument will not be used here because we can
-+ * get lr(x30) of instrumented function at any time by winding up call stack
-+ * as long as the kernel is compiled without -fomit-frame-pointer.
-+ * (or CONFIG_FRAME_POINTER, this is forced on arm64)
-+ *
-+ * stack layout after mcount_enter in _mcount():
-+ *
-+ * current sp =>     0:+-----+
-+ *		       | x29 | -> instrumented function's fp
-+ *		       +-----+
-+ *		       | x30 | -> _mcount()'s lr (= instrumented function's pc)
-+ * old sp     =>   +16:+-----+
-+ * when instrumented   |     |
-+ * function calls      | ... |
-+ * _mcount()	       |     |
-+ *		       |     |
-+ * instrumented => +xx:+-----+
-+ * function's fp       | x29 | -> parent's fp
-+ *		       +-----+
-+ *		       | x30 | -> instrumented function's lr (= parent's pc)
-+ *		       +-----+
-+ *		       | ... |
-+ */
-+
-+	.macro mcount_enter
-+	stp	x29, x30, [sp, #-16]!
-+	.endm
-+
-+	.macro mcount_exit
-+	ldp	x29, x30, [sp], #16
-+	ret
-+	.endm
-+
-+	.macro mcount_adjust_addr rd, rn
-+	sub	\rd, \rn, #AARCH64_INSN_SIZE
-+	.endm
-+
-+	/* for instrumented function's parent */
-+	.macro mcount_get_parent_fp reg
-+	ldr	\reg, [sp]
-+	ldr	\reg, [\reg]
-+	.endm
-+
-+	/* for instrumented function */
-+	.macro mcount_get_pc0 reg
-+	mcount_adjust_addr	\reg, x30
-+	.endm
-+
-+	.macro mcount_get_pc reg
-+	ldr	\reg, [sp, #8]
-+	mcount_adjust_addr	\reg, \reg
-+	.endm
-+
-+	.macro mcount_get_lr reg
-+	ldr	\reg, [sp]
-+	ldr	\reg, [\reg, #8]
-+	mcount_adjust_addr	\reg, \reg
-+	.endm
-+
-+	.macro mcount_get_lr_addr reg
-+	ldr	\reg, [sp]
-+	add	\reg, \reg, #8
-+	.endm
-+
-+/*
-+ * void _mcount(unsigned long return_address)
-+ * @return_address: return address to instrumented function
-+ *
-+ * This function makes calls, if enabled, to:
-+ *     - tracer function to probe instrumented function's entry,
-+ *     - ftrace_graph_caller to set up an exit hook
-+ */
-+ENTRY(_mcount)
-+#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+	ldr	x0, =ftrace_trace_stop
-+	ldr	x0, [x0]		// if ftrace_trace_stop
-+	ret				//   return;
-+#endif
-+	mcount_enter
-+
-+	ldr	x0, =ftrace_trace_function
-+	ldr	x2, [x0]
-+	adr	x0, ftrace_stub
-+	cmp	x0, x2			// if (ftrace_trace_function
-+	b.eq	skip_ftrace_call	//     != ftrace_stub) {
-+
-+	mcount_get_pc	x0		//       function's pc
-+	mcount_get_lr	x1		//       function's lr (= parent's pc)
-+	blr	x2			//   (*ftrace_trace_function)(pc, lr);
-+
-+#ifndef CONFIG_FUNCTION_GRAPH_TRACER
-+skip_ftrace_call:			//   return;
-+	mcount_exit			// }
-+#else
-+	mcount_exit			//   return;
-+					// }
-+skip_ftrace_call:
-+	ldr	x1, =ftrace_graph_return
-+	ldr	x2, [x1]		//   if ((ftrace_graph_return
-+	cmp	x0, x2			//        != ftrace_stub)
-+	b.ne	ftrace_graph_caller
-+
-+	ldr	x1, =ftrace_graph_entry	//     || (ftrace_graph_entry
-+	ldr	x2, [x1]		//        != ftrace_graph_entry_stub))
-+	ldr	x0, =ftrace_graph_entry_stub
-+	cmp	x0, x2
-+	b.ne	ftrace_graph_caller	//     ftrace_graph_caller();
-+
-+	mcount_exit
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-+ENDPROC(_mcount)
-+
-+ENTRY(ftrace_stub)
-+	ret
-+ENDPROC(ftrace_stub)
-+
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+/*
-+ * void ftrace_graph_caller(void)
-+ *
-+ * Called from _mcount() or ftrace_caller() when function_graph tracer is
-+ * selected.
-+ * This function w/ prepare_ftrace_return() fakes link register's value on
-+ * the call stack in order to intercept instrumented function's return path
-+ * and run return_to_handler() later on its exit.
-+ */
-+ENTRY(ftrace_graph_caller)
-+	mcount_get_lr_addr	  x0	//     pointer to function's saved lr
-+	mcount_get_pc		  x1	//     function's pc
-+	mcount_get_parent_fp	  x2	//     parent's fp
-+	bl	prepare_ftrace_return	// prepare_ftrace_return(&lr, pc, fp)
-+
-+	mcount_exit
-+ENDPROC(ftrace_graph_caller)
-+
-+/*
-+ * void return_to_handler(void)
-+ *
-+ * Run ftrace_return_to_handler() before going back to parent.
-+ * @fp is checked against the value passed by ftrace_graph_caller()
-+ * only when CONFIG_FUNCTION_GRAPH_FP_TEST is enabled.
-+ */
-+	.global return_to_handler
-+return_to_handler:
-+	str	x0, [sp, #-16]!
-+	mov	x0, x29			//     parent's fp
-+	bl	ftrace_return_to_handler// addr = ftrace_return_to_hander(fp);
-+	mov	x30, x0			// restore the original return address
-+	ldr	x0, [sp], #16
-+	ret
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-diff --git a/arch/arm64/kernel/ftrace.c b/arch/arm64/kernel/ftrace.c
-new file mode 100644
-index 0000000..a559ab8
---- /dev/null
-+++ b/arch/arm64/kernel/ftrace.c
-@@ -0,0 +1,64 @@
-+/*
-+ * arch/arm64/kernel/ftrace.c
-+ *
-+ * Copyright (C) 2013 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/ftrace.h>
-+#include <linux/swab.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/ftrace.h>
-+#include <asm/insn.h>
-+
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+/*
-+ * function_graph tracer expects ftrace_return_to_handler() to be called
-+ * on the way back to parent. For this purpose, this function is called
-+ * in _mcount() or ftrace_caller() to replace return address (*parent) on
-+ * the call stack to return_to_handler.
-+ *
-+ * Note that @frame_pointer is used only for sanity check later.
-+ */
-+void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
-+			   unsigned long frame_pointer)
-+{
-+	unsigned long return_hooker = (unsigned long)&return_to_handler;
-+	unsigned long old;
-+	struct ftrace_graph_ent trace;
-+	int err;
-+
-+	if (unlikely(atomic_read(&current->tracing_graph_pause)))
-+		return;
-+
-+	/*
-+	 * Note:
-+	 * No protection against faulting at *parent, which may be seen
-+	 * on other archs. It's unlikely on AArch64.
-+	 */
-+	old = *parent;
-+	*parent = return_hooker;
-+
-+	trace.func = self_addr;
-+	trace.depth = current->curr_ret_stack + 1;
-+
-+	/* Only trace if the calling function expects to */
-+	if (!ftrace_graph_entry(&trace)) {
-+		*parent = old;
-+		return;
-+	}
-+
-+	err = ftrace_push_return_trace(old, self_addr, &trace.depth,
-+				       frame_pointer);
-+	if (err == -EBUSY) {
-+		*parent = old;
-+		return;
-+	}
-+}
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
--- 
-1.7.9.5
+Sorry for my fault. I will modify it.
 
+> [...]
+> 
+> > +static void i2c_imx_dma_tx_callback(void *arg)
+> [...]
+> > +static int i2c_imx_dma_tx(struct imx_i2c_struct *i2c_imx, struct
+> > +i2c_msg
+> > *msgs) +{
+> [...]
+> > +static void i2c_imx_dma_rx_callback(void *arg)
+> [...]
+> > +static int i2c_imx_dma_rx(struct imx_i2c_struct *i2c_imx, struct
+> > +i2c_msg
+> > *msgs) +{
+> [...]
+> 
+> Looks like there's quite a bit of code duplication in the four functions
+> above, can you not unify them ?
+> 
+
+Yes, There's looks like quite a bit of code duplication in the four functions above.
+I also hate quite a bit of code duplication.
+But there are many differences in fact.
+If unify them we should add many conditional statements and auxiliary variable.
+I think it's superfluous and will damage the readability.
+So, I am very confused. And if you think unify them will be better I will modify it. 
+Thanks for your suggestion and looking forward to hearing from you.
+
+
+> Also, can the DMA not do full-duplex operation ? What I see here is just
+> half- duplex operations , one for RX and the other one for TX .
+> 
+
+Yes, here have two dma channels, one for RX and the other one for TX.
+When we request the channel we should determine it for TX or RX.
+
+> > +static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx) {
+> > +	struct imx_i2c_dma *dma = i2c_imx->dma;
+> > +	struct dma_chan *dma_chan;
+> > +
+> > +	dma_chan = dma->chan_tx;
+> > +	dma->chan_tx = NULL;
+> > +	dma->buf_tx = 0;
+> > +	dma->len_tx = 0;
+> > +	dma_release_channel(dma_chan);
+> > +
+> > +	dma_chan = dma->chan_rx;
+> > +	dma->chan_tx = NULL;
+> > +	dma->buf_rx = 0;
+> > +	dma->len_rx = 0;
+> > +	dma_release_channel(dma_chan);
+> 
+> You must make _DEAD_ _SURE_ this function is not ever called while the
+> DMA is still active. In your case, I have a feeling that's not handled.
+>
+
+I think this function will not called while the DMA is still 
+active because of the Linux synchronization mechanism - completion. 
+I used it in the dma function.
+
+> > +}
+> >  /** Functions for IMX I2C adapter driver
+> > ***************************************
+> > **********************************************************************
+> > ****
+> > *****/
+> >
+> > @@ -425,7 +600,8 @@ static irqreturn_t i2c_imx_isr(int irq, void
+> *dev_id)
+> >  	return IRQ_NONE;
+> >  }
+> >
+> > -static int i2c_imx_write(struct imx_i2c_struct *i2c_imx, struct
+> > i2c_msg
+> > *msgs) +static int i2c_imx_pio_write(struct imx_i2c_struct *i2c_imx,
+> > +							struct i2c_msg *msgs)
+> >  {
+> >  	int i, result;
+> >
+> > @@ -458,7 +634,56 @@ static int i2c_imx_write(struct imx_i2c_struct
+> > *i2c_imx, struct i2c_msg *msgs) return 0;  }
+> >
+> > -static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct
+> > i2c_msg
+> > *msgs) +static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
+> > +							struct i2c_msg *msgs)
+> > +{
+> > +	int result, timeout=1000;
+> > +	unsigned int temp = 0;
+> > +
+> > +	reinit_completion(&i2c_imx->dma->cmd_complete);
+> > +	result = i2c_imx_dma_tx(i2c_imx, msgs);
+> > +	if(result)
+> > +		return result;
+> > +
+> > +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> > +	temp |= I2CR_DMAEN;
+> > +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> > +
+> > +	/* write slave address */
+> > +	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
+> > +	result = wait_for_completion_interruptible_timeout(
+> > +						&i2c_imx->dma->cmd_complete,
+> > +						msecs_to_jiffies(1000));
+> 
+> Pull the magic constant of 1000 out and #define it as some
+> I2C_IMX_DMA_TIMEOUT please .
+> 
+
+Thanks, I will modify it.
+
+> > +	if (result == 0)
+> > +		return  -ETIMEDOUT;
+> > +
+> > +	/* waiting for Transfer complete. */
+> > +	while(timeout--) {
+> > +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
+> > +		if (temp & 0x80)
+> > +			break;
+> > +		udelay(10);
+> > +	}
+> > +
+> > +	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
+> > +	temp &= ~I2CR_DMAEN;
+> > +	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+> > +
+> > +	/* write the last byte */
+> > +	imx_i2c_write_reg(msgs->buf[msgs->len-1], i2c_imx, IMX_I2C_I2DR);
+> > +	result = i2c_imx_trx_complete(i2c_imx);
+> > +	if (result)
+> > +		return result;
+> > +
+> > +	result = i2c_imx_acked(i2c_imx);
+> > +	if (result)
+> > +		return result;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int i2c_imx_pio_read(struct imx_i2c_struct *i2c_imx,
+> > +							struct i2c_msg *msgs)
+> >  {
+> >  	int i, result;
+> >  	unsigned int temp;
+> > @@ -518,6 +743,80 @@ static int i2c_imx_read(struct imx_i2c_struct
+> > *i2c_imx, struct i2c_msg *msgs) return 0;  }
+> >
+> > +static int i2c_imx_dma_read(struct imx_i2c_struct *i2c_imx,
+> > +							struct i2c_msg *msgs)
+> > +{
+> 
+> Looks like almost an duplication as well...
+> 
+
+Considering the symmetric with them i2c_imx_dma_write.
+i2c_imx_dma_write and i2c_imx_pio_write have many differences. So I separate them.
+But i2c_imx_dma_read and i2c_imx_pio_read is the same at first part. I may should unify them.
+But it's will not symmetric with them i2c_imx_dma_write if unified them. So I don't know which will be better?
+Looking forward to hearing from you.
+
+> Besides, full-duplex DMA operation is missing, please explain why.
+> 
+> THanks!
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
