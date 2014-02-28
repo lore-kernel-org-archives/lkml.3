@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950AbaB1QSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:18:18 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:52742 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751447AbaB1QSQ (ORCPT
+	id S1753010AbaB1QTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:19:01 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:49910 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbaB1QTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:18:16 -0500
-Message-ID: <5310B6BF.10604@free-electrons.com>
-Date: Fri, 28 Feb 2014 17:18:07 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: atmel_usba: Fix crashed during stopping
- when DEBUG is enabled
-References: <1393598066-4016-1-git-send-email-gregory.clement@free-electrons.com> <20140228155027.GC2974@piout.net>
-In-Reply-To: <20140228155027.GC2974@piout.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Feb 2014 11:19:00 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, kvm@vger.kernel.org
+Subject: [GIT PULL] KVM changes for 3.14-rc5
+Date: Fri, 28 Feb 2014 17:18:50 +0100
+Message-Id: <1393604330-17086-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/02/2014 16:50, Alexandre Belloni wrote:
-> Hi Gregory,
-> 
-> On 28/02/2014 at 15:34:01 +0100, Gregory CLEMENT wrote :
->> The debug trace in the atmel_usba_stop function made the assumption
->> that the driver pointer passed in parameter was not NULL. Since the
->> commit "usb: gadget: udc-core: fix a regression during gadget driver
->> unbinding", it was no more always true. This lead to a kernel crash.
->>
->> This commit now use the driver pointer stored in udc which fixes this
->> issue.
->>
->> Since the commit which have triggered this issue was backported to the
->> 3.2 stable branch, then this one should also be backported to the same
->> kernel.
->>
->> Cc: stable@vger.kernel.org # v3.2+
->> Fixes: 511f3c5326ea (usb: gadget: udc-core: fix a regression during gadget driver unbinding)
->> ---
->>  drivers/usb/gadget/atmel_usba_udc.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
->> index 52771d4c44bc..167843de2d8a 100644
->> --- a/drivers/usb/gadget/atmel_usba_udc.c
->> +++ b/drivers/usb/gadget/atmel_usba_udc.c
->> @@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
->>  	toggle_bias(0);
->>  	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
->>  
->> -	udc->driver = NULL;
->> -
->>  	clk_disable_unprepare(udc->hclk);
->>  	clk_disable_unprepare(udc->pclk);
->>  
->> -	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
->> +	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
->> +
->> +	udc->driver = NULL;
-> 
-> Shouldn't we get rid of that assignment as it is done in
-> usb_gadget_remove_driver() anyway ?
+Linus,
 
-usb_gadget_remove_driver() is not the only function to use it.
-usb_udc_softconn_store() can call it too and doesn't have any
-debug message.
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+
+for you to fetch changes up to 1b385cbdd74aa803e966e01e5fe49490d6044e30:
+
+  kvm, vmx: Really fix lazy FPU on nested guest (2014-02-27 22:54:11 +0100)
 
 Thanks,
 
-Gregory
+Paolo
 
+----------------------------------------------------------------
+Three x86 fixes and one for ARM/ARM64.  In particular, nested
+virtualization on Intel is broken in 3.13 and fixed by this
+pull request.
 
-> 
->>  
->>  	return 0;
->>  }
->> -- 
->> 1.8.1.2
->>
-> 
+----------------------------------------------------------------
+Andrew Honig (1):
+      kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
 
+Marc Zyngier (1):
+      arm/arm64: KVM: detect CPU reset on CPU_PM_EXIT
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Marcelo Tosatti (1):
+      KVM: MMU: drop read-only large sptes when creating lower level sptes
+
+Paolo Bonzini (1):
+      kvm, vmx: Really fix lazy FPU on nested guest
+
+ arch/arm/kvm/arm.c        |  3 ++-
+ arch/arm/kvm/interrupts.S | 11 ++++++++++-
+ arch/arm64/kvm/hyp.S      | 27 +++++++++++++++++++++++++--
+ arch/x86/kvm/mmu.c        |  1 +
+ arch/x86/kvm/vmx.c        |  2 +-
+ arch/x86/kvm/x86.c        |  2 +-
+ 6 files changed, 40 insertions(+), 6 deletions(-)
