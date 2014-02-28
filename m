@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaB1CXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 21:23:15 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:41782
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751532AbaB1CXO (ORCPT
+	id S1752198AbaB1CYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 21:24:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53386 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaB1CYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 21:23:14 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIe0eah1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 28 Feb 2014 10:23:52 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Marek Vasut <marex@denx.de>
-CC: <mark.rutland@arm.com>, <wsa@the-dreams.de>,
-        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Yuan Yao <yao.yuan@freescale.com>
-Subject: Re: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
-Message-ID: <20140228022348.GB28660@S2101-09.ap.freescale.net>
-References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com>
- <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
- <201402272139.36076.marex@denx.de>
- <20140228021300.GJ13537@S2101-09.ap.freescale.net>
+	Thu, 27 Feb 2014 21:24:20 -0500
+Date: Fri, 28 Feb 2014 11:23:59 +0900
+From: Mark Brown <broonie@kernel.org>
+To: nikesh@opensource.wolfsonmicro.com
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        nikesh <Nikesh.Oswal@wolfsonmicro.com>
+Message-ID: <20140228022359.GD9383@sirena.org.uk>
+References: <1393517900-27126-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u+M3zPFM/+rkulSy"
 Content-Disposition: inline
-In-Reply-To: <20140228021300.GJ13537@S2101-09.ap.freescale.net>
+In-Reply-To: <1393517900-27126-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+X-Cookie: Q:	Are we not men?
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+X-SA-Exim-Connect-IP: 175.126.181.153
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASOC: dapm: add params_select callback
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:13:02AM +0800, Shawn Guo wrote:
-> On Thu, Feb 27, 2014 at 09:39:35PM +0100, Marek Vasut wrote:
-> > > @@ -193,6 +216,7 @@ static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
-> > >  	.ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
-> > >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
-> > >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
-> > > +	.has_dma_support	= false,
-> > > 
-> > >  };
-> > > 
-> > > @@ -203,6 +227,7 @@ static const struct imx_i2c_hwdata imx21_i2c_hwdata  =
-> > > { .ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
-> > >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
-> > >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
-> > > +	.has_dma_support	= false,
-> > > 
-> > >  };
-> > > 
-> > > @@ -213,6 +238,7 @@ static struct imx_i2c_hwdata vf610_i2c_hwdata = {
-> > >  	.ndivs			= ARRAY_SIZE(vf610_i2c_clk_div),
-> > >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W1C,
-> > >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_0,
-> > > +	.has_dma_support	= true,
-> > 
-> > So why exactly don't we have a DT prop for determining whether the controller 
-> > has DMA support ?
-> 
-> Using DMA or PIO is a decision that should be made by driver on its own,
-> not device tree.
 
-Sorry.  I misunderstood it.  Yes, we can look at the DT property 'dmas'
-to know if the controller has DMA capability.
+--u+M3zPFM/+rkulSy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Shawn
+On Thu, Feb 27, 2014 at 04:18:20PM +0000, nikesh@opensource.wolfsonmicro.com wrote:
+> From: nikesh <Nikesh.Oswal@wolfsonmicro.com>
 
+As I said in my reply to your earlier patch:
+
+| You need to fix both your git and e-mail setups, you should be using
+| "Nikesh Oswal" or similar as your real name and more importantly your
+
+Please don't ignore review comments, it tends not to be helpful.
+
+Please do also use subject lines matching the style for the subsystem.
+
+> dai-link params for codec-codec links were fixed. The fixed link between
+> codec and another chip which may be another codec, baseband, bluetooth
+> codec etc may require run time configuaration changes. This change
+> provides an optional callback to select one of the param from a list
+> of params.
+
+OK, so the question now is why is this being done using a callback and
+why is that callback picking from a list of predefined configurations?
+You've not motivated this decision at all and it's not obvious to me
+that it's the best approach (for example, why not just let the machine
+driver set the parameters at any time rather than have it wait for a
+callback)?
+
+The picking from a list is especially odd, what I said in my previous
+review was:
+
+| If you look at the existing interface you'll also see that it takes an
+| array of parameters rather than just a single parameter.  The idea was
+| to extend the interface to provide a control to userspace allowing
+| selection of one of the configurations from a list for use with cases
+| like modems which can switch between 8kHz and 16kHz modes.
+
+but if the selection is done purely in kernel space and we're not
+constructing an enum then it's less clear that this is helpful.
+
+--u+M3zPFM/+rkulSy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTD/M8AAoJELSic+t+oim9oYgP/iQ36X7Iay3g0P1IZOUK95wD
+J9Rwo9j0Lm+L9O9injgQmjZxha2igCeeo7DoJVN6RuZ4Rj0jIteGtGKwxpK2JnMB
+K971vQjWCnwlwbFewj3Cha0zIMxJSugxkGYSVTrwjQcQzjsOL/qUk68jyL/M6/Zf
+NBbkc1RePGGzt1+v2w2PqWw5xGUnm3doIluTZCBS9KgxIpeqkP2S38a72vF5ACja
+8XNvzgAkh5SOXssrwptqarpVxkz6jiEHpbZ2/tHqnJgdys8VvOKuakPd7IZVF3gf
+zw9WdToORufdJLF4XObhOLjMJ7QV/yb+67vpCZvfneBFDqJrVNXeVzRvsi5xAY8w
+ZKeZqZQM8U/BiA66/5MJZD9voQX6W2fGwcnl4MG/4+UesU6t1kEX5uRHwizCzp3N
+74/hh5yOSxVgDANKGCmG82ds69gTCavsqto6LVIDMOEoM46ZO6M3kln7UIfhgHnq
+mSpvocrzzBHExQGqRN3D1tqfKN+xNuwvIUH+zVaZUnGYDfPETOS2zyIEueWSXer1
+8X8+aN7OsElaD1dySj9sTG3iSqoGF/qYNWof2tJ+pb3mobj14sdBi1Ex7E23SN9n
+er2drZRTpqvwzg8RPXaDZbOYeZjptANYK8+/3HVpT5NFO/mrv4ZWsZjodC9SWAKY
++BLJwc7Gb/EefH3gHXDR
+=3Iga
+-----END PGP SIGNATURE-----
+
+--u+M3zPFM/+rkulSy--
