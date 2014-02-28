@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaB1RRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:17:02 -0500
-Received: from yotta.elopez.com.ar ([31.220.24.173]:48058 "EHLO
-	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaB1RQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:16:59 -0500
-Message-ID: <5310C473.7030304@elopez.com.ar>
-Date: Fri, 28 Feb 2014 14:16:35 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+	id S1753039AbaB1RSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:18:17 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:33414 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752542AbaB1RSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:18:16 -0500
+Message-ID: <5310C4CB.2060201@mev.co.uk>
+Date: Fri, 28 Feb 2014 17:18:03 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH v2 2/5] clk: sun6i: Reparent AHB clock on PLL6
-References: <1393605440-14643-1-git-send-email-maxime.ripard@free-electrons.com> <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1393605440-14643-3-git-send-email-maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: add timeouts to while loops in s626.c
+References: <1393572936-9676-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1393572936-9676-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
-
-El 28/02/14 13:37, Maxime Ripard escribió:
-> In order for the DMA controller to work for SDRAM to devices transfers, the AHB
-> clock should be reparented on the PLL6.
+On 2014-02-28 07:35, Chase Southwood wrote:
+> Smatch located a handful of while loops testing readl calls in s626.c.
+> Since these while loops depend on readl succeeding, it's safer to make
+> sure they time out eventually.
 >
-> Force that parenting in the clock driver.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
 > ---
->   drivers/clk/sunxi/clk-sunxi.c | 18 +++++++++++++++++-
->   1 file changed, 17 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-> index f6f61cc..a5c5882 100644
-> --- a/drivers/clk/sunxi/clk-sunxi.c
-> +++ b/drivers/clk/sunxi/clk-sunxi.c
-> @@ -1286,7 +1286,7 @@ static void __init of_sunxi_table_clock_setup(const struct of_device_id *clk_mat
->    */
->   static void __init sunxi_clock_protect(void)
->   {
-> -	struct clk *clk;
-> +	struct clk *clk, *parent;
->
->   	/* memory bus clock - sun5i+ */
->   	clk = clk_get(NULL, "mbus");
-> @@ -1307,6 +1307,22 @@ static void __init sunxi_clock_protect(void)
->   	if (!IS_ERR(clk))
->   		clk_prepare_enable(clk);
->
-> +	clk = clk_get(NULL, "ahb1_mux");
-> +	if (IS_ERR(clk)) {
-> +		pr_err("Couldn't get AHB1 Mux\n");
-> +		return;
-> +	}
-> +
-> +	parent = clk_get(NULL, "pll6");
-> +	if (IS_ERR(clk)) {
-> +		pr_err("Couldn't get PLL6\n");
-> +		return;
-> +	}
+> Ian and/or Hartley, I'd love your comments on this.  It seems to me that
+> we want these kinds of while loops properly timed out, but I want to make
+> sure I'm doing everything properly.  First off, s626_debi_transfer() says
+> directly that it is called from within critical sections, so I assume
+> that means that the new comedi_timeout() function is no good here, and
+> s626_send_dac() looked equally suspicious, so I opted for iterative
+> timeouts.  Is this correct?  Also, for these timeouts, I used a very
+> conservative 10000 iterations, would it be better to decrease that?
 
-Remember this runs on every sunxi, but this bit of magic is sun6i only. 
-We'll get bogus messages on the other platforms if this goes as is. You 
-could do something like the following:
+Well 10000 iterations is an improvement on infinity!  If the hardware is 
+working, you'd expect it to go round a lot fewer iterations than that, 
+but if the hardware is broken all bets are off, especially if it is 
+generating interrupts.
 
- > +	clk = clk_get(NULL, "ahb1_mux");
- > +	parent = clk_get(NULL, "pll6");
- > +	if (!IS_ERR(clk) && !IS_ERR(parent))
- > +		clk_set_parent(...)
+> Also, do my error strings appear acceptable?
 
-If these things become more common, we may need to consider a 
-per-platform fixup function or something.
+Mostly.  There's a type in one of the strings that says "TLS" instead of 
+"TSL".
 
-Cheers,
+> And finally, are timeouts here even necessary or helpful, or are there
+> any better ways to do it?
 
-Emilio
+In the case of s626_send_dac(), it doesn't seem to be used in any 
+critical sections, so it could make use of Hartley's comedi_timeout().
+
+Some of the timeout errors could be propagated, especially for 
+s626_send_dac() which is only reachable from very few paths.
+
+There are other infinite loops involving calls to the s626_mc_test() 
+function, but those could be dealt with by other patches.
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
