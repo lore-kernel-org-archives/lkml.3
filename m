@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaB1DoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 22:44:06 -0500
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:51863 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaB1DoE (ORCPT
+	id S1751443AbaB1DoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 22:44:21 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42432 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaB1DoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 22:44:04 -0500
+	Thu, 27 Feb 2014 22:44:19 -0500
+Date: Thu, 27 Feb 2014 21:41:38 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 4/9] Input: pmic8xxx-keypad - Migrate to DT
+Message-ID: <20140228034138.GD7308@joshc.qualcomm.com>
+References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+ <1393552520-9068-5-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <52E42B86.1020701@web.de>
-References: <52E42B86.1020701@web.de>
-Date: Thu, 27 Feb 2014 22:44:03 -0500
-X-Google-Sender-Auth: fgUyLAowHD8-lBkcIL2z6fkP-34
-Message-ID: <CAJvTdK=4+fDpPCzy16gch+21JH_t-icixehEkdz_wJBSvrZFXw@mail.gmail.com>
-Subject: Re: [PATCH] intel_idle: Add CPU model 54 (Atom N2000 series)
-From: Len Brown <lenb@kernel.org>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393552520-9068-5-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.
+Looks good, with the exception of one thing...
 
-Note that the difference that will be noticed most will be that ACPI
-on this kind of box typically offers the deepest C-state only when
-on DC, and disables it on DC.  intel_idle offers it no matter
-if the box is on AC or DC.
-
-thanks,
--Len Brown, Intel Open Source Technology Center
-
-
-On Sat, Jan 25, 2014 at 4:24 PM, Jan Kiszka <jan.kiszka@web.de> wrote:
-> From: Jan Kiszka <jan.kiszka@siemens.com>
->
-> Add CPU ID for Atom N2600/N2800 processors. Datasheets indicate support
-> for this, detailed information about potential quirks or limitations are
-> missing, though. So we just reuse the definition for the previous ATOM
-> series. Tests on N2800 systems showed that this addition is fine an can
-> reduce power consumption by about 0.25 W (personally confirmed on Intel
-> DN2800MT).
->
-> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+On Thu, Feb 27, 2014 at 05:55:15PM -0800, Stephen Boyd wrote:
+> The driver is only supported on DT enabled platforms. Convert the
+> driver to DT so that it can probe properly.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  drivers/idle/intel_idle.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 797ed29..6467fc9 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -503,6 +503,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
->         ICPU(0x2f, idle_cpu_nehalem),
->         ICPU(0x2a, idle_cpu_snb),
->         ICPU(0x2d, idle_cpu_snb),
-> +       ICPU(0x36, idle_cpu_atom),
->         ICPU(0x3a, idle_cpu_ivb),
->         ICPU(0x3e, idle_cpu_ivb),
->         ICPU(0x3c, idle_cpu_hsw),
->
->
+>  drivers/input/keyboard/pmic8xxx-keypad.c | 150 ++++++++++++++++++-------------
+> @@ -471,50 +514,27 @@ static void pmic8xxx_kp_close(struct input_dev *dev)
+>   */
+>  static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>  {
+[..]
+> -	keymap_data = pdata->keymap_data;
+> -	if (!keymap_data) {
+> -		dev_err(&pdev->dev, "no keymap data supplied\n");
+> -		return -EINVAL;
+> -	}
+> +	repeat = !of_property_read_bool(pdev->dev.of_node,
+> +					"linux,input-no-autorepeat");
+> +	wakeup = !of_property_read_bool(pdev->dev.of_node,
+> +					"linux,keypad-wakeup");
 
-
+I don't think you mean to invert this.
 
 -- 
-Len Brown, Intel Open Source Technology Center
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
