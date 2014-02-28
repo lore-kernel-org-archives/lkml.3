@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaB1KDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:03:23 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:64678 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaB1KCF (ORCPT
+	id S1751360AbaB1KIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:08:21 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38358 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018AbaB1KIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:02:05 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-64-53105e98b090
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/3] regulator: s2mps11: Don't store registered regulators in
- state container
-Date: Fri, 28 Feb 2014 11:01:48 +0100
-Message-id: <1393581710-17754-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1393581710-17754-1-git-send-email-k.kozlowski@samsung.com>
-References: <1393581710-17754-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e/4Zd0ZcQLBBnfa9C02zljPajH14RM2
-	i9cvDC3ONr1ht/h2pYPJ4vKuOWwWM87vY7JYe+Quu8XFFV+YLNbPeM1iMWf6OyYHbo+ds+6y
-	e2xa1cnm0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBkTJ7exFyzkqdjcdpClgbGLq4uRk0NC
-	wERiSc8hNghbTOLCvfVANheHkMBSRokbt1dBOX1MEscnbWMBqWITMJbYvHwJWEJEYCOjxMH9
-	h1lBHGaBmUwSf24+YAKpEhaIl5g26RmYzSKgKrH67TQwm1fAXWJdO9B2Rg6gfQoScybZgJic
-	Ah4SF9cYglQIAVVc2XuXeQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYISH3ZQfj
-	4mNWhxgFOBiVeHgnePIHC7EmlhVX5h5ilOBgVhLhzXMXCBbiTUmsrEotyo8vKs1JLT7EyMTB
-	KdXA6MbU1/Fu6c6yc2lqMY9OHTqwReVkJvMii//+mVeEDj8qqznI+7ePfZFxtAXHgldZlUaf
-	bJ+vC2XQEojr462LD5jfEG7QV/xuotykmymzupxbmLwZzvU8Kr3rV2t2K6pnw6OTU950XSvx
-	tpl9R+WBC9cLgY3FSkffLE9P/nn/5nQhUZNPfG6xSizFGYmGWsxFxYkAyxlu7hcCAAA=
+	Fri, 28 Feb 2014 05:08:18 -0500
+Date: Fri, 28 Feb 2014 11:08:16 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jenny Tc <jenny.tc@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Linux-OMAP <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
+Message-ID: <20140228100816.GA13406@amd.pavel.ucw.cz>
+References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
+ <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
+ <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
+ <20140228030727.GB27921@jenny-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228030727.GB27921@jenny-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulators registered by devm_regulator_register() do not have to be
-stored in state container because they are never dereferenced later.
-The array of regulator_dev can be safely removed from state container.
+On Fri 2014-02-28 08:37:27, Jenny Tc wrote:
+> On Thu, Feb 27, 2014 at 09:18:57PM +0100, Linus Walleij wrote:
+> > On Tue, Feb 4, 2014 at 6:12 AM, Jenny TC <jenny.tc@intel.com> wrote:
+> > 
+> > > +static inline bool __is_battery_full
+> > > +       (long volt, long cur, long iterm, unsigned long cv)
+> > 
+> > Overall I wonder if you've run checkpatch on these patches, but why
+> > are you naming this one function with a double __underscore?
+> > Just is_battery_full_check() or something would work fine I guess?
+> 
+> Just to convey that is_battery_full is a local function and not generic. You
+> can find similar usage in power_supply_core.c (__power_supply_changed_work)
+> and in other drivers. Isn't it advised to have __ prefixes?
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/regulator/s2mps11.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+It is static; everybody sees it is local. __ prefix usually means
+something else.
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index cd0b9e35a56d..3647d590b962 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -28,8 +28,6 @@
- #define S2MPS11_REGULATOR_CNT ARRAY_SIZE(regulators)
- 
- struct s2mps11_info {
--	struct regulator_dev *rdev[S2MPS11_REGULATOR_MAX];
--
- 	int ramp_delay2;
- 	int ramp_delay34;
- 	int ramp_delay5;
-@@ -439,6 +437,8 @@ common_reg:
- 	config.regmap = iodev->regmap_pmic;
- 	config.driver_data = s2mps11;
- 	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
-+		struct regulator_dev *regulator;
-+
- 		if (!reg_np) {
- 			config.init_data = pdata->regulators[i].initdata;
- 			config.of_node = pdata->regulators[i].reg_node;
-@@ -447,10 +447,10 @@ common_reg:
- 			config.of_node = rdata[i].of_node;
- 		}
- 
--		s2mps11->rdev[i] = devm_regulator_register(&pdev->dev,
-+		regulator = devm_regulator_register(&pdev->dev,
- 						&regulators[i], &config);
--		if (IS_ERR(s2mps11->rdev[i])) {
--			ret = PTR_ERR(s2mps11->rdev[i]);
-+		if (IS_ERR(regulator)) {
-+			ret = PTR_ERR(regulator);
- 			dev_err(&pdev->dev, "regulator init failed for %d\n",
- 				i);
- 			return ret;
+> > > +       u16 capacity;   /* mAh */
+> > > +       u16 voltage_max; /* mV */
+> > > +       /* charge termination current */
+> > > +       u16 chrg_term_mA;
+> > > +       /* Low battery level voltage */
+> > > +       u16 low_batt_mV;
+> > > +       /* upper and lower temperature limits on discharging */
+> > > +       s8 disch_temp_ul; /* Degree Celsius */
+> > > +       s8 disch_temp_ll; /* Degree Celsius */
+> > > +       /* number of temperature monitoring ranges */
+> > > +       u16 temp_mon_ranges;
+> > > +       struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
+> > > +       /* lowest temperature supported */
+> > > +       s8 temp_low_lim;
+> > > +} __packed;
+> > 
+> > Why packed, and convert to kerneldoc for this struct.
+> 
+> Battery charging profile, may come from EEPROM/emmc which would be packed.
+
+Do you need to do endianness conversion, too?
+									Pavel
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
