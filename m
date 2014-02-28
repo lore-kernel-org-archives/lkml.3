@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaB1NMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:12:05 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53575 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751682AbaB1NI6 (ORCPT
+	id S1752147AbaB1NPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:15:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33328 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514AbaB1NPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:08:58 -0500
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 2/5] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Fri, 28 Feb 2014 13:08:19 +0000
-Message-Id: <1393592902-24750-3-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1393592902-24750-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1393592902-24750-1-git-send-email-Liviu.Dudau@arm.com>
+	Fri, 28 Feb 2014 08:15:39 -0500
+Message-ID: <53108BEF.1020308@pengutronix.de>
+Date: Fri, 28 Feb 2014 14:15:27 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+MIME-Version: 1.0
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local> <530DEA7C.6010609@pengutronix.de> <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local> <530E0B92.5010903@pengutronix.de> <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local> <53104995.4010305@pengutronix.de> <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local> <53108798.7090902@pengutronix.de> <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
+In-Reply-To: <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ranges property for a host bridge controller in DT describes
-the mapping between the PCI bus address and the CPU physical address.
-The resources framework however expects that the IO resources start
-at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-The conversion from pci ranges to resources failed to take that into account.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-In the process move the function into drivers/of/address.c as it
-now depends on pci_address_to_pio() code.
+On 02/28/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
+>>>> What happens if the interrupt handler is delayed? For example in a R=
+T
+>>>> enabled system the interrupt handler runs as a thread. There might b=
+e
+>>>> other threads with higher priority. The hardware will probably send
+>>>> all CAN frames in the FIFO, so you want to reduce the overhead and
+>>>> loop in the tx complete handler.
+>>>>
+>>> Yes I agree with your comment.
+>>> It will be good to have a loop in the Tx interrupt handler I am
+>>> modifying the Tx interrupt handler like below.
+>>>
+>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+>>>         struct xcan_priv *priv =3D netdev_priv(ndev);
+>>>         struct net_device_stats *stats =3D &ndev->stats;
+>>>
+>>>         while (priv->tx_head - priv->tx_tail > 0) {
+>>>                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
+>>>                         break;
+>>>                 }
+>>>                 can_get_echo_skb(ndev, priv->tx_tail %
+>>>                                         priv->xcan_echo_skb_max_tx);
+>>>                 priv->tx_tail++;
+>>>                 stats->tx_packets++;
+>>>                 can_led_event(ndev, CAN_LED_EVENT_TX);
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Probably first clear the interrupt, because you've just handled it, then
+check if it's still present. The question is, do you have to clear the
+IRQ for each transmitted frame, or does one clean of the interrupt clear
+the bit for more then one transmitted frame?
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index d1bb30f..d595d98 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -724,3 +724,37 @@ void __iomem *of_iomap(struct device_node *np, int index)
- 	return ioremap(res.start, resource_size(&res));
- }
- EXPORT_SYMBOL(of_iomap);
-+
-+/**
-+ * of_pci_range_to_resource - Create a resource from an of_pci_range
-+ * @range:	the PCI range that describes the resource
-+ * @np:		device node where the range belongs to
-+ * @res:	pointer to a valid resource that will be updated to
-+ *              reflect the values contained in the range.
-+ * Note that if the range is an IO range, the resource will be converted
-+ * using pci_address_to_pio() which can fail if it is called too early or
-+ * if the range cannot be matched to any host bridge IO space (our case here).
-+ * To guard against that we try to register the IO range first.
-+ * If that fails we know that pci_address_to_pio() will do too.
-+ */
-+void of_pci_range_to_resource(struct of_pci_range *range,
-+	struct device_node *np, struct resource *res)
-+{
-+	res->flags = range->flags;
-+	if (res->flags & IORESOURCE_IO) {
-+		unsigned long port = -1;
-+		if (!pci_register_io_range(range->cpu_addr, range->size))
-+			port = pci_address_to_pio(range->cpu_addr);
-+		if (port == (unsigned long)-1) {
-+			res->start = (resource_size_t)OF_BAD_ADDR;
-+			res->end = (resource_size_t)OF_BAD_ADDR;
-+			return;
-+		}
-+		res->start = port;
-+	} else {
-+		res->start = range->cpu_addr;
-+	}
-+	res->end = res->start + range->size - 1;
-+	res->parent = res->child = res->sibling = NULL;
-+	res->name = np->full_name;
-+}
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 40c418d..3fe500a 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -23,17 +23,8 @@ struct of_pci_range {
- #define for_each_of_pci_range(parser, range) \
- 	for (; of_pci_range_parser_one(parser, range);)
- 
--static inline void of_pci_range_to_resource(struct of_pci_range *range,
--					    struct device_node *np,
--					    struct resource *res)
--{
--	res->flags = range->flags;
--	res->start = range->cpu_addr;
--	res->end = range->cpu_addr + range->size - 1;
--	res->parent = res->child = res->sibling = NULL;
--	res->name = np->full_name;
--}
--
-+extern void of_pci_range_to_resource(struct of_pci_range *range,
-+		struct device_node *np, struct resource *res);
- /* Translate a DMA address from device space to CPU space */
- extern u64 of_translate_dma_address(struct device_node *dev,
- 				    const __be32 *in_addr);
--- 
-1.9.0
+>>>                 isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
+>             --> clear Tx OK interrupt.
 
+>=20
+>>>         }
+>>>         netif_wake_queue(ndev);
+>>> }
+>>>
+>>> Are you Ok with this?
+
+Were getting there :)
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlMQi+8ACgkQjTAFq1RaXHPqFwCgidLsjs4bf60MlQaZsLvSmgvE
+hugAn1Et9bzUjDb07qlE8dv+dsDEfaV7
+=OMGk
+-----END PGP SIGNATURE-----
+
+--BqccfKe4b5F00xdVAJSqp3LTVQq5PE8IE--
