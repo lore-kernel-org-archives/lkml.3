@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaB1LME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:12:04 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:55060 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaB1LMA (ORCPT
+	id S1751961AbaB1LMs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:12:48 -0500
+Received: from ni.piap.pl ([195.187.100.4]:41145 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545AbaB1LMr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:12:00 -0500
-Date: Fri, 28 Feb 2014 11:11:53 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH 0/4] mfd: sec: Add support for S2MPS14
-Message-ID: <20140228111153.GC31720@lee--X1>
-References: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
- <20140228104927.GB31720@lee--X1>
- <1393585526.31997.1.camel@AMDC1943>
+	Fri, 28 Feb 2014 06:12:47 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: linux-arm-kernel@lists.infradead.org
+Cc: lkml <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Yinghai Lu <yinghai@kernel.org>, Russell King <linux@arm.linux.org.uk>
+References: <m3eh2nqz7n.fsf@t19.piap.pl>
+Date: Fri, 28 Feb 2014 12:12:45 +0100
+In-Reply-To: <m3eh2nqz7n.fsf@t19.piap.pl> ("Krzysztof =?utf-8?Q?Ha=C5=82as?=
+ =?utf-8?Q?a=22's?= message of
+	"Fri, 28 Feb 2014 12:00:12 +0100")
 MIME-Version: 1.0
+Message-ID: <m3sir3pk2a.fsf@t19.piap.pl>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1393585526.31997.1.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] CNS3xxx: Fix PCIe early iotable_init().
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140228 #7333291, check: 20140228 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Few days ago I sent patches adding support for S2MPS14 device to the
-> > > sec-core/s2mps11 drivers. These patches were rather large as they covered
-> > > multiple subsystems so I decided to split everything into smaller, separate
-> > > patches.
-> > > 
-> > > The original patchset (version 3) can be found here:
-> > > http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
-> > > 
-> > > This patchset is a small subset of the patchset related to the MFD core
-> > > driver. It adds support for the S2MPS14 device only to the MFD core driver.
-> > > I already obtained acks from Lee Jones during previous reviews.
-> > > 
-> > > The patchset is based on current Linus' tree *with* patch:
-> > > mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-> > > (which is already in Lee Jones' MFD tree)
-> > 
-> > Can all of these patches be applied as they are?
-> > 
-> > Is anything going to break as a result?
-> 
-> Yes, they can be applied as they are. That was the reason behind
-> splitting everything. Nothing should break, as far as I reviewed this
-> and tested.
+Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
 
-Very well, all applied, thanks.
-
-> > > Krzysztof Kozlowski (4):
-> > >   mfd: sec: Add maximum RTC register for regmap config
-> > >   mfd: sec: Select different RTC regmaps for devices
-> > >   mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
-> > >   mfd: sec: Add support for S2MPS14
-> > > 
-> > >  drivers/mfd/sec-core.c              |   57 ++++++++++++-
-> > >  drivers/mfd/sec-irq.c               |   97 ++++++++++++++++++++--
-> > >  include/linux/mfd/samsung/core.h    |    1 +
-> > >  include/linux/mfd/samsung/irq.h     |   31 ++++++-
-> > >  include/linux/mfd/samsung/rtc.h     |   57 +++++++++++--
-> > >  include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
-> > >  6 files changed, 378 insertions(+), 17 deletions(-)
-> > >  create mode 100644 include/linux/mfd/samsung/s2mps14.h
-> > > 
-> > 
-> 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--- a/arch/arm/mach-cns3xxx/cns3420vb.c
++++ b/arch/arm/mach-cns3xxx/cns3420vb.c
+@@ -240,7 +240,7 @@ static void __init cns3420_map_io(void)
+ {
+ 	cns3xxx_map_io();
+ 	iotable_init(cns3420_io_desc, ARRAY_SIZE(cns3420_io_desc));
+-
++	cns3xxx_pcie_iotable_init();
+ 	cns3420_early_serial_setup();
+ }
+ 
+--- a/arch/arm/mach-cns3xxx/core.h
++++ b/arch/arm/mach-cns3xxx/core.h
+@@ -14,6 +14,7 @@
+ #include <linux/reboot.h>
+ 
+ extern void cns3xxx_timer_init(void);
++extern void cns3xxx_pcie_iotable_init(void);
+ 
+ #ifdef CONFIG_CACHE_L2X0
+ void __init cns3xxx_l2x0_init(void);
+--- a/arch/arm/mach-cns3xxx/pcie.c
++++ b/arch/arm/mach-cns3xxx/pcie.c
+@@ -357,6 +357,15 @@ static int cns3xxx_pcie_abort_handler(unsigned long addr, unsigned int fsr,
+ 	return 0;
+ }
+ 
++void __init cns3xxx_pcie_iotable_init()
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(cns3xxx_pcie); i++)
++		iotable_init(cns3xxx_pcie[i].cfg_bases,
++			     ARRAY_SIZE(cns3xxx_pcie[i].cfg_bases));
++}
++
+ static int __init cns3xxx_pcie_init(void)
+ {
+ 	int i;
+@@ -368,8 +377,6 @@ static int __init cns3xxx_pcie_init(void)
+ 			"imprecise external abort");
+ 
+ 	for (i = 0; i < ARRAY_SIZE(cns3xxx_pcie); i++) {
+-		iotable_init(cns3xxx_pcie[i].cfg_bases,
+-			     ARRAY_SIZE(cns3xxx_pcie[i].cfg_bases));
+ 		cns3xxx_pwr_clk_en(0x1 << PM_CLK_GATE_REG_OFFSET_PCIE(i));
+ 		cns3xxx_pwr_soft_rst(0x1 << PM_SOFT_RST_REG_OFFST_PCIE(i));
+ 		cns3xxx_pcie_check_link(&cns3xxx_pcie[i]);
