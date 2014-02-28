@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaB1VRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:17:40 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60319 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaB1VRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:17:38 -0500
-Date: Fri, 28 Feb 2014 13:17:33 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228211733.GK11910@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
- <20140227173150.4e5ed747@gandalf.local.home>
- <530FC1C6.5040209@zytor.com>
- <20140227183008.6be081b7@gandalf.local.home>
- <530FCE6C.4080808@zytor.com>
- <alpine.DEB.2.10.1402271957380.6210@vincent-weaver-1.um.maine.edu>
- <20140228203405.GH11910@linux.vnet.ibm.com>
- <20140228154716.0198d7cb@gandalf.local.home>
- <20140228205409.GB14089@laptop.programming.kicks-ass.net>
+	id S1752858AbaB1VSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:18:08 -0500
+Received: from sauhun.de ([89.238.76.85]:57151 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752206AbaB1VSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 16:18:04 -0500
+Date: Fri, 28 Feb 2014 22:17:58 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: David Howells <dhowells@redhat.com>
+Cc: wolfram@the-dreams.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: Add message transfer tracepoints for I2C
+Message-ID: <20140228211758.GB2517@katana>
+References: <20140218203346.GG18768@katana>
+ <20140109214954.25590.73057.stgit@warthog.procyon.org.uk>
+ <10892.1393506444@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l76fUT7nc3MelDdI"
 Content-Disposition: inline
-In-Reply-To: <20140228205409.GB14089@laptop.programming.kicks-ass.net>
+In-Reply-To: <10892.1393506444@warthog.procyon.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022821-6688-0000-0000-00000714321C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 09:54:09PM +0100, Peter Zijlstra wrote:
-> On Fri, Feb 28, 2014 at 03:47:16PM -0500, Steven Rostedt wrote:
-> > > > I'll try your patch momentarily, first I had some other changes I started 
-> > > > running before I left work (for some reason it recompiled the whole 
-> > > > kernel).
-> > > > 
-> > > > 8: function:             perf_output_begin
-> > > > 8: bprint:               perf_output_begin: VMW: event type 2 config 2a st: 2c3e
-> > > > 8: bputs:                perf_output_begin: VMW: before rcu_dereference
-> > > > 9: function:             __do_page_fault
-> > > > 9: function:                down_read_trylock
-> > > > 9: function:                _cond_resched
-> > > > 9: function:                find_vma
-> > > > 
-> > > > so it looks like the fault happens 
-> > > > 
-> > > > rcu_read_lock();
-> > > > 
-> > > > 116         /*
-> > > > 117          * For inherited events we send all the output towards the parent.
-> > > > 118          */
-> > > > 119         if (event->parent)
-> > > > 120                 event = event->parent;
-> > > > 121 
-> > > > 
-> > > > somewhere between here
-> > > > 
-> > > > 122         rb = rcu_dereference(event->rb);
-> > > > 123         if (unlikely(!rb))
-> > > > 124                 goto out;
-> > > > 
-> > > > and here
-> > > > 
-> > > > 125 
-> > > > 126         if (unlikely(!rb->nr_pages))
-> > > > 127                 goto out;
-> > > > 
-> > > > although if rcu locks do anything to turn off tracing then this could be 
-> > > > suspect.
-> > > 
-> > > The most likely suspect is of course event->rb in the rcu_dereference.
-> > > I have to defer to Steven on how rcu_read_lock() and rcu_read_unlock()
-> > > currently interact with tracing.  ;-)
-> > 
-> > These are all perf related. You'll need to defer to Peter Zijlstra ;-)
-> 
-> I'm lost.. :/
-> 
-> pretty much all perf objects are RCU freed. 
 
-This code isn't running in idle context is it?  If so, RCU will happily
-free out from under it.  CONFIG_PROVE_RCU should detect this sort of thing,
-though.
+--l76fUT7nc3MelDdI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
 
+> > And for the buffer: %*phN is difficult to read IMO. What about %*ph? Or
+> > %*phD at least?
+>=20
+> My problem with that is that it increases the length of the output by 50%=
+ and
+> there's a hard limit on how much output we may produce.
+
+Is it PAGE_SIZE? How is this handled when the buffer is so big that the
+limit will be reached anyhow? Note that it is really uncommon to
+transfer kilobytes in one go via i2c. Usually, big transfers are split
+up into smaller fragments, say 128-256 byte. So, for readability, I'd
+still favour %*ph.
+
+
+--l76fUT7nc3MelDdI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTEP0FAAoJEBQN5MwUoCm2N8QQAJwcR8oQtE8665iDc3n9GSvr
+dNf2LeaMc9glfRZmHXDW6rVFe7duP/ZdBKLklmFLhNEIUALvtDywUpjEn/yFwI4Q
+eGDte13BVq12VgHk9Z56HWxNkLUB+emWl80W3B3eVL5HX4oNopaFlPhcQEIKUln3
+7Lg2pyxAaSgzjmD3Cjq0/gSM7jJqwQR84vqp2FtdUfJ2BcmnGYN6imYgMMpshyyx
+QWrBI4TJE/ZQOIeFYK5/vuEumjX3vsgcbYoC83W7vceNx8B7EVxtV6Qj8FMfXZzL
+bIlJGvGSeHHh96AS3L1itflmthsuFh1inF/Q2qKZB/7oCgP9jrS7s2LMOgHylSz+
+lkVCT8irweisW6vSAymXJlBz5lQiZrl24Zs0u6nP9wPY6Qz6LwqFE4HX5IWWtl94
+rFlwiRN7X/Z4y+MRX6WbalVaRLa74qELN+rhe88dACIgsmrwmYeSTsxqmEXnL+6w
+WDF6HjL2foEdinQaYS9jqUECNY7zOILyRshug8T0rhPxo557qJ9QkVVqA+ai3jmU
+nCXmOPtWihktGzUj7SVDs8MtBXlqGCatwFdJ5Yio13Eol+XD3TanswIXD9uYfm6R
+iNFzg+RTF0ZaM9F7ychKWFuZGIlQPOo2m+20CASlpRq+oKCd7l3fbJjeSsBhzdb6
+rlj+g2jsrt/IL3UsHgXm
+=Yiah
+-----END PGP SIGNATURE-----
+
+--l76fUT7nc3MelDdI--
