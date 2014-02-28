@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaB1KIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:08:21 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38358 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaB1KIS (ORCPT
+	id S1751510AbaB1KKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:10:36 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:23756
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751067AbaB1KKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:08:18 -0500
-Date: Fri, 28 Feb 2014 11:08:16 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jenny Tc <jenny.tc@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Linux-OMAP <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Message-ID: <20140228100816.GA13406@amd.pavel.ucw.cz>
-References: <1391490780-6141-1-git-send-email-jenny.tc@intel.com>
- <1391490780-6141-4-git-send-email-jenny.tc@intel.com>
- <CACRpkdbppewuSSJu=Y=1T7oOCxz_ynhNspyPT=S894KoUB6H6g@mail.gmail.com>
- <20140228030727.GB27921@jenny-desktop>
+	Fri, 28 Feb 2014 05:10:33 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lars@metafoo.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 0/3] Simplify the CODEC ASoC probe code.
+Date: Fri, 28 Feb 2014 17:04:24 +0800
+Message-ID: <1393578267-18255-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228030727.GB27921@jenny-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-02-28 08:37:27, Jenny Tc wrote:
-> On Thu, Feb 27, 2014 at 09:18:57PM +0100, Linus Walleij wrote:
-> > On Tue, Feb 4, 2014 at 6:12 AM, Jenny TC <jenny.tc@intel.com> wrote:
-> > 
-> > > +static inline bool __is_battery_full
-> > > +       (long volt, long cur, long iterm, unsigned long cv)
-> > 
-> > Overall I wonder if you've run checkpatch on these patches, but why
-> > are you naming this one function with a double __underscore?
-> > Just is_battery_full_check() or something would work fine I guess?
-> 
-> Just to convey that is_battery_full is a local function and not generic. You
-> can find similar usage in power_supply_core.c (__power_supply_changed_work)
-> and in other drivers. Isn't it advised to have __ prefixes?
+Xiubo Li (3):
+  ASoC: codec: Simplify ASoC probe code.
+  ASoC: io: New signature for snd_soc_codec_set_cache_io()
+  ASoC: core: Fix check before setting default I/O up try regmap
 
-It is static; everybody sees it is local. __ prefix usually means
-something else.
+ include/sound/soc.h              |  7 +-----
+ sound/soc/codecs/ad193x.c        |  7 ------
+ sound/soc/codecs/adau1373.c      |  6 -----
+ sound/soc/codecs/adav80x.c       |  6 -----
+ sound/soc/codecs/ak4535.c        |  6 -----
+ sound/soc/codecs/ak4641.c        |  6 -----
+ sound/soc/codecs/ak4642.c        |  6 -----
+ sound/soc/codecs/ak4671.c        |  6 -----
+ sound/soc/codecs/alc5623.c       |  7 ------
+ sound/soc/codecs/alc5632.c       |  8 -------
+ sound/soc/codecs/cq93vc.c        |  3 +--
+ sound/soc/codecs/cs4270.c        |  9 --------
+ sound/soc/codecs/cs42l51.c       |  6 -----
+ sound/soc/codecs/cs42l52.c       |  6 -----
+ sound/soc/codecs/cs42l73.c       |  8 -------
+ sound/soc/codecs/da7210.c        |  7 ------
+ sound/soc/codecs/da7213.c        |  7 ------
+ sound/soc/codecs/da732x.c        |  8 -------
+ sound/soc/codecs/da9055.c        |  7 ------
+ sound/soc/codecs/isabelle.c      | 16 --------------
+ sound/soc/codecs/lm49453.c       | 17 ---------------
+ sound/soc/codecs/max9768.c       |  5 -----
+ sound/soc/codecs/max98088.c      |  6 -----
+ sound/soc/codecs/max98090.c      |  8 -------
+ sound/soc/codecs/max98095.c      |  6 -----
+ sound/soc/codecs/max9850.c       |  6 -----
+ sound/soc/codecs/mc13783.c       |  4 ++--
+ sound/soc/codecs/ml26124.c       |  7 ------
+ sound/soc/codecs/rt5631.c        |  8 -------
+ sound/soc/codecs/rt5640.c        |  7 ------
+ sound/soc/codecs/sn95031.c       |  2 --
+ sound/soc/codecs/ssm2518.c       |  7 ------
+ sound/soc/codecs/ssm2602.c       |  7 ------
+ sound/soc/codecs/sta32x.c        | 10 ---------
+ sound/soc/codecs/sta529.c        |  7 ------
+ sound/soc/codecs/tlv320aic23.c   |  6 -----
+ sound/soc/codecs/tlv320aic26.c   |  2 --
+ sound/soc/codecs/tlv320aic32x4.c |  2 --
+ sound/soc/codecs/tlv320aic3x.c   |  6 -----
+ sound/soc/codecs/tlv320dac33.c   |  1 -
+ sound/soc/codecs/wm2000.c        |  2 --
+ sound/soc/codecs/wm2200.c        |  7 ------
+ sound/soc/codecs/wm5100.c        |  7 ------
+ sound/soc/codecs/wm5102.c        |  4 +---
+ sound/soc/codecs/wm5110.c        |  3 +--
+ sound/soc/codecs/wm8350.c        |  4 +---
+ sound/soc/codecs/wm8400.c        |  3 +--
+ sound/soc/codecs/wm8510.c        |  6 -----
+ sound/soc/codecs/wm8523.c        |  6 -----
+ sound/soc/codecs/wm8580.c        |  6 -----
+ sound/soc/codecs/wm8711.c        |  6 -----
+ sound/soc/codecs/wm8728.c        |  7 ------
+ sound/soc/codecs/wm8731.c        |  7 ------
+ sound/soc/codecs/wm8737.c        |  6 -----
+ sound/soc/codecs/wm8741.c        |  6 -----
+ sound/soc/codecs/wm8750.c        |  6 -----
+ sound/soc/codecs/wm8753.c        |  7 ------
+ sound/soc/codecs/wm8770.c        |  6 -----
+ sound/soc/codecs/wm8776.c        |  6 -----
+ sound/soc/codecs/wm8804.c        |  8 -------
+ sound/soc/codecs/wm8900.c        |  6 -----
+ sound/soc/codecs/wm8903.c        |  7 ------
+ sound/soc/codecs/wm8904.c        |  8 -------
+ sound/soc/codecs/wm8940.c        |  6 -----
+ sound/soc/codecs/wm8955.c        |  8 -------
+ sound/soc/codecs/wm8960.c        |  6 -----
+ sound/soc/codecs/wm8961.c        |  6 -----
+ sound/soc/codecs/wm8962.c        |  7 ------
+ sound/soc/codecs/wm8971.c        |  6 -----
+ sound/soc/codecs/wm8974.c        |  6 -----
+ sound/soc/codecs/wm8978.c        |  6 -----
+ sound/soc/codecs/wm8983.c        |  6 -----
+ sound/soc/codecs/wm8985.c        |  7 ------
+ sound/soc/codecs/wm8988.c        |  7 ------
+ sound/soc/codecs/wm8990.c        |  6 -----
+ sound/soc/codecs/wm8991.c        |  6 -----
+ sound/soc/codecs/wm8993.c        |  7 ------
+ sound/soc/codecs/wm8994.c        |  3 +--
+ sound/soc/codecs/wm8995.c        |  7 ------
+ sound/soc/codecs/wm8996.c        |  8 -------
+ sound/soc/codecs/wm8997.c        |  4 +---
+ sound/soc/codecs/wm9081.c        |  8 -------
+ sound/soc/codecs/wm9090.c        |  7 ------
+ sound/soc/soc-core.c             | 12 +++++++---
+ sound/soc/soc-io.c               | 47 +++++++++++++++++-----------------------
+ 85 files changed, 39 insertions(+), 547 deletions(-)
 
-> > > +       u16 capacity;   /* mAh */
-> > > +       u16 voltage_max; /* mV */
-> > > +       /* charge termination current */
-> > > +       u16 chrg_term_mA;
-> > > +       /* Low battery level voltage */
-> > > +       u16 low_batt_mV;
-> > > +       /* upper and lower temperature limits on discharging */
-> > > +       s8 disch_temp_ul; /* Degree Celsius */
-> > > +       s8 disch_temp_ll; /* Degree Celsius */
-> > > +       /* number of temperature monitoring ranges */
-> > > +       u16 temp_mon_ranges;
-> > > +       struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
-> > > +       /* lowest temperature supported */
-> > > +       s8 temp_low_lim;
-> > > +} __packed;
-> > 
-> > Why packed, and convert to kerneldoc for this struct.
-> 
-> Battery charging profile, may come from EEPROM/emmc which would be packed.
-
-Do you need to do endianness conversion, too?
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.4
+
+
