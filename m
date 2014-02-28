@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaB1Ge7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 01:34:59 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:12244 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaB1Ge6 (ORCPT
+	id S1751929AbaB1Gfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 01:35:42 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62323 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750750AbaB1Gfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 01:34:58 -0500
-Message-ID: <53102DE8.9090707@huawei.com>
-Date: Fri, 28 Feb 2014 14:34:16 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 28 Feb 2014 01:35:40 -0500
+Message-ID: <53102EE4.80702@metafoo.de>
+Date: Fri, 28 Feb 2014 07:38:28 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: John Fastabend <john.r.fastabend@intel.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net RESEND] vlan: don't allow to add VLAN on VLAN device
-References: <530FF7BF.4030706@huawei.com> <53100677.2060705@intel.com> <53101E1A.6020707@huawei.com> <CAGVrzcb_eD18-XGC34fZaQFbH3f5-NZk+6N5YbjYMSxCCSZX2w@mail.gmail.com>
-In-Reply-To: <CAGVrzcb_eD18-XGC34fZaQFbH3f5-NZk+6N5YbjYMSxCCSZX2w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
+ regmap.
+References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com> <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com> <20140228035244.GJ9383@sirena.org.uk> <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com> <20140228052904.GP9383@sirena.org.uk> <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
+In-Reply-To: <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/2/28 13:41, Florian Fainelli wrote:
-> 2014-02-27 21:26 GMT-08:00 Ding Tianhong <dingtianhong@huawei.com>:
->> On 2014/2/28 11:45, John Fastabend wrote:
->>> On 2/27/2014 6:43 PM, Ding Tianhong wrote:
->>>> I run these steps:
->>>>
->>>> modprobe 8021q
->>>> vconfig add eth2 20
->>>> vconfig add eth2.20 20
->>>> ifconfig eth2 xx.xx.xx.xx
->>>>
->>>> then the Call Trace happened:
->>>>
->>>
->>> [...]
->>>
->>>> ========================================================================
->>>>
->>>> The reason is that if add vlan on vlan dev, the vlan dev will create vlan_info,
->>>> then the notification will let the real dev to run dev_set_rx_mode() and hold
->>>> netif_addr_lock, and then the real dev will call ndo_set_rx_mode(), if the real
->>>> dev is vlan dev, the ndo_set_rx_mode() will hold netif_addr_lock again, so deadlock
->>>> happened.
->>>>
->>>> Don't allow to add vlan on vlan dev to fix this problem.
->>>>
->>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->>>> ---
->>>
->>> I'm not sure we can just disable stacked vlans. There might be something
->>> using them today and they have worked in the past. Lets try to find a
->>> better fix.
->>>
->>> .John
+On 02/28/2014 06:56 AM, Li.Xiubo@freescale.com wrote:
+>> Subject: Re: [PATCH 2/3] ASoC: core: Set the default I/O up try regmap.
 >>
->> Yes, maybe I miss something, can you gave me a scene that the use of eth2.20.30?
->> the device is created from vlan device eth2.20, than I will find a better way to fix it.
-> 
-> Is not QinQ (802.1ad) such as case [1]?
-> 
-> [1]: http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8ad227ff89a7e6f05d07cd0acfd95ed3a24450ca
-> --
-> Florian
-> 
-> 
-Yep, thanks a lot.
+>> On Fri, Feb 28, 2014 at 04:00:38AM +0000, Li.Xiubo@freescale.com wrote:
+>>
+>>> I'll send another patches to applied to use this for another CODEC drivers.
+>>> And there almost 80 files, Should I send them in one patch or split them
+>> into
+>>> individual patch for each CODEC driver ?
+>>
+>> I'd suggest doing one patch that covers the boring drivers where the
+>> first thing they do is call set_cache_io() but split out the others into
+>> one patch per driver since the need more examination.
+>
+> Got it.
 
-Ding
+Btw. be careful, just removing the set_cache_io() call will not work for all 
+drivers. There are some MFD child devices which use regmap from the parent 
+device. So dev_get_regmap() will return NULL for those.
+
+- Lars
 
