@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaB1COT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 21:14:19 -0500
-Received: from [216.32.180.12] ([216.32.180.12]:55154 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751680AbaB1COQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 21:14:16 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIe0eah1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 28 Feb 2014 10:13:02 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Marek Vasut <marex@denx.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Yuan Yao <yao.yuan@freescale.com>,
-        <wsa@the-dreams.de>, <mark.rutland@arm.com>,
-        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH 1/3] i2c: add DMA support for freescale i2c driver
-Message-ID: <20140228021300.GJ13537@S2101-09.ap.freescale.net>
-References: <1393481115-22136-1-git-send-email-yao.yuan@freescale.com>
- <1393481115-22136-2-git-send-email-yao.yuan@freescale.com>
- <201402272139.36076.marex@denx.de>
+	id S1751716AbaB1CSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 21:18:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35476 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaB1CSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 21:18:52 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241230440.20170@vincent-weaver-1.um.maine.edu> <530B841F.5050803@zytor.com> <alpine.DEB.2.10.1402241258590.20170@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu> <530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home> <20140224193043.GP6835@laptop.programming.kicks-ass.net> <530C12CA.6070308@zytor.com> <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com> <20140225094352.73e0e28c@gandalf.local.home> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201402272139.36076.marex@denx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 27 Feb 2014 18:17:59 -0800
+To: Vince Weaver <vincent.weaver@maine.edu>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Message-ID: <10e8ba5d-1642-48cd-8abb-8abcd280a6cd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 09:39:35PM +0100, Marek Vasut wrote:
-> > @@ -193,6 +216,7 @@ static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
-> >  	.ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
-> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
-> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
-> > +	.has_dma_support	= false,
-> > 
-> >  };
-> > 
-> > @@ -203,6 +227,7 @@ static const struct imx_i2c_hwdata imx21_i2c_hwdata  =
-> > { .ndivs			= ARRAY_SIZE(imx_i2c_clk_div),
-> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W0C,
-> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_1,
-> > +	.has_dma_support	= false,
-> > 
-> >  };
-> > 
-> > @@ -213,6 +238,7 @@ static struct imx_i2c_hwdata vf610_i2c_hwdata = {
-> >  	.ndivs			= ARRAY_SIZE(vf610_i2c_clk_div),
-> >  	.i2sr_clr_opcode	= I2SR_CLR_OPCODE_W1C,
-> >  	.i2cr_ien_opcode	= I2CR_IEN_OPCODE_0,
-> > +	.has_dma_support	= true,
-> 
-> So why exactly don't we have a DT prop for determining whether the controller 
-> has DMA support ?
+Ok... I think we're definitely talking about a cr2 leak.  The reboot might be a race condition in the NMI nesting handling maybe?
 
-Using DMA or PIO is a decision that should be made by driver on its own,
-not device tree.
+On February 27, 2014 5:34:34 PM PST, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>On Thu, 27 Feb 2014, H. Peter Anvin wrote:
+>
+>> On 02/27/2014 02:31 PM, Steven Rostedt wrote:
+>> > 
+>> > Yeah, something is getting mesed up.
+>> > 
+>> 
+>> What it *looks* like to me is that we try to nest the cr2
+>save/restore,
+>> which doesn't nest because it is a percpu variable.
+>> 
+>> ... except in the x86-64 case, we *ALSO* save/restore cr2 inside
+>> entry_64.S, which makes the stuff in do_nmi completely redundant and
+>> there for no good reason.
+>> 
+>> I would actually suggest we do the equivalent on i386 as well.
+>> 
+>> Vince, could you try this patch as an experiment?
+>
+>OK with your patch applied it does not segfault.
+>
+>The trace looks like you'd expect too:
+>
+>perf_fuzzer-2910  [000]   255.355331: page_fault_kernel:   
+>address=irq_stack_union ip=copy_user_handle_tail error_code=0x0
+>perf_fuzzer-2910  [000]   255.355331: function:               
+>__do_page_fault
+>perf_fuzzer-2910  [000]   255.355331: function:                  
+>bad_area_nosemaphore
+>perf_fuzzer-2910  [000]   255.355331: function:                     
+>__bad_area_nosemaphore
+>perf_fuzzer-2910  [000]   255.355332: function:                        
+>no_context
+>perf_fuzzer-2910  [000]   255.355332: function:                        
+>   fixup_exception
+>perf_fuzzer-2910  [000]   255.355332: function:                        
+>      search_exception_tables
+>perf_fuzzer-2910  [000]   255.355332: function:                        
+>         search_extable
+>perf_fuzzer-2910  [000]   255.355333: function:            
+>perf_output_begin
+>perf_fuzzer-2910  [000]   255.355333: bprint:              
+>perf_output_begin: VMW: event type 2 config 2a st: 2c3e7
+>perf_fuzzer-2910  [000]   255.355333: bprint:              
+>perf_output_begin: VMW: before event->parent (nil)
+>perf_fuzzer-2910  [000]   255.355334: bprint:              
+>perf_output_begin: VMW: before rcu_dereference (nil)
+>perf_fuzzer-2910  [000]   255.355334: function:            
+>__do_page_fault
+>perf_fuzzer-2910  [000]   255.355334: function:               
+>down_read_trylock
+>perf_fuzzer-2910  [000]   255.355334: function:               
+>_cond_resched
+>perf_fuzzer-2910  [000]   255.355335: function:                find_vma
+>perf_fuzzer-2910  [000]   255.355335: function:               
+>handle_mm_fault
+>perf_fuzzer-2910  [000]   255.355335: function:                  
+>__do_fault
+>perf_fuzzer-2910  [000]   255.355335: bputs:               
+>perf_mmap_fault: VMW: perf_mmap_fault
+>perf_fuzzer-2910  [000]   255.355336: bprint:              
+>perf_mmap_fault: VMW: perf_mmap_fault 0xffff8800cba6a980
+>perf_fuzzer-2910  [000]   255.355336: function:            
+>perf_mmap_to_page
+>perf_fuzzer-2910  [000]   255.355336: function:            
+>_cond_resched
+>perf_fuzzer-2910  [000]   255.355336: function:                     
+>unlock_page
+>perf_fuzzer-2910  [000]   255.355336: function:                        
+>page_waitqueue
+>perf_fuzzer-2910  [000]   255.355337: function:                        
+>__wake_up_bit
+>perf_fuzzer-2910  [000]   255.355337: bputs:               
+>perf_mmap_fault: VMW: perf_mmap_fault
+>perf_fuzzer-2910  [000]   255.355337: function:            
+>_cond_resched
+>perf_fuzzer-2910  [000]   255.355337: function:                     
+>_raw_spin_lock
+>perf_fuzzer-2910  [000]   255.355337: function:                     
+>page_add_file_rmap
+>perf_fuzzer-2910  [000]   255.355338: function:                        
+>__inc_zone_page_state
+>perf_fuzzer-2910  [000]   255.355338: function:                        
+>   __inc_zone_state
+>perf_fuzzer-2910  [000]   255.355338: function:                     
+>set_page_dirty
+>perf_fuzzer-2910  [000]   255.355338: function:                        
+>page_mapping
+>perf_fuzzer-2910  [000]   255.355338: function:                        
+>anon_set_page_dirty
+>perf_fuzzer-2910  [000]   255.355339: function:                     
+>unlock_page
+>
+>
+>Vince
 
-Shawn
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
