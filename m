@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaB1Uqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:46:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41904 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaB1Uqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:46:31 -0500
-Date: Fri, 28 Feb 2014 21:46:21 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] x86: Rename copy_from_user_nmi() to
- copy_from_user_trace()
-Message-ID: <20140228204621.GA14089@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
- <20140227215726.7018c861@gandalf.local.home>
- <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
- <20140228092341.12a40f7c@gandalf.local.home>
- <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
- <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
- <20140228154026.GH9987@twins.programming.kicks-ass.net>
- <5310B60F.30806@zytor.com>
- <20140228112946.1f194397@gandalf.local.home>
- <20140228143316.211d4034@gandalf.local.home>
+	id S1752540AbaB1Uqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:46:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028AbaB1Uqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 15:46:39 -0500
+Date: Fri, 28 Feb 2014 15:45:57 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, Catalin.Marinas@arm.com, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH v6 2/2] arm64: audit: Add audit hook in
+ ptrace/syscall_trace
+Message-ID: <20140228204557.GJ16640@madcap2.tricolour.ca>
+References: <1393319934-2810-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-3-git-send-email-takahiro.akashi@linaro.org>
+ <20140228161558.GE29546@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140228143316.211d4034@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140228161558.GE29546@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 02:33:16PM -0500, Steven Rostedt wrote:
-> [ H. Peter, Here's the rename patch. I did not include your update. You
-> can add that first and then massage this patch on top. But this isn't
-> critical for mainline or stable, where as I believe your patch is. ]
+On 14/02/28, Will Deacon wrote:
+> On Fri, Feb 28, 2014 at 05:17:15AM +0000, AKASHI Takahiro wrote:
+> > This patch adds auditing functions on entry to or exit from
+> > every system call invocation.
+> > 
+> > Acked-by: Richard Guy Briggs <rgb@redhat.com>
+> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > ---
+> >  arch/arm64/kernel/ptrace.c |   54 ++++++++++++++++++++++++++------------------
+> >  1 file changed, 32 insertions(+), 22 deletions(-)
 > 
-> The tracing utilities sometimes need to read from userspace (stack tracing),
-> and to do this it has as special copy_from_user function called
-> copy_from_user_nmi(). Well, as tracers can call this from outside of
-> nmi context, the "_nmi" part is a misnomer and "_trace" is a better
-> name.
+> I think you need to do something like I did for arch/arm/, where we have
+> separate trace functions for entry/exit to make sure that we invoke the
+> various helpers in the correct order (for example, you want to invoke all
+> the debug stuff *first* on entry, but *last* on exit).
 
-NAK, spin_lock_irq() is very much an IRQ safe lock. Similarly
-copy_from_user_nmi() is an NMI safe copy from user.
+I'd have to agree.  I've just had my head deep in audit_syscall_entry()
+and syscall_get_arch to clean them up.  Since current is only ever fed
+to syscall_get_arch() and regs is never used by syscall_get_arch(), I'm
+looking at dropping both from the syscall_get_arch() args list, but
+leave syscall_get_arch() as you have it for now.
 
-Furthermore, there's exactly 0 trace users, so the proposed name is
-actively worse.
+> Will
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
