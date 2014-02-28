@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaB1W36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:29:58 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:38289 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729AbaB1W3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:29:55 -0500
-Message-ID: <53110DE1.6070204@mm-sol.com>
-Date: Sat, 01 Mar 2014 00:29:53 +0200
-From: Georgi Djakov <gdjakov@mm-sol.com>
+	id S1752369AbaB1Wav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:30:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51993 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449AbaB1Wau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 17:30:50 -0500
+Date: Fri, 28 Feb 2014 14:32:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chase Southwood <chase.southwood@yahoo.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        abbotti@mev.co.uk, dan.carpenter@oracle.com
+Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix lines that are over 80
+ characters
+Message-ID: <20140228223228.GA22295@kroah.com>
+References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
+ <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com>
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: linux-mmc@vger.kernel.org, cjb@laptop.org, ulf.hansson@linaro.org,
-        devicetree@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v9 3/3] mmc: sdhci-msm: Add platform_execute_tunning implementation
-References: <1393586675-14628-1-git-send-email-gdjakov@mm-sol.com> <1393586675-14628-4-git-send-email-gdjakov@mm-sol.com> <20140228205119.GJ7308@joshc.qualcomm.com>
-In-Reply-To: <20140228205119.GJ7308@joshc.qualcomm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.02.14, 22:51, Josh Cartwright wrote:
-[..]
->> +		sg_init_one(&sg, data_buf, sizeof(data_buf));
->> +		memset(data_buf, 0, sizeof(data_buf));
->> +		mmc_wait_for_req(mmc, &mrq);
->> +
->> +		if (!cmd.error && !data.error &&
->> +		    !memcmp(data_buf, tuning_block_pattern, sizeof(data_buf))) {
+On Fri, Feb 28, 2014 at 03:15:45AM -0600, Chase Southwood wrote:
+> This patch introduces a simple helper function, outl_1564_timer(), to
+> allow several lines which violate the character limit to be shortened.
+> A handful of other lines that are too long are appropriately split as
+> well.
 > 
-> This memcmp is broken, sizeof(data_buf) is likely not what you want,
-> maybe you want 'size'?  Same thing for sg_init_one()/memset() above.
-> 
-> From sparse:
-> 
-> drivers/mmc/host/sdhci-msm.c: In function â€˜sdhci_msm_execute_tuningâ€™:
-> drivers/mmc/host/sdhci-msm.c:461:53: warning: argument to â€˜sizeofâ€™ in â€˜memcmpâ€™ call is the same expression as the first source; did you mean to provide an explicit length? [-Wsizeof-pointer-memaccess]
->        !memcmp(data_buf, tuning_block_pattern, sizeof(data_buf))) {
-> 
+> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> 2: introduced outl_1564_timer() at the suggestion of Dan.
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 83 +++++++++++++---------
+>  1 file changed, 49 insertions(+), 34 deletions(-)
 
-Nice catch, Josh! Thanks for reviewing!
+The Subject: doesn't match the patch content :(
 
-BR,
-Georgi
