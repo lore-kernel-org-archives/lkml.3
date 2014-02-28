@@ -1,315 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaB1Rnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:43:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15643 "EHLO mx1.redhat.com"
+	id S1753274AbaB1Rno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753131AbaB1Rni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:43:38 -0500
+	id S1753240AbaB1Rnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:43:42 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, eranian@google.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 02/19] perf, sort:  Add physid sorting based on mmap2 data
-Date: Fri, 28 Feb 2014 12:42:51 -0500
-Message-Id: <1393609388-40489-3-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 10/19] perf, c2c: Rework setup code to prepare for features
+Date: Fri, 28 Feb 2014 12:42:59 -0500
+Message-Id: <1393609388-40489-11-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order for the c2c tool to work correctly, it needs to properly
-sort all the records on uniquely identifiable data addresses.  These
-unique addresses are converted from virtual addresses provided by the
-hardware into a kernel address using an mmap2 record as the decoder.
+A basic patch that re-arranges some of the c2c code and adds a couple
+of small features to lay the ground work for the rest of the patch
+series.
 
-Once a unique address is converted, we can sort on them based on
-various rules.  Then it becomes clear which address are overlapping
-with each other across mmap regions or pid spaces.
+Changes include:
 
-This patch just creates the rules and inserts the records into a
-sort entry for safe keeping until later patches process them.
+o reworking the report path
+o replace preprocess_sample with simpler calls
+o rework raw output to handle separators
+o remove phys id gunk
+o add some generic options
 
-The general sorting rule is:
+There isn't much meat in this patch just a bunch of code movement and cleanups.
 
-o group cpumodes together
-o group similar major, minor, inode, inode generation numbers togther
-o if (nonzero major/minor number - ie mmap'd areas)
-  o sort on data addresses
-  o sort on instruction address
-  o sort on pid
-  o sort on tid
-o if cpumode is kernel
-  o sort on data addresses
-  o sort on instruction address
-  o sort on pid
-  o sort on tid
-o else (private to pid space)
-  o sort on pid
-  o sort on tid
-  o sort on data addresses
-  o sort on instruction address
-
-I also hacked in the concept of 'color'.  The purpose of that bit is to
-provides hints later when processing these records that indicate a new unique
-address has been encountered.  Because later processing only checks the data
-addresses, there can be a theoretical scenario that similar sequential data
-addresses (when walking the rbtree) could be misinterpreted as overlapping
-when in fact they are not.
+V2: refresh to latest upstream changes
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-report.c |   2 +-
- tools/perf/util/hist.c      |   7 ++-
- tools/perf/util/hist.h      |   1 +
- tools/perf/util/sort.c      | 148 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/sort.h      |   3 +
- 5 files changed, 157 insertions(+), 4 deletions(-)
+ tools/perf/builtin-c2c.c | 125 ++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 92 insertions(+), 33 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d882b6f..ec797da 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -755,7 +755,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
- 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
- 		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
--		   "snoop, locked, abort, in_tx, transaction"),
-+		   "snoop, locked, abort, in_tx, transaction, physid"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 0466efa..ea54db3 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -420,9 +420,10 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 			.map	= al->map,
- 			.sym	= al->sym,
- 		},
--		.cpu	= al->cpu,
--		.ip	= al->addr,
--		.level	= al->level,
-+		.cpu	 = al->cpu,
-+		.cpumode = al->cpumode,
-+		.ip	 = al->addr,
-+		.level	 = al->level,
- 		.stat = {
- 			.nr_events = 1,
- 			.period	= period,
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a59743f..d226c5b 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -62,6 +62,7 @@ enum hist_column {
- 	HISTC_MEM_LVL,
- 	HISTC_MEM_SNOOP,
- 	HISTC_TRANSACTION,
-+	HISTC_PHYSID,
- 	HISTC_NR_COLS, /* Last entry */
- };
+diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
+index 7082913..367d6c1 100644
+--- a/tools/perf/builtin-c2c.c
++++ b/tools/perf/builtin-c2c.c
+@@ -5,6 +5,7 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "util/debug.h"
  
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 635cd8f..0cb43a5 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -977,6 +977,151 @@ struct sort_entry sort_transaction = {
- 	.se_width_idx	= HISTC_TRANSACTION,
- };
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+@@ -105,34 +106,55 @@ static int perf_c2c__fprintf_header(FILE *fp)
+ }
  
-+static int64_t
-+sort__physid_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+        u64 l, r;
-+        struct map *l_map = left->mem_info->daddr.map;
-+        struct map *r_map = right->mem_info->daddr.map;
-+
-+	/* store all NULL mem maps at the bottom */
-+	/* shouldn't even need this check, should have stubs */
-+	if (!left->mem_info->daddr.map || !right->mem_info->daddr.map)
-+		return 1;
-+
-+        /* group event types together */
-+        if (left->cpumode > right->cpumode) return -1;
-+        if (left->cpumode < right->cpumode) return 1;
-+
-+        if (l_map->maj > r_map->maj) return -1;
-+        if (l_map->maj < r_map->maj) return 1;
-+
-+        if (l_map->min > r_map->min) return -1;
-+        if (l_map->min < r_map->min) return 1;
-+
-+        if (l_map->ino > r_map->ino) return -1;
-+        if (l_map->ino < r_map->ino) return 1;
-+
-+        if (l_map->ino_generation > r_map->ino_generation) return -1;
-+        if (l_map->ino_generation < r_map->ino_generation) return 1;
-+
-+        /*
-+         * Addresses with no major/minor numbers are assumed to be
-+         * anonymous in userspace.  Sort those on pid then address.
-+         *
-+         * The kernel and non-zero major/minor mapped areas are
-+         * assumed to be unity mapped.  Sort those on address then pid.
-+         */
-+
-+        /* al_addr does all the right addr - start + offset calculations */
-+        l = left->mem_info->daddr.al_addr;
-+        r = right->mem_info->daddr.al_addr;
-+
-+        if (l_map->maj || l_map->min || l_map->ino || l_map-> ino_generation) {
-+                /* mmapped areas */
-+
-+                /* hack to mark similar regions, 'right' is new entry */
-+                /* entries with same maj/min/ino/inogen are in same address space */
-+                right->color = TRUE;
-+
-+                if (l > r) return -1;
-+                if (l < r) return 1;
-+
-+                /* sorting by iaddr makes calculations easier later */
-+                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-+                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
-+
-+                if (left->thread->pid_ > right->thread->pid_) return -1;
-+                if (left->thread->pid_ < right->thread->pid_) return 1;
-+
-+                if (left->thread->tid > right->thread->tid) return -1;
-+                if (left->thread->tid < right->thread->tid) return 1;
-+        } else if (left->cpumode == PERF_RECORD_MISC_KERNEL) {
-+                /* kernel mapped areas where 'start' doesn't matter */
-+
-+                /* hack to mark similar regions, 'right' is new entry */
-+                /* whole kernel region is in the same address space */
-+                right->color = TRUE;
-+
-+                if (l > r) return -1;
-+                if (l < r) return 1;
-+
-+                /* sorting by iaddr makes calculations easier later */
-+                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-+                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
-+
-+                if (left->thread->pid_ > right->thread->pid_) return -1;
-+                if (left->thread->pid_ < right->thread->pid_) return 1;
-+
-+                if (left->thread->tid > right->thread->tid) return -1;
-+                if (left->thread->tid < right->thread->tid) return 1;
-+        } else {
-+                /* userspace anonymous */
-+                if (left->thread->pid_ > right->thread->pid_) return -1;
-+                if (left->thread->pid_ < right->thread->pid_) return 1;
-+
-+                if (left->thread->tid > right->thread->tid) return -1;
-+                if (left->thread->tid < right->thread->tid) return 1;
-+
-+	         /* hack to mark similar regions, 'right' is new entry */
-+                /* userspace anonymous address space is contained within pid */
-+                right->color = TRUE;
-+
-+                if (l > r) return -1;
-+                if (l < r) return 1;
-+
-+                /* sorting by iaddr makes calculations easier later */
-+                if (left->mem_info->iaddr.al_addr > right->mem_info->iaddr.al_addr) return -1;
-+                if (left->mem_info->iaddr.al_addr < right->mem_info->iaddr.al_addr) return 1;
-+        }
-+
-+	/* sanity check the maps; only mmaped areas should have different maps */
-+	if ((left->mem_info->daddr.map != right->mem_info->daddr.map) &&
-+	     !right->mem_info->daddr.map->maj && !right->mem_info->daddr.map->min)
-+		pr_debug("physid_cmp: Similar entries have different maps\n");
-+
-+        return 0;
-+}
-+
-+static int hist_entry__physid_snprintf(struct hist_entry *he, char *bf,
-+					    size_t size, unsigned int width)
-+{
-+	char buf[256];
-+	char *p = buf;
-+
-+	if (!he->mem_info->daddr.map) {
-+        	sprintf(p, "%3x %3x %8lx %8lx %6d %16lx %16lx %16lx %8x\n",
-+                        -1,
-+                        -1,
-+                        -1UL,
-+                        -1UL,
-+                        he->thread->pid_,
-+                        -1UL,
-+                        he->mem_info->daddr.addr,
-+                        he->mem_info->iaddr.al_addr,
-+                        he->cpumode);
+ static int perf_sample__fprintf(struct perf_sample *sample, char tag,
+-				const char *reason, struct addr_location *al, FILE *fp)
++				const char *reason, struct mem_info *mi, FILE *fp)
+ {
+ 	char data_src[61];
++	const char *fmt, *sep;
++	struct map *map = mi->iaddr.map;
+ 
+ 	perf_c2c__scnprintf_data_src(data_src, sizeof(data_src), sample->data_src);
+ 
+-	return fprintf(fp, "%c %-16s  %6d  %6d  %4d  %#18" PRIx64 "  %#18" PRIx64 "  %#18" PRIx64 "  %6" PRIu64 "  %#10" PRIx64 " %-60.60s %s:%s\n",
+-		       tag,
+-		       reason ?: "valid record",
+-		       sample->pid,
+-		       sample->tid,
+-		       sample->cpu,
+-		       sample->ip,
+-		       sample->addr,
+-		       0UL,
+-		       sample->weight,
+-		       sample->data_src,
+-		       data_src,
+-		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
+-		       al->sym ? al->sym->name : "???");
++	if (symbol_conf.field_sep) {
++		fmt = "%c%s%s%s%d%s%d%s%d%s%#"PRIx64"%s%#"PRIx64"%s"
++		      "%"PRIu64"%s%#"PRIx64"%s%s%s%s:%s\n";
++		sep = symbol_conf.field_sep;
 +	} else {
-+	        sprintf(p, "%3x %3x %8lx %8lx %6d %16lx %16lx %16lx %8x\n",
-+                        he->mem_info->daddr.map->maj,
-+                        he->mem_info->daddr.map->min,
-+                        he->mem_info->daddr.map->ino,
-+                        he->mem_info->daddr.map->ino_generation,
-+                        he->thread->pid_,
-+                        he->mem_info->daddr.map->start,
-+                        he->mem_info->daddr.addr,
-+                        he->mem_info->iaddr.al_addr,
-+                        he->cpumode);
++		fmt = "%c%s%-16s%s%6d%s%6d%s%4d%s%#18"PRIx64"%s%#18"PRIx64"%s"
++		      "%6"PRIu64"%s%#10"PRIx64"%s%-60.60s%s%s:%s\n";
++		sep = " ";
 +	}
-+	return repsep_snprintf(bf, size, "%-*s", width, buf);
-+}
 +
-+struct sort_entry sort_physid = {
-+	.se_header	= "Physid (major, minor, inode, inode generation, pid, start, Data addr, IP, cpumode)",
-+	.se_cmp		= sort__physid_cmp,
-+	.se_snprintf	= hist_entry__physid_snprintf,
-+	.se_width_idx	= HISTC_PHYSID,
-+};
++	return fprintf(fp, fmt,
++		       tag,				sep,
++		       reason ?: "valid record",	sep,
++		       sample->pid,			sep,
++		       sample->tid,			sep,
++		       sample->cpu,			sep,
++		       sample->ip,			sep,
++		       sample->addr,			sep,
++		       sample->weight,			sep,
++		       sample->data_src,		sep,
++		       data_src,			sep,
++		       map ? (map->dso ? map->dso->long_name : "???") : "???",
++		       mi->iaddr.sym ? mi->iaddr.sym->name : "???");
+ }
+ 
+ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
++					struct addr_location *al,
+ 					struct perf_sample *sample,
+-					struct addr_location *al)
++					struct perf_evsel *evsel)
+ {
+-	if (c2c->raw_records)
+-		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
++	struct mem_info *mi;
 +
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -1023,6 +1168,7 @@ static struct sort_dimension memory_sort_dimensions[] = {
- 	DIM(SORT_MEM_TLB, "tlb", sort_mem_tlb),
- 	DIM(SORT_MEM_LVL, "mem", sort_mem_lvl),
- 	DIM(SORT_MEM_SNOOP, "snoop", sort_mem_snoop),
-+	DIM(SORT_MEM_PHYSID, "physid", sort_physid),
++	mi = sample__resolve_mem(sample, al);
++	if (!mi)
++		return -ENOMEM;
++
++	if (c2c->raw_records) {
++		perf_sample__fprintf(sample, ' ', "raw input", mi, stdout);
++		free(mi);
++		return 0;
++	}
+ 
+ 	return 0;
+ }
+@@ -143,8 +165,9 @@ static const struct perf_evsel_str_handler handlers[] = {
  };
  
- #undef DIM
-@@ -1182,6 +1328,8 @@ void sort__setup_elide(FILE *output)
- 					"tlb", output);
- 		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
- 					"snoop", output);
-+		sort_entry__setup_elide(&sort_physid, symbol_conf.dso_list,
-+					"physid", output);
+ typedef int (*sample_handler)(struct perf_c2c *c2c,
++			      struct addr_location *al,
+ 			      struct perf_sample *sample,
+-			      struct addr_location *al);
++			      struct perf_evsel *evsel);
+ 
+ static int perf_c2c__process_sample(struct perf_tool *tool,
+ 				    union perf_event *event,
+@@ -153,20 +176,49 @@ static int perf_c2c__process_sample(struct perf_tool *tool,
+ 				    struct machine *machine)
+ {
+ 	struct perf_c2c *c2c = container_of(tool, struct perf_c2c, tool);
+-	struct addr_location al;
+-	int err = 0;
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct thread *thread;
++	sample_handler f;
++	int err = -1;
++	struct addr_location al = {
++			.machine = machine,
++			.cpu = sample->cpu,
++			.cpumode = cpumode,
++	};
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+-		pr_err("problem processing %d event, skipping it.\n",
+-		       event->header.type);
+-		return -1;
+-	}
++	if (evsel->handler == NULL)
++		return 0;
++
++	thread = machine__find_thread(machine, sample->tid);
++	if (thread == NULL)
++		goto err;
++
++	al.thread = thread;
+ 
+-	if (evsel->handler != NULL) {
+-		sample_handler f = evsel->handler;
+-		err = f(c2c, sample, &al);
++	f = evsel->handler;
++	err = f(c2c, &al, sample, evsel);
++	if (err)
++		goto err;
++
++	return 0;
++err:
++	if (err > 0)
++		err = 0;
++	return err;
++}
++
++static int perf_c2c__process_events(struct perf_session *session,
++				    struct perf_c2c *c2c)
++{
++	int err = -1;
++
++	err = perf_session__process_events(session, &c2c->tool);
++	if (err) {
++		pr_err("Failed to process count events, error %d\n", err);
++		goto err;
  	}
  
- 	/*
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff4..eb8cd50 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -87,11 +87,13 @@ struct hist_entry {
- 	u64			ip;
- 	u64			transaction;
- 	s32			cpu;
-+	u8			cpumode;
++err:
+ 	return err;
+ }
  
- 	struct hist_entry_diff	diff;
+@@ -197,9 +249,7 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 		}
+ 	}
  
- 	/* We are added by hists__add_dummy_entry. */
- 	bool			dummy;
-+	bool			color;
+-	err = perf_session__process_events(session, &c2c->tool);
+-	if (err)
+-		pr_err("Failed to process events, error %d", err);
++	err = perf_c2c__process_events(session, c2c);
  
- 	/* XXX These two should move to some tree widget lib */
- 	u16			row_offset;
-@@ -166,6 +168,7 @@ enum sort_type {
- 	SORT_MEM_TLB,
- 	SORT_MEM_LVL,
- 	SORT_MEM_SNOOP,
-+	SORT_MEM_PHYSID,
- };
- 
- /*
+ out:
+ 	return err;
+@@ -221,7 +271,6 @@ static int perf_c2c__record(int argc, const char **argv)
+ 	const char **rec_argv;
+ 	const char * const record_args[] = {
+ 		"record",
+-		/* "--phys-addr", */
+ 		"-W",
+ 		"-d",
+ 		"-a",
+@@ -254,6 +303,8 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_c2c c2c = {
+ 		.tool = {
+ 			.sample		 = perf_c2c__process_sample,
++			.mmap2           = perf_event__process_mmap2,
++			.mmap            = perf_event__process_mmap,
+ 			.comm		 = perf_event__process_comm,
+ 			.exit		 = perf_event__process_exit,
+ 			.fork		 = perf_event__process_fork,
+@@ -263,6 +314,14 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	const struct option c2c_options[] = {
+ 	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
++	OPT_INCR('v', "verbose", &verbose,
++		 "be more verbose (show counter open errors, etc)"),
++	OPT_STRING('i', "input", &input_name, "file",
++		   "the input file to process"),
++	OPT_STRING('x', "field-separator", &symbol_conf.field_sep,
++		   "separator",
++		   "separator for columns, no spaces will be added"
++		   " between columns '.' is reserved."),
+ 	OPT_END()
+ 	};
+ 	const char * const c2c_usage[] = {
 -- 
 1.7.11.7
 
