@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773AbaB1AJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 19:09:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59207 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaB1AJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 19:09:53 -0500
-Message-ID: <530FD3CF.2040900@codeaurora.org>
-Date: Thu, 27 Feb 2014 16:09:51 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752054AbaB1ALA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 19:11:00 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:50118 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829AbaB1AK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 19:10:59 -0500
+Date: Fri, 28 Feb 2014 02:10:39 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 0/2] mm: map few pages around fault address if they are
+ in page cache
+Message-ID: <20140228001039.GB8034@node.dhcp.inet.fi>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CA+55aFwOe_m3cfQDGxmcBavhyQTqQQNGvACR4YPLaazM_0oyUw@mail.gmail.com>
 MIME-Version: 1.0
-To: Sebastian Capella <sebastian.capella@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7Zu?= =?UTF-8?B?aWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH v6 2/2] ARM hibernation / suspend-to-disk
-References: <1393545478-14908-1-git-send-email-sebastian.capella@linaro.org> <1393545478-14908-3-git-send-email-sebastian.capella@linaro.org>
-In-Reply-To: <1393545478-14908-3-git-send-email-sebastian.capella@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwOe_m3cfQDGxmcBavhyQTqQQNGvACR4YPLaazM_0oyUw@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/14 15:57, Sebastian Capella wrote:
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 8756e4b..1079ea8 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -291,6 +291,7 @@ static inline void *phys_to_virt(phys_addr_t x)
->   */
->  #define __pa(x)			__virt_to_phys((unsigned long)(x))
->  #define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
-> +#define __pa_symbol(x)		__pa(RELOC_HIDE((unsigned long)(x), 0))
+On Thu, Feb 27, 2014 at 01:28:22PM -0800, Linus Torvalds wrote:
+> On Thu, Feb 27, 2014 at 11:53 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > Here's new version of faultaround patchset. It took a while to tune it and
+> > collect performance data.
+> 
+> Andrew, mind taking this into -mm with my acks? It's based on top of
+> Kirill's cleanup patches that I think are also in your tree.
+> 
+> Kirill - no complaints from me. I do have two minor issues that you
+> might satisfy, but I think the patch is fine as-is.
+> 
+> The issues/questions are:
+> 
+>  (a) could you test this on a couple of different architectures? Even
+> if you just have access to intel machines, testing it across a couple
+> of generations of microarchitectures would be good. The reason I say
+> that is that from my profiles, it *looks* like the page fault costs
+> are relatively higher on Ivybridge/Haswell than on some earlier
+> uarchs.
 
-Just curious, is there a reason for the RELOC_HIDE() here? Or
-__pa_symbol() for that matter? It looks like only x86 uses this on the
-__nosave_{begin,end} symbol. Maybe it's copy-pasta?
+These numbers were from Ivy Bridge.
+I'll bring some numbers for Westmere and Haswell.
 
-I also wonder if anyone has thought about making a __weak
-pfn_is_nosave() function so that architectures don't need to implement
-the same thing every time. Consolidating those shouldn't be part of this
-patch though.
+>  (b) I suspect we should try to strongly discourage filesystems from
+> actually using map_pages unless they use the standard
+> filemap_map_pages function as-is. Even with the fairly clean
+> interface, and forcing people to use "do_set_pte()", I think the docs
+> might want to try to more explicitly discourage people from using this
+> to do their own hacks..
+
+We would need ->map_pages() at least for shmem/tmpfs. It should be
+benefitial there.
+
+Also Matthew noticed that some drivers do ugly hacks like fault in whole
+VMA on first page fault. IIUC, it's for performance reasons. See
+psbfb_vm_fault() or ttm_bo_vm_fault().
+
+I thought it could be reasonable to have ->map_pages() there and do VMA
+population get_user_pages() on mmap() instead.
+
+What do you think?
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+ Kirill A. Shutemov
