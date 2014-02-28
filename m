@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbaB1IEC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:04:02 -0500
-Received: from nm18-vm3.bullet.mail.gq1.yahoo.com ([98.136.217.218]:32582 "EHLO
-	nm18-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751123AbaB1IEA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:04:00 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 950463.60023.bm@omp1038.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=rgQmd2LPDly8NMB4mU8PHmF7hS9nrmuTASqpj2jr3OQcQkb+dOUBnjqxy+Sxc96g/RDjP0iL/tl6P1yyY8l8MXRNaqpyqvfy2S9i42hPvXQcLX6hr8tVMaQfXmMdDK7QjOFQlkwttt2zPtDgUAVc8igiqxg/hByQTWvJneEXHeE=;
-X-YMail-OSG: oadB7QcVM1kzoni8ecsW9RYC2fpd6e_YJ8OFh.FIuDMt_PT
- _8gii0xdKT7thtEFTCLN0fhSUcgpJkWPHDxDBhlrzr3IYic73x6oiCXtMk8S
- DclS9iTq0FWTVzHNLlK4Kki1Fn_Y2XRP4oOV6Wus7X.SBNMTILmtq48nDr.o
- qRWR5TWjmYYGBiNqra5wu6LpMNkDUA6pj4GaHxNnooz9sgY69hJyYS0ubaL4
- wn0bDuvrwxqIDD1b3vtcaGhl.tXNOtqNLDyDEX1.SYdoFllnirAXA8DGlU6P
- _bU6VyZ0WVXzP490QcN_T0sFKAvGodQink0kQW1tMDjwgdP4OajjRIvX7n8E
- aM.ZHzZe_Rh5qrwf3xrzgpZ6O43bn_RVvqO1aAFiipbFVvn5y3WtEumzYi94
- w05jErqn6rF2nSrRtaDWfLE9ElXAe9C6KV31HaQTjKEVudDC0NdcqcyDegSv
- zmwRTu3yAmmFcyAPUjWs6p3jZnjDBkIAACmEP7c9fZSQ1AbY_2m5uPErk2Hq
- xL6OOdXH4nhlAWjcZIaVXDgHG2fsOPTY-
-X-Rocket-MIMEInfo: 002.001,Pk9uIEZyaWRheSwgRmVicnVhcnkgMjgsIDIwMTQgMTo1NyBBTSwgRGFuIENhcnBlbnRlciA8ZGFuLmNhcnBlbnRlckBvcmFjbGUuY29tPiB3cm90ZToKCj4.T24gRnJpLCBGZWIgMjgsIDIwMTQgYXQgMTA6NTI6MzJBTSArMDMwMCwgRGFuIENhcnBlbnRlciB3cm90ZToKPj4.IE9uIEZyaSwgRmViIDI4LCAyMDE0IGF0IDAxOjMxOjIwQU0gLTA2MDAsIENoYXNlIFNvdXRod29vZCB3cm90ZToKPj4gPiBod2Rydl9hcGNpMTU2NC5jIGhhZCBudW1lcm91cyBsaW5lcyBvdmVyIHRoZSBjb2x1bW4gbGltaXQuwqAgVGgBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com> <20140228075232.GH26776@mwanda> <20140228075650.GI26776@mwanda>
-Message-ID: <1393574639.1751.YahooMailNeo@web164003.mail.gq1.yahoo.com>
-Date: Fri, 28 Feb 2014 00:03:59 -0800 (PST)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH 1/2] Staging: comedi: addi-data: fix lines that are over 80 characters
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Chase Southwood <chase.southwoo@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
-In-Reply-To: <20140228075650.GI26776@mwanda>
+	id S1751596AbaB1IP0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:15:26 -0500
+Received: from smtp-out-128.synserver.de ([212.40.185.128]:1093 "EHLO
+	smtp-out-167.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751240AbaB1IPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 03:15:25 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 14877
+Message-ID: <531045A9.3010502@metafoo.de>
+Date: Fri, 28 Feb 2014 09:15:37 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+CC: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
+ regmap.
+References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com> <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com> <20140228035244.GJ9383@sirena.org.uk> <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com> <20140228052904.GP9383@sirena.org.uk> <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com> <53102EE4.80702@metafoo.de> <d872d0fd60eb4c01b38af98014c802aa@BY2PR03MB505.namprd03.prod.outlook.com> <531030C7.2060703@metafoo.de> <5d534c2ac77040d9bc373db9e43dde7c@BY2PR03MB505.namprd03.prod.outlook.com> <53103787.2020702@metafoo.de> <049024c359df495fb8acedd96e574ce2@BY2PR03MB505.namprd03.prod.outlook.com>
+In-Reply-To: <049024c359df495fb8acedd96e574ce2@BY2PR03MB505.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Friday, February 28, 2014 1:57 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-
->>On Fri, Feb 28, 2014 at 10:52:32AM +0300, Dan Carpenter wrote:
->>> On Fri, Feb 28, 2014 at 01:31:20AM -0600, Chase Southwood wrote:
->> > hwdrv_apci1564.c had numerous lines over the column limit.  This patch
->> > splits all such lines to bring them in compliance with coding style.
->> > 
->> > Signed-off-by: Chase Southwood <chase.southwoo@yahoo.com>
->> > ---
->> >  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 50 ++++++++++++++++------
->> >  1 file changed, 36 insertions(+), 14 deletions(-)
->> > 
->> > diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> > index 2b47fa1..77030c5 100644
->> > --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> > +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> > @@ -324,11 +324,15 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
->> >              inl(devpriv->i_IobaseAmcc + APCI1564_TIMER +
->> >              APCI1564_TCW_PROG);
->> >          ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
->> > -        outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);    /* Stop The Timer */
->> > +        /* Stop The Timer */
->> > +        outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER +
->> > +            APCI1564_TCW_PROG);
->> 
->> Just make a helper function so that you can call it like this:
->> 
->> static void outl_1564_timer(struct addi_private *devpriv, unsigned int cmd,
->>                 unsigned int reg)
->> {
->>     outl(cmd, devpriv->i_IobaseAmcc + APCI1564_TIMER, reg);
->                                                        ^^^
->Should be "devpriv->i_IobaseAmcc + APCI1564_TIMER + reg" obviously.
+On 02/28/2014 08:50 AM, Li.Xiubo@freescale.com wrote:
 >
+>>
+>> A quick grep reveals:
+>> mc13783.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+>> si476x.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+>> wm5102.c:	codec->control_data = priv->core.arizona->regmap;
+>> wm5110.c:	codec->control_data = priv->core.arizona->regmap;
+>> wm8997.c:	codec->control_data = priv->core.arizona->regmap;
+>>
+>> But there might be more.
+>>
 >
->regards,
->dan carpenter
+> I have found the following ones, who are using MFD & set_cache_io.
+>
+>     1    143  sound/soc/codecs/cq93vc.c <<cq93vc_probe>>
+>               snd_soc_codec_set_cache_io(codec, 32, 32, SND_SOC_REGMAP);
+>     2    618  sound/soc/codecs/mc13783.c <<mc13783_probe>>
+>               ret = snd_soc_codec_set_cache_io(codec, 8, 24, SND_SOC_REGMAP);
+>     3   1765  sound/soc/codecs/wm5102.c <<wm5102_codec_probe>>
+>               ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
+>     4   1593  sound/soc/codecs/wm5110.c <<wm5110_codec_probe>>
+>               ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
+>     5   1510  sound/soc/codecs/wm8350.c <<wm8350_codec_probe>>
+>               snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_REGMAP);
+>     6   1322  sound/soc/codecs/wm8400.c <<wm8400_codec_probe>>
+>               snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_REGMAP);
+>     7   4004  sound/soc/codecs/wm8994.c <<wm8994_codec_probe>>
+>               snd_soc_codec_set_cache_io(codec, 16, 16, SND_SOC_REGMAP);
+>     8   1058  sound/soc/codecs/wm8997.c <<wm8997_codec_probe>>
+>               ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
 
-You got it, I'll do it this way and resend.
+Yes, I think that's almost all of them. si476x is missing, but I think that 
+one is currently broken, as it doesn't call snd_soc_codec_set_cache_io() at all.
 
-Thanks,
-Chase
+As to how to handle those, I think there was a plan to add the possibility 
+to assign a regmap to a device, so that dev_get_regmap() returns the regmap 
+struct that should be used, even though the device itself did not allocate 
+the regmap. But I can't find the details. Mark may know more about this.
+
+- Lars
