@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaB1SDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 13:03:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185AbaB1SDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 13:03:41 -0500
-Date: Fri, 28 Feb 2014 13:03:37 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: [git pull] device mapper fixes to include in 3.14-rc5
-Message-ID: <20140228180335.GA27146@redhat.com>
+	id S1752639AbaB1SHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 13:07:40 -0500
+Received: from shelob.surriel.com ([74.92.59.67]:40042 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaB1SHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 13:07:39 -0500
+Message-ID: <5310D060.1090504@surriel.com>
+Date: Fri, 28 Feb 2014 13:07:28 -0500
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>
+CC: akpm@linux-foundation.org, gnomes@lxorguk.ukuu.org.uk,
+        josh@joshtriplett.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, opw-kernel@googlegroups.com, jamieliu@google.com,
+        sjenning@linux.vnet.ibm.com
+Subject: Re: [RFC] mm:prototype for the updated swapoff implementation
+References: <20140219003522.GA8887@kelleynnn-virtual-machine> <alpine.LSU.2.11.1402271054390.7000@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1402271054390.7000@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+On 02/27/2014 07:33 PM, Hugh Dickins wrote:
+> On Tue, 18 Feb 2014, Kelley Nielsen wrote:
+> 
+>> The function try_to_unuse() is of quadratic complexity, with a lot of
+>> wasted effort. It unuses swap entries one by one, potentially iterating
+>> over all the page tables for all the processes in the system for each
+>> one.
+> 
+> You've chosen a good target, and I like the look of what you've done.
+> But I'm afraid it will have to get uglier before it's ready, and I'm
+> unsure whether your approach will prove to be a clear win or not.
 
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+I am more optimistic than you, because I have seen swapoff
+on my Nehalem system proceed at under 1MB/s for several hours,
+to clear maybe 3-4GB of stuff out of swap :)
 
-are available in the git repository at:
+>> This new proposed implementation of try_to_unuse simplifies its
+>> complexity to linear. It iterates over the system's mms once, unusing
+>> all the affected entries as it walks each set of page tables. It also
+>> makes similar changes to shmem_unuse.
+>>
+>> Improvement
+>>
+>> swapoff was called on a swap partition containing about 50M of data,
+>> and calls to the function unuse_pte_range were counted.
+>>
+>> Present implementation....about 22.5M calls.
+>> Prototype.................about  7.0K   calls.
+> 
+> That's nice, but mostly it's the time spent that matters.
+> 
+> I should explain why we've left the try_to_unuse() implementation as is
+> for so many years: it's a matter of tradeoff between fast cpu and slow
+> seeking disk.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.14-fixes-1
+> I'll be surprised if your approach does not improve swapoff from SSD
+> (and brd and zram and zswap) very significantly; but the case to worry
+> about is swapoff from hard disk.  You are changing swapoff to use the
+> cpu much more efficiently; but now that you no longer move linearly up
+> the swap_map, you are making the disk head seek around very much more.
 
-for you to fetch changes up to e0d849fad746cb36a6822e4595d8ba9bf0adf7fa:
+I suspect proper read-around of the swap area should take care of
+IO patterns well enough. The quadratic nature of the current
+try_to_unuse search can easily slow things down to comically low
+speeds...
 
-  dm cache: fix truncation bug when mapping I/O to >2TB fast device (2014-02-28 09:23:02 -0500)
-
-There will likely be additional dm-thin metadata and data resize fixes
-to include in 3.14-rc6 next week.  But please pull for the following
-fixes.
-
-Thanks,
-Mike
-
-p.s.
-Note to stable-minded folks: Immutable biovecs were introduced in 3.14,
-so the related fixups for dm mirror are not needed in stable@ kernels.
-
-----------------------------------------------------------------
-A few dm-cache fixes, an invalid ioctl handling fix for dm multipath, a
-couple immutable biovec fixups for dm mirror, and a few dm-thin fixes.
-
-----------------------------------------------------------------
-Hannes Reinecke (1):
-      dm mpath: fix stalls when handling invalid ioctls
-
-Heinz Mauelshagen (1):
-      dm cache: fix truncation bug when mapping I/O to >2TB fast device
-
-Mike Snitzer (5):
-      dm cache: move hook_info into common portion of per_bio_data structure
-      dm cache: do not add migration to completed list before unhooking bio
-      dm thin: avoid metadata commit if a pool's thin devices haven't changed
-      dm thin: fix the error path for the thin device constructor
-      dm thin: allow metadata space larger than supported to go unused
-
-Mikulas Patocka (2):
-      dm io: fix I/O to multiple destinations
-      dm raid1: fix immutable biovec related BUG when retrying read bio
-
- drivers/md/dm-cache-target.c                       | 13 +++++---
- drivers/md/dm-io.c                                 | 23 ++++++-------
- drivers/md/dm-mpath.c                              |  7 ++--
- drivers/md/dm-raid1.c                              |  3 ++
- drivers/md/dm-thin-metadata.c                      | 21 ++++++++++--
- drivers/md/dm-thin-metadata.h                      | 10 +++---
- drivers/md/dm-thin.c                               | 39 ++++++++++++++--------
- drivers/md/persistent-data/dm-space-map-metadata.c |  2 ++
- drivers/md/persistent-data/dm-space-map-metadata.h | 11 ++++++
- 9 files changed, 89 insertions(+), 40 deletions(-)
+-- 
+All rights reversed.
