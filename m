@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954AbaB1IDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:03:42 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39169 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaB1IDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:03:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <5310359F.2040904@ti.com>
-References: <1393502086-9433-1-git-send-email-tomi.valkeinen@ti.com>
-	<530F80ED.1040509@infradead.org>
-	<5310359F.2040904@ti.com>
-Date: Fri, 28 Feb 2014 09:03:39 +0100
-X-Google-Sender-Auth: 4ik1tIN4wKFgu_gz1G66IPtQyUo
-Message-ID: <CAMuHMdVcXmukvrJ7KYNY5WJPgS3=oOqsfvb3k89UANx_6QBTKA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Reorder drivers/video directory
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
+	id S1752036AbaB1IEC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:04:02 -0500
+Received: from nm18-vm3.bullet.mail.gq1.yahoo.com ([98.136.217.218]:32582 "EHLO
+	nm18-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbaB1IEA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 03:04:00 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 950463.60023.bm@omp1038.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=rgQmd2LPDly8NMB4mU8PHmF7hS9nrmuTASqpj2jr3OQcQkb+dOUBnjqxy+Sxc96g/RDjP0iL/tl6P1yyY8l8MXRNaqpyqvfy2S9i42hPvXQcLX6hr8tVMaQfXmMdDK7QjOFQlkwttt2zPtDgUAVc8igiqxg/hByQTWvJneEXHeE=;
+X-YMail-OSG: oadB7QcVM1kzoni8ecsW9RYC2fpd6e_YJ8OFh.FIuDMt_PT
+ _8gii0xdKT7thtEFTCLN0fhSUcgpJkWPHDxDBhlrzr3IYic73x6oiCXtMk8S
+ DclS9iTq0FWTVzHNLlK4Kki1Fn_Y2XRP4oOV6Wus7X.SBNMTILmtq48nDr.o
+ qRWR5TWjmYYGBiNqra5wu6LpMNkDUA6pj4GaHxNnooz9sgY69hJyYS0ubaL4
+ wn0bDuvrwxqIDD1b3vtcaGhl.tXNOtqNLDyDEX1.SYdoFllnirAXA8DGlU6P
+ _bU6VyZ0WVXzP490QcN_T0sFKAvGodQink0kQW1tMDjwgdP4OajjRIvX7n8E
+ aM.ZHzZe_Rh5qrwf3xrzgpZ6O43bn_RVvqO1aAFiipbFVvn5y3WtEumzYi94
+ w05jErqn6rF2nSrRtaDWfLE9ElXAe9C6KV31HaQTjKEVudDC0NdcqcyDegSv
+ zmwRTu3yAmmFcyAPUjWs6p3jZnjDBkIAACmEP7c9fZSQ1AbY_2m5uPErk2Hq
+ xL6OOdXH4nhlAWjcZIaVXDgHG2fsOPTY-
+X-Rocket-MIMEInfo: 002.001,Pk9uIEZyaWRheSwgRmVicnVhcnkgMjgsIDIwMTQgMTo1NyBBTSwgRGFuIENhcnBlbnRlciA8ZGFuLmNhcnBlbnRlckBvcmFjbGUuY29tPiB3cm90ZToKCj4.T24gRnJpLCBGZWIgMjgsIDIwMTQgYXQgMTA6NTI6MzJBTSArMDMwMCwgRGFuIENhcnBlbnRlciB3cm90ZToKPj4.IE9uIEZyaSwgRmViIDI4LCAyMDE0IGF0IDAxOjMxOjIwQU0gLTA2MDAsIENoYXNlIFNvdXRod29vZCB3cm90ZToKPj4gPiBod2Rydl9hcGNpMTU2NC5jIGhhZCBudW1lcm91cyBsaW5lcyBvdmVyIHRoZSBjb2x1bW4gbGltaXQuwqAgVGgBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com> <20140228075232.GH26776@mwanda> <20140228075650.GI26776@mwanda>
+Message-ID: <1393574639.1751.YahooMailNeo@web164003.mail.gq1.yahoo.com>
+Date: Fri, 28 Feb 2014 00:03:59 -0800 (PST)
+From: Chase Southwood <chase.southwood@yahoo.com>
+Reply-To: Chase Southwood <chase.southwood@yahoo.com>
+Subject: Re: [PATCH 1/2] Staging: comedi: addi-data: fix lines that are over 80 characters
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Chase Southwood <chase.southwoo@yahoo.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        David Airlie <airlied@linux.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>
+In-Reply-To: <20140228075650.GI26776@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 8:07 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> On 27/02/14 20:16, Randy Dunlap wrote:
->> On 02/27/2014 03:54 AM, Tomi Valkeinen wrote:
->>> Hi,
->>>
->>> This is a re-send of the series, with RFC removed from the subject, and a bunch
->>> of acks added.
->>>
->>> I'm cc'ing more people, to make sure this doesn't come as a surprise, and to
->>> make sure this is not a bad idea, doomed to fail horribly.
->>
->> What does this patch apply to?  I can't get it to apply cleanly to
->> -rc4 or Linus's current git tree.
->>
->> I like what I see so far.
+>On Friday, February 28, 2014 1:57 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+
+>>On Fri, Feb 28, 2014 at 10:52:32AM +0300, Dan Carpenter wrote:
+>>> On Fri, Feb 28, 2014 at 01:31:20AM -0600, Chase Southwood wrote:
+>> > hwdrv_apci1564.c had numerous lines over the column limit.  This patch
+>> > splits all such lines to bring them in compliance with coding style.
+>> > 
+>> > Signed-off-by: Chase Southwood <chase.southwoo@yahoo.com>
+>> > ---
+>> >  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 50 ++++++++++++++++------
+>> >  1 file changed, 36 insertions(+), 14 deletions(-)
+>> > 
+>> > diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> > index 2b47fa1..77030c5 100644
+>> > --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> > +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> > @@ -324,11 +324,15 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
+>> >              inl(devpriv->i_IobaseAmcc + APCI1564_TIMER +
+>> >              APCI1564_TCW_PROG);
+>> >          ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
+>> > -        outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);    /* Stop The Timer */
+>> > +        /* Stop The Timer */
+>> > +        outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER +
+>> > +            APCI1564_TCW_PROG);
+>> 
+>> Just make a helper function so that you can call it like this:
+>> 
+>> static void outl_1564_timer(struct addi_private *devpriv, unsigned int cmd,
+>>                 unsigned int reg)
+>> {
+>>     outl(cmd, devpriv->i_IobaseAmcc + APCI1564_TIMER, reg);
+>                                                        ^^^
+>Should be "devpriv->i_IobaseAmcc + APCI1564_TIMER + reg" obviously.
 >
-> My branch was based on -rc2. Some minor fbdev fixes went in after that,
-> and they seem to break the apply. I think the drivers/video/Kconfig and
-> drivers/video/Makefile are the most problematic ones, any change there
-> will conflict badly.
+>
+>regards,
+>dan carpenter
 
-So you want to do the move based on one of the later -rcs, to avoid conflicits.
--rc5 may be too late, but it's up to Linus to decide.
+You got it, I'll do it this way and resend.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Chase
