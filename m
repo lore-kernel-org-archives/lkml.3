@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaB1Dkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 22:40:32 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27925 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaB1Dkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 22:40:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
-   d="scan'208";a="483301117"
-From: Aaron Brown <aaron.f.brown@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jacob Keller <jacob.e.keller@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>
-Subject: [PATCH] doc: update SubmittingPatches about the Fixed tag
-Date: Thu, 27 Feb 2014 19:37:02 -0800
-Message-Id: <1393558622-1392-1-git-send-email-aaron.f.brown@intel.com>
-X-Mailer: git-send-email 1.8.5.GIT
+	id S1751301AbaB1DoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 22:44:06 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:51863 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021AbaB1DoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 22:44:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E42B86.1020701@web.de>
+References: <52E42B86.1020701@web.de>
+Date: Thu, 27 Feb 2014 22:44:03 -0500
+X-Google-Sender-Auth: fgUyLAowHD8-lBkcIL2z6fkP-34
+Message-ID: <CAJvTdK=4+fDpPCzy16gch+21JH_t-icixehEkdz_wJBSvrZFXw@mail.gmail.com>
+Subject: Re: [PATCH] intel_idle: Add CPU model 54 (Atom N2000 series)
+From: Len Brown <lenb@kernel.org>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+Applied.
 
-This patch updates the SubmittingPatches process to include howto about
-the new 'Fixed' tag to be used when a patch fixes an issue in a previous
-commit (found by git-bisect for example).
+Note that the difference that will be noticed most will be that ACPI
+on this kind of box typically offers the deepest C-state only when
+on DC, and disables it on DC.  intel_idle offers it no matter
+if the box is on AC or DC.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
----
- Documentation/SubmittingPatches | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+thanks,
+-Len Brown, Intel Open Source Technology Center
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index 26b1e31..88a796c 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -119,6 +119,13 @@ Example:
- 	platform_set_drvdata(), but left the variable "dev" unused,
- 	delete it.
- 
-+If your patch fixes a bug in a specific commit, e.g. you found an issue using
-+git-bisect, please use the 'Fixes:' tag with the first 12 characters of the
-+SHA-1 ID, and the one line summary.
-+Example:
-+
-+	Fixes: e21d2170f366 ("video: remove unnecessary platform_set_drvdata()")
-+
- 
- 3) Separate your changes.
- 
-@@ -430,7 +437,7 @@ person it names.  This tag documents that potentially interested parties
- have been included in the discussion
- 
- 
--14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
-+14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
- 
- If this patch fixes a problem reported by somebody else, consider adding a
- Reported-by: tag to credit the reporter for their contribution.  Please
-@@ -485,6 +492,11 @@ idea was not posted in a public forum. That said, if we diligently credit our
- idea reporters, they will, hopefully, be inspired to help us again in the
- future.
- 
-+A Fixes: tag indicates that the patch fixes an issue in a previous commit. It
-+is used to make it easy to determine where a bug originated, which can help
-+review a bug fix. This is the preferred method for indicating a bug fixed by
-+the patch. See #2 above for more details.
-+
- 
- 15) The canonical patch format
- 
+
+On Sat, Jan 25, 2014 at 4:24 PM, Jan Kiszka <jan.kiszka@web.de> wrote:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+>
+> Add CPU ID for Atom N2600/N2800 processors. Datasheets indicate support
+> for this, detailed information about potential quirks or limitations are
+> missing, though. So we just reuse the definition for the previous ATOM
+> series. Tests on N2800 systems showed that this addition is fine an can
+> reduce power consumption by about 0.25 W (personally confirmed on Intel
+> DN2800MT).
+>
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  drivers/idle/intel_idle.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 797ed29..6467fc9 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -503,6 +503,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
+>         ICPU(0x2f, idle_cpu_nehalem),
+>         ICPU(0x2a, idle_cpu_snb),
+>         ICPU(0x2d, idle_cpu_snb),
+> +       ICPU(0x36, idle_cpu_atom),
+>         ICPU(0x3a, idle_cpu_ivb),
+>         ICPU(0x3e, idle_cpu_ivb),
+>         ICPU(0x3c, idle_cpu_hsw),
+>
+>
+
+
+
 -- 
-1.8.5.GIT
-
+Len Brown, Intel Open Source Technology Center
