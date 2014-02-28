@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaB1Wn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:43:28 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32661 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaB1Wn0 (ORCPT
+	id S1752471AbaB1Wpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:45:42 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:56822 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaB1Wpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:43:26 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+AAYf3hYiPLUFftyWrM6eo
-Date: Fri, 28 Feb 2014 14:43:07 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Matt Porter <mporter@linaro.org>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <b-cousson@ti.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        linux-pwm@vger.kernel.org,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH 5/5] ARM: dts: AM33XX: Add ecap interrupt properties
-Message-ID: <20140228224307.GP13624@atomide.com>
-References: <1391029199-3670-1-git-send-email-mporter@linaro.org>
- <1391029199-3670-6-git-send-email-mporter@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391029199-3670-6-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Feb 2014 17:45:40 -0500
+X-AuditID: cbfec37a-b7fc06d00000555a-69-5311119372e2
+Message-id: <53111190.4020907@samsung.com>
+Date: Fri, 28 Feb 2014 15:45:36 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: ly80toro@cip.cs.fau.de, andy.grover@gmail.com, valentina.manea.m@gmail.com,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 1/3] staging/usbip: add uapi header to export usbip kernel
+ interfaces
+References: <cover.1393542201.git.shuah.kh@samsung.com>
+ <10c9784313c5bafc6410b95cb3b569d5925eeaaa.1393542201.git.shuah.kh@samsung.com>
+ <20140228221558.GA17000@kroah.com>
+In-reply-to: <20140228221558.GA17000@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.6]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9hP93JgoLBBs9fSlu8XbqT2WLPmV/s
+	Fs2L17NZXN41h81i0bJWZotn13Isvv50sHh3aS67A4fHkgt3mDzu7TvM4rFz1l12j/1z17B7
+	fN4kF8AaxWWTkpqTWZZapG+XwJVxf8pspoJZ3BWTbh9hamD8xtHFyMkhIWAisezHcxYIW0zi
+	wr31bF2MXBxCAssYJT5NvMMI4fQySdx4uhXK2cAoceXIUrAWXgEtiR1NDWwgNouAqsSqw+vA
+	4mwC6hKfX+9gB7GFBOQkmpasZgaxRQUiJF6dnQjVKyjxY/I9MFtEQEPi5dFbYDazwENGifsX
+	akFsYYFoiT+T77JALF7LKDGlsZ0RJMEpoC9x4vs5VogGa4mVk7YxQtjyEpvXvGWGWKws8efy
+	KSaI3xQkHl1tZZ/AKDILye5ZSNpnIWlfwMi8ilGstDi5oDgpPbXCUK84Mbe4NC9dLzk/dxMj
+	JKaqdjDe+WpziFGAg1GJh1dikUCwEGtiWXFl7iFGCQ5mJRHeCdeBQrwpiZVVqUX58UWlOanF
+	hxiZODilGhjrEstOs899rLbK5mSYZfOCIPtvTx4Ynk6eU7HWt23FsoYuzw01GZ1ez13Wnl66
+	t2Ari0blH/39Dhu3bgxiOJvYXLUl7vvqNfl/BAP+cWteKVq2+bapsf6UGUeaxRaVTONKz1je
+	tGXRG/mNRfJbxL6lsd8XT7G/rmqdVBwve1fvY9uqaTkGnexKLMUZiYZazEXFiQDAU66rhwIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matt Porter <mporter@linaro.org> [140129 13:02]:
-> Add missing interrupt properties to the ecap0, ecap1, and ecap2
-> nodes.
-> 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
+On 02/28/2014 03:15 PM, Greg KH wrote:
+> On Thu, Feb 27, 2014 at 05:27:25PM -0700, Shuah Khan wrote:
+>> usbip userspace has duplicated enum definition to report usbip device
+>> status maintained by the kernel. Adding an usbip uapi header file will
+>> define the kernel - userspace interface for this device status.
+>>
+>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+>> ---
+>>   include/uapi/linux/Kbuild  |    1 +
+>>   include/uapi/linux/usbip.h |   26 ++++++++++++++++++++++++++
+>>   2 files changed, 27 insertions(+)
+>>   create mode 100644 include/uapi/linux/usbip.h
+>
+> Staging code should be self-contained within drivers/staging/
+>
+> Now I know that a bunch of people are now working on this codebase, and
+> hopefully it will finally get moved out of staging someday soon, but
+> until then, I can't add this file in this location, sorry.
 
-Thanks taking this patch only into omap-for-v3.15/dt, the rest
-should go via the driver mailing lists.
+That makes sense.
 
-Regards,
+>
+> Look at how the drivers/staging/android code handles the uapi files, you
+> should try doing that instead.
+>
 
-Tony
+I will take a look at how android is handling uapi files and redo this 
+patch series and resend it. Hope everybody is ok with the code itself, 
+just the location of the uapi file is the issue, if not please let me 
+know and give me feedback on the approach.
 
-> ---
->  arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 6d95d3d..b4139ba 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -582,6 +582,8 @@
->  				compatible = "ti,am33xx-ecap";
->  				#pwm-cells = <3>;
->  				reg = <0x48300100 0x80>;
-> +				interrupts = <31>;
-> +				interrupt-names = "ecap0";
->  				ti,hwmods = "ecap0";
->  				status = "disabled";
->  			};
-> @@ -610,6 +612,8 @@
->  				compatible = "ti,am33xx-ecap";
->  				#pwm-cells = <3>;
->  				reg = <0x48302100 0x80>;
-> +				interrupts = <47>;
-> +				interrupt-names = "ecap1";
->  				ti,hwmods = "ecap1";
->  				status = "disabled";
->  			};
-> @@ -638,6 +642,8 @@
->  				compatible = "ti,am33xx-ecap";
->  				#pwm-cells = <3>;
->  				reg = <0x48304100 0x80>;
-> +				interrupts = <61>;
-> +				interrupt-names = "ecap2";
->  				ti,hwmods = "ecap2";
->  				status = "disabled";
->  			};
-> -- 
-> 1.8.4
-> 
+-- Shuah
+
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
