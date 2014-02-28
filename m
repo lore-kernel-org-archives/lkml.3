@@ -1,71 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbaB1MjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:39:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54898 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaB1MjQ (ORCPT
+	id S1751829AbaB1MpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:45:09 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:9438 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066AbaB1MpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:39:16 -0500
-Date: Fri, 28 Feb 2014 13:39:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: smp_call_function_single with wait=0 considered harmful
-Message-ID: <20140228123905.GK3104@twins.programming.kicks-ass.net>
-References: <20131204164627.GA27677@infradead.org>
- <20140228122624.GF9987@twins.programming.kicks-ass.net>
+	Fri, 28 Feb 2014 07:45:05 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068h1954cbhz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh906i1155h)
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH v4] can: xilinx CAN controller support.
+Thread-Topic: [PATCH v4] can: xilinx CAN controller support.
+Thread-Index: AQHPMnBMZEwPglt3TUmAMsU8apdwWZrHhtZVgAAnVUOAAqxFHIAARWMw
+Date: Fri, 28 Feb 2014 12:44:54 +0000
+References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local>
+ <530D0A9C.5090402@pengutronix.de>
+ <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
+ <530DEA7C.6010609@pengutronix.de>
+ <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
+ <530E0B92.5010903@pengutronix.de>
+ <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local>
+ <53104995.4010305@pengutronix.de>
+In-Reply-To: <53104995.4010305@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.19.46]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228122624.GF9987@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-RCIS-Action: ALLOW
+Message-ID: <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1SCjOtx015075
 
-On Fri, Feb 28, 2014 at 01:26:24PM +0100, Peter Zijlstra wrote:
-> On Wed, Dec 04, 2013 at 08:46:27AM -0800, Christoph Hellwig wrote:
-> >   kernel/stop_machine.c:stop_two_cpus()
-> 
-> That site should work with .wait=1 just fine, but given the above, the
-> .wait=0 doesn't appear problematic at all.
+Hi Marc,
 
-Scratch that; its broken, but not because of smp_call_function_single().
 
----
-Subject: stop_machine: Fix^2 race between stop_two_cpus() and stop_cpus()
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Friday, February 28, 2014 2:02 PM
+> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org
+> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; devicetree@vger.kernel.org
+> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+>
+> On 02/28/2014 06:50 AM, Appana Durga Kedareswara Rao wrote:
+> > Hi Marc,
+> >
+> >
+> >> -----Original Message-----
+> >> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >> Sent: Wednesday, February 26, 2014 9:13 PM
+> >> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> >> grant.likely@linaro.org; robh+dt@kernel.org;
+> >> linux-can@vger.kernel.org
+> >> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> >> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
+> >> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+> >>
+> >> On 02/26/2014 03:46 PM, Appana Durga Kedareswara Rao wrote:
+> >>> Hi Marc,
+> >>>
+> >>>
+> >>>> -----Original Message-----
+> >>>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> >>>> Sent: Wednesday, February 26, 2014 6:52 PM
+> >>>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal
+> Simek;
+> >>>> grant.likely@linaro.org; robh+dt@kernel.org;
+> >>>> linux-can@vger.kernel.org
+> >>>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> >>>> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
+> >>>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+> >>>>
+> >>>> On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
+> >>>>>> This loop looks broken. Can you explain how it works.
+> >>>>>>
+> >>>>>> What it shoud do is:
+> >>>>>> We have put (priv->tx_head - priv->tx_tail) CAN frames into the
+> FIFO.
+> >>>>>> This means at maximum there could be this amount of CAN frames
+> >>>>>> which have been successfully transmitted. For every cycle in this
+> >>>>>> while loop you
+> >>>>>> should:
+> >>>>>> a) check if a CAN frame has successfully been transmitted
+> >>>>>>    (as this CAN core uses a FIFO it should be "oldest")
+> >>>>>>    A read_reg() of some kind is missing in your loop.
+> >>>>>> b) if needed, remove this event from the FIFO or
+> >>>>>>    mark the interrupt as done. Whatever you hardware needs.
+> >>>>>> c) update your statistics
+> >>>>>> d) Use can_get_echo_skb to push this frame into the networking
+> >>>>>> stack
+> >>>>>> e) As a CAN frame has been transmitted successfully, wake the
+> >> tx_queue.
+> >>>>>>
+> >>>>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
+> >>>>>>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
+> >>>>>>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
+> >>>>>>> +                                   XCAN_IXR_TXFLL_MASK);
+> >>>>>>> +                   netif_stop_queue(ndev);
+> >>>>>>
+> >>>>>> Why do you stop the queue here? A CAN frame has successfully
+> been
+> >>>>>> transmitted, there should be room in the FIFO.
+> >>>>>>
+> >>>>>>> +                   break;
+> >>>>>>> +           }
+> >>>>>>> +           can_get_echo_skb(ndev, priv->tx_tail %
+> >>>>>>> +                                   priv->xcan_echo_skb_max_tx);
+> >>>>>>> +           priv->tx_tail++;
+> >>>>>>> +   }
+> >>>>>>> +
+> >>>>>
+> >>>>> The below are the bit fields available for the Transmit FIFO.
+> >>>>> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx
+> >>>>> fifo full
+> >>>> interrupt.
+> >>>>> 2) in the SR(Status Register) Tx fifo full condition.
+> >>>>>
+> >>>>>
+> >>>>> I am modifying the entire tx interrupt logic to like below.
+> >>>>>
+> >>>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+> >>>>>         struct xcan_priv *priv = netdev_priv(ndev);
+> >>>>>         struct net_device_stats *stats = &ndev->stats;
+> >>>>>
+> >>>>>             while (priv->tx_head - priv->tx_tail > 0) {
+> >>>>>                 if (isr & XCAN_IXR_TXFLL_MASK) {
+> >>>>>                         priv->write_reg(priv, XCAN_ICR_OFFSET,
+> >>>>>                                         XCAN_IXR_TXFLL_MASK);
+> >>>>>                           break;
+> >>>>>                 }
+> >>>>>                 can_get_echo_skb(ndev, priv->tx_tail %
+> >>>>>                                         priv->xcan_echo_skb_max_tx);
+> >>>>>                 priv->tx_tail++;
+> >>>>>          stats->tx_packets++;
+> >>>>>         netif_wake_queue(ndev);
+> >>>>>               can_led_event(ndev, CAN_LED_EVENT_TX);
+> >>>>>
+> >>>>>         }
+> >>>>
+> >>>> You just need to wake the queue once.
+> >>>
+> >>> Ok
+> >>>>
+> >>>>> }
+> >>>>>
+> >>>>>
+> >>>>> Are you Ok with the above logic?
+> >>>>
+> >>>> No, how can you tell how many frames have been transmitted?
+> >>>
+> >>> There is no register to read how many can frames are transmitted.
+> >>> The only way to know Is by reading this parameter
+> >>> (stats->tx_packets++;) through ip command
+> >>
+> >> stats->tx_packets is calculated in the above loop and the loop is
+> >> broken. Let me illustrate the problem:
+> >>
+> >> - xmit is called 10 times in a row
+> >> - this means you have 10 CAN frames in the TX FIFO
+> >> - a single CAN frame gets transmitted
+> >> - you get an interrupt
+> >> - you enter the above routine and loop 10 times and echo the CAN frame
+> >>   back into the stack
+> >>
+> >> Now every application sees 10 transmitted packages, but there is only
+> >> one transmitted. Every time you loop you have to check if the CAN
+> >> frame has already been transmitted or not. Is that possible with the
+> hardware?
+> >
+> >         The only way to know whether the TX packet is transmitted
+> successfully or not is by using the Tx Ok interrupt from the ISR.
+> > This interrupt will come for every Tx Packet.
+> > So I am thinking of there is no loop required in the TX interrupt routine. As
+> it is called for each and every packet.
+>
+> What happens if the interrupt handler is delayed? For example in a RT
+> enabled system the interrupt handler runs as a thread. There might be other
+> threads with higher priority. The hardware will probably send all CAN
+> frames in the FIFO, so you want to reduce the overhead and loop in the tx
+> complete handler.
+>
+Yes I agree with your comment.
+It will be good to have a loop in the Tx interrupt handler
+I am modifying the Tx interrupt handler like below.
 
-We must use smp_call_function_single(.wait=1) for the
-irq_cpu_stop_queue_work() to ensure the queueing is actually done under
-stop_cpus_lock. Without this we could have dropped the lock by the time
-we do the queueing and get the race we tried to fix.
+static void xcan_tx_interrupt(struct net_device *ndev, u32 isr)
+{
+        struct xcan_priv *priv = netdev_priv(ndev);
+        struct net_device_stats *stats = &ndev->stats;
 
-Fixes: 7053ea1a34fa ("stop_machine: Fix race between stop_two_cpus() and stop_cpus()")
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/stop_machine.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+        while (priv->tx_head - priv->tx_tail > 0) {
+                if (!(isr & XCAN_IXR_TXOK_MASK)) {
+                        break;
+                }
+                can_get_echo_skb(ndev, priv->tx_tail %
+                                        priv->xcan_echo_skb_max_tx);
+                priv->tx_tail++;
+                stats->tx_packets++;
+                can_led_event(ndev, CAN_LED_EVENT_TX);
+                isr = priv->read_reg(priv, XCAN_ISR_OFFSET);
+        }
+        netif_wake_queue(ndev);
+}
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 84571e09c907..01fbae5b97b7 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -293,7 +293,7 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
- 	 */
- 	smp_call_function_single(min(cpu1, cpu2),
- 				 &irq_cpu_stop_queue_work,
--				 &call_args, 0);
-+				 &call_args, 1);
- 	lg_local_unlock(&stop_cpus_lock);
- 	preempt_enable();
- 
+Are you Ok with this?
+
+> >
+> > static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+> >         struct xcan_priv *priv = netdev_priv(ndev);
+> >         struct net_device_stats *stats = &ndev->stats;
+> >
+> >
+> >         can_get_echo_skb(ndev, priv->tx_tail %
+> >                                 priv->xcan_echo_skb_max_tx);
+> >         priv->tx_tail++;
+> >         stats->tx_packets++;
+> >         can_led_event(ndev, CAN_LED_EVENT_TX);
+> >         netif_wake_queue(ndev);
+> > }
+> >
+> > If you want me to put some locks for this Will put some spin_locks in the
+> _xmit and in the tx interrupt routine (for the tx_head and tx_tail).
+>
+> There is no need for locking regarding tx_{head,tail}. As the tx complete
+> handler only increments tx_tail and the xmit routine increments tx_head.
+>
+
+Ok
+
+Regards,
+Kedar.
+
+> Marc
+>
+> --
+> Pengutronix e.K.                  | Marc Kleine-Budde           |
+> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
