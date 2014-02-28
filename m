@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaB1RUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:20:42 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55629 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743AbaB1RUk (ORCPT
+	id S1753164AbaB1RVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:21:01 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43708 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639AbaB1RU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:20:40 -0500
-Date: Fri, 28 Feb 2014 17:20:06 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "wad@chromium.org" <wad@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] arm64: Add seccomp support
-Message-ID: <20140228172006.GF30996@mudshark.cambridge.arm.com>
-References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320025-2855-3-git-send-email-takahiro.akashi@linaro.org>
+	Fri, 28 Feb 2014 12:20:59 -0500
+Message-ID: <5310C56C.60709@oracle.com>
+Date: Fri, 28 Feb 2014 12:20:44 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393320025-2855-3-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
+References: <5307D74C.5070002@oracle.com> <20140221235145.GA18046@node.dhcp.inet.fi> <5307F90C.9060602@oracle.com>
+In-Reply-To: <5307F90C.9060602@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 09:20:24AM +0000, AKASHI Takahiro wrote:
-> secure_computing() should always be called first in syscall_trace(), and
-> if it returns non-zero, we should stop further handling. Then that system
-> call may eventually fail, be trapped or the process itself be killed
-> depending on loaded rules.
+On 02/21/2014 08:10 PM, Sasha Levin wrote:
+> On 02/21/2014 06:51 PM, Kirill A. Shutemov wrote:
+>> On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
+>>> >Hi all,
+>>> >
+>>> >While fuzzing with trinity inside a KVM tools guest running latest -next
+>>> >kernel I've stumbled on the following (now with pretty line numbers!) spew:
+>>> >
+>>> >[  746.125099] kernel BUG at mm/huge_memory.c:1371!
+>> It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
+>> I don't see dump_page() output.
+>
+> Right. However, I'm not seeing the dump_page() output in the log.
+>
+> I see that dump_page() has been modified not long ago, I'm looking into it.
 
-[...]
+Alright, here we go:
 
-> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-> index d4ce70e..f2a74bc 100644
-> --- a/arch/arm64/kernel/ptrace.c
-> +++ b/arch/arm64/kernel/ptrace.c
-> @@ -20,12 +20,14 @@
->   */
->  
->  #include <linux/audit.h>
-> +#include <linux/errno.h>
->  #include <linux/kernel.h>
->  #include <linux/sched.h>
->  #include <linux/mm.h>
->  #include <linux/smp.h>
->  #include <linux/ptrace.h>
->  #include <linux/user.h>
-> +#include <linux/seccomp.h>
->  #include <linux/security.h>
->  #include <linux/init.h>
->  #include <linux/signal.h>
-> @@ -1064,6 +1066,10 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
->  {
->  	unsigned long saved_reg;
->  
-> +	if (!dir && secure_computing((int)regs->syscallno))
+[ 3323.062742] page:ffffea00080f0000 count:3 mapcount:0 mapping:ffff8802292ee0e1 index:0x7fa2e6800
+[ 3323.065978] page flags: 0x16fffff80090018(uptodate|dirty|swapcache|swapbacked)
+[ 3323.068535] ------------[ cut here ]------------
+[ 3323.069669] kernel BUG at mm/huge_memory.c:1371!
+[ 3323.070961] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 3323.071028] Dumping ftrace buffer:
+[ 3323.071028]    (ftrace buffer empty)
+[ 3323.071028] Modules linked in:
+[ 3323.071028] CPU: 101 PID: 48284 Comm: trinity-c101 Tainted: G        W 
+3.14.0-rc4-next-20140228-sasha-00011-g4077c67 #25
+[ 3323.071028] task: ffff8800c2718000 ti: ffff8800c26ec000 task.ti: ffff8800c26ec000
+[ 3323.071028] RIP: 0010:[<ffffffff812c083a>]  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
+[ 3323.071028] RSP: 0018:ffff8800c26edc78  EFLAGS: 00010246
+[ 3323.071028] RAX: ffff88022febc000 RBX: ffff8800c26edde8 RCX: 0000000000000040
+[ 3323.071028] RDX: 0000000000000000 RSI: ffff8800c2718cc0 RDI: 000000000203c000
+[ 3323.071028] RBP: ffff8800c26edcb8 R08: 0000000000000000 R09: 0000000000000000
+[ 3323.071028] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0008b9e240
+[ 3323.071028] R13: ffffea00080f0000 R14: 00007fa2e6800000 R15: 00007fa2ffffffff
+[ 3323.071028] FS:  00007fa31e1b8700(0000) GS:ffff880230600000(0000) knlGS:0000000000000000
+[ 3323.071028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3323.071028] CR2: 00007fa31e1e8990 CR3: 0000000005c25000 CR4: 00000000000006e0
+[ 3323.071028] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000698000
+[ 3323.071028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 3323.071028] Stack:
+[ 3323.071028]  00000000000004de ffff88022e2139d0 ffff8800c26edcb8 ffff88021b7ef9a0
+[ 3323.071028]  00007fa2e6800000 00007fa300000000 ffff8800c26edde8 00007fa2ffffffff
+[ 3323.071028]  ffff8800c26edd48 ffffffff812800c6 ffffea0008454540 00007fa2e6a00000
+[ 3323.071028] Call Trace:
+[ 3323.071028]  [<ffffffff812800c6>] unmap_page_range+0x2c6/0x410
+[ 3323.071028]  [<ffffffff81280301>] unmap_single_vma+0xf1/0x110
+[ 3323.071028]  [<ffffffff81280381>] unmap_vmas+0x61/0xa0
+[ 3323.071028]  [<ffffffff812875e0>] exit_mmap+0xd0/0x170
+[ 3323.071028]  [<ffffffff811387a7>] mmput+0x77/0xe0
+[ 3323.071028]  [<ffffffff8113c80d>] exit_mm+0x18d/0x1a0
+[ 3323.071028]  [<ffffffff811ecea5>] ? acct_collect+0x175/0x1b0
+[ 3323.071028]  [<ffffffff8113ec1a>] do_exit+0x26a/0x510
+[ 3323.071028]  [<ffffffff8113ef61>] do_group_exit+0xa1/0xe0
+[ 3323.071028]  [<ffffffff8113efb2>] SyS_exit_group+0x12/0x20
+[ 3323.071028]  [<ffffffff8439f720>] tracesys+0xdd/0xe2
+[ 3323.071028] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 
+45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 f6 1f f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 
+03 f0 48 ff 48
+[ 3323.071028] RIP  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
+[ 3323.071028]  RSP <ffff8800c26edc78>
 
-Why do you need this cast to (int)? Also, it's probably better to check for
--1 explicitly here.
 
-I'm slightly surprised that we do the secure computing check first. Doesn't
-this allow a debugger to change the syscall to something else after we've
-decided that it's ok?
-
-Will
+Thanks,
+Sasha
