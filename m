@@ -1,145 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaB1MF3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:05:29 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38968 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaB1MF1 (ORCPT
+	id S1751679AbaB1MNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:13:36 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48635 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751296AbaB1MNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:05:27 -0500
-Message-ID: <53107AA4.30902@linux.vnet.ibm.com>
-Date: Fri, 28 Feb 2014 17:31:40 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 28 Feb 2014 07:13:35 -0500
+Date: Fri, 28 Feb 2014 12:13:15 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
+Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
+ via atomic_long_*
+Message-ID: <20140228121314.GC674@mudshark.cambridge.arm.com>
+References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
+ <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        rjw@rjwysocki.net, nicolas.pitre@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/5] idle/cpuidle: Split cpuidle_idle_call main function
- into smaller functions
-References: <1393315733-32321-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1393315733-32321-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14022812-1344-0000-0000-000006246D27
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2014 01:38 PM, Daniel Lezcano wrote:
-> In order to allow better integration between the cpuidle framework and the
-> scheduler, reducing the distance between these two sub-components will
-> facilitate this integration by moving part of the cpuidle code in the idle
-> task file and, because idle.c is in the sched directory, we have access to
-> the scheduler's private structures.
+On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
+> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
+> > The asm-generic rwsem implementation directly acceses sem->cnt when
+> > performing a __down_read_trylock operation. Whilst this is probably safe
+> > on all architectures, we should stick to the atomic_long_* API and use
+> > atomic_long_read instead.
+> > 
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > ---
+> >  include/asm-generic/rwsem.h | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> > index bb1e2cdeb9bf..75af612f54f8 100644
+> > --- a/include/asm-generic/rwsem.h
+> > +++ b/include/asm-generic/rwsem.h
+> > @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
+> >  {
+> >  	long tmp;
+> >  
+> > -	while ((tmp = sem->count) >= 0) {
+> > +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
 > 
-> This patch splits the cpuidle_idle_call main entry function into 3 calls
-> to a newly added API:
->  1. select the idle state
->  2. enter the idle state
->  3. reflect the idle state
+> That's pretty ugly, how about having infinite look and just do the tmp
+> assign separately from the conditional?
 > 
-> The cpuidle_idle_call calls these three functions to implement the main
-> idle entry function.
+> It also looks like a cpu_relax() could help here between iterations.
+> Other than that:
 > 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Acked-by: Nicolas Pitre <nico@linaro.org>
-> ---
-> 
-> ChangeLog:
-> 
-> V3:
->     * moved broadcast timer outside of cpuidle_enter() as suggested by
->       Preeti U Murthy.
-> 	https://lkml.org/lkml/2014/2/24/601
-> V2: 
->     * splitted cpuidle_select error check into 'cpuidle_enabled' function
-> 
-> ---
->  drivers/cpuidle/cpuidle.c |   97 ++++++++++++++++++++++++++++++++++++----------
->  include/linux/cpuidle.h   |   19 +++++++++
->  2 files changed, 95 insertions(+), 21 deletions(-)
-> 
-> Index: cpuidle-next/drivers/cpuidle/cpuidle.c
-> ===================================================================
-> --- cpuidle-next.orig/drivers/cpuidle/cpuidle.c
-> +++ cpuidle-next/drivers/cpuidle/cpuidle.c
-> @@ -65,6 +65,26 @@ int cpuidle_play_dead(void)
->  }
-> 
->  /**
-> + * cpuidle_enabled - check if the cpuidle framework is ready
-> + * @dev: cpuidle device for this cpu
-> + * @drv: cpuidle driver for this cpu
-> + *
-> + * Return 0 on success, otherwise:
-> + * -NODEV : the cpuidle framework is not available
-> + * -EBUSY : the cpuidle framework is not initialized
-> + */
-> +int cpuidle_enabled(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-> +{
-> +	if (off || !initialized)
-> +		return -ENODEV;
-> +
-> +	if (!drv || !dev || !dev->enabled)
-> +		return -EBUSY;
-> +
-> +	return 0;
-> +}
-> +
-> +/**
->   * cpuidle_enter_state - enter the state and update stats
->   * @dev: cpuidle device for this cpu
->   * @drv: cpuidle driver for this cpu
-> @@ -108,6 +128,51 @@ int cpuidle_enter_state(struct cpuidle_d
->  }
-> 
->  /**
-> + * cpuidle_select - ask the cpuidle framework to choose an idle state
-> + *
-> + * @drv: the cpuidle driver
-> + * @dev: the cpuidle device
-> + *
-> + * Returns the index of the idle state.
-> + */
-> +int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
-> +{
-> +	return cpuidle_curr_governor->select(drv, dev);
-> +}
-> +
-> +/**
-> + * cpuidle_enter - enter into the specified idle state
-> + *
-> + * @drv:   the cpuidle driver tied with the cpu
-> + * @dev:   the cpuidle device
-> + * @index: the index in the idle state table
-> + *
-> + * Returns the index in the idle state, < 0 in case of error.
-> + * The error code depends on the backend driver
-> + */
-> +int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
-> +		  int index)
-> +{
-> +	if (cpuidle_state_is_coupled(dev, drv, index))
-> +		return cpuidle_enter_state_coupled(dev, drv, index);
-> +	return cpuidle_enter_state(dev, drv, index);
-> +}
-> +
-> +/**
-<snip>
-> 
-> -	if (cpuidle_state_is_coupled(dev, drv, next_state))
-> -		entered_state = cpuidle_enter_state_coupled(dev, drv,
-> -							    next_state);
-> -	else
-> -		entered_state = cpuidle_enter_state(dev, drv, next_state);
-> +	entered_state = cpuidle_enter(drv, dev, next_state);
+> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
 
-Wouldn't you need to check for return value on cpuidle_enter()?
+Actually, we should make that cmpxchg an atomic_long_cmpxchg, so the extra
+diff ends up looking like below. It's ugly adding a cpu_relax(), since you
+only want it when the cmpxchg fails (and we don't have such logic in the
+asm-generic __atomic_add_unless, for example).
 
-Regards
-Preeti U Murthy
+Will
+
+--->8
+
+diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+index 603a0a11e592..2b6401f9e428 100644
+--- a/include/asm-generic/rwsem.h
++++ b/include/asm-generic/rwsem.h
+@@ -40,14 +40,16 @@ static inline void __down_read(struct rw_semaphore *sem)
+ static inline int __down_read_trylock(struct rw_semaphore *sem)
+ {
+        long tmp;
++       atomic_long_t *cnt = (atomic_long_t *)&sem->count;
+ 
+-       while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
+-               if (tmp == cmpxchg(&sem->count, tmp,
+-                                  tmp + RWSEM_ACTIVE_READ_BIAS)) {
+-                       return 1;
+-               }
+-       }
+-       return 0;
++       do {
++               tmp = atomic_long_read(cnt);
++               if (tmp < 0)
++                       return 0;
++       } while (tmp != atomic_long_cmpxchg(cnt, tmp,
++                                           tmp + RWSEM_ACTIVE_READ_BIAS));
++
++       return 1;
+ }
+ 
+ /*
 
