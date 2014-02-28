@@ -1,70 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaB1B4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 20:56:24 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36031 "EHLO
+	id S1752725AbaB1B4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 20:56:21 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36045 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaB1BzX (ORCPT
+	with ESMTP id S1751638AbaB1BzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 20:55:23 -0500
+	Thu, 27 Feb 2014 20:55:24 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v4 0/9] Use regmap+devm+DT in pm8xxx input drivers
-Date: Thu, 27 Feb 2014 17:55:11 -0800
-Message-Id: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+        Josh Cartwright <joshc@codeaurora.org>, linux-input@vger.kernel.org
+Subject: [PATCH v4 2/9] Input: pmic8xxx-keypad - Migrate to devm_* APIs
+Date: Thu, 27 Feb 2014 17:55:13 -0800
+Message-Id: <1393552520-9068-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+In-Reply-To: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
+References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches move the pm8xxx input drivers over to use devm_* APIs
-and regmap. This breaks the dependency of these drivers on the pm8xxx
-specific read/write calls and also simplifies the probe code a bit.
-Finally we add devicetree support to these drivers so they can be probed
-on the platforms that are supported upstream.
+Simplify the error paths and reduce the lines of code in this
+driver by using the devm_* APIs.
 
-Changes since v3:
- * Dropped devm conversion patch for pwrkey
- * Fixed compilation of keypad
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/input/keyboard/pmic8xxx-keypad.c | 61 +++++++++-----------------------
+ 1 file changed, 17 insertions(+), 44 deletions(-)
 
-Changes since v2:
- * Rebased to v3.14-rc3
-
-Changes since v1:
- * Picked up Dmitry's version of devm for pwrkey
- * Added DT bindings and parsing patches
- * Dropped patches picked up by Dmitry
-
-Stephen Boyd (9):
-  Input: pmic8xxx-keypad - Fix build by removing gpio configuration
-  Input: pmic8xxx-keypad - Migrate to devm_* APIs
-  Input: pmic8xxx-keypad - Migrate to regmap APIs
-  Input: pmic8xxx-keypad - Migrate to DT
-  Input: pmic8xxx-pwrkey - Migrate to DT
-  Input: pm8xxx-vibrator - Add DT match table
-  devicetree: bindings: Document PM8921/8058 keypads
-  devicetree: bindings: Document PM8921/8058 power keys
-  devicetree: bindings: Document PM8921/8058 vibrators
-
- .../bindings/input/qcom,pm8xxx-keypad.txt          |  72 +++++
- .../bindings/input/qcom,pm8xxx-pwrkey.txt          |  39 +++
- .../devicetree/bindings/input/qcom,pm8xxx-vib.txt  |  16 +
- drivers/input/keyboard/pmic8xxx-keypad.c           | 348 ++++++++-------------
- drivers/input/misc/pm8xxx-vibrator.c               |   8 +
- drivers/input/misc/pmic8xxx-pwrkey.c               |  33 +-
- include/linux/input/pmic8xxx-keypad.h              |  52 ---
- include/linux/input/pmic8xxx-pwrkey.h              |  31 --
- 8 files changed, 286 insertions(+), 313 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-pwrkey.txt
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8xxx-vib.txt
- delete mode 100644 include/linux/input/pmic8xxx-keypad.h
- delete mode 100644 include/linux/input/pmic8xxx-pwrkey.h
-
+diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
+index c4aa882c8fb9..bec53ebde7b2 100644
+--- a/drivers/input/keyboard/pmic8xxx-keypad.c
++++ b/drivers/input/keyboard/pmic8xxx-keypad.c
+@@ -543,7 +543,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	kp = kzalloc(sizeof(*kp), GFP_KERNEL);
++	kp = devm_kzalloc(&pdev->dev, sizeof(*kp), GFP_KERNEL);
+ 	if (!kp)
+ 		return -ENOMEM;
+ 
+@@ -552,32 +552,27 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	kp->pdata	= pdata;
+ 	kp->dev		= &pdev->dev;
+ 
+-	kp->input = input_allocate_device();
++	kp->input = devm_input_allocate_device(&pdev->dev);
+ 	if (!kp->input) {
+ 		dev_err(&pdev->dev, "unable to allocate input device\n");
+-		rc = -ENOMEM;
+-		goto err_alloc_device;
++		return -ENOMEM;
+ 	}
+ 
+ 	kp->key_sense_irq = platform_get_irq(pdev, 0);
+ 	if (kp->key_sense_irq < 0) {
+ 		dev_err(&pdev->dev, "unable to get keypad sense irq\n");
+-		rc = -ENXIO;
+-		goto err_get_irq;
++		return kp->key_sense_irq;
+ 	}
+ 
+ 	kp->key_stuck_irq = platform_get_irq(pdev, 1);
+ 	if (kp->key_stuck_irq < 0) {
+ 		dev_err(&pdev->dev, "unable to get keypad stuck irq\n");
+-		rc = -ENXIO;
+-		goto err_get_irq;
++		return kp->key_stuck_irq;
+ 	}
+ 
+ 	kp->input->name = pdata->input_name ? : "PMIC8XXX keypad";
+ 	kp->input->phys = pdata->input_phys_device ? : "pmic8xxx_keypad/input0";
+ 
+-	kp->input->dev.parent	= &pdev->dev;
+-
+ 	kp->input->id.bustype	= BUS_I2C;
+ 	kp->input->id.version	= 0x0001;
+ 	kp->input->id.product	= 0x0001;
+@@ -591,7 +586,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 					kp->keycodes, kp->input);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "failed to build keymap\n");
+-		goto err_get_irq;
++		return rc;
+ 	}
+ 
+ 	if (pdata->rep)
+@@ -607,27 +602,29 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	rc = pmic8xxx_kpd_init(kp);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "unable to initialize keypad controller\n");
+-		goto err_get_irq;
++		return rc;
+ 	}
+ 
+-	rc = request_any_context_irq(kp->key_sense_irq, pmic8xxx_kp_irq,
+-				 IRQF_TRIGGER_RISING, "pmic-keypad", kp);
++	rc = devm_request_any_context_irq(&pdev->dev, kp->key_sense_irq,
++			pmic8xxx_kp_irq, IRQF_TRIGGER_RISING, "pmic-keypad",
++			kp);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to request keypad sense irq\n");
+-		goto err_get_irq;
++		return rc;
+ 	}
+ 
+-	rc = request_any_context_irq(kp->key_stuck_irq, pmic8xxx_kp_stuck_irq,
+-				 IRQF_TRIGGER_RISING, "pmic-keypad-stuck", kp);
++	rc = devm_request_any_context_irq(&pdev->dev, kp->key_stuck_irq,
++			pmic8xxx_kp_stuck_irq, IRQF_TRIGGER_RISING,
++			"pmic-keypad-stuck", kp);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to request keypad stuck irq\n");
+-		goto err_req_stuck_irq;
++		return rc;
+ 	}
+ 
+ 	rc = pmic8xxx_kp_read_u8(kp, &ctrl_val, KEYP_CTRL);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "failed to read KEYP_CTRL register\n");
+-		goto err_pmic_reg_read;
++		return rc;
+ 	}
+ 
+ 	kp->ctrl_reg = ctrl_val;
+@@ -635,35 +632,12 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+ 	rc = input_register_device(kp->input);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "unable to register keypad input device\n");
+-		goto err_pmic_reg_read;
++		return rc;
+ 	}
+ 
+ 	device_init_wakeup(&pdev->dev, pdata->wakeup);
+ 
+ 	return 0;
+-
+-err_pmic_reg_read:
+-	free_irq(kp->key_stuck_irq, kp);
+-err_req_stuck_irq:
+-	free_irq(kp->key_sense_irq, kp);
+-err_get_irq:
+-	input_free_device(kp->input);
+-err_alloc_device:
+-	kfree(kp);
+-	return rc;
+-}
+-
+-static int pmic8xxx_kp_remove(struct platform_device *pdev)
+-{
+-	struct pmic8xxx_kp *kp = platform_get_drvdata(pdev);
+-
+-	device_init_wakeup(&pdev->dev, 0);
+-	free_irq(kp->key_stuck_irq, kp);
+-	free_irq(kp->key_sense_irq, kp);
+-	input_unregister_device(kp->input);
+-	kfree(kp);
+-
+-	return 0;
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -713,7 +687,6 @@ static SIMPLE_DEV_PM_OPS(pm8xxx_kp_pm_ops,
+ 
+ static struct platform_driver pmic8xxx_kp_driver = {
+ 	.probe		= pmic8xxx_kp_probe,
+-	.remove		= pmic8xxx_kp_remove,
+ 	.driver		= {
+ 		.name = PM8XXX_KEYPAD_DEV_NAME,
+ 		.owner = THIS_MODULE,
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
