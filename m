@@ -1,126 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaB1StE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 13:49:04 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19638 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400AbaB1StC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 13:49:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,563,1389772800"; 
-   d="scan'208";a="464373681"
-Date: Fri, 28 Feb 2014 10:49:00 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Otto Meier <gf435@gmx.net>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [3.14-rc4 xHCI] Regression haswell B85 with xHCI on
-Message-ID: <20140228184900.GB3405@xanatos>
-References: <530F650F.60508@gmx.net>
+	id S1752005AbaB1StS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 13:49:18 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:39307 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948AbaB1StP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 13:49:15 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Guy Briggs <rgb@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Fri, 28 Feb 2014 10:49:05 -0800
+Message-ID: <8738j3vzry.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <530F650F.60508@gmx.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+cvbGdyWxdwKZkuERGnUXuiefsHpnpKHs=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3023]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Eric Paris <eparis@redhat.com>
+X-Spam-Relay-Country: 
+Subject: [PATCH] audit: Use struct net not pid_t to remember the network namespce to reply in
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:17:19PM +0100, Otto Meier wrote:
-> I migrated my system from H77 Ivy-bridge to a haswell Platform
-> B85 i3-4330.
-> 
-> The system has three dvb-c usb receivers connected. On the Ivy
-> Platform everything runs fine with xHCI. On the haswell Platform
-> xHCI explodes with  following messages:
 
-Do these DVB-C receivers work with an earlier kernel on this machine?
-If so, that's technically not a regression, but it's still a bug that
-needs to get fixed.
+While reading through 3.14-rc1 I found a pretty siginficant mishandling
+of network namespaces in the recent audit changes.
 
-> 2014-02-27T16:45:53.518332+01:00 vnas kernel: [  222.218703] xhci_hcd 0000:00:14.0: xHCI host not responding to stop endpoint command.
-> 2014-02-27T16:45:53.518342+01:00 vnas kernel: [  222.218712] xhci_hcd 0000:00:14.0: Assuming host is dying, halting host.
-> 2014-02-27T16:45:53.518346+01:00 vnas kernel: [  222.218808] xhci_hcd 0000:00:14.0: HC died; cleaning up
-> 2014-02-27T16:45:53.518349+01:00 vnas kernel: [  222.218870] usb 1-1: USB disconnect, device number 2
-> 2014-02-27T16:45:53.518351+01:00 vnas kernel: [  222.218880] usb 1-1.2: USB disconnect, device number 7
-> 2014-02-27T16:45:53.518353+01:00 vnas kernel: [  222.218979] em2884 #0: writing to i2c device at 0x52 failed (error=-19)
-> 2014-02-27T16:45:53.518356+01:00 vnas kernel: [  222.218988] drxk: i2c write error at addr 0x29
-> 2014-02-27T16:45:53.518358+01:00 vnas kernel: [  222.218993] em2884 #2: writing to i2c device at 0x52 failed (error=-19)
-> 2014-02-27T16:45:53.518361+01:00 vnas kernel: [  222.218997] drxk: i2c write error at addr 0x29
-> 2014-02-27T16:45:53.518364+01:00 vnas kernel: [  222.219001] drxk: write_block: i2c write error at addr 0x831ffd
-> 2014-02-27T16:45:53.518366+01:00 vnas kernel: [  222.219006] drxk: write_block: i2c write error at addr 0x831ffd
-> 2014-02-27T16:45:53.518368+01:00 vnas kernel: [  222.219012] em2884 #1: writing to i2c device at 0x52 failed (error=-19)
-> 2014-02-27T16:45:53.518371+01:00 vnas kernel: [  222.219017] drxk: i2c write error at addr 0x29
-> 2014-02-27T16:45:53.518373+01:00 vnas kernel: [  222.219021] drxk: write_block: i2c write error at addr 0x831ffd
-> 2014-02-27T16:45:53.518375+01:00 vnas kernel: [  222.219070] em2884 #0: Disconnecting em2884 #0
-> 2014-02-27T16:45:53.518962+01:00 vnas kernel: [  222.219076] em2884 #0: Closing audio extension
+In struct audit_netlink_list and audit_reply add a reference to the
+network namespace of the caller and remove the userspace pid of the
+caller.  This cleanly remembers the callers network namespace, and
+removes a huge class of races and nasty failure modes that can occur
+when attempting to relook up the callers network namespace from a pid_t
+(including the caller's network namespace changing, pid wraparound, and
+the pid simply not being present).
 
-Can you enable xHCI dynamic debugging (make sure you have
-CONFIG_DYNAMIC_DEBUG turned on), and send us more of the dmesg before
-the host died?
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ kernel/audit.c       |   10 ++++++----
+ kernel/audit.h       |    2 +-
+ kernel/auditfilter.c |    3 ++-
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
-echo -n 'module xhci_hcd =p' > /sys/kernel/debug/dynamic_debug/control
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 34c5a2310fbf..1e5756f16f6f 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -182,7 +182,7 @@ struct audit_buffer {
+ 
+ struct audit_reply {
+ 	__u32 portid;
+-	pid_t pid;
++	struct net *net;	
+ 	struct sk_buff *skb;
+ };
+ 
+@@ -500,7 +500,7 @@ int audit_send_list(void *_dest)
+ {
+ 	struct audit_netlink_list *dest = _dest;
+ 	struct sk_buff *skb;
+-	struct net *net = get_net_ns_by_pid(dest->pid);
++	struct net *net = dest->net;
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+ 
+ 	/* wait for parent to finish and send an ACK */
+@@ -510,6 +510,7 @@ int audit_send_list(void *_dest)
+ 	while ((skb = __skb_dequeue(&dest->q)) != NULL)
+ 		netlink_unicast(aunet->nlsk, skb, dest->portid, 0);
+ 
++	put_net(net);
+ 	kfree(dest);
+ 
+ 	return 0;
+@@ -543,7 +544,7 @@ out_kfree_skb:
+ static int audit_send_reply_thread(void *arg)
+ {
+ 	struct audit_reply *reply = (struct audit_reply *)arg;
+-	struct net *net = get_net_ns_by_pid(reply->pid);
++	struct net *net = reply->net;
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+ 
+ 	mutex_lock(&audit_cmd_mutex);
+@@ -552,6 +553,7 @@ static int audit_send_reply_thread(void *arg)
+ 	/* Ignore failure. It'll only happen if the sender goes away,
+ 	   because our timeout is set to infinite. */
+ 	netlink_unicast(aunet->nlsk , reply->skb, reply->portid, 0);
++	put_net(net);
+ 	kfree(reply);
+ 	return 0;
+ }
+@@ -583,8 +585,8 @@ static void audit_send_reply(__u32 portid, int seq, int type, int done,
+ 	if (!skb)
+ 		goto out;
+ 
++	reply->net = get_net(current->nsproxy->net_ns);
+ 	reply->portid = portid;
+-	reply->pid = task_pid_vnr(current);
+ 	reply->skb = skb;
+ 
+ 	tsk = kthread_run(audit_send_reply_thread, reply, "audit_send_reply");
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 57cc64d67718..8df132214606 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -247,7 +247,7 @@ extern void		    audit_panic(const char *message);
+ 
+ struct audit_netlink_list {
+ 	__u32 portid;
+-	pid_t pid;
++	struct net *net;
+ 	struct sk_buff_head q;
+ };
+ 
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 14a78cca384e..a5e3d73d73e4 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -29,6 +29,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/security.h>
++#include <net/net_namespace.h>
+ #include "audit.h"
+ 
+ /*
+@@ -1083,8 +1084,8 @@ int audit_list_rules_send(__u32 portid, int seq)
+ 	dest = kmalloc(sizeof(struct audit_netlink_list), GFP_KERNEL);
+ 	if (!dest)
+ 		return -ENOMEM;
++	dest->net = get_net(current->nsproxy->net_ns);
+ 	dest->portid = portid;
+-	dest->pid = task_pid_vnr(current);
+ 	skb_queue_head_init(&dest->q);
+ 
+ 	mutex_lock(&audit_filter_mutex);
+-- 
+1.7.5.4
 
-> This happens when more then one DVB-C receiver is connected.
-> With only one it works.
-> 
-> If I disable xHCI Mode in Bios and run only with EHCI.
-> Everything is running fine either.
-> 
-> lsusb:
-> 
-> Bus 001 Device 002: ID 8087:8008 Intel Corp.
-> Bus 002 Device 002: ID 8087:8000 Intel Corp.
-> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub                      
-> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub                                                                                                                         
-> Bus 002 Device 003: ID 2109:2811                                                                                                               
-> Bus 002 Device 004: ID 10c4:ea60 Cygnal Integrated Products, Inc. CP210x UART Bridge / myAVR mySmartUSB light                
-> Bus 002 Device 005: ID 03eb:201l3 Atmel Corp.
-> Bus 002 Device 006: ID 9e88:9e8f                                                                                                                                                       
-> Bus 002 Device 007: ID 1a40:0101 Terminus Technology Inc. 4-Port HUB
-> Bus 002 Device 008: ID 2040:1605 Hauppauge                                                                 
-> Bus 002 Device 009: ID 2040:1605 Hauppauge                                                                                                        
-> Bus 002 Device 010: ID 2040:1605 Hauppauge
-> Bus 002 Device 011: ID 04e6:5116 SCM Microsystems, Inc. SCR331-LC1 / SCR3310 SmartCard Reader
-> Bus 002 Device 012: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
-> Bus 002 Device 013: ID 10c4:ea60 Cygnal Integrated Products, Inc. CP210x UART Bridge / myAVR mySmartUSB light
-> Bus 002 Device 014: ID 10c4:ea60 Cygnal Integrated Products, Inc. CP210x UART Bridge / myAVR mySmartUSB light
-> 
-> lspci: xHCI disabled:
-> 
-> 00:00.0 Host bridge: Intel Corporation 4th Gen Core Processor DRAM
-> Controller (rev 06)
-> 00:02.0 VGA compatible controller: Intel Corporation Xeon E3-1200 v3/4th
-> Gen Core Processor Integrated Graphics Controller (rev 06)
-> 00:03.0 Audio device: Intel Corporation Xeon E3-1200 v3/4th Gen Core
-> Processor HD Audio Controller (rev 06)
-> 00:16.0 Communication controller: Intel Corporation 8 Series/C220 Series
-> Chipset Family MEI Controller #1 (rev 04)
-> 00:1a.0 USB controller: Intel Corporation 8 Series/C220 Series Chipset
-> Family USB EHCI #2 (rev 05)
-> 00:1b.0 Audio device: Intel Corporation 8 Series/C220 Series Chipset
-> High Definition Audio Controller (rev 05)
-> 00:1c.0 PCI bridge: Intel Corporation 8 Series/C220 Series Chipset
-> Family PCI Express Root Port #1 (rev d5)
-> 00:1c.2 PCI bridge: Intel Corporation 8 Series/C220 Series Chipset
-> Family PCI Express Root Port #3 (rev d5)
-> 00:1c.3 PCI bridge: Intel Corporation 8 Series/C220 Series Chipset
-> Family PCI Express Root Port #4 (rev d5)
-> 00:1d.0 USB controller: Intel Corporation 8 Series/C220 Series Chipset
-> Family USB EHCI #1 (rev 05)
-> 00:1f.0 ISA bridge: Intel Corporation B85 Express LPC Controller (rev 05)
-> 00:1f.2 SATA controller: Intel Corporation 8 Series/C220 Series Chipset
-> Family 6-port SATA Controller 1 [AHCI mode] (rev 05)
-> 00:1f.3 SMBus: Intel Corporation 8 Series/C220 Series Chipset Family
-> SMBus Controller (rev 05)
-> 02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 0c)
-> 03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 0c)
-> 
-> Any Idea how to fix these?
-
-I won't know until I see more dmesg.
-
-Sarah Sharp
