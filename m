@@ -1,352 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaB1Nox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:44:53 -0500
-Received: from nm49.bullet.mail.ne1.yahoo.com ([98.138.120.56]:40768 "HELO
-	nm49.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752319AbaB1Nou (ORCPT
+	id S1752532AbaB1NnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:43:20 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:18776 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200AbaB1NnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:44:50 -0500
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 516947.34447.bm@omp1002.access.mail.gq1.yahoo.com
-X-YMail-OSG: MsJEUA8VM1k5odUmTxKoFOgJPMKO.GrftLcYP6Fa_gsMCb2
- wGZXO9oaoQgW3ZVuuztTiY2at6Tn8Yl_PjRRatCQZVbbb643DfQARZ6_HLql
- _6riBKrIMusKuvmjjrGi0PuNwSyPcuCHAEP2a67KtzTMq0yNpxP07XL.vBxT
- XxQS1riWegsEQZvzGgP01E_6d6YNhNiqPLJOXO98n8xlrpINc4PRg9amTrcL
- ljTuxvhhqJYWy3G2ai7rGhTuBlD9FAY772Z2OejUj2SCThEhUTfPbyTWRzV1
- r7.DZgGQbBuB1fmAG_LuiSLSJrV5svvYoQ0HdAXf8u2mK8WhFEHxlXdzA1sZ
- ZjDguSICFr0ifjiQVPLjzwK08B2jPMfQhLb1tqhroMLaOVYWgoPW6gZ7omyO
- cxofIBwrS9H3bVpxkw7DgUiUG4CAJSnfeIpcSgOMKVAImWXUbWg4P5M2JYll
- aqM4jud7PvaIJgI8CryYY6n5Ed1ttgCehRQlMrY03Fcf3VJ1WsMGaupl.AYb
- kyVNsqPYmXBJXqmUGkpdzerrPjX56MBipTIghggPvDES55w5M.AUh10dXSyD
- Qb_COGA--
-X-RocketYMMF: wbb775
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1393594892.21532.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
-Message-ID: <1393594928.61046.YahooMailNeo@web5706.biz.mail.ne1.yahoo.com>
-Date: Fri, 28 Feb 2014 05:42:08 -0800 (PST)
-From: "From Mrs.Susan Shabangu" <sshabangusus101@gmail.com>
-Reply-To: "From Mrs.Susan Shabangu" <sshabangu2014@gmail.com>
-Subject: KINDLY VIEW THE ATTACHMENT AND GET BACK TO ME
-To: undisclosed recipients:;
-In-Reply-To: <1393594892.21532.YahooMailNeo@web5704.biz.mail.ne1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="805399167-1539482765-1393594928=:61046"
+	Fri, 28 Feb 2014 08:43:12 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-f9-5310926cb61e
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
+Subject: [PATCH v6 01/11] of: document bindings for reserved-memory nodes
+Date: Fri, 28 Feb 2014 14:42:46 +0100
+Message-id: <1393594976-16728-2-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com>
+References: <1393594976-16728-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAyWRa0hTYRzGfc/ObcPRcS05SYxaRBFoM6LeyiKD8LUviUZgSbp0qLGp7TTR
+	QhpLTedtzEJTmxM1YaiLFXiPlOWsUSheFti0vEC6pZmiXabl8NuP//P783x4aJ6oAg+h0zPu
+	KtQZcqWUFODOLcd4qNLIxMnezZ2Gm8ZBCv7QFfDg8vNSAOvtHwlY4W0g4BtfJ4DesiIcdrUv
+	AfhB56VgR3E1BdfGvmLQNjtBwIbCJhyOdteRsM3upuCLhX4MNrtGMGh25BPQVyWB712rJGy1
+	N1LQUNWGw4I+OwU3O2w4XOwvxKG12oNDS7cPwIWVIfzCPtRqagXo7x8jQJ5KA0Cj5WUY6qpx
+	U6jUm08gm6WYRJ8nekn0sukBmtya5aGxIR2B2n2LGKrYlKFn3eUAlb+yALRqk8QEXRdEpCiU
+	6dkK9bHzSYI0c009nrUoy5mxeigtMB7WAz7NMidYz5dJfIeD2eEpK6kHAlrENAPWbfEBfyBi
+	SjDWYcrzM8mEs/rvetLPYqYBsKsm3P/AY6ZJtmikFPMHu5lodqOwZZtpGmcOsbNL8XpA0UIG
+	sWUH/UeW2c/WGSP8Ln/b1VZNEztFiJ385QIGIDSDAAvYo9AkZ3G3UlXhYZxcxWkyUsOSM1U2
+	sDPiWidoHDwzABgaSAOFhuhdcSJCns3lqgYAS/OkYuGcjokTCVPkufcU6sxEtUap4AYARvND
+	tOByXnxCkrn4aex6rMRpNiVeiolUUp86JVemAmTyhJPHN7QHWiKrY0OXvwWuzztub2hnrr6e
+	P4LzbzjlvVuPuCDT2X8aX/BNUnjuYl9UkbPHMe4er4wqsIrravfmzPBrt0UJ7brzOPXJ25Ws
+	ten1nw/F90t+Xxseiusxn6rUp0txLk0efpSn5uT/AW3hekqiAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---805399167-1539482765-1393594928=:61046
-Content-Type: text/plain; charset=us-ascii
+From: Grant Likely <grant.likely@linaro.org>
 
+Reserved memory nodes allow for the reservation of static (fixed
+address) regions, or dynamically allocated regions for a specific
+purpose.
 
---805399167-1539482765-1393594928=:61046
-Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document; name="FROM MRS.SUSAN SHABANGU.docx"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="FROM MRS.SUSAN SHABANGU.docx"
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+[joshc: Based on binding document proposed (in non-patch form) here:
+ http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
+ adapted to support #memory-region-cells]
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+[mszyprow: removed #memory-region-cells property]
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ .../bindings/reserved-memory/reserved-memory.txt   |  136 ++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
 
-UEsDBBQABgAIAAAAIQDd/JU3ZgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNd
-LnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0VMtuwjAQvFfqP0S+Vomh
-h6qqCBz6OLZIpR9g7A1Y9Uv28vr7bgJEVQtBKuUSKVnvzOzsxIPR2ppsCTFp
-70rWL3osAye90m5Wso/JS37PsoTCKWG8g5JtILHR8PpqMNkESBl1u1SyOWJ4
-4DzJOViRCh/AUaXy0Qqk1zjjQchPMQN+2+vdcekdgsMcaww2HDxBJRYGs+c1
-fd4qiWASyx63B2uukokQjJYCSSlfOvWDJd8xFNTZnElzHdINyWD8IENdOU6w
-63sja6JWkI1FxFdhSQZf+ai48nJhaYaiG+aATl9VWkLbX6OF6CWkRJ5bU7QV
-K7Tb6z+qI+HGQPp/FVvcLnrSOY4+JE57OZsf6s0rUDlZESCihnZ1x0cHRLLs
-EsPvkLvGb1KAlHfgzbN/tgcNzEnKin6JiZgaOJvvV/Ja6JMiVjB9v5j738C7
-hLT5kz7+wYz9dVF3H0gdb+634RcAAAD//wMAUEsDBBQABgAIAAAAIQAekRq3
-8wAAAE4CAAALAAgCX3JlbHMvLnJlbHMgogQCKKAAAgAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAjJLbSgNBDIbvBd9hyH032woi0tneSKF3IusDhJnsAXcOzKTavr2jILpQ
-217m9OfLT9abg5vUO6c8Bq9hWdWg2JtgR99reG23iwdQWchbmoJnDUfOsGlu
-b9YvPJGUoTyMMaui4rOGQSQ+ImYzsKNchci+VLqQHEkJU4+RzBv1jKu6vsf0
-VwOamabaWQ1pZ+9AtcdYNl/WDl03Gn4KZu/Yy4kVyAdhb9kuYipsScZyjWop
-9SwabDDPJZ2RYqwKNuBpotX1RP9fi46FLAmhCYnP83x1nANaXg902aJ5x687
-HyFZLBZ9e/tDg7MvaD4BAAD//wMAUEsDBBQABgAIAAAAIQAAiu5yZwEAAHwG
-AAAcAAgBd29yZC9fcmVscy9kb2N1bWVudC54bWwucmVscyCiBAEooAABAAAA
-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
-uULPwJajqgpVHcDF0lym4ENdQrS+oEsskCMvShl3aCFGKgAiIyLYYEeznmBa
-Jly76O9Qq4BsZpW0n3g4NGlZtykgJYG9ZBBw5gQx+OiWYTDfV5kGl/EebywK
-of4hvqLWMCqLFkJ+BlziG0yRwO5ocPqW2slPpC1ppyrBMrA8RND4iNqGQ4Hl
-IRZG4QQB9ngBujjSARpdeSVx7ouIa/Im8kb8NnC9get14RqOC4cPYY1/kfWl
-00SW9IVXlTlTRCUT6uAAE/BGqxiwC1RIHsEVS6DUYgi5ZEC62HfhuwCXyG9D
-5tE6Q3Bt0hpdPHciQAwBPXE7HMGqJyPHq7CGQY0UdlBbiVtDiI7fipWUrX8F
-OILZGKM2NIQSAdCZ4E8GgXAlsBCN2PZ5mKQ0safQKBBQBRglaE0cIXIY9XSj
-WhvVeoRqUUxgkDWHPEIUrZ9BopxJP+wxhJEceHKDrBOQN8gFFYBUIt6BTFvr
-riHUN1pxS68oXrJGHNGFSxoqfBceCPTpJh/UiLBRlrwJdA4Bgu1kXvTpOTkf
-sbHB/yDGtm6cgYOGkDNDnpipsPbtjBG1DW8JTIGwNBR1fKf6T/L8aOxjPHTk
-GHpHWaN8eGYVGzmkvXKtWq2Ascb/7Jee/AR3yuaR2EW4bBYJRSmJdKIm5OYl
-CGFnD4MCzMUAC4yYXCPuA7aAUMQv27mwBAYVG8HBsQ5nkkEj6gxhJw3HTi2t
-nPCBkha7aJIJ8qzjRmXs5xaIUKvQgSkzUHAueVPkDuP4YnrkJNYjHAGdQk5o
-qahT5Dlj9x47RioPHUHNeId0FwVsY0X/wDICqGg68/IS5rzk8sYt+35Z2FXI
-l+Ie00ZyvPLHc4aUWsQpYtFMDmdG4lOUna6a21ac90EvT1uNXosdX7Dziz5r
-Nk5P2cU5NgO02EW73Wm22GnnvFVmR61m4wPKXbTtu17rvNfpd/7s9D8mjzo9
-1u/SccJGs9+hGlr/bbYu+1n5xtHFn2ik0201+7bG55X+eVttLtiBnZ+qZ6aP
-izu9ijD/ULn9NkN4fvq4+HBxXp46sKQCJtYapMx2WMNBdgokA1KrcCAsyahB
-vozB+cHOwO7FcARg8MBtpMXJxNwWz5c0MavI7EsaV37B4ThdE6WDFYR3wLiL
-zTTG3Lbzs40SN+cfcNvD4pNRP/P5hxcqC3cnhL9+kZbFTyJ6OI5mLPjVzDs9
-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
+diff --git a/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+new file mode 100644
+index 000000000000..8b0d747a38e7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+@@ -0,0 +1,136 @@
++*** Reserved memory regions ***
++
++Reserved memory is specified as a node under the /reserved-memory node.
++The operating system shall exclude reserved memory from normal usage
++one can create child nodes describing particular reserved (excluded from
++normal use) memory regions. Such memory regions are usually designed for
++the special usage by various device drivers.
++
++Parameters for each memory region can be encoded into the device tree
++with the following nodes:
++
++/reserved-memory node
++---------------------
++#address-cells, #size-cells (required) - standard definition
++    - Should use the same values as the root node
++ranges (required) - standard definition
++    - Should be empty
++
++/reserved-memory/ child nodes
++-----------------------------
++Each child of the reserved-memory node specifies one or more regions of
++reserved memory. Each child node may either use a 'reg' property to
++specify a specific range of reserved memory, or a 'size' property with
++optional constraints to request a dynamically allocated block of memory.
++
++Following the generic-names recommended practice, node names should
++reflect the purpose of the node (ie. "framebuffer" or "dma-pool"). Unit
++address (@<address>) should be appended to the name if the node is a
++static allocation.
++
++Properties:
++Requires either a) or b) below.
++a) static allocation
++   reg (required) - standard definition
++b) dynamic allocation
++   size (required) - length based on parent's #size-cells
++                   - Size in bytes of memory to reserve.
++   alignment (optional) - length based on parent's #size-cells
++                        - Address boundary for alignment of allocation.
++   alloc-ranges (optional) - prop-encoded-array (address, length pairs).
++                           - Specifies regions of memory that are
++                             acceptable to allocate from.
++
++If both reg and size are present, then the reg property takes precedence
++and size is ignored.
++
++Additional properties:
++compatible (optional) - standard definition
++    - may contain the following strings:
++        - shared-dma-pool: This indicates a region of memory meant to be
++          used as a shared pool of DMA buffers for a set of devices. It can
++          be used by an operating system to instanciate the necessary pool
++          management subsystem if necessary.
++        - vendor specific string in the form <vendor>,[<device>-]<usage>
++no-map (optional) - empty property
++    - Indicates the operating system must not create a virtual mapping
++      of the region as part of its standard mapping of system memory,
++      nor permit speculative access to it under any circumstances other
++      than under the control of the device driver using the region.
++reusable (optional) - empty property
++    - The operating system can use the memory in this region with the
++      limitation that the device driver(s) owning the region need to be
++      able to reclaim it back. Typically that means that the operating
++      system can use that region to store volatile or cached data that
++      can be otherwise regenerated or migrated elsewhere.
++
++Linux implementation note:
++- If a "linux,cma-default" property is present, then Linux will use the
++  region for the default pool of the contiguous memory allocator.
++
++Device node references to reserved memory
++-----------------------------------------
++Regions in the /reserved-memory node may be referenced by other device
++nodes by adding a memory-region property to the device node.
++
++memory-region (optional) - phandle, specifier pairs to children of /reserved-memory
++
++Example
++-------
++This example defines 3 contiguous regions are defined for Linux kernel:
++one default of all device drivers (named linux,cma@72000000 and 64MiB in size),
++one dedicated to the framebuffer device (named framebuffer@78000000, 8MiB), and
++one for multimedia processing (named multimedia-memory@77000000, 64MiB).
++
++/ {
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	memory {
++		reg = <0x40000000 0x40000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		/* global autoconfigured region for contiguous allocations */
++		linux,cma {
++			compatible = "shared-dma-pool";
++			reusable;
++			#memory-region-cells = <0>;
++			size = <0x4000000>;
++			alignment = <0x2000>;
++			linux,cma-default;
++		};
++
++		display_reserved: framebuffer@78000000 {
++			#memory-region-cells = <0>;
++			reg = <0x78000000 0x800000>;
++		};
++
++		multimedia_reserved: multimedia@77000000 {
++			compatible = "acme,multimedia-memory";
++			#memory-region-cells = <1>;
++			reg = <0x77000000 0x4000000>;
++		};
++	};
++
++	/* ... */
++
++	fb0: video@12300000 {
++		memory-region = <&display_reserved>;
++		/* ... */
++	};
++
++	scaler: scaler@12500000 {
++		memory-region = <&multimedia_reserved 0xdeadbeef>;
++		/* ... */
++	};
++
++	codec: codec@12600000 {
++		memory-region = <&multimedia_reserved 0xfeebdaed>;
++		/* ... */
++	};
++};
+-- 
+1.7.9.5
 
---805399167-1539482765-1393594928=:61046--
