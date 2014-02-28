@@ -1,107 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaB1Jxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 04:53:51 -0500
-Received: from nm12-vm2.bullet.mail.gq1.yahoo.com ([98.136.218.189]:48645 "EHLO
-	nm12-vm2.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751077AbaB1Jxr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 04:53:47 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 321190.27806.bm@omp1013.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=FzNYE7LI22ALD5SHzo+Kp51ed4AdFXEuM7cz8nrpnMa13OStg8kjfyZtjxdVXBsLMuS1ZREcQ6EQPg2LlBKhg2Pm6waJYIYVBDzwAdWTQbIjrfgA8CSOBz4WHes6idLio/sUiRfhX/x5iue3dKJswTQpKD0fJSeGPPQo/N5f168=;
-X-YMail-OSG: bEKjkYQVM1k8zQgKhd8AZrrR3SlEFaQp.I4.Se6Gv7UwXWZ
- eIfWi1jLEyu77tgonx8H.JE4SNNIl40Qe9la5gZ_v.NCyHhm2hWJ.sIcrzvW
- 3xLIDZJiWRR._e6LKG3Z0PhwlpuSvZuZN3b8fzMaMOgPwkiOOWp89xA4ZFLQ
- gb_uBYGvp2YBUjTQ4d9yiPOfcUIiPb6OgWwUHmHNCPJB2XCg62nCX757yHJw
- e_OE4mC50bD8mMpEV4DC.Ff.NmFxqsBqb_sM809V8f6eZbdA1OwkiP0YRrF4
- WKeit7RP0xtgyxv1W5L2hcOsBNciyXPXItSa2VBWGNJSeIVpm2ou4SdeMsB6
- TpRlUl0WN4h6MMXHkbjoMO49Bn25vjb5mokFG.G3wiq7xjXoRXn9JWvJJbVG
- UweFPs_gixJ8mEHj2VT26wdWgDybtOIPwCGH58dU2ITrEipZMrsxgbCDi_1_
- oqnGNn7TEa5ZCSrLMUBhyVV6VFbbBl_fXcNDEMkrxNOWjPWB.EdwfKs9z3hu
- N123_3AWcgdFnGzAV8u3gM71kPYyPWUgO
-X-Rocket-MIMEInfo: 002.001,Pk9uIEZyaWRheSwgRmVicnVhcnkgMjgsIDIwMTQgMzo0MiBBTSwgRGFuIENhcnBlbnRlciA8ZGFuLmNhcnBlbnRlckBvcmFjbGUuY29tPiB3cm90ZToKCj4.T24gRnJpLCBGZWIgMjgsIDIwMTQgYXQgMDM6MTU6NDVBTSAtMDYwMCwgQ2hhc2UgU291dGh3b29kIHdyb3RlOgo.PiBUaGlzIHBhdGNoIGludHJvZHVjZXMgYSBzaW1wbGUgaGVscGVyIGZ1bmN0aW9uLCBvdXRsXzE1NjRfdGltZXIoKSwgdG8KPj4gYWxsb3cgc2V2ZXJhbCBsaW5lcyB3aGljaCB2aW9sYXRlIHRoZSBjaGFyYWN0ZXIgbGltaXQgdG8gYmUBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.177.636
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com> <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com> <20140228094215.GJ26776@mwanda>
-Message-ID: <1393581227.57507.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-Date: Fri, 28 Feb 2014 01:53:47 -0800 (PST)
-From: Chase Southwood <chase.southwood@yahoo.com>
-Reply-To: Chase Southwood <chase.southwood@yahoo.com>
-Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix lines that are over 80 characters
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140228094215.GJ26776@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751550AbaB1Jy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 04:54:26 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:11337 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaB1JyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 04:54:18 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-31-53105cc7698f
+Message-id: <53105CC6.1090902@samsung.com>
+Date: Fri, 28 Feb 2014 10:54:14 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH v5 01/11] of: document bindings for reserved-memory nodes
+References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com>
+ <1392985527-6260-2-git-send-email-m.szyprowski@samsung.com>
+ <20140226115108.211D2C40A89@trevor.secretlab.ca>
+In-reply-to: <20140226115108.211D2C40A89@trevor.secretlab.ca>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t/xq7onYgSCDU70MVn8nXSM3eJDUyuz
+	xftlPYwW84+cY7Xof7OQ1eLAnx2MFm96O1gsdq57x2ixvXMGu8WXKw+ZLDY9vsZqsbBtCYvF
+	5V1z2Cw2vDzIZLH0+kUmiwXHW1gt/kyXszh1/TObxZoji9ktJkxfy2LRuvcIu8Xf7ZtYLF4d
+	bGOxWD/jNYvFql1/GC1efjzB4iDlsWbeGkaP378mMXq8njyB0eNyXy+Tx85Zd9k9et60sHps
+	WtXJ5nHn2h42j81L6j1u/3vM7HHlRBOrx7o/r5g8+v8aeMzd1cfo0bdlFaPH501yAYJRXDYp
+	qTmZZalF+nYJXBlLrj1nLrhgX3Gr6Tt7A+N0wy5GTg4JAROJu/072CBsMYkL99aD2UICSxkl
+	Njz37WLkArI/MUqsbTjLDpLgFdCS2H3/NZDNwcEioCox83MFSJhNwFCi620XG0hYVCBUYt5c
+	PYhqQYkfk++xgIwRETjJKPFvbx87iMMs0MYm0TBhHdgyYQFfiR0PzrBALNvBKHFk5k6wBKeA
+	rcTfZ59ZQWxmATOJRy3rmCFseYnNa94yT2AUmIVkyywkZbOQlC1gZF7FKJpamlxQnJSea6RX
+	nJhbXJqXrpecn7uJEZIMvu5gXHrM6hCjAAejEg/vBE/+YCHWxLLiytxDjBIczEoivHnuAsFC
+	vCmJlVWpRfnxRaU5qcWHGJk4OKUaGKXPFGZ1blyaFhcZJn6Rf9FTKY2PByUscoQuTC+O/tad
+	EvH75bZvb3M2OnjIF+yQ8g2X6o/h8WmKKi/xMeIqv3CiP2i586uJstEXeUI/d7cyzFDy6t3q
+	Wv59Q4fX0Zy8ArcOMw3/N2cN7D7cTvtxJfqbSkDIEjm5Qxp7RB2+G2dx+VvVVdsqsRRnJBpq
+	MRcVJwIAfYLXoeQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Friday, February 28, 2014 3:42 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+Hello,
 
->>On Fri, Feb 28, 2014 at 03:15:45AM -0600, Chase Southwood wrote:
->> This patch introduces a simple helper function, outl_1564_timer(), to
->> allow several lines which violate the character limit to be shortened.
->> A handful of other lines that are too long are appropriately split as
->> well.
->> 
->> Cc: Dan Carpenter <dan.carpenter@oracle.com>
->> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
->> ---
->> 2: introduced outl_1564_timer() at the suggestion of Dan.
->>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 83 +++++++++++++---------
->>  1 file changed, 49 insertions(+), 34 deletions(-)
->> 
->> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> index 2b47fa1..d958d3c 100644
->> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
->> @@ -99,6 +99,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
->>  #define APCI1564_TCW_WARN_TIMEVAL            24
->>  #define APCI1564_TCW_WARN_TIMEBASE            28
->>  
->> +/* Helper functions */
+On 2014-02-26 12:51, Grant Likely wrote:
+> On Fri, 21 Feb 2014 13:25:17 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> > From: Grant Likely <grant.likely@linaro.org>
+> >
+> > Reserved memory nodes allow for the reservation of static (fixed
+> > address) regions, or dynamically allocated regions for a specific
+> > purpose.
+> >
+> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> > [joshc: Based on binding document proposed (in non-patch form) here:
+> >  http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
+> >  adapted to support #memory-region-cells]
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > ---
+> >  .../bindings/reserved-memory/reserved-memory.txt   |  138 ++++++++++++++++++++
+> >  1 file changed, 138 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> >
+> > diff --git a/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> > new file mode 100644
+> > index 000000000000..a606ce90c9c4
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+> > @@ -0,0 +1,138 @@
+> > +*** Reserved memory regions ***
+> > +
+> > +Reserved memory is specified as a node under the /reserved-memory node.
+> > +The operating system shall exclude reserved memory from normal usage
+> > +one can create child nodes describing particular reserved (excluded from
+> > +normal use) memory regions. Such memory regions are usually designed for
+> > +the special usage by various device drivers.
+> > +
+> > +Parameters for each memory region can be encoded into the device tree
+> > +with the following nodes:
+> > +
+> > +/reserved-memory node
+> > +---------------------
+> > +#address-cells, #size-cells (required) - standard definition
+> > +    - Should use the same values as the root node
+> > +#memory-region-cells (required) - dictates number of cells used in the child
+> > +                                  nodes memory-region specifier
 >
->Obvious comment is too obvious.
+> I still don't like this portion of the binding. I'm not convinced that
+> it is necessary in the majority of cases and it is going to be very
+> driver specific. I would rather drop it entirely from the common
+> binding. If a specific driver needs to do something like the above then
+> it can have a driver specific binding. Otherwise I think the default
+> should be a simple phandle with no arguments to a single reserved memory
+> node.
 >
->> +static void outl_1564_timer(struct addi_private *, unsigned int, unsigned int);
->> +
+> Ben, can you weigh in on the current state of this document. I'm mostly
+> happy with it aside from my comment above. Do you think this is ready to
+> be merged?
 >
->Avoid forward declarations.  Put the function itself here.
+> > +ranges (required) - standard definition
+> > +    - Should be empty
+> > +
+> > +/reserved-memory/ child nodes
+> > +-----------------------------
+> > +Each child of the reserved-memory node specifies one or more regions of
+> > +reserved memory. Each child node may either use a 'reg' property to
+> > +specify a specific range of reserved memory, or a 'size' property with
+> > +optional constraints to request a dynamically allocated block of memory.
+> > +
+> > +Following the generic-names recommended practice, node names should
+> > +reflect the purpose of the node (ie. "framebuffer" or "dma-pool"). Unit
+> > +address (@<address>) should be appended to the name if the node is a
+> > +static allocation.
+> > +
+> > +Properties:
+> > +Requires either a) or b) below.
+> > +a) static allocation
+> > +   reg (required) - standard definition
+> > +b) dynamic allocation
+> > +   size (required) - length based on parent's #size-cells
+> > +                   - Size in bytes of memory to reserve.
+> > +   alignment (optional) - length based on parent's #size-cells
+> > +                        - Address boundary for alignment of allocation.
+> > +   alloc-ranges (optional) - prop-encoded-array (address, length pairs).
+> > +                           - Specifies regions of memory that are
+> > +                             acceptable to allocate from.
+> > +
+> > +If both reg and size are present, then the reg property takes precedence
+> > +and size is ignored.
+> > +
+> > +Additional properties:
+> > +compatible (optional) - standard definition
+> > +    - may contain the following strings:
+> > +        - shared-dma-pool: This indicates a region of memory meant to be
+> > +          used as a shared pool of DMA buffers for a set of devices. It can
+> > +          be used by an operating system to instanciate the necessary pool
+> > +          management subsystem if necessary.
+> > +        - vendor specific string in the form <vendor>,[<device>-]<usage>
 >
->Do a function for APCI1564_DIGITAL_IP as well.
->
->outl_1564_digital_ip()
->inl_1564_digital_ip()
->
->To be honest, I'm not sure how much the 1564 adds to the name.  The
->names should match of course.
->
->I wonder if this line is buggy?:
->outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1); /* Disable the >and/or interrupt */
->Should it be?
->outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + >APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
->
->You would need to read the specs to be sure.
->
->Anyway, take some more time with this and play with different ways to
->clean it up.
->
->regards,
->
->dan carpenter
+> Add "Use vendor strings to identify regions dedicates for a specific
+> vendor device. For example: 'acme,framebuffer'. Platform code can use vendor
+> strings to identify device specific regions"
 
-Hey Dan!
+So do you want to completely drop phandle based links between device 
+nodes and
+memory regions?
 
-Thanks a lot, I really appreciate all of the really good feedback.  It's getting late now, but tomorrow I'll work on tidying everything up based on all of these comments and double check that hardware spec as well.
+> > +no-map (optional) - empty property
+> > +    - Indicates the operating system must not create a virtual mapping
+> > +      of the region as part of its standard mapping of system memory,
+> > +      nor permit speculative access to it under any circumstances other
+> > +      than under the control of the device driver using the region.
+> > +reusable (optional) - empty property
+> > +    - The operating system can use the memory in this region with the
+> > +      limitation that the device driver(s) owning the region need to be
+> > +      able to reclaim it back. Typically that means that the operating
+> > +      system can use that region to store volatile or cached data that
+> > +      can be otherwise regenerated or migrated elsewhere.
+> > +
+> > +Linux implementation note:
+> > +- If a "linux,cma-default" property is present, then Linux will use the
+> > +  region for the default pool of the contiguous memory allocator.
+> > +
+> > +Device node references to reserved memory
+> > +-----------------------------------------
+> > +Regions in the /reserved-memory node may be referenced by other device
+> > +nodes by adding a memory-region property to the device node.
+> > +
+> > +memory-region (optional) - phandle, specifier pairs to children of /reserved-memory
+> > +
+> > +Example
+> > +-------
+> > +This example defines 3 contiguous regions are defined for Linux kernel:
+> > +one default of all device drivers (named linux,cma@72000000 and 64MiB in size),
+> > +one dedicated to the framebuffer device (named framebuffer@78000000, 8MiB), and
+> > +one for multimedia processing (named multimedia-memory@77000000, 64MiB).
+> > +
+> > +/ {
+> > +	#address-cells = <1>;
+> > +	#size-cells = <1>;
+> > +
+> > +	memory {
+> > +		reg = <0x40000000 0x40000000>;
+> > +	};
+> > +
+> > +	reserved-memory {
+> > +		#address-cells = <1>;
+> > +		#size-cells = <1>;
+> > +		ranges;
+> > +
+> > +		/* global autoconfigured region for contiguous allocations */
+> > +		linux,cma {
+> > +			compatible = "shared-dma-pool";
+> > +			reusable;
+> > +			#memory-region-cells = <0>;
+> > +			size = <0x4000000>;
+> > +			alignment = <0x2000>;
+> > +			linux,cma-default;
+> > +		};
+> > +
+> > +		display_reserved: framebuffer@78000000 {
+> > +			#memory-region-cells = <0>;
+> > +			reg = <0x78000000 0x800000>;
+> > +		};
+> > +
+> > +		multimedia_reserved: multimedia@77000000 {
+> > +			compatible = "acme,multimedia-memory";
+> > +			#memory-region-cells = <1>;
+> > +			reg = <0x77000000 0x4000000>;
+> > +		};
+> > +	};
+> > +
+> > +	/* ... */
+> > +
+> > +	fb0: video@12300000 {
+> > +		memory-region = <&display_reserved>;
+> > +		/* ... */
+> > +	};
+> > +
+> > +	scaler: scaler@12500000 {
+> > +		memory-region = <&multimedia_reserved 0xdeadbeef>;
+> > +		/* ... */
+> > +	};
+> > +
+> > +	codec: codec@12600000 {
+> > +		memory-region = <&multimedia_reserved 0xfeebdaed>;
+> > +		/* ... */
+> > +	};
+> > +};
+> > --
+> > 1.7.9.5
+> >
+>
+>
 
-Thanks,
-Chase
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
+
