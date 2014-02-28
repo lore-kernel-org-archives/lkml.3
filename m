@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbaB1VnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:43:18 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:60610 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751729AbaB1VnQ (ORCPT
+	id S1752305AbaB1Vv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:51:56 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:57555 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaB1Vvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:43:16 -0500
-Message-ID: <1393623789.4052.17.camel@x220>
-Subject: Re: [PATCH 14/28] Remove MACH_SMDKC210
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mark Brown <broonie@kernel.org>
-Cc: Richard Weinberger <richard@nod.at>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 28 Feb 2014 22:43:09 +0100
-In-Reply-To: <20140212160431.GB28112@sirena.org.uk>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-15-git-send-email-richard@nod.at>
-	 <20140210114154.GQ1757@sirena.org.uk> <1392039072.3585.15.camel@x220>
-	 <20140210141255.GI1757@sirena.org.uk> <1392046242.3585.41.camel@x220>
-	 <20140210163621.GA13533@sirena.org.uk> <1392070159.27939.34.camel@x220>
-	 <20140212160431.GB28112@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Feb 2014 21:43:14.0454 (UTC) FILETIME=[156F0B60:01CF34CE]
-X-RcptDomain: vger.kernel.org
+	Fri, 28 Feb 2014 16:51:55 -0500
+Date: Fri, 28 Feb 2014 13:51:50 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228215150.GM11910@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140227173150.4e5ed747@gandalf.local.home>
+ <530FC1C6.5040209@zytor.com>
+ <20140227183008.6be081b7@gandalf.local.home>
+ <530FCE6C.4080808@zytor.com>
+ <alpine.DEB.2.10.1402271957380.6210@vincent-weaver-1.um.maine.edu>
+ <20140228203405.GH11910@linux.vnet.ibm.com>
+ <20140228154716.0198d7cb@gandalf.local.home>
+ <20140228205409.GB14089@laptop.programming.kicks-ass.net>
+ <20140228211733.GK11910@linux.vnet.ibm.com>
+ <20140228212700.GH14089@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228212700.GH14089@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022821-1344-0000-0000-00000628A90C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-02-12 at 16:04 +0000, Mark Brown wrote:
-> On Mon, Feb 10, 2014 at 11:09:19PM +0100, Paul Bolle wrote:
-> > See, if you scan v3.10:arch/arm/mach-exynos/mach-smdkv310.c you'll
-> > notice the string "smdk-audio". If you grep that string you get a few
-> > hits. But none in v3.10:sound/soc/samsung/smdk_wm9713.c. And if you scan
-> > v3.10:sound/soc/samsung/smdk_wm9713.c for strings you'll find stuff like
-> > "wm9713-hifi",  "wm9713-codec", and "soc-audio". But these don't show up
-> > in v3.10:arch/arm/mach-exynos/mach-smdkv310.c. So it's not obvious how
-> > these two files relate.
+On Fri, Feb 28, 2014 at 10:27:00PM +0100, Peter Zijlstra wrote:
+> On Fri, Feb 28, 2014 at 01:17:33PM -0800, Paul E. McKenney wrote:
+> > This code isn't running in idle context is it?  If so, RCU will happily
+> > free out from under it.  CONFIG_PROVE_RCU should detect this sort of thing,
+> > though.
 > 
-> > And I'm left wondering why SND_SOC_SAMSUNG_SMDK_WM9713 actually depends
-> > on (among other symbols) MACH_SMDKV310 and MACH_SMDKC210 in v3.10.
-> 
-> The hardware is physically present on those boards but must be selected
-> with DIP switches, the device registration needs to be changed in the
-> kernel when that happens (as the DT must be when it is in use).
+> Well, interrupts/NMIs can happen when idle, but the interrupt/NMI
+> entry code deals with the idle state AFAIK.
 
-In v3.14-rc4 these two symbols suddenly got removed, see commit
-eaff64705dd5 ("ASoC: samsung: Remove invalid dependencies"). It does
-exactly what I proposed last year, see
-https://lkml.org/lkml/2013/7/14/27 . (That link currently shows a rather
-empty page; is lkml.org having problems again?)
+Yep, rcu_irq_enter() and rcu_nmi_enter() deal with that.  More worried
+about this being code invoked from some energy-efficiency driver or
+another within the idle loop.
 
-That commit is fine with me, of course. I now see no reason to continue
-my, rather slowly progressing, search for the problem that you wanted to
-get properly fixed. I suppose another commit already fixed it.
-
-Thanks,
-
-
-Paul Bolle
+							Thanx, Paul
 
