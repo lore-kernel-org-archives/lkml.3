@@ -1,247 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835AbaB1RvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:51:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176AbaB1Rne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753173AbaB1Rne (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Feb 2014 12:43:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131AbaB1Rnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:43:32 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, eranian@google.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 04/19] perf: Allow ability to map cpus to nodes easily
-Date: Fri, 28 Feb 2014 12:42:53 -0500
-Message-Id: <1393609388-40489-5-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 01/19] Revert "perf: Disable PERF_RECORD_MMAP2 support"
+Date: Fri, 28 Feb 2014 12:42:50 -0500
+Message-Id: <1393609388-40489-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch figures out the max number of cpus and nodes that are on the
-system and creates a map of cpu to node.  This allows us to provide a cpu
-and quickly get the node associated with it.
+This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
 
-It was mostly copied from builtin-kmem.c and tweaked slightly to use less memory
-(use possible cpus instead of max).  It also calculates the max number of nodes.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+Conflicts:
+	tools/perf/util/event.c
 ---
- tools/perf/util/cpumap.c | 150 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/cpumap.h |  35 +++++++++++
- 2 files changed, 185 insertions(+)
+ kernel/events/core.c    |  4 ----
+ tools/perf/util/event.c | 36 +++++++++++++++++++-----------------
+ tools/perf/util/evsel.c |  1 +
+ 3 files changed, 20 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 7fe4994..d19d5b3 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -317,3 +317,153 @@ int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
- {
- 	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
- }
-+
-+/* setup simple routines to easily access node numbers given a cpu number */
-+
-+
-+#define PATH_SYS_NODE   "/sys/devices/system/node"
-+
-+/* Determine highest possible cpu in the system for sparse allocation */
-+static void set_max_cpu_num(void)
-+{
-+	FILE *fp;
-+	char buf[256];
-+	int num;
-+
-+	/* set up default */
-+	max_cpu_num = 4096;
-+
-+	/* get the highest possible cpu number for a sparse allocation */
-+	fp = fopen("/sys/devices/system/cpu/possible", "r");
-+	if (!fp)
-+		goto out;
-+
-+	num = fread(&buf, 1, sizeof(buf), fp);
-+	if (!num)
-+		goto out_close;
-+	buf[num] = '\0';
-+
-+	/* start on the right, to find highest cpu num */
-+	while (--num) {
-+		if ((buf[num] == ',') || (buf[num] == '-')) {
-+			num++;
-+			break;
-+		}
-+	}
-+	if (sscanf(&buf[num], "%d", &max_cpu_num) < 1)
-+		goto out_close;
-+
-+	max_cpu_num++;
-+
-+	fclose(fp);
-+	return;
-+
-+out_close:
-+	fclose(fp);
-+out:
-+	pr_err("Failed to read max cpus, using default of %d\n",
-+		max_cpu_num);
-+	return;
-+}
-+
-+/* Determine highest possible node in the system for sparse allocation */
-+static void set_max_node_num(void)
-+{
-+	FILE *fp;
-+	char buf[256];
-+	int num;
-+
-+	/* set up default */
-+	max_node_num = 8;
-+
-+	/* get the highest possible cpu number for a sparse allocation */
-+	fp = fopen("/sys/devices/system/node/possible", "r");
-+	if (!fp)
-+		goto out;
-+
-+	num = fread(&buf, 1, sizeof(buf), fp);
-+	if (!num)
-+		goto out_close;
-+	buf[num] = '\0';
-+
-+	/* start on the right, to find highest node num */
-+	while (--num) {
-+		if ((buf[num] == ',') || (buf[num] == '-')) {
-+			num++;
-+			break;
-+		}
-+	}
-+	if (sscanf(&buf[num], "%d", &max_node_num) < 1)
-+		goto out_close;
-+
-+	max_node_num++;
-+
-+	fclose(fp);
-+	return;
-+
-+out_close:
-+	fclose(fp);
-+out:
-+	pr_err("Failed to read max nodes, using default of %d\n",
-+		max_node_num);
-+	return;
-+}
-+
-+static int init_cpunode_map(void)
-+{
-+	int i;
-+
-+	set_max_cpu_num();
-+	set_max_node_num();
-+
-+	cpunode_map = calloc(max_cpu_num, sizeof(int));
-+	if (!cpunode_map) {
-+		pr_err("%s: calloc failed\n", __func__);
-+		goto out;
-+	}
-+
-+	for (i = 0; i < max_cpu_num; i++)
-+		cpunode_map[i] = -1;
-+
-+	return 0;
-+out:
-+	return -1;
-+}
-+
-+int cpu_map__setup_cpunode_map(void)
-+{
-+	struct dirent *dent1, *dent2;
-+	DIR *dir1, *dir2;
-+	unsigned int cpu, mem;
-+	char buf[PATH_MAX];
-+
-+	/* initialize globals */
-+	if (init_cpunode_map())
-+		return -1;
-+
-+	dir1 = opendir(PATH_SYS_NODE);
-+	if (!dir1)
-+		return 0;
-+
-+	/* walk tree and setup map */
-+	while ((dent1 = readdir(dir1)) != NULL) {
-+		if (dent1->d_type != DT_DIR ||
-+		    sscanf(dent1->d_name, "node%u", &mem) < 1)
-+			continue;
-+
-+		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
-+		dir2 = opendir(buf);
-+		if (!dir2)
-+			continue;
-+		while ((dent2 = readdir(dir2)) != NULL) {
-+			if (dent2->d_type != DT_LNK ||
-+			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
-+				continue;
-+			cpunode_map[cpu] = mem;
-+		}
-+		closedir(dir2);
-+	}
-+	closedir(dir1);
-+	return 0;
-+}
-+
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index b123bb9..d6fde2b 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -4,6 +4,9 @@
- #include <stdio.h>
- #include <stdbool.h>
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 45e5543..a4ab184 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6851,10 +6851,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (ret)
+ 		return -EFAULT;
  
-+#include "perf.h"
-+#include "util/debug.h"
-+
- struct cpu_map {
- 	int nr;
- 	int map[];
-@@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
- 	return map ? map->map[0] == -1 : true;
- }
+-	/* disabled for now */
+-	if (attr->mmap2)
+-		return -EINVAL;
+-
+ 	if (attr->__reserved_1)
+ 		return -EINVAL;
  
-+int max_cpu_num;
-+int max_node_num;
-+int *cpunode_map;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 55eebe9..82fb890 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -155,13 +155,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	event->header.type = PERF_RECORD_MMAP;
++	event->header.type = PERF_RECORD_MMAP2;
+ 
+ 	while (1) {
+ 		char bf[BUFSIZ];
+ 		char prot[5];
+ 		char execname[PATH_MAX];
+ 		char anonstr[] = "//anon";
++		unsigned int ino;
+ 		size_t size;
+ 		ssize_t n;
+ 
+@@ -172,14 +173,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		strcpy(execname, "");
+ 
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
+-		       &event->mmap.start, &event->mmap.len, prot,
+-		       &event->mmap.pgoff,
+-		       execname);
+-		/*
+- 		 * Anon maps don't have the execname.
+- 		 */
+-		if (n < 4)
++		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
++		       &event->mmap2.start, &event->mmap2.len, prot,
++		       &event->mmap2.pgoff, &event->mmap2.maj,
++		       &event->mmap2.min,
++		       &ino, execname);
 +
-+int cpu_map__setup_cpunode_map(void);
++		event->mmap2.ino = (u64)ino;
 +
-+static inline int cpu_map__max_node(void)
-+{
-+	if (unlikely(!max_node_num))
-+		pr_debug("cpu_map not initiailzed\n");
-+
-+	return max_node_num;
-+}
-+
-+static inline int cpu_map__max_cpu(void)
-+{
-+	if (unlikely(!max_cpu_num))
-+		pr_debug("cpu_map not initiailzed\n");
-+
-+	return max_cpu_num;
-+}
-+
-+static inline int cpu_map__get_node(int cpu)
-+{
-+	if (unlikely(cpunode_map == NULL)) {
-+		pr_debug("cpu_map not initialized\n");
-+		return -1;
-+	}
-+
-+	return cpunode_map[cpu];
-+}
-+
- #endif /* __PERF_CPUMAP_H */
++		if (n < 7)
+ 			continue;
+ 		/*
+ 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+@@ -200,15 +202,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			strcpy(execname, anonstr);
+ 
+ 		size = strlen(execname) + 1;
+-		memcpy(event->mmap.filename, execname, size);
++		memcpy(event->mmap2.filename, execname, size);
+ 		size = PERF_ALIGN(size, sizeof(u64));
+-		event->mmap.len -= event->mmap.start;
+-		event->mmap.header.size = (sizeof(event->mmap) -
+-					(sizeof(event->mmap.filename) - size));
+-		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
+-		event->mmap.header.size += machine->id_hdr_size;
+-		event->mmap.pid = tgid;
+-		event->mmap.tid = pid;
++		event->mmap2.len -= event->mmap.start;
++		event->mmap2.header.size = (sizeof(event->mmap2) -
++					(sizeof(event->mmap2.filename) - size));
++		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
++		event->mmap2.header.size += machine->id_hdr_size;
++		event->mmap2.pid = tgid;
++		event->mmap2.tid = pid;
+ 
+ 		if (process(tool, event, &synth_sample, machine) != 0) {
+ 			rc = -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index adc94dd..f2ab0b3 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -640,6 +640,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		perf_evsel__set_sample_bit(evsel, WEIGHT);
+ 
+ 	attr->mmap  = track;
++	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
+ 
+ 	if (opts->sample_transaction)
 -- 
 1.7.11.7
 
