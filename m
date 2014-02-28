@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaB1LcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:32:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53124 "EHLO
+	id S1752147AbaB1LcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:32:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53143 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaB1LcC (ORCPT
+	with ESMTP id S1751896AbaB1LcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:32:02 -0500
-Date: Fri, 28 Feb 2014 12:31:46 +0100
+	Fri, 28 Feb 2014 06:32:17 -0500
+Date: Fri, 28 Feb 2014 12:32:09 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Subject: Re: [PATCH V3] mm: numa: bugfix for LAST_CPUPID_NOT_IN_PAGE_FLAGS
-Message-ID: <20140228113146.GJ27965@twins.programming.kicks-ass.net>
-References: <1393578122-6500-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Mel Gorman <mgorman@suse.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>
+Subject: Re: [patch] rt,sched,numa: Move task_numa_free() to
+ __put_task_struct(), which -rt offloads
+Message-ID: <20140228113209.GK27965@twins.programming.kicks-ass.net>
+References: <1393568591.6018.27.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393578122-6500-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1393568591.6018.27.camel@marge.simpson.net>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 02:32:02PM +0530, Aneesh Kumar K.V wrote:
-> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+On Fri, Feb 28, 2014 at 07:23:11AM +0100, Mike Galbraith wrote:
 > 
-> When doing some numa tests on powerpc, I triggered an oops bug. I find
-> it is caused by using page->_last_cpupid.  It should be initialized as
-> "-1 & LAST_CPUPID_MASK", but not "-1". Otherwise, in task_numa_fault(),
-> we will miss the checking (last_cpupid == (-1 & LAST_CPUPID_MASK)).
-> And finally cause an oops bug in task_numa_group(), since the online cpu is
-> less than possible cpu. This happen with CONFIG_SPARSE_VMEMMAP disabled
+> Bad idea:
+> [  908.026136]  [<ffffffff8150ad6a>] rt_spin_lock_slowlock+0xaa/0x2c0
+> [  908.026145]  [<ffffffff8108f701>] task_numa_free+0x31/0x130
+> [  908.026151]  [<ffffffff8108121e>] finish_task_switch+0xce/0x100
+> [  908.026156]  [<ffffffff81509c0a>] thread_return+0x48/0x4ae
+> [  908.026160]  [<ffffffff8150a095>] schedule+0x25/0xa0
+> [  908.026163]  [<ffffffff8150ad95>] rt_spin_lock_slowlock+0xd5/0x2c0
+> [  908.026170]  [<ffffffff810658cf>] get_signal_to_deliver+0xaf/0x680
+> [  908.026175]  [<ffffffff8100242d>] do_signal+0x3d/0x5b0
+> [  908.026179]  [<ffffffff81002a30>] do_notify_resume+0x90/0xe0
+> [  908.026186]  [<ffffffff81513176>] int_signal+0x12/0x17
+> [  908.026193]  [<00007ff2a388b1d0>] 0x7ff2a388b1cf
 > 
-> Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Mike Galbraith <bitbucket@online.de>
 
-
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-
-> ---
->   
->  include/linux/mm.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index f28f46eade6a..86245839c9fa 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -757,7 +757,7 @@ static inline bool __cpupid_match_pid(pid_t task_pid, int cpupid)
->  #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
->  static inline int page_cpupid_xchg_last(struct page *page, int cpupid)
->  {
-> -	return xchg(&page->_last_cpupid, cpupid);
-> +	return xchg(&page->_last_cpupid, cpupid & LAST_CPUPID_MASK);
->  }
->  
->  static inline int page_cpupid_last(struct page *page)
-> @@ -766,7 +766,7 @@ static inline int page_cpupid_last(struct page *page)
->  }
->  static inline void page_cpupid_reset_last(struct page *page)
->  {
-> -	page->_last_cpupid = -1;
-> +	page->_last_cpupid = -1 & LAST_CPUPID_MASK;
->  }
->  #else
->  static inline int page_cpupid_last(struct page *page)
-> -- 
-> 1.8.3.2
-> 
+Fair enough; thanks!
