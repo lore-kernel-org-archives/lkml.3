@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaB1ATS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 19:19:18 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:47403 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaB1ASd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 19:18:33 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: Stefani Seibold <stefani@seibold.net>, X86 ML <x86@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	id S1752676AbaB1AUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 19:20:04 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:33302 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163AbaB1AUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 19:20:02 -0500
+Date: Fri, 28 Feb 2014 02:18:58 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 2/4] x86: Inline the CLOCK_MONOTONIC vdso code
-Date: Thu, 27 Feb 2014 16:18:13 -0800
-Message-Id: <b57951476bba16dc34fd358a34d672d0d1156915.1393545985.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <cover.1393545985.git.luto@amacapital.net>
-References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
- <cover.1393545985.git.luto@amacapital.net>
-In-Reply-To: <cover.1393545985.git.luto@amacapital.net>
-References: <cover.1393545985.git.luto@amacapital.net>
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        anton@samba.org, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
+Message-ID: <20140228001858.GC8034@node.dhcp.inet.fi>
+References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com>
+ <530FB55F.2070106@linux.intel.com>
+ <CA+55aFzUYTHXcVnZL0vTGRPh3oQ8qYGO9+Va1Ch3P1yX+9knDg@mail.gmail.com>
+ <530FBD8F.7090304@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <530FBD8F.7090304@linux.intel.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This saves a nanosecond or so on my box.
+On Thu, Feb 27, 2014 at 02:34:55PM -0800, Dave Hansen wrote:
+> Kirill's git test suite runs did show that it _can_ hurt in some cases.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vclock_gettime.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And see last use-case for how much it can hurt. :)
 
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 828888e..16d6861 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -263,7 +263,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
- 	return mode;
- }
- 
--notrace static int do_monotonic(struct timespec *ts)
-+notrace static int __always_inline do_monotonic(struct timespec *ts)
- {
- 	unsigned long seq;
- 	u64 ns;
+It shouldn't differs much for the same *number* of pages between [u]archs
+unless setup of the pte is significantly more expensive or page fault is
+faster.
+
+But of course, I can move FAULT_AROUND_PAGES to arch/x86/ and let
+architecture mantainers to decide if they want the feature. ;)
+
 -- 
-1.8.5.3
-
+ Kirill A. Shutemov
