@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaB1Rzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:55:53 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:52365 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374AbaB1Rzu (ORCPT
+	id S1753466AbaB1Rz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:55:59 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:51732 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaB1Rzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:55:50 -0500
+	Fri, 28 Feb 2014 12:55:54 -0500
 From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Minchan Kim <minchan@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
         linux-kernel@vger.kernel.org,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv9 3/7] zram: factor out single stream compression
-Date: Fri, 28 Feb 2014 20:52:03 +0300
-Message-Id: <1393609927-22090-4-git-send-email-sergey.senozhatsky@gmail.com>
+Subject: [PATCHv9 5/7] zram: add set_max_streams knob
+Date: Fri, 28 Feb 2014 20:52:05 +0300
+Message-Id: <1393609927-22090-6-git-send-email-sergey.senozhatsky@gmail.com>
 X-Mailer: git-send-email 1.9.0.359.g5e34a15
 In-Reply-To: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
 References: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
@@ -23,157 +23,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is preparation patch to add multi stream support to zcomp.
+This patch allows to change max_comp_streams on initialised zcomp.
 
-Introduce struct zcomp_strm_single and a set of functions to manage zcomp_strm
-stream access. zcomp_strm_single implements single compession stream, same way
-as current zcomp implementation. This moves zcomp_strm stream control and
-locking from zcomp, so compressing backend zcomp is not aware of required
-locking.
+Introduce zcomp set_max_streams() knob, zcomp_strm_multi_set_max_streams()
+and zcomp_strm_single_set_max_streams() callbacks to change streams limit
+for zcomp_strm_multi and zcomp_strm_single, accordingly. set_max_streams
+for single steam zcomp does nothing.
 
-Single and multi streams require different locking schemes. Minchan Kim
-reported that spinlock-based locking scheme (which is used in multi stream
-implementation) has demonstrated a severe perfomance regression for single
-compression stream case, comparing to mutex-based.
-see https://lkml.org/lkml/2014/2/18/16
+If user has lowered the limit, then zcomp_strm_multi_set_max_streams()
+attempts to immediately free extra streams (as much as it can, depending
+on idle streams availability).
 
-The following set of functions added:
-- zcomp_strm_single_find()/zcomp_strm_single_release()
-  find and release a compression stream, implement required locking
-- zcomp_strm_single_create()/zcomp_strm_single_destroy()
-  create and destroy zcomp_strm_single
-
-New ->strm_find() and ->strm_release() callbacks added to zcomp, which are set to
-zcomp_strm_single_find() and zcomp_strm_single_release() during initialisation.
-Instead of direct locking and zcomp_strm access from zcomp_strm_find() and
-zcomp_strm_release(), zcomp now calls ->strm_find() and ->strm_release()
-correspondingly.
+Note, this patch does not allow to change stream 'policy' from single to
+multi stream (or vice versa) on already initialised compression backend.
 
 Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 ---
- drivers/block/zram/zcomp.c | 62 ++++++++++++++++++++++++++++++++++++++++------
- drivers/block/zram/zcomp.h |  7 ++++--
- 2 files changed, 59 insertions(+), 10 deletions(-)
+ drivers/block/zram/zcomp.c    | 36 ++++++++++++++++++++++++++++++++++++
+ drivers/block/zram/zcomp.h    |  3 +++
+ drivers/block/zram/zram_drv.c |  5 ++---
+ 3 files changed, 41 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/block/zram/zcomp.c b/drivers/block/zram/zcomp.c
-index 22f4ae2..72e8071 100644
+index c06f75f..ac276f7 100644
 --- a/drivers/block/zram/zcomp.c
 +++ b/drivers/block/zram/zcomp.c
-@@ -16,6 +16,14 @@
- #include "zcomp.h"
- #include "zcomp_lzo.h"
- 
-+/*
-+ * single zcomp_strm backend
-+ */
-+struct zcomp_strm_single {
-+	struct mutex strm_lock;
-+	struct zcomp_strm *zstrm;
-+};
-+
- static struct zcomp_backend *find_backend(const char *compress)
- {
- 	if (strncmp(compress, "lzo", 3) == 0)
-@@ -54,15 +62,56 @@ static struct zcomp_strm *zcomp_strm_alloc(struct zcomp *comp)
- 	return zstrm;
+@@ -136,6 +136,29 @@ static void zcomp_strm_multi_release(struct zcomp *comp, struct zcomp_strm *zstr
+ 	zcomp_strm_free(comp, zstrm);
  }
  
-+static struct zcomp_strm *zcomp_strm_single_find(struct zcomp *comp)
++/* change max_strm limit */
++static int zcomp_strm_multi_set_max_streams(struct zcomp *comp, int num_strm)
 +{
-+	struct zcomp_strm_single *zs = comp->stream;
-+	mutex_lock(&zs->strm_lock);
-+	return zs->zstrm;
-+}
++	struct zcomp_strm_multi *zs = comp->stream;
++	struct zcomp_strm *zstrm;
 +
-+static void zcomp_strm_single_release(struct zcomp *comp,
-+		struct zcomp_strm *zstrm)
-+{
-+	struct zcomp_strm_single *zs = comp->stream;
-+	mutex_unlock(&zs->strm_lock);
-+}
-+
-+static void zcomp_strm_single_destroy(struct zcomp *comp)
-+{
-+	struct zcomp_strm_single *zs = comp->stream;
-+	zcomp_strm_free(comp, zs->zstrm);
-+	kfree(zs);
-+}
-+
-+static int zcomp_strm_single_create(struct zcomp *comp)
-+{
-+	struct zcomp_strm_single *zs;
-+
-+	comp->destroy = zcomp_strm_single_destroy;
-+	comp->strm_find = zcomp_strm_single_find;
-+	comp->strm_release = zcomp_strm_single_release;
-+	zs = kmalloc(sizeof(struct zcomp_strm_single), GFP_KERNEL);
-+	if (!zs)
-+		return -ENOMEM;
-+
-+	comp->stream = zs;
-+	mutex_init(&zs->strm_lock);
-+	zs->zstrm = zcomp_strm_alloc(comp);
-+	if (!zs->zstrm) {
-+		kfree(zs);
-+		return -ENOMEM;
++	spin_lock(&zs->strm_lock);
++	zs->max_strm = num_strm;
++	/*
++	 * if user has lowered the limit and there are idle streams,
++	 * immediately free as much streams (and memory) as we can.
++	 */
++	while (zs->avail_strm > num_strm && !list_empty(&zs->idle_strm)) {
++		zstrm = list_entry(zs->idle_strm.next,
++				struct zcomp_strm, list);
++		list_del(&zstrm->list);
++		zcomp_strm_free(comp, zstrm);
++		zs->avail_strm--;
 +	}
++	spin_unlock(&zs->strm_lock);
 +	return 0;
++}
++
+ static void zcomp_strm_multi_destroy(struct zcomp *comp)
+ {
+ 	struct zcomp_strm_multi *zs = comp->stream;
+@@ -158,6 +181,7 @@ static int zcomp_strm_multi_create(struct zcomp *comp, int max_strm)
+ 	comp->destroy = zcomp_strm_multi_destroy;
+ 	comp->strm_find = zcomp_strm_multi_find;
+ 	comp->strm_release = zcomp_strm_multi_release;
++	comp->set_max_streams = zcomp_strm_multi_set_max_streams;
+ 	zs = kmalloc(sizeof(struct zcomp_strm_multi), GFP_KERNEL);
+ 	if (!zs)
+ 		return -ENOMEM;
+@@ -192,6 +216,12 @@ static void zcomp_strm_single_release(struct zcomp *comp,
+ 	mutex_unlock(&zs->strm_lock);
+ }
+ 
++static int zcomp_strm_single_set_max_streams(struct zcomp *comp, int num_strm)
++{
++	/* zcomp_strm_single support only max_comp_streams == 1 */
++	return -ENOTSUPP;
++}
++
+ static void zcomp_strm_single_destroy(struct zcomp *comp)
+ {
+ 	struct zcomp_strm_single *zs = comp->stream;
+@@ -206,6 +236,7 @@ static int zcomp_strm_single_create(struct zcomp *comp)
+ 	comp->destroy = zcomp_strm_single_destroy;
+ 	comp->strm_find = zcomp_strm_single_find;
+ 	comp->strm_release = zcomp_strm_single_release;
++	comp->set_max_streams = zcomp_strm_single_set_max_streams;
+ 	zs = kmalloc(sizeof(struct zcomp_strm_single), GFP_KERNEL);
+ 	if (!zs)
+ 		return -ENOMEM;
+@@ -220,6 +251,11 @@ static int zcomp_strm_single_create(struct zcomp *comp)
+ 	return 0;
+ }
+ 
++int zcomp_set_max_streams(struct zcomp *comp, int num_strm)
++{
++	return comp->set_max_streams(comp, num_strm);
 +}
 +
  struct zcomp_strm *zcomp_strm_find(struct zcomp *comp)
  {
--	mutex_lock(&comp->strm_lock);
--	return comp->zstrm;
-+	return comp->strm_find(comp);
- }
- 
- void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm)
- {
--	mutex_unlock(&comp->strm_lock);
-+	comp->strm_release(comp, zstrm);
- }
- 
- int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
-@@ -80,7 +129,7 @@ int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
- 
- void zcomp_destroy(struct zcomp *comp)
- {
--	zcomp_strm_free(comp, comp->zstrm);
-+	comp->destroy(comp);
- 	kfree(comp);
- }
- 
-@@ -104,10 +153,7 @@ struct zcomp *zcomp_create(const char *compress)
- 		return NULL;
- 
- 	comp->backend = backend;
--	mutex_init(&comp->strm_lock);
--
--	comp->zstrm = zcomp_strm_alloc(comp);
--	if (!comp->zstrm) {
-+	if (zcomp_strm_single_create(comp) != 0) {
- 		kfree(comp);
- 		return NULL;
- 	}
+ 	return comp->strm_find(comp);
 diff --git a/drivers/block/zram/zcomp.h b/drivers/block/zram/zcomp.h
-index c9a98e1..dc3500d 100644
+index 2a36844..bd11d59 100644
 --- a/drivers/block/zram/zcomp.h
 +++ b/drivers/block/zram/zcomp.h
-@@ -39,9 +39,12 @@ struct zcomp_backend {
+@@ -46,6 +46,7 @@ struct zcomp {
  
- /* dynamic per-device compression frontend */
- struct zcomp {
--	struct mutex strm_lock;
--	struct zcomp_strm *zstrm;
-+	void *stream;
- 	struct zcomp_backend *backend;
-+
-+	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
-+	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
-+	void (*destroy)(struct zcomp *comp);
+ 	struct zcomp_strm *(*strm_find)(struct zcomp *comp);
+ 	void (*strm_release)(struct zcomp *comp, struct zcomp_strm *zstrm);
++	int (*set_max_streams)(struct zcomp *comp, int num_strm);
+ 	void (*destroy)(struct zcomp *comp);
  };
  
- struct zcomp *zcomp_create(const char *comp);
+@@ -60,4 +61,6 @@ int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
+ 
+ int zcomp_decompress(struct zcomp *comp, const unsigned char *src,
+ 		size_t src_len, unsigned char *dst);
++
++int zcomp_set_max_streams(struct zcomp *comp, int num_strm);
+ #endif /* _ZCOMP_H_ */
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 75bbc37..2de17f6 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -133,9 +133,8 @@ static ssize_t max_comp_streams_store(struct device *dev,
+ 		return -EINVAL;
+ 	down_write(&zram->init_lock);
+ 	if (init_done(zram)) {
+-		up_write(&zram->init_lock);
+-		pr_info("Can't set max_comp_streams for initialized device\n");
+-		return -EBUSY;
++		if (zcomp_set_max_streams(zram->comp, num))
++			pr_info("Cannot change max compression streams\n");
+ 	}
+ 	zram->max_comp_streams = num;
+ 	up_write(&zram->init_lock);
 -- 
 1.9.0.359.g5e34a15
 
