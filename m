@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaB1Izb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:55:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.13]:49238 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaB1Iz3 (ORCPT
+	id S1751813AbaB1I7A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:59:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49051 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaB1I67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:55:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] bug: Make BUG() call unreachable()
-Date: Fri, 28 Feb 2014 09:55:26 +0100
-Message-ID: <6915585.VegnvotSUi@wuerfel>
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140228001645.GA29605@thin>
-References: <469b5dc113cb468232291527642f8dc47663e945.1393385236.git.josh@joshtriplett.org> <201402272019.47554.arnd@arndb.de> <20140228001645.GA29605@thin>
+	Fri, 28 Feb 2014 03:58:59 -0500
+Date: Fri, 28 Feb 2014 09:58:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: josh@joshtriplett.org
+Cc: Rashika Kheria <rashika.kheria@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 18/46] kernel: Mark functions as static in sched/fair.c
+Message-ID: <20140228085852.GC27965@twins.programming.kicks-ass.net>
+References: <7b4a60c74ced00e0d65c38488f20dc4bd69f0dd2.1393493276.git.rashika.kheria@gmail.com>
+ <8addb2b0ca590ad5b3492ce1c6cb86b67905acd5.1393493277.git.rashika.kheria@gmail.com>
+ <20140227115805.GE9987@twins.programming.kicks-ass.net>
+ <20140227160322.GC26756@thin>
+ <20140227192435.GA27965@twins.programming.kicks-ass.net>
+ <20140227230905.GD30335@cloud>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vxPDm8fAseHNn96bX3jWp1MfYQBbDl0Cx24VTv1n2LK
- V0Wt8eiHzr8SIyIpq4zAFrIQB0XYGOXcf33CJWrLDs5hXjWwx9
- sPkom0z7Vh3+KhtDUU31VaArtF2WYeVps6bN6t7TilsLs90rZX
- m6BdvRyz63+ORSjI/wpPbayq7kvKunFZQYuqYJH6CLGZTSYp+c
- SzWLXWpFiWzg4hKK6GfpMIx/tPxsSEFIWNhAfpSW5ZNOkAaB2I
- iZVYJXVchz05/+zLQAs5Iheu5vaCQKUa6LYELLYemxZe+68OKS
- ZyYN8HVPQqunlALXz4nSfpp1Ct28Wmm0xPMhwNRlZo148jFlkI
- pPUuuvjzm/B9C2MsZH94=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140227230905.GD30335@cloud>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 February 2014 16:16:45 Josh Triplett wrote:
-> On Thu, Feb 27, 2014 at 08:19:47PM +0100, Arnd Bergmann wrote:
-> > On Wednesday 26 February 2014, Josh Triplett wrote:
-> > > This doesn't seem any different than compiling out assert() at runtime
-> > > in a userspace program, given how the kernel uses BUG() and BUG_ON().
-> > > I'd argue that adding unreachable() doesn't seem like it makes the
-> > > current implementation of BUG() any worse; either way if you reach it
-> > > you have a problem.
+On Thu, Feb 27, 2014 at 03:09:05PM -0800, josh@joshtriplett.org wrote:
+> On Thu, Feb 27, 2014 at 08:24:35PM +0100, Peter Zijlstra wrote:
+> > On Thu, Feb 27, 2014 at 08:03:22AM -0800, Josh Triplett wrote:
+> > > Did you perhaps check, and notice that there are *zero* uses of this
+> > > function in the kernel?  Nothing overrides this weak symbol; it is no
+> > > longer needed.  You removed the one and only user in your commit:
 > > 
-> > I think it's better to get a warning about undefined behavior than
-> > to suppress that warning.
+> > I know that; but you don't get to remove interfaces under the guise of a
+> > static checker and without mention of such in the changelog.
 > 
-> Then at this point I'm going to suggest that you go ahead and submit the
-> patch you want on top of the first four patches of this series.
+> So the changelog message needed improvement.  Got it; that would have
+> been helpful to hear.
+> 
+> The kernel hardly goes to great lengths to preserve old interfaces with
+> no users (per stable_api_nonsense), and the commit message already stated
+> that the function was being marked as static because it wasn't used
+> elsewhere.  But sure, perhaps something like the following, added to the
+> commit message, would address your concern?
+> 
+> """
+> arch_scale_smt_power, in particular, is a __weak function provided for
+> architectures to override.  However, the only overriding definition was
+> removed before v3.6, in commit ee08d1284ea9235b29bd2d9b7493b4b4cf3da09c
+> ("sched/x86: Remove broken power estimation").  Thus, drop the __weak
+> and make the function static.
+> """
+> 
+> Or would you prefer to see it completely eliminated (inlining it into
+> its caller) as part of the same patch?
 
-Sure, no problem. I'll wait for your patches to show up in linux-next
-and then do a patch on top. I'll be traveling for the next week, so
-it may get delayed another few days.
-
-> Please keep in mind the value and code size savings of !CONFIG_BUG, versus
-> CONFIG_BUG=y and !CONFIG_DEBUG_BUGVERBOSE; those mean two different
-> things.
-
-I think I compared all the options before in the patch I cited,
-https://lkml.org/lkml/2013/7/5/222 but I agree that the list
-is a bit confusing.
-
-> Meanwhile: Andrew, could you go ahead and apply the first four patches?
-
-Yes please.
-
-	Arnd
+Also remove the arch_ prefix, its not longer an arch function if you
+make it static, is it.
