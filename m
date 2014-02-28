@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaB1Q0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:26:04 -0500
-Received: from smtp5.epfl.ch ([128.178.224.8]:52128 "EHLO smtp5.epfl.ch"
+	id S1752831AbaB1Q0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:26:22 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:33344 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487AbaB1Q0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:26:01 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Cc: Rob Herring <robh@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/2] checkpatch: fixes for vendor compatible check
-Date: Fri, 28 Feb 2014 17:25:40 +0100
-Message-Id: <1393604742-14317-1-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751580AbaB1Q0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 11:26:20 -0500
+Message-ID: <5310B8A7.3040305@mev.co.uk>
+Date: Fri, 28 Feb 2014 16:26:15 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Abbott <ian.abbott@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: comedi: addi-data: remove unnecessary variable
+ initializations in hwdrv_apci035.c
+References: <1393572645-9470-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1393572645-9470-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2014-02-28 07:30, Chase Southwood wrote:
+> Nearly every variable in hwdrv_apci035.c is initialized to 0 when it is
+> declared, and then set to some other value before ever being used.  As
+> such, we can remove all of these initializations.  They are accomplishing
+> nothing.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+>   .../comedi/drivers/addi-data/hwdrv_apci035.c       | 26 +++++++++++-----------
+>   1 file changed, 13 insertions(+), 13 deletions(-)
 
-Since v1 [1]:
-- Add check for vendors with '-', as suggested by Joe Perches
-
-Regards,
-Florian
-
-[1] http://thread.gmane.org/gmane.linux.drivers.devicetree/63770
-
-
-Florian Vaussard (2):
-  checkpatch: check vendor compatible with dashes
-  checkpatch: fix spurious vendor compatible warnings
-
- scripts/checkpatch.pl | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
 -- 
-1.8.5.3
-
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
