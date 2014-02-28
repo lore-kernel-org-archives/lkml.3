@@ -1,48 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaB1MEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:04:33 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:33945 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbaB1MEY convert rfc822-to-8bit (ORCPT
+	id S1752040AbaB1MF3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:05:29 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:38968 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaB1MF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:04:24 -0500
-From: Matthew Leach <matthew.leach@arm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Peter Ziljstra <peterz@infradead.org>
-Subject: A question regarding TG load tracking functions in fair.c
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Fri, 28 Feb 2014 12:04:19 +0000
-Message-ID: <87d2i7mojg.fsf@e106496-lin.cambridge.arm.com>
+	Fri, 28 Feb 2014 07:05:27 -0500
+Message-ID: <53107AA4.30902@linux.vnet.ibm.com>
+Date: Fri, 28 Feb 2014 17:31:40 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 28 Feb 2014 12:04:20.0602 (UTC) FILETIME=[3671D5A0:01CF347D]
-X-MC-Unique: 114022812042211001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        rjw@rjwysocki.net, nicolas.pitre@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/5] idle/cpuidle: Split cpuidle_idle_call main function
+ into smaller functions
+References: <1393315733-32321-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1393315733-32321-1-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022812-1344-0000-0000-000006246D27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On 02/25/2014 01:38 PM, Daniel Lezcano wrote:
+> In order to allow better integration between the cpuidle framework and the
+> scheduler, reducing the distance between these two sub-components will
+> facilitate this integration by moving part of the cpuidle code in the idle
+> task file and, because idle.c is in the sched directory, we have access to
+> the scheduler's private structures.
+> 
+> This patch splits the cpuidle_idle_call main entry function into 3 calls
+> to a newly added API:
+>  1. select the idle state
+>  2. enter the idle state
+>  3. reflect the idle state
+> 
+> The cpuidle_idle_call calls these three functions to implement the main
+> idle entry function.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Acked-by: Nicolas Pitre <nico@linaro.org>
+> ---
+> 
+> ChangeLog:
+> 
+> V3:
+>     * moved broadcast timer outside of cpuidle_enter() as suggested by
+>       Preeti U Murthy.
+> 	https://lkml.org/lkml/2014/2/24/601
+> V2: 
+>     * splitted cpuidle_select error check into 'cpuidle_enabled' function
+> 
+> ---
+>  drivers/cpuidle/cpuidle.c |   97 ++++++++++++++++++++++++++++++++++++----------
+>  include/linux/cpuidle.h   |   19 +++++++++
+>  2 files changed, 95 insertions(+), 21 deletions(-)
+> 
+> Index: cpuidle-next/drivers/cpuidle/cpuidle.c
+> ===================================================================
+> --- cpuidle-next.orig/drivers/cpuidle/cpuidle.c
+> +++ cpuidle-next/drivers/cpuidle/cpuidle.c
+> @@ -65,6 +65,26 @@ int cpuidle_play_dead(void)
+>  }
+> 
+>  /**
+> + * cpuidle_enabled - check if the cpuidle framework is ready
+> + * @dev: cpuidle device for this cpu
+> + * @drv: cpuidle driver for this cpu
+> + *
+> + * Return 0 on success, otherwise:
+> + * -NODEV : the cpuidle framework is not available
+> + * -EBUSY : the cpuidle framework is not initialized
+> + */
+> +int cpuidle_enabled(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+> +{
+> +	if (off || !initialized)
+> +		return -ENODEV;
+> +
+> +	if (!drv || !dev || !dev->enabled)
+> +		return -EBUSY;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   * cpuidle_enter_state - enter the state and update stats
+>   * @dev: cpuidle device for this cpu
+>   * @drv: cpuidle driver for this cpu
+> @@ -108,6 +128,51 @@ int cpuidle_enter_state(struct cpuidle_d
+>  }
+> 
+>  /**
+> + * cpuidle_select - ask the cpuidle framework to choose an idle state
+> + *
+> + * @drv: the cpuidle driver
+> + * @dev: the cpuidle device
+> + *
+> + * Returns the index of the idle state.
+> + */
+> +int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+> +{
+> +	return cpuidle_curr_governor->select(drv, dev);
+> +}
+> +
+> +/**
+> + * cpuidle_enter - enter into the specified idle state
+> + *
+> + * @drv:   the cpuidle driver tied with the cpu
+> + * @dev:   the cpuidle device
+> + * @index: the index in the idle state table
+> + *
+> + * Returns the index in the idle state, < 0 in case of error.
+> + * The error code depends on the backend driver
+> + */
+> +int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+> +		  int index)
+> +{
+> +	if (cpuidle_state_is_coupled(dev, drv, index))
+> +		return cpuidle_enter_state_coupled(dev, drv, index);
+> +	return cpuidle_enter_state(dev, drv, index);
+> +}
+> +
+> +/**
+<snip>
+> 
+> -	if (cpuidle_state_is_coupled(dev, drv, next_state))
+> -		entered_state = cpuidle_enter_state_coupled(dev, drv,
+> -							    next_state);
+> -	else
+> -		entered_state = cpuidle_enter_state(dev, drv, next_state);
+> +	entered_state = cpuidle_enter(drv, dev, next_state);
 
-I have a question regarding two lines of code in the functions
-__update_cfs_rq_tg_load_contrib and __update_tg_runnable_avg. AFAICS
-these functions update a load-tracking signal for the local RQ and an
-aggregated signal in the TG for all RQs that belong to this TG. The
-update is surrounded by conditions:
+Wouldn't you need to check for return value on cpuidle_enter()?
 
-  if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-
-for __update_tg_runnable_avg and
-
-  if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-
-for __update_cfs_rq_tg_load_contrib. Is this an optimisation to prevent
-the signals being updated for small variations? Also, could you please
-shed some light on the specific numbers used?
-
-Thanks,
--- 
-Matt
+Regards
+Preeti U Murthy
 
