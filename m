@@ -1,278 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaB1NHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:07:55 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:4793
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751812AbaB1NHw (ORCPT
+	id S1752276AbaB1NJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:09:04 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53609 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752150AbaB1NJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:07:52 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068h1954cbhz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh906i1155h)
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        "wg@grandegger.com" <wg@grandegger.com>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH v4] can: xilinx CAN controller support.
-Thread-Topic: [PATCH v4] can: xilinx CAN controller support.
-Thread-Index: AQHPMnBMZEwPglt3TUmAMsU8apdwWZrHhtZVgAAnVUOAAqxFHIAASeaWgAABKWA=
-Date: Fri, 28 Feb 2014 13:07:45 +0000
-References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local>
- <530D0A9C.5090402@pengutronix.de>
- <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local>
- <530DEA7C.6010609@pengutronix.de>
- <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local>
- <530E0B92.5010903@pengutronix.de>
- <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local>
- <53104995.4010305@pengutronix.de>
- <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local>
- <53108798.7090902@pengutronix.de>
-In-Reply-To: <53108798.7090902@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.97.219]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 28 Feb 2014 08:09:00 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v3 0/5] [RFC] Support for creating generic host_bridge from device tree
+Date: Fri, 28 Feb 2014 13:08:17 +0000
+Message-Id: <1393592902-24750-1-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s1SD857q015216
 
-Hi Marc,
+This is v3 of my attempt to add support for a generic pci_host_bridge controller created
+from a description passed in the device tree.
 
+Changes from v2:
+  - Use range->cpu_addr when calling pci_address_to_pio()
+  - Introduce pci_register_io_range() helper function in order to register
+    io ranges ahead of their conversion to PIO values. This is needed as no
+    information is being stored yet regarding the range mapping, making
+    pci_address_to_pio() fail. Default weak implementation does nothing,
+    to cover the default weak implementation of pci_address_to_pio() that
+    expects direct mapping of physical addresses into PIO values (x86 view).
 
-> -----Original Message-----
-> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> Sent: Friday, February 28, 2014 6:27 PM
-> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
-> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org
-> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; devicetree@vger.kernel.org
-> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
->
-> On 02/28/2014 01:44 PM, Appana Durga Kedareswara Rao wrote:
-> > Hi Marc,
-> >
-> >
-> >> -----Original Message-----
-> >> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> >> Sent: Friday, February 28, 2014 2:02 PM
-> >> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
-> >> grant.likely@linaro.org; robh+dt@kernel.org;
-> >> linux-can@vger.kernel.org
-> >> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> >> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
-> >> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-> >>
-> >> On 02/28/2014 06:50 AM, Appana Durga Kedareswara Rao wrote:
-> >>> Hi Marc,
-> >>>
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> >>>> Sent: Wednesday, February 26, 2014 9:13 PM
-> >>>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal
-> Simek;
-> >>>> grant.likely@linaro.org; robh+dt@kernel.org;
-> >>>> linux-can@vger.kernel.org
-> >>>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> >>>> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
-> >>>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-> >>>>
-> >>>> On 02/26/2014 03:46 PM, Appana Durga Kedareswara Rao wrote:
-> >>>>> Hi Marc,
-> >>>>>
-> >>>>>
-> >>>>>> -----Original Message-----
-> >>>>>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
-> >>>>>> Sent: Wednesday, February 26, 2014 6:52 PM
-> >>>>>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal
-> >> Simek;
-> >>>>>> grant.likely@linaro.org; robh+dt@kernel.org;
-> >>>>>> linux-can@vger.kernel.org
-> >>>>>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> >>>>>> linux- kernel@vger.kernel.org; devicetree@vger.kernel.org
-> >>>>>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
-> >>>>>>
-> >>>>>> On 02/26/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
-> >>>>>>>> This loop looks broken. Can you explain how it works.
-> >>>>>>>>
-> >>>>>>>> What it shoud do is:
-> >>>>>>>> We have put (priv->tx_head - priv->tx_tail) CAN frames into the
-> >> FIFO.
-> >>>>>>>> This means at maximum there could be this amount of CAN frames
-> >>>>>>>> which have been successfully transmitted. For every cycle in
-> >>>>>>>> this while loop you
-> >>>>>>>> should:
-> >>>>>>>> a) check if a CAN frame has successfully been transmitted
-> >>>>>>>>    (as this CAN core uses a FIFO it should be "oldest")
-> >>>>>>>>    A read_reg() of some kind is missing in your loop.
-> >>>>>>>> b) if needed, remove this event from the FIFO or
-> >>>>>>>>    mark the interrupt as done. Whatever you hardware needs.
-> >>>>>>>> c) update your statistics
-> >>>>>>>> d) Use can_get_echo_skb to push this frame into the networking
-> >>>>>>>> stack
-> >>>>>>>> e) As a CAN frame has been transmitted successfully, wake the
-> >>>> tx_queue.
-> >>>>>>>>
-> >>>>>>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
-> >>>>>>>>> +           if (isr & XCAN_IXR_TXFLL_MASK) {
-> >>>>>>>>> +                   priv->write_reg(priv, XCAN_ICR_OFFSET,
-> >>>>>>>>> +                                   XCAN_IXR_TXFLL_MASK);
-> >>>>>>>>> +                   netif_stop_queue(ndev);
-> >>>>>>>>
-> >>>>>>>> Why do you stop the queue here? A CAN frame has successfully
-> >> been
-> >>>>>>>> transmitted, there should be room in the FIFO.
-> >>>>>>>>
-> >>>>>>>>> +                   break;
-> >>>>>>>>> +           }
-> >>>>>>>>> +           can_get_echo_skb(ndev, priv->tx_tail %
-> >>>>>>>>> +                                   priv->xcan_echo_skb_max_tx);
-> >>>>>>>>> +           priv->tx_tail++;
-> >>>>>>>>> +   }
-> >>>>>>>>> +
-> >>>>>>>
-> >>>>>>> The below are the bit fields available for the Transmit FIFO.
-> >>>>>>> 1) In the ISR(interrupt status register)  Tx Ok interrupt and Tx
-> >>>>>>> fifo full
-> >>>>>> interrupt.
-> >>>>>>> 2) in the SR(Status Register) Tx fifo full condition.
-> >>>>>>>
-> >>>>>>>
-> >>>>>>> I am modifying the entire tx interrupt logic to like below.
-> >>>>>>>
-> >>>>>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
-> >>>>>>>         struct xcan_priv *priv = netdev_priv(ndev);
-> >>>>>>>         struct net_device_stats *stats = &ndev->stats;
-> >>>>>>>
-> >>>>>>>             while (priv->tx_head - priv->tx_tail > 0) {
-> >>>>>>>                 if (isr & XCAN_IXR_TXFLL_MASK) {
-> >>>>>>>                         priv->write_reg(priv, XCAN_ICR_OFFSET,
-> >>>>>>>                                         XCAN_IXR_TXFLL_MASK);
-> >>>>>>>                           break;
-> >>>>>>>                 }
-> >>>>>>>                 can_get_echo_skb(ndev, priv->tx_tail %
-> >>>>>>>                                         priv->xcan_echo_skb_max_tx);
-> >>>>>>>                 priv->tx_tail++;
-> >>>>>>>          stats->tx_packets++;
-> >>>>>>>         netif_wake_queue(ndev);
-> >>>>>>>               can_led_event(ndev, CAN_LED_EVENT_TX);
-> >>>>>>>
-> >>>>>>>         }
-> >>>>>>
-> >>>>>> You just need to wake the queue once.
-> >>>>>
-> >>>>> Ok
-> >>>>>>
-> >>>>>>> }
-> >>>>>>>
-> >>>>>>>
-> >>>>>>> Are you Ok with the above logic?
-> >>>>>>
-> >>>>>> No, how can you tell how many frames have been transmitted?
-> >>>>>
-> >>>>> There is no register to read how many can frames are transmitted.
-> >>>>> The only way to know Is by reading this parameter
-> >>>>> (stats->tx_packets++;) through ip command
-> >>>>
-> >>>> stats->tx_packets is calculated in the above loop and the loop is
-> >>>> broken. Let me illustrate the problem:
-> >>>>
-> >>>> - xmit is called 10 times in a row
-> >>>> - this means you have 10 CAN frames in the TX FIFO
-> >>>> - a single CAN frame gets transmitted
-> >>>> - you get an interrupt
-> >>>> - you enter the above routine and loop 10 times and echo the CAN
-> frame
-> >>>>   back into the stack
-> >>>>
-> >>>> Now every application sees 10 transmitted packages, but there is
-> >>>> only one transmitted. Every time you loop you have to check if the
-> >>>> CAN frame has already been transmitted or not. Is that possible
-> >>>> with the
-> >> hardware?
-> >>>
-> >>>         The only way to know whether the TX packet is transmitted
-> >> successfully or not is by using the Tx Ok interrupt from the ISR.
-> >>> This interrupt will come for every Tx Packet.
-> >>> So I am thinking of there is no loop required in the TX interrupt
-> >>> routine. As
-> >> it is called for each and every packet.
-> >>
-> >> What happens if the interrupt handler is delayed? For example in a RT
-> >> enabled system the interrupt handler runs as a thread. There might be
-> >> other threads with higher priority. The hardware will probably send
-> >> all CAN frames in the FIFO, so you want to reduce the overhead and
-> >> loop in the tx complete handler.
-> >>
-> > Yes I agree with your comment.
-> > It will be good to have a loop in the Tx interrupt handler I am
-> > modifying the Tx interrupt handler like below.
-> >
-> > static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
-> >         struct xcan_priv *priv = netdev_priv(ndev);
-> >         struct net_device_stats *stats = &ndev->stats;
-> >
-> >         while (priv->tx_head - priv->tx_tail > 0) {
-> >                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
-> >                         break;
-> >                 }
-> >                 can_get_echo_skb(ndev, priv->tx_tail %
-> >                                         priv->xcan_echo_skb_max_tx);
-> >                 priv->tx_tail++;
-> >                 stats->tx_packets++;
-> >                 can_led_event(ndev, CAN_LED_EVENT_TX);
-> >                 isr = priv->read_reg(priv, XCAN_ISR_OFFSET);
-            --> clear Tx OK interrupt.
+Changes from v1:
+  - Add patch to fix conversion of IO ranges into IO resources.
+  - Added a domain_nr member to pci_host_bridge structure, and a new function
+    to create a root bus in a given domain number. In order to facilitate that
+    I propose changing the order of initialisation between pci_host_bridge and
+    it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
+    This is done in patch 1/4 and 2/4.
+  - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
+    code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
+    and if that fails assign the next unallocated domain id.
+  - Changed the name of the function that creates the generic host bridge from
+    pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
 
-> >         }
-> >         netif_wake_queue(ndev);
-> > }
-> >
-> > Are you Ok with this?
->
-> Do you have to ACK the interrupt, so that TXOK_MASK is finally cleared?
-> The use case is here: m CAN frames are put into the FIFO, n out of m CAN
-> frames are transferred, where n < m. In this case you have to leave the loop
-> after n, but "priv->tx_head - priv->tx_tail == m".
->
+v1 thread here: https://lkml.org/lkml/2014/2/3/380
 
-Yes I forget to add that I added a line here above in the loop clear TXOK interrupt.
-I think it fixes your above question. Please Correct me if I miss understand your question.
+The following is an edit of the original blurb:
+
+Following the discussion started here [1], I now have a proposal for tackling
+generic support for host bridges described via device tree. It is an initial
+stab at it, to try to get feedback and suggestions, but it is functional enough
+that I have PCI Express for arm64 working on an FPGA using the patch that I am
+also publishing that adds support for PCI for that platform.
+
+Looking at the existing architectures that fit the requirements (use of device
+tree and PCI) yields the powerpc and microblaze as generic enough to make them
+candidates for conversion. I have a tentative patch for microblaze that I can
+only compile test it, unfortunately using qemu-microblaze leads to an early
+crash in the kernel.
+
+As Bjorn has mentioned in the previous discussion, the idea is to add to
+struct pci_host_bridge enough data to be able to reduce the size or remove the
+architecture specific pci_controller structure. arm64 support actually manages
+to get rid of all the architecture static data and has no pci_controller structure
+defined. For host bridge drivers that means a change of API unless architectures
+decide to provide a compatibility layer (comments here please).
+
+In order to initialise a host bridge with the new API, the following example
+code is sufficient for a _probe() function:
+
+static int myhostbridge_probe(struct platform_device *pdev)
+{
+	int err;
+	struct device_node *dev;
+	struct pci_host_bridge *bridge;
+	struct myhostbridge_port *pp;
+	resource_size_t lastbus;
+
+	dev = pdev->dev.of_node;
+
+	if (!of_device_is_available(dev)) {
+		pr_warn("%s: disabled\n", dev->full_name);
+		return -ENODEV;
+	}
+
+	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
+	if (!pp)
+		return -ENOMEM;
+
+	bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
+	if (!bridge) {
+		err = -EINVAL;
+		goto bridge_init_fail;
+	}
+
+	err = myhostbridge_setup(bridge->bus);
+	if (err)
+		goto bridge_init_fail;
+
+	/* We always enable PCI domains and we keep domain 0 backward
+	 * compatible in /proc for video cards
+	 */
+	pci_add_flags(PCI_ENABLE_PROC_DOMAINS | PCI_COMPAT_DOMAIN_0);
+	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
+
+	lastbus = pci_scan_child_bus(bridge->bus);
+	pci_bus_update_busn_res_end(bridge->bus, lastbus);
+
+	pci_assign_unassigned_bus_resources(bridge->bus);
+
+	pci_bus_add_devices(bridge->bus);
+
+	return 0;
+
+bridge_init_fail:
+	kfree(pp);
+	return err;
+}
+
+[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
+
+Best regards,
+Liviu
 
 
-Regards,
-Kedar.
+Liviu Dudau (5):
+  pci: Introduce pci_register_io_range() helper function.
+  pci: OF: Fix the conversion of IO ranges into IO resources.
+  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+  pci: Introduce a domain number for pci_host_bridge.
+  pci: Add support for creating a generic host_bridge from device tree
 
-> Marc
->
-> --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+ drivers/of/address.c       |  39 +++++++++++++
+ drivers/pci/host-bridge.c  | 134 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/probe.c        |  66 ++++++++++++++--------
+ include/linux/of_address.h |  14 +----
+ include/linux/pci.h        |  17 ++++++
+ 5 files changed, 236 insertions(+), 34 deletions(-)
 
+-- 
+1.9.0
 
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
