@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaB1BYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 20:24:17 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60254 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaB1BYP (ORCPT
+	id S1752028AbaB1B1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 20:27:12 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49981 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaB1B1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 20:24:15 -0500
+	Thu, 27 Feb 2014 20:27:10 -0500
+Date: Thu, 27 Feb 2014 17:27:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: tglx@linutronix.de, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org, peterz@infradead.org,
+        oleg@redhat.com, rostedt@goodmis.org, bitbucket@online.de
+Subject: [GIT PULL timers] Timer-wheel bandaids^Wcommits for 3.15
+Message-ID: <20140228012704.GA20805@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <1393545229.24588.147.camel@joe-AO722>
-References: <1393531019-25134-1-git-send-email-florian.vaussard@epfl.ch>
-	<1393531808.24588.119.camel@joe-AO722>
-	<530F9F03.40803@epfl.ch>
-	<1393545229.24588.147.camel@joe-AO722>
-Date: Thu, 27 Feb 2014 19:24:14 -0600
-X-Google-Sender-Auth: -CMSpt_sJlMonShC3J4nSLZlzUM
-Message-ID: <CAL_JsqLnMyHGsv7L64FxooH0jaRjjF8uE=d=n6C84+hYB+ryVQ@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: fix spurious vendor compatible warnings
-From: Rob Herring <robh@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andy Whitcroft <apw@canonical.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022801-0928-0000-0000-0000000B8AAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 5:53 PM, Joe Perches <joe@perches.com> wrote:
-> On Thu, 2014-02-27 at 21:24 +0100, Florian Vaussard wrote:
->> On 02/27/2014 09:10 PM, Joe Perches wrote:
->> > On Thu, 2014-02-27 at 20:56 +0100, Florian Vaussard wrote:
->> >> With a compatible string like
->> >> compatible = "foo";
->> >> checkpatch will currently try to find "foo" in  vendor-prefixes.txt,
->> >> which is wrong since the vendor prefix is empty in this specific case.
-> []
->> > Some vendor names have dashes.
->> > I don't know if underscores are allowed.
->> >
->> > $ grep -rP --include=*.[ch] -oh "compatible\s*=\s*\"[^,]+,\w" * | \
->> >   sed -r -e 's/\s//g' -e 's/,.$//' | sort | uniq -c | grep "[_-]"
->> >       1 compatible="active-semi
->> >       8 compatible="asahi-kasei
-> []
->> In ePAPR v1.1, I could not find any strict requirement. It
->> is just saying:
->>
->> The recommended format is "manufacturer,model", where manufacturer is a
->> string describing the name of the manufacturer (such as a stock ticker
->> symbol), and model specifies the model number.
->
-> Should there also be a check in .c and .h files for
->         .compatible = "somestring"
+Hello, Thomas and Ingo,
 
-Ideally, yes. I didn't do that because I figured there would be too
-many variations in formatting compared to dts files.
+This pull request contains latency bandaids^Woptimizations to the
+timer-wheel code that are useful in conjunction with NO_HZ_FULL Kconfig
+option.  These optimizations reduce the jiffy-by-jiffy looping in cases
+where there is either zero or one timers in the timer wheel, which is
+a common case for NO_HZ_FULL "worker" CPUs that run almost entirely
+in usermode for a single task.
 
-> and
->         OF_DEV_AUXDATA("somestring",,,,)
+This is of course no substitute for a more extensive reworking of the
+timer-wheel code, but it does provide some simple patches that can
+provide significant latency improvements for NO_HZ_FULL systems that
+have CPUs that very rarely enter the kernel.
 
-Probably not. OF_DEV_AUXDATA is hopefully temporary. There are 156
-instances now and it looks like they've been going down since 3.8.
+							Thanx, Paul
 
-Rob
+These changes since commit 849401b66d305f3feb75b6db7459b95ad190552a:
+
+  tick: Fixup more fallout from hrtimer broadcast mode (2014-02-09 15:11:47 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git timers.2014.02.25a
+
+for you to fetch changes up to aea369b959bef10d235cd0714789cd8b0fe170b8:
+
+  timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0 (2014-02-25 12:39:01 -0800)
+
+----------------------------------------------------------------
+Oleg Nesterov (1):
+      timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0
+
+Paul E. McKenney (4):
+      timers: Track total number of timers in list
+      timers: Reduce __run_timers() latency for empty list
+      timers: Reduce future __run_timers() latency for newly emptied list
+      timers: Reduce future __run_timers() latency for first add to empty list
+
+ kernel/timer.c | 30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
