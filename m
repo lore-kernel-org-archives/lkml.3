@@ -1,83 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaB1GM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 01:12:59 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:40673 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaB1GM6 (ORCPT
+	id S1751457AbaB1GN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 01:13:27 -0500
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:30224
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750820AbaB1GNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 01:12:58 -0500
-Date: Fri, 28 Feb 2014 06:12:54 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: "alan@linux.intel.com" <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Len.Brown@intel.com, Adam Williamson <awilliam@redhat.com>
-Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
- sequence loop
-Message-ID: <20140228061254.GA2226@srcf.ucam.org>
-References: <53100C8D.1060001@linux.intel.com>
- <20140228045637.GA28257@srcf.ucam.org>
- <53101D1D.9010202@linux.intel.com>
- <20140228055629.GA847@srcf.ucam.org>
- <531027BE.2010807@linux.intel.com>
+	Fri, 28 Feb 2014 01:13:25 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <vinod.koul@intel.com>, <brian.austin@cirrus.com>,
+        <Paul.Handrigan@cirrus.com>, <timur@tabi.org>, <mr.swami.reddy@ti.com>,
+        <vishwas.a.deshpande@ti.com>, <fabio.estevam@freescale.com>,
+        <kuninori.morimoto.gx@renesas.com>, <sachin.kamat@linaro.org>,
+        <Adam.Thomson.Opensource@diasemi.com>, <dgreid@chromium.org>,
+        <abrestic@chromium.org>, <swarren@nvidia.com>, <shc_work@mail.ru>,
+        <s.trumtrar@pengutronix.de>, <bardliao@realtek.com>,
+        <shawn.guo@linaro.org>, <LW@KARO-electronics.de>, <mpa@pengutronix.de>,
+        <peter.ujfalusi@ti.com>, <Andreas.Irestal@axis.com>,
+        <ckeepax@opensource.wolfsonmicro.com>,
+        <rf@opensource.wolfsonmicro.com>, <viresh.kumar@linaro.org>,
+        <axel.lin@ingics.com>, <alban.bedel@avionic-design.de>,
+        <voice.shen@atmel.com>, <jic23@kernel.org>, <mahaijuns@gmail.com>,
+        <mike.dyer@md-soft.co.uk>, <b42378@freescale.com>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 0/2] Simplify the CODEC ASoC probe code.
+Date: Fri, 28 Feb 2014 13:06:47 +0800
+Message-ID: <1393564009-15968-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <531027BE.2010807@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 02:07:58PM +0800, Li, Aubrey wrote:
-> On 2014/2/28 13:56, Matthew Garrett wrote:
-> > Probably, once we've got those patches landed (I've lost track of 
-> > whether they're in 3.13 or aimed at 3.14)
-> 
-> You didn't look the reference I quoted in the patch.
-> 
-> It's stable if 32/64 bit linux call the corresponding 32/64bit EFI
-> runtime service. Matt Fleming's mixed mode is aiming at 3.15:
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/log/?h=mixed-mode
+Most of the CODECs' ASoC probe code could be simplified directly, while
+for wm5110 and wm8997 CODEC drivers need much more research and examination.
 
-It's stable as long as you have the 1:1 mapping patches, which are 
-different to the mixed mode patches. Otherwise it'll work on some 
-hardware and crash on others.
 
-> > Mm. Not all x86 platforms support cf8/cf9 (Moorestown, for instance) and 
-> > so it's theoretically possible that they'd put some different hardware 
-> > there instead. But then, Moorestown probably has its own reboot code, so 
-> > that may not matter?
-> 
-> Yes, Moorestown has its own machine_ops. Instead of the system hanging
-> after issue "reboot" command, I think and suggest CF9 is worth to have a
-> try.
 
-Writing to arbitrary register addresses isn't a good plan if we're on a 
-platform that might have different hardware there.
+Xiubo Li (2):
+  ASoC: codec: Simplify ASoC probe code.
+  ASoC: io: Remove reduntant params of snd_soc_codec_set_cache_io()
 
-> >> Reset register address: 0xCF9
-> >> Value to cause reset:   0x6
-> > 
-> > Huh. But that's almost exactly what the PCI reboot code would do. Why 
-> > does the PCI method work but the ACPI one fail? Does it really depend on 
-> > ORing the original value with the reset value? Or is the timing just 
-> > somehow marginal?
-> 
-> reboot returns at:
-> 
-> if (!(acpi_gbl_FADT.flags & ACPI_FADT_RESET_REGISTER))
->                 return;
-> 
-> This is a ACPI bug or intention, who knows.
-
-Well, how about we figure that out? Is there a full acpi dump of one of 
-these machines somewhere?
+ include/sound/soc.h              |  1 -
+ sound/soc/codecs/ad193x.c        |  7 -------
+ sound/soc/codecs/adau1373.c      |  6 ------
+ sound/soc/codecs/adav80x.c       |  6 ------
+ sound/soc/codecs/ak4535.c        |  6 ------
+ sound/soc/codecs/ak4641.c        |  6 ------
+ sound/soc/codecs/ak4642.c        |  6 ------
+ sound/soc/codecs/ak4671.c        |  6 ------
+ sound/soc/codecs/alc5623.c       |  7 -------
+ sound/soc/codecs/alc5632.c       |  8 --------
+ sound/soc/codecs/cq93vc.c        |  2 --
+ sound/soc/codecs/cs4270.c        |  9 ---------
+ sound/soc/codecs/cs42l51.c       |  6 ------
+ sound/soc/codecs/cs42l52.c       |  6 ------
+ sound/soc/codecs/cs42l73.c       |  8 --------
+ sound/soc/codecs/da7210.c        |  7 -------
+ sound/soc/codecs/da7213.c        |  7 -------
+ sound/soc/codecs/da732x.c        |  8 --------
+ sound/soc/codecs/da9055.c        |  7 -------
+ sound/soc/codecs/isabelle.c      | 16 ----------------
+ sound/soc/codecs/lm49453.c       | 17 -----------------
+ sound/soc/codecs/max9768.c       |  5 -----
+ sound/soc/codecs/max98088.c      |  6 ------
+ sound/soc/codecs/max98090.c      |  8 --------
+ sound/soc/codecs/max98095.c      |  6 ------
+ sound/soc/codecs/max9850.c       |  6 ------
+ sound/soc/codecs/mc13783.c       |  7 -------
+ sound/soc/codecs/ml26124.c       |  7 -------
+ sound/soc/codecs/rt5631.c        |  8 --------
+ sound/soc/codecs/rt5640.c        |  7 -------
+ sound/soc/codecs/sn95031.c       |  2 --
+ sound/soc/codecs/ssm2518.c       |  7 -------
+ sound/soc/codecs/ssm2602.c       |  7 -------
+ sound/soc/codecs/sta32x.c        | 10 ----------
+ sound/soc/codecs/sta529.c        |  7 -------
+ sound/soc/codecs/tlv320aic23.c   |  6 ------
+ sound/soc/codecs/tlv320aic26.c   |  2 --
+ sound/soc/codecs/tlv320aic32x4.c |  2 --
+ sound/soc/codecs/tlv320aic3x.c   |  6 ------
+ sound/soc/codecs/wm2000.c        |  2 --
+ sound/soc/codecs/wm2200.c        |  7 -------
+ sound/soc/codecs/wm5100.c        |  7 -------
+ sound/soc/codecs/wm5102.c        |  6 ------
+ sound/soc/codecs/wm5110.c        |  2 +-
+ sound/soc/codecs/wm8350.c        |  4 ----
+ sound/soc/codecs/wm8400.c        |  3 ---
+ sound/soc/codecs/wm8510.c        |  6 ------
+ sound/soc/codecs/wm8523.c        |  6 ------
+ sound/soc/codecs/wm8580.c        |  6 ------
+ sound/soc/codecs/wm8711.c        |  6 ------
+ sound/soc/codecs/wm8728.c        |  7 -------
+ sound/soc/codecs/wm8731.c        |  7 -------
+ sound/soc/codecs/wm8737.c        |  6 ------
+ sound/soc/codecs/wm8741.c        |  6 ------
+ sound/soc/codecs/wm8750.c        |  6 ------
+ sound/soc/codecs/wm8753.c        |  7 -------
+ sound/soc/codecs/wm8770.c        |  6 ------
+ sound/soc/codecs/wm8776.c        |  6 ------
+ sound/soc/codecs/wm8804.c        |  8 --------
+ sound/soc/codecs/wm8900.c        |  6 ------
+ sound/soc/codecs/wm8903.c        |  7 -------
+ sound/soc/codecs/wm8904.c        |  8 --------
+ sound/soc/codecs/wm8940.c        |  6 ------
+ sound/soc/codecs/wm8955.c        |  8 --------
+ sound/soc/codecs/wm8960.c        |  6 ------
+ sound/soc/codecs/wm8961.c        |  6 ------
+ sound/soc/codecs/wm8962.c        |  7 -------
+ sound/soc/codecs/wm8971.c        |  6 ------
+ sound/soc/codecs/wm8974.c        |  6 ------
+ sound/soc/codecs/wm8978.c        |  6 ------
+ sound/soc/codecs/wm8983.c        |  6 ------
+ sound/soc/codecs/wm8985.c        |  7 -------
+ sound/soc/codecs/wm8988.c        |  7 -------
+ sound/soc/codecs/wm8990.c        |  6 ------
+ sound/soc/codecs/wm8991.c        |  6 ------
+ sound/soc/codecs/wm8993.c        |  7 -------
+ sound/soc/codecs/wm8994.c        |  3 ---
+ sound/soc/codecs/wm8995.c        |  7 -------
+ sound/soc/codecs/wm8996.c        |  8 --------
+ sound/soc/codecs/wm8997.c        |  2 +-
+ sound/soc/codecs/wm9081.c        |  8 --------
+ sound/soc/codecs/wm9090.c        |  7 -------
+ sound/soc/soc-core.c             |  2 +-
+ sound/soc/soc-io.c               |  4 ----
+ 84 files changed, 3 insertions(+), 524 deletions(-)
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.8.4
+
+
