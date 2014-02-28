@@ -1,71 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbaB1HTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:19:00 -0500
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:37970
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750719AbaB1HS7 convert rfc822-to-8bit (ORCPT
+	id S1751750AbaB1HWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:22:52 -0500
+Received: from www84.your-server.de ([213.133.104.84]:40420 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaB1HWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:18:59 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
- regmap.
-Thread-Topic: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up
- try regmap.
-Thread-Index: AQHPM6qACYVR5A4ww0ayWu7DY52qF5rKCb6AgAAA4rCAABoHAIAAB6RAgAALwACAAAAvYIAAAhGAgAAEQ0CAAAPJgIAAAKpg
-Date: Fri, 28 Feb 2014 07:18:54 +0000
-Message-ID: <497c5d0ca8914036a8adfc23a73b1979@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com>
- <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com>
- <20140228035244.GJ9383@sirena.org.uk>
- <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com>
- <20140228052904.GP9383@sirena.org.uk>
- <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
- <53102EE4.80702@metafoo.de>
- <d872d0fd60eb4c01b38af98014c802aa@BY2PR03MB505.namprd03.prod.outlook.com>
- <531030C7.2060703@metafoo.de>
- <5d534c2ac77040d9bc373db9e43dde7c@BY2PR03MB505.namprd03.prod.outlook.com>
- <53103787.2020702@metafoo.de>
-In-Reply-To: <53103787.2020702@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0136C1DDA4
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(51704005)(86362001)(81342001)(83322001)(54316002)(56776001)(47736001)(81542001)(47446002)(47976001)(69226001)(87266001)(2656002)(76482001)(4396001)(46102001)(74502001)(87936001)(93136001)(49866001)(93516002)(50986001)(92566001)(80976001)(33646001)(74662001)(51856001)(53806001)(85306002)(74366001)(59766001)(81816001)(63696002)(74316001)(81686001)(76576001)(76786001)(76796001)(66066001)(74876001)(74706001)(83072002)(85852003)(54356001)(95666003)(94946001)(31966008)(94316002)(95416001)(79102001)(77982001)(65816001)(80022001)(90146001)(56816005)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB427;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:E5F2CF0F.29E08445.B8D232EB.52E0DFD4.200AB;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Fri, 28 Feb 2014 02:22:49 -0500
+Message-ID: <1393572151.1019.4.camel@wall-e.seibold.net>
+Subject: Re: [PATCH v2 3/4] x86: Patch alternatives in the 32-bit vDSO
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Fri, 28 Feb 2014 08:22:31 +0100
+In-Reply-To: <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
+References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
+	 <cover.1393545985.git.luto@amacapital.net>
+	 <09bf3b51cae30d91b5e8fb05453c1d8d886d3839.1393545985.git.luto@amacapital.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
+> rdtsc_barrier() needs this.
 > 
-> A quick grep reveals:
-> mc13783.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
-> si476x.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
-> wm5102.c:	codec->control_data = priv->core.arizona->regmap;
-> wm5110.c:	codec->control_data = priv->core.arizona->regmap;
-> wm8997.c:	codec->control_data = priv->core.arizona->regmap;
+
+Thanks for doing this.
+
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  arch/x86/include/asm/vdso.h  |  2 ++
+>  arch/x86/vdso/vdso32-setup.c | 25 +++++++++++++------------
+>  arch/x86/vdso/vma.c          |  9 ++++++---
+>  3 files changed, 21 insertions(+), 15 deletions(-)
 > 
-> But there might be more.
->
+> diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+> index 6db8b23..a844f90 100644
+> --- a/arch/x86/include/asm/vdso.h
+> +++ b/arch/x86/include/asm/vdso.h
+> @@ -40,4 +40,6 @@ extern const char vdso32_int80_start, vdso32_int80_end;
+>  extern const char vdso32_syscall_start, vdso32_syscall_end;
+>  extern const char vdso32_sysenter_start, vdso32_sysenter_end;
+>  
+> +void __init patch_vdso32(void *vdso, size_t len);
+> +
+>  #endif /* _ASM_X86_VDSO_H */
+> diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+> index 6b74a46..b37aa1d 100644
+> --- a/arch/x86/vdso/vdso32-setup.c
+> +++ b/arch/x86/vdso/vdso32-setup.c
+> @@ -273,29 +273,30 @@ static void map_compat_vdso(int map)
+>  
+>  int __init sysenter_setup(void)
+>  {
+> -	void *syscall_page = (void *)get_zeroed_page(GFP_ATOMIC);
+> -	const void *vsyscall;
+> -	size_t vsyscall_len;
+> +	void *vdso_page = (void *)get_zeroed_page(GFP_ATOMIC);
+> +	const void *vdso;
+> +	size_t vdso_len;
+>  
+> -	vdso32_pages[0] = virt_to_page(syscall_page);
+> +	vdso32_pages[0] = virt_to_page(vdso_page);
+>  
+>  #ifdef CONFIG_X86_32
+>  	gate_vma_init();
+>  #endif
+>  
+>  	if (vdso32_syscall()) {
+> -		vsyscall = &vdso32_syscall_start;
+> -		vsyscall_len = &vdso32_syscall_end - &vdso32_syscall_start;
+> +		vdso = &vdso32_syscall_start;
+> +		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
+>  	} else if (vdso32_sysenter()){
+> -		vsyscall = &vdso32_sysenter_start;
+> -		vsyscall_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
+> +		vdso = &vdso32_sysenter_start;
+> +		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
+>  	} else {
+> -		vsyscall = &vdso32_int80_start;
+> -		vsyscall_len = &vdso32_int80_end - &vdso32_int80_start;
+> +		vdso = &vdso32_int80_start;
+> +		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
+>  	}
+>  
+> -	memcpy(syscall_page, vsyscall, vsyscall_len);
+> -	relocate_vdso(syscall_page);
+> +	memcpy(vdso_page, vdso, vdso_len);
+> +	patch_vdso32(vdso_page, vdso_len);
+> +	relocate_vdso(vdso_page);
+>  
+>  	return 0;
+>  }
+> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+> index 431e875..149caa1 100644
+> --- a/arch/x86/vdso/vma.c
+> +++ b/arch/x86/vdso/vma.c
+> @@ -28,8 +28,11 @@ static unsigned vdso_size;
+>  extern char vdsox32_start[], vdsox32_end[];
+>  extern struct page *vdsox32_pages[];
+>  static unsigned vdsox32_size;
+> +#endif
+>  
+> -static void __init patch_vdsox32(void *vdso, size_t len)
+> +#if defined(CONFIG_X86_32) || defined(CONFIG_X86_X32_ABI) || \
+> +	defined(CONFIG_COMPAT)
+> +void __init patch_vdso32(void *vdso, size_t len)
+>  {
+>  	Elf32_Ehdr *hdr = vdso;
+>  	Elf32_Shdr *sechdrs, *alt_sec = 0;
+> @@ -52,7 +55,7 @@ static void __init patch_vdsox32(void *vdso, size_t len)
+>  	}
+>  
+>  	/* If we get here, it's probably a bug. */
+> -	pr_warning("patch_vdsox32: .altinstructions not found\n");
+> +	pr_warning("patch_vdso32: .altinstructions not found\n");
+>  	return;  /* nothing to patch */
+>  
+>  found:
+> @@ -104,7 +107,7 @@ static int __init init_vdso(void)
+>  		vdso_pages[i] = virt_to_page(vdso_start + i*PAGE_SIZE);
+>  
+>  #ifdef CONFIG_X86_X32_ABI
+> -	patch_vdsox32(vdsox32_start, vdsox32_end - vdsox32_start);
+> +	patch_vdso32(vdsox32_start, vdsox32_end - vdsox32_start);
+>  	npages = (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE;
+>  	vdsox32_size = npages << PAGE_SHIFT;
+>  	for (i = 0; i < npages; i++)
 
-Yes, I'll check it more carefully...
-
-Thanks very much.
-
-
-Best Regards,
-Xiubo
- 
 
