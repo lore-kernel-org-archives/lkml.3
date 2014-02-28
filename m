@@ -1,403 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaB1HkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:40:22 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:34749 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960AbaB1HkT (ORCPT
+	id S1751408AbaB1HvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:51:04 -0500
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:9564
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750873AbaB1HvC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:40:19 -0500
-Date: Fri, 28 Feb 2014 08:40:15 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com, josh@joshtriplett.org,
-        pebolle@tiscali.nl, shaibal.dutta@broadcom.com,
-        paul.gortmaker@windriver.com, mst@redhat.com, tj@kernel.org,
-        fweisbec@gmail.com, laijs@cn.fujitsu.com, peter@hurleysoftware.com,
-        gregkh@linuxfoundation.org, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, rusty@rustcorp.com.au
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.15
-Message-ID: <20140228074015.GA20113@gmail.com>
-References: <20140228014728.GA23789@linux.vnet.ibm.com>
+	Fri, 28 Feb 2014 02:51:02 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up try
+ regmap.
+Thread-Topic: [alsa-devel] [PATCH 2/3] ASoC: core: Set the default I/O up
+ try regmap.
+Thread-Index: AQHPM6qACYVR5A4ww0ayWu7DY52qF5rKCb6AgAAA4rCAABoHAIAAB6RAgAALwACAAAAvYIAAAhGAgAAEQ0CAAAPJgIAACEhQ
+Date: Fri, 28 Feb 2014 07:50:41 +0000
+Message-ID: <049024c359df495fb8acedd96e574ce2@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1393494593-26310-1-git-send-email-Li.Xiubo@freescale.com>
+ <1393494593-26310-3-git-send-email-Li.Xiubo@freescale.com>
+ <20140228035244.GJ9383@sirena.org.uk>
+ <c405df11848a40b7beda8d8fe747e7a7@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140228052904.GP9383@sirena.org.uk>
+ <1b89016263c84e0297655034a648032f@BY2PR03MB505.namprd03.prod.outlook.com>
+ <53102EE4.80702@metafoo.de>
+ <d872d0fd60eb4c01b38af98014c802aa@BY2PR03MB505.namprd03.prod.outlook.com>
+ <531030C7.2060703@metafoo.de>
+ <5d534c2ac77040d9bc373db9e43dde7c@BY2PR03MB505.namprd03.prod.outlook.com>
+ <53103787.2020702@metafoo.de>
+In-Reply-To: <53103787.2020702@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0136C1DDA4
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(164054003)(189002)(199002)(51704005)(63696002)(93136001)(90146001)(66066001)(69226001)(76576001)(95666003)(93516002)(56816005)(76786001)(76796001)(81342001)(47976001)(80022001)(65816001)(56776001)(4396001)(74876001)(74706001)(46102001)(47736001)(94316002)(50986001)(77982001)(49866001)(53806001)(85306002)(47446002)(86362001)(92566001)(95416001)(76482001)(54356001)(74502001)(31966008)(94946001)(74316001)(54316002)(85852003)(83322001)(33646001)(79102001)(87936001)(59766001)(51856001)(74366001)(81686001)(83072002)(80976001)(2656002)(81816001)(87266001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB425;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:60E1FF03.2920E119.7CE230FF.52D0BF5E.20127;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228014728.GA23789@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> A quick grep reveals:
+> mc13783.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+> si476x.c:	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+> wm5102.c:	codec->control_data = priv->core.arizona->regmap;
+> wm5110.c:	codec->control_data = priv->core.arizona->regmap;
+> wm8997.c:	codec->control_data = priv->core.arizona->regmap;
+> 
+> But there might be more.
+> 
 
-> Hello, Ingo,
-> 
-> The major changes to this series are:
-> 
-> 1.	Update RCU documentation.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/2/17/555.
-> 
-> 2.	Miscellaneous fixes.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/2/17/530.  Note that two of these
-> 	are RCU changes to other maintainer's trees: add1f0995454
-> 	(fs) and 8857563b819b (notifer), both of which substitute
-> 	rcu_access_pointer() for rcu_dereference_raw().
-> 
-> 3.	Real-time latency fixes.  These were posted to LKML at
-> 	https://lkml.org/lkml/2014/2/17/544.
-> 
-> 4.	Torture-test changes, including refactoring of rcutorture
-> 	and introduction of a vestigial locktorture.  These were posted
-> 	to LKML at https://lkml.org/lkml/2014/2/17/599.
-> 
-> All of these have been exposed to -next testing.
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> for you to fetch changes up to f5604f67fe8cbd6f2088b20b9463f721aa613d4b:
-> 
->   Merge branch 'torture.2014.02.23a' into HEAD (2014-02-26 06:38:59 -0800)
-> 
-> ----------------------------------------------------------------
-> 
-> Joe Perches (2):
->       rcu: Glue ASCII strings together
->       rcu: Indentation and spacing fixes.
-> 
-> Paul Bolle (2):
->       rcu: Disambiguate CONFIG_RCU_NOCB_CPUs
->       rcutorture: Rename TREE_RCU-Kconfig.txt
-> 
-> Paul E. McKenney (71):
->       documentation: Document call_rcu() safety mechanisms and limitations
->       Documentation/memory-barriers.txt: ACCESS_ONCE() provides cache coherence
->       Documentation/memory-barriers.txt: Conditional must use prior load
->       Documentation/kernel-per-CPU-kthreads.txt: Workqueue affinity
->       Documentation/memory-barriers.txt: Need barriers() for some control dependencies
->       documentation: Fix some inconsistencies in RTFP.txt
->       rcu: Add ACCESS_ONCE() to ->n_force_qs_lh accesses
->       rcu: Stop tracking FSF's postal address
->       rcu: Remove ACCESS_ONCE() from jiffies
->       rcu: Define rcu_assign_pointer() in terms of smp_store_release()
->       fs: Substitute rcu_access_pointer() for rcu_dereference_raw()
->       rcu: Optimize rcu_is_nocb_cpu() for RCU_NOCB_CPU_ALL
->       rcu: Optimize rcu_needs_cpu() for RCU_NOCB_CPU_ALL
->       rcu: Optimize RCU_FAST_NO_HZ for RCU_NOCB_CPU_ALL
->       rcutorture: Print grace-period performance statistics
->       rcutorture: Print script and arguments to standard output
->       rcutorture: Move common boot flags to kvm-test-1-rcu.sh
->       rcutorture: Allow kvm-test-1-rcu.sh to pause after build
->       rcutorture: Move common qemu flags to kvm-test-1.sh
->       rcutorture: Reduce SRCU-N number of CPUs
->       rcutorture: Enable concurrent rcutorture runs
->       rcutorture: Fix results-directory error message
->       rcutorture: Add dryrun capability
->       rcutorture: Handle multiple runs of the same test
->       rcutorture: Do better bin packing
->       rcutorture: Add comments, especially on bin packing.
->       rcutorture: Flag tests requiring more CPUs than are available
->       rcutorture: Print results directory when dumping results
->       rcutorture: Fix checkpatch complaint
->       rcutorture: Abstract rcu_torture_random()
->       rcutorture: Don't create results directory for dryruns
->       rcutorture: Abstract torture_param()
->       rcutorture: Rename PRINTK to TOROUT
->       rcutorture: Abstract TOROUT_STRING() and friends
->       rcutorture: Abstract torture_shutdown_absorb()
->       rcutorture: Abstract torture_shuffle()
->       rcutorture: Abstract torture_onoff()
->       rcutorture: Abstract torture-test initialization
->       rcutorture: Abstract torture-test cleanup
->       rcutorture: Print dates when doing parallel rcutorture runs
->       rcutorture: Abstract torture_shutdown_notify()
->       rcutorture: Privatize fullstop
->       rcutorture: Add diagnostic for unscheduled system shutdown
->       rcutorture: Abstract stutter_wait()
->       rcutorture: Apply ACCESS_ONCE() to racy fullstop accesses
->       rcutorture: Abstract torture_shutdown()
->       rcutorture: Clean up rcu_torture_init() error checking
->       rcutorture: Announce task creation
->       rcutorture: Fix rcutorture shutdown races
->       rcutorture: Fix missing-return bug in rcu_torture_barrier_init()
->       rcutorture: Abstract torture_create_kthread()
->       rcutorture: Abstract torture_stop_kthread()
->       rcutorture: Stop generic kthreads in torture_cleanup()
->       rcutorture: Abstract kvm-recheck.sh
->       locktorture: Add a lock-torture kernel module
->       rcutorture: Add an rcu_busted to test the test
->       rcutorture: Create config files for scripted test-the-test testing
->       rcutorture: Create CFcommon file for common Kconfig parameters
->       rcutorture: Remove RCU dependencies from ver_functions.sh API
->       rcutorture: Rename kvm-test-1-rcu.sh
->       rcutorture: Introduce "rcu" directory level underneath configs
->       locktorture: Add vestigial locktorture configuration
->       rcutorture: Gracefully handle NULL cleanup hooks
->       locktorture: Add kvm-recheck.sh plug-in for locktorture
->       rcutorture: Place kvm-test-1-run.sh output into res directory
->       rcutorture: Add a lock_busted to test the test
->       rcutorture: Save kvm.sh output to log
->       Documentation/memory-barriers.txt: Clarify release/acquire ordering
->       notifier: Substitute rcu_access_pointer() for rcu_dereference_raw()
->       Merge branches 'doc.2014.02.24a', 'fixes.2014.02.26a' and 'rt.2014.02.17b' into HEAD
->       Merge branch 'torture.2014.02.23a' into HEAD
-> 
-> Paul Gortmaker (2):
->       rcu: Fix sparse warning for rcu_expedited from kernel/ksysfs.c
->       rcu: Ensure kernel/rcu/rcu.h can be sourced/used stand-alone
-> 
-> Shaibal Dutta (1):
->       rcu: Move SRCU grace period work to power efficient workqueue
-> 
->  Documentation/RCU/RTFP.txt                         | 149 ++-
->  Documentation/RCU/checklist.txt                    |  18 +-
->  Documentation/kernel-per-CPU-kthreads.txt          |  13 +-
->  Documentation/memory-barriers.txt                  | 137 ++-
->  fs/file.c                                          |   2 +-
->  include/linux/rculist.h                            |  17 +-
->  include/linux/rcupdate.h                           |  94 +-
->  include/linux/rcutiny.h                            |  10 +-
->  include/linux/rcutree.h                            |   6 +-
->  include/linux/srcu.h                               |   4 +-
->  include/linux/torture.h                            | 100 +++
->  kernel/Makefile                                    |   1 +
->  kernel/ksysfs.c                                    |   2 +
->  kernel/locking/Makefile                            |   1 +
->  kernel/locking/locktorture.c                       | 452 ++++++++++
->  kernel/notifier.c                                  |   2 +-
->  kernel/rcu/Makefile                                |   2 +-
->  kernel/rcu/rcu.h                                   |   7 +-
->  kernel/rcu/{torture.c => rcutorture.c}             | 996 +++++----------------
->  kernel/rcu/srcu.c                                  |  11 +-
->  kernel/rcu/tiny.c                                  |   8 +-
->  kernel/rcu/tiny_plugin.h                           |   4 +-
->  kernel/rcu/tree.c                                  |  18 +-
->  kernel/rcu/tree.h                                  |   4 +-
->  kernel/rcu/tree_plugin.h                           |  19 +-
->  kernel/rcu/tree_trace.c                            |   6 +-
->  kernel/rcu/update.c                                |   5 +-
->  kernel/torture.c                                   | 719 +++++++++++++++
->  lib/Kconfig.debug                                  |  20 +
->  .../testing/selftests/rcutorture/bin/functions.sh  |   1 +
->  .../selftests/rcutorture/bin/kvm-recheck-lock.sh   |  51 ++
->  .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |  51 ++
->  .../selftests/rcutorture/bin/kvm-recheck.sh        |  13 +-
->  .../bin/{kvm-test-1-rcu.sh => kvm-test-1-run.sh}   |  53 +-
->  tools/testing/selftests/rcutorture/bin/kvm.sh      | 276 +++++-
->  .../selftests/rcutorture/configs/lock/BUSTED       |   6 +
->  .../selftests/rcutorture/configs/lock/BUSTED.boot  |   1 +
->  .../selftests/rcutorture/configs/lock/CFLIST       |   1 +
->  .../selftests/rcutorture/configs/lock/CFcommon     |   2 +
->  .../selftests/rcutorture/configs/lock/LOCK01       |   6 +
->  .../rcutorture/configs/lock/ver_functions.sh       |  43 +
->  .../selftests/rcutorture/configs/rcu/BUSTED        |   7 +
->  .../selftests/rcutorture/configs/rcu/BUSTED.boot   |   1 +
->  .../selftests/rcutorture/configs/{ => rcu}/CFLIST  |   0
->  .../selftests/rcutorture/configs/rcu/CFcommon      |   2 +
->  .../selftests/rcutorture/configs/{ => rcu}/SRCU-N  |   3 +-
->  .../rcutorture/configs/{ => rcu}/SRCU-N.boot       |   0
->  .../selftests/rcutorture/configs/{ => rcu}/SRCU-P  |   1 -
->  .../rcutorture/configs/{ => rcu}/SRCU-P.boot       |   0
->  .../selftests/rcutorture/configs/{ => rcu}/TINY01  |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TINY02  |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TREE01  |   1 -
->  .../rcutorture/configs/{ => rcu}/TREE01.boot       |   0
->  .../selftests/rcutorture/configs/{ => rcu}/TREE02  |   3 +-
->  .../selftests/rcutorture/configs/{ => rcu}/TREE03  |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TREE04  |   1 -
->  .../rcutorture/configs/{ => rcu}/TREE04.boot       |   0
->  .../selftests/rcutorture/configs/{ => rcu}/TREE05  |   1 -
->  .../rcutorture/configs/{ => rcu}/TREE05.boot       |   0
->  .../selftests/rcutorture/configs/{ => rcu}/TREE06  |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TREE07  |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TREE08  |   1 -
->  .../rcutorture/configs/{ => rcu}/TREE08-T          |   1 -
->  .../selftests/rcutorture/configs/{ => rcu}/TREE09  |   1 -
->  .../rcutorture/configs/{ => rcu}/v0.0/CFLIST       |   0
->  .../configs/{ => rcu}/v0.0/N1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v0.0/N2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v0.0/N3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v0.0/N4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v0.0/N5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v0.0/NT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v0.0/NT3-NH       |   0
->  .../configs/{ => rcu}/v0.0/P1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v0.0/P2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v0.0/P3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v0.0/P4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v0.0/P5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v0.0/PT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v0.0/PT2-NH       |   0
->  .../configs/{ => rcu}/v0.0/ver_functions.sh        |  22 +-
->  .../rcutorture/configs/{ => rcu}/v3.12/CFLIST      |   0
->  .../configs/{ => rcu}/v3.12/N1-S-T-NH-SD-SMP-HP    |   0
->  .../configs/{ => rcu}/v3.12/N2-2-t-nh-sd-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/N3-3-T-nh-SD-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/N4-A-t-NH-sd-SMP-HP    |   0
->  .../configs/{ => rcu}/v3.12/N5-U-T-NH-sd-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/N6---t-nh-SD-smp-hp    |   0
->  .../configs/{ => rcu}/v3.12/N7-4-T-NH-SD-SMP-HP    |   0
->  .../configs/{ => rcu}/v3.12/N8-2-T-NH-SD-SMP-HP    |   0
->  .../rcutorture/configs/{ => rcu}/v3.12/NT1-nh      |   0
->  .../rcutorture/configs/{ => rcu}/v3.12/NT3-NH      |   0
->  .../configs/{ => rcu}/v3.12/P1-S-T-NH-SD-SMP-HP    |   0
->  .../configs/{ => rcu}/v3.12/P2-2-t-nh-sd-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/P3-3-T-nh-SD-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/P4-A-t-NH-sd-SMP-HP    |   0
->  .../configs/{ => rcu}/v3.12/P5-U-T-NH-sd-SMP-hp    |   0
->  .../configs/{ => rcu}/v3.12/P6---t-nh-SD-smp-hp    |   0
->  .../configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP    |   0
->  .../{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP-all        |   0
->  .../{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP-none       |   0
->  .../configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-hp    |   0
->  .../rcutorture/configs/{ => rcu}/v3.12/PT1-nh      |   0
->  .../rcutorture/configs/{ => rcu}/v3.12/PT2-NH      |   0
->  .../rcutorture/configs/{ => rcu}/v3.3/CFLIST       |   0
->  .../configs/{ => rcu}/v3.3/N1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.3/N2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.3/N3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.3/N4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.3/N5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v3.3/NT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v3.3/NT3-NH       |   0
->  .../configs/{ => rcu}/v3.3/P1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.3/P2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.3/P3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.3/P4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.3/P5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v3.3/PT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v3.3/PT2-NH       |   0
->  .../configs/{ => rcu/v3.3}/ver_functions.sh        |  28 +-
->  .../rcutorture/configs/{ => rcu}/v3.5/CFLIST       |   0
->  .../configs/{ => rcu}/v3.5/N1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.5/N2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.5/N3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.5/N4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.5/N5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v3.5/NT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v3.5/NT3-NH       |   0
->  .../configs/{ => rcu}/v3.5/P1-S-T-NH-SD-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.5/P2-2-t-nh-sd-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.5/P3-3-T-nh-SD-SMP-hp     |   0
->  .../configs/{ => rcu}/v3.5/P4-A-t-NH-sd-SMP-HP     |   0
->  .../configs/{ => rcu}/v3.5/P5-U-T-NH-sd-SMP-hp     |   0
->  .../rcutorture/configs/{ => rcu}/v3.5/PT1-nh       |   0
->  .../rcutorture/configs/{ => rcu}/v3.5/PT2-NH       |   0
->  .../configs/{ => rcu}/v3.5/ver_functions.sh        |  23 +-
->  .../configs/{v3.3 => rcu}/ver_functions.sh         |  26 +-
->  .../{TREE_RCU-Kconfig.txt => TREE_RCU-kconfig.txt} |   0
->  137 files changed, 2384 insertions(+), 1074 deletions(-)
->  create mode 100644 include/linux/torture.h
->  create mode 100644 kernel/locking/locktorture.c
->  rename kernel/rcu/{torture.c => rcutorture.c} (59%)
->  create mode 100644 kernel/torture.c
->  create mode 100755 tools/testing/selftests/rcutorture/bin/kvm-recheck-lock.sh
->  create mode 100755 tools/testing/selftests/rcutorture/bin/kvm-recheck-rcu.sh
->  rename tools/testing/selftests/rcutorture/bin/{kvm-test-1-rcu.sh => kvm-test-1-run.sh} (79%)
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/BUSTED
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/BUSTED.boot
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/CFLIST
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/CFcommon
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK01
->  create mode 100644 tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/BUSTED
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/BUSTED.boot
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/CFLIST (100%)
->  create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/CFcommon
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/SRCU-N (75%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/SRCU-N.boot (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/SRCU-P (86%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/SRCU-P.boot (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TINY01 (92%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TINY02 (92%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE01 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE01.boot (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE02 (92%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE03 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE04 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE04.boot (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE05 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE05.boot (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE06 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE07 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE08 (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE08-T (96%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/TREE09 (95%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/CFLIST (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/N1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/N2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/N3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/N4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/N5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/NT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/NT3-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/P1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/P2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/P3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/P4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/P5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/PT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/PT2-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v0.0/ver_functions.sh (70%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/CFLIST (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N6---t-nh-SD-smp-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N7-4-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/N8-2-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/NT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/NT3-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P6---t-nh-SD-smp-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP-all (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-HP-none (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/P7-4-T-NH-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/PT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.12/PT2-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/CFLIST (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/N1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/N2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/N3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/N4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/N5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/NT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/NT3-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/P1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/P2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/P3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/P4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/P5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/PT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.3/PT2-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu/v3.3}/ver_functions.sh (72%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/CFLIST (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/N1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/N2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/N3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/N4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/N5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/NT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/NT3-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/P1-S-T-NH-SD-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/P2-2-t-nh-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/P3-3-T-nh-SD-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/P4-A-t-NH-sd-SMP-HP (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/P5-U-T-NH-sd-SMP-hp (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/PT1-nh (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/PT2-NH (100%)
->  rename tools/testing/selftests/rcutorture/configs/{ => rcu}/v3.5/ver_functions.sh (69%)
->  rename tools/testing/selftests/rcutorture/configs/{v3.3 => rcu}/ver_functions.sh (66%)
->  rename tools/testing/selftests/rcutorture/doc/{TREE_RCU-Kconfig.txt => TREE_RCU-kconfig.txt} (100%)
+I have found the following ones, who are using MFD & set_cache_io.
 
-Pulled, thanks a lot Paul!
+   1    143  sound/soc/codecs/cq93vc.c <<cq93vc_probe>>
+             snd_soc_codec_set_cache_io(codec, 32, 32, SND_SOC_REGMAP);
+   2    618  sound/soc/codecs/mc13783.c <<mc13783_probe>>
+             ret = snd_soc_codec_set_cache_io(codec, 8, 24, SND_SOC_REGMAP);
+   3   1765  sound/soc/codecs/wm5102.c <<wm5102_codec_probe>>
+             ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
+   4   1593  sound/soc/codecs/wm5110.c <<wm5110_codec_probe>>
+             ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
+   5   1510  sound/soc/codecs/wm8350.c <<wm8350_codec_probe>>
+             snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_REGMAP);
+   6   1322  sound/soc/codecs/wm8400.c <<wm8400_codec_probe>>
+             snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_REGMAP);
+   7   4004  sound/soc/codecs/wm8994.c <<wm8994_codec_probe>>
+             snd_soc_codec_set_cache_io(codec, 16, 16, SND_SOC_REGMAP);
+   8   1058  sound/soc/codecs/wm8997.c <<wm8997_codec_probe>>
+             ret = snd_soc_codec_set_cache_io(codec, 32, 16, SND_SOC_REGMAP);
 
-	Ingo
+
+Thanks,
+
+--
+Best regards,
+Xiubo
