@@ -1,91 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaB1KpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:45:17 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43824 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532AbaB1KpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:45:14 -0500
-Message-ID: <531068AB.5060600@ti.com>
-Date: Fri, 28 Feb 2014 12:44:59 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751910AbaB1KqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:46:22 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:50544 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750927AbaB1KqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 05:46:20 -0500
+Message-ID: <531068F4.3060903@free-electrons.com>
+Date: Fri, 28 Feb 2014 11:46:12 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Gerd Hoffmann <kraxel@redhat.com>
-CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <kys@microsoft.com>,
-        <abgupta@microsoft.com>, <haiyangz@microsoft.com>,
-        <jasowang@redhat.com>, <devel@linuxdriverproject.org>
-Subject: Re: [PATCH v5 0/2] hyperv-fb: add support for generation 2 virtual
- machines
-References: <1393411885-14895-1-git-send-email-kraxel@redhat.com>	 <53105077.4090102@ti.com> <1393582795.3364.5.camel@nilsson.home.kraxel.org>
-In-Reply-To: <1393582795.3364.5.camel@nilsson.home.kraxel.org>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: Re: [PATCH v3] clk: respect the clock dependencies in of_clk_init
+References: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Mike,
 
-On 28/02/14 12:19, Gerd Hoffmann wrote:
-> On Fr, 2014-02-28 at 11:01 +0200, Tomi Valkeinen wrote:
->> On 26/02/14 12:51, Gerd Hoffmann wrote:
->>>   Hi,
->>>
->>> This patch series adds support for uefi-based gen2 virtual machines
->>> to the hyperv-fb driver.  It depends on a few vmbus changes which are=
+On 24/02/2014 19:10, Gregory CLEMENT wrote:
+> Until now the clock providers were initialized in the order found in
+> the device tree. This led to have the dependencies between the clocks
+> not respected: children clocks could be initialized before their
+> parent clocks.
+> 
+> Instead of forcing each platform to manage its own initialization order,
+> this patch adds this work inside the framework itself.
+> 
+> Using the data of the device tree the of_clk_init function now delayed
+> the initialization of a clock provider if its parent provider was not
+> ready yet.
+> 
+> The strict dependency check (all parents of a given clk must be
+> initialized) was added by Boris BREZILLON
 
->>> staged in Greg's char-misc tree (and linux-next).
->>
->> Depends how?
->=20
-> Will fail to build without the vmbus patches.
->=20
->> Patches that depend on other patches should be merged via
->> the same tree to avoid compile or functional breaks.
->=20
-> I think Greg will happily merge them through char-misc if he gets your
-> fbdev maintainer ACK for the patches.
+Are you ok with this version?
+Will you take it for 3.15?
+Or maybe you expected that it will be part of a pull request?
 
-Ok. It's usually good to mention if only an ack is needed (and from
-whom). You did send this to fbdev, and said "please apply". So I already
-applied it, until I realized you said there are dependencies.
+However as it is modifying the core of the framework I thought that you
+would take it and apply yourself.
 
-So:
+Thanks,
 
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Gregory
 
- Tomi
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+> Mike,
+> 
+> This patch depend on the patch "clk: return probe defer when DT clock
+> not yet ready": http://article.gmane.org/gmane.linux.kernel/1643466
+> 
+> If for any reason you don't want to take it, then I will write a new
+> version closer to the v2 for the parent_ready() function.
+> 
+> I have taken into account all the remarks from Tomasz.
+> 
+> Thanks,
+> 
+> Changelog:
+> v2->v3:
+> 
+> - added the SoB flag of Boris
+> - used of_clk_get(np, i) in the parent_ready() function.
+> - simplified the loops to manage the order dependencies in of_clk_init()
+> 
+> v1 -> v2:
+> Merged the  strict dependency check from Boris.
+> 
+> 
+>  drivers/clk/clk.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 79 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 32d84e921b23..3a07f8ac2e11 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2526,24 +2526,99 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
+>  }
+>  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+>  
+> +struct clock_provider {
+> +	of_clk_init_cb_t clk_init_cb;
+> +	struct device_node *np;
+> +	struct list_head node;
+> +};
+> +
+> +static LIST_HEAD(clk_provider_list);
+> +
+> +/*
+> + * This function looks for a parent clock. If there is one, then it
+> + * checks that the provider for this parent clock was initialized, in
+> + * this case the parent clock will be ready.
+> + */
+> +static int parent_ready(struct device_node *np)
+> +{
+> +	int i = 0;
+> +
+> +	while (true) {
+> +		struct clk *clk = of_clk_get(np, i);
+> +
+> +		/* this parent is ready we can check the next one */
+> +		if (!IS_ERR(clk)) {
+> +			clk_put(clk);
+> +			i++;
+> +			continue;
+> +		}
+> +
+> +		/* at least one parent is not ready, we exit now */
+> +		if (PTR_ERR(clk) == -EPROBE_DEFER)
+> +			return 0;
+> +
+> +		/*
+> +		 * Here we make assumption that the device tree is
+> +		 * written correctly. So an error means that there is
+> +		 * no more parent. As we didn't exit yet, then the
+> +		 * previous parent are ready. If there is no clock
+> +		 * parent, no need to wait for them, then we can
+> +		 * consider their absence as being ready
+> +		 */
+> +		return 1;
+> +	}
+> +}
+> +
+>  /**
+>   * of_clk_init() - Scan and init clock providers from the DT
+>   * @matches: array of compatible values and init functions for providers.
+>   *
+> - * This function scans the device tree for matching clock providers and
+> - * calls their initialization functions
+> + * This function scans the device tree for matching clock providers
+> + * and calls their initialization functions. It also do it by trying
+> + * to follow the dependencies.
+>   */
+>  void __init of_clk_init(const struct of_device_id *matches)
+>  {
+>  	const struct of_device_id *match;
+>  	struct device_node *np;
+> +	struct clock_provider *clk_provider, *next;
+> +	bool is_init_done;
+> +	bool force = false;
+>  
+>  	if (!matches)
+>  		matches = &__clk_of_table;
+>  
+> +	/* First prepare the list of the clocks providers */
+>  	for_each_matching_node_and_match(np, matches, &match) {
+> -		of_clk_init_cb_t clk_init_cb = match->data;
+> -		clk_init_cb(np);
+> +		struct clock_provider *parent =
+> +			kzalloc(sizeof(struct clock_provider),	GFP_KERNEL);
+> +
+> +		parent->clk_init_cb = match->data;
+> +		parent->np = np;
+> +		list_add(&parent->node, &clk_provider_list);
+> +	}
+> +
+> +	while (!list_empty(&clk_provider_list)) {
+> +		is_init_done = false;
+> +		list_for_each_entry_safe(clk_provider, next,
+> +					&clk_provider_list, node) {
+> +			if (force || parent_ready(clk_provider->np)) {
+> +				clk_provider->clk_init_cb(clk_provider->np);
+> +				list_del(&clk_provider->node);
+> +				kfree(clk_provider);
+> +				is_init_done = true;
+> +			}
+> +		}
+> +
+> +		/*
+> +		 * We didn't managed to initialize any of the
+> +		 * remaining providers during the last loop, so now we
+> +		 * initialize all the remaining ones unconditionally
+> +		 * in case the clock parent was not mandatory
+> +		 */
+> +		if (!is_init_done)
+> +			force = true;
+> +
+>  	}
+>  }
+>  #endif
+> 
 
 
-
---7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTEGirAAoJEPo9qoy8lh71jxwQAIGAgDaZ7RvyV3U82uHWLLj8
-Ck3yrroFASIplen6CLrdIFA2rv1jgnDuRrSZ/SpYHd8M3rqfFD9G7ASFdRy9AVzp
-UjM86Rgbot9HhOfeWis57oQAbJRw41FKwj7bniykElK2Wdrw+0LJL55bg6kBgO3p
-cI0KXI7MDbi1hdHJZdHs+X1gcEu548zHq6lw4cw4Gmz18ktB7sJRY9Hhi1T3ddwb
-cCJi6DKvKQwDZFhpBHnsirbMdhwSmQJ1lRrx5B3mDYyR/aGaVU3SP5vukSTwX2ZW
-UpVnID2P0xvt54tHB7VCYmXbDebCJawH7KedCfPdpT22AacJF1WsGvNjeR4WsNhq
-Q3V5BrrNNQoC+1XX/HFXJVo1Wmw6O7zBFEc552/N3QIWnMbR0SSfuIINCxvQ8D/r
-n8Lbk+7nLLcfJmz6YISX/hLedlqUFhYzCancNp7pjdlmg0jFABuCwDtB3wpcDnN2
-PZkRqwRLwd5NesWGfHAuL6aroxgKr07Ps0PHKDNAcKoQQ0S4ryBVsGndtt1/1qOp
-eqxTrKEfJtTz4O7KzNkuuhIbUti+OutRrgiyBOMdr4kJ3g9p9V1G4WRzuyr8hbf9
-xCLBlbLvtKAPDTtGexHYr/lBfehoVpJ3tNjSlS3sKu0escWTjFwtOOuPimCse/Mc
-5wgAy3Pk4ap+SmnDPMf/
-=2oE+
------END PGP SIGNATURE-----
-
---7XKaoJDxL4T9AHlMatrCgdgd2U9f61E7k--
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
