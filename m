@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaB1Uyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:54:50 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61894 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752534AbaB1Uys (ORCPT
+	id S1752782AbaB1UzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:55:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42400 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaB1UzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:54:48 -0500
-Message-ID: <1393620863.4052.2.camel@x220>
-Subject: Re: [Xen-devel] [PATCH] xen: remove XEN_PRIVILEGED_GUEST
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Vladimir =?UTF-8?Q?=27=CF=86-coder/phcoder=27?= Serbinenko 
-	<phcoder@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, David Vrabel <david.vrabel@citrix.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        xen-devel@lists.xenproject.org, Thomas Gleixner <tglx@linutronix.de>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Date: Fri, 28 Feb 2014 21:54:23 +0100
-In-Reply-To: <530B9FB6.6000909@gmail.com>
-References: <201402171223.s1HCNG0S023567@userz7022.oracle.com>
-	 <1392642197.13000.20.camel@x220>
-	 <20140217144307.GB28658@localhost.localdomain>
-	 <1392718467.30073.12.camel@x220>
-	 <20140224183939.GA26794@andromeda.dapyr.net> <530B9FB6.6000909@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 28 Feb 2014 20:54:46.0070 (UTC) FILETIME=[4FE6DD60:01CF34C7]
-X-RcptDomain: vger.kernel.org
+	Fri, 28 Feb 2014 15:55:06 -0500
+Date: Fri, 28 Feb 2014 21:55:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228205500.GC14089@laptop.programming.kicks-ass.net>
+References: <20140227173150.4e5ed747@gandalf.local.home>
+ <530FC1C6.5040209@zytor.com>
+ <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+ <20140227215726.7018c861@gandalf.local.home>
+ <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
+ <20140228092341.12a40f7c@gandalf.local.home>
+ <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+ <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+ <20140228154026.GH9987@twins.programming.kicks-ass.net>
+ <5310B60F.30806@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5310B60F.30806@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-24 at 20:38 +0100, Vladimir 'φ-coder/phcoder' Serbinenko
-wrote:
-> On 24.02.2014 19:39, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Feb 18, 2014 at 11:14:27AM +0100, Paul Bolle wrote:
-> >> And that commit was reverted a week later in grub commit
-> >> faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 ("Revert grub-file usage in
-> >> grub-mkconfig."), see
-> >> http://git.savannah.gnu.org/cgit/grub.git/commit/util/grub.d/20_linux_xen.in?id=faf4a65e1e1ce1d822d251c1e4b53d96ec7faec5 .
-> >>
-> >> That commit has no explanation (other than its one line summary). So
-> >> we're left guessing why this was done. Luckily, it doesn't matter here,
-> >> because the test for CONFIG_XEN_PRIVILEGED_GUEST is superfluous.
+On Fri, Feb 28, 2014 at 08:15:11AM -0800, H. Peter Anvin wrote:
+> On 02/28/2014 07:40 AM, Peter Zijlstra wrote:
+> > On Fri, Feb 28, 2014 at 07:13:06AM -0800, H. Peter Anvin wrote:
+> >> If I'm reading this right we end up going from the page fault
+> >> tracepoint to copy_from_user_nmi() without going through NMI, and the
+> >> cr2 corruption is obvious.  I guess the assumption that only the NMI
+> >> path needed to save cr2 is flawed?
 > > 
-> > How about we ask Vladimir?
+> > It was never assumed it would only go through NMI, but that it would be
+> > NMI safe -- and as it turns out, it is that.
 > > 
-> > Vladimir - could you shed some light on it? Thanks!
+> > What I did assume was that any other callsites would be safe, seeing how
+> > they'd already be running in 'normal' contexts.
 > > 
-> CONFIG_XEN_PRIVILEGED_GUEST is not present on Linux even though it
-> should be. The test was removed to accomodate this.
+> > I had not considered people putting tracepoints _that_ early in the
+> > exception paths.
+> > 
+> > Note that there's more tracepoints there than the one mentioned.
+> > 
+> 
+> Well, I was talking about the assumption spelled out in the comment
+> above copy_from_user_nmi() which pretty much states "cr2 is safe because
+> cr2 is saved/restored in the NMI wrappers."
 
-It's not clear to me what this means, sorry. 
-
-> The usage of grub-file was removed because it wasn't release-ready.
-
-I see.
-
-Thanks.
-
-
-Paul Bolle
-
+That is because we assumed NMI was the only thing that could interrupt a
+fault handler before it would read CR2. Never thinking someone would put
+a tracepoint there.
