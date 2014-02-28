@@ -1,113 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaB1PNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:13:32 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:34694 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbaB1PNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:13:30 -0500
+	id S1752742AbaB1PON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:14:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43463 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752431AbaB1POM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 10:14:12 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home> <20140224193043.GP6835@laptop.programming.kicks-ass.net> <530C12CA.6070308@zytor.com> <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com> <20140225094352.73e0e28c@gandalf.local.home> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu> <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home> <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Date: Fri, 28 Feb 2014 10:13:29 -0500
-X-Google-Sender-Auth: 70ADWcf2d8owu6E0te45VR0WkhY
-Message-ID: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
-Subject: Feb. Fedora Kernel Patch Report
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 28 Feb 2014 07:13:06 -0800
+To: Vince Weaver <vincent.weaver@maine.edu>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Message-ID: <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's been a while since I sent one of these.  Mostly that's due to the
-overlap between which upstream stable version we're using in Fedora
-across the releases, and how fast those have been happening upstream.
-We're settled on 3.13.y now, and with 3.14-rc4 out there things have
-calmed down enough to take stock again.
+If I'm reading this right we end up going from the page fault tracepoint to copy_from_user_nmi() without going through NMI, and the cr2 corruption is obvious.  I guess the assumption that only the NMI path needed to save cr2 is flawed?
 
-Here's the patches we have on top of 3.13.5.
+On February 28, 2014 7:07:29 AM PST, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>On Fri, 28 Feb 2014, Steven Rostedt wrote:
+>
+>> Interesting. Are you doing a perf function trace?
+>> 
+>> And just in case, can you add this patch and make sure the copy is
+>> called by NMI.
+>
+>199.900682: function:             trace_do_page_fault
+>199.900683: page_fault_user:      address=__per_cpu_end
+>ip=__per_cpu_end error_code=0x6
+>199.900683: function:             perf_swevent_get_recursion_context
+>199.900684: function:             perf_tp_event
+>199.900684: function:                perf_swevent_event
+>199.900684: function:                   perf_swevent_overflow
+>199.900684: function:                      __perf_event_overflow
+>199.900685: function:                         perf_prepare_sample
+>199.900685: function:                           
+>__perf_event_header__init_id
+>199.900685: function:                               task_tgid_nr_ns
+>199.900685: function:                               perf_event_tid
+>199.900686: function:                                  __task_pid_nr_ns
+>199.900686: function:                            perf_callchain
+>199.900687: function:             copy_from_user_nmi
+>199.900687: function:             trace_do_page_fault
+>199.900687: page_fault_kernel:    address=irq_stack_union
+>ip=copy_user_generic_string error_code=0x0
+>199.900688: function:                __do_page_fault
+>199.900688: function:                   bad_area_nosemaphore
+>199.900688: function:                      __bad_area_nosemaphore
+>199.900689: function:                         no_context
+>199.900689: function:                            fixup_exception
+>199.900689: function:                              
+>search_exception_tables
+>199.900689: function:                                  search_extable
+>199.900691: function:             copy_user_handle_tail
+>199.900691: function:             trace_do_page_fault
+>199.900691: page_fault_kernel:    address=irq_stack_union
+>ip=copy_user_handle_tail error_code=0x0
+>199.900691: function:                __do_page_fault
+>199.900692: function:                   bad_area_nosemaphore
+>199.900692: function:                      __bad_area_nosemaphore
+>199.900692: function:                         no_context
+>199.900692: function:                            fixup_exception
+>199.900692: function:                              
+>search_exception_tables
+>199.900692: function:                                  search_extable
+>199.900693: function:             save_stack_trace
+>199.900693: function:                dump_trace
+>199.900694: function:                   print_context_stack
+>199.900694: function:                      __kernel_text_address
+>199.900694: function:                         is_module_text_address
+>199.900695: function:                            __module_text_address
+>199.900695: function:                               __module_address
+>199.900695: function:                      __kernel_text_address
+>199.900695: function:                         is_module_text_address
+>199.900696: function:                            __module_text_address
+>199.900696: function:                               __module_address
+>...
+>199.900705: function:                      __kernel_text_address
+>199.900809: kernel_stack:         <stack trace>
+>=> perf_callchain (ffffffff810d35a2)
+>=> perf_prepare_sample (ffffffff810cfae3)
+>=> __perf_event_overflow (ffffffff810d02f4)
+>=> perf_swevent_overflow (ffffffff810d04e3)
+>=> perf_swevent_event (ffffffff810d0574)
+>=> perf_tp_event (ffffffff810d070c)
+>=> perf_trace_x86_exceptions (ffffffff810341b6)
+>=> trace_do_page_fault (ffffffff81537702)
+>=> trace_page_fault (ffffffff81534772)
+>199.900810: function:             perf_output_begin
+>199.900810: function:             __do_page_fault
+>199.900810: function:                __perf_sw_event
+>199.900810: function:                  
+>perf_swevent_get_recursion_context
+>199.900811: function:                down_read_trylock
+>199.900811: function:                _cond_resched
+>199.900811: function:                find_vma
+>199.900811: function:                bad_area
+>199.900812: function:                   up_read
+>199.900812: function:                   __bad_area_nosemaphore
+>199.900812: function:                      is_prefetch
+>199.900812: function:                         convert_ip_to_linear
+>199.900813: function:                      unhandled_signal
+>199.900813: function:                      __printk_ratelimit
+>199.900813: function:             _raw_spin_trylock
+>199.900813: function:             _raw_spin_unlock_irqrestore
+>199.900814: function:                      printk
+>199.900814: function:                         vprintk_emit
 
-josh
-
-fs-proc-devtree-remove_proc_entry.patch
-- Upstream commit c1d867a54d426b45da017fbe8e585f8a3064ce8d
-
-drm-radeon-Disable-writeback-by-default-on-ppc.patch
-- This is superseded by upstream commit
-ea31bf697d27270188a93cd78cf9de4bc968aca3 but that seems to be a bit
-big for a stable backport
-
-dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
-- Still pending upstream (no idea why...)
-
-sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
-sunrpc-replace-gssd_running-with-more-reliable-check.patch
-nfs-check-gssd-running-before-krb5i-auth.patch
-- Added to fix a 15sec mount delay
-- Upstream commits 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6
-  89f842435c630f8426f414e6030bc2ffea0d6f81
-  6aa23d76a7b549521a03b63b6d5b7880ea87eab7 respectively
-
-rpc_pipe-remove-the-clntXX-dir-if-creating-the-pipe-fails.patch
-sunrpc-add-an-info-file-for-the-dummy-gssd-pipe.patch
-rpc_pipe-fix-cleanup-of-dummy-gssd-directory-when-notification-fails.patch
-- Fixes for some of the patches above (rhbz 1037793)
-- Upstream commits 3396f92f8be606ea485b0a82d4e7749a448b013b
-  e2f0c83a9de331d9352185ca3642616c13127539
-  23e66ba97127ff3b064d4c6c5138aa34eafc492f respectively
-
-elantech-Properly-differentiate-between-clickpads-an.patch (rhbz 1030802)
-- Upstream commit c15bdfd5b9831e4cab8cfc118243956e267dd30e
-
-KVM-MMU-handle-invalid-root_hpa-at-__direct_map.patch (rhbz 924916)
-- Upstream commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9
-- Probably should grab 37f6a4e237303549c8676dfe1fd1991ceab512eb too
-
-KVM-VMX-fix-use-after-free-of-vmx-loaded_vmcs.patch (rhbz 1047892)
-- Upstream commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56
-
-0001-Input-wacom-make-sure-touch_max-is-set-for-touch-dev.patch
-0002-Input-wacom-add-support-for-three-new-Intuos-devices.patch
-0003-Input-wacom-add-reporting-of-SW_MUTE_DEVICE-events.patch
-- rhbz 1003167 1046238
-- Upstream commits 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4
-  b5fd2a3e92ca5c8c1f3c20d31ac5daed3ec4d604
-  961794a00eab03f4344b7d5e825e8e789e55da87
-
-Input-ALPS-add-support-for-Dolphin-devices.patch (rhbz 953211)
-- Upstream commit ee65d4b36de8ddf4467f788faa5d8ddd1bfcdaa2
-
-xhci-fix-resume-issues-on-renesas-chips-in-samsung-laptops.patch (rhbz 950630)
-- Upstream commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
-- Oddly not queued for stable?
-
-cgroup-fixes.patch (rhbz 1045755)
-- Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
-- There was a 3.12 version of this patch sent to stable list from
-Michal Hocko.  I don't remember why it wasn't applied, or why it
-wasn't applied for 3.13.y...
-
-ipv6-introduce-IFA_F_NOPREFIXROUTE-and-IFA_F_MANAGETEMPADDR-flags.patch
-ipv6-addrconf-revert-if_inet6ifa_flag-format.patch
-- rhbz 1064430 1056711
-- Backports of commits to add this stuff in 3.14.  Not suitable for stable.
-
-cifs-ensure-that-uncached-writes-handle-unmapped-areas-correctly.patch
-cifs-sanity-check-length-of-data-to-send-before-sending.patch
-cifs-mask-off-top-byte-in-get_rfc1002_length.patch
-- rhbz 1064253 CVE-2014-0069 rhbz 1068862
-- Upstream commit 5d81de8e8667da7135d3a32a964087c0faf5483f and two
-additional fixes
-
-cpufreq-powernow-k8-Initialize-per-cpu-data-structures-properly.patch
-(rhbz 1054408)
-- Upstream commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e
-- CC'd to stable but not queued
-
-e100-Fix-disabling-already-disabled-device-warning.patch (rhbz 994438)
-- Upstream commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4
-
-usb-ehci-fix-deadlock-when-threadirqs-option-is-used.patch
-- Still pending upstream
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
