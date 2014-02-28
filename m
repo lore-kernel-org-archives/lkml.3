@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaB1LFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:05:39 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15801 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296AbaB1LFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:05:37 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-bd-53106d7f2e22
-Message-id: <1393585526.31997.1.camel@AMDC1943>
-Subject: Re: [PATCH 0/4] mfd: sec: Add support for S2MPS14
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Date: Fri, 28 Feb 2014 12:05:26 +0100
-In-reply-to: <20140228104927.GB31720@lee--X1>
-References: <1393584104-18912-1-git-send-email-k.kozlowski@samsung.com>
- <20140228104927.GB31720@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xK7r1uQLBBv1T+Sw2zljPanG26Q27
-	xf2vRxktLu+aw2Yx4/w+Jou1R+6yW5zuZrW4uOILk8X6Ga9ZHDg97lzbw+Yx72SgR9+WVYwe
-	nzfJBbBEcdmkpOZklqUW6dslcGVsf3qLqWABf8WN968YGxi/cHcxcnJICJhIXFz0kRXCFpO4
-	cG89WxcjF4eQwFJGifaOc6wQzmdGiQ0zb7F0MXJw8AroSyzbaQfSICxgJXFq2iYmEJtNwFhi
-	8/IlbCAlIgIqEufemIO0MgscZ5KYfugwI0gNi4CqxN3Jm8FsTgFdiduzljKD2EICWRIXJvwB
-	O4JZQF1i0rxFzBAHKUnsbu9kh4jLS2xe8xYszisgKPFj8j2WCYwCs5C0zEJSNgtJ2QJG5lWM
-	oqmlyQXFSem5hnrFibnFpXnpesn5uZsYIaH+ZQfj4mNWhxgFOBiVeHgnePIHC7EmlhVX5h5i
-	lOBgVhLhzXMXCBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAmJM1s3D1oWgvhgMi+x6YvLOfab1j
-	UsCnlxMn3Qmfuvd3cvqKFs4iF+2r6od/19xOeWe6+JZWLsfLhSwrlD6J2Gy0fWEttnSp4Som
-	Y+ajW3dWPz759Z/32VyhXyoZp++ZdOhv7a4uqXkX9nDD/IcvV/0Wn7/lgEL/lrPrf13NreKd
-	79cyr6A5rU6JpTgj0VCLuag4EQB9MrVqUwIAAA==
+	id S1751655AbaB1LIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:08:48 -0500
+Received: from ni.piap.pl ([195.187.100.4]:41004 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751021AbaB1LIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 06:08:47 -0500
+X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Feb 2014 06:08:46 EST
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <anton@enomsg.org>, Yinghai Lu <yinghai@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Fri, 28 Feb 2014 12:00:12 +0100
+MIME-Version: 1.0
+Message-ID: <m3eh2nqz7n.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: [ARM] CNS3xxx: 3 regressions identified in v3.14-rc4+
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20140228 #7333291, check: 20140228 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-28 at 10:49 +0000, Lee Jones wrote:
-> > Few days ago I sent patches adding support for S2MPS14 device to the
-> > sec-core/s2mps11 drivers. These patches were rather large as they covered
-> > multiple subsystems so I decided to split everything into smaller, separate
-> > patches.
-> > 
-> > The original patchset (version 3) can be found here:
-> > http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27194/focus=1649217
-> > 
-> > This patchset is a small subset of the patchset related to the MFD core
-> > driver. It adds support for the S2MPS14 device only to the MFD core driver.
-> > I already obtained acks from Lee Jones during previous reviews.
-> > 
-> > The patchset is based on current Linus' tree *with* patch:
-> > mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-> > (which is already in Lee Jones' MFD tree)
-> 
-> Can all of these patches be applied as they are?
-> 
-> Is anything going to break as a result?
+Hello,
 
-Yes, they can be applied as they are. That was the reason behind
-splitting everything. Nothing should break, as far as I reviewed this
-and tested.
+Linux version 3.14.0-rc4+ (current tip, no extra patches), CPU is Cavium
+Econa CNS3420, board is Gateworks Laguna GW2388-4 (masqueraded as
+CNS3420VB).
 
-Best regards,
-Krzysztof
 
-> 
-> > Krzysztof Kozlowski (4):
-> >   mfd: sec: Add maximum RTC register for regmap config
-> >   mfd: sec: Select different RTC regmaps for devices
-> >   mfd: sec: Use consistent S2MPS11 RTC alarm interrupt indexes
-> >   mfd: sec: Add support for S2MPS14
-> > 
-> >  drivers/mfd/sec-core.c              |   57 ++++++++++++-
-> >  drivers/mfd/sec-irq.c               |   97 ++++++++++++++++++++--
-> >  include/linux/mfd/samsung/core.h    |    1 +
-> >  include/linux/mfd/samsung/irq.h     |   31 ++++++-
-> >  include/linux/mfd/samsung/rtc.h     |   57 +++++++++++--
-> >  include/linux/mfd/samsung/s2mps14.h |  152 +++++++++++++++++++++++++++++++++++
-> >  6 files changed, 378 insertions(+), 17 deletions(-)
-> >  create mode 100644 include/linux/mfd/samsung/s2mps14.h
-> > 
-> 
+Issue #1 ###################################################
 
+kernel BUG at mm/vmalloc.c:1132!
+PC is at vm_area_add_early+0x20/0x84
+LR is at add_static_vm_early+0xc/0x60
+
+The problem is cns3xxx_pcie_init() (device_initcall) calls the "early"
+iotable_init(). I'll attach the patch.
+
+
+Issue #2 ###################################################
+
+PCI hangs system completely while trying to access any PCI MMIO region
+(plain IO not tested).
+
+The guilty commit is 928bea964827d7824b548c1f8e06eccbbc4d0d7d:
+
+    PCI: Delay enabling bridges until they're needed
+
+    We currently enable PCI bridges after scanning a bus and assigning
+    resources.  This is often done in arch code.
+
+    This patch changes this so we don't enable a bridge until necessary, i.e.,
+    until we enable a PCI device behind the bridge.  We do this in the generic
+    pci_enable_device() path, so this also removes the arch-specific code to
+    enable bridges.
+
+Reverting changes in arch/arm/kernel/bios32.c, drivers/pci/bus.c and
+include/linux/pci.h (= essentially adding pci_enable_bridges(bus) in
+ARM's pci_common_init_dev()) makes it work again.
+
+Options?
+
+
+Issue #3 ###################################################
+
+NR_IRQS:16 nr_irqs:96 96
+
+WARNING: at drivers/irqchip/irq-gic.c:952 gic_init_bases+0xe4/0x2b8()
+Cannot allocate irq_descs @ IRQ16, assuming pre-allocated
+Backtrace:
+gic_init_bases    from cns3xxx_init_irq+0x24/0x34
+cns3xxx_init_irq  from init_IRQ+0x24/0x2c
+init_IRQ          from start_kernel+0x1a8/0x338
+start_kernel      from 0x2000806c
+
+I'm having problems understanding how is machine_desc->nr_irqs supposed
+to work with CONFIG_ARM_GIC and CONFIG_SPARSE_IRQ set.
+
+machine_desc->nr_irqs is set to NR_IRQS_CNS3XXX =
+IRQ_TC11MP_GIC_START + 64 = 32 + 64 = 96.
+
+At start, machine_desc->nr_irqs are pre-allocated via
+start_kernel() -> early_irq_init().
+
+Then, gic_init(0, 29, ...) ->  gic_init_bases(0, 29, ...) tries this
+(and fails):
+
+	/*
+	 * For primary GICs, skip over SGIs.
+	 * For secondary GICs, skip over PPIs, too.
+	 */
+	irq_start = (effectively) 16;
+
+	irq_base = irq_alloc_descs(irq_start, 16, gic_irqs, numa_node_id());
+	if (IS_ERR_VALUE(irq_base)) {
+		WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+		     irq_start);
+
+Does this mean machine_desc->nr_irqs is to be kept at 16
+(NR_IRQS_LEGACY) or less, so it doesn't conflict with gic_init()?
+
+Or perhaps gic_init() shouldn't warn about this?
+
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
