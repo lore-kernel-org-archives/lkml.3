@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaB1NbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:31:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52138 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378AbaB1NbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:31:03 -0500
-Message-ID: <53108F90.7070608@ti.com>
-Date: Fri, 28 Feb 2014 07:30:56 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752159AbaB1Nch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:32:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35231 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaB1Ncf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 08:32:35 -0500
+Message-ID: <53108FE6.80405@pengutronix.de>
+Date: Fri, 28 Feb 2014 14:32:22 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Lee Jones <lee.jones@linaro.org>
-CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
- regmap patch
-References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com>
-In-Reply-To: <53103D34.8050101@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] can: xilinx CAN controller support.
+References: <74d607e9-ac9c-4a9b-ac49-e84ae49d20c2@TX2EHSMHS031.ehs.local> <530D0A9C.5090402@pengutronix.de> <cd00fb2d-c8a7-423d-8aa0-2b413e9ac101@CO9EHSMHS017.ehs.local> <530DEA7C.6010609@pengutronix.de> <678ca296-8687-4e7c-9014-ae69d886a068@CO9EHSMHS014.ehs.local> <530E0B92.5010903@pengutronix.de> <2e3bfd38-37d5-4102-af79-821196c6c732@CH1EHSMHS006.ehs.local> <53104995.4010305@pengutronix.de> <48409965-e214-43b7-8b6a-08bf075707e1@CO9EHSMHS001.ehs.local> <53108798.7090902@pengutronix.de> <4902b8d8-139a-4fd0-9e6e-a30ce7e6683b@CH1EHSMHS019.ehs.local> <53108BEF.1020308@pengutronix.de> <f7b303dd-bf23-40f2-bbd4-4594cba8f345@CO9EHSMHS026.ehs.local>
+In-Reply-To: <f7b303dd-bf23-40f2-bbd4-4594cba8f345@CO9EHSMHS026.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 01:39 AM, Peter Ujfalusi wrote:
-> On 02/27/2014 05:00 PM, Nishanth Menon wrote:
->> The other option might be to blindly configure 6040 to max speed ->
->> but then you do have an issue with that single register write
->> operation to configure the speed?
-> 
-> Yes, exactly. It is unfortunate that twl6040's i2c speed is configured via i2c
-> write. It would have been better if we would have had pins to configure this.
-> 
->> TWL6040 is by default at 100KHz, bus_speed is configured (via dts or
->> otherwise) is 400KHz/3.4MHz, the register write for configuring 6040
->> to max speed will occur at 400KHz/3.4MHz, which implies 6040 register
->> write operation might not actually take place (as 6040 still expects
->> to talk 100KHz till the mentioned register write takes place).
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 02/28/2014 02:27 PM, Appana Durga Kedareswara Rao wrote:
+
+>> -----Original Message-----
+>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+>> Sent: Friday, February 28, 2014 6:45 PM
+>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+>> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org=
+
+>> Cc: netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linu=
+x-
+>> kernel@vger.kernel.org; devicetree@vger.kernel.org
+>> Subject: Re: [PATCH v4] can: xilinx CAN controller support.
 >>
->> Ideally, the behavior you need is as follows:
->> talk at 100KHz for the first register write(of configuring speed),
->> followed by 400KHz/3.4 MHz for the subsequent operations on the bus
->> (assuming 400KHz/3.4 is the least common denominator speed on the bus).
-> 
-> Yes. Or the bootloader should have been configuring the twl6040 to 3.4MHz with
-> a single write. When the driver comes up the i2c controller had been already
+>> On 02/28/2014 02:07 PM, Appana Durga Kedareswara Rao wrote:
+>>>>>> What happens if the interrupt handler is delayed? For example in a=
 
-you would not be able to do that unless you have powered on TWL6040
-regulators - and the moment you power them down (example on module
-removal: regulator_bulk_disable(TWL6040_NUM_SUPPLIES,
-twl6040->supplies);), you are back to square 1.
+>>>>>> RT enabled system the interrupt handler runs as a thread. There
+>>>>>> might be other threads with higher priority. The hardware will
+>>>>>> probably send all CAN frames in the FIFO, so you want to reduce th=
+e
+>>>>>> overhead and loop in the tx complete handler.
+>>>>>>
+>>>>> Yes I agree with your comment.
+>>>>> It will be good to have a loop in the Tx interrupt handler I am
+>>>>> modifying the Tx interrupt handler like below.
+>>>>>
+>>>>> static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+>>>>>         struct xcan_priv *priv =3D netdev_priv(ndev);
+>>>>>         struct net_device_stats *stats =3D &ndev->stats;
+>>>>>
+>>>>>         while (priv->tx_head - priv->tx_tail > 0) {
+>>>>>                 if (!(isr & XCAN_IXR_TXOK_MASK)) {
+>>>>>                         break;
+>>>>>                 }
+>>>>>                 can_get_echo_skb(ndev, priv->tx_tail %
+>>>>>                                         priv->xcan_echo_skb_max_tx)=
+;
+>>>>>                 priv->tx_tail++;
+>>>>>                 stats->tx_packets++;
+>>>>>                 can_led_event(ndev, CAN_LED_EVENT_TX);
+>>
+>> Probably first clear the interrupt, because you've just handled it, th=
+en check
+>> if it's still present. The question is, do you have to clear the IRQ f=
+or each
+>> transmitted frame, or does one clean of the interrupt clear the bit fo=
+r more
+>> then one transmitted frame?
+>>
+>=20
+> We already were clearing it in the interrupt routine
+> (xcan_interrupt). That's why clearing it at the end of the loop. We
+> have to clear the IRQ (TXOK) for each transmitted frame.
 
-> probed and it would know that the bus can be used in 3.4MHz and we would not
-> have issues with the speed.
-> Yous see: twl6030 is also on the same bus (usually). Not sure how twl6030's
-> i2c speed is selected but the fact that twl6040 is not alone on the bus makes
-> things complicated.
+Please move the clear into the loop. Then it's all in one place. Good
+that you have to clear the bit for each transmitted frame. I think,
+we're almost done :) When I'm okay with the driver, let Wolfgang have a
+look at the error handling.
 
-TWL6030 can do 3.3MHz by default and there are no speed registers to
-configure.
+Marc
 
-> Also you could have more devices on the bus, wired for 3.4MHz. In that case we
-> would need to make sure that the first access happens with 100KHz to twl6040
-> to select 3.4MHz mode, switch the controller speed and allow the communication
-> to other chips. It is another question how the 3.4MHz clients will interpret
-> the 100KHz communication on the bus, I guess it is ignored by them.
-As far as the i2c spec 2.1 says:
-"Fast-mode devices are downward-compatible and can communicate with
-Standard-mode devices in a 0 to 100 kbit/s I2C-bus system"
-...
-"Hs-mode devices can transfer information at bit rates of up to 3.4
-Mbit/s, yet they remain fully downward compatible with Fast- or
-Standard-mode (F/S-mode) devices for bi-directional communication in a
-mixed-speed bus system."
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-So, they are backward compatible.
 
-> 
->> I am not sure if the i2c framework has ability to do that.
-> 
-> AFAIK we do not have such a thing in i2c framework. We would need client
-> drivers reporting what they support, notification mechanism to notify clients
-> on speed change and couple of other things might be needed as well. So there
-> are quite a number of things missing to get dynamic/adaptive i2c working where
-> the master configuration depends on the attached devices and not the other way
-> around.
-> 
-> I'll do some experiments with the twl6040 and i2c speeds today, but so far I
-> think the 400KHz change is a safe thing to do.
-> 
-I dont think that is correct. The safest thing to do is to switch the
-i2c bus speed to 100KHz. you are depending on emperical results and a
-specification violation by expecting to let a chip default set for
-100KHz to always allow for the first communication at 400KHz.
+--4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Unless ofcourse, you can confirm that the default speed register
-writes are allowed at 400KHz contrary to the data sheet info you
-mentioned in the patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
--- 
-Regards,
-Nishanth Menon
+iEYEARECAAYFAlMQj+YACgkQjTAFq1RaXHPxEQCdFOpBeFoC9vm/5oStNOK/07cd
+I+MAnjpuCqb7t0byrHGqEwjPN3VVV3GU
+=UJdI
+-----END PGP SIGNATURE-----
+
+--4NUNi4ni8N9ONkSMXCLaVe3RLkGKiOkhm--
