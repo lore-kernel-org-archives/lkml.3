@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbaB1Ipt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:45:49 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:39319 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbaB1Ipk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:45:40 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, tj@kernel.org, peterz@infradead.org,
-        mingo@kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] timer: Make sure TIMER_FLAG_MASK bits are free in allocated base
-Date: Fri, 28 Feb 2014 14:15:22 +0530
-Message-Id: <9144e10d7e854a0aa8a673332adec356d81a923c.1393576981.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org>
-References: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org>
-In-Reply-To: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org>
-References: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org>
+	id S1752043AbaB1Ipu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:45:50 -0500
+Received: from gate.crashing.org ([63.228.1.57]:44242 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751859AbaB1Ipm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 03:45:42 -0500
+Message-ID: <1393577130.22449.8.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 28 Feb 2014 19:45:30 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3-0ubuntu3~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we are using two lowest bit of base for internal purpose and so they
-both should be zero in the allocated address. The code was doing the right thing
-before this patch came in:
+Hi Linus !
 
-commit c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3
-Author: Tejun Heo <tj@kernel.org>
-Date:   Wed Aug 8 11:10:28 2012 -0700
+Here are a few more powerpc fixes for 3.14. Most of these are also
+CC'ed to stable and fix bugs in new functionality introduced in
+the last 2 or 3 versions.
 
-    timer: Implement TIMER_IRQSAFE
+The following changes since commit 66f9af83e56bfa12964d251df9d60fb571579913:
 
-Tejun probably forgot to update this piece of code which checks if the lowest
-'n' bits are zero or not and so wasn't updated according to the new flag. Lets
-use TIMER_FLAG_MASK in the calculations here, so that this code wouldn't require
-a change later on with another flag in.
+  powerpc/eeh: Disable EEH on reboot (2014-02-17 11:19:39 +1100)
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/timer.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+are available in the git repository at:
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index e8e7839..d52a8ff 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1548,9 +1548,8 @@ static int init_timers_cpu(int cpu)
- 			if (!base)
- 				return -ENOMEM;
- 
--			/* Make sure that tvec_base is 2 byte aligned */
--			if (tbase_get_deferrable(base)) {
--				WARN_ON(1);
-+			/* Make sure tvec_base has TIMER_FLAG_MASK bits free */
-+			if (WARN_ON(base != tbase_get_base(base))) {
- 				kfree(base);
- 				return -ENOMEM;
- 			}
--- 
-1.7.12.rc2.18.g61b472e
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to e0cf957614976896111e676e5134ac98ee227d3d:
+
+  powerpc/powernv: Fix indirect XSCOM unmangling (2014-02-28 19:15:49 +1100)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (2):
+      powerpc/powernv: Fix opal_xscom_{read,write} prototype
+      powerpc/powernv: Fix indirect XSCOM unmangling
+
+Gavin Shan (2):
+      powerpc/powernv: Dump PHB diag-data immediately
+      powerpc/powernv: Refactor PHB diag-data dump
+
+Laurent Dufour (1):
+      powerpc/crashdump : Fix page frame number check in copy_oldmem_page
+
+Liu Ping Fan (1):
+      powerpc/ftrace: bugfix for test_24bit_addr
+
+Paul Mackerras (1):
+      powerpc: Increase stack redzone for 64-bit userspace to 512 bytes
+
+Tony Breeds (1):
+      powerpc/le: Ensure that the 'stop-self' RTAS token is handled correctly
+
+ arch/powerpc/include/asm/compat.h            |   5 +-
+ arch/powerpc/include/asm/opal.h              |   4 +-
+ arch/powerpc/include/asm/ptrace.h            |  16 +-
+ arch/powerpc/kernel/crash_dump.c             |   8 +-
+ arch/powerpc/kernel/ftrace.c                 |   1 +
+ arch/powerpc/kernel/signal_64.c              |   4 +-
+ arch/powerpc/platforms/powernv/eeh-ioda.c    |  96 ++++++------
+ arch/powerpc/platforms/powernv/opal-xscom.c  |  21 +--
+ arch/powerpc/platforms/powernv/pci.c         | 220 +++++++++++++++------------
+ arch/powerpc/platforms/pseries/hotplug-cpu.c |  22 +--
+ 10 files changed, 219 insertions(+), 178 deletions(-)
+
 
