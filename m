@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaB1WPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:15:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9096 "EHLO mx1.redhat.com"
+	id S1752915AbaB1WRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:17:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24682 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435AbaB1WPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:15:04 -0500
-Message-ID: <53110A62.7070109@redhat.com>
-Date: Fri, 28 Feb 2014 17:14:58 -0500
-From: Vlad Yasevich <vyasevic@redhat.com>
-Reply-To: vyasevic@redhat.com
+	id S1752713AbaB1WRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 17:17:00 -0500
+Message-ID: <1393625813.2817.1.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot
+ sequence loop
+From: Adam Williamson <awilliam@redhat.com>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len.Brown@intel.com
+Date: Fri, 28 Feb 2014 14:16:53 -0800
+In-Reply-To: <53110977.8080907@linux.intel.com>
+References: <53100C8D.1060001@linux.intel.com>
+	 <20140228045637.GA28257@srcf.ucam.org> <53101D1D.9010202@linux.intel.com>
+	 <20140228055629.GA847@srcf.ucam.org> <531027BE.2010807@linux.intel.com>
+	 <20140228061254.GA2226@srcf.ucam.org> <53102AB9.40600@linux.intel.com>
+	 <20140228062325.GA3246@srcf.ucam.org> <53102F3C.4020806@linux.intel.com>
+	 <20140228064413.GA4900@srcf.ucam.org> <531032A0.8090903@linux.intel.com>
+	 <5310CBB7.4030407@linux.intel.com> <53110977.8080907@linux.intel.com>
 Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: macvtap performance regression (bisected) between 3.13 and 3.14-rc1
-References: <530FA586.3010400@de.ibm.com>
-In-Reply-To: <530FA586.3010400@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 03:52 PM, Christian Borntraeger wrote:
-> Vlad,
+On Sat, 2014-03-01 at 06:11 +0800, Li, Aubrey wrote:
+> On 2014/3/1 1:47, H. Peter Anvin wrote:
+> > On 02/27/2014 10:54 PM, Li, Aubrey wrote:
+> >> On 2014/2/28 14:44, Matthew Garrett wrote:
+> >>> On Fri, Feb 28, 2014 at 02:39:56PM +0800, Li, Aubrey wrote:
+> >>>
+> >>>> Just let you know, Windows8.1 calls EFI on these boxes for reboot/shutdown.
+> >>>
+> >>> Ok, in that case we should add EFI reboot to the list once Matt's 1:1 
+> >>> mapping support has landed. The right place to try it is probably after 
+> >>> the second attempt to perform an ACPI reboot. I'm still not enthusiastic 
+> >>> about adding cf9 by default.
+> >>>
+> >>
+> >> I'll defer to you if no one on the list supports me to add cf9.
+> >>
+> > 
+> > I believe we *had* it in the default list for a while, and it caused
+> > hangs on some systems.
 > 
-> commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523
->     macvtap: Add support of packet capture on macvtap device.
+> So this can be finalized, add EFI after twice ACPI reboot attempt. I'll
+> update the bugzilla and the patch.
 > 
-> causes a performance regression for iperf traffic between two KVM guests
-> on my s390 system. Both guests are connected via two macvtaps on the same OSA
-> network card.
-> Before that patch I get ~20 Gbit/sec between two guests, afterwards I get
-> ~4Gbit/sec
-> 
-> Latency seems to be unchanges (uperf 1byte ping pong).
-> 
-> According to ifconfig in the guest, I have ~ 1500 bytes per packet with this
-> patch and ~  40000 bytes without. So for some reason this patch causes the
-> network stack to do segmentation. (the guest kernel stays the same, only host 
-> kernel is changed).
-> 
-> Any ideas?
+> Thanks,
+> -Aubrey
 
-I am looking.  It shouldn't cause addition segmentations and when I ran
-netperf on the code I didn't see any difference in the throughput.
-
--vlad
-
-> 
-> 
-> Christian
-> 
+I believe Matt still wanted to check the status of "the recent patches
+to provide a 1:1 mapping" and only commit this after those. I was trying
+to figure out what patches he meant exactly so I could check that status
+(I'm helping! I'm helping!) but I couldn't.
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
