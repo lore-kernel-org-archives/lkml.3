@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaB1XXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 18:23:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52377 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaB1XXm (ORCPT
+	id S1752604AbaB1Xb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 18:31:58 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:38808 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaB1Xb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 18:23:42 -0500
-Date: Fri, 28 Feb 2014 15:25:20 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, gtdev@spearhead.de,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 1/1] serial: 8250_pci: fix support for MosChip 98xx boards
-Message-ID: <20140228232520.GA22275@kroah.com>
-References: <1393022777-5959-1-git-send-email-iws@ovro.caltech.edu>
- <20140221224949.GL16209@ovro.caltech.edu>
+	Fri, 28 Feb 2014 18:31:56 -0500
+Date: Fri, 28 Feb 2014 18:34:00 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <20140228163039.6eb6a8d6@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1402281829330.7966@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com> <20140225094352.73e0e28c@gandalf.local.home> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+ <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home> <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu> <40f095f7-605f-4885-951f-31da7d2d637a@email.android.com>
+ <alpine.DEB.2.10.1402281616280.7362@vincent-weaver-1.um.maine.edu> <20140228163039.6eb6a8d6@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140221224949.GL16209@ovro.caltech.edu>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 21, 2014 at 02:49:49PM -0800, Ira W. Snyder wrote:
-> On Fri, Feb 21, 2014 at 02:46:17PM -0800, Ira W. Snyder wrote:
-> > From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-> > 
-> > Commit 7808edcd306f22aeb23775d34e70b7fa2f58b852 "Basic support for
-> > Moschip 9900 family I/O chips" broke support for the 98xx boards. This
-> > is due to a missing check for the 99xx family inside the newly added
-> > pci_netmos_9900_setup() function, which is now used for all boards in
-> > the Moschip family.
-> > 
-> > The code for skipping BARs is incorrect for the 98xx boards. Using it
-> > causes two serial ports to be left undetected on my 9865 board.
-> > 
-> > By checking for the 99xx boards and using the new code exclusively for
-> > them, all of my serial ports are now detected.
-> > 
-> > Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
-> > ---
-> > 
-> > Here is the lspci output for my 9865 board. On the 05:00.2 device, the
-> > middle two serial ports (I/O ports 0x1010 and 0x1008) are left unused
-> > and undetected without this patch.
-> > 
-> > After the patch, they work perfectly.
-> > 
-> > 05:00.0 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-> > 	Subsystem: Device a000:1000
-> > 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 21
-> > 	I/O ports at 1028 [size=8]
-> > 	Memory at e0104000 (32-bit, non-prefetchable) [size=4K]
-> > 	Memory at e0103000 (32-bit, non-prefetchable) [size=4K]
-> > 	Capabilities: <access denied>
-> > 	Kernel driver in use: serial
-> > 	Kernel modules: parport_pc
-> > 
-> > 05:00.1 Serial controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller (prog-if 02 [16550])
-> > 	Subsystem: Device a000:1000
-> > 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 22
-> > 	I/O ports at 1020 [size=8]
-> > 	Memory at e0102000 (32-bit, non-prefetchable) [size=4K]
-> > 	Memory at e0101000 (32-bit, non-prefetchable) [size=4K]
-> > 	Capabilities: <access denied>
-> > 	Kernel driver in use: serial
-> > 	Kernel modules: parport_pc
-> > 
-> > 05:00.2 Communication controller: MosChip Semiconductor Technology Ltd. PCI 9865 Multi-I/O Controller
-> > 	Subsystem: Device a000:3004
-> > 	Flags: bus master, fast Back2Back, medium devsel, latency 32, IRQ 23
-> > 	I/O ports at 1018 [size=8]
-> > 	I/O ports at 1010 [size=8]
-> > 	I/O ports at 1008 [size=8]
-> > 	I/O ports at 1000 [size=8]
-> > 	Memory at e0100000 (32-bit, non-prefetchable) [size=4K]
-> > 	Capabilities: <access denied>
-> > 	Kernel driver in use: serial
-> > 
-> >  drivers/tty/serial/8250/8250_pci.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-> > index 50228eed3b6f..374551f196c5 100644
-> > --- a/drivers/tty/serial/8250/8250_pci.c
-> > +++ b/drivers/tty/serial/8250/8250_pci.c
-> > @@ -783,7 +783,8 @@ static int pci_netmos_9900_setup(struct serial_private *priv,
-> >  {
-> >  	unsigned int bar;
-> >  
-> > -	if ((priv->dev->subsystem_device & 0xff00) == 0x3000) {
-> > +	if ((priv->dev->subsystem_device & 0xff00) == 0x3000 &&
-> > +		(priv->dev->device & 0xff00) == 0x9900) {
-> >  		/* netmos apparently orders BARs by datasheet layout, so serial
-> >  		 * ports get BARs 0 and 3 (or 1 and 4 for memmapped)
-> >  		 */
-> > -- 
-> > 1.8.3.2
-> > 
+On Fri, 28 Feb 2014, Steven Rostedt wrote:
+
+> On Fri, 28 Feb 2014 16:18:23 -0500 (EST)
+> Vince Weaver <vincent.weaver@maine.edu> wrote:
 > 
-> Adding some CC's that were missed the first time. Greg's email address
-> has changed.
+> > I was away from the computer this afternoon and of course I have scores of 
+> > e-mails on this topic now with lots of competing patches.  Is there one 
+> > in particular I'm supposed to be testing?
+> 
+> I was poking fun at you on IRC for this exact reason:
+> 
+> <rostedt> poor Vince, I keep sending him new patches. "No, don't test this patch, now test this one. Oh wait, try this one instead"
+> * peterz sees Vince thinking: "stop... sending.. me.. damn... patches... already... !!!11!"
+> <rostedt> or at least, "Let me finish this test before I cancel it again for another damn patch"
+> <rostedt> then he's probably doing "I'm not going to run any tests now, until I wait a while to see if there's a new patch to test"
 
-Care to resend this in a format that I can apply it in?
+Well while it might appear that I spend all of my days finding perf_event 
+bugs, I actually am a college professor so I do occasionally have to run 
+off to teach a class, meet with students, or write papers/grants for other 
+academics to reject.
 
-thanks,
+It's nice others can reproduce the issue now, it would have saved me a lot 
+of trouble, although now in theory I have a much better handle of how to 
+use/abuse ftrace so I guess it was worth it.
 
-greg k-h
+Once the fix gets into git I'm sure the relentless perf_fuzzer will let us 
+know if there are any other issues left.  I do look forward to the day 
+when I can leave it running overnight and have a clean syslog the next 
+morning.
+
+Vince
