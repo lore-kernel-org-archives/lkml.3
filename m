@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaB1PKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:10:06 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43303 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909AbaB1PKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:10:01 -0500
-Message-ID: <5310A6A6.6030803@ti.com>
-Date: Fri, 28 Feb 2014 09:09:26 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752607AbaB1PNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:13:32 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:34694 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431AbaB1PNa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 10:13:30 -0500
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Chris Ball <chris@printf.net>
-CC: Balaji T K <balajitk@ti.com>, <linux-mmc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH V2 1/2] mmc: omap_hsmmc: Add support for quirky omap3
- hsmmc controller
-References: <1392356749-32091-1-git-send-email-nm@ti.com> <1392356749-32091-2-git-send-email-nm@ti.com> <20140214163102.GA21592@atomide.com>
-In-Reply-To: <20140214163102.GA21592@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Date: Fri, 28 Feb 2014 10:13:29 -0500
+X-Google-Sender-Auth: 70ADWcf2d8owu6E0te45VR0WkhY
+Message-ID: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
+Subject: Feb. Fedora Kernel Patch Report
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2014 10:31 AM, Tony Lindgren wrote:
-> * Nishanth Menon <nm@ti.com> [140213 21:48]:
->> When device is booted using devicetree, platforms impacted by Erratum
->> 2.1.1.128 is not detected easily in the mmc driver. This erratum
->> indicates that the module cannot do multi-block transfers. Platforms
->> such as LDP which use OMAP3 ES revision prior to ES3.0 are impacted by
->> this.
->>
->> Provide a new compatible property "ti,omap3-pre-es3-hsmmc" to allow
->> driver to determine if driver needs to implement quirks associated
->> with the specific module version (primarily because the IP revision
->> information is not sufficient for the same).
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
-> 
-> Looks good to me, would be good to get this into the -rc cycle
-> as LDP is one of the automated boot testing boards for us.
-> 
-> If you guys want me to pick up both of the patches let me know,
-> otherwise feel free to add my ack.
-> 
+It's been a while since I sent one of these.  Mostly that's due to the
+overlap between which upstream stable version we're using in Fedora
+across the releases, and how fast those have been happening upstream.
+We're settled on 3.13.y now, and with 3.14-rc4 out there things have
+calmed down enough to take stock again.
 
-Chris,
-would you be picking up the series that fixes LDP dt boot behavior or
-should Tony pick it up?
+Here's the patches we have on top of 3.13.5.
 
-https://patchwork.kernel.org/patch/3650061/
-https://patchwork.kernel.org/patch/3650031/
+josh
 
+fs-proc-devtree-remove_proc_entry.patch
+- Upstream commit c1d867a54d426b45da017fbe8e585f8a3064ce8d
 
--- 
-Regards,
-Nishanth Menon
+drm-radeon-Disable-writeback-by-default-on-ppc.patch
+- This is superseded by upstream commit
+ea31bf697d27270188a93cd78cf9de4bc968aca3 but that seems to be a bit
+big for a stable backport
+
+dm-cache-policy-mq_fix-large-scale-table-allocation-bug.patch (rhbz 993744)
+- Still pending upstream (no idea why...)
+
+sunrpc-create-a-new-dummy-pipe-for-gssd-to-hold-open.patch
+sunrpc-replace-gssd_running-with-more-reliable-check.patch
+nfs-check-gssd-running-before-krb5i-auth.patch
+- Added to fix a 15sec mount delay
+- Upstream commits 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6
+  89f842435c630f8426f414e6030bc2ffea0d6f81
+  6aa23d76a7b549521a03b63b6d5b7880ea87eab7 respectively
+
+rpc_pipe-remove-the-clntXX-dir-if-creating-the-pipe-fails.patch
+sunrpc-add-an-info-file-for-the-dummy-gssd-pipe.patch
+rpc_pipe-fix-cleanup-of-dummy-gssd-directory-when-notification-fails.patch
+- Fixes for some of the patches above (rhbz 1037793)
+- Upstream commits 3396f92f8be606ea485b0a82d4e7749a448b013b
+  e2f0c83a9de331d9352185ca3642616c13127539
+  23e66ba97127ff3b064d4c6c5138aa34eafc492f respectively
+
+elantech-Properly-differentiate-between-clickpads-an.patch (rhbz 1030802)
+- Upstream commit c15bdfd5b9831e4cab8cfc118243956e267dd30e
+
+KVM-MMU-handle-invalid-root_hpa-at-__direct_map.patch (rhbz 924916)
+- Upstream commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9
+- Probably should grab 37f6a4e237303549c8676dfe1fd1991ceab512eb too
+
+KVM-VMX-fix-use-after-free-of-vmx-loaded_vmcs.patch (rhbz 1047892)
+- Upstream commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56
+
+0001-Input-wacom-make-sure-touch_max-is-set-for-touch-dev.patch
+0002-Input-wacom-add-support-for-three-new-Intuos-devices.patch
+0003-Input-wacom-add-reporting-of-SW_MUTE_DEVICE-events.patch
+- rhbz 1003167 1046238
+- Upstream commits 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4
+  b5fd2a3e92ca5c8c1f3c20d31ac5daed3ec4d604
+  961794a00eab03f4344b7d5e825e8e789e55da87
+
+Input-ALPS-add-support-for-Dolphin-devices.patch (rhbz 953211)
+- Upstream commit ee65d4b36de8ddf4467f788faa5d8ddd1bfcdaa2
+
+xhci-fix-resume-issues-on-renesas-chips-in-samsung-laptops.patch (rhbz 950630)
+- Upstream commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
+- Oddly not queued for stable?
+
+cgroup-fixes.patch (rhbz 1045755)
+- Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
+- There was a 3.12 version of this patch sent to stable list from
+Michal Hocko.  I don't remember why it wasn't applied, or why it
+wasn't applied for 3.13.y...
+
+ipv6-introduce-IFA_F_NOPREFIXROUTE-and-IFA_F_MANAGETEMPADDR-flags.patch
+ipv6-addrconf-revert-if_inet6ifa_flag-format.patch
+- rhbz 1064430 1056711
+- Backports of commits to add this stuff in 3.14.  Not suitable for stable.
+
+cifs-ensure-that-uncached-writes-handle-unmapped-areas-correctly.patch
+cifs-sanity-check-length-of-data-to-send-before-sending.patch
+cifs-mask-off-top-byte-in-get_rfc1002_length.patch
+- rhbz 1064253 CVE-2014-0069 rhbz 1068862
+- Upstream commit 5d81de8e8667da7135d3a32a964087c0faf5483f and two
+additional fixes
+
+cpufreq-powernow-k8-Initialize-per-cpu-data-structures-properly.patch
+(rhbz 1054408)
+- Upstream commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e
+- CC'd to stable but not queued
+
+e100-Fix-disabling-already-disabled-device-warning.patch (rhbz 994438)
+- Upstream commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4
+
+usb-ehci-fix-deadlock-when-threadirqs-option-is-used.patch
+- Still pending upstream
