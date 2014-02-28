@@ -1,184 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378AbaB1Jue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 04:50:34 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:33554 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021AbaB1Ju3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 04:50:29 -0500
-Date: Fri, 28 Feb 2014 09:50:22 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v6 2/2] ARM hibernation / suspend-to-disk
-Message-ID: <20140228095022.GA25090@e102568-lin.cambridge.arm.com>
-References: <1393545478-14908-1-git-send-email-sebastian.capella@linaro.org>
- <1393545478-14908-3-git-send-email-sebastian.capella@linaro.org>
+	id S1751447AbaB1Jxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 04:53:51 -0500
+Received: from nm12-vm2.bullet.mail.gq1.yahoo.com ([98.136.218.189]:48645 "EHLO
+	nm12-vm2.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751077AbaB1Jxr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 04:53:47 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 321190.27806.bm@omp1013.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=FzNYE7LI22ALD5SHzo+Kp51ed4AdFXEuM7cz8nrpnMa13OStg8kjfyZtjxdVXBsLMuS1ZREcQ6EQPg2LlBKhg2Pm6waJYIYVBDzwAdWTQbIjrfgA8CSOBz4WHes6idLio/sUiRfhX/x5iue3dKJswTQpKD0fJSeGPPQo/N5f168=;
+X-YMail-OSG: bEKjkYQVM1k8zQgKhd8AZrrR3SlEFaQp.I4.Se6Gv7UwXWZ
+ eIfWi1jLEyu77tgonx8H.JE4SNNIl40Qe9la5gZ_v.NCyHhm2hWJ.sIcrzvW
+ 3xLIDZJiWRR._e6LKG3Z0PhwlpuSvZuZN3b8fzMaMOgPwkiOOWp89xA4ZFLQ
+ gb_uBYGvp2YBUjTQ4d9yiPOfcUIiPb6OgWwUHmHNCPJB2XCg62nCX757yHJw
+ e_OE4mC50bD8mMpEV4DC.Ff.NmFxqsBqb_sM809V8f6eZbdA1OwkiP0YRrF4
+ WKeit7RP0xtgyxv1W5L2hcOsBNciyXPXItSa2VBWGNJSeIVpm2ou4SdeMsB6
+ TpRlUl0WN4h6MMXHkbjoMO49Bn25vjb5mokFG.G3wiq7xjXoRXn9JWvJJbVG
+ UweFPs_gixJ8mEHj2VT26wdWgDybtOIPwCGH58dU2ITrEipZMrsxgbCDi_1_
+ oqnGNn7TEa5ZCSrLMUBhyVV6VFbbBl_fXcNDEMkrxNOWjPWB.EdwfKs9z3hu
+ N123_3AWcgdFnGzAV8u3gM71kPYyPWUgO
+X-Rocket-MIMEInfo: 002.001,Pk9uIEZyaWRheSwgRmVicnVhcnkgMjgsIDIwMTQgMzo0MiBBTSwgRGFuIENhcnBlbnRlciA8ZGFuLmNhcnBlbnRlckBvcmFjbGUuY29tPiB3cm90ZToKCj4.T24gRnJpLCBGZWIgMjgsIDIwMTQgYXQgMDM6MTU6NDVBTSAtMDYwMCwgQ2hhc2UgU291dGh3b29kIHdyb3RlOgo.PiBUaGlzIHBhdGNoIGludHJvZHVjZXMgYSBzaW1wbGUgaGVscGVyIGZ1bmN0aW9uLCBvdXRsXzE1NjRfdGltZXIoKSwgdG8KPj4gYWxsb3cgc2V2ZXJhbCBsaW5lcyB3aGljaCB2aW9sYXRlIHRoZSBjaGFyYWN0ZXIgbGltaXQgdG8gYmUBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.177.636
+References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com> <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com> <20140228094215.GJ26776@mwanda>
+Message-ID: <1393581227.57507.YahooMailNeo@web164006.mail.gq1.yahoo.com>
+Date: Fri, 28 Feb 2014 01:53:47 -0800 (PST)
+From: Chase Southwood <chase.southwood@yahoo.com>
+Reply-To: Chase Southwood <chase.southwood@yahoo.com>
+Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix lines that are over 80 characters
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140228094215.GJ26776@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <1393545478-14908-3-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 28 Feb 2014 09:50:31.0502 (UTC) FILETIME=[84BA66E0:01CF346A]
-X-MC-Unique: 114022809502600901
-Content-Type: text/plain; charset=WINDOWS-1252
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:57:58PM +0000, Sebastian Capella wrote:
+>On Friday, February 28, 2014 3:42 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-[...]
+>>On Fri, Feb 28, 2014 at 03:15:45AM -0600, Chase Southwood wrote:
+>> This patch introduces a simple helper function, outl_1564_timer(), to
+>> allow several lines which violate the character limit to be shortened.
+>> A handful of other lines that are too long are appropriately split as
+>> well.
+>> 
+>> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+>> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+>> ---
+>> 2: introduced outl_1564_timer() at the suggestion of Dan.
+>>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 83 +++++++++++++---------
+>>  1 file changed, 49 insertions(+), 34 deletions(-)
+>> 
+>> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> index 2b47fa1..d958d3c 100644
+>> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+>> @@ -99,6 +99,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+>>  #define APCI1564_TCW_WARN_TIMEVAL            24
+>>  #define APCI1564_TCW_WARN_TIMEBASE            28
+>>  
+>> +/* Helper functions */
+>
+>Obvious comment is too obvious.
+>
+>> +static void outl_1564_timer(struct addi_private *, unsigned int, unsigned int);
+>> +
+>
+>Avoid forward declarations.  Put the function itself here.
+>
+>Do a function for APCI1564_DIGITAL_IP as well.
+>
+>outl_1564_digital_ip()
+>inl_1564_digital_ip()
+>
+>To be honest, I'm not sure how much the 1564 adds to the name.  The
+>names should match of course.
+>
+>I wonder if this line is buggy?:
+>outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1); /* Disable the >and/or interrupt */
+>Should it be?
+>outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + >APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
+>
+>You would need to read the specs to be sure.
+>
+>Anyway, take some more time with this and play with different ways to
+>clean it up.
+>
+>regards,
+>
+>dan carpenter
 
-> diff --git a/arch/arm/kernel/hibernate.c b/arch/arm/kernel/hibernate.c
-> new file mode 100644
-> index 0000000..a41e0e3
-> --- /dev/null
-> +++ b/arch/arm/kernel/hibernate.c
-> @@ -0,0 +1,113 @@
-> +/*
-> + * Hibernation support specific for ARM
-> + *
-> + * Derived from work on ARM hibernation support by:
-> + *
-> + * Ubuntu project, hibernation support for mach-dove
-> + * Copyright (C) 2010 Nokia Corporation (Hiroshi Doyu)
-> + * Copyright (C) 2010 Texas Instruments, Inc. (Teerth Reddy et al.)
-> + *  https://lkml.org/lkml/2010/6/18/4
-> + *  https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/027422.html
-> + *  https://patchwork.kernel.org/patch/96442/
-> + *
-> + * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-> + *
-> + * License terms: GNU General Public License (GPL) version 2
-> + */
-> +
-> +#include <linux/mm.h>
-> +#include <linux/suspend.h>
-> +#include <asm/tlbflush.h>
-> +#include <asm/cacheflush.h>
+Hey Dan!
 
-You can drop tlbflush.h and cacheflush.h, they do not seem to be needed.
-
-> +#include <asm/system_misc.h>
-> +#include <asm/idmap.h>
-> +#include <asm/suspend.h>
-> +
-> +extern const void __nosave_begin, __nosave_end;
-> +
-> +int pfn_is_nosave(unsigned long pfn)
-> +{
-> +	unsigned long nosave_begin_pfn =
-> +			__pa_symbol(&__nosave_begin) >> PAGE_SHIFT;
-> +	unsigned long nosave_end_pfn =
-> +			PAGE_ALIGN(__pa_symbol(&__nosave_end)) >> PAGE_SHIFT;
-> +
-> +	return (pfn >= nosave_begin_pfn) && (pfn < nosave_end_pfn);
-> +}
-> +
-> +void notrace save_processor_state(void)
-> +{
-> +	WARN_ON(num_online_cpus() != 1);
-> +	local_fiq_disable();
-> +}
-> +
-> +void notrace restore_processor_state(void)
-> +{
-> +	local_fiq_enable();
-> +}
-> +
-> +/*
-> + * Snapshot kernel memory and reset the system.
-> + *
-> + * swsusp_save() is executed in the suspend finisher so that the CPU
-> + * context pointer and memory are part of the saved image, which is
-> + * required by the resume kernel image to restart execution from
-> + * swsusp_arch_suspend().
-> + *
-> + * soft_restart is not technically needed, but is used to get success
-> + * returned from cpu_suspend.
-> + *
-> + * When soft reboot completes, the hibernation snapshot is written out.
-> + */
-> +static int notrace arch_save_image(unsigned long unused)
-> +{
-> +	int ret;
-> +
-> +	ret = swsusp_save();
-> +	if (ret == 0)
-> +		soft_restart(virt_to_phys(cpu_resume));
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Save the current CPU state before suspend / poweroff.
-> + */
-> +int notrace swsusp_arch_suspend(void)
-> +{
-> +	return cpu_suspend(0, arch_save_image);
-> +}
-> +
-> +/*
-> + * The framework loads the hibernation image into a linked list anchored
-> + * at restore_pblist, for swsusp_arch_resume() to copy back to the proper
-> + * destinations.
-> + *
-> + * To make this work if resume is triggered from initramfs, the
-> + * pagetables need to be switched to allow writes to kernel mem.
-> + */
-
-Comment above needs updating. We are switching page tables to a set of
-page tables that are certain to live at the same location in the older
-kernel, that's the only reason, as we discussed. soft_restart will make
-sure (again) to switch to 1:1 page tables so that we can call cpu_resume
-with the MMU off.
-
-> +static void notrace arch_restore_image(void *unused)
-> +{
-> +	struct pbe *pbe;
-> +
-> +	cpu_switch_mm(idmap_pgd, &init_mm);
-> +	for (pbe = restore_pblist; pbe; pbe = pbe->next)
-> +		copy_page(pbe->orig_address, pbe->address);
-> +
-> +	soft_restart(virt_to_phys(cpu_resume));
-> +}
-> +
-> +static u8 resume_stack[PAGE_SIZE/2] __nosavedata;
-> +
-> +/*
-> + * Resume from the hibernation image.
-> + * Due to the kernel heap / data restore, stack contents change underneath
-> + * and that would make function calls impossible; switch to a temporary
-> + * stack within the nosave region to avoid that problem.
-> + */
-> +int swsusp_arch_resume(void)
-> +{
-> +	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-> +	call_with_stack(arch_restore_image, 0,
-> +		resume_stack + sizeof(resume_stack));
-
-This does not guarantee your stack is 8-byte aligned, that's not AAPCS
-compliant and might buy you trouble.
-
-Either you align the stack or you align the pointer you are passing.
-
-Please have a look at kernel/process.c
+Thanks a lot, I really appreciate all of the really good feedback.  It's getting late now, but tomorrow I'll work on tidying everything up based on all of these comments and double check that hardware spec as well.
 
 Thanks,
-Lorenzo
-
+Chase
