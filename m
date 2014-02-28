@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaB1Poo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:44:44 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43797 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaB1Pon (ORCPT
+	id S1752749AbaB1PrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:47:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33436 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaB1PrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:44:43 -0500
-Message-ID: <5310AEA8.1070804@ti.com>
-Date: Fri, 28 Feb 2014 10:43:36 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 28 Feb 2014 10:47:20 -0500
+Date: Fri, 28 Feb 2014 16:47:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [PATCH] x86 trace: Fix page fault tracing bug
+Message-ID: <20140228154708.GI9987@twins.programming.kicks-ass.net>
+References: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <galak@kernel.crashing.org>,
-        <rob@landley.net>, <robherring2@gmail.com>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <rob.herring@calxeda.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <dwmw2@infradead.org>, <nsekhar@ti.com>
-Subject: Re: [PATCH v6 0/2]  Introduce AEMIF driver for Davinci/Keystone archs
-References: <1393262772-24442-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1393262772-24442-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393601620-13117-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Fri, Feb 28, 2014 at 04:33:40PM +0100, Jiri Olsa wrote:
 
-On Monday 24 February 2014 12:26 PM, Ivan Khoronzhuk wrote:
-> These patches introduce Async External Memory Interface (EMIF16/AEMIF)
-> controller driver for Davinci/Keystone archs.
-> 
-> For more informations see documentation:
-> Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
-> OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
-> Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
-> 
-[..]
+While I like the idea of just pushing up the CR2 read; the below does
+the read too late still, exception_enter() also has a tracepoint in.
 
+> @@ -1267,9 +1269,18 @@ dotraplinkage void __kprobes
+>  trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  {
+>  	enum ctx_state prev_state;
+> +	unsigned long address;
+>  
+>  	prev_state = exception_enter();
+> +
+> +	/*
+> +	 * The tracepoint processing could trigger another page
+> +	 * fault (user space callchain reading) and destroy the
+> +	 * original cr2 value, so read the faulting address now.
+> +	 */
+> +	address = read_cr2();
+> +
+>  	trace_page_fault_entries(regs, error_code);
+> -	__do_page_fault(regs, error_code);
+> +	__do_page_fault(regs, error_code, address);
+>  	exception_exit(prev_state);
+>  }
+> -- 
+> 1.7.11.7
 > 
-> v5..v6:
-> - memory: ti-aemif: introduce AEMIF driver
-> - memory: ti-aemif: add bindings for AEMIF driver
-> 	changed opaque names for cs node properties
-> 
-Can you please pick these two patches ? 
-
-Regards,
-Santosh
