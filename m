@@ -1,76 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaB1O0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 09:26:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:41324 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaB1O0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 09:26:33 -0500
-Message-ID: <53109C92.10104@ti.com>
-Date: Fri, 28 Feb 2014 16:26:26 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752168AbaB1OaL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 09:30:11 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:52073 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751447AbaB1OaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 09:30:08 -0500
+Date: Fri, 28 Feb 2014 15:27:53 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 4/5] DMA: sun6i: Add driver for the Allwinner A31 DMA
+ controller
+Message-ID: <20140228142753.GQ607@lukather>
+References: <1393258967-4843-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1393258967-4843-5-git-send-email-maxime.ripard@free-electrons.com>
+ <1393327695.28803.25.camel@smile.fi.intel.com>
+ <20140228103614.GM607@lukather>
+ <1393594391.28803.79.camel@smile.fi.intel.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Lee Jones <lee.jones@linaro.org>
-CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
- regmap patch
-References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com>
-In-Reply-To: <53108F90.7070608@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hEarWVD7htqb1VxP"
+Content-Disposition: inline
+In-Reply-To: <1393594391.28803.79.camel@smile.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 03:30 PM, Nishanth Menon wrote:
-> TWL6030 can do 3.3MHz by default and there are no speed registers to
-> configure.
 
-According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
-not seen registers or pins to select the speed. As the documentation puts
-this: High-speed mode (limited to 2.4Mbit/s maximum)
+--hEarWVD7htqb1VxP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Fri, Feb 28, 2014 at 03:33:11PM +0200, Andy Shevchenko wrote:
+> On Fri, 2014-02-28 at 11:36 +0100, Maxime Ripard wrote:
+> > Hi Andy,
+> >=20
+> > On Tue, Feb 25, 2014 at 01:28:15PM +0200, Andy Shevchenko wrote:
+> > > > +static irqreturn_t sun6i_dma_interrupt(int irq, void *dev_id)
+> > > > +{
+> > > > +	struct sun6i_dma_dev *sdev =3D (struct sun6i_dma_dev *)dev_id;
+> > > > +	struct sun6i_vchan *vchan;
+> > > > +	struct sun6i_pchan *pchan;
+> > > > +	int i, j, ret =3D 0;
+> > > > +	u32 status;
+> > > > +
+> > > > +	for (i =3D 0; i < 2; i++) {
+> > > > +		status =3D readl(sdev->base + DMA_IRQ_STAT(i));
+> > > > +		if (!status) {
+> > > > +			ret |=3D IRQ_NONE;
+> > >=20
+> > > Maybe move this to definition block.
+> > >=20
+> > > > +			continue;
+> > > > +		}
+> > > > +
+> > > > +		dev_dbg(sdev->slave.dev, "DMA irq status %s: 0x%x\n",
+> > > > +			i ? "high" : "low", status);
+> > > > +
+> > > > +		writel(status, sdev->base + DMA_IRQ_STAT(i));
+> > > > +
+> > > > +		for (j =3D 0; (j < 8) && status; j++) {
+> > > > +			if (status & DMA_IRQ_QUEUE) {
+> > > > +				pchan =3D sdev->pchans + j;
+> > > > +				vchan =3D pchan->vchan;
+> > > > +
+> > > > +				if (vchan) {
+> > > > +					unsigned long flags;
+> > > > +
+> > > > +					spin_lock_irqsave(&vchan->vc.lock,
+> > > > +							  flags);
+> > > > +					vchan_cookie_complete(&pchan->desc->vd);
+> > > > +					pchan->done =3D pchan->desc;
+> > > > +					spin_unlock_irqrestore(&vchan->vc.lock,
+> > > > +							       flags);
+> > > > +				}
+> > > > +			}
+> > > > +
+> > > > +			status =3D status >> 4;
+> > > > +		}
+> > > > +
+> > > > +		ret |=3D IRQ_HANDLED;
+> > >=20
+> > > In case one is handled, another is not, what you have to do?
+> >=20
+> > The interrupt status is split across two registers. In the case where
+> > one of the two register reports an interrupt, we still have to handle
+> > our interrupt, we actually did, so we have to return IRQ_HANDLED.
+>=20
+> You removed the code below this assignment, but if I remember correctly
+> you check for exact value there.
+>=20
+> In case of one is not handled and the other is handled you will have ret
+> =3D IRQ_HANDLED | IRQ_NONE. Thus, your following code will not be
+> executed. Is it by design?
 
->> Also you could have more devices on the bus, wired for 3.4MHz. In that case we
->> would need to make sure that the first access happens with 100KHz to twl6040
->> to select 3.4MHz mode, switch the controller speed and allow the communication
->> to other chips. It is another question how the 3.4MHz clients will interpret
->> the 100KHz communication on the bus, I guess it is ignored by them.
-> As far as the i2c spec 2.1 says:
-> "Fast-mode devices are downward-compatible and can communicate with
-> Standard-mode devices in a 0 to 100 kbit/s I2C-bus system"
-> ...
-> "Hs-mode devices can transfer information at bit rates of up to 3.4
-> Mbit/s, yet they remain fully downward compatible with Fast- or
-> Standard-mode (F/S-mode) devices for bi-directional communication in a
-> mixed-speed bus system."
-> 
-> So, they are backward compatible.
+The code that got removed was
 
-I just tried it on PandaBoard to set the i2c speed to 24MHz. If I do not touch
-the twl6040 ACCCTL register's i2cmode I can not access to twl6040 later on.
-However if I select the high-speed mode as the first write everything is fine
-afterwards.
-Hrm, it is possible that I can write with high-speed to twl6040 but the
-twl6040 is sending back the data in normal-mode?
-So in theory if I have the ACCCTL write as a first I2C access towards twl6040
-we might be safe if the bus is in high-speed mode?
+if (ret =3D=3D IRQ_HANDLED)
+   tasklet_schedule()
 
-If I have fast mode configured to the controller, I can still communicate with
-twl6040 even if it is set to normal mode.
+return ret;
 
-I still think that this patch is safe for now. We could try to figure out how
-to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
-done in the same series.
+The only thing that wouldn't have been executed if we had no
+interrupts to report was the tasklet_schedule.
 
-Now after several boots:
-It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
-right after cold power on.
-So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
-register. But the content of ACCCTL register seams to be preserved between
-reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
+This has lightly changed though in the v2, thanks to your comments.
 
--- 
-Péter
+I don't have the | anymore, and call tasklet_schedule directly in the
+loop.
+
+I'll send the v2 in a short while.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--hEarWVD7htqb1VxP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTEJzpAAoJEBx+YmzsjxAgcT4P/1Sd3ex0WJavxclx7l99pNXu
+FZzNlgMbo4aSAopX+l8asYmk3vIem0kl02IDOa8hW5cs8rH1Nr4gKYhVQprGj17n
+525tEjrKdAv96yPqhROByPdbPGcT64B9OrPrSnhEx/kLg0EOtK95gUwYeuVc2D3u
+Ifi1pZwwivjDSkisTfswFoQ48kaH6nDSTIE81j8fLotgxMAwU6zzSvL2Jd1UG9eY
+Oxy/UHNsnEcY5lXvOZh9qu4vi9r+q6bN+zgc3uEUjccx0x5h7QTTbLr/kLm9h5dM
+GPqYT6WPy8geHuV4eVxH9oUoffaeOP0ZUUJMeR/ai9oCSCacud6Obpg8orP0WuOl
+Nnk5hh0hdoi0AORPr5240tnHA+Dz0+JKCvYU/i7EIj9Bz9wnWBESpGWVeuciUHmp
+hZe9mESm6AbIVDeONVvxmrd1UM5hYbdlv/QUmwPaD4qTdXoumvApbS261qLEo3Zo
+qBFyu5Y0+mFtvCP7sF/teoVeeT2PtiTZ8/8i9sMgxCeN46je3N2UodP8D4+wRgzy
+aFZJ4tMWjABODCiJFJWUOuNoNR1zMUSeHen3Wbd+WcUIk1mlS5ZtrbwlLYRc1MLD
+RH/N6qXxzu0jTP7nPkEZi6ldAP3j32Qn3lvLM6ghe8f8yUl3y7B4P96f3Bs6P4U0
+3fPl1EwfaOMqFzWMcrXa
+=g5Fm
+-----END PGP SIGNATURE-----
+
+--hEarWVD7htqb1VxP--
