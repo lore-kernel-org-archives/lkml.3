@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaB1PFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:05:21 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:37823 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976AbaB1PFT (ORCPT
+	id S1752451AbaB1PHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:07:15 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:42131 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819AbaB1PHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:05:19 -0500
-Date: Fri, 28 Feb 2014 10:07:29 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-In-Reply-To: <20140228092341.12a40f7c@gandalf.local.home>
-Message-ID: <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home> <20140224193043.GP6835@laptop.programming.kicks-ass.net> <530C12CA.6070308@zytor.com>
- <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com> <20140225094352.73e0e28c@gandalf.local.home> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
- <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 28 Feb 2014 10:07:12 -0500
+Message-ID: <5310A61C.5000105@ti.com>
+Date: Fri, 28 Feb 2014 09:07:08 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Lee Jones <lee.jones@linaro.org>
+CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
+ regmap patch
+References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com> <53109C92.10104@ti.com>
+In-Reply-To: <53109C92.10104@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014, Steven Rostedt wrote:
-
-> Interesting. Are you doing a perf function trace?
+On 02/28/2014 08:26 AM, Peter Ujfalusi wrote:
+> On 02/28/2014 03:30 PM, Nishanth Menon wrote:
+>> TWL6030 can do 3.3MHz by default and there are no speed registers to
+>> configure.
 > 
-> And just in case, can you add this patch and make sure the copy is
-> called by NMI.
+> According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
+> not seen registers or pins to select the speed. As the documentation puts
+> this: High-speed mode (limited to 2.4Mbit/s maximum)
 
-199.900682: function:             trace_do_page_fault
-199.900683: page_fault_user:      address=__per_cpu_end ip=__per_cpu_end error_code=0x6
-199.900683: function:             perf_swevent_get_recursion_context
-199.900684: function:             perf_tp_event
-199.900684: function:                perf_swevent_event
-199.900684: function:                   perf_swevent_overflow
-199.900684: function:                      __perf_event_overflow
-199.900685: function:                         perf_prepare_sample
-199.900685: function:                            __perf_event_header__init_id
-199.900685: function:                               task_tgid_nr_ns
-199.900685: function:                               perf_event_tid
-199.900686: function:                                  __task_pid_nr_ns
-199.900686: function:                            perf_callchain
-199.900687: function:             copy_from_user_nmi
-199.900687: function:             trace_do_page_fault
-199.900687: page_fault_kernel:    address=irq_stack_union ip=copy_user_generic_string error_code=0x0
-199.900688: function:                __do_page_fault
-199.900688: function:                   bad_area_nosemaphore
-199.900688: function:                      __bad_area_nosemaphore
-199.900689: function:                         no_context
-199.900689: function:                            fixup_exception
-199.900689: function:                               search_exception_tables
-199.900689: function:                                  search_extable
-199.900691: function:             copy_user_handle_tail
-199.900691: function:             trace_do_page_fault
-199.900691: page_fault_kernel:    address=irq_stack_union ip=copy_user_handle_tail error_code=0x0
-199.900691: function:                __do_page_fault
-199.900692: function:                   bad_area_nosemaphore
-199.900692: function:                      __bad_area_nosemaphore
-199.900692: function:                         no_context
-199.900692: function:                            fixup_exception
-199.900692: function:                               search_exception_tables
-199.900692: function:                                  search_extable
-199.900693: function:             save_stack_trace
-199.900693: function:                dump_trace
-199.900694: function:                   print_context_stack
-199.900694: function:                      __kernel_text_address
-199.900694: function:                         is_module_text_address
-199.900695: function:                            __module_text_address
-199.900695: function:                               __module_address
-199.900695: function:                      __kernel_text_address
-199.900695: function:                         is_module_text_address
-199.900696: function:                            __module_text_address
-199.900696: function:                               __module_address
-...
-199.900705: function:                      __kernel_text_address
-199.900809: kernel_stack:         <stack trace>
-=> perf_callchain (ffffffff810d35a2)
-=> perf_prepare_sample (ffffffff810cfae3)
-=> __perf_event_overflow (ffffffff810d02f4)
-=> perf_swevent_overflow (ffffffff810d04e3)
-=> perf_swevent_event (ffffffff810d0574)
-=> perf_tp_event (ffffffff810d070c)
-=> perf_trace_x86_exceptions (ffffffff810341b6)
-=> trace_do_page_fault (ffffffff81537702)
-=> trace_page_fault (ffffffff81534772)
-199.900810: function:             perf_output_begin
-199.900810: function:             __do_page_fault
-199.900810: function:                __perf_sw_event
-199.900810: function:                   perf_swevent_get_recursion_context
-199.900811: function:                down_read_trylock
-199.900811: function:                _cond_resched
-199.900811: function:                find_vma
-199.900811: function:                bad_area
-199.900812: function:                   up_read
-199.900812: function:                   __bad_area_nosemaphore
-199.900812: function:                      is_prefetch
-199.900812: function:                         convert_ip_to_linear
-199.900813: function:                      unhandled_signal
-199.900813: function:                      __printk_ratelimit
-199.900813: function:             _raw_spin_trylock
-199.900813: function:             _raw_spin_unlock_irqrestore
-199.900814: function:                      printk
-199.900814: function:                         vprintk_emit
+Aye, you are correct, the latest data sheet does show this - i made
+the mistake of opening an older spec doc :(..
 
+>>> Also you could have more devices on the bus, wired for 3.4MHz. In that case we
+>>> would need to make sure that the first access happens with 100KHz to twl6040
+>>> to select 3.4MHz mode, switch the controller speed and allow the communication
+>>> to other chips. It is another question how the 3.4MHz clients will interpret
+>>> the 100KHz communication on the bus, I guess it is ignored by them.
+>> As far as the i2c spec 2.1 says:
+>> "Fast-mode devices are downward-compatible and can communicate with
+>> Standard-mode devices in a 0 to 100 kbit/s I2C-bus system"
+>> ...
+>> "Hs-mode devices can transfer information at bit rates of up to 3.4
+>> Mbit/s, yet they remain fully downward compatible with Fast- or
+>> Standard-mode (F/S-mode) devices for bi-directional communication in a
+>> mixed-speed bus system."
+>>
+>> So, they are backward compatible.
+> 
+> I just tried it on PandaBoard to set the i2c speed to 24MHz. If I do not touch
+> the twl6040 ACCCTL register's i2cmode I can not access to twl6040 later on.
+> However if I select the high-speed mode as the first write everything is fine
+> afterwards.
+> Hrm, it is possible that I can write with high-speed to twl6040 but the
+> twl6040 is sending back the data in normal-mode?
+
+I doubt it would do that as it would be a violation of i2c high speed
+specification.
+
+> So in theory if I have the ACCCTL write as a first I2C access towards twl6040
+> we might be safe if the bus is in high-speed mode?
+
+I think you did catch the real behavior in the email below.
+
+I do however suggest that you put one of those i2c analyser on the
+rail to see what is happening. else, we'd be doing a lot of guessing here.
+
+> 
+> If I have fast mode configured to the controller, I can still communicate with
+> twl6040 even if it is set to normal mode.
+
+> 
+> I still think that this patch is safe for now. We could try to figure out how
+> to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
+> done in the same series.
+
+?? you mean set i2c bus speed to full speed on PandaBoard? it is
+already full speed[1]!
+
+> 
+> Now after several boots:
+> It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
+> right after cold power on.
+> So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
+> register. But the content of ACCCTL register seams to be preserved between
+> reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
+
+This observation is the key.
+
+Are you power cycling the regulators for TWL6040 as part of your
+shutdown handler? Did you read the ACCTL register after a reboot to
+see if the register contents are still the same as before?
+
+Based on this observation, I suggest switching [1] to 100KHz.
+
+[1]
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/arm/boot/dts/omap4-panda-common.dtsi#n291
+
+-- 
+Regards,
+Nishanth Menon
