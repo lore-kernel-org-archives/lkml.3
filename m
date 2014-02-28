@@ -1,36 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaB1GrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 01:47:25 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59063 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaB1GrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 01:47:22 -0500
-Message-ID: <531030F8.3050005@gmail.com>
-Date: Fri, 28 Feb 2014 14:47:20 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Ryan <ryanphilips19@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Suspend-resume tracing
-References: <CANMsd01L5v0tVsEdg6Ua3HXsMGB+Zg6BJ2DfDDi7D_gwU6Zs+A@mail.gmail.com>
-In-Reply-To: <CANMsd01L5v0tVsEdg6Ua3HXsMGB+Zg6BJ2DfDDi7D_gwU6Zs+A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751898AbaB1GtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 01:49:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25227 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157AbaB1GtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 01:49:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,560,1389772800"; 
+   d="scan'208";a="491350609"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Chew Kean Ho <kean.ho.chew@intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] pwm: add support for Intel Low Power Subsystem PWM
+Date: Fri, 28 Feb 2014 22:50:57 +0800
+Message-Id: <1393599057-26451-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2014 03:21 AM, Ryan wrote:
-> Is there a way to trace suspend-resume without using ftrace and printk.
->
-> Thanks.
-> ryan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-lttng
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+Add support for Intel Low Power I/O subsystem PWM controllers found on
+Intel BayTrail SoC.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
+Signed-off-by: Chang, Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+ drivers/pwm/Kconfig    |   10 +++
+ drivers/pwm/Makefile   |    1 +
+ drivers/pwm/pwm-lpss.c |  179 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 190 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pwm/pwm-lpss.c
+
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 0b7a3c9..aaa91cc 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -119,6 +119,16 @@ config PWM_LPC32XX
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-lpc32xx.
+ 
++config PWM_LPSS
++	tristate "Intel LPSS PWM support"
++	depends on ACPI
++	help
++	  Generic PWM framework driver for Intel Low Power Subsystem PWM
++	  controller.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-lpss.
++
+ config PWM_MXS
+ 	tristate "Freescale MXS PWM support"
+ 	depends on ARCH_MXS && OF
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index d8906ec..61bf073 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+ obj-$(CONFIG_PWM_LP3943)	+= pwm-lp3943.o
+ obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
++obj-$(CONFIG_PWM_LPSS)		+= pwm-lpss.o
+ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
+ obj-$(CONFIG_PWM_PCA9685)	+= pwm-pca9685.o
+ obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
+diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+new file mode 100644
+index 0000000..2ecd945
+--- /dev/null
++++ b/drivers/pwm/pwm-lpss.c
+@@ -0,0 +1,179 @@
++/*
++ * Intel Low Power Subsystem PWM controller driver
++ *
++ * Copyright (C) 2014, Intel Corporation
++ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
++ * Author: Chew Kean Ho <kean.ho.chew@intel.com>
++ * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
++ * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/acpi.h>
++#include <linux/clk.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pwm.h>
++#include <linux/platform_device.h>
++
++#define PWM				0x00000000
++#define PWM_ENABLE			BIT(31)
++#define PWM_SW_UPDATE			BIT(30)
++#define PWM_BASE_UNIT_SHIFT		8
++#define PWM_BASE_UNIT_MASK		0x00ffff00
++#define PWM_ON_TIME_DIV_MASK		0x000000ff
++#define PWM_DIVISION_CORRECTION		0x2
++#define PWM_LIMIT			(0x8000 + PWM_DIVISION_CORRECTION)
++#define NSECS_PER_SEC			1000000000UL
++
++struct pwm_lpss_chip {
++	struct pwm_chip chip;
++	void __iomem *regs;
++	struct clk *clk;
++};
++
++static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
++{
++	return container_of(chip, struct pwm_lpss_chip, chip);
++}
++
++static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			   int duty_ns, int period_ns)
++{
++	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
++	u8 on_time_div;
++	unsigned long c = clk_get_rate(lpwm->clk);
++	unsigned long long base_unit, freq = NSECS_PER_SEC;
++	u32 ctrl;
++
++	do_div(freq, period_ns);
++
++	/* The equation is: base_unit = ((freq / c) * 65536) + correction */
++	base_unit = freq * 65536;
++	do_div(base_unit, c);
++	base_unit += PWM_DIVISION_CORRECTION;
++	if (base_unit > PWM_LIMIT)
++		return -EINVAL;
++
++	if (duty_ns <= 0)
++		duty_ns = 1;
++	on_time_div = 255 - (255 * duty_ns / period_ns);
++
++	ctrl = readl(lpwm->regs + PWM);
++	ctrl &= ~(PWM_BASE_UNIT_MASK | PWM_ON_TIME_DIV_MASK);
++	ctrl |= (u16) base_unit << PWM_BASE_UNIT_SHIFT;
++	ctrl |= on_time_div;
++	/* request PWM to update on next cycle */
++	ctrl |= PWM_SW_UPDATE;
++	writel(ctrl, lpwm->regs + PWM);
++
++	return 0;
++}
++
++static int pwm_lpss_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
++	u32 ctrl;
++	int ret;
++
++	ret = clk_prepare_enable(lpwm->clk);
++	if (ret)
++		return ret;
++
++	ctrl = readl(lpwm->regs + PWM);
++	writel(ctrl | PWM_ENABLE, lpwm->regs + PWM);
++
++	return 0;
++}
++
++static void pwm_lpss_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
++	u32 ctrl;
++
++	ctrl = readl(lpwm->regs + PWM);
++	writel(ctrl & ~PWM_ENABLE, lpwm->regs + PWM);
++
++	clk_disable_unprepare(lpwm->clk);
++}
++
++static const struct pwm_ops pwm_lpss_ops = {
++	.config = pwm_lpss_config,
++	.enable = pwm_lpss_enable,
++	.disable = pwm_lpss_disable,
++	.owner = THIS_MODULE,
++};
++
++static const struct acpi_device_id pwm_lpss_acpi_match[] = {
++	{ "80860F08", 0 },
++	{ "80860F09", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
++
++static int pwm_lpss_probe(struct platform_device *pdev)
++{
++	struct pwm_lpss_chip *lpwm;
++	struct resource *r;
++	int ret;
++
++	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
++	if (!lpwm)
++		return -ENOMEM;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(lpwm->regs))
++		return PTR_ERR(lpwm->regs);
++
++	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(lpwm->clk)) {
++		dev_err(&pdev->dev, "failed to get PWM clock\n");
++		return PTR_ERR(lpwm->clk);
++	}
++
++	lpwm->chip.dev = &pdev->dev;
++	lpwm->chip.ops = &pwm_lpss_ops;
++	lpwm->chip.base = -1;
++	lpwm->chip.npwm = 1;
++
++	ret = pwmchip_add(&lpwm->chip);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, lpwm);
++	return 0;
++}
++
++static int pwm_lpss_remove(struct platform_device *pdev)
++{
++	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
++	u32 ctrl;
++
++	ctrl = readl(lpwm->regs + PWM);
++	writel(ctrl & ~PWM_ENABLE, lpwm->regs + PWM);
++
++	return pwmchip_remove(&lpwm->chip);
++}
++
++static struct platform_driver pwm_lpss_driver = {
++	.driver = {
++		.name = "pwm-lpss",
++		.acpi_match_table = pwm_lpss_acpi_match,
++	},
++	.probe = pwm_lpss_probe,
++	.remove = pwm_lpss_remove,
++};
++module_platform_driver(pwm_lpss_driver);
++
++MODULE_DESCRIPTION("PWM driver for Intel LPSS");
++MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
++MODULE_LICENSE("GPLv2");
++MODULE_ALIAS("platform:pwm-lpss");
+-- 
+1.7.4.4
+
