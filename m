@@ -1,54 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaB1XIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 18:08:25 -0500
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:43971 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723AbaB1XIX (ORCPT
+	id S1752241AbaB1XIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 18:08:43 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:45905 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682AbaB1XIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 18:08:23 -0500
+	Fri, 28 Feb 2014 18:08:40 -0500
+Date: Sat, 1 Mar 2014 00:08:36 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Henrik Austad <henrik@austad.us>
+Cc: LKML <linux-kernel@vger.kernel.org>, Henrik Austad <haustad@cisco.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6 v2] Expose do_timer CPU as RW to userspace
+Message-ID: <20140228230832.GA26658@localhost.localdomain>
+References: <1393331641-14016-1-git-send-email-henrik@austad.us>
+ <20140225141906.GA22814@localhost.localdomain>
+ <20140226081602.GA16591@austad.us>
+ <20140226130234.GA3104@localhost.localdomain>
+ <20140227083735.GA5129@austad.us>
+ <20140227135618.GB17608@localhost.localdomain>
+ <20140228094035.GA6113@austad.us>
 MIME-Version: 1.0
-In-Reply-To: <20140228001039.GB8034@node.dhcp.inet.fi>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CA+55aFwOe_m3cfQDGxmcBavhyQTqQQNGvACR4YPLaazM_0oyUw@mail.gmail.com>
-	<20140228001039.GB8034@node.dhcp.inet.fi>
-Date: Fri, 28 Feb 2014 17:08:22 -0600
-X-Google-Sender-Auth: 9zC69jUj3bTpXS78o1CQTTdiTNc
-Message-ID: <CA+55aFyuspw4viBYbjd=j+zOHe1w-_LMCUHdyTjt4yUqUyosdw@mail.gmail.com>
-Subject: Re: [PATCHv3 0/2] mm: map few pages around fault address if they are
- in page cache
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140228094035.GA6113@austad.us>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 6:10 PM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
->
-> Also Matthew noticed that some drivers do ugly hacks like fault in whole
-> VMA on first page fault. IIUC, it's for performance reasons. See
-> psbfb_vm_fault() or ttm_bo_vm_fault().
+On Fri, Feb 28, 2014 at 10:40:35AM +0100, Henrik Austad wrote:
+> On Thu, Feb 27, 2014 at 02:56:20PM +0100, Frederic Weisbecker wrote:
+> > Right, or timekeeper_cpumask.
+> 
+> Right, paying some attention to a proper, descriptive name is probably a 
+> good thing.
+> 
+> Also, for future reference, a consistent name for "the core running the 
+> timeeping update" would be nice. Ref suggestion above, 'timekeeper' seems 
+> to be a valid name for the core currently assigned the duty.
+> 
+> All in favour?
 
-I guarantee it's not for performance reasons, it's probably some other breakage.
+Yeah definetly. I'm already using it in my changelogs for a few.
 
-And if anything really does want to populate things fully, doing so at
-fault time is wrong anyway, you should just use MAP_POPULATE at mmap
-time.
+> 
+> > > For periodic, that would be a single core (normally boot), and when 
+> > > forced, it would return a cpu-mask with only one cpu set. Then the 
+> > > result would be a lot more informative for NO_HZ_(IDLE|FULL) as well.
+> > 
+> > I'd rather suggest that for periodic and NO_HZ_IDLE, this should be equal 
+> > to cpu_online_mask by default. Because the timekeeping duty can be taken 
+> > by any CPU.
+> 
+> So basically, we're looking at a few more values here then
 
-So I'll believe the shm/tmpfs issue, and that's "mm internal" anyway.
-But random crappy drivers? No way in hell.
+I feel we don't need more than a strictly single cpumask that can do all of that.
+Look:
 
-               Linus
+> 
+> # the current (un)restricted mask where timekeeper can run this would be 
+> # the writable mask
+> 
+>      timekeeper_cpumask
+
+Ok. By default cpu_possible_mask.
+
+> 
+> # the mask for which you can assign cores to timekeeper_cpumask For 
+> # NO_HZ_FULL, I guess this would be all cores except those in 
+> # nohz_full-mask.
+> # read-only
+> 
+>      timekeeper_cpumask_possible
+
+Right but why a different mask here? Just in the case of NO_HZ_FULL,
+timekeeper_cpumask is (cpu_possible_mask & ~tick_nohz_full_mask)
+
+> 
+> # makes sense only in periodic system where it does not bounce around like 
+> # crazy.
+> # read-only
+> 
+>      timekeeper_current_cpu
+
+It may not bounce crazy but it can bounce actually. Just offline the timekeeper
+and this happens.
+
+Then again I feel like timekeeper_cpumask is still a good fit here.
+
+> 
+> Then force_cpu should accept a mask, or a range, of CPUs on which 
+> timekeeper should be allowed.
+> 
+>      timekeeper_cpumask_forced
+
+That too can be timekeeper_cpumask.
+
+> > Assuming we want it then yeah, the cpumask affinity in sysfs/procfs looks 
+> > like a sane approach to me. In term we should also plug it to rcu full 
+> > system idle detection: https://lwn.net/Articles/558284/ so that we can 
+> > shutdown the reduced set of timekeepers when there is no other CPU 
+> > running. I have some patches for it that I can plug afterward. So no 
+> > worry for you on that side.
+> 
+> Ok, I'm not going to start to worry about that just yet then, but it does 
+> sound very interesting! :)
+
+And moreover it's very convenient for me if we do that since that would
+setup all the infrastrucuture I need to affine timekeeper and adaptively
+run the timekeeper in dynticks idle mode on NO_HZ_FULL.
+
+> > > That is certainly true, but that part happens to be of global 
+> > > influence, so if I have a core where a driver disables interrupts a lot 
+> > > (or drops into a hypervisor, or any other silly thing it really 
+> > > shouldn't be doing), then I would like to be able to move the 
+> > > timekeeping updates away from that core.
+> > 
+> > I don't understand how these things are linked together. If your driver 
+> > disables interrupt and you don't want to be disturbed, moving the 
+> > timekeeping duty doesn't move the tick itself.
+> 
+> True, but it reduces some amount of jitter from the tick itself. It's more 
+> like damagecontrol than damage-prevention.
+
+Ok.
+
+> 
+> > What happens to be disturbing for you in the timekeeping update that is 
+> > not with the tick as a whole? Is the delta of cputime added by jiffies 
+> > and gtod update alone a problem?
+> 
+> I had some examples where timekeeper would grab timekeeper.lock and hold it 
+> for a very long time. The reason was not very easy to pinpoint, so one of 
+> the things I wanted to try, was to move the timekeeper around and see what 
+> happened (yeah, debugging at it's best!)
+
+And you got better results?
+
+> > > > Does this all make sense outside the NO_HZ_FULL case?
+> > > 
+> > > In my view, it makes sense in the periodic case as well since all 
+> > > timekeeping updates then happens on the boot-cpu (unless it is 
+> > > hotunplugged that is).
+> > 
+> > But if we get back to your requirements, you want no interference at all. 
+> > HZ_PERIODIC doesn't look like what you want.
+> 
+> True, but I also needed a mechanism for moving the timekeeper away from a 
+> problematic core.
+> 
+> Another benefit from periodic, is that it supports skewed timers and that 
+> the overhead is lower than NO_HZ when you do have timer-interrupts.
+
+Yeah that's a point.
+
+> > > That's what I aimed at, and I *think* I managed that. I added a 
+> > > forced_timer_can_stop_tick() and let can_stop_full_tick() and 
+> > > can_stop_idle_tick() call that. I think that is sufficient, at least I 
+> > > did not see that the timerduty was transferred to another core 
+> > > afterwards.
+> > 
+> > Ok, I need to look at the details.
+> 
+> Ahem, no, my understanding of the NOHZ-cpumask was flawed. I'm reworking 
+> this based on feedback as well as the discussion below.
+
+Ok.
+
+> > Scenario is: CPU 0 handles timekeeping and CPU 1 is full dynticks. Both 
+> > are running then CPU 1 goes to sleep. CPU 0 notices that CPU 1 went to 
+> > sleep and thus nobody else needs the timekeeping to be uptodate. If CPU 0 
+> > is idle as well it can go to sleep. So does it. Then later if CPU 1 wakes 
+> > up to do something, it sends an IPI to CPU 0 such that CPU 0 wakes up, 
+> > notices that CPU 1 is alive and run the timekeeping update on its behalf.
+> > 
+> > It's not yet upstream but that's the plan :)
+> 
+> So all dynticks-kernel will send an IPI to CPU0 upon wakeup to notify  
+> that they're no longer sleeping?
+
+I guess you meant s/dynticks-kernel/full-dynticks CPU/
+So yes that's exactly what happens!
+
+> Sounds like having a (effective) way to detect that the entire system is 
+> idle in an effective manner would be really nice in this scenario! That 
+> way, if CPU1 could determine that the system was not idle, it would not 
+> have to send an IPI to CPU0 to wake it up.
+
+Exactly! The full system idle detection provides that clever information (taking care
+of races and all) that lets us know if the IPI is really needed or if it can be spared,
+depending on CPU 0 state.
+
+This all relies on a tricky lockless machine state. Checkout CONFIG_NO_HZ_FULL_SYSIDLE
+for details, it's an interesting devilry ;)
+
+It's not yet used but we are in the good way: https://lkml.org/lkml/2013/12/17/708
+
+Thanks.
