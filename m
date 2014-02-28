@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaB1R5y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:57:54 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14211 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753342AbaB1R5n (ORCPT
+	id S1753679AbaB1R6e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:58:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20617 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410AbaB1R6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:57:43 -0500
-Date: Fri, 28 Feb 2014 17:57:30 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@arm.com
-Subject: [GIT PULL] arm64 fixes for 3.14
-Message-ID: <20140228175725.GA28200@arm.com>
+	Fri, 28 Feb 2014 12:58:31 -0500
+Message-ID: <5310CEB6.4010604@oracle.com>
+Date: Fri, 28 Feb 2014 13:00:22 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+CC: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH v2] xen: add support for MSI message groups
+References: <530F68BE.2070505@oracle.com> <1393524935-4216-1-git-send-email-roger.pau@citrix.com> <530F87CC.8090000@oracle.com> <5310C54A.1080906@oracle.com> <5310CB6F.1070706@citrix.com>
+In-Reply-To: <5310CB6F.1070706@citrix.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/28/2014 12:46 PM, Roger Pau Monné wrote:
+> On 28/02/14 18:20, Boris Ostrovsky wrote:
+>> On 02/27/2014 01:45 PM, Boris Ostrovsky wrote:
+>>> On 02/27/2014 01:15 PM, Roger Pau Monne wrote:
+>>>> Add support for MSI message groups for Xen Dom0 using the
+>>>> MAP_PIRQ_TYPE_MULTI_MSI pirq map type.
+>>>>
+>>>> In order to keep track of which pirq is the first one in the group all
+>>>> pirqs in the MSI group except for the first one have the newly
+>>>> introduced PIRQ_MSI_GROUP flag set. This prevents calling
+>>>> PHYSDEVOP_unmap_pirq on them, since the unmap must be done with the
+>>>> first pirq in the group.
+>>> Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>>>
+>>>
+>>
+>> I was just looking at xen_setup_msi_irqs() (for a different reason) and
+>> I am no longer sure this patch does anything:
+>>
+>> static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>> {
+>>          int irq, ret, i;
+>>          struct msi_desc *msidesc;
+>>          int *v;
+>>
+>>          if (type == PCI_CAP_ID_MSI && nvec > 1)
+>>                  return 1;
+>> ....
+>>
+>> Same thing for xen_hvm_setup_msi_irqs().
+> As said in the commit message this is only for Dom0, so the function
+> modified is xen_initdom_setup_msi_irqs (were this check is removed).
 
-Please pull the arm64 fixes below. Thanks.
+Then what is the reason for these changes:
 
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 103e702..905956f 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -178,6 +178,7 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+  	i = 0;
+  	list_for_each_entry(msidesc, &dev->msi_list, list) {
+  		irq = xen_bind_pirq_msi_to_irq(dev, msidesc, v[i],
++					       (type == PCI_CAP_ID_MSI) ? nvec : 1,
+  					       (type == PCI_CAP_ID_MSIX) ?
+  					       "pcifront-msi-x" :
+  					       "pcifront-msi",
+@@ -245,6 +246,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+  				"xen: msi already bound to pirq=%d\n", pirq);
+  		}
+  		irq = xen_bind_pirq_msi_to_irq(dev, msidesc, pirq,
++					       (type == PCI_CAP_ID_MSI) ? nvec : 1,
+  					       (type == PCI_CAP_ID_MSIX) ?
+  					       "msi-x" : "msi",
+  					       DOMID_SELF);
 
-The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
+Should you simply pass 1?
 
-  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
+-boris
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
-
-for you to fetch changes up to b57fc9e80692043e2a3a74e1d2c047eb700dcd0c:
-
-  arm64: Fix !CONFIG_SMP kernel build (2014-02-28 16:12:25 +0000)
-
-----------------------------------------------------------------
-- !CONFIG_SMP build fix
-- pte bit testing macros conversion fix (int truncates top bits of long)
-- stack unwinding PC calculation fix
-
-----------------------------------------------------------------
-Catalin Marinas (1):
-      arm64: Fix !CONFIG_SMP kernel build
-
-Olof Johansson (1):
-      ARM64: unwind: Fix PC calculation
-
-Steve Capper (1):
-      arm64: mm: Add double logical invert to pte accessors
-
- arch/arm64/include/asm/percpu.h  |  8 ++++++++
- arch/arm64/include/asm/pgtable.h | 10 +++++-----
- arch/arm64/kernel/stacktrace.c   |  6 +++++-
- 3 files changed, 18 insertions(+), 6 deletions(-)
-
--- 
-Catalin
