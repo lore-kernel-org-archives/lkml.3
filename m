@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaB1AWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 19:22:42 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59821 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaB1AWk convert rfc822-to-8bit (ORCPT
+	id S1752480AbaB1A1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 19:27:35 -0500
+Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:57123 "EHLO
+	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751991AbaB1A1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 19:22:40 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 3/3] ARM: config: Update msm_defconfig
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20140227221458.GA5334@codeaurora.org>
-Date: Thu, 27 Feb 2014 18:22:37 -0600
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <318973D9-95B5-4D53-B774-D4239FD9AECB@codeaurora.org>
-References: <1393467394-10907-1-git-send-email-sboyd@codeaurora.org> <1393467394-10907-4-git-send-email-sboyd@codeaurora.org> <20140227221458.GA5334@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 27 Feb 2014 19:27:34 -0500
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, ly80toro@cip.cs.fau.de, andy.grover@gmail.com,
+        valentina.manea.m@gmail.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH 2/3] staging/usbip: change usbip to include new uapi usbip.h
+Date: Thu, 27 Feb 2014 17:27:26 -0700
+Message-Id: <dbbe5fffc27bf23cfffa99ea3d048ea75aa4e536.1393542201.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1393542201.git.shuah.kh@samsung.com>
+References: <cover.1393542201.git.shuah.kh@samsung.com>
+In-Reply-To: <cover.1393542201.git.shuah.kh@samsung.com>
+References: <cover.1393542201.git.shuah.kh@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+usbip userspace has duplicated enum definition to report usbip device
+status maintained by the kernel. A new uapi usbip.h now defines the
+usbip device status for kernel and userspace to use. Change usbip
+kernel space to include uapi usbip.h for usbip device status.
 
-On Feb 27, 2014, at 4:14 PM, David Brown <davidb@codeaurora.org> wrote:
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/staging/usbip/usbip_common.h |   19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-> On Wed, Feb 26, 2014 at 06:16:34PM -0800, Stephen Boyd wrote:
->> Now that DT based platforms are split out of mach-msm into
->> mach-qcom, put back a non-DT based SoC into the msm_defconfig and
->> stop selecting unsupported drivers.
->> 
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->> arch/arm/configs/msm_defconfig | 25 +++----------------------
->> 1 file changed, 3 insertions(+), 22 deletions(-)
-> 
-> Acked-by: David Brown <davidb@codeaurora.org>
-> 
-> Kumar, can you just pull this in with the other qcom changes from
-> Sephen?
-
-sure
-
-- k
-
+diff --git a/drivers/staging/usbip/usbip_common.h b/drivers/staging/usbip/usbip_common.h
+index 7e6c543..846ef5b 100644
+--- a/drivers/staging/usbip/usbip_common.h
++++ b/drivers/staging/usbip/usbip_common.h
+@@ -29,6 +29,7 @@
+ #include <linux/types.h>
+ #include <linux/usb.h>
+ #include <linux/wait.h>
++#include <uapi/linux/usbip.h>
+ 
+ #define USBIP_VERSION "1.0.0"
+ 
+@@ -235,22 +236,6 @@ enum usbip_side {
+ 	USBIP_STUB,
+ };
+ 
+-enum usbip_status {
+-	/* sdev is available. */
+-	SDEV_ST_AVAILABLE = 0x01,
+-	/* sdev is now used. */
+-	SDEV_ST_USED,
+-	/* sdev is unusable because of a fatal error. */
+-	SDEV_ST_ERROR,
+-
+-	/* vdev does not connect a remote device. */
+-	VDEV_ST_NULL,
+-	/* vdev is used, but the USB address is not assigned yet */
+-	VDEV_ST_NOTASSIGNED,
+-	VDEV_ST_USED,
+-	VDEV_ST_ERROR
+-};
+-
+ /* event handler */
+ #define USBIP_EH_SHUTDOWN	(1 << 0)
+ #define USBIP_EH_BYE		(1 << 1)
+@@ -271,7 +256,7 @@ enum usbip_status {
+ /* a common structure for stub_device and vhci_device */
+ struct usbip_device {
+ 	enum usbip_side side;
+-	enum usbip_status status;
++	enum usbip_device_status status;
+ 
+ 	/* lock for status */
+ 	spinlock_t lock;
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.10.4
 
