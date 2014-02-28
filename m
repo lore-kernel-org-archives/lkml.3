@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaB1TOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 14:14:15 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:53499 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaB1TOM (ORCPT
+	id S1752050AbaB1TPQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 14:15:16 -0500
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:48620 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaB1TPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 14:14:12 -0500
-Date: Fri, 28 Feb 2014 13:11:29 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 7/9] devicetree: bindings: Document PM8921/8058 keypads
-Message-ID: <20140228191129.GH7308@joshc.qualcomm.com>
-References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
- <1393552520-9068-8-git-send-email-sboyd@codeaurora.org>
- <20140228135527.GF7308@joshc.qualcomm.com>
- <20140228183708.GF2487@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228183708.GF2487@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 28 Feb 2014 14:15:13 -0500
+X-AuditID: cbfec372-b7fa96d000006a7b-05-5310e0402597
+Date: Fri, 28 Feb 2014 16:15:06 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rui Wang <ruiv.wang@gmail.com>
+Subject: Re: [PATCH v6 4/4] i2c, i2c_imc: Add DIMM bus code
+Message-id: <20140228161506.62889d46@samsung.com>
+In-reply-to: <CALCETrVwSj3KGcPqQD2Kd9W5FCHyPWLukCVr0BZLdQc_Fgz4qA@mail.gmail.com>
+References: <cover.1387588711.git.luto@amacapital.net>
+ <15eccfa508fd0f55230c4274e3e968f91a123b73.1387588711.git.luto@amacapital.net>
+ <20140219151626.GA13973@katana>
+ <CALCETrVBPzGqaXbZVgUZMw7D5U5YnUMJOEsw1r=TceLYjJ39JA@mail.gmail.com>
+ <20140220035128.14da0f79.m.chehab@samsung.com>
+ <3908561D78D1C84285E8C5FCA982C28F31DCC6F8@ORSMSX106.amr.corp.intel.com>
+ <CALCETrVwSj3KGcPqQD2Kd9W5FCHyPWLukCVr0BZLdQc_Fgz4qA@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/hEF2HBwLBBvvey1o0/o206Pj7hdHi
+	8q45bBZPFp5hsli9toHVYuKhJ2wWby7cY7FYeWIWswOHx/03f1k8ds66y+6xeM9LJo8rDSfZ
+	PHZ+b2D3OHnqCYvH501yAexRXDYpqTmZZalF+nYJXBkz1x5lLbjMXXHoUCtbA+Mczi5GTg4J
+	AROJKz93s0DYYhIX7q1n62Lk4hASWMIosf59IytIQkigh0ni03VvEJtFQFXi5MpJ7CA2m4CR
+	xKvGFrAaEQFNiZdT5rOANDMLrGeSWHf1CdhUYQFriR29B8FsXgFDiY2TpzCB2JwCwRINJ7ax
+	QCzYyCyxdjU3xBVOEq9eT2aCqBeU+DH5HlgNs4CWxOZtTawQtrzE5jVvmScwCsxCUjYLSdks
+	JGULGJlXMYqWFicXFCel5xrqFSfmFpfmpesl5+duYoTEQNEOxmcbrA4xCnAwKvHwSiwSCBZi
+	TSwrrsw9xCjBwawkwjvhOlCINyWxsiq1KD++qDQntfgQIxMHp1QD456IubNdTjB9+WJ1/PRk
+	1+f2sYebmWTnhb1hypBdtDX25n/f9+f57Ju0lwitsOa7Lzbx1yfNyzUzeeMaykoquMXr+Bu+
+	G9z7++RX4LayBYonDDQTxDY+fOj0cm5J6d2KO3aTnlafOaf6Xfmu3Jn9h5r+Rz/QuVbDMPtE
+	sITTh55fstvenOX6a63EUpyRaKjFXFScCABWntV5XwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:37:08AM -0800, Stephen Boyd wrote:
-> On 02/28, Josh Cartwright wrote:
-> > On Thu, Feb 27, 2014 at 05:55:18PM -0800, Stephen Boyd wrote:
-> > > +
-> > > +EXAMPLE
-> > > +
-> > > +	keypad {
-> > > +		compatible = "qcom,pm8921-keypad";
-> > > +		interrupt-parent = <&pmicintc>;
-> > > +		interrupts = <74 1>, <75 1>;
-> > > +		linux,keymap = <
-> > > +			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-> > > +			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-> > > +			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-> > > +			MATRIX_KEY(0, 3, KEY_CAMERA)
-> > > +			>;
-> > > +		keypad,num-rows = <1>;
-> > > +		keypad,num-columns = <5>;
-> > > +		debounce = <15>;
-> > > +		scan-delay = <32>;
-> > > +		row-hold = <91500>;
-> > > +	};
+Em Wed, 19 Feb 2014 17:39:07 -0800
+Andy Lutomirski <luto@amacapital.net> escreveu:
+
+> On Wed, Feb 19, 2014 at 11:03 AM, Luck, Tony <tony.luck@intel.com> wrote:
+> >> (I'm c/c Tony here, as he also shared the same concern that I had on a
+> >> previous feedback about using I2C to talk with the DIMM).
 > >
-> > It odd to me that these newly created bindings don't have 'reg'
-> > properties, even though the device clearly has a register region.
-> >
-> > I suppose it makes sense from a "port over from platform data to DT"
-> > perspective, as these drivers have just assumed the location of their
-> > registers to be fixed; however I suspect things will need to be changed
-> > if/when we hope to share these drivers with pm8841/pm8941 and beyond...
-> >
->
-> Agreed. I would love it if the platform OF code would create
-> IORESOURCE_REG resources for any reg properties that aren't
-> translatable to CPU addresses. That way we don't have to pick out the
-> reg property from DT with special OF code (like you've done in
-> rtc-pm8xxx).
+> > Correct - I've heard the same issues that reads on I2C can be misinterpreted
+> > as writes ... and oops, you have a brick.
+> 
+> Is this true on DDR3 DIMMs, i.e. anything that's compatible with
+> LGA2011?  If you plug a DIMM into an LGA2011 board's memory slot,
+> then, one way or another, it's very likely that there will be TSOD
+> traffic, if for no other purpose than to determine that there is no
+> TSOD present.  TSOD traffic consists of reads and writes, both with
+> and without register numbers.  (Sorry, I can never remember the smbus
+> terminology here -- the relevant transactions are two-byte reads and
+> two-byte writes, both with a command specified and without one.  One
+> of the bits in the iMC SMBUS registers tells the controller which kind
+> of read to use to probe the thermometer.)
 
-Yes, I agree this would be nice.  The rtc-pm8xxx register parsing magic
-is misplaced/ugly.  I'll see about taking a crack at this and seeing
-what it looks like.
+An update on that: I double-checked with a DIMM manufacturer.
+I was told that some DIMM models have write protect circuits but
+others don't.
 
-> I'll throw the reg property into the binding so that in
-> the future we can support the register moving around (although at the
-> moment the driver will ignore it).
+So, yeah, accessing it could eventually brick the DIMM, depending 
+on the DIMM model, if such driver won't block I2C write ops or
+if the BIOS is also trying to access the bus at the same time.
 
-Great, I think this sounds good.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
+Mauro
