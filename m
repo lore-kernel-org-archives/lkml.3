@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaB1CTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 21:19:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38313 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaB1CTu (ORCPT
+	id S1752263AbaB1CVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 21:21:14 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:38111 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaB1CVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 21:19:50 -0500
-Message-ID: <530FF245.7070300@codeaurora.org>
-Date: Thu, 27 Feb 2014 18:19:49 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 27 Feb 2014 21:21:12 -0500
+From: Kumar Amit Mehta <gmate.amit@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: standby24x7@gmail.com, josh@joshtriplett.org, rashika.kheria@gmail.com,
+        lidza.louina@gmail.com, dan.carpenter@oracle.com, lisa@xenapiadmin.com,
+        devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: sb105x: b_pci_mp.c: fix for non-member access
+Date: Fri, 28 Feb 2014 04:21:03 +0200
+Message-Id: <1393554063-25823-1-git-send-email-gmate.amit@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 MIME-Version: 1.0
-To: Russ Dill <Russ.Dill@ti.com>
-CC: Sebastian Capella <sebastian.capella@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH v6 2/2] ARM hibernation / suspend-to-disk
-References: <1393545478-14908-1-git-send-email-sebastian.capella@linaro.org> <1393545478-14908-3-git-send-email-sebastian.capella@linaro.org> <530FD3CF.2040900@codeaurora.org> <530FEAA9.7040601@ti.com>
-In-Reply-To: <530FEAA9.7040601@ti.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/14 17:47, Russ Dill wrote:
-> On 02/27/2014 04:09 PM, Stephen Boyd wrote:
->> On 02/27/14 15:57, Sebastian Capella wrote:
->>> diff --git a/arch/arm/include/asm/memory.h
->>> b/arch/arm/include/asm/memory.h index 8756e4b..1079ea8 100644 ---
->>> a/arch/arm/include/asm/memory.h +++
->>> b/arch/arm/include/asm/memory.h @@ -291,6 +291,7 @@ static inline
->>> void *phys_to_virt(phys_addr_t x) */ #define __pa(x)
->>> __virt_to_phys((unsigned long)(x)) #define __va(x)			((void
->>> *)__phys_to_virt((phys_addr_t)(x))) +#define __pa_symbol(x)
->>> __pa(RELOC_HIDE((unsigned long)(x), 0))
->> Just curious, is there a reason for the RELOC_HIDE() here? Or 
->> __pa_symbol() for that matter? It looks like only x86 uses this on
->> the __nosave_{begin,end} symbol. Maybe it's copy-pasta?
-> From my understanding this needs to stick around so long as gcc 3.x is
-> supported (did it get dropped yet?) on ARM Linux since it doesn't
-> support -fno-strict-overflow.
+'struct tty_struct’ has no member named ‘low_latency’
 
-I don't think it's been dropped yet but I wonder if anyone has tried
-recent kernels with such a compiler?
+Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+---
+ drivers/staging/sb105x/sb_pci_mp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Would the usage of &__pv_table_begin in arch/arm/mm/mmu.c also need the
-same treatment? Or the tagtable loop in atags_parse.c? Do the other
-architectures also need to be fixed? That link Sebastian points to says
-that ppc originally needed it but pfn_is_nosave() on ppc doesn't use
-RELOC_HIDE anywhere in their __pa() macro from what I can tell.
-
+diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
+index c9d6ee3..5687d6c 100644
+--- a/drivers/staging/sb105x/sb_pci_mp.c
++++ b/drivers/staging/sb105x/sb_pci_mp.c
+@@ -898,7 +898,7 @@ static int mp_set_info(struct sb_uart_state *state, struct serial_struct *newinf
+ 	state->closing_wait    = closing_wait;
+ 	port->fifosize         = new_serial.xmit_fifo_size;
+ 	if (state->info->tty)
+-		state->info->tty->low_latency =
++		state->info->tty->port->low_latency =
+ 			(port->flags & UPF_LOW_LATENCY) ? 1 : 0;
+ 
+ check_and_exit:
+@@ -1571,7 +1571,7 @@ static int mp_open(struct tty_struct *tty, struct file *filp)
+ 	mtpt  = (struct mp_port *)state->port;
+ 
+ 	tty->driver_data = state;
+-	tty->low_latency = (state->port->flags & UPF_LOW_LATENCY) ? 1 : 0;
++	tty->port->low_latency = (state->port->flags & UPF_LOW_LATENCY) ? 1 : 0;
+ 	tty->alt_speed = 0;
+ 	state->info->tty = tty;
+ 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.5.3
 
