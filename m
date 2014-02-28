@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaB1ShO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 13:37:14 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:50540 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaB1ShK (ORCPT
+	id S1751787AbaB1Sol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 13:44:41 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48308 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaB1Soj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 13:37:10 -0500
-Date: Fri, 28 Feb 2014 10:37:08 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 7/9] devicetree: bindings: Document PM8921/8058 keypads
-Message-ID: <20140228183708.GF2487@codeaurora.org>
-References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
- <1393552520-9068-8-git-send-email-sboyd@codeaurora.org>
- <20140228135527.GF7308@joshc.qualcomm.com>
+	Fri, 28 Feb 2014 13:44:39 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH] ARM: qcom: Enable basic support for Qualcomm platforms in multi_v7_defconfig
+References: <1393360445-16923-1-git-send-email-galak@codeaurora.org>
+	<7hy50xv3rw.fsf@paris.lan> <7hzjlbtc9y.fsf@paris.lan>
+	<20140228182745.GC2487@codeaurora.org>
+Date: Fri, 28 Feb 2014 10:44:36 -0800
+In-Reply-To: <20140228182745.GC2487@codeaurora.org> (Stephen Boyd's message of
+	"Fri, 28 Feb 2014 10:27:45 -0800")
+Message-ID: <7heh2nt6uj.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228135527.GF7308@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28, Josh Cartwright wrote:
-> On Thu, Feb 27, 2014 at 05:55:18PM -0800, Stephen Boyd wrote:
-> 
-> - linux,wakeup?
-> - linux,no-auto-repeat?
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-Added.
+> On 02/28, Kevin Hilman wrote:
+>> Hi Kumar,
+>> 
+>> Kevin Hilman <khilman@linaro.org> writes:
+>> 
+>> > Kumar Gala <galak@codeaurora.org> writes:
+>> >
+>> >> Enable support for the MSM8x60, MSM8960, and MSM8974 SoCs, clocks and
+>> >> serial console as part of the standard multi_v7_defconfig.
+>> >>
+>> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>> >> ---
+>> >>
+>> >> I leave this to the arm-soc guys to apply because of possible conflicts
+>> >> with other updates to multi_v7_defconfig.
+>> >
+>> > Seem to be a handful of !qcom changes here, probably resulting from a
+>> > run of 'make savedefconfig' without all the new changes in.
+>> >
+>> > I've thinned this out to only the qcom changes and applied the following
+>> > to next/boards.  I think it's better to do any 'make savedefconfig'
+>> > cleanups as a separate, cleanup-only patch as needed.
+>> 
+>> Bisecting a new boot failure on u8500/snowball came down to this patch.
+>> Simply disabling CONFIG_ARCH_QCOM in mutli_v7_defconfig gets the
+>> u8500/snowball booting again, so it looks like there may still be some
+>> qcom specifics that are being run on non-qcom platforms with a
+>> multi-platform config.
+>> 
+>> Could you audit for initcalls/drivers being initialized on non-qcom
+>> SoCs?
+>> 
+>
+> Can you try disabling CONFIG_ARCH_MSM8X60 and
+> CONFIG_ARCH_MSM8960? MY suspicion is the text offset movement is
+> causing problems, but I hope I'm wrong.
 
-> 
-> > +
-> > +EXAMPLE
-> > +
-> > +	keypad {
-> > +		compatible = "qcom,pm8921-keypad";
-> > +		interrupt-parent = <&pmicintc>;
-> > +		interrupts = <74 1>, <75 1>;
-> > +		linux,keymap = <
-> > +			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-> > +			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-> > +			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-> > +			MATRIX_KEY(0, 3, KEY_CAMERA)
-> > +			>;
-> > +		keypad,num-rows = <1>;
-> > +		keypad,num-columns = <5>;
-> > +		debounce = <15>;
-> > +		scan-delay = <32>;
-> > +		row-hold = <91500>;
-> > +	};
-> 
-> It odd to me that these newly created bindings don't have 'reg'
-> properties, even though the device clearly has a register region.
-> 
-> I suppose it makes sense from a "port over from platform data to DT"
-> perspective, as these drivers have just assumed the location of their
-> registers to be fixed; however I suspect things will need to be changed
-> if/when we hope to share these drivers with pm8841/pm8941 and beyond...
-> 
+Sorry to dash your hopes, but you're right.
 
-Agreed. I would love it if the platform OF code would create
-IORESOURCE_REG resources for any reg properties that aren't
-translatable to CPU addresses. That way we don't have to pick out
-the reg property from DT with special OF code (like you've done
-in rtc-pm8xxx). I'll throw the reg property into the binding so
-that in the future we can support the register moving around
-(although at the moment the driver will ignore it).
+Starting from a fresh multi_v7_defconfig and disabling those two Kconfig
+options gets the snowball booting again on multi_v7_defconfig.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Kevin
+
