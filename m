@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaB1MuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 07:50:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52459 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751157AbaB1MuK (ORCPT
+	id S1752045AbaB1Mur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 07:50:47 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58947 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228AbaB1Mup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 07:50:10 -0500
-Message-ID: <531085FE.2050902@hurleysoftware.com>
-Date: Fri, 28 Feb 2014 07:50:06 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 28 Feb 2014 07:50:45 -0500
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, Davidlohr Bueso <davidlohr@hp.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
-Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
- via atomic_long_*
-References: <1393003347-24958-1-git-send-email-will.deacon@arm.com> <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net> <20140228121314.GC674@mudshark.cambridge.arm.com>
-In-Reply-To: <20140228121314.GC674@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <CA+5PVA4GNWFx5bDM912TYmDbMHmZpb2X=Tzo85mGEGATvbW70A@mail.gmail.com>
+References: <1393445473-15068-1-git-send-email-matthew.garrett@nebula.com>
+	<CA+5PVA4RSh3hzJxEjpzHPj8w3uPoEzfg7ySWjB=6RUhAKJTudQ@mail.gmail.com>
+	<20140227190710.GA4755@kroah.com>
+	<CA+5PVA4GNWFx5bDM912TYmDbMHmZpb2X=Tzo85mGEGATvbW70A@mail.gmail.com>
+Date: Fri, 28 Feb 2014 07:50:44 -0500
+X-Google-Sender-Auth: yH6r5GLualc3bOfaE-Pd5FI5nSI
+Message-ID: <CA+5PVA763nsmS8kA28XJvRbCnzvrfgTXJ1aUykJktnT5Jcj_yg@mail.gmail.com>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 07:13 AM, Will Deacon wrote:
-> On Thu, Feb 27, 2014 at 05:28:24AM +0000, Davidlohr Bueso wrote:
->> On Fri, 2014-02-21 at 17:22 +0000, Will Deacon wrote:
->>> The asm-generic rwsem implementation directly acceses sem->cnt when
->>> performing a __down_read_trylock operation. Whilst this is probably safe
->>> on all architectures, we should stick to the atomic_long_* API and use
->>> atomic_long_read instead.
+On Thu, Feb 27, 2014 at 2:11 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> On Thu, Feb 27, 2014 at 2:07 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Thu, Feb 27, 2014 at 01:04:34PM -0500, Josh Boyer wrote:
+>>> On Wed, Feb 26, 2014 at 3:11 PM, Matthew Garrett
+>>> <matthew.garrett@nebula.com> wrote:
+>>> > The conclusion we came to at Plumbers was that this patchset was basically
+>>> > fine but that Linus hated the name "securelevel" more than I hate pickled
+>>> > herring, so after thinking about this for a few months I've come up with
+>>> > "Trusted Kernel". This flag indicates that the kernel is, via some
+>>> > external mechanism, trusted and should behave that way. If firmware has
+>>> > some way to verify the kernel, it can pass that information on. If userspace
+>>> > has some way to verify the kernel, it can set the flag itself. However,
+>>> > userspace should not attempt to use the flag as a means to verify that the
+>>> > kernel was trusted - untrusted userspace could have set it on an untrusted
+>>> > kernel, but by the same metric an untrusted kernel could just set it itself.
 >>>
->>> Signed-off-by: Will Deacon <will.deacon@arm.com>
->>> ---
->>>   include/asm-generic/rwsem.h | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>> FWIW, I've been running a kernel using this patchset in place of the
+>>> patchset Fedora typically carries for this purpose for a bit.  Things
+>>> appear to be working as expected and the protections remain the same.
 >>>
->>> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
->>> index bb1e2cdeb9bf..75af612f54f8 100644
->>> --- a/include/asm-generic/rwsem.h
->>> +++ b/include/asm-generic/rwsem.h
->>> @@ -41,7 +41,7 @@ static inline int __down_read_trylock(struct rw_semaphore *sem)
->>>   {
->>>   	long tmp;
->>>
->>> -	while ((tmp = sem->count) >= 0) {
->>> +	while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
+>>> It would be really nice to get this set of patches in so some of the
+>>> other patches that depend on them can start being pushed as well.
 >>
->> That's pretty ugly, how about having infinite look and just do the tmp
->> assign separately from the conditional?
->>
->> It also looks like a cpu_relax() could help here between iterations.
-
-This is the read trylock so no cpu_relax().
-
->> Other than that:
->>
->> Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+>> What other patches depend on this series?  Why aren't they also in this
+>> series?
 >
-> Actually, we should make that cmpxchg an atomic_long_cmpxchg, so the extra
-> diff ends up looking like below. It's ugly adding a cpu_relax(), since you
-> only want it when the cmpxchg fails (and we don't have such logic in the
-> asm-generic __atomic_add_unless, for example).
->
-> Will
->
-> --->8
->
-> diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
-> index 603a0a11e592..2b6401f9e428 100644
-> --- a/include/asm-generic/rwsem.h
-> +++ b/include/asm-generic/rwsem.h
-> @@ -40,14 +40,16 @@ static inline void __down_read(struct rw_semaphore *sem)
->   static inline int __down_read_trylock(struct rw_semaphore *sem)
->   {
->          long tmp;
-> +       atomic_long_t *cnt = (atomic_long_t *)&sem->count;
+> The patches we have to import certificates from the UEFI db and dbx
+> vars, and MokListRT and apply them to signed module verification.
+> Looking at them closely, there are pieces that could be sent now as
+> they are slightly orthogonal to what this patchset is doing, which is
+> probably why they aren't in this patchset to begin with.  I'll have to
+> figure out which of those actually depend on anything in Matthew's
+> series.
 
-The shared rwsem failure paths (kernel/locking/rwsem_xadd.c) peek at
-sem->count as long type, so this isn't really necessary.
+OK, I figured it out.  I have a patch that adds an EFI_SECURE_BOOT
+x86_efi_facility bit, and that is used in the later patches where
+applicable.  The patch that adds it depends on patch 12 in Matthew's
+series.
 
->
-> -       while ((tmp = atomic_long_read((atomic_long_t *)&sem->count)) >= 0) {
-> -               if (tmp == cmpxchg(&sem->count, tmp,
-> -                                  tmp + RWSEM_ACTIVE_READ_BIAS)) {
-> -                       return 1;
-> -               }
-> -       }
-> -       return 0;
-> +       do {
-> +               tmp = atomic_long_read(cnt);
-> +               if (tmp < 0)
-> +                       return 0;
-> +       } while (tmp != atomic_long_cmpxchg(cnt, tmp,
-> +                                           tmp + RWSEM_ACTIVE_READ_BIAS));
-> +
-> +       return 1;
->   }
+There are a few patches that are mostly stand-alone and I'll try and
+get those sent out soon.  They're a mix of things from David Howells
+and myself, and should probably go through the security tree.
 
-Regards,
-Peter Hurley
+josh
