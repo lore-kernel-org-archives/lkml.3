@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaB1Wjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:39:49 -0500
-Received: from mail.efficios.com ([78.47.125.74]:54473 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaB1Wjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:39:48 -0500
-Date: Fri, 28 Feb 2014 22:39:52 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        rp@svcs.cs.pdx.edu
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-ID: <1093938296.32533.1393627192076.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1701445203.32532.1393627172801.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] Userspace RCU 0.8.2
+	id S1752431AbaB1WkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:40:05 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:40797 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212AbaB1WkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 17:40:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [24.201.126.139]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF27 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Userspace RCU 0.8.2
-Thread-Index: EEzZZHmz7n0zLhhlSZ/6FCYpr2W7QQ==
+In-Reply-To: <20140228222501.GL13624@atomide.com>
+References: <1390685343-11663-1-git-send-email-marek@goldelico.com>
+	<1390685343-11663-6-git-send-email-marek@goldelico.com>
+	<20140228222501.GL13624@atomide.com>
+Date: Fri, 28 Feb 2014 23:40:00 +0100
+Message-ID: <CAAfyv34Agdabr3eg1VS9mHmTtefHf3HQrS6CWF4D9jkp2fEqzA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] ARM: dts: omap3-gta04: Add basic sound support.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Benoit Cousson <bcousson@baylibre.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This
-data synchronization library provides read-side access which scales
-linearly with the number of cores. It does so by allowing multiples
-copies of a given data structure to live at the same time, and by
-monitoring the data structure accesses to detect grace periods after
-which memory reclamation is possible.
+Hi Tony,
 
-liburcu-cds provides efficient data structures based on RCU and
-lock-free algorithms. Those structures include hash tables, queues,
-stacks, and doubly-linked lists.
+On Fri, Feb 28, 2014 at 11:25 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Marek Belisko <marek@goldelico.com> [140125 13:31]:
+>
+> Hmm care to add descriptions and repost the remaining patches
+> that I did not yet pick up for the fixes?
+Sure I'll do.
+>
+>> Signed-off-by: NeilBrown <neilb@suse.de>
+>
+> Hmm should this also have From: NeilBrown <neilb@suse.de>?
+Maybe I did some changes and forgot add my Signed-off-by? I'll recheck.
+>
+> Also, while at it, maybe change your long time habit of adding
+> a period to the end of the subject line? That is of course
+> if you don't insist on having it, it's not usually used if
+> you look at git log --pretty=oneline :)
+Sure . Thanks for notice ;). It there possibility that missing patches
+go to 3.15?
+>
+> Regards,
+>
+> Tony
+>
+>> ---
+>>  arch/arm/boot/dts/omap3-gta04.dts | 15 +++++++++++++++
+>>  1 file changed, 15 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
+>> index 7e09410..a924a843 100644
+>> --- a/arch/arm/boot/dts/omap3-gta04.dts
+>> +++ b/arch/arm/boot/dts/omap3-gta04.dts
+>> @@ -36,6 +36,14 @@
+>>                       gpio-key,wakeup;
+>>               };
+>>       };
+>> +
+>> +     sound {
+>> +             compatible = "ti,omap-twl4030";
+>> +             ti,model = "gta04";
+>> +
+>> +             ti,mcbsp = <&mcbsp2>;
+>> +             ti,codec = <&twl_audio>;
+>> +     };
+>>  };
+>>
+>>  &omap3_pmx_core {
+>> @@ -79,6 +87,13 @@
+>>               reg = <0x48>;
+>>               interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+>>               interrupt-parent = <&intc>;
+>> +
+>> +             twl_audio: audio {
+>> +                     compatible = "ti,twl4030-audio";
+>> +                     codec {
+>> +                     };
+>> +             };
+>> +
+>>               vaux4: regulator-vaux4 {
+>>                       compatible = "ti,twl4030-vaux4";
+>>                       regulator-min-microvolt = <2800000>;
+>> --
+>> 1.8.3.2
+>>
 
+BR,
 
-Changelog:
-2014-02-28 Userspace RCU 0.8.2
-        * Fix: out of tree build: doc/examples
-        * Fix: out of tree build tests/common
-        * tests/unit: use lib rather than source
-        * automake: Rename INCLUDES to AM_CPPFLAGS (new name)
-        * tests regressions: use lib rather than recompile from source
-        * tests: use common lib rather than recompile compat sources
-        * urcu tests: use lib rather than compile from source
-        * urcu mb tests: use lib rather than recompile from source
-        * urcu signal tests: use library rather than recompile source
-        * tests: move yield debug to common test library
-        * tests urcu bp: use lib rather than recompile source
-        * test_urcu_defer: link on urcu lib rather than recompile source
-        * tests/benchmark: use urcu qsbr lib rather than recompile from source
-        * Pass the CC variable to the example Makefiles
-        * Fix: urcu-bp interaction with threads vs constructors/destructors
-        * Fix undefined NULL pointer arithmetic
-        * Blacklist ARM gcc 4.8.0, 4.8.1, 4.8.2
-        * rculfhash: document max_nr_buckets = 0
-
-Project website: http://urcu.so
-Download link: http://urcu.so/files/
-Git repository: git://git.urcu.so/urcu.git
+marek
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
