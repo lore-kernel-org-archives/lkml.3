@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaB1Ntl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:49:41 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:39755 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaB1Nte (ORCPT
+	id S1752044AbaB1NuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:50:07 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:42547 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578AbaB1Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:49:34 -0500
+	Fri, 28 Feb 2014 08:49:33 -0500
 From: Alex Elder <elder@linaro.org>
 To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
         devicetree@vger.kernel.org
 Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ARM: dts: use real clocks for bcm21664
-Date: Fri, 28 Feb 2014 07:49:31 -0600
-Message-Id: <1393595371-3789-6-git-send-email-elder@linaro.org>
+Subject: [PATCH 4/5] clk: bcm21664: use common clock framework
+Date: Fri, 28 Feb 2014 07:49:30 -0600
+Message-Id: <1393595371-3789-5-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1393595371-3789-1-git-send-email-elder@linaro.org>
 References: <1393595371-3789-1-git-send-email-elder@linaro.org>
@@ -22,337 +22,407 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the "fake" fixed-rate clocks used previously for the
-bcm21664 family with "real" ones.
+Define the set of CCUs and provided clocks sufficient to satisfy the
+needs of all the existing clock references for BCM21664.  Replace
+the "fake" fixed-rate clocks used previously with "real" ones.
+
+Note that only the minimal set of these clocks and CCUs is defined
+here.  More clock definitions will need to be added as required by
+the addition of additional drivers.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- arch/arm/boot/dts/bcm21664.dtsi |  190 ++++++++++++++++++++++++---------------
- 1 file changed, 118 insertions(+), 72 deletions(-)
+ drivers/clk/bcm/Kconfig              |    2 +-
+ drivers/clk/bcm/Makefile             |    1 +
+ drivers/clk/bcm/clk-bcm21664.c       |  290 ++++++++++++++++++++++++++++++++++
+ include/dt-bindings/clock/bcm21664.h |   62 ++++++++
+ 4 files changed, 354 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/bcm/clk-bcm21664.c
+ create mode 100644 include/dt-bindings/clock/bcm21664.h
 
-diff --git a/arch/arm/boot/dts/bcm21664.dtsi b/arch/arm/boot/dts/bcm21664.dtsi
-index 08a44d4..8b36682 100644
---- a/arch/arm/boot/dts/bcm21664.dtsi
-+++ b/arch/arm/boot/dts/bcm21664.dtsi
-@@ -14,6 +14,8 @@
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/interrupt-controller/irq.h>
- 
+diff --git a/drivers/clk/bcm/Kconfig b/drivers/clk/bcm/Kconfig
+index a7262fb..75506e5 100644
+--- a/drivers/clk/bcm/Kconfig
++++ b/drivers/clk/bcm/Kconfig
+@@ -6,4 +6,4 @@ config CLK_BCM_KONA
+ 	help
+ 	  Enable common clock framework support for Broadcom SoCs
+ 	  using "Kona" style clock control units, including those
+-	  in the BCM281xx family.
++	  in the BCM281xx and BCM21664 families.
+diff --git a/drivers/clk/bcm/Makefile b/drivers/clk/bcm/Makefile
+index cf93359..6297d05 100644
+--- a/drivers/clk/bcm/Makefile
++++ b/drivers/clk/bcm/Makefile
+@@ -1,3 +1,4 @@
+ obj-$(CONFIG_CLK_BCM_KONA)	+= clk-kona.o
+ obj-$(CONFIG_CLK_BCM_KONA)	+= clk-kona-setup.o
+ obj-$(CONFIG_CLK_BCM_KONA)	+= clk-bcm281xx.o
++obj-$(CONFIG_CLK_BCM_KONA)	+= clk-bcm21664.o
+diff --git a/drivers/clk/bcm/clk-bcm21664.c b/drivers/clk/bcm/clk-bcm21664.c
+new file mode 100644
+index 0000000..eeae4ca
+--- /dev/null
++++ b/drivers/clk/bcm/clk-bcm21664.c
+@@ -0,0 +1,290 @@
++/*
++ * Copyright (C) 2014 Broadcom Corporation
++ * Copyright 2014 Linaro Limited
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include "clk-kona.h"
 +#include "dt-bindings/clock/bcm21664.h"
 +
- #include "skeleton.dtsi"
- 
- / {
-@@ -43,7 +45,7 @@
- 		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e000000 0x118>;
--		clocks = <&uartb_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_UARTB>;
- 		interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -53,7 +55,7 @@
- 		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e001000 0x118>;
--		clocks = <&uartb2_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_UARTB2>;
- 		interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -63,7 +65,7 @@
- 		compatible = "brcm,bcm21664-dw-apb-uart", "snps,dw-apb-uart";
- 		status = "disabled";
- 		reg = <0x3e002000 0x118>;
--		clocks = <&uartb3_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_UARTB3>;
- 		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
- 		reg-shift = <2>;
- 		reg-io-width = <4>;
-@@ -85,7 +87,7 @@
- 		compatible = "brcm,kona-timer";
- 		reg = <0x35006000 0x1c>;
- 		interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&hub_timer_clk>;
-+		clocks = <&aon_ccu BCM21664_AON_CCU_HUB_TIMER>;
- 	};
- 
- 	gpio: gpio@35003000 {
-@@ -106,7 +108,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f180000 0x801c>;
- 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&sdio1_clk>;
-+		clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO1>;
- 		status = "disabled";
- 	};
- 
-@@ -114,7 +116,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f190000 0x801c>;
- 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&sdio2_clk>;
-+		clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO2>;
- 		status = "disabled";
- 	};
- 
-@@ -122,7 +124,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1a0000 0x801c>;
- 		interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&sdio3_clk>;
-+		clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO3>;
- 		status = "disabled";
- 	};
- 
-@@ -130,7 +132,7 @@
- 		compatible = "brcm,kona-sdhci";
- 		reg = <0x3f1b0000 0x801c>;
- 		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&sdio4_clk>;
-+		clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO4>;
- 		status = "disabled";
- 	};
- 
-@@ -140,7 +142,7 @@
- 		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&bsc1_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC1>;
- 		status = "disabled";
- 	};
- 
-@@ -150,7 +152,7 @@
- 		interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&bsc2_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC2>;
- 		status = "disabled";
- 	};
- 
-@@ -160,7 +162,7 @@
- 		interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&bsc3_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC3>;
- 		status = "disabled";
- 	};
- 
-@@ -170,105 +172,149 @@
- 		interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_HIGH>;
- 		#address-cells = <1>;
- 		#size-cells = <0>;
--		clocks = <&bsc4_clk>;
-+		clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC4>;
- 		status = "disabled";
- 	};
- 
- 	clocks {
--		bsc1_clk: bsc1 {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
--			#clock-cells = <0>;
--		};
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
- 
--		bsc2_clk: bsc2 {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
-+		/*
-+		 * Fixed clocks are defined before CCUs whose
-+		 * clocks may depend on them.
-+		 */
++#define BCM21664_CCU_COMMON(_name, _capname) \
++	KONA_CCU_COMMON(BCM21664, _name, _capname)
 +
-+		ref_32k_clk: ref_32k {
- 			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
- 		};
- 
--		bsc3_clk: bsc3 {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
-+		bbl_32k_clk: bbl_32k {
- 			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
- 		};
- 
--		bsc4_clk: bsc4 {
-+		ref_13m_clk: ref_13m {
-+			#clock-cells = <0>;
- 			compatible = "fixed-clock";
- 			clock-frequency = <13000000>;
--			#clock-cells = <0>;
- 		};
- 
--		pmu_bsc_clk: pmu_bsc {
-+		var_13m_clk: var_13m {
-+			#clock-cells = <0>;
- 			compatible = "fixed-clock";
- 			clock-frequency = <13000000>;
--			#clock-cells = <0>;
- 		};
- 
--		hub_timer_clk: hub_timer {
--			compatible = "fixed-clock";
--			clock-frequency = <32768>;
-+		dft_19_5m_clk: dft_19_5m {
- 			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <19500000>;
- 		};
- 
--		pwm_clk: pwm {
-+		ref_crystal_clk: ref_crystal {
-+			#clock-cells = <0>;
- 			compatible = "fixed-clock";
- 			clock-frequency = <26000000>;
--			#clock-cells = <0>;
- 		};
- 
--		sdio1_clk: sdio1 {
--			compatible = "fixed-clock";
--			clock-frequency = <48000000>;
-+		ref_52m_clk: ref_52m {
- 			#clock-cells = <0>;
--		};
--
--		sdio2_clk: sdio2 {
- 			compatible = "fixed-clock";
--			clock-frequency = <48000000>;
--			#clock-cells = <0>;
-+			clock-frequency = <52000000>;
- 		};
- 
--		sdio3_clk: sdio3 {
--			compatible = "fixed-clock";
--			clock-frequency = <48000000>;
-+		var_52m_clk: var_52m {
- 			#clock-cells = <0>;
--		};
--
--		sdio4_clk: sdio4 {
--			compatible = "fixed-clock";
--			clock-frequency = <48000000>;
--			#clock-cells = <0>;
--		};
--
--		tmon_1m_clk: tmon_1m {
- 			compatible = "fixed-clock";
--			clock-frequency = <1000000>;
--			#clock-cells = <0>;
--		};
--
--		uartb_clk: uartb {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
--			#clock-cells = <0>;
--		};
--
--		uartb2_clk: uartb2 {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
--			#clock-cells = <0>;
--		};
--
--		uartb3_clk: uartb3 {
--			compatible = "fixed-clock";
--			clock-frequency = <13000000>;
--			#clock-cells = <0>;
-+			clock-frequency = <52000000>;
- 		};
- 
- 		usb_otg_ahb_clk: usb_otg_ahb {
-+			#clock-cells = <0>;
- 			compatible = "fixed-clock";
- 			clock-frequency = <52000000>;
-+		};
++/* Root CCU */
 +
-+		ref_96m_clk: ref_96m {
- 			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <96000000>;
-+		};
++static struct peri_clk_data frac_1m_data = {
++	.gate		= HW_SW_GATE(0x214, 16, 0, 1),
++	.clocks		= CLOCKS("ref_crystal"),
++};
 +
-+		var_96m_clk: var_96m {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <96000000>;
-+		};
++static struct ccu_data root_ccu_data = {
++	BCM21664_CCU_COMMON(root, ROOT),
++	/* no policy control */
++	.kona_clks	= {
++		[BCM21664_ROOT_CCU_FRAC_1M] =
++			KONA_CLK(root, frac_1m, peri),
++		[BCM21664_ROOT_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
++	},
++};
 +
-+		ref_104m_clk: ref_104m {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <104000000>;
-+		};
++/* AON CCU */
 +
-+		var_104m_clk: var_104m {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <104000000>;
-+		};
++static struct peri_clk_data hub_timer_data = {
++	.gate		= HW_SW_GATE(0x0414, 16, 0, 1),
++	.hyst		= HYST(0x0414, 8, 9),
++	.clocks		= CLOCKS("bbl_32k",
++				 "frac_1m",
++				 "dft_19_5m"),
++	.sel		= SELECTOR(0x0a10, 0, 2),
++	.trig		= TRIGGER(0x0a40, 4),
++};
 +
-+		ref_156m_clk: ref_156m {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <156000000>;
-+		};
++static struct ccu_data aon_ccu_data = {
++	BCM21664_CCU_COMMON(aon, AON),
++	.policy		= {
++		.enable		= CCU_LVM_EN(0x0034, 0),
++		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
++	},
++	.kona_clks	= {
++		[BCM21664_AON_CCU_HUB_TIMER] =
++			KONA_CLK(aon, hub_timer, peri),
++		[BCM21664_AON_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
++	},
++};
 +
-+		var_156m_clk: var_156m {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <156000000>;
-+		};
++/* Master CCU */
 +
-+		root_ccu: root_ccu {
-+			compatible = BCM21664_DT_ROOT_CCU_COMPAT;
-+			reg = <0x35001000 0x0f00>;
-+			#clock-cells = <1>;
-+			clock-output-names = "frac_1m";
-+		};
++static struct peri_clk_data sdio1_data = {
++	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_52m",
++				 "ref_52m",
++				 "var_96m",
++				 "ref_96m"),
++	.sel		= SELECTOR(0x0a28, 0, 3),
++	.div		= DIVIDER(0x0a28, 4, 14),
++	.trig		= TRIGGER(0x0afc, 9),
++};
 +
-+		aon_ccu: aon_ccu {
-+			compatible = BCM21664_DT_AON_CCU_COMPAT;
-+			reg = <0x35002000 0x0f00>;
-+			#clock-cells = <1>;
-+			clock-output-names = "hub_timer";
-+		};
++static struct peri_clk_data sdio2_data = {
++	.gate		= HW_SW_GATE(0x035c, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_52m",
++				 "ref_52m",
++				 "var_96m",
++				 "ref_96m"),
++	.sel		= SELECTOR(0x0a2c, 0, 3),
++	.div		= DIVIDER(0x0a2c, 4, 14),
++	.trig		= TRIGGER(0x0afc, 10),
++};
 +
-+		master_ccu: master_ccu {
-+			compatible = BCM21664_DT_MASTER_CCU_COMPAT;
-+			reg = <0x3f001000 0x0f00>;
-+			#clock-cells = <1>;
-+			clock-output-names = "sdio1",
-+					     "sdio2",
-+					     "sdio3",
-+					     "sdio4",
-+					     "sdio1_sleep",
-+					     "sdio2_sleep",
-+					     "sdio3_sleep",
-+					     "sdio4_sleep";
-+		};
++static struct peri_clk_data sdio3_data = {
++	.gate		= HW_SW_GATE(0x0364, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_52m",
++				 "ref_52m",
++				 "var_96m",
++				 "ref_96m"),
++	.sel		= SELECTOR(0x0a34, 0, 3),
++	.div		= DIVIDER(0x0a34, 4, 14),
++	.trig		= TRIGGER(0x0afc, 12),
++};
 +
-+		slave_ccu: slave_ccu {
-+			compatible = BCM21664_DT_SLAVE_CCU_COMPAT;
-+			reg = <0x3e011000 0x0f00>;
-+			#clock-cells = <1>;
-+			clock-output-names = "uartb",
-+					     "uartb2",
-+					     "uartb3",
-+					     "bsc1",
-+					     "bsc2",
-+					     "bsc3",
-+					     "bsc4";
- 		};
- 	};
- 
++static struct peri_clk_data sdio4_data = {
++	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_52m",
++				 "ref_52m",
++				 "var_96m",
++				 "ref_96m"),
++	.sel		= SELECTOR(0x0a30, 0, 3),
++	.div		= DIVIDER(0x0a30, 4, 14),
++	.trig		= TRIGGER(0x0afc, 11),
++};
++
++static struct peri_clk_data sdio1_sleep_data = {
++	.clocks		= CLOCKS("ref_32k"),	/* Verify */
++	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
++};
++
++static struct peri_clk_data sdio2_sleep_data = {
++	.clocks		= CLOCKS("ref_32k"),	/* Verify */
++	.gate		= HW_SW_GATE(0x035c, 18, 2, 3),
++};
++
++static struct peri_clk_data sdio3_sleep_data = {
++	.clocks		= CLOCKS("ref_32k"),	/* Verify */
++	.gate		= HW_SW_GATE(0x0364, 18, 2, 3),
++};
++
++static struct peri_clk_data sdio4_sleep_data = {
++	.clocks		= CLOCKS("ref_32k"),	/* Verify */
++	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
++};
++
++static struct ccu_data master_ccu_data = {
++	BCM21664_CCU_COMMON(master, MASTER),
++	.policy		= {
++		.enable		= CCU_LVM_EN(0x0034, 0),
++		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
++	},
++	.kona_clks	= {
++		[BCM21664_MASTER_CCU_SDIO1] =
++			KONA_CLK(master, sdio1, peri),
++		[BCM21664_MASTER_CCU_SDIO2] =
++			KONA_CLK(master, sdio2, peri),
++		[BCM21664_MASTER_CCU_SDIO3] =
++			KONA_CLK(master, sdio3, peri),
++		[BCM21664_MASTER_CCU_SDIO4] =
++			KONA_CLK(master, sdio4, peri),
++		[BCM21664_MASTER_CCU_SDIO1_SLEEP] =
++			KONA_CLK(master, sdio1_sleep, peri),
++		[BCM21664_MASTER_CCU_SDIO2_SLEEP] =
++			KONA_CLK(master, sdio2_sleep, peri),
++		[BCM21664_MASTER_CCU_SDIO3_SLEEP] =
++			KONA_CLK(master, sdio3_sleep, peri),
++		[BCM21664_MASTER_CCU_SDIO4_SLEEP] =
++			KONA_CLK(master, sdio4_sleep, peri),
++		[BCM21664_MASTER_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
++	},
++};
++
++/* Slave CCU */
++
++static struct peri_clk_data uartb_data = {
++	.gate		= HW_SW_GATE(0x0400, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_156m",
++				 "ref_156m"),
++	.sel		= SELECTOR(0x0a10, 0, 2),
++	.div		= FRAC_DIVIDER(0x0a10, 4, 12, 8),
++	.trig		= TRIGGER(0x0afc, 2),
++};
++
++static struct peri_clk_data uartb2_data = {
++	.gate		= HW_SW_GATE(0x0404, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_156m",
++				 "ref_156m"),
++	.sel		= SELECTOR(0x0a14, 0, 2),
++	.div		= FRAC_DIVIDER(0x0a14, 4, 12, 8),
++	.trig		= TRIGGER(0x0afc, 3),
++};
++
++static struct peri_clk_data uartb3_data = {
++	.gate		= HW_SW_GATE(0x0408, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_156m",
++				 "ref_156m"),
++	.sel		= SELECTOR(0x0a18, 0, 2),
++	.div		= FRAC_DIVIDER(0x0a18, 4, 12, 8),
++	.trig		= TRIGGER(0x0afc, 4),
++};
++
++static struct peri_clk_data bsc1_data = {
++	.gate		= HW_SW_GATE(0x0458, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_104m",
++				 "ref_104m",
++				 "var_13m",
++				 "ref_13m"),
++	.sel		= SELECTOR(0x0a64, 0, 3),
++	.trig		= TRIGGER(0x0afc, 23),
++};
++
++static struct peri_clk_data bsc2_data = {
++	.gate		= HW_SW_GATE(0x045c, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_104m",
++				 "ref_104m",
++				 "var_13m",
++				 "ref_13m"),
++	.sel		= SELECTOR(0x0a68, 0, 3),
++	.trig		= TRIGGER(0x0afc, 24),
++};
++
++static struct peri_clk_data bsc3_data = {
++	.gate		= HW_SW_GATE(0x0470, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_104m",
++				 "ref_104m",
++				 "var_13m",
++				 "ref_13m"),
++	.sel		= SELECTOR(0x0a7c, 0, 3),
++	.trig		= TRIGGER(0x0afc, 18),
++};
++
++static struct peri_clk_data bsc4_data = {
++	.gate		= HW_SW_GATE(0x0474, 18, 2, 3),
++	.clocks		= CLOCKS("ref_crystal",
++				 "var_104m",
++				 "ref_104m",
++				 "var_13m",
++				 "ref_13m"),
++	.sel		= SELECTOR(0x0a80, 0, 3),
++	.trig		= TRIGGER(0x0afc, 19),
++};
++
++static struct ccu_data slave_ccu_data = {
++	BCM21664_CCU_COMMON(slave, SLAVE),
++       .policy		= {
++		.enable		= CCU_LVM_EN(0x0034, 0),
++		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
++	},
++	.kona_clks	= {
++		[BCM21664_SLAVE_CCU_UARTB] =
++			KONA_CLK(slave, uartb, peri),
++		[BCM21664_SLAVE_CCU_UARTB2] =
++			KONA_CLK(slave, uartb2, peri),
++		[BCM21664_SLAVE_CCU_UARTB3] =
++			KONA_CLK(slave, uartb3, peri),
++		[BCM21664_SLAVE_CCU_BSC1] =
++			KONA_CLK(slave, bsc1, peri),
++		[BCM21664_SLAVE_CCU_BSC2] =
++			KONA_CLK(slave, bsc2, peri),
++		[BCM21664_SLAVE_CCU_BSC3] =
++			KONA_CLK(slave, bsc3, peri),
++		[BCM21664_SLAVE_CCU_BSC4] =
++			KONA_CLK(slave, bsc4, peri),
++		[BCM21664_SLAVE_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
++	},
++};
++
++/* Device tree match table callback functions */
++
++static void __init kona_dt_root_ccu_setup(struct device_node *node)
++{
++	kona_dt_ccu_setup(&root_ccu_data, node);
++}
++
++static void __init kona_dt_aon_ccu_setup(struct device_node *node)
++{
++	kona_dt_ccu_setup(&aon_ccu_data, node);
++}
++
++static void __init kona_dt_master_ccu_setup(struct device_node *node)
++{
++	kona_dt_ccu_setup(&master_ccu_data, node);
++}
++
++static void __init kona_dt_slave_ccu_setup(struct device_node *node)
++{
++	kona_dt_ccu_setup(&slave_ccu_data, node);
++}
++
++CLK_OF_DECLARE(bcm21664_root_ccu, BCM21664_DT_ROOT_CCU_COMPAT,
++			kona_dt_root_ccu_setup);
++CLK_OF_DECLARE(bcm21664_aon_ccu, BCM21664_DT_AON_CCU_COMPAT,
++			kona_dt_aon_ccu_setup);
++CLK_OF_DECLARE(bcm21664_master_ccu, BCM21664_DT_MASTER_CCU_COMPAT,
++			kona_dt_master_ccu_setup);
++CLK_OF_DECLARE(bcm21664_slave_ccu, BCM21664_DT_SLAVE_CCU_COMPAT,
++			kona_dt_slave_ccu_setup);
+diff --git a/include/dt-bindings/clock/bcm21664.h b/include/dt-bindings/clock/bcm21664.h
+new file mode 100644
+index 0000000..5a7f0e4
+--- /dev/null
++++ b/include/dt-bindings/clock/bcm21664.h
+@@ -0,0 +1,62 @@
++/*
++ * Copyright (C) 2013 Broadcom Corporation
++ * Copyright 2013 Linaro Limited
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _CLOCK_BCM21664_H
++#define _CLOCK_BCM21664_H
++
++/*
++ * This file defines the values used to specify clocks provided by
++ * the clock control units (CCUs) on Broadcom BCM21664 family SoCs.
++ */
++
++/* bcm21664 CCU device tree "compatible" strings */
++#define BCM21664_DT_ROOT_CCU_COMPAT	"brcm,bcm21664-root-ccu"
++#define BCM21664_DT_AON_CCU_COMPAT	"brcm,bcm21664-aon-ccu"
++#define BCM21664_DT_MASTER_CCU_COMPAT	"brcm,bcm21664-master-ccu"
++#define BCM21664_DT_SLAVE_CCU_COMPAT	"brcm,bcm21664-slave-ccu"
++
++/* root CCU clock ids */
++
++#define BCM21664_ROOT_CCU_FRAC_1M		0
++#define BCM21664_ROOT_CCU_CLOCK_COUNT		1
++
++/* aon CCU clock ids */
++
++#define BCM21664_AON_CCU_HUB_TIMER		0
++#define BCM21664_AON_CCU_CLOCK_COUNT		1
++
++/* master CCU clock ids */
++
++#define BCM21664_MASTER_CCU_SDIO1		0
++#define BCM21664_MASTER_CCU_SDIO2		1
++#define BCM21664_MASTER_CCU_SDIO3		2
++#define BCM21664_MASTER_CCU_SDIO4		3
++#define BCM21664_MASTER_CCU_SDIO1_SLEEP		4
++#define BCM21664_MASTER_CCU_SDIO2_SLEEP		5
++#define BCM21664_MASTER_CCU_SDIO3_SLEEP		6
++#define BCM21664_MASTER_CCU_SDIO4_SLEEP		7
++#define BCM21664_MASTER_CCU_CLOCK_COUNT		8
++
++/* slave CCU clock ids */
++
++#define BCM21664_SLAVE_CCU_UARTB		0
++#define BCM21664_SLAVE_CCU_UARTB2		1
++#define BCM21664_SLAVE_CCU_UARTB3		2
++#define BCM21664_SLAVE_CCU_BSC1			3
++#define BCM21664_SLAVE_CCU_BSC2			4
++#define BCM21664_SLAVE_CCU_BSC3			5
++#define BCM21664_SLAVE_CCU_BSC4			6
++#define BCM21664_SLAVE_CCU_CLOCK_COUNT		7
++
++#endif /* _CLOCK_BCM21664_H */
 -- 
 1.7.9.5
 
