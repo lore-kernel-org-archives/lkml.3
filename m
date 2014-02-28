@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaB1EXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 23:23:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5621 "EHLO mga02.intel.com"
+	id S1751845AbaB1EXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 23:23:39 -0500
+Received: from mga01.intel.com ([192.55.52.88]:31551 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177AbaB1EWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751247AbaB1EWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Feb 2014 23:22:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
-   d="scan'208";a="463876466"
+   d="scan'208";a="483314719"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@redhat.com
 Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, eranian@google.com,
         namhyung@kernel.org, jolsa@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 8/8] tools, perf: Make get_srcline fall back to sym+offset
-Date: Thu, 27 Feb 2014 20:22:32 -0800
-Message-Id: <1393561352-23448-9-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 4/8] perf, tools: Enable printing the srcline in the history v2
+Date: Thu, 27 Feb 2014 20:22:28 -0800
+Message-Id: <1393561352-23448-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
 References: <1393561352-23448-1-git-send-email-andi@firstfloor.org>
@@ -25,144 +25,222 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When the source line is not found fall back to sym + offset.
-This is generally much more useful than a raw address.
-For this we need to pass in the symbol from the caller.
-For some callers it's awkward to compute, so we stay
-at the old behaviour.
+For lbr-as-callgraph we need to see the line number in the history,
+because many LBR entries can be in a single function, and just
+showing the same function name many times is not useful.
 
+When the history code is configured to sort by address, also try to
+resolve the address to a file:srcline and display this in the browser.
+If that doesn't work still display the address.
+
+This can be also useful without LBRs for understanding which call in a large
+function (or in which inlined function) called something else.
+
+Contains fixes from Namhyung Kim
+
+v2: Refactor code into common function
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/annotate.c  |  2 +-
- tools/perf/util/callchain.c |  3 ++-
- tools/perf/util/map.c       |  2 +-
- tools/perf/util/sort.c      |  6 ++++--
- tools/perf/util/srcline.c   | 12 +++++++++---
- tools/perf/util/util.h      |  4 +++-
- 6 files changed, 20 insertions(+), 9 deletions(-)
+ tools/perf/ui/browsers/hists.c | 17 -----------------
+ tools/perf/ui/stdio/hist.c     | 23 +++++++++--------------
+ tools/perf/util/callchain.c    | 29 +++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h    |  5 +++++
+ tools/perf/util/machine.c      |  2 +-
+ tools/perf/util/srcline.c      |  6 ++++--
+ 6 files changed, 48 insertions(+), 34 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index f020110..6bc23bf 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1185,7 +1185,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			goto next;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index b720b92..ec69142 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -394,23 +394,6 @@ out:
+ 	return key;
+ }
  
- 		offset = start + i;
--		src_line->path = get_srcline(map->dso, offset);
-+		src_line->path = get_srcline(map->dso, offset, NULL, false);
- 		insert_source_line(&tmp_root, src_line);
+-static char *callchain_list__sym_name(struct callchain_list *cl,
+-				      char *bf, size_t bfsize, bool show_dso)
+-{
+-	int printed;
+-
+-	if (cl->ms.sym)
+-		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
+-		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-
+-	if (show_dso)
+-		scnprintf(bf + printed, bfsize - printed, " %s",
+-			  cl->ms.map ? cl->ms.map->dso->short_name : "unknown");
+-
+-	return bf;
+-}
+-
+ #define LEVEL_OFFSET_STEP 3
  
- 	next:
+ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *browser,
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 831fbb7..3ac9ace 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -41,6 +41,7 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ {
+ 	int i;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	ret += callchain__fprintf_left_margin(fp, left_margin);
+ 	for (i = 0; i < depth; i++) {
+@@ -56,11 +57,8 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 		} else
+ 			ret += fprintf(fp, "%s", "          ");
+ 	}
+-	if (chain->ms.sym)
+-		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+-	else
+-		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+-
++	fputs(callchain_list__sym_name(chain, bf, sizeof(bf), false), fp);
++	fputc('\n', fp);
+ 	return ret;
+ }
+ 
+@@ -168,6 +166,7 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 	struct rb_node *node;
+ 	int i = 0;
+ 	int ret = 0;
++	char bf[1024];
+ 
+ 	/*
+ 	 * If have one single callchain root, don't bother printing
+@@ -195,10 +194,8 @@ static size_t callchain__fprintf_graph(FILE *fp, struct rb_root *root,
+ 			} else
+ 				ret += callchain__fprintf_left_margin(fp, left_margin);
+ 
+-			if (chain->ms.sym)
+-				ret += fprintf(fp, " %s\n", chain->ms.sym->name);
+-			else
+-				ret += fprintf(fp, " %p\n", (void *)(long)chain->ip);
++			ret += fprintf(fp, "%s\n", callchain_list__sym_name(chain, bf, sizeof(bf),
++							false));
+ 
+ 			if (++entries_printed == callchain_param.print_limit)
+ 				break;
+@@ -218,6 +215,7 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ {
+ 	struct callchain_list *chain;
+ 	size_t ret = 0;
++	char bf[1024];
+ 
+ 	if (!node)
+ 		return 0;
+@@ -228,11 +226,8 @@ static size_t __callchain__fprintf_flat(FILE *fp, struct callchain_node *node,
+ 	list_for_each_entry(chain, &node->val, list) {
+ 		if (chain->ip >= PERF_CONTEXT_MAX)
+ 			continue;
+-		if (chain->ms.sym)
+-			ret += fprintf(fp, "                %s\n", chain->ms.sym->name);
+-		else
+-			ret += fprintf(fp, "                %p\n",
+-					(void *)(long)chain->ip);
++		ret += fprintf(fp, "                %s\n", callchain_list__sym_name(chain,
++					bf, sizeof(bf), false));
+ 	}
+ 
+ 	return ret;
 diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 56ab517..9ad5fc7 100644
+index 8d9db45..56ab517 100644
 --- a/tools/perf/util/callchain.c
 +++ b/tools/perf/util/callchain.c
-@@ -562,7 +562,8 @@ char *callchain_list__sym_name(struct callchain_list *cl,
- 		    cl->ms.map && !cl->srcline)
- 			cl->srcline = get_srcline(cl->ms.map->dso,
- 						  map__rip_2objdump(cl->ms.map,
--								    cl->ip));
-+								    cl->ip),
-+						  cl->ms.sym, false);
- 		if (cl->srcline)
- 			printed = scnprintf(bf, bfsize, "%s %s",
- 					cl->ms.sym->name, cl->srcline);
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 39cd2d0..9638e68 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -262,7 +262,7 @@ int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
+@@ -551,3 +551,32 @@ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *samp
+ 		return 0;
+ 	return callchain_append(he->callchain, &callchain_cursor, sample->period);
+ }
++
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso)
++{
++	int printed;
++
++	if (cl->ms.sym) {
++		if (callchain_param.key == CCKEY_ADDRESS &&
++		    cl->ms.map && !cl->srcline)
++			cl->srcline = get_srcline(cl->ms.map->dso,
++						  map__rip_2objdump(cl->ms.map,
++								    cl->ip));
++		if (cl->srcline)
++			printed = scnprintf(bf, bfsize, "%s %s",
++					cl->ms.sym->name, cl->srcline);
++		else
++			printed = scnprintf(bf, bfsize, "%s",
++					    cl->ms.sym->name);
++	} else
++		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++
++	if (show_dso)
++		scnprintf(bf + printed, bfsize - printed, " %s",
++			  cl->ms.map ?
++			  cl->ms.map->dso->short_name :
++			  "unknown");
++
++	return bf;
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index be29bb8..39322ef 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -59,6 +59,7 @@ struct callchain_param {
+ struct callchain_list {
+ 	u64			ip;
+ 	struct map_symbol	ms;
++	char		       *srcline;
+ 	struct list_head	list;
+ };
  
- 	if (map && map->dso) {
- 		srcline = get_srcline(map->dso,
--				      map__rip_2objdump(map, addr));
-+				      map__rip_2objdump(map, addr), NULL, true);
- 		if (srcline != SRCLINE_UNKNOWN)
- 			ret = fprintf(fp, "%s%s", prefix, srcline);
- 		free_srcline(srcline);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index d273cf2..80e6dfa 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -265,7 +265,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = left->ms.map;
- 			left->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, left->ip));
-+					   map__rip_2objdump(map, left->ip),
-+						    left->ms.sym, true);
- 		}
+@@ -158,4 +159,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
+ 
+ extern const char record_callchain_help[];
++
++char *callchain_list__sym_name(struct callchain_list *cl,
++			       char *bf, size_t bfsize, bool show_dso);
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 6eff65e..ef198c3 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1310,7 +1310,7 @@ static int add_callchain_ip(struct machine *machine,
+ 			return -EINVAL;
  	}
- 	if (!right->srcline) {
-@@ -274,7 +275,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 		else {
- 			struct map *map = right->ms.map;
- 			right->srcline = get_srcline(map->dso,
--					    map__rip_2objdump(map, right->ip));
-+					     map__rip_2objdump(map, right->ip),
-+						     right->ms.sym, true);
- 		}
- 	}
- 	return strcmp(left->srcline, right->srcline);
+ 
+-	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
++	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
+ }
+ 
+ #define CHASHSZ 127
 diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index ac877f9..36a7aff 100644
+index f3e4bc5..c6a7cdc 100644
 --- a/tools/perf/util/srcline.c
 +++ b/tools/perf/util/srcline.c
-@@ -8,12 +8,13 @@
- #include "util/util.h"
- #include "util/debug.h"
+@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	const char *dso_name;
  
-+#include "symbol.h"
-+
- #ifdef HAVE_LIBBFD_SUPPORT
+ 	if (!dso->has_srcline)
+-		return SRCLINE_UNKNOWN;
++		goto out;
  
- /*
-  * Implement addr2line using libbfd.
-  */
--#define PACKAGE "perf"
- #include <bfd.h>
- 
- struct a2l_data {
-@@ -250,7 +251,8 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
-  */
- #define A2L_FAIL_LIMIT 123
- 
--char *get_srcline(struct dso *dso, unsigned long addr)
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym)
- {
- 	char *file = NULL;
- 	unsigned line = 0;
-@@ -289,7 +291,11 @@ out:
+ 	if (dso->symsrc_filename)
+ 		dso_name = dso->symsrc_filename;
+@@ -289,7 +289,9 @@ out:
  		dso->has_srcline = 0;
  		dso__free_a2l(dso);
  	}
--	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+	if (sym) {
-+		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
-+					addr - sym->start) < 0)
-+			return SRCLINE_UNKNOWN;
-+	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
- 		return SRCLINE_UNKNOWN;
- 	return srcline;
+-	return SRCLINE_UNKNOWN;
++	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
++		return SRCLINE_UNKNOWN;
++	return srcline;
  }
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 6995d66..4b29ed1 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -317,8 +317,10 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags);
- #define SRCLINE_UNKNOWN  ((char *) "??:0")
  
- struct dso;
-+struct symbol;
- 
--char *get_srcline(struct dso *dso, unsigned long addr);
-+char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
-+		  bool show_sym);
- void free_srcline(char *srcline);
- 
- int filename__read_int(const char *filename, int *value);
+ void free_srcline(char *srcline)
 -- 
 1.8.5.3
 
