@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaB1HgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:36:10 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:36452 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaB1HgI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:36:08 -0500
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: sachin.kamat@linaro.org, shaun@xresource.ca,
-        dulshani.gunawardhana89@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5 v2] Staging: cxt1e1: Fix line length over 80 characters in hwprobe.c
-Date: Fri, 28 Feb 2014 16:36:03 +0900
-Message-ID: <3980699.cFzmTHesZE@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	id S1751907AbaB1Hjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 02:39:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40287 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751297AbaB1Hji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 02:39:38 -0500
+Message-ID: <53103D34.8050101@ti.com>
+Date: Fri, 28 Feb 2014 09:39:32 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Nishanth Menon <nm@ti.com>, Lee Jones <lee.jones@linaro.org>
+CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
+ regmap patch
+References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com>
+In-Reply-To: <530F5323.1020305@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/27/2014 05:00 PM, Nishanth Menon wrote:
+> The other option might be to blindly configure 6040 to max speed ->
+> but then you do have an issue with that single register write
+> operation to configure the speed?
 
-clean up checkpatch.pl warnings:
- WARNING: Line length over 80 characters
+Yes, exactly. It is unfortunate that twl6040's i2c speed is configured via i2c
+write. It would have been better if we would have had pins to configure this.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/cxt1e1/hwprobe.c |   45 ++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 17 deletions(-)
+> TWL6040 is by default at 100KHz, bus_speed is configured (via dts or
+> otherwise) is 400KHz/3.4MHz, the register write for configuring 6040
+> to max speed will occur at 400KHz/3.4MHz, which implies 6040 register
+> write operation might not actually take place (as 6040 still expects
+> to talk 100KHz till the mentioned register write takes place).
+> 
+> Ideally, the behavior you need is as follows:
+> talk at 100KHz for the first register write(of configuring speed),
+> followed by 400KHz/3.4 MHz for the subsequent operations on the bus
+> (assuming 400KHz/3.4 is the least common denominator speed on the bus).
 
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 85040bb..d6ccbd9 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -37,7 +37,8 @@ extern int  drvr_state;
- 
- /* forward references */
- void        c4_stopwd(ci_t *);
--struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long, unsigned long, int, int);
-+struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long,
-+				      unsigned long, int, int);
- 
- 
- struct s_hdw_info hdw_info[MAX_BOARDS];
-@@ -104,24 +105,31 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
- 	addr = (long) hi->addr_mapped[1] + EEPROM_OFFSET;
- 
- 	/* read EEPROM with largest known format size... */
--	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data, sizeof(FLD_TYPE2));
-+	pmc_eeprom_read_buffer(addr, 0, (char *)hi->mfg_info.data,
-+			       sizeof(FLD_TYPE2));
- 
- #if 0
- 	{
- 		unsigned char *ucp = (unsigned char *) &hi->mfg_info.data;
- 
- 		pr_info("eeprom[00]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3), *(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
-+			*(ucp + 0), *(ucp + 1), *(ucp + 2), *(ucp + 3),
-+			*(ucp + 4), *(ucp + 5), *(ucp + 6), *(ucp + 7));
- 		pr_info("eeprom[08]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11), *(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
-+			*(ucp + 8), *(ucp + 9), *(ucp + 10), *(ucp + 11),
-+			*(ucp + 12), *(ucp + 13), *(ucp + 14), *(ucp + 15));
- 		pr_info("eeprom[16]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19), *(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
-+			*(ucp + 16), *(ucp + 17), *(ucp + 18), *(ucp + 19),
-+			*(ucp + 20), *(ucp + 21), *(ucp + 22), *(ucp + 23));
- 		pr_info("eeprom[24]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27), *(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
-+			*(ucp + 24), *(ucp + 25), *(ucp + 26), *(ucp + 27),
-+			*(ucp + 28), *(ucp + 29), *(ucp + 30), *(ucp + 31));
- 		pr_info("eeprom[32]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35), *(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
-+			*(ucp + 32), *(ucp + 33), *(ucp + 34), *(ucp + 35),
-+			*(ucp + 36), *(ucp + 37), *(ucp + 38), *(ucp + 39));
- 		pr_info("eeprom[40]:  %02x %02x %02x %02x  %02x %02x %02x %02x\n",
--				*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43), *(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
-+			*(ucp + 40), *(ucp + 41), *(ucp + 42), *(ucp + 43),
-+			*(ucp + 44), *(ucp + 45), *(ucp + 46), *(ucp + 47));
- 	}
- #endif
- #if 0
-@@ -230,10 +238,11 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 		return 0;
- 	}
- 
--	if (pdev->bus)                  /* obtain bus number */
-+	/* obtain bus number */
-+	if (pdev->bus)
- 		busno = pdev->bus->number;
- 	else
--		busno = 0;                  /* default for system PCI inconsistency */
-+		busno = 0; /* default for system PCI inconsistency */
- 	slot = pdev->devfn & ~0x07;
- 
- 	/*
-@@ -246,8 +255,8 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	for (i = 0, hi = hdw_info; i < MAX_BOARDS; i++, hi++)
- 	{
- 		/*
--		 * match with board's first found interface, otherwise this is first
--		 * found
-+		 * match with board's first found interface, otherwise this is
-+		 * fisrt found
- 		 */
- 		if ((hi->pci_slot == 0xff) ||   /* new board */
- 		    ((hi->pci_slot == slot) && (hi->bus == pdev->bus)))
-@@ -256,13 +265,14 @@ c4_hdw_init(struct pci_dev *pdev, int found)
- 	if (i == MAX_BOARDS)            /* no match in above loop means MAX
- 					 * exceeded */
- 	{
--		pr_warning("exceeded number of allowed devices (>%d)?\n", MAX_BOARDS);
-+		pr_warning("exceeded number of allowed devices (>%d)?\n",
-+			   MAX_BOARDS);
- 		return 0;
- 	}
- 	if (pdev->bus)
- 		hi->pci_busno = pdev->bus->number;
- 	else
--		hi->pci_busno = 0;          /* default for system PCI inconsistency */
-+		hi->pci_busno = 0; /* default for system PCI inconsistency */
- 	hi->pci_slot = slot;
- 	pci_read_config_byte(pdev, PCI_INTERRUPT_PIN, &hi->pci_pin[fun]);
- 	pci_read_config_byte(pdev, PCI_REVISION_ID, &hi->revid[fun]);
-@@ -345,7 +355,8 @@ c4hw_attach_all(void)
- 			}
- #ifdef SBE_MAP_DEBUG
- 			pr_warning("%s: io remapped from phys %x to virt %x\n",
--				   hi->devname, (u_int32_t) hi->addr[j], (u_int32_t) hi->addr_mapped[j]);
-+				   hi->devname, (u_int32_t) hi->addr[j],
-+				   (u_int32_t) hi->addr_mapped[j]);
- #endif
- 		}
- 	}
-@@ -380,9 +391,9 @@ c4hw_attach_all(void)
- #if 0
- 			cleanup_devs();
- #endif
--			return error_flag;      /* error_flag set w/in add_dev() */
-+			return error_flag; /* error_flag set w/in add_dev() */
- 		}
--		show_two(hi, i);           /* displays found information */
-+		show_two(hi, i); /* displays found information */
- 	}
- 	return 0;
- }
+Yes. Or the bootloader should have been configuring the twl6040 to 3.4MHz with
+a single write. When the driver comes up the i2c controller had been already
+probed and it would know that the bus can be used in 3.4MHz and we would not
+have issues with the speed.
+Yous see: twl6030 is also on the same bus (usually). Not sure how twl6030's
+i2c speed is selected but the fact that twl6040 is not alone on the bus makes
+things complicated.
+Also you could have more devices on the bus, wired for 3.4MHz. In that case we
+would need to make sure that the first access happens with 100KHz to twl6040
+to select 3.4MHz mode, switch the controller speed and allow the communication
+to other chips. It is another question how the 3.4MHz clients will interpret
+the 100KHz communication on the bus, I guess it is ignored by them.
+
+> I am not sure if the i2c framework has ability to do that.
+
+AFAIK we do not have such a thing in i2c framework. We would need client
+drivers reporting what they support, notification mechanism to notify clients
+on speed change and couple of other things might be needed as well. So there
+are quite a number of things missing to get dynamic/adaptive i2c working where
+the master configuration depends on the attached devices and not the other way
+around.
+
+I'll do some experiments with the twl6040 and i2c speeds today, but so far I
+think the 400KHz change is a safe thing to do.
+
 -- 
-1.7.9.5
-
----
+Péter
