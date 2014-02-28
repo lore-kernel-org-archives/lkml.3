@@ -1,121 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaB1N6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:58:10 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:55130 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaB1N6I (ORCPT
+	id S1752072AbaB1OBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 09:01:00 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57532 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaB1OA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:58:08 -0500
-Date: Fri, 28 Feb 2014 07:55:27 -0600
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 7/9] devicetree: bindings: Document PM8921/8058 keypads
-Message-ID: <20140228135527.GF7308@joshc.qualcomm.com>
-References: <1393552520-9068-1-git-send-email-sboyd@codeaurora.org>
- <1393552520-9068-8-git-send-email-sboyd@codeaurora.org>
+	Fri, 28 Feb 2014 09:00:58 -0500
+Date: Fri, 28 Feb 2014 21:00:45 +0700
+From: Chris Bainbridge <chris.bainbridge@gmail.com>
+To: Dennis Mungai <dmngaie@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Dave Jones <davej@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: set Pentium M as PAE capable
+Message-ID: <20140228140043.GA12157@debian.local>
+References: <20140225060146.GA4339@debian.local>
+ <530C7465.2080600@zytor.com>
+ <20140225162611.GA31902@redhat.com>
+ <530CCFD2.3050007@zytor.com>
+ <20140226121256.GA8494@debian.local>
+ <20140226131852.GA22690@pd.tnic>
+ <20140226154949.GA770@redhat.com>
+ <20140228073011.GA26449@debian.local>
+ <CAKKYfmFgVjYwvThpB0FBB+ggOwULWKLpz7ADT1eojno_KtD9yw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1393552520-9068-8-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAKKYfmFgVjYwvThpB0FBB+ggOwULWKLpz7ADT1eojno_KtD9yw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:55:18PM -0800, Stephen Boyd wrote:
-> Document the keypad device found on PM8921 and PM8058 PMICs.
-[..]
-> +++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-> @@ -0,0 +1,72 @@
-> +Qualcomm PM8xxx PMIC Keypad
-> +
-> +PROPERTIES
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,pm8058-keypad"
-> +		    "qcom,pm8921-keypad"
-> +- interrupts:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: the first interrupt specifies the key sense interrupt
-> +		    and the second interrupt specifies the key stuck interrupt.
-> +		    The format of the specifier is defined by the binding
-> +		    document describing the node's interrupt parent.
-> +
-> +- linux,keymap:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: the linux keymap. More information can be found in
-> +		    input/matrix-keymap.txt.
-> +
-> +- keypad,num-rows:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: number of rows in the keymap. More information can be found
-> +		    in input/matrix-keymap.txt.
-> +
-> +- keypad,num-columns:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: number of columns in the keymap. More information can be
-> +		    found in input/matrix-keymap.txt.
-> +
-> +- debounce:
-> +	Usage: optional
-> +	Value type: <u32>
-> +	Definition: time in microseconds that key must be pressed or release
-> +		    for key sense interrupt to trigger.
-> +
-> +- scan-delay:
-> +	Usage: optional
-> +	Value type: <u32>
-> +	Definition: time in microseconds to pause between successive scans
-> +		    of the matrix array.
-> +
-> +- row-hold:
-> +	Usage: optional
-> +	Value type: <u32>
-> +	Definition: time in nanoseconds to pause between scans of each row in
-> +		    the matrix array.
+On Fri, Feb 28, 2014 at 03:27:50PM +0300, Dennis Mungai wrote:
+> Hello people,
+> 
+> Note that revisions of the Dothan core were released in the first quarter
+> of 2005 with the *Sonoma* chipsets and supported a 533 MT/s FSB and NX-bit
+> (and PAE support required for it was enabled, unlike earlier Pentium Ms
+> that had it disabled). These processors include the 730M (1.6 GHz), 740M
+> (1.73 GHz), 750M (1.86 GHz), 760M (2.0 GHz) and 770M (2.13 GHz). These
+> models all have a TDP of 27 W and a 2 MB L2 cache.
+> 
+> These CPUs should have PAE enabled. Only earlier versions of the Pentium M
+> ( Older Dothans and the Banias core) do not have PAE support, officially.
+> 
+> -Dennis.
 
-- linux,wakeup?
-- linux,no-auto-repeat?
+Good point, patch updated to not show the warning if PAE is already
+enabled.
 
-> +
-> +EXAMPLE
-> +
-> +	keypad {
-> +		compatible = "qcom,pm8921-keypad";
-> +		interrupt-parent = <&pmicintc>;
-> +		interrupts = <74 1>, <75 1>;
-> +		linux,keymap = <
-> +			MATRIX_KEY(0, 0, KEY_VOLUMEUP)
-> +			MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)
-> +			MATRIX_KEY(0, 2, KEY_CAMERA_FOCUS)
-> +			MATRIX_KEY(0, 3, KEY_CAMERA)
-> +			>;
-> +		keypad,num-rows = <1>;
-> +		keypad,num-columns = <5>;
-> +		debounce = <15>;
-> +		scan-delay = <32>;
-> +		row-hold = <91500>;
-> +	};
-
-It odd to me that these newly created bindings don't have 'reg'
-properties, even though the device clearly has a register region.
-
-I suppose it makes sense from a "port over from platform data to DT"
-perspective, as these drivers have just assumed the location of their
-registers to be fixed; however I suspect things will need to be changed
-if/when we hope to share these drivers with pm8841/pm8941 and beyond...
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
+---
+diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
+index 4d3ff03..3fd12bc 100644
+--- a/arch/x86/boot/cpucheck.c
++++ b/arch/x86/boot/cpucheck.c
+@@ -69,6 +69,13 @@ static int is_transmeta(void)
+ 	       cpu_vendor[2] == A32('M', 'x', '8', '6');
+ }
+ 
++static int is_intel(void)
++{
++	return cpu_vendor[0] == A32('G', 'e', 'n', 'u') &&
++	       cpu_vendor[1] == A32('i', 'n', 'e', 'I') &&
++	       cpu_vendor[2] == A32('n', 't', 'e', 'l');
++}
++
+ static int has_fpu(void)
+ {
+ 	u16 fcw = -1, fsw = -1;
+@@ -239,6 +246,21 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
+ 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
+ 
+ 		err = check_flags();
++	} else if (err == 0x01 &&
++		   !(err_flags[0] & ~(1 << X86_FEATURE_PAE)) &&
++		   is_intel() && cpu.level == 6 &&
++		   (cpu.model == 9 || cpu.model == 13)) {
++		/* PAE is disabled on this Pentium M but can be forced */
++		if (cmdline_find_option_bool("forcepae")) {
++			puts("WARNING: Forcing PAE in CPU flags\n");
++			set_bit(X86_FEATURE_PAE, cpu.flags);
++			err = check_flags();
++		}
++		else {
++			puts("Pentium M: PAE is disabled, "
++			     "enable it with kernel argument \"forcepae\"\n"
++			     "(this will taint the kernel)\n");
++		}
+ 	}
+ 
+ 	if (err_flags_ptr)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index bbe1b8b..873cf3b 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -196,6 +196,14 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
+ 	}
+ }
+ 
++static int forcepae;
++static int __init forcepae_setup(char *__unused)
++{
++	forcepae = 1;
++	return 1;
++}
++__setup("forcepae", forcepae_setup);
++
+ static void intel_workarounds(struct cpuinfo_x86 *c)
+ {
+ 	unsigned long lo, hi;
+@@ -226,6 +234,15 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+ 		clear_cpu_cap(c, X86_FEATURE_SEP);
+ 
+ 	/*
++	 * PAE CPUID bug: Pentium M reports no PAE but has PAE
++	 */
++	if (forcepae) {
++		printk(KERN_WARNING "PAE forced!\n");
++		set_cpu_cap(c, X86_FEATURE_PAE);
++		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
++	}
++
++	/*
+ 	 * P4 Xeon errata 037 workaround.
+ 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
+ 	 */
