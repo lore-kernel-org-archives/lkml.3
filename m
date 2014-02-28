@@ -1,61 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaB1Lvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 06:51:40 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55802 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570AbaB1Lvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 06:51:39 -0500
-Message-ID: <1393588254.22449.13.camel@pasglop>
-Subject: Re: [PATCHv3 1/2] mm: introduce vm_ops->map_pages()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+	id S1752129AbaB1Lw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 06:52:28 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:53076 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaB1LwZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 06:52:25 -0500
+Message-ID: <53107872.7030904@de.ibm.com>
+Date: Fri, 28 Feb 2014 12:52:18 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
+CC: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        anton@samba.org, Paul Mackerras <paulus@samba.org>
-Date: Fri, 28 Feb 2014 22:50:54 +1100
-In-Reply-To: <530FBD8F.7090304@linux.intel.com>
-References: <1393530827-25450-1-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1393530827-25450-2-git-send-email-kirill.shutemov@linux.intel.com>
-	 <530FB55F.2070106@linux.intel.com>
-	 <CA+55aFzUYTHXcVnZL0vTGRPh3oQ8qYGO9+Va1Ch3P1yX+9knDg@mail.gmail.com>
-	 <530FBD8F.7090304@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3-0ubuntu3~saucy1 
-Mime-Version: 1.0
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm, s390: Ignore MADV_HUGEPAGE on s390 to prevent
+ SIGSEGV in qemu
+References: <cover.1393516106.git.athorlton@sgi.com> <c856e298ae180842638bdf85d74436ad8bbb84e4.1393516106.git.athorlton@sgi.com>
+In-Reply-To: <c856e298ae180842638bdf85d74436ad8bbb84e4.1393516106.git.athorlton@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14022811-0342-0000-0000-000007F60384
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-02-27 at 14:34 -0800, Dave Hansen wrote:
+On 27/02/14 18:23, Alex Thorlton wrote:
+> As Christian pointed out, the recent 'Revert "thp: make MADV_HUGEPAGE
+> check for mm->def_flags"' breaks qemu, it does QEMU_MADV_HUGEPAGE for
+> all kvm pages but this doesn't work after s390_enable_sie/thp_split_mm.
 > 
-> The question is really whether or not we ever access the mapping that we
-> faulted around, though.  If we never access it, then the cost (however
-> small it was) is a loss.  That's the mechanism that I'd expect causes
-> Kirill's numbers to go up after they hit their minimum at ~order-4.
+> Paolo suggested that instead of failing on the call to madvise, we
+> simply ignore the call (return 0).
+> 
+> Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
+> Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+> Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: linux390@de.ibm.com
+> Cc: linux-s390@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> Cc: linux-api@vger.kernel.org
+> 
+> ---
+>  mm/huge_memory.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index a4310a5..61d234d 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1970,6 +1970,15 @@ int hugepage_madvise(struct vm_area_struct *vma,
+>  {
+>  	switch (advice) {
+>  	case MADV_HUGEPAGE:
+> +#ifdef CONFIG_S390
+> +		/*
+> +		 * qemu blindly sets MADV_HUGEPAGE on all allocations, but s390
+> +		 * can't handle this properly after s390_enable_sie, so we simply
+> +		 * ignore the madvise to prevent qemu from causing a SIGSEGV.
+> +		 */
+> +		if (mm_has_pgste(vma->vm_mm))
+> +			return 0;
+> +#endif
+>  		/*
+>  		 * Be somewhat over-protective like KSM for now!
+>  		 */
+> 
 
-On the other hand, the cost of our faults on ppc64 is higher. The two hash
-lookups by the MMU (generally L2 misses) before it even decides to take the
-fault, followed by a generally longer code path before we get to Linux
-fault handler.
 
-So there might be a bigger win for us, especially if the "around" pages
-get pre-hashed (ie, via update_mmu_cache)
-
-I don't have the bandwidth to play around with that myself at the moment
-but I'll try to find somebody who can.
-
-Cheers,
-Ben.
-
+Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
