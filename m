@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaB1UP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:15:58 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:48709 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaB1UP5 (ORCPT
+	id S1751904AbaB1UT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:19:56 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39746 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaB1UTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:15:57 -0500
+	Fri, 28 Feb 2014 15:19:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1393572804.1019.14.camel@wall-e.seibold.net>
+In-Reply-To: <e33a0c21-5d74-4584-ac35-8cd45a905310@email.android.com>
 References: <CALCETrW_PHbDzn2S3NyGTSk4yqYjnpJbStCuLc_yBGdfspfFCA@mail.gmail.com>
- <cover.1393545985.git.luto@amacapital.net> <1393572804.1019.14.camel@wall-e.seibold.net>
+ <cover.1393545985.git.luto@amacapital.net> <2f5d45b67dcd2c4ba58ed7ff13cfcd7a4da977fa.1393545985.git.luto@amacapital.net>
+ <1393572505.1019.10.camel@wall-e.seibold.net> <e33a0c21-5d74-4584-ac35-8cd45a905310@email.android.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 28 Feb 2014 12:15:36 -0800
-Message-ID: <CALCETrW5Z07cn+-r2qnyUDaC_XMujYtcT4zV2ztCOwo4qbfj9w@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] vDSO fixes, on top of tip/x86/vdso
-To: Stefani Seibold <stefani@seibold.net>
-Cc: X86 ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+Date: Fri, 28 Feb 2014 12:19:34 -0800
+Message-ID: <CALCETrXOrJPidKSAshwE94wumnWqZdwDQ0+fWAY8UZxLf+PCdw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] x86: Use the default ABI for the 32-bit vDSO
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefani Seibold <stefani@seibold.net>, X86 ML <x86@kernel.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -32,35 +33,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 11:33 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> Am Donnerstag, den 27.02.2014, 16:18 -0800 schrieb Andy Lutomirski:
->> I'd still like someone else to confirm that the 32-bit vDSO is working
->> on all common configurations before I'm happy with it, but this should
->> be a considerable improvement.
->>
->> Someone who maintains the clock code should review the changes in:
->>
->>     commit 0fc8a237cbe98a06962f5ea37d24fc2369e23c74
->>     Author: Stefani Seibold <stefani@seibold.net>
->>     Date:   Wed Feb 19 10:09:10 2014 +0100
->>
->>         x86, vdso: Add 32-bit VDSO time support for the 64-bit kernel
->>
->> very carefully.
->>
->> There's still something extremely questionable about VDSO_PAGES in the
->> 32-bit vDSO code.  It appears to be terminally screwed up, and AFAICS it
->> only works at all because none of the 32-bit vDSO images ever exceed
->> 4096 bytes.
->>
->
-> The 4096 bytes limit was not introduced by the patch set. It is still
-> there for compatibility reason.
+On Fri, Feb 28, 2014 at 7:06 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> How many internal function calls are there? It seems we should try to avoid those as much as possible by suitable inlining.
 
-Compatibility with what?  And it doesn't look like there's a sane 4k
-"limit".  It looks like the code with confuse itself and crash if the
-image exceeds 4k.
+There are no non-static calls at all, except for __x86.get_pc_thunk.
+I imagine that gcc is smart enough to improve the calling convention
+to non-externally-visible functions.
 
-But yes, this issue predates your code.
+Amazingly (to me, anyway), the performance of the 32-bit version seems
+to be within 1 ns or so of the 64-bit version on SNB.  I suspect that
+Intel has optimized the crap out of these things.
 
 --Andy
