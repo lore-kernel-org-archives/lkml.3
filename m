@@ -1,174 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaB1KCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:02:49 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:40057 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaB1KCH (ORCPT
+	id S1751914AbaB1KDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:03:25 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:11856 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaB1KCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:02:07 -0500
-Message-ID: <53105E8E.1040504@gmail.com>
-Date: Fri, 28 Feb 2014 11:01:50 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+	Fri, 28 Feb 2014 05:02:04 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-6b-53105e9aef8e
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH v5 01/11] of: document bindings for reserved-memory nodes
-References: <1392985527-6260-1-git-send-email-m.szyprowski@samsung.com> <1392985527-6260-2-git-send-email-m.szyprowski@samsung.com> <20140226115108.211D2C40A89@trevor.secretlab.ca> <53105CC6.1090902@samsung.com>
-In-Reply-To: <53105CC6.1090902@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Subject: [PATCH 3/3] regulator: s2mps11: Copy supported regulators from
+ initconst
+Date: Fri, 28 Feb 2014 11:01:50 +0100
+Message-id: <1393581710-17754-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1393581710-17754-1-git-send-email-k.kozlowski@samsung.com>
+References: <1393581710-17754-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Zd1ZcQLBBgdXslhsnLGe1WLqwyds
+	Fte/PGe1eP3C0OJs0xt2i29XOpgsLu+aw2Yx4/w+Jou1R+6yW1xc8YXJYv2M1ywWc383slrM
+	mf6OyYHXY+esu+wem1Z1snn0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxpsFHewF3zUrrvTc
+	Z29gXKvUxcjJISFgIrHmzXVmCFtM4sK99WxdjFwcQgJLGSU67kxggnD6mCRWTOtiBaliEzCW
+	2Lx8CViViMBGRomD+w+zgjjMAh+ZJBb2fwebJSwQLLH0yzGgdg4OFgFVif0TuUHCvALuEpMa
+	3rCChCUEFCTmTLIBMTkFPCQurjEEqRACqriy9y7zBEbeBYwMqxhFU0uTC4qT0nMN9YoTc4tL
+	89L1kvNzNzFCgvDLDsbFx6wOMQpwMCrx8E7w5A8WYk0sK67MPcQowcGsJMKb5y4QLMSbklhZ
+	lVqUH19UmpNafIiRiYNTqoGRLTPaRZ5n7ZztMtfs7bakt28tU//6d43Fo4kfV8+yXdpW5vhT
+	+MLvjJXHn131D6kUmFHIWRJ5pzy06LOt4W9+zmNLp7ts9vocnL73wN0rodoTuj+y5TlySz61
+	/C9V0+He92JWTlJatfzpRUUHy5bLr7Sf2m/5+bBJkNZ07xmvMuMWSfbl7d2txFKckWioxVxU
+	nAgA4Tgp8yACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.02.2014 10:54, Marek Szyprowski wrote:
-> Hello,
->
-> On 2014-02-26 12:51, Grant Likely wrote:
->> On Fri, 21 Feb 2014 13:25:17 +0100, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
->> > From: Grant Likely <grant.likely@linaro.org>
->> >
->> > Reserved memory nodes allow for the reservation of static (fixed
->> > address) regions, or dynamically allocated regions for a specific
->> > purpose.
->> >
->> > Signed-off-by: Grant Likely <grant.likely@linaro.org>
->> > [joshc: Based on binding document proposed (in non-patch form) here:
->> >
->> http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
->> >  adapted to support #memory-region-cells]
->> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
->> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> > ---
->> >  .../bindings/reserved-memory/reserved-memory.txt   |  138
->> ++++++++++++++++++++
->> >  1 file changed, 138 insertions(+)
->> >  create mode 100644
->> Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
->> >
->> > diff --git
->> a/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
->>
->> > new file mode 100644
->> > index 000000000000..a606ce90c9c4
->> > --- /dev/null
->> > +++
->> b/Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
->> > @@ -0,0 +1,138 @@
->> > +*** Reserved memory regions ***
->> > +
->> > +Reserved memory is specified as a node under the /reserved-memory
->> node.
->> > +The operating system shall exclude reserved memory from normal usage
->> > +one can create child nodes describing particular reserved (excluded
->> from
->> > +normal use) memory regions. Such memory regions are usually
->> designed for
->> > +the special usage by various device drivers.
->> > +
->> > +Parameters for each memory region can be encoded into the device tree
->> > +with the following nodes:
->> > +
->> > +/reserved-memory node
->> > +---------------------
->> > +#address-cells, #size-cells (required) - standard definition
->> > +    - Should use the same values as the root node
->> > +#memory-region-cells (required) - dictates number of cells used in
->> the child
->> > +                                  nodes memory-region specifier
->>
->> I still don't like this portion of the binding. I'm not convinced that
->> it is necessary in the majority of cases and it is going to be very
->> driver specific. I would rather drop it entirely from the common
->> binding. If a specific driver needs to do something like the above then
->> it can have a driver specific binding. Otherwise I think the default
->> should be a simple phandle with no arguments to a single reserved memory
->> node.
->>
->> Ben, can you weigh in on the current state of this document. I'm mostly
->> happy with it aside from my comment above. Do you think this is ready to
->> be merged?
->>
->> > +ranges (required) - standard definition
->> > +    - Should be empty
->> > +
->> > +/reserved-memory/ child nodes
->> > +-----------------------------
->> > +Each child of the reserved-memory node specifies one or more
->> regions of
->> > +reserved memory. Each child node may either use a 'reg' property to
->> > +specify a specific range of reserved memory, or a 'size' property with
->> > +optional constraints to request a dynamically allocated block of
->> memory.
->> > +
->> > +Following the generic-names recommended practice, node names should
->> > +reflect the purpose of the node (ie. "framebuffer" or "dma-pool").
->> Unit
->> > +address (@<address>) should be appended to the name if the node is a
->> > +static allocation.
->> > +
->> > +Properties:
->> > +Requires either a) or b) below.
->> > +a) static allocation
->> > +   reg (required) - standard definition
->> > +b) dynamic allocation
->> > +   size (required) - length based on parent's #size-cells
->> > +                   - Size in bytes of memory to reserve.
->> > +   alignment (optional) - length based on parent's #size-cells
->> > +                        - Address boundary for alignment of
->> allocation.
->> > +   alloc-ranges (optional) - prop-encoded-array (address, length
->> pairs).
->> > +                           - Specifies regions of memory that are
->> > +                             acceptable to allocate from.
->> > +
->> > +If both reg and size are present, then the reg property takes
->> precedence
->> > +and size is ignored.
->> > +
->> > +Additional properties:
->> > +compatible (optional) - standard definition
->> > +    - may contain the following strings:
->> > +        - shared-dma-pool: This indicates a region of memory meant
->> to be
->> > +          used as a shared pool of DMA buffers for a set of
->> devices. It can
->> > +          be used by an operating system to instanciate the
->> necessary pool
->> > +          management subsystem if necessary.
->> > +        - vendor specific string in the form
->> <vendor>,[<device>-]<usage>
->>
->> Add "Use vendor strings to identify regions dedicates for a specific
->> vendor device. For example: 'acme,framebuffer'. Platform code can use
->> vendor
->> strings to identify device specific regions"
->
-> So do you want to completely drop phandle based links between device
-> nodes and
-> memory regions?
+Add __initconst to 'regulator_desc' array with supported regulators.
+During probe choose how many and which regulators will be supported
+according to device ID. Then copy the 'regulator_desc' array to
+allocated memory so the regulator core can use it.
 
-Huh? How this would work with regions that have to be used for multiple 
-(but not all - not a default region) devices?
+Additionally allocate array of of_regulator_match() dynamically (based
+on number of regulators) instead of allocation on the stack.
 
-Best regards,
-Tomasz
+This is needed for supporting different devices in s2mps11
+driver and actually prepares the regulator driver for supporting the
+S2MPS14 device.
+
+Code for supporting the S2MPS14 device will add its own array of
+'regulator_desc' (also marked as __initconst). This way memory footprint
+of the driver will be reduced (approximately 'regulators_desc' array for
+S2MPS11 occupies 5 kB on 32-bit ARM, for S2MPS14 will occupy 3 kB).
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/s2mps11.c |   75 +++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 62 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 189038aecbf5..ca66fc56fa58 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -25,9 +25,8 @@
+ #include <linux/mfd/samsung/core.h>
+ #include <linux/mfd/samsung/s2mps11.h>
+ 
+-#define S2MPS11_REGULATOR_CNT ARRAY_SIZE(regulators)
+-
+ struct s2mps11_info {
++	unsigned int rdev_num;
+ 	int ramp_delay2;
+ 	int ramp_delay34;
+ 	int ramp_delay5;
+@@ -343,7 +342,7 @@ static struct regulator_ops s2mps11_buck_ops = {
+ 	.enable_mask	= S2MPS11_ENABLE_MASK			\
+ }
+ 
+-static const struct regulator_desc regulators[] = {
++static const struct regulator_desc s2mps11_regulators[] __initconst = {
+ 	regulator_desc_ldo2(1),
+ 	regulator_desc_ldo1(2),
+ 	regulator_desc_ldo1(3),
+@@ -394,21 +393,62 @@ static const struct regulator_desc regulators[] = {
+ 	regulator_desc_buck10,
+ };
+ 
++/*
++ * Allocates memory under 'regulators' pointer and copies there array
++ * of regulator_desc for given device.
++ *
++ * Returns number of regulators or negative ERRNO on error.
++ */
++static int __init
++s2mps11_pmic_init_regulators_desc(struct platform_device *pdev,
++		struct regulator_desc **regulators)
++{
++	const struct regulator_desc *regulators_init;
++	enum sec_device_type dev_type;
++	int rdev_num;
++
++	dev_type = platform_get_device_id(pdev)->driver_data;
++	switch (dev_type) {
++	case S2MPS11X:
++		rdev_num = ARRAY_SIZE(s2mps11_regulators);
++		regulators_init = s2mps11_regulators;
++		break;
++	default:
++		dev_err(&pdev->dev, "Invalid device type: %u\n", dev_type);
++		return -EINVAL;
++	};
++
++	*regulators = devm_kzalloc(&pdev->dev,
++			sizeof(**regulators) * rdev_num, GFP_KERNEL);
++	if (!*regulators)
++		return -ENOMEM;
++
++	memcpy(*regulators, regulators_init, sizeof(**regulators) * rdev_num);
++
++	return rdev_num;
++}
++
+ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+-	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
+-	struct of_regulator_match rdata[S2MPS11_REGULATOR_MAX];
++	struct sec_platform_data *pdata = iodev->pdata;
++	struct of_regulator_match *rdata = NULL;
+ 	struct device_node *reg_np = NULL;
+ 	struct regulator_config config = { };
+ 	struct s2mps11_info *s2mps11;
+-	int i, ret;
++	int i, ret = 0;
++	struct regulator_desc *regulators = NULL;
++	int rdev_num;
+ 
+ 	s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
+ 				GFP_KERNEL);
+ 	if (!s2mps11)
+ 		return -ENOMEM;
+ 
++	rdev_num = s2mps11_pmic_init_regulators_desc(pdev, &regulators);
++	if (rdev_num < 0)
++		return rdev_num;
++
+ 	if (!iodev->dev->of_node) {
+ 		if (pdata) {
+ 			goto common_reg;
+@@ -419,24 +459,30 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	for (i = 0; i < S2MPS11_REGULATOR_CNT; i++)
++	rdata = kzalloc(sizeof(*rdata) * rdev_num, GFP_KERNEL);
++	if (!rdata)
++		return -ENOMEM;
++
++	for (i = 0; i < rdev_num; i++)
+ 		rdata[i].name = regulators[i].name;
+ 
+ 	reg_np = of_find_node_by_name(iodev->dev->of_node, "regulators");
+ 	if (!reg_np) {
+ 		dev_err(&pdev->dev, "could not find regulators sub-node\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto out;
+ 	}
+ 
+-	of_regulator_match(&pdev->dev, reg_np, rdata, S2MPS11_REGULATOR_MAX);
++	of_regulator_match(&pdev->dev, reg_np, rdata, rdev_num);
+ 
+ common_reg:
+ 	platform_set_drvdata(pdev, s2mps11);
++	s2mps11->rdev_num = rdev_num;
+ 
+ 	config.dev = &pdev->dev;
+ 	config.regmap = iodev->regmap_pmic;
+ 	config.driver_data = s2mps11;
+-	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
++	for (i = 0; i < rdev_num; i++) {
+ 		struct regulator_dev *regulator;
+ 
+ 		if (!reg_np) {
+@@ -453,15 +499,18 @@ common_reg:
+ 			ret = PTR_ERR(regulator);
+ 			dev_err(&pdev->dev, "regulator init failed for %d\n",
+ 				i);
+-			return ret;
++			goto out;
+ 		}
+ 	}
+ 
+-	return 0;
++out:
++	kfree(rdata);
++
++	return ret;
+ }
+ 
+ static const struct platform_device_id s2mps11_pmic_id[] = {
+-	{ "s2mps11-pmic", 0},
++	{ "s2mps11-pmic", S2MPS11X},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(platform, s2mps11_pmic_id);
+-- 
+1.7.9.5
+
