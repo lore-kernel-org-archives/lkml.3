@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaB1EHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Feb 2014 23:07:05 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:50492 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaB1EHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Feb 2014 23:07:03 -0500
-Message-ID: <53100B62.8000704@hp.com>
-Date: Thu, 27 Feb 2014 23:06:58 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1751457AbaB1EMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Feb 2014 23:12:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:22509 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750999AbaB1EL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Feb 2014 23:11:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,559,1389772800"; 
+   d="scan'208";a="483311210"
+Message-ID: <53100C8D.1060001@linux.intel.com>
+Date: Fri, 28 Feb 2014 12:11:57 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] deadlock on rename_lock
-References: <1393548357.4705.75.camel@kjgkr>
-In-Reply-To: <1393548357.4705.75.camel@kjgkr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "alan@linux.intel.com" <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Len.Brown@intel.com, Adam Williamson <awilliam@redhat.com>
+Subject: [patch] x86: Introduce BOOT_EFI and BOOT_CF9 into the reboot sequence
+ loop
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2014 07:45 PM, Jaegeuk Kim wrote:
-> Hi Al,
->
-> In the following configuration, I met a deadlock condition like below.
->
-> Kernel: 3.14-rc3
-> Workload: fsstress with 10 threads
-> Reproducible scenario: N/A
->
-> Is it related to this patch?
-> commit 1370e97bb2eb1ef2df7355204e5a4ba13e12b861
-> Author: Waiman Long<Waiman.Long@hp.com>
-> Date:   Thu Sep 12 10:55:34 2013 -0400
->
->      seqlock: Add a new locking reader type
->
-> In d_walk(),
->                  /*
->                   * might go back up the wrong parent if we have had a
-> rename
->                   * or deletion
->                   */
->                  if (this_parent != child->d_parent ||
->                           (child->d_flags&  DCACHE_DENTRY_KILLED) ||
->
-> -->  I suspect that the upper conditions can trigger rename_retry even
-> though rename_retry was done once before.
->
->                           need_seqretry(&rename_lock, seq)) {
->                          spin_unlock(&this_parent->d_lock);
->                          rcu_read_unlock();
->                          goto rename_retry;
->                  }
->
-> Thanks,
->
->
+This patch is to introduce BOOT_EFI and BOOT_CF9 in the reboot sequence
+loop, to fix the reboot problem on the known Intel Bay Trail-T based
+platform, for example, ASUS-T100 and Dell Venue 8/11 Pro. These
+platforms don't support ACPI reboot, we expect to call EFI runtime
+service to handle this case, and CF9 is an alternate after EFI.
 
-It seems like the rename_lock may not be able to fully protect against 
-the setting of the DCACHE_DENTRY_KILLED flag. Al, should this case be 
-handled separately? I am 100% sure if we could just release the lock and 
-let it try again without causing infinite loop.
+We don't need any dmidecode based quirks any more, we don't need extra
+"reboot=efi" or "reboot=p" in the command line. The machine can be
+rebooted automatically with the patch.
 
--Longman
+References: https://bugzilla.kernel.org/show_bug.cgi?id=70931
+Signed-off-by Aubrey Li <aubrey.li@intel.com>
+---
+ arch/x86/kernel/reboot.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index c752cb4..1b58e00 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -462,11 +462,12 @@ void __attribute__((weak)) mach_reboot_fixups(void)
+  *
+  * 1) If the FADT has the ACPI reboot register flag set, try it
+  * 2) If still alive, write to the keyboard controller
+- * 3) If still alive, write to the ACPI reboot register again
+- * 4) If still alive, write to the keyboard controller again
++ * 3) If still alive, call EFI runtime service
++ * 4) If still alive, write to the PCI IO port 0xCF9
++ * 5) If still alive, try (1)~(4) one time again
+  *
+  * If the machine is still alive at this stage, it gives up. We default to
+- * following the same pattern, except that if we're still alive after
+(4) we'll
++ * following the same pattern, except that if we're still alive after
+(5) we'll
+  * try to force a triple fault and then cycle between hitting the keyboard
+  * controller and doing that
+  */
+@@ -500,7 +501,7 @@ static void native_machine_emergency_restart(void)
+ 			}
+ 			if (attempt == 0 && orig_reboot_type == BOOT_ACPI) {
+ 				attempt = 1;
+-				reboot_type = BOOT_ACPI;
++				reboot_type = BOOT_EFI;
+ 			} else {
+ 				reboot_type = BOOT_TRIPLE;
+ 			}
+@@ -530,7 +531,7 @@ static void native_machine_emergency_restart(void)
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
+-			reboot_type = BOOT_KBD;
++			reboot_type = BOOT_CF9;
+ 			break;
+
+ 		case BOOT_CF9:
+@@ -548,7 +549,7 @@ static void native_machine_emergency_restart(void)
+ 				outb(cf9|reboot_code, 0xcf9);
+ 				udelay(50);
+ 			}
+-			reboot_type = BOOT_KBD;
++			reboot_type = BOOT_ACPI;
+ 			break;
+ 		}
+ 	}
+-- 
+1.7.10.4
