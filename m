@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaB1NJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:09:04 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53609 "EHLO
+	id S1752399AbaB1NJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:09:18 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53727 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752150AbaB1NJA (ORCPT
+	by vger.kernel.org with ESMTP id S1751750AbaB1NJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:09:00 -0500
+	Fri, 28 Feb 2014 08:09:08 -0500
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -16,64 +16,40 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 0/5] [RFC] Support for creating generic host_bridge from device tree
-Date: Fri, 28 Feb 2014 13:08:17 +0000
-Message-Id: <1393592902-24750-1-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v3 0/3] [RFC] Add support for PCI in AArch64
+Date: Fri, 28 Feb 2014 13:08:30 +0000
+Message-Id: <1393592913-24796-1-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v3 of my attempt to add support for a generic pci_host_bridge controller created
-from a description passed in the device tree.
+Hi,
+
+This patch adds support for PCI to AArch64. It is based on my v3 patch
+that adds support for creating generic host bridge structure from
+device tree. With that in place, I was able to boot a platform that
+has PCIe host bridge support and use a PCIe network card.
 
 Changes from v2:
-  - Use range->cpu_addr when calling pci_address_to_pio()
-  - Introduce pci_register_io_range() helper function in order to register
-    io ranges ahead of their conversion to PIO values. This is needed as no
-    information is being stored yet regarding the range mapping, making
-    pci_address_to_pio() fail. Default weak implementation does nothing,
-    to cover the default weak implementation of pci_address_to_pio() that
-    expects direct mapping of physical addresses into PIO values (x86 view).
+  - Implement an arch specific version of pci_register_io_range() and
+    pci_address_to_pio().
+  - Return 1 from pci_proc_domain().
 
 Changes from v1:
-  - Add patch to fix conversion of IO ranges into IO resources.
-  - Added a domain_nr member to pci_host_bridge structure, and a new function
-    to create a root bus in a given domain number. In order to facilitate that
-    I propose changing the order of initialisation between pci_host_bridge and
-    it's related bus in pci_create_root_bus() as sort of a rever of 7b5436635800.
-    This is done in patch 1/4 and 2/4.
-  - Added a simple allocator of domain numbers in drivers/pci/host-bridge.c. The
-    code will first try to get a domain id from of_alias_get_id(..., "pci-domain")
-    and if that fails assign the next unallocated domain id.
-  - Changed the name of the function that creates the generic host bridge from
-    pci_host_bridge_of_init to of_create_pci_host_bridge and exported as GPL symbol.
+  - Added Catalin's patch for moving the PCI_IO_BASE location and extend
+    its size to 16MB
+  - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
+    keeping track of assigned IO space and returns an io_offset. At the
+    moment the code is added in arch/arm64 but it can be moved in drivers/pci.
+  - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
+    as suggested by Arnd.
 
-v1 thread here: https://lkml.org/lkml/2014/2/3/380
-
-The following is an edit of the original blurb:
-
-Following the discussion started here [1], I now have a proposal for tackling
-generic support for host bridges described via device tree. It is an initial
-stab at it, to try to get feedback and suggestions, but it is functional enough
-that I have PCI Express for arm64 working on an FPGA using the patch that I am
-also publishing that adds support for PCI for that platform.
-
-Looking at the existing architectures that fit the requirements (use of device
-tree and PCI) yields the powerpc and microblaze as generic enough to make them
-candidates for conversion. I have a tentative patch for microblaze that I can
-only compile test it, unfortunately using qemu-microblaze leads to an early
-crash in the kernel.
-
-As Bjorn has mentioned in the previous discussion, the idea is to add to
-struct pci_host_bridge enough data to be able to reduce the size or remove the
-architecture specific pci_controller structure. arm64 support actually manages
-to get rid of all the architecture static data and has no pci_controller structure
-defined. For host bridge drivers that means a change of API unless architectures
-decide to provide a compatibility layer (comments here please).
-
-In order to initialise a host bridge with the new API, the following example
-code is sufficient for a _probe() function:
+The API used is different from the one used by ARM architecture. There is
+no pci_common_init_dev() function and no hw_pci structure, as that is no
+longer needed. Once the last signature is added to the legal agreement, I
+will post the host bridge driver code that I am using. Meanwhile, here
+is an example of what the probe function looks like, posted as an example:
 
 static int myhostbridge_probe(struct platform_device *pdev)
 {
@@ -124,25 +100,29 @@ bridge_init_fail:
 	return err;
 }
 
-[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
 
 Best regards,
 Liviu
 
 
-Liviu Dudau (5):
-  pci: Introduce pci_register_io_range() helper function.
-  pci: OF: Fix the conversion of IO ranges into IO resources.
-  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
-  pci: Introduce a domain number for pci_host_bridge.
-  pci: Add support for creating a generic host_bridge from device tree
+Catalin Marinas (1):
+  arm64: Extend the PCI I/O space to 16MB
 
- drivers/of/address.c       |  39 +++++++++++++
- drivers/pci/host-bridge.c  | 134 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/probe.c        |  66 ++++++++++++++--------
- include/linux/of_address.h |  14 +----
- include/linux/pci.h        |  17 ++++++
- 5 files changed, 236 insertions(+), 34 deletions(-)
+Liviu Dudau (2):
+  Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+  arm64: Add architecture support for PCI
+
+ Documentation/arm64/memory.txt |  16 ++--
+ arch/arm64/Kconfig             |  19 ++++-
+ arch/arm64/include/asm/Kbuild  |   1 +
+ arch/arm64/include/asm/io.h    |   5 +-
+ arch/arm64/include/asm/pci.h   |  47 +++++++++++
+ arch/arm64/kernel/Makefile     |   1 +
+ arch/arm64/kernel/pci.c        | 178 +++++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/io.h       |   2 +-
+ 8 files changed, 259 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm64/include/asm/pci.h
+ create mode 100644 arch/arm64/kernel/pci.c
 
 -- 
 1.9.0
