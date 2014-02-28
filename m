@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaB1QQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:16:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44150 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752557AbaB1QQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:16:21 -0500
-Message-ID: <5310B60F.30806@zytor.com>
-Date: Fri, 28 Feb 2014 08:15:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752954AbaB1QQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:16:37 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53960 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752155AbaB1QQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 11:16:35 -0500
+Date: Fri, 28 Feb 2014 16:15:59 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>
+Subject: Re: [PATCH v6 2/2] arm64: audit: Add audit hook in
+ ptrace/syscall_trace
+Message-ID: <20140228161558.GE29546@mudshark.cambridge.arm.com>
+References: <1393319934-2810-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-1-git-send-email-takahiro.akashi@linaro.org>
+ <1393564635-3921-3-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-References: <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu> <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home> <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu> <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com> <20140228154026.GH9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140228154026.GH9987@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393564635-3921-3-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2014 07:40 AM, Peter Zijlstra wrote:
-> On Fri, Feb 28, 2014 at 07:13:06AM -0800, H. Peter Anvin wrote:
->> If I'm reading this right we end up going from the page fault
->> tracepoint to copy_from_user_nmi() without going through NMI, and the
->> cr2 corruption is obvious.  I guess the assumption that only the NMI
->> path needed to save cr2 is flawed?
+On Fri, Feb 28, 2014 at 05:17:15AM +0000, AKASHI Takahiro wrote:
+> This patch adds auditing functions on entry to or exit from
+> every system call invocation.
 > 
-> It was never assumed it would only go through NMI, but that it would be
-> NMI safe -- and as it turns out, it is that.
-> 
-> What I did assume was that any other callsites would be safe, seeing how
-> they'd already be running in 'normal' contexts.
-> 
-> I had not considered people putting tracepoints _that_ early in the
-> exception paths.
-> 
-> Note that there's more tracepoints there than the one mentioned.
-> 
+> Acked-by: Richard Guy Briggs <rgb@redhat.com>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/kernel/ptrace.c |   54 ++++++++++++++++++++++++++------------------
+>  1 file changed, 32 insertions(+), 22 deletions(-)
 
-Well, I was talking about the assumption spelled out in the comment
-above copy_from_user_nmi() which pretty much states "cr2 is safe because
-cr2 is saved/restored in the NMI wrappers."
+I think you need to do something like I did for arch/arm/, where we have
+separate trace functions for entry/exit to make sure that we invoke the
+various helpers in the correct order (for example, you want to invoke all
+the debug stuff *first* on entry, but *last* on exit).
 
-	-hpa
+Will
