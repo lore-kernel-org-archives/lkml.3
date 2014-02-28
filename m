@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaB1Q6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:58:55 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55190 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593AbaB1Q6y (ORCPT
+	id S1752554AbaB1RDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:03:33 -0500
+Received: from lvps176-28-13-145.dedicated.hosteurope.de ([176.28.13.145]:45468
+	"EHLO lvps176-28-13-145.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751974AbaB1RDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:58:54 -0500
-Date: Fri, 28 Feb 2014 16:58:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "wad@chromium.org" <wad@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] arm64: is_compat_task is defined both in
- asm/compat.h and linux/compat.h
-Message-ID: <20140228165817.GE30996@mudshark.cambridge.arm.com>
-References: <1391767892-5395-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320025-2855-1-git-send-email-takahiro.akashi@linaro.org>
- <1393320025-2855-4-git-send-email-takahiro.akashi@linaro.org>
+	Fri, 28 Feb 2014 12:03:32 -0500
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Feb 2014 12:03:32 EST
+From: Tim Sander <tim@krieglstein.org>
+To: "linux-arm@lists.infradead.org" <linux-arm@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: FIQ on xilinx cortex a9 zynq
+Date: Fri, 28 Feb 2014 17:53:29 +0100
+Message-ID: <8605883.1pbkKagGpT@dabox>
+User-Agent: KMail/4.12.2 (Linux/3.13.0; KDE/4.12.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393320025-2855-4-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 09:20:25AM +0000, AKASHI Takahiro wrote:
-> kernel/seccomp.c includes linux/compat.h and, indicrectly, asm/compat.h
-> via asm/syscall.h. Due to the duplicated definitions of is_compat_task,
-> compiling this file will fail in the case of !CONFIG_COMPAT.
-> So this patch
-> 1) removes is_compat_task() definition from asm/compat.h
-> 2) replaces asm/compat.h to linux/compat.h in kernel/*.c
-> 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
+Hi
 
-You built this, right? If so,
+I am currently trying to get the FIQ interrupt working with linux. I want to
+have the FIQ to have an interrupt which is not masked by linux and gives the
+lowest irq latencys the hardware can deliver. 
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+In the case of the xilinx zynx i have seen that the ICCICR register enables
+the FIQ via the fittingly named config bit FiqEn. Enabling this bit "as is" does
+not seem to work as the kernel works in secure mode and thus all interrupts
+delivered suddenly are delivered in FIQ context which is obviously not a good
+idea. 
 
-Will
+So i tried to switch all interrupts to the non-secure mode:
+Disable the interrupts in ICCICR register, set all interrupt security
+registers to 0xffffffff which means non-secure mode.
+
+The register values after that looked like that which is slighly irritating
+for the ICDISR0 case:
+ICDISR0:f800ffff
+ICDISR1:ffffffff
+ICDISR2:ffffffff
+Set the ICCICR register to 0x17 (SBPR,AckCtl,EnableNS,EnableS).
+But still the kernel locks up when doing this. 
+
+One cause would be that in driver/irqchips/irq-gic.c the first bit in ICCICR is
+used to switch the interrupts off. Now it should be the second bit as they where 
+shifted to the non-secure mode.
+
+I tried the following patch which should switch both the non-secure and the
+secure images but still this locked the kernel up:
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 5e7f810..a05a126 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -467,13 +467,14 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+                writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
+ 
+        writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-       writel_relaxed(1, base + GIC_CPU_CTRL);
++
++       writel_relaxed(readl(base + GIC_CPU_CTRL)|3, base + GIC_CPU_CTRL);
+ }
+ 
+ void gic_cpu_if_down(void)
+ {
+        void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
+-       writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
++       writel_relaxed(readl(cpu_base + GIC_CPU_CTRL)&0xfffffffc, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ #ifdef CONFIG_CPU_PM
+@@ -608,7 +609,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+                writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+        writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-       writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++       writel_relaxed(readl(cpu_base + GIC_CPU_CTRL)|3, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,        void *v)
+----
+
+but still the kernel locks up even if i haven't enabled the fiqen bit in ICCICR register.
+So currently i am out of ideas why the kernel locks up but i am sure i have forgotten one thing
+or another... :-/
+
+It seems much harder to get the FIQ running than in the "good ol' days" without TrustZone.
+
+Best regards
+Tim
+
