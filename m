@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaB1Jjz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 04:39:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50212 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaB1Jjx (ORCPT
+	id S1751680AbaB1Jmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 04:42:42 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30295 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623AbaB1Jmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 04:39:53 -0500
-Date: Fri, 28 Feb 2014 10:39:40 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228093940.GH27965@twins.programming.kicks-ass.net>
-References: <20140224141329.1cd3bb52@gandalf.local.home>
- <20140224193043.GP6835@laptop.programming.kicks-ass.net>
- <530C12CA.6070308@zytor.com>
- <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
- <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
- <20140225094352.73e0e28c@gandalf.local.home>
- <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
- <20140227173150.4e5ed747@gandalf.local.home>
+	Fri, 28 Feb 2014 04:42:40 -0500
+Date: Fri, 28 Feb 2014 12:42:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chase Southwood <chase.southwood@yahoo.com>
+Cc: gregkh@linuxfoundation.org, abbotti@mev.co.uk,
+        hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] Staging: comedi: fix lines that are over 80
+ characters
+Message-ID: <20140228094215.GJ26776@mwanda>
+References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
+ <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140227173150.4e5ed747@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1393578945-20488-1-git-send-email-chase.southwood@yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 05:31:50PM -0500, Steven Rostedt wrote:
-> Well, the perf ring buffer is vmalloced, right? That can cause a page
-> fault too.
+On Fri, Feb 28, 2014 at 03:15:45AM -0600, Chase Southwood wrote:
+> This patch introduces a simple helper function, outl_1564_timer(), to
+> allow several lines which violate the character limit to be shortened.
+> A handful of other lines that are too long are appropriately split as
+> well.
+> 
+> Cc: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> 2: introduced outl_1564_timer() at the suggestion of Dan.
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 83 +++++++++++++---------
+>  1 file changed, 49 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> index 2b47fa1..d958d3c 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> @@ -99,6 +99,9 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
+>  #define APCI1564_TCW_WARN_TIMEVAL			24
+>  #define APCI1564_TCW_WARN_TIMEBASE			28
+>  
+> +/* Helper functions */
 
-On x86 they're typically not -- although we have a debug CONFIG option
-to test that code on x86 too. On SPARC/ARM etc.. we have to use
-vmalloc_user() because of cache aliasing (yay for VIPT).
+Obvious comment is too obvious.
+
+> +static void outl_1564_timer(struct addi_private *, unsigned int, unsigned int);
+> +
+
+Avoid forward declarations.  Put the function itself here.
+
+Do a function for APCI1564_DIGITAL_IP as well.
+
+outl_1564_digital_ip()
+inl_1564_digital_ip()
+
+To be honest, I'm not sure how much the 1564 adds to the name.  The
+names should match of course.
+
+I wonder if this line is buggy?:
+outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP_INTERRUPT_MODE1); /* Disable the and/or interrupt */
+Should it be?
+outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DIGITAL_IP + APCI1564_DIGITAL_IP_INTERRUPT_MODE1);
+
+You would need to read the specs to be sure.
+
+Anyway, take some more time with this and play with different ways to
+clean it up.
+
+regards,
+dan carpenter
+
