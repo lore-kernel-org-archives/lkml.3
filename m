@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaB1Pki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:40:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33158 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaB1Pkh (ORCPT
+	id S1752677AbaB1Pln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:41:43 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53215 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752406AbaB1Plm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:40:37 -0500
-Date: Fri, 28 Feb 2014 16:40:26 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228154026.GH9987@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
- <20140227173150.4e5ed747@gandalf.local.home>
- <530FC1C6.5040209@zytor.com>
- <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
- <20140227215726.7018c861@gandalf.local.home>
- <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
- <20140228092341.12a40f7c@gandalf.local.home>
- <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
- <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
+	Fri, 28 Feb 2014 10:41:42 -0500
+Date: Fri, 28 Feb 2014 15:41:22 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rkuo@codeaurora.org" <rkuo@codeaurora.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "paulus@samba.org" <paulus@samba.org>
+Subject: Re: [PATCH 1/2] asm-generic: rwsem: ensure sem->cnt is only accessed
+ via atomic_long_*
+Message-ID: <20140228154121.GC29546@mudshark.cambridge.arm.com>
+References: <1393003347-24958-1-git-send-email-will.deacon@arm.com>
+ <1393478904.3884.6.camel@buesod1.americas.hpqcorp.net>
+ <20140228121314.GC674@mudshark.cambridge.arm.com>
+ <531085FE.2050902@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1c583986-74f8-4829-883b-390dc49ddabb@email.android.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <531085FE.2050902@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 07:13:06AM -0800, H. Peter Anvin wrote:
-> If I'm reading this right we end up going from the page fault
-> tracepoint to copy_from_user_nmi() without going through NMI, and the
-> cr2 corruption is obvious.  I guess the assumption that only the NMI
-> path needed to save cr2 is flawed?
+On Fri, Feb 28, 2014 at 12:50:06PM +0000, Peter Hurley wrote:
+> On 02/28/2014 07:13 AM, Will Deacon wrote:
+> > diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+> > index 603a0a11e592..2b6401f9e428 100644
+> > --- a/include/asm-generic/rwsem.h
+> > +++ b/include/asm-generic/rwsem.h
+> > @@ -40,14 +40,16 @@ static inline void __down_read(struct rw_semaphore *sem)
+> >   static inline int __down_read_trylock(struct rw_semaphore *sem)
+> >   {
+> >          long tmp;
+> > +       atomic_long_t *cnt = (atomic_long_t *)&sem->count;
+> 
+> The shared rwsem failure paths (kernel/locking/rwsem_xadd.c) peek at
+> sem->count as long type, so this isn't really necessary.
 
-It was never assumed it would only go through NMI, but that it would be
-NMI safe -- and as it turns out, it is that.
+Yeah, none of this patch is necessary from a technical perspective. I was
+just in the area and tried to make the file at least self-consistent wrt the
+atomic API. It's a harmless cleanup.
 
-What I did assume was that any other callsites would be safe, seeing how
-they'd already be running in 'normal' contexts.
-
-I had not considered people putting tracepoints _that_ early in the
-exception paths.
-
-Note that there's more tracepoints there than the one mentioned.
+Will
