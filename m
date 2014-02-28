@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161AbaB1OXo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 09:23:44 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:31411 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751532AbaB1OXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 09:23:43 -0500
-Date: Fri, 28 Feb 2014 09:23:41 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: perf_fuzzer compiled for x32 causes reboot
-Message-ID: <20140228092341.12a40f7c@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402241302210.20560@vincent-weaver-1.um.maine.edu>
-	<530B90A5.3090302@zytor.com>
-	<20140224141329.1cd3bb52@gandalf.local.home>
-	<20140224193043.GP6835@laptop.programming.kicks-ass.net>
-	<530C12CA.6070308@zytor.com>
-	<alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu>
-	<dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com>
-	<20140225094352.73e0e28c@gandalf.local.home>
-	<alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu>
-	<20140227173150.4e5ed747@gandalf.local.home>
-	<530FC1C6.5040209@zytor.com>
-	<alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
-	<20140227215726.7018c861@gandalf.local.home>
-	<alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1752274AbaB1O0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 09:26:35 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41324 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228AbaB1O0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 09:26:33 -0500
+Message-ID: <53109C92.10104@ti.com>
+Date: Fri, 28 Feb 2014 16:26:26 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Nishanth Menon <nm@ti.com>, Lee Jones <lee.jones@linaro.org>
+CC: <florian.vaussard@epfl.ch>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/3] mfd: twl6040: Select i2c fast mode as default with
+ regmap patch
+References: <1393509410-1640-1-git-send-email-peter.ujfalusi@ti.com> <1393509410-1640-2-git-send-email-peter.ujfalusi@ti.com> <530F4A84.9070906@ti.com> <530F4CA5.6030502@ti.com> <530F5323.1020305@ti.com> <53103D34.8050101@ti.com> <53108F90.7070608@ti.com>
+In-Reply-To: <53108F90.7070608@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014 09:15:33 -0500 (EST)
-Vince Weaver <vincent.weaver@maine.edu> wrote:
+On 02/28/2014 03:30 PM, Nishanth Menon wrote:
+> TWL6030 can do 3.3MHz by default and there are no speed registers to
+> configure.
 
-> On Thu, 27 Feb 2014, Steven Rostedt wrote:
+According to the datasheet the speed of twl6030 is limited to 2.4MHz. I have
+not seen registers or pins to select the speed. As the documentation puts
+this: High-speed mode (limited to 2.4Mbit/s maximum)
+
+
+>> Also you could have more devices on the bus, wired for 3.4MHz. In that case we
+>> would need to make sure that the first access happens with 100KHz to twl6040
+>> to select 3.4MHz mode, switch the controller speed and allow the communication
+>> to other chips. It is another question how the 3.4MHz clients will interpret
+>> the 100KHz communication on the bus, I guess it is ignored by them.
+> As far as the i2c spec 2.1 says:
+> "Fast-mode devices are downward-compatible and can communicate with
+> Standard-mode devices in a 0 to 100 kbit/s I2C-bus system"
+> ...
+> "Hs-mode devices can transfer information at bit rates of up to 3.4
+> Mbit/s, yet they remain fully downward compatible with Fast- or
+> Standard-mode (F/S-mode) devices for bi-directional communication in a
+> mixed-speed bus system."
 > 
-> > On Thu, 27 Feb 2014 20:34:34 -0500 (EST)
-> > Vince Weaver <vincent.weaver@maine.edu> wrote:
-> > 
-> > 
-> > > > I would actually suggest we do the equivalent on i386 as well.
-> > > > 
-> > > > Vince, could you try this patch as an experiment?
-> > > 
-> > > OK with your patch applied it does not segfault.
-> > > 
-> > 
-> > Vince, Great! Can you remove Peter's patch, and try this one. It
-> > removes the crud to save the cr2 from entry_64.S and makes both i386
-> > and x86_64 do the same thing in regards to cr2 handling.
-> 
-> no, with only this patch applied it segfaults as per previous:
-> 
-> [  126.396049] perf_fuzzer[2904]: segfault at 17a0 ip 00000000004017fd sp 00000000ffaff3f0 error 6 in perf_fuzzer[400000+d1000]
+> So, they are backward compatible.
 
-Interesting. Are you doing a perf function trace?
+I just tried it on PandaBoard to set the i2c speed to 24MHz. If I do not touch
+the twl6040 ACCCTL register's i2cmode I can not access to twl6040 later on.
+However if I select the high-speed mode as the first write everything is fine
+afterwards.
+Hrm, it is possible that I can write with high-speed to twl6040 but the
+twl6040 is sending back the data in normal-mode?
+So in theory if I have the ACCCTL write as a first I2C access towards twl6040
+we might be safe if the bus is in high-speed mode?
 
-And just in case, can you add this patch and make sure the copy is
-called by NMI.
+If I have fast mode configured to the controller, I can still communicate with
+twl6040 even if it is set to normal mode.
 
--- Steve
+I still think that this patch is safe for now. We could try to figure out how
+to increase the i2c speed on the bus for twl6030 and twl6040. This has to be
+done in the same series.
 
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-index ddf9ecb..ca943cd 100644
---- a/arch/x86/lib/usercopy.c
-+++ b/arch/x86/lib/usercopy.c
-@@ -29,6 +29,7 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 	 */
- 	pagefault_disable();
- 	ret = __copy_from_user_inatomic(to, from, n);
-+	trace_dump_stack(2)
- 	pagefault_enable();
- 
- 	return ret;
+Now after several boots:
+It seams if I set the i2c to 2.4MHz and I can not communicate with twl6040
+right after cold power on.
+So if the i2c bus is already set to 2.4GHz I can not set the twl6040 ACCCTL
+register. But the content of ACCCTL register seams to be preserved between
+reboots and this is why I saw that the 2.4MHz bus speed might be even possible.
+
+-- 
+Péter
