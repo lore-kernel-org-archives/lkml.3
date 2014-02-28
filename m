@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaB1Qqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 11:46:34 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44994 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaB1Qqd (ORCPT
+	id S1752919AbaB1Qr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 11:47:26 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:42450 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689AbaB1QrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 11:46:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX187K1J15oWqRbF1OIDc0A9+FFnsI1ItykU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 186885366F2
-Date: Fri, 28 Feb 2014 11:46:30 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Aaron Brown <aaron.f.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org, Jacob Keller <jacob.e.keller@intel.com>
-Subject: Re: [PATCH] doc: update SubmittingPatches about the Fixed tag
-Message-ID: <20140228164630.GN1872@titan.lakedaemon.net>
-References: <1393558622-1392-1-git-send-email-aaron.f.brown@intel.com>
+	Fri, 28 Feb 2014 11:47:24 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>, Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH] ARM: qcom: Enable basic support for Qualcomm platforms in multi_v7_defconfig
+References: <1393360445-16923-1-git-send-email-galak@codeaurora.org>
+	<7hy50xv3rw.fsf@paris.lan>
+Date: Fri, 28 Feb 2014 08:47:21 -0800
+In-Reply-To: <7hy50xv3rw.fsf@paris.lan> (Kevin Hilman's message of "Wed, 26
+	Feb 2014 15:43:31 -0800")
+Message-ID: <7hzjlbtc9y.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393558622-1392-1-git-send-email-aaron.f.brown@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 27, 2014 at 07:37:02PM -0800, Aaron Brown wrote:
-> From: Jacob Keller <jacob.e.keller@intel.com>
-> 
-> This patch updates the SubmittingPatches process to include howto about
-> the new 'Fixed' tag to be used when a patch fixes an issue in a previous
-> commit (found by git-bisect for example).
-> 
-> Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-> Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-> Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
-> ---
->  Documentation/SubmittingPatches | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-> index 26b1e31..88a796c 100644
-> --- a/Documentation/SubmittingPatches
-> +++ b/Documentation/SubmittingPatches
-> @@ -119,6 +119,13 @@ Example:
->  	platform_set_drvdata(), but left the variable "dev" unused,
->  	delete it.
->  
-> +If your patch fixes a bug in a specific commit, e.g. you found an issue using
-> +git-bisect, please use the 'Fixes:' tag with the first 12 characters of the
-> +SHA-1 ID, and the one line summary.
+Hi Kumar,
 
-It may be worth mentioning here that this can be configured in your git
-config by setting core.abbrev = 12.
+Kevin Hilman <khilman@linaro.org> writes:
 
-> +Example:
-> +
-> +	Fixes: e21d2170f366 ("video: remove unnecessary platform_set_drvdata()")
-> +
->  
->  3) Separate your changes.
->  
-> @@ -430,7 +437,7 @@ person it names.  This tag documents that potentially interested parties
->  have been included in the discussion
->  
->  
-> -14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
-> +14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
->  
->  If this patch fixes a problem reported by somebody else, consider adding a
->  Reported-by: tag to credit the reporter for their contribution.  Please
-> @@ -485,6 +492,11 @@ idea was not posted in a public forum. That said, if we diligently credit our
->  idea reporters, they will, hopefully, be inspired to help us again in the
->  future.
->  
-> +A Fixes: tag indicates that the patch fixes an issue in a previous commit. It
-> +is used to make it easy to determine where a bug originated, which can help
-> +review a bug fix. This is the preferred method for indicating a bug fixed by
-> +the patch. See #2 above for more details.
-> +
+> Kumar Gala <galak@codeaurora.org> writes:
+>
+>> Enable support for the MSM8x60, MSM8960, and MSM8974 SoCs, clocks and
+>> serial console as part of the standard multi_v7_defconfig.
+>>
+>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>> ---
+>>
+>> I leave this to the arm-soc guys to apply because of possible conflicts
+>> with other updates to multi_v7_defconfig.
+>
+> Seem to be a handful of !qcom changes here, probably resulting from a
+> run of 'make savedefconfig' without all the new changes in.
+>
+> I've thinned this out to only the qcom changes and applied the following
+> to next/boards.  I think it's better to do any 'make savedefconfig'
+> cleanups as a separate, cleanup-only patch as needed.
 
-imho, the most useful aspect of this tag is for determining which stable
-kernel versions the fix should be backported to.  Perhaps
+Bisecting a new boot failure on u8500/snowball came down to this patch.
+Simply disabling CONFIG_ARCH_QCOM in mutli_v7_defconfig gets the
+u8500/snowball booting again, so it looks like there may still be some
+qcom specifics that are being run on non-qcom platforms with a
+multi-platform config.
 
-"...review a bug fix.  This tag also assists the stable kernel team in
-determining which stable kernel versions should receive your fix. This
-is the preferred..."
+Could you audit for initcalls/drivers being initialized on non-qcom
+SoCs?
 
-thx,
+Thanks,
 
-Jason.
+Kevin
