@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaB1UUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 15:20:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30011 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041AbaB1UUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 15:20:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,564,1389772800"; 
-   d="scan'208";a="483841112"
-Date: Fri, 28 Feb 2014 15:20:31 -0500
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140228202031.GB12820@linux.intel.com>
-References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
- <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com>
- <1393609771.6784.83.camel@misato.fc.hp.com>
+	id S1751915AbaB1UYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 15:24:25 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:38109 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaB1UYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 15:24:24 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org
+Subject: Re: [PATCH] ARM: qcom: Enable basic support for Qualcomm platforms in multi_v7_defconfig
+References: <1393360445-16923-1-git-send-email-galak@codeaurora.org>
+	<7hy50xv3rw.fsf@paris.lan> <7hzjlbtc9y.fsf@paris.lan>
+	<20140228182745.GC2487@codeaurora.org> <7heh2nt6uj.fsf@paris.lan>
+Date: Fri, 28 Feb 2014 12:24:21 -0800
+In-Reply-To: <7heh2nt6uj.fsf@paris.lan> (Kevin Hilman's message of "Fri, 28
+	Feb 2014 10:44:36 -0800")
+Message-ID: <7htxbjrnnu.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393609771.6784.83.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:49:31AM -0700, Toshi Kani wrote:
-> On Tue, 2014-02-25 at 09:18 -0500, Matthew Wilcox wrote:
-> > Instead of calling aops->get_xip_mem from the fault handler, the
-> > filesystem passes a get_block_t that is used to find the appropriate
-> > blocks.
->  :
-> > +static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
-> > +			get_block_t get_block)
-> > +{
-> > +	struct file *file = vma->vm_file;
-> > +	struct inode *inode = file_inode(file);
-> > +	struct address_space *mapping = file->f_mapping;
-> > +	struct buffer_head bh;
-> > +	unsigned long vaddr = (unsigned long)vmf->virtual_address;
-> > +	sector_t block;
-> > +	pgoff_t size;
-> > +	unsigned long pfn;
-> > +	int error;
-> > +
-> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +	if (vmf->pgoff >= size)
-> > +		return VM_FAULT_SIGBUS;
-> > +
-> > +	memset(&bh, 0, sizeof(bh));
-> > +	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - inode->i_blkbits);
-> > +	bh.b_size = PAGE_SIZE;
-> > +	error = get_block(inode, block, &bh, 0);
-> > +	if (error || bh.b_size < PAGE_SIZE)
-> > +		return VM_FAULT_SIGBUS;
-> 
-> I am learning the code and have some questions.
+Kevin Hilman <khilman@linaro.org> writes:
 
-Hi Toshi,
+> Stephen Boyd <sboyd@codeaurora.org> writes:
+>
+>> On 02/28, Kevin Hilman wrote:
+>>> Hi Kumar,
+>>> 
+>>> Kevin Hilman <khilman@linaro.org> writes:
+>>> 
+>>> > Kumar Gala <galak@codeaurora.org> writes:
+>>> >
+>>> >> Enable support for the MSM8x60, MSM8960, and MSM8974 SoCs, clocks and
+>>> >> serial console as part of the standard multi_v7_defconfig.
+>>> >>
+>>> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>>> >> ---
+>>> >>
+>>> >> I leave this to the arm-soc guys to apply because of possible conflicts
+>>> >> with other updates to multi_v7_defconfig.
+>>> >
+>>> > Seem to be a handful of !qcom changes here, probably resulting from a
+>>> > run of 'make savedefconfig' without all the new changes in.
+>>> >
+>>> > I've thinned this out to only the qcom changes and applied the following
+>>> > to next/boards.  I think it's better to do any 'make savedefconfig'
+>>> > cleanups as a separate, cleanup-only patch as needed.
+>>> 
+>>> Bisecting a new boot failure on u8500/snowball came down to this patch.
+>>> Simply disabling CONFIG_ARCH_QCOM in mutli_v7_defconfig gets the
+>>> u8500/snowball booting again, so it looks like there may still be some
+>>> qcom specifics that are being run on non-qcom platforms with a
+>>> multi-platform config.
+>>> 
+>>> Could you audit for initcalls/drivers being initialized on non-qcom
+>>> SoCs?
+>>> 
+>>
+>> Can you try disabling CONFIG_ARCH_MSM8X60 and
+>> CONFIG_ARCH_MSM8960? MY suspicion is the text offset movement is
+>> causing problems, but I hope I'm wrong.
+>
+> Sorry to dash your hopes, but you're right.
+>
+> Starting from a fresh multi_v7_defconfig and disabling those two Kconfig
+> options gets the snowball booting again on multi_v7_defconfig.
 
-Glad to see you're looking at it.  Let me try to help ...
+For the record...
 
-> The original code,
-> xip_file_fault(), jumps to found: and calls vm_insert_mixed() when
-> get_xip_mem(,,0,,) succeeded.  If get_xip_mem() returns -ENODATA, it
-> calls either get_xip_mem(,,1,,) or xip_sparse_page().  In this new
-> function, it looks to me that get_block(,,,0) returns 0 for both cases
-> (success and -ENODATA previously), which are dealt in the same way.  Is
-> that right?  If so, is there any reason for the change?
+After some discussion on IRC, we discovered this is because those
+options add a 2Mb offset to TEXT_OFFSET, and my boot tool wasn't taking
+that into account when creating the uImage to boot on snowball.
 
-Yes, get_xip_mem() returned -ENODATA for a hole.  That was a suboptimal
-interface because filesystems are actually capable of returning more
-information than that, eg how long the hole is (ext4 *doesn't*, but I
-consider that to be a bug).
+I guess it's time to upgrade u-boot on snowball with bootz support so it
+can directly boot a zImage.
 
-I don't get to decide what the get_block() interface looks like.  It's the
-standard way that the VFS calls back into the filesystem and has been
-around for probably close to twenty years at this point.  I'm still trying
-to understand exactly what the contract is for get_blocks() ... I have
-a document that I'm working on to try to explain it, but it's tough going!
-
-> Also, isn't it
-> possible to call get_block(,,,1) even if get_block(,,,0) found a block?
-
-The code in question looks like this:
-
-        error = get_block(inode, block, &bh, 0);
-        if (error || bh.b_size < PAGE_SIZE)
-                goto sigbus;
-
-        if (!buffer_written(&bh) && !vmf->cow_page) {
-                if (vmf->flags & FAULT_FLAG_WRITE) {
-                        error = get_block(inode, block, &bh, 1);
-
-where buffer_written is defined as:
-        return buffer_mapped(bh) && !buffer_unwritten(bh);
-
-Doing some boolean algebra, that's:
-
-	if (!buffer_mapped || buffer_unwritten)
-
-In either case, we want to tell the filesystem that we're writing to
-this block.  At least, that's my current understanding of the get_block()
-interface.  I'm open to correction here!
+Kevin
