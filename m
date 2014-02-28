@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaB1H5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 02:57:16 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48852 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaB1H5P (ORCPT
+	id S1751650AbaB1IBs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:01:48 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42101 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaB1IBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 02:57:15 -0500
-Date: Fri, 28 Feb 2014 10:56:50 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        Chase Southwood <chase.southwoo@yahoo.com>,
-        linux-kernel@vger.kernel.org, abbotti@mev.co.uk
-Subject: Re: [PATCH 1/2] Staging: comedi: addi-data: fix lines that are over
- 80 characters
-Message-ID: <20140228075650.GI26776@mwanda>
-References: <1393572680-9521-1-git-send-email-chase.southwood@yahoo.com>
- <20140228075232.GH26776@mwanda>
+	Fri, 28 Feb 2014 03:01:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140228075232.GH26776@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <10401513.fZZM0mLxSj@avalon>
+References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
+	<1462634.UcxrmdxVtK@avalon>
+	<CAMuHMdU6R_Wubsx2KCAXVBynzqquJekDNDZ-Sq1sKYEOM1RtTw@mail.gmail.com>
+	<10401513.fZZM0mLxSj@avalon>
+Date: Fri, 28 Feb 2014 09:01:45 +0100
+X-Google-Sender-Auth: U82OxSooayUMBzaUSrCeG6kyJ4U
+Message-ID: <CAMuHMdVXFnzECcGoywZS=p=ZkkYEYJbaPQoseQSGWYBeT0Y9Tg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/6] spi: sh-msiof: Add support for R-Car H2 and M2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Bastian Hecht <hechtb@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 10:52:32AM +0300, Dan Carpenter wrote:
-> On Fri, Feb 28, 2014 at 01:31:20AM -0600, Chase Southwood wrote:
-> > hwdrv_apci1564.c had numerous lines over the column limit.  This patch
-> > splits all such lines to bring them in compliance with coding style.
-> > 
-> > Signed-off-by: Chase Southwood <chase.southwoo@yahoo.com>
-> > ---
-> >  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 50 ++++++++++++++++------
-> >  1 file changed, 36 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-> > index 2b47fa1..77030c5 100644
-> > --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-> > +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-> > @@ -324,11 +324,15 @@ static int i_APCI1564_ConfigTimerCounterWatchdog(struct comedi_device *dev,
-> >  			inl(devpriv->i_IobaseAmcc + APCI1564_TIMER +
-> >  			APCI1564_TCW_PROG);
-> >  		ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
-> > -		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER + APCI1564_TCW_PROG);	/* Stop The Timer */
-> > +		/* Stop The Timer */
-> > +		outl(ul_Command1, devpriv->i_IobaseAmcc + APCI1564_TIMER +
-> > +			APCI1564_TCW_PROG);
-> 
-> Just make a helper function so that you can call it like this:
-> 
-> static void outl_1564_timer(struct addi_private *devpriv, unsigned int cmd,
-> 			    unsigned int reg)
-> {
-> 	outl(cmd, devpriv->i_IobaseAmcc + APCI1564_TIMER, reg);
-                                                        ^^^
-Should be "devpriv->i_IobaseAmcc + APCI1564_TIMER + reg" obviously.
+Hi Laurent,
 
-regards,
-dan carpenter
+On Fri, Feb 28, 2014 at 12:02 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+>> And if we remove "renesas,sh-msiof", we should probably remove
+>> "renesas,sh-mobile-msiof", too, as there are no current users, and it also
+>> assumes the same MSIOF implementation?
+>
+> I'm not too familiar with the MSIOF hardware, can "renesas,sh-mobile-msiof" be
+> used as a fallback for the currently support ARM SoCs ?
 
+r8a73a4/APE6: No
+r8a7740/A1: Maybe (not 100% clear to me from the datasheet)
+r8a7790/R-Car H2: No
+r8a7791/R-Car M2: No
+sh7372/AP4: No information
+sh73a0/AG5: No information
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
