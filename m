@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaB1PDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 10:03:52 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:23102 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287AbaB1PBf (ORCPT
+	id S1752849AbaB1PFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 10:05:21 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37823 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaB1PFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 10:01:35 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-e4-5310a4cc5469
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
-Cc: jmorris@namei.org, linux-kernel@vger.kernel.org, casey.schaufler@intel.com,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 1/8] ima: fix erronous removal of security.ima xattr
-Date: Fri, 28 Feb 2014 16:59:25 +0200
-Message-id: <26fce2ad8be7c65be3bfe972f91c7a1dbe8ae668.1393599538.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <cover.1393599538.git.d.kasatkin@samsung.com>
-References: <cover.1393599538.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1393599538.git.d.kasatkin@samsung.com>
-References: <cover.1393599538.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xa7pnlggEG/yeZG1xY8UCJotbf/cy
-	W3xZWmexbv1iJovLu+awWXzoecRm8WnFJGYHdo+ds+6yeyze85LJ48GhzSwePd+TPfq2rGL0
-	+LxJLoAtissmJTUnsyy1SN8ugStj0plTTAXXuCvOzXvG3sB4nrOLkYNDQsBE4s380C5GTiBT
-	TOLCvfVsXYxcHEICSxkl9m6/DuV0MklcvHCMHaSKTUBPYkPzDzBbRMBZYtGtdlaQImaBqYwS
-	r25NYwFJCAu4SNyftg3MZhFQlVi5dBYTiM0rECdxb/kNdoh1ChLLvqxlBrE5Bawktly+xwpi
-	CwlYSlx9NpcNl/gERv4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKC8csOxsXHrA4x
-	CnAwKvHwSiwSCBZiTSwrrsw9xCjBwawkwjt9PlCINyWxsiq1KD++qDQntfgQIxMHp1QDo1L6
-	XbZnu++wtW6+wsnnfqlf7Myf7xJSE/ivMuk+VRWdJHNq1ue2IjWPJjnvW7/33S+MyQxxmCy8
-	SmbqN/cFhW1F7LtiN1gd+1SfY9bc8t0qzenvpSvTfa1qjSeUH3ulyRquxa2WtJ9942ytywbb
-	YiW8zt94mXbww54diYm/9gZnV9stM3/focRSnJFoqMVcVJwIAKCc6LgkAgAA
+	Fri, 28 Feb 2014 10:05:19 -0500
+Date: Fri, 28 Feb 2014 10:07:29 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+In-Reply-To: <20140228092341.12a40f7c@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1402280957470.6727@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1402241130080.20170@vincent-weaver-1.um.maine.edu> <530B90A5.3090302@zytor.com> <20140224141329.1cd3bb52@gandalf.local.home> <20140224193043.GP6835@laptop.programming.kicks-ass.net> <530C12CA.6070308@zytor.com>
+ <alpine.DEB.2.10.1402250904400.23234@vincent-weaver-1.um.maine.edu> <dde99a03-9f97-4cd9-aeef-cb0dcc62a7dc@email.android.com> <20140225094352.73e0e28c@gandalf.local.home> <alpine.DEB.2.10.1402251032230.23234@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1402261003390.18730@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1402271621000.2571@vincent-weaver-1.um.maine.edu> <20140227173150.4e5ed747@gandalf.local.home> <530FC1C6.5040209@zytor.com> <alpine.DEB.2.10.1402272032140.6271@vincent-weaver-1.um.maine.edu>
+ <20140227215726.7018c861@gandalf.local.home> <alpine.DEB.2.10.1402280914550.6727@vincent-weaver-1.um.maine.edu> <20140228092341.12a40f7c@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ima_inode_post_setattr() calls ima_must_appraise() to check if
-file needs to be appraised. If it is not then it removes security.ima
-xattr. With original policy matching code it might happen that even
-file needs to be appraised with FILE_CHECK hook, it might not be
-for POST_SETATTR hook. 'security.ima' might be erronously removed.
+On Fri, 28 Feb 2014, Steven Rostedt wrote:
 
-This patch treats POST_SETATTR as special wildcard function and will
-cause ima_must_appraise() to be true if any of the hooks rules matches.
-security.ima will not be removed if any of the hooks would require
-appraisal.
+> Interesting. Are you doing a perf function trace?
+> 
+> And just in case, can you add this patch and make sure the copy is
+> called by NMI.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/ima/ima_policy.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index d7c97a4..947cdbe 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -167,9 +167,11 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
- 	const struct cred *cred = current_cred();
- 	int i;
- 
--	if ((rule->flags & IMA_FUNC) && rule->func != func)
-+	if ((rule->flags & IMA_FUNC) &&
-+		    (rule->func != func && func != POST_SETATTR))
- 		return false;
--	if ((rule->flags & IMA_MASK) && rule->mask != mask)
-+	if ((rule->flags & IMA_MASK) &&
-+		    (rule->mask != mask && func != POST_SETATTR))
- 		return false;
- 	if ((rule->flags & IMA_FSMAGIC)
- 	    && rule->fsmagic != inode->i_sb->s_magic)
--- 
-1.8.3.2
+199.900682: function:             trace_do_page_fault
+199.900683: page_fault_user:      address=__per_cpu_end ip=__per_cpu_end error_code=0x6
+199.900683: function:             perf_swevent_get_recursion_context
+199.900684: function:             perf_tp_event
+199.900684: function:                perf_swevent_event
+199.900684: function:                   perf_swevent_overflow
+199.900684: function:                      __perf_event_overflow
+199.900685: function:                         perf_prepare_sample
+199.900685: function:                            __perf_event_header__init_id
+199.900685: function:                               task_tgid_nr_ns
+199.900685: function:                               perf_event_tid
+199.900686: function:                                  __task_pid_nr_ns
+199.900686: function:                            perf_callchain
+199.900687: function:             copy_from_user_nmi
+199.900687: function:             trace_do_page_fault
+199.900687: page_fault_kernel:    address=irq_stack_union ip=copy_user_generic_string error_code=0x0
+199.900688: function:                __do_page_fault
+199.900688: function:                   bad_area_nosemaphore
+199.900688: function:                      __bad_area_nosemaphore
+199.900689: function:                         no_context
+199.900689: function:                            fixup_exception
+199.900689: function:                               search_exception_tables
+199.900689: function:                                  search_extable
+199.900691: function:             copy_user_handle_tail
+199.900691: function:             trace_do_page_fault
+199.900691: page_fault_kernel:    address=irq_stack_union ip=copy_user_handle_tail error_code=0x0
+199.900691: function:                __do_page_fault
+199.900692: function:                   bad_area_nosemaphore
+199.900692: function:                      __bad_area_nosemaphore
+199.900692: function:                         no_context
+199.900692: function:                            fixup_exception
+199.900692: function:                               search_exception_tables
+199.900692: function:                                  search_extable
+199.900693: function:             save_stack_trace
+199.900693: function:                dump_trace
+199.900694: function:                   print_context_stack
+199.900694: function:                      __kernel_text_address
+199.900694: function:                         is_module_text_address
+199.900695: function:                            __module_text_address
+199.900695: function:                               __module_address
+199.900695: function:                      __kernel_text_address
+199.900695: function:                         is_module_text_address
+199.900696: function:                            __module_text_address
+199.900696: function:                               __module_address
+...
+199.900705: function:                      __kernel_text_address
+199.900809: kernel_stack:         <stack trace>
+=> perf_callchain (ffffffff810d35a2)
+=> perf_prepare_sample (ffffffff810cfae3)
+=> __perf_event_overflow (ffffffff810d02f4)
+=> perf_swevent_overflow (ffffffff810d04e3)
+=> perf_swevent_event (ffffffff810d0574)
+=> perf_tp_event (ffffffff810d070c)
+=> perf_trace_x86_exceptions (ffffffff810341b6)
+=> trace_do_page_fault (ffffffff81537702)
+=> trace_page_fault (ffffffff81534772)
+199.900810: function:             perf_output_begin
+199.900810: function:             __do_page_fault
+199.900810: function:                __perf_sw_event
+199.900810: function:                   perf_swevent_get_recursion_context
+199.900811: function:                down_read_trylock
+199.900811: function:                _cond_resched
+199.900811: function:                find_vma
+199.900811: function:                bad_area
+199.900812: function:                   up_read
+199.900812: function:                   __bad_area_nosemaphore
+199.900812: function:                      is_prefetch
+199.900812: function:                         convert_ip_to_linear
+199.900813: function:                      unhandled_signal
+199.900813: function:                      __printk_ratelimit
+199.900813: function:             _raw_spin_trylock
+199.900813: function:             _raw_spin_unlock_irqrestore
+199.900814: function:                      printk
+199.900814: function:                         vprintk_emit
 
