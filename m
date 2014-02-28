@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaB1Kvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 05:51:40 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35943 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaB1Kvj (ORCPT
+	id S1751651AbaB1Kwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 05:52:42 -0500
+Received: from www.linutronix.de ([62.245.132.108]:35456 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083AbaB1Kwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 05:51:39 -0500
-Message-ID: <1393584643.3522.5.camel@tkhai>
-Subject: Re: [PATCH]sched/core: Return possibility to set RT and DL classes
- back
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        <tkhai@yandex.ru>
-Date: Fri, 28 Feb 2014 14:50:43 +0400
-In-Reply-To: <1393496657.3522.3.camel@tkhai>
-References: <1393496657.3522.3.camel@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
+	Fri, 28 Feb 2014 05:52:41 -0500
+Date: Fri, 28 Feb 2014 11:52:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, tj@kernel.org, peterz@infradead.org,
+        mingo@kernel.org
+Subject: Re: [PATCH 2/2] timer: Make sure TIMER_FLAG_MASK bits are free in
+ allocated base
+In-Reply-To: <9144e10d7e854a0aa8a673332adec356d81a923c.1393576981.git.viresh.kumar@linaro.org>
+Message-ID: <alpine.DEB.2.02.1402281151180.18573@ionos.tec.linutronix.de>
+References: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org> <9144e10d7e854a0aa8a673332adec356d81a923c.1393576981.git.viresh.kumar@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, have you seen this?
+On Fri, 28 Feb 2014, Viresh Kumar wrote:
 
-Nothing works at the moment:
-
-now
-
-   21 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3                                                                                                                                            
-   16 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2                                                                                                                                            
-   11 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1                                                                                                                                            
-   10 root      20   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
-
-   22 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
-   17 root      20   0     0    0    0 S  0.0  0.0   0:00.00 migration/2                                                                                                                                           
-   12 root      20   0     0    0    0 S  0.0  0.0   0:00.04 migration/1                                                                                                                                           
-    9 root      20   0     0    0    0 S  0.0  0.0   0:00.20 migration/0
-
-with fix
-
-   21 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/3         
-   16 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/2         
-   11 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/1         
-   10 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 watchdog/0
-
-   22 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/3                                                                                                                                           
-   17 root      RT   0     0    0    0 S  0.0  0.0   0:00.03 migration/2                                                                                                                                           
-   12 root      RT   0     0    0    0 S  0.0  0.0   0:00.00 migration/1                                                                                                                                           
-    9 root      RT   0     0    0    0 S  0.0  0.0   0:00.24 migration/0
-
-В Чт, 27/02/2014 в 14:24 +0400, Kirill Tkhai пишет:
-> [PATCH]sched/core: Return possibility to set RT and DL classes back
+> Currently we are using two lowest bit of base for internal purpose and so they
+> both should be zero in the allocated address. The code was doing the right thing
+> before this patch came in:
 > 
-> I found that it's impossible to set RT policy for tasks at the moment.
+> commit c5f66e99b7cb091e3d51ae8e8156892e8feb7fa3
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Wed Aug 8 11:10:28 2012 -0700
 > 
-> This is regression after commit [sched: Consider pi boosting in setscheduler()]
-> 				[c365c292d05908c6ea6f32708f331e21033fe71d     ]
-> Fix that.
+>     timer: Implement TIMER_IRQSAFE
 > 
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Ingo Molnar <mingo@redhat.com>
+> Tejun probably forgot to update this piece of code which checks if the lowest
+> 'n' bits are zero or not and so wasn't updated according to the new flag. Lets
+> use TIMER_FLAG_MASK in the calculations here, so that this code wouldn't require
+> a change later on with another flag in.
+
+Are you planning to introduce more flag horror? Don't go there. The
+timer_list code is about to be rewritten completely and I'm not going
+to add new features to the existing code base.
+
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 > ---
->  kernel/sched/core.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 84b23ce..30cf9ad 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3193,6 +3193,10 @@ static void __setscheduler_params(struct task_struct *p,
->  	 * getparam()/getattr() don't report silly values for !rt tasks.
->  	 */
->  	p->rt_priority = attr->sched_priority;
-> +
-> +	p->normal_prio = normal_prio(p);
-> +	p->prio = rt_mutex_getprio(p);
-> +
->  	set_load_weight(p);
->  }
->  
+>  kernel/timer.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-
-
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index e8e7839..d52a8ff 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -1548,9 +1548,8 @@ static int init_timers_cpu(int cpu)
+>  			if (!base)
+>  				return -ENOMEM;
+>  
+> -			/* Make sure that tvec_base is 2 byte aligned */
+> -			if (tbase_get_deferrable(base)) {
+> -				WARN_ON(1);
+> +			/* Make sure tvec_base has TIMER_FLAG_MASK bits free */
+> +			if (WARN_ON(base != tbase_get_base(base))) {
+>  				kfree(base);
+>  				return -ENOMEM;
+>  			}
+> -- 
+> 1.7.12.rc2.18.g61b472e
+> 
+> 
