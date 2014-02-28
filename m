@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaB1VJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 16:09:34 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36681 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaB1VJa (ORCPT
+	id S1752843AbaB1VKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 16:10:03 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:54977 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaB1VJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 16:09:30 -0500
-Message-ID: <5310FB05.4000307@gmail.com>
-Date: Fri, 28 Feb 2014 22:09:25 +0100
+	Fri, 28 Feb 2014 16:09:59 -0500
+Message-ID: <5310FB23.5040203@gmail.com>
+Date: Fri, 28 Feb 2014 22:09:55 +0100
 From: Sylwester Nawrocki <snjw23@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
@@ -24,10 +24,9 @@ CC: Grant Likely <grant.likely@linaro.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 3/7] of: Warn if of_graph_get_next_endpoint is called
- with the root node
-References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de> <1393522540-22887-4-git-send-email-p.zabel@pengutronix.de>
-In-Reply-To: <1393522540-22887-4-git-send-email-p.zabel@pengutronix.de>
+Subject: Re: [PATCH v5 5/7] [media] of: move common endpoint parsing to drivers/of
+References: <1393522540-22887-1-git-send-email-p.zabel@pengutronix.de> <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
+In-Reply-To: <1393522540-22887-6-git-send-email-p.zabel@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,32 +34,225 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 02/27/2014 06:35 PM, Philipp Zabel wrote:
-> If of_graph_get_next_endpoint is given a parentless node instead of an
-> endpoint node, it is clearly a bug.
+> This patch adds a new struct of_endpoint which is then embedded in struct
+> v4l2_of_endpoint and contains the endpoint properties that are not V4L2
+> (or even media) specific: the port number, endpoint id, local device tree
+> node and remote endpoint phandle. of_graph_parse_endpoint parses those
+> properties and is used by v4l2_of_parse_endpoint, which just adds the
+> V4L2 MBUS information to the containing v4l2_of_endpoint structure.
 >
 > Signed-off-by: Philipp Zabel<p.zabel@pengutronix.de>
 > ---
->   drivers/of/base.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
+> Changes since v4:
+>   - Fixed users of struct v4l2_of_endpoint
+>   - Removed left-over #include<media/of_graph.h>  from v4l2-of.h
+> ---
+>   drivers/media/platform/exynos4-is/media-dev.c | 10 ++++-----
+>   drivers/media/platform/exynos4-is/mipi-csis.c |  2 +-
+>   drivers/media/v4l2-core/v4l2-of.c             | 16 +++-----------
+>   drivers/of/base.c                             | 31 +++++++++++++++++++++++++++
+>   include/linux/of_graph.h                      | 20 +++++++++++++++++
+>   include/media/v4l2-of.h                       |  8 ++-----
+>   6 files changed, 62 insertions(+), 25 deletions(-)
 >
+> diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
+> index d0f82da..04d6ecd 100644
+> --- a/drivers/media/platform/exynos4-is/media-dev.c
+> +++ b/drivers/media/platform/exynos4-is/media-dev.c
+> @@ -469,10 +469,10 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
+>   		return 0;
+>
+>   	v4l2_of_parse_endpoint(ep,&endpoint);
+> -	if (WARN_ON(endpoint.port == 0) || index>= FIMC_MAX_SENSORS)
+> +	if (WARN_ON(endpoint.base.port == 0) || index>= FIMC_MAX_SENSORS)
+>   		return -EINVAL;
+>
+> -	pd->mux_id = (endpoint.port - 1)&  0x1;
+> +	pd->mux_id = (endpoint.base.port - 1)&  0x1;
+>
+>   	rem = of_graph_get_remote_port_parent(ep);
+>   	of_node_put(ep);
+> @@ -494,13 +494,13 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
+>   		return -EINVAL;
+>   	}
+>
+> -	if (fimc_input_is_parallel(endpoint.port)) {
+> +	if (fimc_input_is_parallel(endpoint.base.port)) {
+>   		if (endpoint.bus_type == V4L2_MBUS_PARALLEL)
+>   			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_601;
+>   		else
+>   			pd->sensor_bus_type = FIMC_BUS_TYPE_ITU_656;
+>   		pd->flags = endpoint.bus.parallel.flags;
+> -	} else if (fimc_input_is_mipi_csi(endpoint.port)) {
+> +	} else if (fimc_input_is_mipi_csi(endpoint.base.port)) {
+>   		/*
+>   		 * MIPI CSI-2: only input mux selection and
+>   		 * the sensor's clock frequency is needed.
+> @@ -508,7 +508,7 @@ static int fimc_md_parse_port_node(struct fimc_md *fmd,
+>   		pd->sensor_bus_type = FIMC_BUS_TYPE_MIPI_CSI2;
+>   	} else {
+>   		v4l2_err(&fmd->v4l2_dev, "Wrong port id (%u) at node %s\n",
+> -			 endpoint.port, rem->full_name);
+> +			 endpoint.base.port, rem->full_name);
+>   	}
+>   	/*
+>   	 * For FIMC-IS handled sensors, that are placed under i2c-isp device
+> diff --git a/drivers/media/platform/exynos4-is/mipi-csis.c b/drivers/media/platform/exynos4-is/mipi-csis.c
+> index fd1ae65..3678ba5 100644
+> --- a/drivers/media/platform/exynos4-is/mipi-csis.c
+> +++ b/drivers/media/platform/exynos4-is/mipi-csis.c
+> @@ -772,7 +772,7 @@ static int s5pcsis_parse_dt(struct platform_device *pdev,
+>   	/* Get port node and validate MIPI-CSI channel id. */
+>   	v4l2_of_parse_endpoint(node,&endpoint);
+>
+> -	state->index = endpoint.port - FIMC_INPUT_MIPI_CSI2_0;
+> +	state->index = endpoint.base.port - FIMC_INPUT_MIPI_CSI2_0;
+>   	if (state->index<  0 || state->index>= CSIS_MAX_ENTITIES)
+>   		return -ENXIO;
+>
+> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+> index f919db3..b4ed9a9 100644
+> --- a/drivers/media/v4l2-core/v4l2-of.c
+> +++ b/drivers/media/v4l2-core/v4l2-of.c
+> @@ -127,17 +127,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+>   int v4l2_of_parse_endpoint(const struct device_node *node,
+>   			   struct v4l2_of_endpoint *endpoint)
+>   {
+> -	struct device_node *port_node = of_get_parent(node);
+> -
+> -	memset(endpoint, 0, offsetof(struct v4l2_of_endpoint, head));
+> -
+> -	endpoint->local_node = node;
+> -	/*
+> -	 * It doesn't matter whether the two calls below succeed.
+> -	 * If they don't then the default value 0 is used.
+> -	 */
+> -	of_property_read_u32(port_node, "reg",&endpoint->port);
+> -	of_property_read_u32(node, "reg",&endpoint->id);
+> +	of_graph_parse_endpoint(node,&endpoint->base);
+> +	endpoint->bus_type = 0;
+> +	memset(&endpoint->bus, 0, sizeof(endpoint->bus));
+>
+>   	v4l2_of_parse_csi_bus(node, endpoint);
+>   	/*
+> @@ -147,8 +139,6 @@ int v4l2_of_parse_endpoint(const struct device_node *node,
+>   	if (endpoint->bus.mipi_csi2.flags == 0)
+>   		v4l2_of_parse_parallel_bus(node, endpoint);
+>
+> -	of_node_put(port_node);
+> -
+>   	return 0;
+>   }
+>   EXPORT_SYMBOL(v4l2_of_parse_endpoint);
 > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b2f223f..6e650cf 100644
+> index 8ecca7a..ba3cfca 100644
 > --- a/drivers/of/base.c
 > +++ b/drivers/of/base.c
-> @@ -2028,8 +2028,8 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->   		of_node_put(node);
->   	} else {
->   		port = of_get_parent(prev);
-> -		if (!port)
-> -			/* Hm, has someone given us the root node ?... */
-> +		if (WARN_ONCE(!port, "%s(): endpoint has no parent node\n",
-> +			      __func__))
-
-Perhaps we can add more information to this error log, e.g.
-
-		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
-			      __func__, prev->full_name))
-?
->   			return NULL;
+> @@ -1985,6 +1985,37 @@ struct device_node *of_find_next_cache_node(const struct device_node *np)
+>   }
 >
->   		/* Avoid dropping prev node refcount to 0. */
+>   /**
+> + * of_graph_parse_endpoint() - parse common endpoint node properties
+> + * @node: pointer to endpoint device_node
+> + * @endpoint: pointer to the OF endpoint data structure
+> + *
+> + * All properties are optional. If none are found, we don't set any flags.
+> + * This means the port has a static configuration and no properties have
+> + * to be specified explicitly.
+
+I don't think these two sentences are needed, it's all described in the
+DT binding documentation. And struct of_endpoint doesn't contain any
+"flags" field.
+
+> + * The caller should hold a reference to @node.
+> + */
+> +int of_graph_parse_endpoint(const struct device_node *node,
+> +			    struct of_endpoint *endpoint)
+> +{
+> +	struct device_node *port_node = of_get_parent(node);
+> +
+> +	memset(endpoint, 0, sizeof(*endpoint));
+> +
+> +	endpoint->local_node = node;
+> +	/*
+> +	 * It doesn't matter whether the two calls below succeed.
+> +	 * If they don't then the default value 0 is used.
+> +	 */
+> +	of_property_read_u32(port_node, "reg",&endpoint->port);
+> +	of_property_read_u32(node, "reg",&endpoint->id);
+> +
+> +	of_node_put(port_node);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(of_graph_parse_endpoint);
+> +
+> +/**
+>    * of_graph_get_next_endpoint() - get next endpoint node
+>    * @parent: pointer to the parent device node
+>    * @prev: previous endpoint node, or NULL to get first
+> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+> index 3bbeb60..2b233db 100644
+> --- a/include/linux/of_graph.h
+> +++ b/include/linux/of_graph.h
+> @@ -14,7 +14,21 @@
+>   #ifndef __LINUX_OF_GRAPH_H
+>   #define __LINUX_OF_GRAPH_H
+>
+> +/**
+> + * struct of_endpoint - the OF graph endpoint data structure
+> + * @port: identifier (value of reg property) of a port this endpoint belongs to
+> + * @id: identifier (value of reg property) of this endpoint
+> + * @local_node: pointer to device_node of this endpoint
+> + */
+> +struct of_endpoint {
+> +	unsigned int port;
+> +	unsigned int id;
+> +	const struct device_node *local_node;
+> +};
+> +
+>   #ifdef CONFIG_OF
+> +int of_graph_parse_endpoint(const struct device_node *node,
+> +				struct of_endpoint *endpoint);
+>   struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+>   					struct device_node *previous);
+>   struct device_node *of_graph_get_remote_port_parent(
+> @@ -22,6 +36,12 @@ struct device_node *of_graph_get_remote_port_parent(
+>   struct device_node *of_graph_get_remote_port(const struct device_node *node);
+>   #else
+>
+> +static inline int of_graph_parse_endpoint(const struct device_node *node,
+> +					struct of_endpoint *endpoint);
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>   static inline struct device_node *of_graph_get_next_endpoint(
+>   					const struct device_node *parent,
+>   					struct device_node *previous)
+> diff --git a/include/media/v4l2-of.h b/include/media/v4l2-of.h
+> index 3a49735..70fa7b7 100644
+> --- a/include/media/v4l2-of.h
+> +++ b/include/media/v4l2-of.h
+> @@ -51,17 +51,13 @@ struct v4l2_of_bus_parallel {
+>
+>   /**
+>    * struct v4l2_of_endpoint - the endpoint data structure
+> - * @port: identifier (value of reg property) of a port this endpoint belongs to
+> - * @id: identifier (value of reg property) of this endpoint
+> - * @local_node: pointer to device_node of this endpoint
+> + * @base: struct of_endpoint containing port, id, and local of_node
+>    * @bus_type: bus type
+>    * @bus: bus configuration data structure
+>    * @head: list head for this structure
+>    */
+>   struct v4l2_of_endpoint {
+> -	unsigned int port;
+> -	unsigned int id;
+> -	const struct device_node *local_node;
+> +	struct of_endpoint base;
+>   	enum v4l2_mbus_type bus_type;
+>   	union {
+>   		struct v4l2_of_bus_parallel parallel;
+
+Otherwise looks good to me.
