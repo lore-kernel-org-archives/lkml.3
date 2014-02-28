@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaB1IBs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 03:01:48 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:42101 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaB1IBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 03:01:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <10401513.fZZM0mLxSj@avalon>
-References: <1393323673-2751-1-git-send-email-geert@linux-m68k.org>
-	<1462634.UcxrmdxVtK@avalon>
-	<CAMuHMdU6R_Wubsx2KCAXVBynzqquJekDNDZ-Sq1sKYEOM1RtTw@mail.gmail.com>
-	<10401513.fZZM0mLxSj@avalon>
-Date: Fri, 28 Feb 2014 09:01:45 +0100
-X-Google-Sender-Auth: U82OxSooayUMBzaUSrCeG6kyJ4U
-Message-ID: <CAMuHMdVXFnzECcGoywZS=p=ZkkYEYJbaPQoseQSGWYBeT0Y9Tg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/6] spi: sh-msiof: Add support for R-Car H2 and M2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Bastian Hecht <hechtb@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Takashi Yoshii <takasi-y@ops.dti.ne.jp>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751775AbaB1IBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 03:01:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40115 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaB1IBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 03:01:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,560,1389772800"; 
+   d="scan'208";a="489743889"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>
+Cc: Chew Kean Ho <kean.ho.chew@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: i801: enable Intel BayTrail SMBUS
+Date: Sat,  1 Mar 2014 00:03:56 +0800
+Message-Id: <1393603436-3494-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+From: Chew, Kean ho <kean.ho.chew@intel.com>
 
-On Fri, Feb 28, 2014 at 12:02 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
->> And if we remove "renesas,sh-msiof", we should probably remove
->> "renesas,sh-mobile-msiof", too, as there are no current users, and it also
->> assumes the same MSIOF implementation?
->
-> I'm not too familiar with the MSIOF hardware, can "renesas,sh-mobile-msiof" be
-> used as a fallback for the currently support ARM SoCs ?
+Add Device ID of Intel BayTrail SMBus Controller.
 
-r8a73a4/APE6: No
-r8a7740/A1: Maybe (not 100% clear to me from the datasheet)
-r8a7790/R-Car H2: No
-r8a7791/R-Car M2: No
-sh7372/AP4: No information
-sh73a0/AG5: No information
+Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+---
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
 
-Gr{oetje,eeting}s,
+diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
+index aaaf0693..adf5e33 100644
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -26,6 +26,7 @@ Supported adapters:
+   * Intel Wellsburg (PCH)
+   * Intel Coleto Creek (PCH)
+   * Intel Wildcat Point-LP (PCH)
++  * Intel BayTrail (SOC)
+    Datasheets: Publicly available at the Intel website
+ 
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index f5ed031..f23da0e 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -110,6 +110,7 @@ config I2C_I801
+ 	    Wellsburg (PCH)
+ 	    Coleto Creek (PCH)
+ 	    Wildcat Point-LP (PCH)
++	    BayTrail (SOC)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 349c2d3..899f559 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -60,6 +60,7 @@
+   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
+   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
+   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
++  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -161,6 +162,7 @@
+ 				 STATUS_ERROR_FLAGS)
+ 
+ /* Older devices have their ID defined in <linux/pci_ids.h> */
++#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+ /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
+@@ -822,6 +824,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
+ 	{ 0, }
+ };
+ 
+-- 
+1.7.4.4
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
