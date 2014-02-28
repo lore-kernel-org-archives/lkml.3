@@ -1,157 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaB1NvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 08:51:07 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:57877 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaB1Ntb (ORCPT
+	id S1752345AbaB1Nwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 08:52:34 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:40277 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaB1Nwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 08:49:31 -0500
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, bcm@fixthebug.org, mporter@linaro.org,
-        devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] ARM: dts: revise kona clock binding document
-Date: Fri, 28 Feb 2014 07:49:28 -0600
-Message-Id: <1393595371-3789-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1393595371-3789-1-git-send-email-elder@linaro.org>
-References: <1393595371-3789-1-git-send-email-elder@linaro.org>
+	Fri, 28 Feb 2014 08:52:33 -0500
+Message-ID: <5310949F.7000901@atmel.com>
+Date: Fri, 28 Feb 2014 14:52:31 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Herbert Xu'" <herbert@gondor.apana.org.au>
+CC: <linux-kernel@vger.kernel.org>, "'Peter Korsgaard'" <jacmet@sunsite.dk>
+Subject: Re: [PATCH 1/5] hwrng: atmel - Use devm_clk_get()
+References: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
+In-Reply-To: <003e01cf3378$c9f54420$5ddfcc60$%han@samsung.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next patch defines a binding for a new Broadcom SoC that uses
-Kona style CCUs for its clocks.  Update the generic Kona clock
-binding document so it's more natural to accomodate the definitions
-of additional SoC families.
+On 27/02/2014 06:00, Jingoo Han :
+> Use devm_clk_get() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Specifically:
-    - Define the compatible string values generically, referring
-      to specific per-model values later in the document.
-    - Put the device tree example immediately after the required
-      properties listing, before the tables of SoC-specific values.
-    - Clearly identify the start of the section defining specific
-      values related to the BCM281XX family
-    - Add a list of the specific BCM281XX family compatible strings.
-    - Reword the description of the table slightly.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- .../devicetree/bindings/clock/bcm-kona-clock.txt   |   87 +++++++++++---------
- 1 file changed, 47 insertions(+), 40 deletions(-)
+Thanks a lot.
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-index 56d1f49..ebe3ab6 100644
---- a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-@@ -10,12 +10,12 @@ This binding uses the common clock binding:
- 
- Required properties:
- - compatible
--	Shall have one of the following values:
--	- "brcm,bcm11351-root-ccu"
--	- "brcm,bcm11351-aon-ccu"
--	- "brcm,bcm11351-hub-ccu"
--	- "brcm,bcm11351-master-ccu"
--	- "brcm,bcm11351-slave-ccu"
-+	Shall have a value of the form "brcm,<model>-<which>-ccu",
-+	where <model> is a Broadcom SoC model number and <which> is
-+	the name of a defined CCU.  For example:
-+	    "brcm,bcm11351-root-ccu"
-+	The compatible strings used for each supported SoC family
-+	are defined below.
- - reg
- 	Shall define the base and range of the address space
- 	containing clock control registers
-@@ -26,12 +26,48 @@ Required properties:
- 	Shall be an ordered list of strings defining the names of
- 	the clocks provided by the CCU.
- 
-+Device tree example:
- 
--BCM281XX family SoCs use Kona CCUs.  The following table defines
--the set of CCUs and clock specifiers for BCM281XX clocks.  When
--a clock consumer references a clocks, its symbolic specifier
--(rather than its numeric index value) should be used.  These
--specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-+	slave_ccu: slave_ccu {
-+		compatible = "brcm,bcm11351-slave-ccu";
-+		reg = <0x3e011000 0x0f00>;
-+		#clock-cells = <1>;
-+		clock-output-names = "uartb",
-+				     "uartb2",
-+				     "uartb3",
-+				     "uartb4";
-+	};
-+
-+	ref_crystal_clk: ref_crystal {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <26000000>;
-+	};
-+
-+	uart@3e002000 {
-+		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
-+		status = "disabled";
-+		reg = <0x3e002000 0x1000>;
-+		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
-+		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+	};
-+
-+BCM281XX family
-+---------------
-+CCU compatible string values for SoCs in the BCM281XX family are:
-+    "brcm,bcm11351-root-ccu"
-+    "brcm,bcm11351-aon-ccu"
-+    "brcm,bcm11351-hub-ccu"
-+    "brcm,bcm11351-master-ccu"
-+    "brcm,bcm11351-slave-ccu"
-+
-+The following table defines the set of CCUs and clock specifiers for
-+BCM281XX family clocks.  When a clock consumer references a clocks,
-+its symbolic specifier (rather than its numeric index value) should
-+be used.  These specifiers are defined in:
-+    "include/dt-bindings/clock/bcm281xx.h"
- 
-     CCU     Clock           Type    Index   Specifier
-     ---     -----           ----    -----   ---------
-@@ -62,32 +98,3 @@ specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-     slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
-     slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
-     slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
--
--
--Device tree example:
--
--	slave_ccu: slave_ccu {
--		compatible = "brcm,bcm11351-slave-ccu";
--		reg = <0x3e011000 0x0f00>;
--		#clock-cells = <1>;
--		clock-output-names = "uartb",
--				     "uartb2",
--				     "uartb3",
--				     "uartb4";
--	};
--
--	ref_crystal_clk: ref_crystal {
--		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <26000000>;
--	};
--
--	uart@3e002000 {
--		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
--		status = "disabled";
--		reg = <0x3e002000 0x1000>;
--		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
--		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
--		reg-shift = <2>;
--		reg-io-width = <4>;
--	};
+> ---
+>  drivers/char/hw_random/atmel-rng.c |    8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+> index dfeddf2..851bc7e 100644
+> --- a/drivers/char/hw_random/atmel-rng.c
+> +++ b/drivers/char/hw_random/atmel-rng.c
+> @@ -63,13 +63,13 @@ static int atmel_trng_probe(struct platform_device *pdev)
+>  	if (IS_ERR(trng->base))
+>  		return PTR_ERR(trng->base);
+>  
+> -	trng->clk = clk_get(&pdev->dev, NULL);
+> +	trng->clk = devm_clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(trng->clk))
+>  		return PTR_ERR(trng->clk);
+>  
+>  	ret = clk_enable(trng->clk);
+>  	if (ret)
+> -		goto err_enable;
+> +		return ret;
+>  
+>  	writel(TRNG_KEY | 1, trng->base + TRNG_CR);
+>  	trng->rng.name = pdev->name;
+> @@ -85,9 +85,6 @@ static int atmel_trng_probe(struct platform_device *pdev)
+>  
+>  err_register:
+>  	clk_disable(trng->clk);
+> -err_enable:
+> -	clk_put(trng->clk);
+> -
+>  	return ret;
+>  }
+>  
+> @@ -99,7 +96,6 @@ static int atmel_trng_remove(struct platform_device *pdev)
+>  
+>  	writel(TRNG_KEY, trng->base + TRNG_CR);
+>  	clk_disable(trng->clk);
+> -	clk_put(trng->clk);
+>  
+>  	return 0;
+>  }
+> 
+
+
 -- 
-1.7.9.5
-
+Nicolas Ferre
