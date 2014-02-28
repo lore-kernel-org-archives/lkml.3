@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaB1RES (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:04:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaB1RER (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:04:17 -0500
-Date: Fri, 28 Feb 2014 09:05:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Surendra Patil <surendra.tux@gmail.com>
-Cc: rupesh.gujare@atmel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers:staging:ozwpan Fixed sparse context imbalance
- warning
-Message-ID: <20140228170555.GA20856@kroah.com>
-References: <1393606622-7549-1-git-send-email-surendra.tux@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393606622-7549-1-git-send-email-surendra.tux@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1753021AbaB1RHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:07:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53659 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752387AbaB1RHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:07:40 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: X86 ML <x86@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86, crash: Unify ifdef
+Date: Fri, 28 Feb 2014 18:07:36 +0100
+Message-Id: <1393607256-13184-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 28, 2014 at 08:57:02AM -0800, Surendra Patil wrote:
-> Sparse warns about -
-> drivers/staging/ozwpan/ozproto.c:797:6: warning: context imbalance in 'oz_polling_lock_bh' - wrong count at exit
-> drivers/staging/ozwpan/ozproto.c:802:6: warning: context imbalance in 'oz_polling_unlock_bh' - unexpected unlock
-> so added __acquires() and __releases().
-> 
-> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
-> ---
->  drivers/staging/ozwpan/ozproto.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-> index e7138ed..b47cec1 100644
-> --- a/drivers/staging/ozwpan/ozproto.c
-> +++ b/drivers/staging/ozwpan/ozproto.c
-> @@ -795,11 +795,13 @@ int oz_get_pd_list(struct oz_mac_addr *addr, int max_count)
->  }
->  
->  void oz_polling_lock_bh(void)
-> +__acquires(&g_polling_block)
->  {
->  	spin_lock_bh(&g_polling_lock);
->  }
->  
->  void oz_polling_unlock_bh(void)
-> +__releases(&g_polling_block)
->  {
->  	spin_unlock_bh(&g_polling_lock);
->  }
+From: Borislav Petkov <bp@suse.de>
 
-How about ripping out this "wrapper" function entirely and replacing all
-calls to them with the "real" call to the spinlock function?
+Merge two back-to-back CONFIG_X86_32 ifdefs into one.
 
-thanks,
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/crash.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-greg k-h
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index a57902efe2d5..507de8066594 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -57,9 +57,7 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
+ {
+ #ifdef CONFIG_X86_32
+ 	struct pt_regs fixed_regs;
+-#endif
+ 
+-#ifdef CONFIG_X86_32
+ 	if (!user_mode_vm(regs)) {
+ 		crash_fixup_ss_esp(&fixed_regs, regs);
+ 		regs = &fixed_regs;
+-- 
+1.9.0
+
