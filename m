@@ -1,130 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaB1Rne (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 12:43:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753131AbaB1Rnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 12:43:32 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, eranian@google.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 01/19] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Date: Fri, 28 Feb 2014 12:42:50 -0500
-Message-Id: <1393609388-40489-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
+	id S1753300AbaB1Rzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 12:55:47 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:61907 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131AbaB1Rzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Feb 2014 12:55:45 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCHv9 0/7] add compressing abstraction and multi stream support
+Date: Fri, 28 Feb 2014 20:52:00 +0300
+Message-Id: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.9.0.359.g5e34a15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
+This patchset introduces zcomp compression backend abstraction
+adding ability to support compression algorithms other than LZO;
+support for multi compression streams, making parallel compressions
+possible; adds support for LZ4 compression algorithm.
 
-Conflicts:
-	tools/perf/util/event.c
----
- kernel/events/core.c    |  4 ----
- tools/perf/util/event.c | 36 +++++++++++++++++++-----------------
- tools/perf/util/evsel.c |  1 +
- 3 files changed, 20 insertions(+), 21 deletions(-)
+v8->v9 (reviewed by Andrew Morton):
+-- add LZ4 backend (+iozone test vs LZO)
+-- merge patches 'zram: document max_comp_streams' and 'zram: add multi
+   stream functionality'
+-- do not extern backend struct from source file
+-- use find()/release() naming instead of get()/put()
+-- minor code, commit messages and code comments `nitpicks'
+-- removed Acked-by Minchan Kim from first two patches, because I've
+   changed them a bit.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 45e5543..a4ab184 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6851,10 +6851,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
- 
--	/* disabled for now */
--	if (attr->mmap2)
--		return -EINVAL;
--
- 	if (attr->__reserved_1)
- 		return -EINVAL;
- 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 55eebe9..82fb890 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -155,13 +155,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP;
-+	event->header.type = PERF_RECORD_MMAP2;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
-+		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -172,14 +173,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
--		       &event->mmap.start, &event->mmap.len, prot,
--		       &event->mmap.pgoff,
--		       execname);
--		/*
-- 		 * Anon maps don't have the execname.
-- 		 */
--		if (n < 4)
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
-+		       &event->mmap2.start, &event->mmap2.len, prot,
-+		       &event->mmap2.pgoff, &event->mmap2.maj,
-+		       &event->mmap2.min,
-+		       &ino, execname);
-+
-+		event->mmap2.ino = (u64)ino;
-+
-+		if (n < 7)
- 			continue;
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
-@@ -200,15 +202,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
- 
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap.filename, execname, size);
-+		memcpy(event->mmap2.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap.len -= event->mmap.start;
--		event->mmap.header.size = (sizeof(event->mmap) -
--					(sizeof(event->mmap.filename) - size));
--		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--		event->mmap.header.size += machine->id_hdr_size;
--		event->mmap.pid = tgid;
--		event->mmap.tid = pid;
-+		event->mmap2.len -= event->mmap.start;
-+		event->mmap2.header.size = (sizeof(event->mmap2) -
-+					(sizeof(event->mmap2.filename) - size));
-+		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
-+		event->mmap2.header.size += machine->id_hdr_size;
-+		event->mmap2.pid = tgid;
-+		event->mmap2.tid = pid;
- 
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index adc94dd..f2ab0b3 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -640,6 +640,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		perf_evsel__set_sample_bit(evsel, WEIGHT);
- 
- 	attr->mmap  = track;
-+	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
- 
- 	if (opts->sample_transaction)
+v7->v8 (reviewed by Minchan Kim):
+-- merge patches 'add multi stream functionality' and 'enable multi
+   stream compression support in zram'
+-- return status code from set_max_streams knob and print message on
+   error
+-- do not use atomic type for ->avail_strm
+-- return back: allocate by default only one stream for multi stream backend
+-- wake sleeping write in zcomp_strm_multi_put() only if we put stream
+   to idle list
+-- minor code `nitpicks'
+
+v6->v7 (reviewed by Minchan Kim):
+-- enable multi and single stream support out of the box (drop
+   ZRAM_MULTI_STREAM config option)
+-- add set_max_stream knob, so we can adjust max number of compression
+   streams in runtime (for multi stream backend at the moment)
+-- minor code `nitpicks'
+
+v5->v6 (reviewed by Minchan Kim):
+-- handle single compression stream case separately, using mutex locking,
+   to address perfomance regression
+-- handle multi compression stream using spin lock and wait_event()/wake_up()
+-- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+   config option)
+
+v4->v5 (reviewed by Minchan Kim):
+-- renamed zcomp buffer_lock; removed src len and dst len from
+   compress() and decompress(); not using term `buffer' and
+   `workmem' in code and documentation; define compress() and
+   decompress() functions for LZO backend; not using goto's;
+   do not put idle zcomp_strm to idle list tail.
+
+v3->v4 (reviewed by Minchan Kim):
+-- renamed compression backend and working memory structs as requested
+   by Minchan Kim; fixed several issues noted by Minchan Kim.
+
+Sergey Senozhatsky (7):
+  zram: introduce compressing backend abstraction
+  zram: use zcomp compressing backends
+  zram: factor out single stream compression
+  zram: add multi stream functionality
+  zram: add set_max_streams knob
+  zram: make compression algorithm selection possible
+  zram: add lz4 algorithm backend
+
+ Documentation/ABI/testing/sysfs-block-zram |  17 +-
+ Documentation/blockdev/zram.txt            |  45 +++-
+ drivers/block/zram/Kconfig                 |  10 +
+ drivers/block/zram/Makefile                |   4 +-
+ drivers/block/zram/zcomp.c                 | 349 +++++++++++++++++++++++++++++
+ drivers/block/zram/zcomp.h                 |  68 ++++++
+ drivers/block/zram/zcomp_lz4.c             |  47 ++++
+ drivers/block/zram/zcomp_lz4.h             |  17 ++
+ drivers/block/zram/zcomp_lzo.c             |  47 ++++
+ drivers/block/zram/zcomp_lzo.h             |  17 ++
+ drivers/block/zram/zram_drv.c              | 131 ++++++++---
+ drivers/block/zram/zram_drv.h              |  11 +-
+ 12 files changed, 715 insertions(+), 48 deletions(-)
+ create mode 100644 drivers/block/zram/zcomp.c
+ create mode 100644 drivers/block/zram/zcomp.h
+ create mode 100644 drivers/block/zram/zcomp_lz4.c
+ create mode 100644 drivers/block/zram/zcomp_lz4.h
+ create mode 100644 drivers/block/zram/zcomp_lzo.c
+ create mode 100644 drivers/block/zram/zcomp_lzo.h
+
 -- 
-1.7.11.7
+1.9.0.359.g5e34a15
 
