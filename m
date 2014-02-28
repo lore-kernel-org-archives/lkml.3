@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaB1WDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 17:03:08 -0500
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:36577 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbaB1WCz (ORCPT
+	id S1752604AbaB1WF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 17:05:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:11223 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751729AbaB1WFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 17:02:55 -0500
-Message-ID: <1393621411.2899.39.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 08/19] perf c2c: Shared data analyser
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Fowles <rfowles@redhat.com>
-Date: Fri, 28 Feb 2014 13:03:31 -0800
-In-Reply-To: <20140228194642.GM25953@redhat.com>
-References: <1393609388-40489-1-git-send-email-dzickus@redhat.com>
-	 <1393609388-40489-9-git-send-email-dzickus@redhat.com>
-	 <87lhwvawc4.fsf@tassilo.jf.intel.com> <20140228194642.GM25953@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 28 Feb 2014 17:05:55 -0500
+Date: Fri, 28 Feb 2014 17:05:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: perf_fuzzer compiled for x32 causes reboot
+Message-ID: <20140228170553.49f77108@gandalf.local.home>
+In-Reply-To: <20140228215511.GB6835@laptop.programming.kicks-ass.net>
+References: <530FC1C6.5040209@zytor.com>
+	<20140227183008.6be081b7@gandalf.local.home>
+	<530FCE6C.4080808@zytor.com>
+	<alpine.DEB.2.10.1402271957380.6210@vincent-weaver-1.um.maine.edu>
+	<20140228203405.GH11910@linux.vnet.ibm.com>
+	<20140228154716.0198d7cb@gandalf.local.home>
+	<20140228205409.GB14089@laptop.programming.kicks-ass.net>
+	<20140228211733.GK11910@linux.vnet.ibm.com>
+	<20140228212700.GH14089@laptop.programming.kicks-ass.net>
+	<20140228215150.GM11910@linux.vnet.ibm.com>
+	<20140228215511.GB6835@laptop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-02-28 at 14:46 -0500, Don Zickus wrote:
-> On Fri, Feb 28, 2014 at 11:08:59AM -0800, Andi Kleen wrote:
-> > Don Zickus <dzickus@redhat.com> writes:
-> > > +
-> > > +static const struct perf_evsel_str_handler handlers[] = {
-> > > +	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
-> > > +	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
+On Fri, 28 Feb 2014 22:55:11 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Fri, Feb 28, 2014 at 01:51:50PM -0800, Paul E. McKenney wrote:
+> > On Fri, Feb 28, 2014 at 10:27:00PM +0100, Peter Zijlstra wrote:
+> > > On Fri, Feb 28, 2014 at 01:17:33PM -0800, Paul E. McKenney wrote:
+> > > > This code isn't running in idle context is it?  If so, RCU will happily
+> > > > free out from under it.  CONFIG_PROVE_RCU should detect this sort of thing,
+> > > > though.
+> > > 
+> > > Well, interrupts/NMIs can happen when idle, but the interrupt/NMI
+> > > entry code deals with the idle state AFAIK.
 > > 
+> > Yep, rcu_irq_enter() and rcu_nmi_enter() deal with that.  More worried
+> > about this being code invoked from some energy-efficiency driver or
+> > another within the idle loop.
+> 
+> Right, so any tracepoint can end up there; but I thought there was
+> already the rule that tracepoints needed RCU enabled.
 
-Hmm I'm getting this when running a simple record command. 
+There is and we have special tracepoint caller for those cases we want a
+tracepoint out of RCU scope. These will reactivate rcu in the
+tracepoint code.
 
-invalid or unsupported event: 'cpu/mem-loads/pp'
+  trace_<tp_name>_rcuidle(...)
 
-This only occurs with c2c, other subcommands work normally. It's as if
-it were an old kernel, but it's Linus' latest. Is this an issue with the
-patch or something I'm missing?
-
-Furthermore, I see:
-ls /sys/bus/event_source/devices/cpu/events
-branch-instructions  branch-misses  cache-misses  cache-references  cpu-cycles  instructions  mem-loads
-
-Thanks!
-
-
-
+-- Steve
