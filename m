@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaCAN7o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 08:59:44 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:61018 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaCAN7k (ORCPT
+	id S1753211AbaCAOAR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 09:00:17 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:60584 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082AbaCAN7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 08:59:40 -0500
+	Sat, 1 Mar 2014 08:59:43 -0500
 From: Marek Belisko <marek@goldelico.com>
 To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
@@ -16,9 +16,9 @@ Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         hns@goldelico.com, NeilBrown <neilb@suse.de>,
         Marek Belisko <marek@goldelico.com>
-Subject: [PATCH v2 5/7] ARM: dts: omap3-gta04: Add basic sound support
-Date: Sat,  1 Mar 2014 14:58:52 +0100
-Message-Id: <1393682334-26805-6-git-send-email-marek@goldelico.com>
+Subject: [PATCH v2 6/7] ARM: dts: omap3-gta04: Enable mmc2 for wifi
+Date: Sat,  1 Mar 2014 14:58:53 +0100
+Message-Id: <1393682334-26805-7-git-send-email-marek@goldelico.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1393682334-26805-1-git-send-email-marek@goldelico.com>
 References: <1393682334-26805-1-git-send-email-marek@goldelico.com>
@@ -28,46 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-This adds basic sound support for gta04 board.
+This requires vaux4.
+
+Reset line isn't used yet, so wifi isn't reliable.
+But it does work once per boot.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Marek Belisko <marek@goldelico.com>
 ---
- arch/arm/boot/dts/omap3-gta04.dts | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/arm/boot/dts/omap3-gta04.dts | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/omap3-gta04.dts b/arch/arm/boot/dts/omap3-gta04.dts
-index 42fc12e..41a21bd 100644
+index 41a21bd..d556e3a 100644
 --- a/arch/arm/boot/dts/omap3-gta04.dts
 +++ b/arch/arm/boot/dts/omap3-gta04.dts
-@@ -36,6 +36,14 @@
- 			gpio-key,wakeup;
- 		};
- 	};
-+
-+	sound {
-+		compatible = "ti,omap-twl4030";
-+		ti,model = "gta04";
-+
-+		ti,mcbsp = <&mcbsp2>;
-+		ti,codec = <&twl_audio>;
-+	};
+@@ -178,7 +178,9 @@
  };
  
- &omap3_pmx_core {
-@@ -80,6 +88,12 @@
- 		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
- 		interrupt-parent = <&intc>;
- 	};
-+
-+	twl_audio: audio {
-+		compatible = "ti,twl4030-audio";
-+		codec {
-+		};
-+	};
+ &mmc2 {
+-	status = "disabled";
++	vmmc-supply = <&vaux4>;
++	bus-width = <4>;
++	ti,non-removable;
  };
  
- #include "twl4030.dtsi"
+ &mmc3 {
+@@ -204,3 +206,8 @@
+ 	bb_uvolt = <3200000>;
+ 	bb_uamp = <150>;
+ };
++
++&vaux4 {
++	regulator-min-microvolt = <2800000>;
++	regulator-max-microvolt = <3150000>;
++};
 -- 
 1.8.3.2
 
