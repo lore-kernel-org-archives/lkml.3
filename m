@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaCAOZO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 09:25:14 -0500
-Received: from pollux.schaedler.net ([195.141.111.206]:37033 "EHLO
-	pollux.schaedler.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaCAOZN (ORCPT
+	id S1753058AbaCAPbK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 10:31:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47048 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaCAPbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 09:25:13 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Mar 2014 09:25:12 EST
-From: Mario Fux <mario@unormal.org>
-To: linux-kernel@vger.kernel.org, general@lists.mozilla.org
-Subject: Diploma thesis about media choice and usage in Free Software communities: I need your help.
-Date: Sat, 1 Mar 2014 15:20:12 +0100
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-686-pae; KDE/4.8.4; i686; ; )
+	Sat, 1 Mar 2014 10:31:08 -0500
+Date: Sat, 1 Mar 2014 16:31:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Hogan <james.hogan@imgtec.com>
+cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, linus.walleij@linaro.org,
+        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irq: Changed the return type of irq_chip.irq_startup()
+ from unsigned int to int
+In-Reply-To: <7150036.UpHTd1PK1K@radagast>
+Message-ID: <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de>
+References: <CACh+v5Nkuct0J65OHcnSd6Dfq4EyfafY8RpTvdwKXUA7A8_+Xw@mail.gmail.com> <1393521679-32331-1-git-send-email-jjhiblot@traphandler.com> <7150036.UpHTd1PK1K@radagast>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403011520.13115.mario@unormal.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Free Software contributor*
+On Fri, 28 Feb 2014, James Hogan wrote:
+> On Thursday 27 February 2014 18:21:19 Jean-Jacques Hiblot wrote:
+> >  drivers/irqchip/irq-metag.c               | 4 ++--
+> 
+> I think you've missed out drivers/irqchip/irq-metag-ext.c
 
-I'm currently in the process of writing my diploma thesis. I've worked hard 
-during the last few weeks and months on a questionnaire [1] which shall 
-collect some data for my thesis. Furthermore the data of this survey will be 
-interesting for the Free Software communities as well.
+There is a good reason why I asked to do this with coccinelle.
 
-So please take some time or add it to your todo list or, even better, go 
-directly to my questionnaire [1] and help me make a great diploma thesis and 
-improve the Free Software community in some ways. 
+Thanks,
 
-The questionnaire [1] takes some 20 to 30 minutes. At the end of the 
-questionnaire you'll find a way to participate in a draw where you can even 
-win something nice.
+	tglx
 
-In a first round I got the feedback that the length of the questionnaire [1] 
-and that some questions (mostly the ones at the beginning of the questionnaire 
-about the 12 different tasks) are quite abstract and difficult. But please try 
-it, try your best and take the time and brain power. The remaining part of the 
-questionnaire [1] (after these two pages with the tasks questions) is quite 
-easy and quickly done. And you have the possibility to come back to where you 
-have left filling in the questionnaire [1] after a shorter or longer break.
-
-And if there are any questions, feedback or you need help don't hesitate a 
-moment to write me an email or ping me on IRC (freenode.net and oftc.net) as 
-unormal.
-
-This survey will be open till Sunday, the 9th of March 2014, 23.59 UTC.
-
-Thanks to all for reading and helping and towards the summer of 2014 you can 
-read here what all the data you gave me showed us and where we can learn and 
-improve.
-
-Thanks in advance and best regards
-Mario Fux
-
-[1] http://survey.kde.org/index.php/783182/lang-en
-
-* By contributor I mean not just developers but translators, artist, usability 
-people, documentation writers and many more. Everybody who contributes in one 
-way or the other to Free Software.
-
--- 
-Fellow of the FSFE.org and Joined the Game of KDE.org
-Main Organizer of the Randa Meetings (www.randa-meetings.ch)
-And if you need a simple computer:
-www.asimplecomputer.com or www.eineinfachercomputer.com
