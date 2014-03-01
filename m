@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaCAPbK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Mar 2014 10:31:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:47048 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaCAPbI (ORCPT
+	id S1753115AbaCAPdo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Mar 2014 10:33:44 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53702 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882AbaCAPdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Mar 2014 10:31:08 -0500
-Date: Sat, 1 Mar 2014 16:31:13 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, linus.walleij@linaro.org,
-        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] irq: Changed the return type of irq_chip.irq_startup()
- from unsigned int to int
-In-Reply-To: <7150036.UpHTd1PK1K@radagast>
-Message-ID: <alpine.DEB.2.02.1403011629540.18573@ionos.tec.linutronix.de>
-References: <CACh+v5Nkuct0J65OHcnSd6Dfq4EyfafY8RpTvdwKXUA7A8_+Xw@mail.gmail.com> <1393521679-32331-1-git-send-email-jjhiblot@traphandler.com> <7150036.UpHTd1PK1K@radagast>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 1 Mar 2014 10:33:43 -0500
+Message-ID: <5311FDD1.3050306@linaro.org>
+Date: Sat, 01 Mar 2014 23:33:37 +0800
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, xen-devel@lists.xenproject.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
+Subject: Re: [PATCH 2/2] arm/xen: Don't use xen DMA ops when the device is
+ protected by an IOMMU
+References: <1392913301-25524-1-git-send-email-julien.grall@linaro.org> <1392914159.32657.18.camel@kazak.uk.xensource.com> <alpine.DEB.2.02.1402241214570.4471@kaball.uk.xensource.com> <20140224151636.GA13489@kroah.com> <alpine.DEB.2.02.1402242036490.31489@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1402242036490.31489@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Feb 2014, James Hogan wrote:
-> On Thursday 27 February 2014 18:21:19 Jean-Jacques Hiblot wrote:
-> >  drivers/irqchip/irq-metag.c               | 4 ++--
-> 
-> I think you've missed out drivers/irqchip/irq-metag-ext.c
+Hi Stefano,
 
-There is a good reason why I asked to do this with coccinelle.
+On 25/02/14 04:49, Stefano Stabellini wrote:
+> Julien, could you please come up with a simple patch to demonstrate the
+> concept?
+>
 
-Thanks,
+Sure. I won't have time to write the patch next week. I will try to send 
+it as soon as possible.
 
-	tglx
+Cheers,
 
+-- 
+Julien Grall
