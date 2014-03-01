@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaCAAf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 19:35:59 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:44022 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaCAAf5 (ORCPT
+	id S1752721AbaCAAkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 19:40:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52966 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaCAAkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 19:35:57 -0500
+	Fri, 28 Feb 2014 19:40:39 -0500
+Date: Fri, 28 Feb 2014 16:42:16 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh@kernel.org>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC/RFT v3 2/9] drivers: base: support cpu cache
+ information interface to userspace via sysfs
+Message-ID: <20140301004216.GA30634@kroah.com>
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com>
+ <1392825976-17633-3-git-send-email-sudeep.holla@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1393625931-2858-1-git-send-email-quning@google.com>
-References: <1393625931-2858-1-git-send-email-quning@google.com>
-From: Ning Qu <quning@gmail.com>
-Date: Fri, 28 Feb 2014 16:35:16 -0800
-Message-ID: <CACQD4-5U3P+QiuNKzt5+VdDDi0ocphR+Jh81eHqG6_+KeaHyRw@mail.gmail.com>
-Subject: Re: [PATCH 0/1] mm, shmem: map few pages around fault address if they
- are in page cache
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, Ning Qu <quning@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ning Qu <quning@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392825976-17633-3-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry about my fault about the experiments, here is the real one.
+On Wed, Feb 19, 2014 at 04:06:09PM +0000, Sudeep Holla wrote:
+> From: Sudeep Holla <sudeep.holla@arm.com>
+> 
+> This patch adds initial support for providing processor cache information
+> to userspace through sysfs interface. This is based on already existing
+> implementations(x86, ia64, s390 and powerpc) and hence the interface is
+> intended to be fully compatible.
+> 
+> The main purpose of this generic support is to avoid further code
+> duplication to support new architectures and also to unify all the existing
+> different implementations.
+> 
+> This implementation maintains the hierarchy of cache objects which reflects
+> the system's cache topology. Cache devices are instantiated as needed as
+> CPUs come online. The cache information is replicated per-cpu even if they are
+> shared. A per-cpu array of cache information maintained is used mainly for
+> sysfs-related book keeping.
+> 
+> It also implements the shared_cpu_map attribute, which is essential for
+> enabling both kernel and user-space to discover the system's overall cache
+> topology.
+> 
+> This patch also add the missing ABI documentation for the cacheinfo sysfs
+> interface already, which is well defined and widely used.
+> 
+> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Rob Herring <robh@kernel.org>
+> Cc: linux-doc@vger.kernel.org
+> ---
+>  Documentation/ABI/testing/sysfs-devices-system-cpu |  40 ++
+>  drivers/base/Makefile                              |   2 +-
+>  drivers/base/cacheinfo.c                           | 484 +++++++++++++++++++++
+>  include/linux/cacheinfo.h                          |  55 +++
+>  4 files changed, 580 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/base/cacheinfo.c
+>  create mode 100644 include/linux/cacheinfo.h
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+> index d5a0d33..dabe03e 100644
+> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
+> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+> @@ -224,3 +224,43 @@ Description:	Parameters for the Intel P-state driver
+>  		frequency range.
+>  
+>  		More details can be found in Documentation/cpu-freq/intel-pstate.txt
+> +
+> +What:		/sys/devices/system/cpu/cpu*/cache/index*/<set_of_attributes_mentioned_below>
+> +Date:		February 2014
+> +Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
 
-Btw, apparently, there are still some questions about the results and
-I will sync with Kirill about his test command line.
+No, your name goes here, you don't get to run away from this new code :)
 
-Below is just some simple experiment numbers from this patch, let me know if
-you would like more:
+> +Description:	Parameters for the CPU cache attributes
+> +
+> +		attributes:
+> +			- writethrough: data is written to both the cache line
+> +					and to the block in the lower-level memory
+> +			- writeback: data is written only to the cache line and
+> +				     the modified cache line is written to main
+> +				     memory only when it is replaced
+> +			- writeallocate: allocate a memory location to a cache line
+> +					 on a cache miss because of a write
+> +			- readallocate: allocate a memory location to a cache line
+> +					on a cache miss because of a read
+> +
+> +		coherency_line_size: the minimum amount of data that gets transferred
+> +
+> +		level: the cache hierarcy in the multi-level cache configuration
+> +
+> +		number_of_sets: total number of sets in the cache, a set is a
+> +				collection of cache lines with the same cache index
+> +
+> +		physical_line_partition: number of physical cache line per cache tag
+> +
+> +		shared_cpu_list: the list of cpus sharing the cache
+> +
+> +		shared_cpu_map: logical cpu mask containing the list of cpus sharing
+> +				the cache
+> +
+> +		size: the total cache size in kB
+> +
+> +		type:
+> +			- instruction: cache that only holds instructions
+> +			- data: cache that only caches data
+> +			- unified: cache that holds both data and instructions
+> +
+> +		ways_of_associativity: degree of freedom in placing a particular block
+> +					of memory in the cache
 
-Tested on Xeon machine with 64GiB of RAM, using the current default fault
-order 4.
+With this patch, does this all work for x86, or does it need more glue
+logic?
 
-Sequential access 8GiB file
-                        Baseline        with-patch
-1 thread
-    minor fault         8,389,052    4,456,530
-    time, seconds    9.55            8.31
+thanks,
 
-Random access 8GiB file
-                        Baseline        with-patch
-1 thread
-    minor fault         8,389,315   6,423,386
-    time, seconds    11.68         10.51
-
-
-
-Best wishes,
--- 
-Ning Qu
+greg k-h
