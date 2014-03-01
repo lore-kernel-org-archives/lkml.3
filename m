@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaCAD5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 22:57:20 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12219 "EHLO
+	id S1753492AbaCAD57 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 22:57:59 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:12248 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752846AbaCADwi (ORCPT
+	by vger.kernel.org with ESMTP id S1752761AbaCADwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Feb 2014 22:52:38 -0500
-Message-Id: <20140301035236.088867351@goodmis.org>
+	Fri, 28 Feb 2014 22:52:37 -0500
+Message-Id: <20140301035236.516402001@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 28 Feb 2014 22:52:11 -0500
+Date: Fri, 28 Feb 2014 22:52:14 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,13 +17,14 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 02/14] timers: do not raise softirq unconditionally
+        <stable-rt@vger.kernel.org>, Tiejun Chen <tiejun.chen@windriver.com>,
+        Bin Jiang <bin.jiang@windriver.com>
+Subject: [PATCH RT 05/14] rcutree/rcu_bh_qs: disable irq while calling rcu_preempt_qs()
 References: <20140301035209.031474616@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-timers-do-not-raise-softirq-unconditionally.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0005-rcutree-rcu_bh_qs-disable-irq-while-calling-rcu_pree.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,172 +35,55 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Tiejun Chen <tiejun.chen@windriver.com>
 
-Mike,
+Any callers to the function rcu_preempt_qs() must disable irqs in
+order to protect the assignment to ->rcu_read_unlock_special. In
+RT case, rcu_bh_qs() as the wrapper of rcu_preempt_qs() is called
+in some scenarios where irq is enabled, like this path,
 
-On Thu, 7 Nov 2013, Mike Galbraith wrote:
+do_single_softirq()
+    |
+    + local_irq_enable();
+    + handle_softirq()
+    |    |
+    |    + rcu_bh_qs()
+    |        |
+    |        + rcu_preempt_qs()
+    |
+    + local_irq_disable()
 
-> On Thu, 2013-11-07 at 04:26 +0100, Mike Galbraith wrote:
-> > On Wed, 2013-11-06 at 18:49 +0100, Thomas Gleixner wrote:
->
-> > > I bet you are trying to work around some of the side effects of the
-> > > occasional tick which is still necessary despite of full nohz, right?
-> >
-> > Nope, I wanted to check out cost of nohz_full for rt, and found that it
-> > doesn't work at all instead, looked, and found that the sole running
-> > task has just awakened ksoftirqd when it wants to shut the tick down, so
-> > that shutdown never happens.
->
-> Like so in virgin 3.10-rt.  Box is x3550 M3 booted nowatchdog
-> rcu_nocbs=1-3 nohz_full=1-3, and CPUs1-3 are completely isolated via
-> cpusets as well.
+So here we'd better disable irq directly inside of rcu_bh_qs() to
+fix this, otherwise the kernel may be freezable sometimes as
+observed. And especially this way is also kind and safe for the
+potential rcu_bh_qs() usage elsewhere in the future.
 
-well, that very same problem is in mainline if you add "threadirqs" to
-the command line. But we can be smart about this. The untested patch
-below should address that issue. If that works on mainline we can
-adapt it for RT (needs a trylock(&base->lock) there).
-
-Though it's not a full solution. It needs some thought versus the
-softirq code of timers. Assume we have only one timer queued 1000
-ticks into the future. So this change will cause the timer softirq not
-to be called until that timer expires and then the timer softirq is
-going to do 1000 loops until it catches up with jiffies. That's
-anything but pretty ...
-
-What worries me more is this one:
-
-  pert-5229  [003] d..h1..   684.482618: softirq_raise: vec=9 [action=RCU]
-
-The CPU has no callbacks as you shoved them over to cpu 0, so why is
-the RCU softirq raised?
-
-Thanks,
-
-	tglx
-------------------
-Message-id: <alpine.DEB.2.02.1311071158350.23353@ionos.tec.linutronix.de>
-|CONFIG_NO_HZ_FULL + CONFIG_PREEMPT_RT_FULL = nogo
 Cc: stable-rt@vger.kernel.org
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Bin Jiang <bin.jiang@windriver.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/hrtimer.h |  3 +--
- kernel/hrtimer.c        | 31 +++++++------------------------
- kernel/timer.c          | 28 +++++++++++++++++++++++++---
- 3 files changed, 33 insertions(+), 29 deletions(-)
+ kernel/rcutree.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 79a7a35..bdbf77db 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -461,9 +461,8 @@ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
- 		unsigned long delta, const enum hrtimer_mode mode, int clock);
- extern int schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 75743cb..5439cee 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -187,7 +187,12 @@ static void rcu_preempt_qs(int cpu);
  
--/* Soft interrupt function to run the hrtimer queues: */
-+/* Called from the periodic timer tick */
- extern void hrtimer_run_queues(void);
--extern void hrtimer_run_pending(void);
- 
- /* Bootup initialization: */
- extern void __init hrtimers_init(void);
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a63cfaf..a7e90b2 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1691,30 +1691,6 @@ static void run_hrtimer_softirq(struct softirq_action *h)
- }
- 
- /*
-- * Called from timer softirq every jiffy, expire hrtimers:
-- *
-- * For HRT its the fall back code to run the softirq in the timer
-- * softirq context in case the hrtimer initialization failed or has
-- * not been done yet.
-- */
--void hrtimer_run_pending(void)
--{
--	if (hrtimer_hres_active())
--		return;
--
--	/*
--	 * This _is_ ugly: We have to check in the softirq context,
--	 * whether we can switch to highres and / or nohz mode. The
--	 * clocksource switch happens in the timer interrupt with
--	 * xtime_lock held. Notification from there only sets the
--	 * check bit in the tick_oneshot code, otherwise we might
--	 * deadlock vs. xtime_lock.
--	 */
--	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
--		hrtimer_switch_to_hres();
--}
--
--/*
-  * Called from hardirq context every jiffy
-  */
- void hrtimer_run_queues(void)
-@@ -1727,6 +1703,13 @@ void hrtimer_run_queues(void)
- 	if (hrtimer_hres_active())
- 		return;
- 
-+	/*
-+	 * Check whether we can switch to highres mode.
-+	 */
-+	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled())
-+	    && hrtimer_switch_to_hres())
-+		return;
-+
- 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
- 		base = &cpu_base->clock_base[index];
- 		if (!timerqueue_getnext(&base->active))
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 48652cc..3d7313c 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1443,8 +1443,6 @@ static void run_timer_softirq(struct softirq_action *h)
- 	irq_work_run();
- #endif
- 
--	hrtimer_run_pending();
--
- 	if (time_after_eq(jiffies, base->timer_jiffies))
- 		__run_timers(base);
- }
-@@ -1454,8 +1452,32 @@ static void run_timer_softirq(struct softirq_action *h)
-  */
- void run_local_timers(void)
+ void rcu_bh_qs(int cpu)
  {
-+	struct tvec_base *base = __this_cpu_read(tvec_bases);
++	unsigned long flags;
 +
- 	hrtimer_run_queues();
--	raise_softirq(TIMER_SOFTIRQ);
-+	/*
-+	 * We can access this lockless as we are in the timer
-+	 * interrupt. If there are no timers queued, nothing to do in
-+	 * the timer softirq.
-+	 */
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	if (!spin_do_trylock(&base->lock)) {
-+		raise_softirq(TIMER_SOFTIRQ);
-+		return;
-+	}
-+#endif
-+	if (!base->active_timers)
-+		goto out;
-+
-+	/* Check whether the next pending timer has expired */
-+	if (time_before_eq(base->next_timer, jiffies))
-+		raise_softirq(TIMER_SOFTIRQ);
-+out:
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	rt_spin_unlock_after_trylock_in_irq(&base->lock);
-+#endif
-+	/* The ; ensures that gcc won't complain in the !RT case */
-+	;
++	/* Callers to this function, rcu_preempt_qs(), must disable irqs. */
++	local_irq_save(flags);
+ 	rcu_preempt_qs(cpu);
++	local_irq_restore(flags);
  }
- 
- #ifdef __ARCH_WANT_SYS_ALARM
+ #else
+ void rcu_bh_qs(int cpu)
 -- 
 1.8.5.3
 
