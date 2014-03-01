@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaCACT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Feb 2014 21:19:58 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:42596 "EHLO fiona.linuxhacker.ru"
+	id S1753388AbaCACU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Feb 2014 21:20:26 -0500
+Received: from linuxhacker.ru ([217.76.32.60]:42593 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729AbaCACRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752924AbaCACRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Feb 2014 21:17:18 -0500
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: "John L. Hammond" <john.hammond@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 07/17] lustre/mdc: fix bad ERR_PTR usage in mdc_locks.c
-Date: Fri, 28 Feb 2014 21:16:36 -0500
-Message-Id: <1393640206-20286-8-git-send-email-green@linuxhacker.ru>
+Cc: Alexey Lyashkov <alexey_lyashkov@xyratex.com>,
+        Patrick Farrell <paf@cray.com>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 05/17] lustre/mdc: use ibits_known mask for lock match
+Date: Fri, 28 Feb 2014 21:16:34 -0500
+Message-Id: <1393640206-20286-6-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1393640206-20286-1-git-send-email-green@linuxhacker.ru>
 References: <1393640206-20286-1-git-send-email-green@linuxhacker.ru>
@@ -21,72 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John L. Hammond" <john.hammond@intel.com>
+From: Alexey Lyashkov <alexey_lyashkov@xyratex.com>
 
-In mdc_intent_open_pack() return an ERR_PTR() rather than NULL when
-ldlm_prep_enqueue_req() fails. In mdc_intent_getattr_async() check the
-return value of mdc_intent_getattr_pack() using IS_ERR(). Clean up the
-includes in mdc_locks.c.
+Before revalidating a lock on the client, mask the lock bits against
+the lock bits supported by the server (ibits_known), so newer clients
+will find valid locks given by older server versions.
 
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-on: http://review.whamcloud.com/7886
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4078
+Signed-off-by: Patrick Farrell <paf@cray.com>
+Signed-off-by: Alexey Lyashkov <alexey_lyashkov@xyratex.com>
+Reviewed-on: http://review.whamcloud.com/8636
+Xyratex-bug-id: MRP-1583
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4405
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: Nathaniel Clark <nathaniel.l.clark@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_locks.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/staging/lustre/lustre/include/lustre_export.h | 8 ++++++++
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c         | 8 +++++---
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/lustre/lustre/include/lustre_export.h b/drivers/staging/lustre/lustre/include/lustre_export.h
+index 2feb38b..82a230b 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_export.h
++++ b/drivers/staging/lustre/lustre/include/lustre_export.h
+@@ -380,6 +380,14 @@ static inline bool imp_connect_lvb_type(struct obd_import *imp)
+ 		return false;
+ }
+ 
++static inline __u64 exp_connect_ibits(struct obd_export *exp)
++{
++	struct obd_connect_data *ocd;
++
++	ocd = &exp->exp_connect_data;
++	return ocd->ocd_ibits_known;
++}
++
+ extern struct obd_export *class_conn2export(struct lustre_handle *conn);
+ extern struct obd_device *class_conn2obd(struct lustre_handle *conn);
+ 
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 6ef9e28..6110943 100644
+index d9017a5..6ef9e28 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -37,15 +37,15 @@
- #define DEBUG_SUBSYSTEM S_MDC
+@@ -160,6 +160,8 @@ ldlm_mode_t mdc_lock_match(struct obd_export *exp, __u64 flags,
+ 	ldlm_mode_t rc;
  
- # include <linux/module.h>
--# include <linux/pagemap.h>
--# include <linux/miscdevice.h>
+ 	fid_build_reg_res_name(fid, &res_id);
++	/* LU-4405: Clear bits not supported by server */
++	policy->l_inodebits.bits &= exp_connect_ibits(exp);
+ 	rc = ldlm_lock_match(class_exp2obd(exp)->obd_namespace, flags,
+ 			     &res_id, type, policy, mode, lockh, 0);
+ 	return rc;
+@@ -1087,10 +1089,10 @@ int mdc_revalidate_lock(struct obd_export *exp, struct lookup_intent *it,
+ 			break;
+ 		}
  
--#include <lustre_acl.h>
-+#include <linux/lustre_intent.h>
-+#include <obd.h>
- #include <obd_class.h>
- #include <lustre_dlm.h>
--/* fid_res_name_eq() */
--#include <lustre_fid.h>
--#include <lprocfs_status.h>
-+#include <lustre_fid.h> /* fid_res_name_eq() */
-+#include <lustre_mdc.h>
-+#include <lustre_net.h>
-+#include <lustre_req_layout.h>
- #include "mdc_internal.h"
- 
- struct mdc_getattr_args {
-@@ -336,9 +336,9 @@ static struct ptlrpc_request *mdc_intent_open_pack(struct obd_export *exp,
- 			     max(lmmsize, obddev->u.cli.cl_default_mds_easize));
- 
- 	rc = ldlm_prep_enqueue_req(exp, req, &cancels, count);
--	if (rc) {
-+	if (rc < 0) {
- 		ptlrpc_request_free(req);
--		return NULL;
-+		return ERR_PTR(rc);
+-		mode = ldlm_lock_match(exp->exp_obd->obd_namespace,
+-				       LDLM_FL_BLOCK_GRANTED, &res_id,
++		mode = mdc_lock_match(exp, LDLM_FL_BLOCK_GRANTED, fid,
+ 				       LDLM_IBITS, &policy,
+-				       LCK_CR|LCK_CW|LCK_PR|LCK_PW, &lockh, 0);
++				      LCK_CR | LCK_CW | LCK_PR | LCK_PW,
++				      &lockh);
  	}
  
- 	spin_lock(&req->rq_lock);
-@@ -1281,8 +1281,8 @@ int mdc_intent_getattr_async(struct obd_export *exp,
- 
- 	fid_build_reg_res_name(&op_data->op_fid1, &res_id);
- 	req = mdc_intent_getattr_pack(exp, it, op_data);
--	if (!req)
--		return -ENOMEM;
-+	if (IS_ERR(req))
-+		return PTR_ERR(req);
- 
- 	rc = mdc_enter_request(&obddev->u.cli);
- 	if (rc != 0) {
+ 	if (mode) {
 -- 
 1.8.5.3
 
